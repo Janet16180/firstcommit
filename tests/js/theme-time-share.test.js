@@ -5,7 +5,7 @@ const test = require("node:test");
 const { installBrowser, load, record } = require("./load");
 
 const document = installBrowser();
-const { TimeShare } = load(["dom.js", "map.js", "theme-time.js", "theme-time-motion.js", "theme-time-places.js", "theme-time-share.js"], ["TimeShare"]);
+const { TimeShare, TimePlaces } = load(["dom.js", "map.js", "theme-time.js", "theme-time-motion.js", "theme-time-places.js", "theme-time-share.js"], ["TimeShare", "TimePlaces"]);
 
 const full = (name) => name.padEnd(40, "0");
 const blob = (name) => name.padEnd(40, "b");
@@ -46,10 +46,20 @@ const none = { you: [], github: [], alex: [] };
 const YOU_PUSHED = { you: clone(TWO, "b", "b", [README, NOTES]), github: hub(TWO), alex: clone(ONE, "a", "a", [README]) };
 const ALEX_FETCHED = { ...YOU_PUSHED, alex: clone(TWO, "a", "b", [README]) };
 const ALEX_PULLED = { ...YOU_PUSHED, alex: clone(TWO, "b", "b", [README, NOTES]) };
+const THREE = [["c", ["b"]], ...TWO];
+const ALEX_COMMITTED = { ...ALEX_PULLED, alex: clone(THREE, "c", "b", [README, file("notes.txt", { head: "3", index: "3", folder: "3" })]) };
+const ALEX_PUSHED = { ...ALEX_COMMITTED, github: hub(THREE), alex: clone(THREE, "c", "c", ALEX_COMMITTED.alex.files) };
+const DIVERGED = [["d", ["b"]], ...TWO];
+const YOU_COMMITTED = { ...ALEX_PUSHED, you: clone(DIVERGED, "d", "b", [README, NOTES]) };
+const YOU_STOPPED = { ...YOU_COMMITTED, you: clone([["d", ["b"]], ...THREE], "d", "c", [README, NOTES]) };
+const STOPPED = "From /tmp/firstcommit-share/github/project\n   b000000..c000000  main       -> origin/main\nfatal: Need to specify how to reconcile divergent branches.\n";
 const STEPS = {
   push: { id: "push", actor: "you", before: { ...YOU_PUSHED, you: clone(TWO, "b", "a", [README, NOTES]), github: hub(ONE) }, after: YOU_PUSHED, events: { ...none, you: kinds("remote-updated"), github: kinds("push-received") }, commands: ["git push"], transcript: [{ command: "git push", output: "", status: 0 }] },
   fetch: { id: "pull-fetch", actor: "alex", before: YOU_PUSHED, after: ALEX_FETCHED, events: { ...none, alex: kinds("remote-updated") }, commands: ["git pull"], transcript: [{ command: "git fetch", output: "", status: 0 }] },
   merge: { id: "pull-merge-half", actor: "alex", before: ALEX_FETCHED, after: ALEX_PULLED, events: { ...none, alex: kinds("branch-moved") }, commands: ["git pull"], transcript: [{ command: "git pull", output: "", status: 0 }] },
+  alexCommit: { id: "alex-commit", actor: "alex", before: ALEX_PULLED, after: ALEX_COMMITTED, events: { ...none, alex: kinds("commit-created") }, commands: ["echo 'Bring the slides.' >> notes.txt", "git commit -am 'Ask for the slides'"], transcript: [] },
+  alexPush: { id: "alex-push", actor: "alex", before: ALEX_COMMITTED, after: ALEX_PUSHED, events: { ...none, alex: kinds("remote-updated"), github: kinds("push-received") }, commands: ["git push"], transcript: [] },
+  stops: { id: "pull-stops", actor: "you", before: YOU_COMMITTED, after: YOU_STOPPED, events: { ...none, you: kinds("remote-updated") }, commands: ["git pull"], transcript: [{ command: "git pull", output: STOPPED, status: 128 }] },
   refused: { id: "refused", actor: "you", before: YOU_PUSHED, after: YOU_PUSHED, events: none, commands: ["git push"], transcript: [{ command: "git push", output: " ! [rejected]        main -> main (fetch first)\n", status: 1 }] },
 };
 
@@ -85,14 +95,49 @@ test("the figure puts your computer, GitHub and Alex's computer side by side, ea
   assert.match(person(figure, "you").querySelector(".ts-name").textContent, /^You$/);
 });
 
+test("Alex's column is titled Alex's repository, and both repositories hold the commits, not only yours", () => {
+  const figure = TimeShare.render(STEPS.push);
+  const titles = (who) => [...person(figure, who).querySelectorAll("h4")].map((node) => node.textContent);
+  assert.deepEqual(titles("you"), ["Working folder", "Staging area", "Your repository"]);
+  assert.deepEqual(titles("alex"), ["Working folder", "Staging area", "Alex's repository"]);
+  const notes = [...figure.querySelectorAll('[data-area="repository"] .tt-place-note')].map((node) => node.textContent);
+  assert.deepEqual(notes, ["closed boxes: the commits", "closed boxes: the commits"]);
+});
+
 test("every step's caption says what Alex can see", () => {
-  const ids = ["create", "add", "commit", "push", "pull-fetch", "pull-merge-half", "alex-shares", "you-commit", "refused", "pull-merge", "push-again"];
+  const ids = ["create", "add", "commit", "push", "pull-fetch", "pull-merge-half", "alex-commit", "alex-push", "you-commit", "refused", "pull-stops", "pull-merge", "push-again"];
   assert.deepEqual(Object.keys(TimeShare.CAPTIONS), ids);
   for (const id of ids) assert.match(TimeShare.CAPTIONS[id], /Alex/, id);
 });
 
 test("the commit's caption says plainly that committing shares nothing", () => {
   assert.match(TimeShare.CAPTIONS.commit, /shares nothing/);
+});
+
+test("the merge half's caption says Alex's files have it now, since the fetch half already brought the commit", () => {
+  assert.match(TimeShare.CAPTIONS["pull-merge-half"], /Now Alex's files have it too\.$/);
+});
+
+test("your merge's caption names the command that merged, and the step before says a plain git pull stops", () => {
+  assert.match(TimeShare.CAPTIONS["pull-stops"], /^Your `git pull` fetches Alex's commit/);
+  assert.match(TimeShare.CAPTIONS["pull-stops"], /Then it stops/);
+  assert.match(TimeShare.CAPTIONS["pull-merge"], /^`git pull --no-rebase` merges/);
+  assert.match(TimeShare.CAPTIONS["pull-merge"], /`--no-edit` takes git's own merge message instead of opening an editor/);
+});
+
+test("Alex's commit and Alex's push are two steps, each lighting its own arrow", () => {
+  assert.deepEqual(TimeShare.lit(STEPS.alexCommit), ["commit"]);
+  assert.deepEqual(TimeShare.lit(STEPS.alexPush), ["push"]);
+});
+
+test("a plain git pull that stops shows git's own words, and lights only its fetch half", () => {
+  const { figure, calls } = played(STEPS.stops);
+  assert.deepEqual(TimeShare.lit(STEPS.stops), ["fetch"]);
+  assert.match(figure.querySelector(".ts-output").textContent, /Need to specify how to reconcile divergent branches/);
+  assert.match(figure.querySelector(".ts-command").textContent, /^You:\$ git pull$/);
+  const yours = (area) => person(figure, "you").querySelector(`[data-area="${area}"]`);
+  assert.deepEqual(calls.filter((call) => yours("folder").contains(call.node) || yours("index").contains(call.node)), []);
+  assert.equal(figure.querySelectorAll(".tt-flyer.is-commit").length, 1);
 });
 
 test("a step lights the arrows of the person who ran it, from their own events and GitHub's", () => {
@@ -148,6 +193,23 @@ test("a refused push shows git's own words, and nothing moves anywhere", () => {
   assert.match(figure.querySelector(".ts-output").textContent, /\[rejected\]/);
   assert.deepEqual(calls, []);
   assert.equal(figure.querySelector(".tt-flyer"), null);
+});
+
+test("the figure's motions take their pace from the four places' shared timing, and follow it when it changes", () => {
+  const { flight, arrow } = TimePlaces.TIMING;
+  const was = { ...flight, arrow };
+  try {
+    Object.assign(flight, { delay: 1001, duration: 1002 });
+    TimePlaces.TIMING.arrow = 1003;
+    const { figure, calls } = played(STEPS.push);
+    const flyer = calls.find((call) => call.node === figure.querySelector(".tt-flyer"));
+    assert.deepEqual([flyer.timing.delay, flyer.timing.duration], [1001, 1002]);
+    const shaft = calls.find((call) => call.node.getAttribute("class") === "tt-arrow-shaft");
+    assert.equal(shaft.timing.duration, 1003);
+  } finally {
+    Object.assign(flight, { delay: was.delay, duration: was.duration });
+    TimePlaces.TIMING.arrow = was.arrow;
+  }
 });
 
 test("under reduced motion nothing moves, and the caption still says what happened", () => {
