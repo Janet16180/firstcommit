@@ -49,3 +49,7 @@ def test_a_digest_matches_only_its_own_answer() -> None:
     assert kit.answer_is(" main ", stored)
     assert not kit.answer_is("master", stored)
     assert not kit.answer_is(None, stored)
+
+
+def test_levels_can_name_every_part_of_a_snapshot() -> None:
+    assert {"Snapshot", "FileEntry", "Commit", "Ref"} <= set(kit.__all__)

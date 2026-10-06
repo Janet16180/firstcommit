@@ -54,12 +54,34 @@ def isolation(home: Path) -> dict[str, str]:
     }
 
 
-def environment(base: Mapping[str, str], home: Path, author: Person, when: str | None) -> dict[str, str]:
+def shell_environment(base: Mapping[str, str], home: Path) -> dict[str, str]:
     """
-    Build the environment of one game git command.
+    Build the environment of a shell the game gives the player (the page's terminal, ``firstcommit shell``).
 
     Every inherited ``GIT_*`` variable is dropped first, so a ``GIT_DIR`` or ``GIT_INDEX_FILE``
-    set around the server cannot redirect the command.
+    set around the server cannot redirect the player's commands; then git is kept to the game's
+    configuration and labs. Everything else, such as the player's editor, is kept.
+
+    Parameters
+    ----------
+    base : Mapping[str, str]
+        The environment to start from.
+    home : Path
+        The game's home folder.
+
+    Returns
+    -------
+    dict[str, str]
+        ``base`` without its git variables, plus `isolation`.
+    """
+    env = {key: value for key, value in base.items() if not key.startswith("GIT_")}
+    env.update(isolation(home))
+    return env
+
+
+def environment(base: Mapping[str, str], home: Path, author: Person, when: str | None) -> dict[str, str]:
+    """
+    Build the environment of one game git command: the player's shell environment, made fit for a program.
 
     Parameters
     ----------
@@ -75,13 +97,12 @@ def environment(base: Mapping[str, str], home: Path, author: Person, when: str |
     Returns
     -------
     dict[str, str]
-        The environment: no inherited git variables, the isolation variables, the identity,
-        the C locale (so output can be parsed), no optional locks (the page checks the lab
-        while the player types, and a ``git status`` that refreshed the index would hold
-        ``index.lock`` and make the player's own command fail), no prompts and no editor.
+        `shell_environment`, plus the identity, the C locale (so output can be parsed), no
+        optional locks (the page checks the lab while the player types, and a ``git status``
+        that refreshed the index would hold ``index.lock`` and make the player's own command
+        fail), no prompts and no editor.
     """
-    env = {key: value for key, value in base.items() if not key.startswith("GIT_")}
-    env.update(isolation(home))
+    env = shell_environment(base, home)
     env.update(
         {
             "LC_ALL": "C",
@@ -107,13 +128,14 @@ def run(
     Run one git command for the game and return its result, whatever its exit status.
 
     Use it when failing is an expected outcome, such as resolving a name that may not exist.
-    Output is decoded as UTF-8 with undecodable bytes replaced, so file names a player invents
-    can always be shown.
+    Git is started as ``git -C <cwd>`` from ``/``, so a folder the player deleted gives git's own
+    failure (exit status 128) instead of an exception. Output is decoded as UTF-8 with
+    undecodable bytes replaced, so file names a player invents can always be shown.
 
     Parameters
     ----------
     cwd : Path
-        Folder to run in.
+        Folder to run in; relative paths in ``args`` resolve there. It may not exist.
     *args : str
         Arguments after ``git``.
     author : Person
@@ -134,8 +156,8 @@ def run(
         If git runs longer than `TIMEOUT` seconds.
     """
     return subprocess.run(
-        ["git", *args],
-        cwd=cwd,
+        ["git", "-C", str(cwd), *args],
+        cwd="/",
         env=environment(os.environ, save.home(), author, when),
         input=stdin if stdin is not None else "",
         capture_output=True,
