@@ -357,6 +357,26 @@ def test_an_edit_after_the_commit_keeps_the_level_unsolved(played: kit.Lab) -> N
     assert "changed" in verdict.message
 
 
+def test_a_repository_inside_the_project_folder_keeps_the_level_unsolved(played: kit.Lab) -> None:
+    git(played, "init", "project")
+    assert git(played, "status", "--porcelain").strip() == "?? project/"
+    verdict = check(played)
+    assert not verdict.solved
+    assert "`project/` is a folder with its own repository" in verdict.message
+
+
+def test_a_changed_file_mode_keeps_the_level_unsolved(played: kit.Lab) -> None:
+    (played.project / "README.md").chmod(0o755)
+    assert git(played, "status", "--porcelain").strip() == "M README.md"
+    verdict = check(played)
+    assert not verdict.solved
+    assert "`git status` still lists `README.md`" in verdict.message
+    git(played, "add", "README.md")
+    assert not check(played).solved
+    git(played, "commit", "-m", "Make the README executable")
+    assert check(played).solved
+
+
 def test_committing_the_extra_file_too_solves_the_level(played: kit.Lab) -> None:
     append(played, "notes.txt", "notes")
     git(played, "add", "notes.txt")
