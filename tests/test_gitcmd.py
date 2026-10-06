@@ -7,6 +7,8 @@ from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
+from hypothesis import given
+from hypothesis import strategies as st
 
 from firstcommit import gitcmd, save
 
@@ -279,3 +281,213 @@ def test_a_commit_with_a_name_but_no_email_stops_instead_of_guessing_one(game_ho
     assert result.returncode == 128
     assert "fatal: no email was given and auto-detection is disabled" in result.stderr
 
+
+@pytest.mark.parametrize(
+    ("printed", "shown"),
+    [
+        ("counting 1\rcounting 2\rdone\n", "doneting 2\n"),
+        ("counting 3\r          \rdone\n", "done\n"),
+        ("a  \r\nkept  \n", "a\nkept  \n"),
+        ("Rebasing (1/1)\r" + " " * 79 + "\rSuccessfully rebased.\n", "Successfully rebased.\n"),
+    ],
+)
+def test_carriage_returns_leave_what_a_terminal_shows(printed: str, shown: str) -> None:
+    assert gitcmd.as_on_terminal(printed) == shown
+
+
+@given(st.text(alphabet=st.characters(blacklist_characters="\r")))
+def test_output_without_carriage_returns_is_shown_as_printed(printed: str) -> None:
+    assert gitcmd.as_on_terminal(printed) == printed
+
+
+@given(st.text())
+def test_what_a_terminal_shows_has_no_carriage_return_and_as_many_lines(printed: str) -> None:
+    shown = gitcmd.as_on_terminal(printed)
+    assert "\r" not in shown
+    assert shown.count("\n") == printed.count("\n")
+
+
+def clone_behind_with_a_change_in_the_way(folder: Path) -> Path:
+    """
+    Make a clone that is one commit behind its remote and has changed, without committing, the file that commit changes.
+
+    Parameters
+    ----------
+    folder : Path
+        An empty folder; the game's git configuration must exist.
+
+    Returns
+    -------
+    Path
+        The clone, where ``git pull`` has to refuse the fast-forward.
+    """
+    github, alex, mine = folder / "github.git", folder / "alex", folder / "mine"
+    gitcmd.output(folder, "init", "-q", "--bare", str(github))
+    gitcmd.output(folder, "clone", "-q", str(github), str(alex))
+    (alex / "notes.txt").write_text("one\n")
+    gitcmd.output(alex, "add", "notes.txt")
+    gitcmd.output(alex, "commit", "-q", "-m", "Add notes")
+    gitcmd.output(alex, "push", "-q", "origin", "main")
+    gitcmd.output(folder, "clone", "-q", str(github), str(mine))
+    (alex / "notes.txt").write_text("two\n")
+    gitcmd.output(alex, "commit", "-q", "-am", "Change notes")
+    gitcmd.output(alex, "push", "-q", "origin", "main")
+    (mine / "notes.txt").write_text("mine\n")
+    return mine
+
+
+def test_a_command_on_a_terminal_shows_its_lines_in_the_order_a_terminal_does(game_home: Path, tmp_path: Path) -> None:
+    save.ensure_gitconfig(gitcmd.BASE_CONFIG)
+    mine = clone_behind_with_a_change_in_the_way(tmp_path)
+    shell = {**gitcmd.shell_environment(os.environ, game_home), "LC_ALL": "C"}
+    piped = subprocess.run(["git", "pull"], cwd=mine, env=shell, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, check=False).stdout
+    assert piped.index("Aborting") < piped.index("Updating")
+    status, shown = gitcmd.run_on_terminal(mine, "pull")
+    assert status != 0
+    assert shown.index("Updating") < shown.index("error: Your local changes") < shown.index("Aborting")
+
+
+def diverged(folder: Path) -> Path:
+    """
+    Make a repository whose branch ``topic`` and ``main`` each have a commit the other lacks, with Alex as its configured identity.
+
+    Parameters
+    ----------
+    folder : Path
+        Where to make it.
+
+    Returns
+    -------
+    Path
+        The repository, on ``topic``.
+    """
+    repo = folder / "repo"
+    gitcmd.output(folder, "init", "-q", "-b", "main", str(repo))
+    gitcmd.output(repo, "config", "user.name", ALEX.name)
+    gitcmd.output(repo, "config", "user.email", ALEX.email)
+    gitcmd.output(repo, "commit", "-q", "--allow-empty", "-m", "one")
+    gitcmd.output(repo, "switch", "-q", "-c", "topic")
+    gitcmd.output(repo, "commit", "-q", "--allow-empty", "-m", "two")
+    gitcmd.output(repo, "switch", "-q", "main")
+    gitcmd.output(repo, "commit", "-q", "--allow-empty", "-m", "three")
+    gitcmd.output(repo, "switch", "-q", "topic")
+    return repo
+
+
+def test_a_command_on_a_terminal_shows_what_stays_on_the_screen_without_escapes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("TERM", "xterm-256color")
+    repo = diverged(tmp_path)
+    assert gitcmd.run_on_terminal(repo, "rebase", "main") == (0, "Successfully rebased and updated refs/heads/topic.\n")
+
+
+def test_a_command_on_a_terminal_never_prints_colours(game_home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("TERM", "xterm-256color")
+    save.ensure_gitconfig(gitcmd.BASE_CONFIG + "[color]\n\tui = always\n")
+    repo = diverged(tmp_path)
+    status, shown = gitcmd.run_on_terminal(repo, "log", "--oneline", "--decorate", "-1")
+    assert (status, shown) == (0, f"{gitcmd.output(repo, 'rev-parse', '--short', 'HEAD').strip()} (HEAD -> topic) two\n")
+
+
+def test_a_command_on_a_terminal_never_opens_a_pager_or_an_editor(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    repo = diverged(tmp_path)
+    script, marker = program_that_leaves_a_mark(tmp_path)
+    gitcmd.output(repo, "config", "core.pager", str(script))
+    gitcmd.output(repo, "config", "core.editor", str(script))
+    monkeypatch.setenv("EDITOR", str(script))
+    monkeypatch.setenv("VISUAL", str(script))
+    monkeypatch.setenv("PAGER", str(script))
+    assert gitcmd.run_on_terminal(repo, "log", "--oneline")[0] == 0
+    status, shown = gitcmd.run_on_terminal(repo, "commit", "--allow-empty")
+    assert (status, shown) == (1, "Aborting commit due to empty commit message.\n")
+    assert not marker.exists()
+
+
+def test_a_command_on_a_terminal_never_waits_for_a_password(tmp_path: Path, password_server: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("SSH_ASKPASS", raising=False)
+    status, shown = gitcmd.run_on_terminal(tmp_path, "ls-remote", password_server)
+    assert status != 0
+    assert "terminal prompts disabled" in shown
+
+
+def test_a_command_on_a_terminal_reads_no_answer_to_its_own_questions(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(gitcmd, "TIMEOUT", 5.0)
+    repo = tmp_path / "repo"
+    gitcmd.output(tmp_path, "init", "-q", str(repo))
+    (repo / "notes.txt").write_text("one\n")
+    gitcmd.output(repo, "add", "notes.txt")
+    (repo / "notes.txt").write_text("two\n")
+    status, shown = gitcmd.run_on_terminal(repo, "add", "-p")
+    assert status == 0 and "Stage this hunk" in shown
+    assert gitcmd.output(repo, "diff", "--name-only") == "notes.txt\n"
+
+
+def test_a_command_on_a_terminal_commits_as_the_configured_identity_whatever_the_environment_says(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    for variable in ["GIT_AUTHOR_NAME", "GIT_COMMITTER_NAME"]:
+        monkeypatch.setenv(variable, "Intruder")
+    for variable in ["GIT_AUTHOR_EMAIL", "GIT_COMMITTER_EMAIL", "EMAIL"]:
+        monkeypatch.setenv(variable, "intruder@example.com")
+    repo = tmp_path / "repo"
+    gitcmd.output(tmp_path, "init", "-q", str(repo))
+    gitcmd.output(repo, "config", "user.name", "Alex Kim")
+    gitcmd.output(repo, "config", "user.email", "alex@example.com")
+    assert gitcmd.run_on_terminal(repo, "commit", "-q", "--allow-empty", "-m", "First") == (0, "")
+    assert gitcmd.output(repo, "log", "-1", "--format=%an <%ae>, %cn <%ce>") == "Alex Kim <alex@example.com>, Alex Kim <alex@example.com>\n"
+
+
+def test_a_command_on_a_terminal_is_kept_to_the_games_configuration_and_labs(game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    gitcmd.output(game_home, "init", "-q")
+    monkeypatch.setenv("GIT_DIR", str(game_home / ".git"))
+    lab = game_home / "labs" / "some-level"
+    lab.mkdir(parents=True)
+    status, shown = gitcmd.run_on_terminal(lab, "rev-parse", "--git-dir")
+    assert status == 128 and "not a git repository" in shown
+
+
+def test_a_command_on_a_terminal_in_a_missing_folder_gives_gits_own_failure(tmp_path: Path) -> None:
+    status, shown = gitcmd.run_on_terminal(tmp_path / "gone", "status")
+    assert status == 128 and "cannot change to" in shown
+
+
+
+def test_a_command_on_a_terminal_runs_in_the_c_locale_so_its_words_can_be_read_back(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("LC_ALL", "de_DE.UTF-8")
+    assert gitcmd.run_on_terminal(tmp_path, "-c", "alias.locale=!printf %s \"$LC_ALL\"", "locale") == (0, "C")
+
+
+def test_a_command_on_a_terminal_keeps_each_line_as_printed(tmp_path: Path) -> None:
+    assert gitcmd.run_on_terminal(tmp_path, "-c", "alias.say=!printf 'kept  \\n'", "say") == (0, "kept  \n")
+
+def ended(pid: int) -> bool:
+    """
+    Tell whether a process has ended: it is gone, or a zombie waiting to be reaped.
+
+    Parameters
+    ----------
+    pid : int
+        The process id.
+
+    Returns
+    -------
+    bool
+        True once the process runs no more.
+    """
+    try:
+        state = Path(f"/proc/{pid}/stat").read_text().rsplit(")", 1)[1].split()[0]
+    except FileNotFoundError:
+        state = "Z"
+    return state == "Z"
+
+
+@pytest.mark.slow
+def test_a_command_on_a_terminal_that_runs_too_long_is_stopped_with_everything_it_started(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(gitcmd, "TIMEOUT", 1.0)
+    pid_file = tmp_path / "sleeper.pid"
+    started = time.monotonic()
+    with pytest.raises(subprocess.TimeoutExpired):
+        gitcmd.run_on_terminal(tmp_path, "-c", f"alias.wait=!echo $$ > {pid_file}; exec sleep 60", "wait")
+    assert time.monotonic() - started < 10
+    pid = int(pid_file.read_text())
+    deadline = time.monotonic() + 5
+    while not ended(pid) and time.monotonic() < deadline:
+        time.sleep(0.05)
+    assert ended(pid)
