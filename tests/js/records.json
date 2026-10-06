@@ -835,11 +835,51 @@
   "events": [
    {
     "kind": "commit-created",
-    "text": "You made commit 547cd2b on feature: Add a greeting to the readme."
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "You made commit ",
+        "code": false
+       },
+       {
+        "text": "547cd2b",
+        "code": true
+       },
+       {
+        "text": " on ",
+        "code": false
+       },
+       {
+        "text": "feature",
+        "code": true
+       },
+       {
+        "text": ": Add a greeting to the readme.",
+        "code": false
+       }
+      ]
+     }
+    ]
    },
    {
     "kind": "file-staged",
-    "text": "README.md is staged: its new version goes into the next commit."
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "README.md",
+        "code": true
+       },
+       {
+        "text": " is staged: its new version goes into the next commit.",
+        "code": false
+       }
+      ]
+     }
+    ]
    }
   ]
  },

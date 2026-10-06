@@ -5,16 +5,17 @@ const test = require("node:test");
 const { installBrowser, load, record } = require("./load");
 
 installBrowser();
-const { LivePanel } = load(["dom.js", "map.js", "live.js"], ["LivePanel"]);
+const { LivePanel } = load(["dom.js", "markup.js", "map.js", "live.js"], ["LivePanel"]);
 
 const clockAt = (text) => () => new Date(`2026-10-06T${text}`);
+const said = (kind, ...spans) => ({ kind, text: [{ kind: "para", spans: spans.map((span) => (Array.isArray(span) ? { text: span[0], code: true } : { text: span, code: false })) }] });
 
 test("a batch of events goes on top of the feed in its own order, and the feed keeps the newest", () => {
-  const first = [{ kind: "a", text: "one" }];
-  const second = [{ kind: "b", text: "two" }, { kind: "c", text: "three" }];
+  const first = [said("a", "one")];
+  const second = [said("b", "two"), said("c", "three")];
   let feed = LivePanel.mergeEvents([], first, 1, 2);
   feed = LivePanel.mergeEvents(feed, second, 2, 2);
-  assert.deepEqual(feed.map((event) => [event.text, event.at]), [["two", 2], ["three", 2]]);
+  assert.deepEqual(feed.map((event) => [event.kind, event.at]), [["b", 2], ["c", 2]]);
 });
 
 test("an observation draws the player's repository, the stand-in GitHub and the three areas", () => {
@@ -56,12 +57,13 @@ test("what just happened lists the events newest first, with the time they were 
   let now = "10:00:00";
   const panel = LivePanel.create({ now: () => clockAt(now)() });
   assert.match(panel.element.textContent, /Nothing yet/);
-  panel.update({ ...record("observation"), events: [{ kind: "file-created", text: "You created a.txt." }] });
+  panel.update({ ...record("observation"), events: [said("file-created", "You created ", ["a.txt"], ".")] });
   now = "10:00:05";
-  panel.update({ ...record("observation"), events: [{ kind: "file-staged", text: "a.txt is staged." }] });
+  panel.update({ ...record("observation"), events: [said("file-staged", ["a.txt"], " is staged.")] });
   const items = panel.element.querySelectorAll(".feed li");
   assert.deepEqual(items.map((item) => item.getAttribute("data-kind")), ["file-staged", "file-created"]);
   assert.match(items[0].textContent, /a\.txt is staged\./);
+  assert.equal(items[0].querySelector("code").textContent, "a.txt");
   assert.ok(items[0].classList.contains("is-fresh"));
   assert.ok(!items[1].classList.contains("is-fresh"));
   assert.equal(panel.element.querySelector("[aria-live]").textContent, "a.txt is staged.");

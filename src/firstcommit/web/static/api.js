@@ -99,7 +99,7 @@ const createGameApi = (function () {
   const STEP = record({ correct: flag, message: BLOCKS, step: number, quest_done: flag });
   const CHECK = record({ solved: flag, message: BLOCKS, payout: nullable(PAYOUT), debrief: nullable(BLOCKS) });
   const HINT = record({ hint: BLOCKS, used: number, total: number, cost: number });
-  const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), events: list(record({ kind: text, text })) });
+  const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), events: list(record({ kind: text, text: BLOCKS })) });
   const CARDS = record({
     cards: list(record({
       id: text,

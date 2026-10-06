@@ -1203,8 +1203,13 @@ input[type="text"]::placeholder {
   border-left-color: var(--danger);
 }
 
-.feed li span {
-  display: block;
+.feed-text p {
+  margin: 0;
+}
+
+.feed-text code {
+  font-size: 0.85em;
+  font-weight: 600;
 }
 
 .feed li + li {

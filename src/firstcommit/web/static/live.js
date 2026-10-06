@@ -4,11 +4,11 @@
  * The live panel beside the terminal: the player's repository as a commit graph, the
  * stand-in GitHub when the level has one, the three areas strip, and "what just happened",
  * all from /api/observe (firstcommit/game.py's Observation). It redraws a part only when its
- * snapshot changed, and marks the commits that are new since the last drawing. Needs dom.js
- * and map.js. Defines one global, LivePanel.
+ * snapshot changed, and marks the commits that are new since the last drawing. Needs dom.js,
+ * markup.js and map.js. Defines one global, LivePanel.
  */
 
-/* global Dom, RepoMap */
+/* global Dom, Markup, RepoMap */
 /* exported LivePanel */
 
 const LivePanel = (function () {
@@ -73,10 +73,10 @@ const LivePanel = (function () {
       const time = (date) => date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
       feedList.replaceChildren(...feed.map((event) => el("li", { "data-kind": event.kind, class: event.at === at ? "is-fresh" : null },
         el("time", {}, time(event.at)),
-        el("span", {}, event.text),
+        el("div", { class: "feed-text" }, Markup.render(event.text)),
       )));
       quiet.hidden = true;
-      announce.textContent = events.map((event) => event.text).join(" ");
+      announce.textContent = events.map((event) => Markup.plain(event.text)).join(" ");
     }
 
     return {
