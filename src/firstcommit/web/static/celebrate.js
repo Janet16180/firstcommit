@@ -87,7 +87,8 @@ const Celebrate = (function () {
           el("p", { class: "kicker" }, kicker),
           el("h2", { id: "celebration-title", tabindex: "-1", autofocus: true }, title),
           subtitle && el("p", { class: "celebration-sub" }, subtitle),
-          el("p", { class: "celebration-xp" }, firstTime ? [value, " XP"] : "Played again: no XP this time"),
+          el("p", { class: "celebration-xp" }, value, " XP"),
+          !firstTime && el("p", { class: "celebration-replay muted" }, "Played again"),
           el("p", { class: "celebration-rank", hidden: rankBefore === rankAfter }, "New rank: ", el("strong", {}, rankAfter)),
           continueButton,
         ),
@@ -101,7 +102,7 @@ const Celebrate = (function () {
       dialog.querySelector("h2").focus();
       timers.setTimeout(() => dialog.open && continueButton.focus(), FOCUS_DELAY_MS);
       if (reduced) return;
-      if (firstTime) countUp(value, xp);
+      countUp(value, xp);
       confetti(canvas);
     });
   }

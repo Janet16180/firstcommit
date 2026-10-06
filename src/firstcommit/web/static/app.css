@@ -1769,6 +1769,11 @@ input[type="text"]::placeholder {
   font-variant-numeric: tabular-nums;
 }
 
+.celebration-replay {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+}
+
 .celebration-rank {
   font-size: 1.05rem;
 }

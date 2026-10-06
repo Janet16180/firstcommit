@@ -132,6 +132,17 @@ test("a win is celebrated, then the debrief teaches and suggests what comes next
   assert.ok(run.q(".debrief a[href=\"#/cards/basics\"]"));
 });
 
+test("the debrief of a replay shows the XP the server paid and says it was played again", async () => {
+  const solved = record("check_solved");
+  const replay = { ...solved, payout: { ...solved.payout, xp: 40, first_time: false } };
+  const run = page({ active: { ...record("active"), level: ID, step: 3 }, replies: { "/api/check": replay } });
+  await settle();
+  await settle();
+  assert.deepEqual(run.seen.celebrated.map((options) => [options.xp, options.firstTime]), [[40, false]]);
+  assert.match(run.q(".payout").textContent, /Played again/);
+  assert.match(run.q(".payout").textContent, /\+40 XP/);
+});
+
 test("a level solved elsewhere is celebrated from the dashboard's last payout, then shows its debrief", async () => {
   const payout = { level: ID, xp: 150, first_time: true, rank_before: "Committer", rank_after: "Committer" };
   const refreshed = { ...record("status"), active: null, last_payout: payout };

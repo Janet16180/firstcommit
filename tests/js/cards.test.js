@@ -87,6 +87,27 @@ test("after the last card a summary counts the right answers and the XP", async 
   assert.match(run.q(".cards-summary").textContent, /\+5 XP/);
 });
 
+async function finishRound(run) {
+  await settle();
+  run.all("button.choice")[1].click();
+  await settle();
+  run.q(".card-next").click();
+}
+
+test("a round that paid nothing because no card was due says so", async () => {
+  const notDue = { ...record("cards")[0], pays: false };
+  const run = cards({ list: [notDue], result: { ...record("card_result"), xp: 0 } });
+  await finishRound(run);
+  assert.match(run.q(".cards-summary").textContent, /No XP this round: these cards were not due yet/);
+});
+
+test("a round of due cards that paid nothing does not blame the schedule", async () => {
+  const run = cards({ list: [record("cards")[0]], result: wrong });
+  await finishRound(run);
+  assert.match(run.q(".cards-summary").textContent, /No XP this round\./);
+  assert.doesNotMatch(run.q(".cards-summary").textContent, /not due/);
+});
+
 test("with no cards to review it says so", async () => {
   const run = cards({ list: [] });
   await settle();

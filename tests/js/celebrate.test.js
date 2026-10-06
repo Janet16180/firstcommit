@@ -20,11 +20,20 @@ test("a win shows the level, the XP paid and a new rank, then continues on the b
   assert.equal(document.body.querySelector("dialog.celebration"), null);
 });
 
-test("a replay says it pays nothing, and an unchanged rank is not announced", async () => {
-  const done = Celebrate.show({ ...WIN, firstTime: false, xp: 0, rankBefore: "Committer", rankAfter: "Committer" });
+test("a replay shows the XP the server paid and says it was played again; an unchanged rank is not announced", async () => {
+  const done = Celebrate.show({ ...WIN, firstTime: false, xp: 30, rankBefore: "Committer", rankAfter: "Committer" });
   const overlay = document.body.querySelector("dialog.celebration");
-  assert.match(overlay.querySelector(".celebration-xp").textContent, /no XP/);
+  assert.match(overlay.querySelector(".celebration-xp").textContent, /\+30 XP/);
+  assert.match(overlay.querySelector(".celebration-replay").textContent, /Played again/);
   assert.equal(overlay.querySelector(".celebration-rank").hidden, true);
+  overlay.close();
+  await done;
+});
+
+test("a first win does not say it was played again", async () => {
+  const done = Celebrate.show(WIN);
+  const overlay = document.body.querySelector("dialog.celebration");
+  assert.equal(overlay.querySelector(".celebration-replay"), null);
   overlay.close();
   await done;
 });
