@@ -1,11 +1,12 @@
-"""Shared test setup: every test gets its own game home, so no test touches the player's ~/.firstcommit; plus the sample level and decks."""
+"""Shared test setup: every test gets its own game home, so no test touches the player's ~/.firstcommit; plus the sample level (also with a two-person playground) and decks."""
 
+import dataclasses
 from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
 
-from firstcommit import cards, runner
+from firstcommit import cards, kit, runner
 from sample_levels import basics_sample
 
 
@@ -47,6 +48,47 @@ def sample_level(monkeypatch: pytest.MonkeyPatch) -> runner.Level:
         The sample level, ``basics-sample``.
     """
     level = runner.load(basics_sample)
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    return level
+
+
+
+def playground_setup(lab: kit.Lab) -> kit.State:
+    """
+    Set a lab up as the two-person playground, as a level with one does.
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The empty lab.
+
+    Returns
+    -------
+    kit.State
+        The branch name.
+    """
+    kit.setup_playground(lab)
+    return {"branch": "main"}
+
+
+@pytest.fixture
+def playground_level(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> runner.Level:
+    """
+    Make the game's catalogue hold only the sample level, its lab set up as the two-person playground.
+
+    Parameters
+    ----------
+    sample_level : runner.Level
+        The sample level.
+    monkeypatch : pytest.MonkeyPatch
+        Pytest's patcher.
+
+    Returns
+    -------
+    runner.Level
+        The sample level with `playground_setup` as its setup.
+    """
+    level = dataclasses.replace(sample_level, setup=playground_setup)
     monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
     return level
 

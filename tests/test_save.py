@@ -77,11 +77,11 @@ SNAPSHOT: records.Snapshot = {
     "stash": 0,
     "truncated": False,
 }
-OBSERVED: save.Observed = {"level": "basics-first-commit", "project": SNAPSHOT, "github": {**SNAPSHOT, "bare": True, "files": []}}
+OBSERVED: save.Observed = {"level": "basics-first-commit", "project": SNAPSHOT, "github": {**SNAPSHOT, "bare": True, "files": []}, "teammate": SNAPSHOT}
 
 
-def test_observed_snapshots_read_back_and_clear() -> None:
-    observed = OBSERVED
+@pytest.mark.parametrize("observed", [OBSERVED, {**OBSERVED, "github": None, "teammate": None}], ids=["playground", "project only"])
+def test_observed_snapshots_read_back_and_clear(observed: save.Observed) -> None:
     assert save.load_observed() is None
     save.write_observed(observed)
     assert save.load_observed() == observed
@@ -214,6 +214,9 @@ OBSERVATION_DAMAGE = [
     ("project.stash", True),
     ("github.exists", None),
     ("github", {"exists": True}),
+    ("teammate", ...),
+    ("teammate.branch", 3),
+    ("teammate", []),
 ]
 
 

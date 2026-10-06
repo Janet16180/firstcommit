@@ -1,4 +1,5 @@
 import dataclasses
+import fcntl
 import json
 import os
 import stat
@@ -12,7 +13,21 @@ from pathlib import Path
 import pytest
 from termlab import sandbox
 
-from firstcommit import changes, demos, game, gitcmd, guide, kit, markup, repomap, runner, save, score
+from firstcommit import (
+    changes,
+    demos,
+    game,
+    gitcmd,
+    guide,
+    kit,
+    markup,
+    playground,
+    records,
+    repomap,
+    runner,
+    save,
+    score,
+)
 from firstcommit.chapters import CHAPTERS
 
 pytestmark = pytest.mark.usefixtures("sample_decks")
@@ -142,6 +157,30 @@ def lab_project(home: Path) -> Path:
         ``<home>/labs/basics-sample/project``.
     """
     return home / "labs" / "basics-sample" / "project"
+
+
+def lock_is_held(home: Path) -> bool:
+    """
+    Tell whether the save's lock is held, by trying to take it without waiting.
+
+    Parameters
+    ----------
+    home : Path
+        The game home.
+
+    Returns
+    -------
+    bool
+        True if someone holds the lock; the probe never keeps it.
+    """
+    with open(home / ".lock", "w") as handle:
+        try:
+            fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except BlockingIOError:
+            held = True
+        else:
+            held = False
+    return held
 
 
 def active_record() -> save.Active:
@@ -416,7 +455,7 @@ def test_a_level_whose_setup_fails_leaves_nothing_in_progress(sample_level: runn
     assert not (game_home / "labs" / "basics-sample").exists()
 
 
-@pytest.mark.parametrize("action", [lambda: game.quest_step(None), lambda: game.check(None, auto=True), game.hint, game.observe])
+@pytest.mark.parametrize("action", [lambda: game.quest_step(None), lambda: game.check(None, auto=True), game.hint, game.observe, lambda: game.press("you", "status")])
 def test_actions_on_a_level_need_a_level_in_progress(sample_level: runner.Level, action: Callable[[], object]) -> None:
     with pytest.raises(game.NotPlayingError):
         action()
@@ -837,6 +876,106 @@ def test_starting_a_level_forgets_the_last_observation(sample_level: runner.Leve
     game.start(sample_level.id)
     assert not (game_home / "observed.json").exists()
     assert game.observe()["events"] == []
+
+
+
+def test_observing_a_level_without_a_playground_has_no_teammate(sample_level: runner.Level) -> None:
+    game.start(sample_level.id)
+    observation = game.observe()
+    assert (observation["teammate"], observation["teammate_events"]) == (None, [])
+
+
+def test_observing_a_playground_snapshots_alexs_clone_and_tells_its_changes_apart(playground_level: runner.Level, game_home: Path) -> None:
+    game.start(playground_level.id)
+    first = game.observe()
+    assert first["teammate"] is not None and first["teammate"]["branch"] == "main"
+    assert first["teammate_events"] == []
+    (game_home / "labs" / playground_level.id / "teammate" / "project" / "notes.txt").write_text("x")
+    second = game.observe()
+    assert ([event["kind"] for event in second["teammate_events"]], second["events"]) == (["file-created"], [])
+    assert "notes.txt" in plain(second["teammate_events"][0]["text"])
+
+
+
+def test_a_teammates_clone_removed_from_the_terminal_leaves_no_playground(playground_level: runner.Level, game_home: Path) -> None:
+    game.start(playground_level.id)
+    game.observe()
+    teammate = runner.lab_of(playground_level.id).teammate
+    sandbox.remove_tree(teammate, game_home)
+    after = game.observe()
+    assert (after["teammate"], after["teammate_events"]) == (None, [])
+    with pytest.raises(game.NoPlaygroundError):
+        game.press("alex", "status")
+
+def test_each_press_runs_in_the_clone_of_the_person_who_pressed(playground_level: runner.Level) -> None:
+    game.start(playground_level.id)
+    game.observe()
+    yours = game.press("you", "edit")["observation"]
+    assert ([event["kind"] for event in yours["events"]], yours["teammate_events"]) == (["file-created"], [])
+    alexs = game.press("alex", "edit")["observation"]
+    assert (alexs["events"], [event["kind"] for event in alexs["teammate_events"]]) == ([], ["file-created"])
+    assert alexs["teammate"] is not None
+    assert [entry["path"] for entry in alexs["project"]["files"]] == ["README.md", "you.txt"]
+    assert [entry["path"] for entry in alexs["teammate"]["files"]] == ["README.md", "alex.txt"]
+
+
+def test_a_press_gives_the_command_as_the_player_could_type_it_and_what_git_printed(playground_level: runner.Level) -> None:
+    game.start(playground_level.id)
+    pressed = game.press("alex", "commit")
+    press = pressed["press"]
+    assert (press["person"], press["button"], press["command"], press["status"]) == ("alex", "commit", playground.BUTTONS["commit"]["alex"], 1)
+    assert "nothing to commit" in press["output"]
+    assert pressed["explanation"] is None
+
+
+def test_what_a_press_changed_is_told_once_and_observing_then_sees_the_same_lab(playground_level: runner.Level) -> None:
+    game.start(playground_level.id)
+    game.observe()
+    pressed = game.press("alex", "edit")["observation"]
+    again = game.observe()
+    assert (again["project"], again["github"], again["teammate"]) == (pressed["project"], pressed["github"], pressed["teammate"])
+    assert (again["events"], again["teammate_events"]) == ([], [])
+
+
+def test_a_push_from_alex_is_told_among_the_events_of_github(playground_level: runner.Level) -> None:
+    game.start(playground_level.id)
+    for button in ["edit", "add", "commit"]:
+        game.press("alex", button)
+    pushed = game.press("alex", "push")
+    assert pushed["press"]["status"] == 0
+    assert "push-received" in [event["kind"] for event in pushed["observation"]["events"]]
+
+
+def test_a_press_runs_and_snapshots_the_lab_while_holding_the_save_lock(playground_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    game.start(playground_level.id)
+    held: list[tuple[str, bool]] = []
+    real_press, real_snapshot = playground.press, repomap.snapshot
+
+    def pressing(lab: kit.Lab, person: records.Who, button: records.Button) -> records.Press:
+        held.append(("press", lock_is_held(game_home)))
+        return real_press(lab, person, button)
+
+    def snapshotting(path: Path) -> repomap.Snapshot:
+        held.append(("snapshot", lock_is_held(game_home)))
+        return real_snapshot(path)
+
+    monkeypatch.setattr(playground, "press", pressing)
+    monkeypatch.setattr(repomap, "snapshot", snapshotting)
+    game.press("you", "status")
+    assert held == [("press", True)] + [("snapshot", True)] * 3
+
+
+def test_pressing_needs_a_level_with_a_playground(sample_level: runner.Level, game_home: Path) -> None:
+    game.start(sample_level.id)
+    with pytest.raises(game.NoPlaygroundError, match="playground"):
+        game.press("you", "edit")
+    assert not (lab_project(game_home) / "you.txt").exists()
+
+
+@pytest.mark.parametrize(("person", "button"), [("bob", "status"), ("You", "status"), ("alex", "rebase"), ("alex", "")])
+def test_an_unknown_person_or_button_is_an_unknown_id_before_anything_else(person: str, button: str) -> None:
+    with pytest.raises(game.UnknownIdError, match="playground"):
+        game.press(person, button)
 
 
 def test_aborting_ends_the_level_and_removes_its_lab(sample_level: runner.Level, game_home: Path) -> None:
