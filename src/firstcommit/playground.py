@@ -20,7 +20,7 @@ from pathlib import Path
 from termlab import snippets
 
 from firstcommit import gitcmd, save
-from firstcommit.kit import Lab
+from firstcommit.lab import Lab
 from firstcommit.records import FILE_MODE, Button, Press, Who
 
 PEOPLE: dict[Who, gitcmd.Person] = {
