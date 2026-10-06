@@ -328,7 +328,7 @@ def _transcripts(printed: str, status: int, token: str, commands: list[list[_Com
     """
     pieces = re.split(f"\0{token} ([0-9]+)\0", printed.replace(str(home), SHOWN_HOME))
     statuses = [int(status) for status in pieces[1::2]]
-    outputs = [_as_on_terminal(output) for output in pieces[0::2]]
+    outputs = [gitcmd.as_on_terminal(output) for output in pieces[0::2]]
     flat = [command for slide in commands for command in slide]
     if status == COPY_FAILED:
         raise RuntimeError(f"the lesson folder could not be copied:\n{outputs[-1]}")
@@ -342,33 +342,6 @@ def _transcripts(printed: str, status: int, token: str, commands: list[list[_Com
             raise RuntimeError(f"slide {command.slide!r}: {command.text!r} failed with status {status}:\n{output}")
     lines = iter([Line(command=command.text, output=output) for command, output in zip(flat, outputs, strict=False)])
     return [[next(lines) for _ in slide] for slide in commands]
-
-
-def _as_on_terminal(output: str) -> str:
-    """
-    Apply carriage returns as a terminal does.
-
-    A carriage return sends the cursor back to the start of the line, so later text overwrites
-    earlier text; progress counters (``Rebasing (1/1)``) leave only their last state.
-
-    Parameters
-    ----------
-    output : str
-        What a command printed.
-
-    Returns
-    -------
-    str
-        What stays on the screen. Lines without a carriage return are unchanged; the others
-        lose the spaces left at their end.
-    """
-    shown_lines = []
-    for line in output.split("\n"):
-        shown = ""
-        for part in line.split("\r"):
-            shown = part + shown[len(part) :]
-        shown_lines.append(shown.rstrip(" ") if "\r" in line else shown)
-    return "\n".join(shown_lines)
 
 
 def _frame(slide: str, transcript: list[Line], copy_of_home: Path, home: Path) -> Frame:
