@@ -1,0 +1,114 @@
+"use strict";
+
+const assert = require("node:assert/strict");
+const test = require("node:test");
+const { fakeServer, httpError, installBrowser, load, record } = require("./load");
+
+installBrowser();
+const { createGameApi } = load(["api.js"], ["createGameApi"]);
+
+const REPLIES = {
+  "/api/status": record("status"),
+  "/api/level": record("level"),
+  "/api/lesson": record("lesson"),
+  "/api/start": record("active"),
+  "/api/step": record("step"),
+  "/api/check": record("check_solved"),
+  "/api/hint": record("hint"),
+  "/api/observe": record("observation"),
+  "/api/abort": { level: "sample-second" },
+  "/api/reset": {},
+  "/api/cards": { cards: record("cards") },
+  "/api/card": record("card_result"),
+  "/api/notes": record("notes"),
+};
+
+function gameApi(replies = REPLIES) {
+  const server = fakeServer(replies);
+  return { game: createGameApi(server.api), calls: server.calls };
+}
+
+test("each action calls its route with the body the server expects", async () => {
+  const { game, calls } = gameApi();
+  await game.status();
+  await game.level("a level/x");
+  await game.lesson("lvl");
+  await game.start("lvl");
+  await game.step("main");
+  await game.step(null);
+  await game.check(null, true);
+  await game.hint();
+  await game.observe();
+  await game.abort();
+  await game.reset();
+  await game.cards("basics", 10);
+  await game.cards(null, 5);
+  await game.card("card-1", "The staging area");
+  await game.notes("basics");
+  assert.deepEqual(calls.map((call) => [call.path, call.body]), [
+    ["/api/status", undefined],
+    ["/api/level?id=a%20level%2Fx", undefined],
+    ["/api/lesson?id=lvl", undefined],
+    ["/api/start", { level: "lvl" }],
+    ["/api/step", { answer: "main" }],
+    ["/api/step", { answer: null }],
+    ["/api/check", { answer: null, auto: true }],
+    ["/api/hint", {}],
+    ["/api/observe", undefined],
+    ["/api/abort", {}],
+    ["/api/reset", { confirm: true }],
+    ["/api/cards?chapter=basics&limit=10", undefined],
+    ["/api/cards?limit=5", undefined],
+    ["/api/card", { id: "card-1", reply: "The staging area" }],
+    ["/api/notes?chapter=basics", undefined],
+  ]);
+});
+
+test("every sample record is accepted as it is", async () => {
+  const { game } = gameApi();
+  assert.deepEqual(await game.status(), record("status"));
+  assert.deepEqual(await game.observe(), record("observation"));
+  assert.deepEqual(await game.cards(null, 3), record("cards"));
+  assert.equal(await game.abort(), "sample-second");
+  assert.deepEqual(await game.check(null, false), record("check_solved"));
+  for (const action of ["level", "lesson", "start", "step", "hint", "notes"]) await game[action]("x");
+  await game.card("x", "y");
+});
+
+test("an unsolved check and an empty observation are accepted", async () => {
+  const observation = { ...record("observation"), github: null, events: [], project: record("snapshots").empty };
+  const { game } = gameApi({ "/api/check": record("check_unsolved"), "/api/observe": observation });
+  assert.equal((await game.check("x", false)).solved, false);
+  assert.equal((await game.observe()).github, null);
+});
+
+test("a reply missing a field is refused with the route and the field named", async () => {
+  const status = record("status");
+  delete status.rank.next_at;
+  const { game } = gameApi({ "/api/status": status });
+  await assert.rejects(game.status(), /\/api\/status.*rank\.next_at/);
+});
+
+test("a field of the wrong type is refused", async () => {
+  const observation = record("observation");
+  observation.project.commits[1].parents = "abc";
+  const { game } = gameApi({ "/api/observe": observation });
+  await assert.rejects(game.observe(), /project\.commits\[1\]\.parents should be a list/);
+});
+
+test("text with an unknown kind of block is refused", async () => {
+  const hint = record("hint");
+  hint.hint = [{ kind: "table" }];
+  const { game } = gameApi({ "/api/hint": hint });
+  await assert.rejects(game.hint(), /hint\[0\]\.kind/);
+});
+
+test("a server error keeps its HTTP status for the page to act on", async () => {
+  const { game } = gameApi({ "/api/observe": httpError(409, "no level is in progress") });
+  await assert.rejects(game.observe(), (error) => error.status === 409);
+});
+
+test("a contract error carries no HTTP status", async () => {
+  const { game } = gameApi({ "/api/notes": { chapter: "basics" } });
+  await assert.rejects(game.notes("basics"), (error) => error.status === undefined && /\/api\/notes/.test(error.message));
+});
