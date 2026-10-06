@@ -19,6 +19,19 @@
     "max-lines-per-function": ["warn", { "max": 80, "skipBlankLines": true, "skipComments": true }]
   },
   "overrides": [
-    { "files": ["tests/js/*.js"], "env": { "browser": false, "node": true } }
+    { "files": ["tests/js/*.js"], "env": { "browser": false, "node": true } },
+    {
+      // The page builds every node with Dom.el, so text from the game can never become markup.
+      "files": ["src/firstcommit/web/static/*.js"],
+      "rules": {
+        "no-restricted-properties": ["error",
+          { "property": "innerHTML", "message": "Build nodes with Dom.el; text must never become markup." },
+          { "property": "outerHTML", "message": "Build nodes with Dom.el; text must never become markup." },
+          { "property": "insertAdjacentHTML", "message": "Build nodes with Dom.el; text must never become markup." },
+          { "object": "document", "property": "write", "message": "Build nodes with Dom.el; text must never become markup." },
+          { "object": "document", "property": "writeln", "message": "Build nodes with Dom.el; text must never become markup." }
+        ]
+      }
+    }
   ]
 }
