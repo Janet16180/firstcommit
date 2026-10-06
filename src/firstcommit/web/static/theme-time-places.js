@@ -230,11 +230,13 @@ const TimePlaces = (function () {
      reading. Each commit's tooltip keeps its whole subject. */
   const FLOOR = 0.8;
 
-  /* A repository's commits: closed boxes on its timeline. GitHub has no HEAD you are on, so an
-     empty GitHub only says it has no commits. */
-  function repositoryPlace(area, snapshot, showHead, owner = null) {
-    const empty = !showHead && !snapshot.commits.length ? boxes.words.noCommits : null;
-    const map = empty ? null : RepoMap.render(snapshot, { theme: boxes, showHead });
+  /* A repository's commits: closed boxes on its timeline, drawn with `theme` (the small boxes
+     unless given), whose key, if any, goes under the whole figure instead. GitHub has no HEAD
+     you are on, so an empty GitHub only says it has no commits. */
+  function repositoryPlace(area, snapshot, showHead, owner = null, theme = boxes) {
+    const empty = !showHead && !snapshot.commits.length ? theme.words.noCommits : null;
+    const keyless = RepoMap.theme({ ...theme, shapes: { ...theme.shapes, key: () => null } });
+    const map = empty ? null : RepoMap.render(snapshot, { theme: keyless, showHead });
     const graph = map && map.querySelector("svg.map-graph");
     if (graph) graph.style.minWidth = `${Math.round(FLOOR * Number(graph.getAttribute("width")))}px`;
     return el("section", { class: `tt-place is-${area}`, "data-area": area },
@@ -297,23 +299,26 @@ const TimePlaces = (function () {
 
   /* The four places as a figure, lighting `options.commands`' arrows and showing their sentences;
      without a GitHub (`observation.github` null), your computer's three places, joined by add and
-     commit only ("is-local"). */
-  function render(observation, { commands: matched = [] } = {}) {
+     commit only ("is-local"). `options.theme` draws the repositories (the small boxes unless
+     given; "is-full" otherwise), and its key, if it has one, goes once under the figure. */
+  function render(observation, { commands: matched = [], theme = boxes } = {}) {
     const { project, github } = observation;
+    const key = project.commits.length > 0 && theme.shapes.key({ snapshot: project, map: RepoMap.layout(project, { theme, showHead: true }), theme });
+    const look = [github ? "" : " is-local", theme === boxes ? "" : " is-full"].join("");
     const lit = drawn(github, matched);
     const merge = ARROWS.pull.path;
     const back = (part) => github && arrow("pull", lit, part);
     const label = github ? `The four places: ${Object.values(PLACES).join(", ")}` : `${COMPUTER}: ${[PLACES.folder, PLACES.index, PLACES.repository].join(", ")}`;
-    return el("figure", { class: github ? "tt-places" : "tt-places is-local", "aria-label": label }, el("div", { class: "tt-places-grid" },
+    return el("figure", { class: `tt-places${look}`, "aria-label": label }, el("div", { class: "tt-places-grid" },
       el("div", { class: "tt-frame is-computer", "aria-hidden": "true" }, el("span", {}, COMPUTER)),
       github && el("div", { class: "tt-frame is-github", "aria-hidden": "true" }, el("span", {}, GITHUB)),
       filePlace("folder", project.files),
       pair(1, arrow("add", lit), back(merge.slice(1))),
       filePlace("index", project.files, null, project.exists ? NO_FILES : NO_INDEX),
       pair(2, arrow("commit", lit), back(merge.slice(0, 2))),
-      repositoryPlace("repository", project, true),
-      github && [pair(3, arrow("push", lit), arrow("fetch", lit)), repositoryPlace("remote", github, false), arrow("clone", lit)],
-    ), lit.length > 0 && el("figcaption", { class: "tt-places-caption" }, told(lit, project).map((sentence) => el("p", {}, inline(sentence)))));
+      repositoryPlace("repository", project, true, null, theme),
+      github && [pair(3, arrow("push", lit), arrow("fetch", lit)), repositoryPlace("remote", github, false, null, theme), arrow("clone", lit)],
+    ), key || null, lit.length > 0 && el("figcaption", { class: "tt-places-caption" }, told(lit, project).map((sentence) => el("p", {}, inline(sentence)))));
   }
 
   const find = (scope, attribute, value) => [...scope.querySelectorAll(`[${attribute}]`)].find((node) => node.getAttribute(attribute) === value) || null;
@@ -374,11 +379,11 @@ const TimePlaces = (function () {
   }
 
   /* The commit graph of one place moves from its old drawing to its new one, `offset` ms late. */
-  function settle(place, before, after, showHead, offset, reduced) {
+  function settle(place, before, after, { showHead, offset, reduced, theme }) {
     if (!before || !after) return [];
     const graph = place.querySelector(".repo-map");
     if (!graph) return [];
-    return TimeMotion.playMap(graph, before, after, { theme: boxes, showHead, reduced, offset });
+    return TimeMotion.playMap(graph, before, after, { theme, showHead, reduced, offset });
   }
 
   /* When each flight leaves: one after another within a group (same arrow, same kind of thing),
@@ -399,7 +404,7 @@ const TimePlaces = (function () {
 
   /* Plays a transition {before, after, commands} on the figure render(after) drew; returns the
      animations started. `lookup` finds the places and arrows (see `within`). */
-  function play(figure, { before, after, commands: matched }, reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches, lookup = within(figure)) {
+  function play(figure, { before, after, commands: matched }, reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches, lookup = within(figure), theme = boxes) {
     if (reduced || !before || typeof figure.animate !== "function") return [];
     const lit = drawn(after.github, matched);
     const started = [];
@@ -473,13 +478,21 @@ const TimePlaces = (function () {
       const index = here >= 0 ? here : firstCommit(() => true);
       return index >= 0 ? delays[index] + TIMING.land : 0;
     };
-    started.push(...settle(lookup.place("repository"), before.project, after.project, true, landing("repository"), reduced));
-    started.push(...settle(lookup.place("remote"), before.github, after.github, false, landing("remote"), reduced));
+    started.push(...settle(lookup.place("repository"), before.project, after.project, { showHead: true, offset: landing("repository"), reduced, theme }));
+    started.push(...settle(lookup.place("remote"), before.github, after.github, { showHead: false, offset: landing("remote"), reduced, theme }));
     return started;
   }
 
   /* The figure's building blocks, for figures with more than one computer (theme-time-share.js). */
   const parts = { filePlace, repositoryPlace, arrow, pair, inline };
 
-  return { commands, flights, render, play, parts, ARROWS, PLACES, TIMING };
+  /* The figure drawn and played with `theme`'s maps, as the live page shows it; the same
+     interface as TimePlaces' own render, play and commands. */
+  const withTheme = (theme) => ({
+    commands,
+    render: (observation, options = {}) => render(observation, { ...options, theme }),
+    play: (figure, transition, reduced, lookup) => play(figure, transition, reduced, lookup, theme),
+  });
+
+  return { commands, flights, render, play, withTheme, parts, ARROWS, PLACES, TIMING };
 })();

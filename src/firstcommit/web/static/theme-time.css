@@ -532,13 +532,29 @@ h2,
   font-size: 0.82rem;
 }
 
-.tt-places .map-label text,
-.tt-places .map-hash {
+.tt-places:not(.is-full) .map-label text,
+.tt-places:not(.is-full) .map-hash {
   font-size: 11px;
 }
 
-.tt-places .map-subject {
+.tt-places:not(.is-full) .map-subject {
   font-size: 12px;
+}
+
+/* Drawn at the map's own size (the live page), the figure never lies in one row: GitHub's full
+   timeline would leave your repository's too little room. At most 1180px wide, it takes the
+   in-between layout (GitHub under your computer) or, narrower, the stacked one, where your
+   repository has the figure's whole width. The map's key sits once under the figure. */
+.tt-places.is-full {
+  max-width: 1180px;
+}
+
+.tt-places.is-full .tt-place-graph {
+  max-height: 24rem;
+}
+
+.tt-places > .tt-key {
+  margin: 0.2rem 0.9rem 0;
 }
 
 /* A file is a page: its content's colour, its name, its short id, and git status's words. */
@@ -898,9 +914,111 @@ h2,
   font-weight: 650;
 }
 
-/* Stacked: your computer above (working folder and staging area side by side, your repository
-   under them), GitHub below. The arrows between rows point up and down; clone runs up the right. */
-@container tt-places (max-width: 1040px) {
+/* In between, from 1180px down: your computer in one row, GitHub under it across the figure, so
+   your repository keeps the room its timeline needs. Push and fetch run down and up between your
+   repository and GitHub; clone runs up the right side. */
+@container tt-places (max-width: 1180px) {
+  .tt-places-grid {
+    grid-template-columns: minmax(7.5rem, 0.8fr) 3.4rem minmax(7.5rem, 0.8fr) 3.8rem minmax(0, 2.4fr) 2.4rem;
+    grid-template-rows: auto 4.6rem auto;
+  }
+
+  .tt-places.is-local .tt-places-grid {
+    grid-template-columns: minmax(7.5rem, 0.8fr) 3.4rem minmax(7.5rem, 0.8fr) 3.8rem minmax(0, 2.4fr);
+    grid-template-rows: auto;
+  }
+
+  .tt-frame.is-github,
+  .tt-place.is-remote {
+    grid-column: 1 / 6;
+    grid-row: 3;
+  }
+
+  .tt-arrows-pair.is-gap-3 {
+    grid-column: 5;
+    grid-row: 2;
+  }
+
+  .tt-arrow.is-clone {
+    display: flex;
+    grid-column: 6;
+    grid-row: 1 / 4;
+    margin: 0;
+  }
+
+  .tt-arrow-stop {
+    display: none;
+  }
+
+  .tt-arrows-pair.is-gap-3 {
+    flex-direction: row;
+    justify-content: center;
+    gap: 2.5rem;
+    align-self: stretch;
+    padding: 0.2rem 0 0.9rem;
+  }
+
+  .tt-arrows-pair.is-gap-3 .tt-arrow,
+  .tt-arrow.is-clone {
+    flex-direction: row;
+    align-self: stretch;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0;
+  }
+
+  .tt-arrows-pair.is-gap-3 .tt-arrow-shaft,
+  .tt-arrow.is-clone .tt-arrow-shaft {
+    align-self: stretch;
+    width: 2px;
+    height: auto;
+    margin: 5px 0;
+    transform-origin: center top;
+  }
+
+  .tt-arrows-pair.is-gap-3 .tt-arrow.is-active .tt-arrow-shaft {
+    width: 3px;
+  }
+
+  .tt-arrows-pair.is-gap-3 .tt-arrow.is-back .tt-arrow-shaft,
+  .tt-arrow.is-clone .tt-arrow-shaft {
+    transform-origin: center bottom;
+  }
+
+  .tt-arrow.is-clone .tt-arrow-shaft {
+    border-top: none;
+    border-left: 2px dashed currentColor;
+  }
+
+  .tt-arrows-pair.is-gap-3 .tt-arrow-shaft::after,
+  .tt-arrow.is-clone .tt-arrow-shaft::after {
+    top: auto;
+    right: auto;
+    bottom: -7px;
+    left: -5px;
+    width: 12px;
+    height: 9px;
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+  }
+
+  .tt-arrows-pair.is-gap-3 .tt-arrow.is-back .tt-arrow-shaft::after,
+  .tt-arrow.is-clone .tt-arrow-shaft::after {
+    top: -7px;
+    bottom: auto;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+
+  .tt-arrow.is-clone .tt-arrow-label {
+    align-self: center;
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+  }
+}
+
+/* Stacked, from 1000px down: your computer above (working folder and staging area side by side,
+   your repository under them, across the figure), GitHub below. The arrows between rows point up
+   and down; clone runs up the right. */
+@container tt-places (max-width: 1000px) {
   .tt-places-grid {
     grid-template-columns: 0.4rem minmax(0, 1fr) 3.6rem minmax(0, 1fr) 2.4rem;
     grid-template-rows: auto 4.6rem auto 5.2rem auto;
@@ -957,8 +1075,7 @@ h2,
     grid-row: 5;
   }
 
-  .tt-arrows-pair.is-gap-2,
-  .tt-arrows-pair.is-gap-3 {
+  .tt-arrows-pair.is-gap-2 {
     flex-direction: row;
     justify-content: center;
     gap: 2.5rem;
@@ -977,9 +1094,7 @@ h2,
     display: none;
   }
 
-  .tt-arrows-pair.is-gap-2 .tt-arrow,
-  .tt-arrows-pair.is-gap-3 .tt-arrow,
-  .tt-arrow.is-clone {
+  .tt-arrows-pair.is-gap-2 .tt-arrow {
     flex-direction: row;
     align-self: stretch;
     justify-content: center;
@@ -987,9 +1102,7 @@ h2,
     padding: 0;
   }
 
-  .tt-arrows-pair.is-gap-2 .tt-arrow-shaft,
-  .tt-arrows-pair.is-gap-3 .tt-arrow-shaft,
-  .tt-arrow.is-clone .tt-arrow-shaft {
+  .tt-arrows-pair.is-gap-2 .tt-arrow-shaft {
     align-self: stretch;
     width: 2px;
     height: auto;
@@ -997,25 +1110,15 @@ h2,
     transform-origin: center top;
   }
 
-  .tt-arrows-pair.is-gap-2 .tt-arrow.is-active .tt-arrow-shaft,
-  .tt-arrows-pair.is-gap-3 .tt-arrow.is-active .tt-arrow-shaft {
+  .tt-arrows-pair.is-gap-2 .tt-arrow.is-active .tt-arrow-shaft {
     width: 3px;
   }
 
-  .tt-arrows-pair.is-gap-2 .tt-arrow.is-back .tt-arrow-shaft,
-  .tt-arrows-pair.is-gap-3 .tt-arrow.is-back .tt-arrow-shaft,
-  .tt-arrow.is-clone .tt-arrow-shaft {
+  .tt-arrows-pair.is-gap-2 .tt-arrow.is-back .tt-arrow-shaft {
     transform-origin: center bottom;
   }
 
-  .tt-arrow.is-clone .tt-arrow-shaft {
-    border-top: none;
-    border-left: 2px dashed currentColor;
-  }
-
-  .tt-arrows-pair.is-gap-2 .tt-arrow-shaft::after,
-  .tt-arrows-pair.is-gap-3 .tt-arrow-shaft::after,
-  .tt-arrow.is-clone .tt-arrow-shaft::after {
+  .tt-arrows-pair.is-gap-2 .tt-arrow-shaft::after {
     top: auto;
     right: auto;
     bottom: -7px;
@@ -1025,17 +1128,9 @@ h2,
     clip-path: polygon(0 0, 100% 0, 50% 100%);
   }
 
-  .tt-arrows-pair.is-gap-2 .tt-arrow.is-back .tt-arrow-shaft::after,
-  .tt-arrows-pair.is-gap-3 .tt-arrow.is-back .tt-arrow-shaft::after,
-  .tt-arrow.is-clone .tt-arrow-shaft::after {
+  .tt-arrows-pair.is-gap-2 .tt-arrow.is-back .tt-arrow-shaft::after {
     top: -7px;
     bottom: auto;
     clip-path: polygon(50% 0, 100% 100%, 0 100%);
-  }
-
-  .tt-arrow.is-clone .tt-arrow-label {
-    align-self: center;
-    writing-mode: vertical-rl;
-    transform: rotate(180deg);
   }
 }
