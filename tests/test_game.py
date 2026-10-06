@@ -209,15 +209,50 @@ def test_the_dashboard_shows_the_level_in_progress(sample_level: runner.Level) -
     assert {key: value for key, value in active.items() if key != "started"} == {"level": "basics-sample", "step": 0, "steps": 3, "hints": 1, "hints_total": 3, "attempts": 0}
 
 
-def test_an_unknown_level_id_raises_key_error(sample_level: runner.Level) -> None:
+def test_an_unknown_level_id_raises_unknown_id_error(sample_level: runner.Level) -> None:
     for action in (game.level, game.lesson, game.start):
-        with pytest.raises(KeyError):
+        with pytest.raises(game.UnknownIdError, match="basics-nothing"):
             action("basics-nothing")
+
+
+def test_an_unknown_id_is_a_lookup_error_that_no_key_error_can_pass_for() -> None:
+    assert issubclass(game.UnknownIdError, LookupError)
+    assert not issubclass(game.UnknownIdError, KeyError)
+    assert not issubclass(KeyError, game.UnknownIdError)
+
+
+def test_a_key_error_inside_a_level_setup_is_a_bug_not_an_unknown_id(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    def broken_setup(lab: kit.Lab) -> kit.State:
+        answers: dict[str, str] = {}
+        return {"name": answers["players_name"]}
+
+    broken = dataclasses.replace(sample_level, setup=broken_setup)
+    monkeypatch.setattr(runner, "catalogue", lambda: {broken.id: broken})
+    with pytest.raises(KeyError, match="players_name"):
+        game.start(broken.id)
+
+
+def test_a_key_error_while_building_a_lesson_is_a_bug_not_an_unknown_id(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    def broken_frames(slides: Sequence[kit.Slide]) -> list[demos.Frame]:
+        raise KeyError("transcript")
+
+    monkeypatch.setattr(demos, "frames", broken_frames)
+    with pytest.raises(KeyError, match="transcript"):
+        game.lesson(sample_level.id)
+
+
+def test_a_key_error_while_scoring_a_card_is_a_bug_not_an_unknown_id(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    def broken_score(level: int, correct: bool, pays: bool, streak: int) -> score.CardScore:
+        raise KeyError(level)
+
+    monkeypatch.setattr(score, "card_score", broken_score)
+    with pytest.raises(KeyError):
+        game.answer_card("basics-c01", "right")
 
 
 def test_starting_an_unknown_level_leaves_the_level_in_progress_alone(sample_level: runner.Level, game_home: Path) -> None:
     game.start(sample_level.id)
-    with pytest.raises(KeyError):
+    with pytest.raises(game.UnknownIdError):
         game.start("basics-nothing")
     assert game.status()["active"] is not None
     assert lab_project(game_home).is_dir()
@@ -784,12 +819,14 @@ source = "git-commit(1)"
     assert (result["correct"], result["answer"], result["answer_text"]) == (True, right["value"], right["text"])
 
 
-def test_an_unknown_chapter_or_card_raises_key_error(sample_level: runner.Level) -> None:
-    with pytest.raises(KeyError):
+def test_an_unknown_chapter_or_card_raises_unknown_id_error(sample_level: runner.Level) -> None:
+    with pytest.raises(game.UnknownIdError, match="nowhere"):
         game.due_cards("nowhere", 5)
-    with pytest.raises(KeyError):
+    with pytest.raises(game.UnknownIdError, match="basics-nothing"):
         game.answer_card("basics-nothing", "right")
-    with pytest.raises(KeyError):
+    with pytest.raises(game.UnknownIdError, match="nowhere"):
+        game.answer_card("nowhere-card", "right")
+    with pytest.raises(game.UnknownIdError, match="nowhere"):
         game.notes("nowhere")
 
 

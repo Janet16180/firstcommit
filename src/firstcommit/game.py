@@ -12,7 +12,9 @@ the page too. Every field the player reads is parsed blocks; every value the pag
 UTF-8 cannot encode, such as the lone surrogates JSON can carry, are replaced here, so levels and
 cards only ever see a wrong answer. Errors the interfaces handle:
 
-- ``KeyError``: an unknown level, chapter or card id (the routes answer 404);
+- `UnknownIdError`: an unknown level, chapter or card id (the routes answer 404). It is raised
+  only by the one lookup of each kind of id, at the top of a function, so a ``KeyError`` from a
+  level's setup, the scoring or a lesson stays what it is: a bug;
 - `NotPlayingError`: an action on the level in progress when there is none (409);
 - `firstcommit.save.SaveError`: a damaged save file (``firstcommit reset --yes`` starts over).
 
@@ -246,6 +248,10 @@ class Diagnosis(TypedDict):
     detail: str
 
 
+class UnknownIdError(LookupError):
+    """A level, chapter or card id the game does not have (the web routes answer 404)."""
+
+
 class NotPlayingError(Exception):
     """No level is in progress, for an action that needs one (the web routes answer 409)."""
 
@@ -304,10 +310,10 @@ def level(level_id: str) -> LevelView:
 
     Raises
     ------
-    KeyError
+    UnknownIdError
         If no level has this id.
     """
-    entry = runner.catalogue()[level_id]
+    entry = _level(level_id)
     finished = save.load_progress()["levels"].get(level_id)
     active = save.load_active()
     playing = active if active is not None and active["level"] == level_id else None
@@ -347,10 +353,10 @@ def lesson(level_id: str) -> LessonView:
 
     Raises
     ------
-    KeyError
+    UnknownIdError
         If no level has this id.
     """
-    entry = runner.catalogue()[level_id]
+    entry = _level(level_id)
     slides: list[SlideView] = [
         {
             "id": slide.id,
@@ -382,10 +388,10 @@ def start(level_id: str) -> ActiveView:
 
     Raises
     ------
-    KeyError
+    UnknownIdError
         If no level has this id; the level in progress is then left alone.
     """
-    entry = runner.catalogue()[level_id]
+    entry = _level(level_id)
     with save.lock():
         save.clear_active()
         save.clear_observed()
@@ -591,9 +597,11 @@ def due_cards(chapter: str | None, limit: int) -> list[CardView]:
 
     Raises
     ------
-    KeyError
+    UnknownIdError
         If `chapter` is not a chapter id.
     """
+    if chapter is not None:
+        _chapter(chapter)
     progress = save.load_progress()
     today = date.today()
     rng = random.Random()
@@ -618,10 +626,10 @@ def answer_card(card_id: str, reply: str) -> CardResult:
 
     Raises
     ------
-    KeyError
+    UnknownIdError
         If no card has this id.
     """
-    card = cards.find(card_id)
+    card = _card(card_id)
     today = date.today()
     correct = cards.judge(card, _encodable(reply))
     with save.lock():
@@ -661,10 +669,10 @@ def notes(chapter: str) -> Notes:
 
     Raises
     ------
-    KeyError
+    UnknownIdError
         If `chapter` is not a chapter id.
     """
-    return {"chapter": chapter, "title": CHAPTERS[chapter], "notes": markup.parse(cards.deck(chapter).notes)}
+    return {"chapter": chapter, "title": _chapter(chapter), "notes": markup.parse(cards.deck(chapter).notes)}
 
 
 def terminal_folder() -> str:
@@ -700,6 +708,81 @@ def doctor() -> list[Diagnosis]:
         `MIN_PYTHON`), and the game home (absolute and writable), in that order.
     """
     return [_git_diagnosis(), _python_diagnosis(), _home_diagnosis()]
+
+
+def _level(level_id: str) -> runner.Level:
+    """
+    Look a level up by its id.
+
+    Parameters
+    ----------
+    level_id : str
+        The id the player or the page sent.
+
+    Returns
+    -------
+    runner.Level
+        The level.
+
+    Raises
+    ------
+    UnknownIdError
+        If no level has this id.
+    """
+    levels = runner.catalogue()
+    if level_id not in levels:
+        raise UnknownIdError(f"no level has the id {level_id!r}")
+    return levels[level_id]
+
+
+def _chapter(chapter: str) -> str:
+    """
+    Look a chapter up by its id.
+
+    Parameters
+    ----------
+    chapter : str
+        The id the player or the page sent.
+
+    Returns
+    -------
+    str
+        The chapter's title.
+
+    Raises
+    ------
+    UnknownIdError
+        If no chapter has this id.
+    """
+    if chapter not in CHAPTERS:
+        raise UnknownIdError(f"no chapter has the id {chapter!r}")
+    return CHAPTERS[chapter]
+
+
+def _card(card_id: str) -> cards.Card:
+    """
+    Look a card up by its id; the one place where a missing card becomes an unknown id.
+
+    Parameters
+    ----------
+    card_id : str
+        The id the player or the page sent.
+
+    Returns
+    -------
+    cards.Card
+        The card.
+
+    Raises
+    ------
+    UnknownIdError
+        If no deck holds a card with this id.
+    """
+    try:
+        card = cards.find(card_id)
+    except KeyError as error:
+        raise UnknownIdError(f"no card has the id {card_id!r}") from error
+    return card
 
 
 def _playing() -> tuple[save.Active, runner.Level]:
@@ -802,11 +885,6 @@ def _cards_to_review(chapter: str | None, progress: save.Progress, limit: int) -
     -------
     list[cards.Card]
         The cards, in the order to ask them.
-
-    Raises
-    ------
-    KeyError
-        If `chapter` is not a chapter id.
     """
     if chapter is not None:
         pool = list(cards.deck(chapter).cards)
