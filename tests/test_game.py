@@ -14,6 +14,8 @@ from firstcommit.chapters import CHAPTERS
 
 pytestmark = pytest.mark.usefixtures("sample_decks")
 
+HELLO_BLOB = "ce013625030ba8dba906f756967f9e9ca394464a"
+
 
 def fake_snapshot(path: Path) -> repomap.Snapshot:
     """
@@ -74,10 +76,10 @@ def fake_frames(slides: Sequence[kit.Slide]) -> list[demos.Frame]:
     ]
 
 
-@pytest.fixture(autouse=True)
-def insight(monkeypatch: pytest.MonkeyPatch) -> None:
+@pytest.fixture
+def fake_insight(monkeypatch: pytest.MonkeyPatch) -> None:
     """
-    Replace the repository readers, which another branch implements, by the fakes above.
+    Replace the repository readers by the fakes above, where exact made-up figures make a test clearer.
 
     Parameters
     ----------
@@ -222,7 +224,8 @@ def test_a_level_page_lists_the_hints_already_revealed(sample_level: runner.Leve
     assert game.level(sample_level.id)["hints"] == [markup.parse(hint) for hint in sample_level.hints[:2]]
 
 
-def test_a_lesson_shows_each_slide_with_its_real_figure(sample_level: runner.Level) -> None:
+@pytest.mark.usefixtures("fake_insight")
+def test_a_lesson_gives_each_slide_its_figure(sample_level: runner.Level) -> None:
     lesson = game.lesson(sample_level.id)
     assert (lesson["level"], lesson["title"]) == ("basics-sample", "Say hello")
     first, second = lesson["slides"]
@@ -231,6 +234,16 @@ def test_a_lesson_shows_each_slide_with_its_real_figure(sample_level: runner.Lev
     assert first["transcript"] == [{"command": "git init -q demo", "output": "ran init"}]
     assert second["objects"] == [{"hash": "e" * 40, "type": "blob", "size": 1}]
     assert second["map"]["exists"] is False
+
+
+def test_a_lesson_shows_the_real_commands_their_output_and_the_repository_they_leave(sample_level: runner.Level) -> None:
+    first, second = game.lesson(sample_level.id)["slides"]
+    assert first["transcript"] == [{"command": "git init -q demo", "output": ""}]
+    assert [line["command"] for line in second["transcript"]] == ["cd demo", "printf 'hello\\n' > hello.txt", "git add hello.txt", "git ls-files --stage"]
+    assert second["transcript"][-1]["output"] == f"100644 {HELLO_BLOB} 0\thello.txt\n"
+    assert (second["view"], second["map"]["branch"]) == ("objects", "main")
+    assert [(entry["path"], entry["head"], entry["index"]) for entry in second["map"]["files"]] == [("hello.txt", None, HELLO_BLOB)]
+    assert second["objects"] == [{"hash": HELLO_BLOB, "type": "blob", "size": 6}]
 
 
 def test_starting_a_level_builds_its_lab_and_records_it(sample_level: runner.Level, game_home: Path) -> None:
@@ -520,6 +533,7 @@ def test_hints_cost_nothing_on_a_replay(sample_level: runner.Level) -> None:
     assert game.hint()["cost"] == 0
 
 
+@pytest.mark.usefixtures("fake_insight")
 def test_observing_the_lab_snapshots_it_and_tells_what_changed(sample_level: runner.Level, game_home: Path) -> None:
     game.start(sample_level.id)
     first = game.observe()
@@ -531,6 +545,20 @@ def test_observing_the_lab_snapshots_it_and_tells_what_changed(sample_level: run
     assert game.observe()["events"] == []
 
 
+def test_observing_a_real_lab_tells_of_the_staging_and_the_commit(sample_level: runner.Level, game_home: Path) -> None:
+    game.start(sample_level.id)
+    first = game.observe()
+    assert (first["project"]["exists"], first["project"]["branch"], first["github"], first["events"]) == (True, "trunk", None, [])
+    assert [(entry["path"], entry["index"], entry["folder"]) for entry in first["project"]["files"]] == [("hello.txt", None, HELLO_BLOB)]
+    kit.git(lab_project(game_home), "add", "hello.txt")
+    assert [event["kind"] for event in game.observe()["events"]] == ["file-staged"]
+    kit.git(lab_project(game_home), "commit", "-q", "-m", "Say hello")
+    short = kit.git(lab_project(game_home), "rev-parse", "--short", "HEAD").strip()
+    events = game.observe()["events"]
+    assert any(event["kind"] == "commit-created" and short in event["text"] for event in events), events
+
+
+@pytest.mark.usefixtures("fake_insight")
 def test_observing_an_unchanged_lab_does_not_rewrite_the_observation(sample_level: runner.Level, game_home: Path) -> None:
     game.start(sample_level.id)
     game.observe()
@@ -541,6 +569,7 @@ def test_observing_an_unchanged_lab_does_not_rewrite_the_observation(sample_leve
     assert observed.stat().st_mtime_ns == long_ago
 
 
+@pytest.mark.usefixtures("fake_insight")
 def test_observing_a_lab_with_a_stand_in_github_snapshots_it_too(sample_level: runner.Level, game_home: Path) -> None:
     game.start(sample_level.id)
     github = game_home / "labs" / "basics-sample" / "github" / "project.git"
@@ -551,6 +580,7 @@ def test_observing_a_lab_with_a_stand_in_github_snapshots_it_too(sample_level: r
     assert game.observe()["events"] == [{"kind": "file-created", "text": "`pushed` appeared."}]
 
 
+@pytest.mark.usefixtures("fake_insight")
 def test_starting_a_level_forgets_the_last_observation(sample_level: runner.Level, game_home: Path) -> None:
     game.start(sample_level.id)
     (lab_project(game_home) / "notes.txt").write_text("x")

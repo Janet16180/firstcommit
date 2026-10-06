@@ -12,7 +12,13 @@ DIFFICULTY = 1
 XP = 100
 LESSON = [
     kit.Slide(id="init", title="A repository", text="Make one:\n\n    $ git init -q demo", run="git init -q demo", view="terminal"),
-    kit.Slide(id="areas", title="Three areas", text="A file lives in three places.", view="areas"),
+    kit.Slide(
+        id="areas",
+        title="Three areas",
+        text="A staged file is a blob in the object database.",
+        run="cd demo\nprintf 'hello\\n' > hello.txt\ngit add hello.txt\ngit ls-files --stage",
+        view="objects",
+    ),
 ]
 BRIEFING = "Commit `hello.txt` on the branch `{{branch}}`."
 HINTS = [
