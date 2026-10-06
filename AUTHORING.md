@@ -199,6 +199,7 @@ for people.
 | `kit.git_run(cwd, *args, ...)` | run git; returns the result whatever the exit status, even when `cwd` was deleted (checks) |
 | `kit.snapshot(path)` | the repository in a folder, as the map shows it (`kit.Snapshot`, `kit.FileEntry`, `kit.Commit`, `kit.Ref`) |
 | `kit.version(entry, area)` | a file's id and mode in `"head"`, `"index"` or `"folder"`; two areas agree only when their versions are equal (`chmod +x` is a change) |
+| `kit.staged(snap)`, `kit.unstaged(snap)`, `kit.untracked(snap)`, `kit.nested(snap)`, `kit.conflicted(snap)`, `kit.mode_changed(snap)` | the paths `git status` lists as changes to be committed, changes not staged (modified, deleted or type changed), untracked files, repositories nested in the folder, unmerged paths, and changes of the executable bit alone; each file's `index_change` and `folder_change` hold the same classification |
 | `kit.Person`, `kit.GAME` | commit identities |
 | `kit.parse_int(text)` | a typed number, or None (never `isdigit()` + `int()`) |
 | `kit.is_hash_of(text, full)` | the player typed this object id, whole or abbreviated |

@@ -29,7 +29,7 @@ Names and short hashes in the text are in backticks, commit subjects in double q
 from dataclasses import dataclass
 from typing import Literal, TypedDict
 
-from firstcommit.repomap import EXECUTABLE_MODE, Commit, FileEntry, RefKind, Snapshot, version
+from firstcommit.repomap import EXECUTABLE_MODE, Commit, FileEntry, FolderChange, RefKind, Snapshot, version
 
 MAX_FILE_EVENTS = 4
 """More events of one kind about files are told as one, naming the first `NAMES_SHOWN` paths."""
@@ -48,6 +48,15 @@ SUMMARIES = {
     "nested-repository-created": "{count} separate repositories appeared inside this one: {names}.",
     "nested-repository-deleted": "{count} separate repositories are gone from the working folder: {names}.",
 }
+FOLDER_NOTES: dict[FolderChange | None, str] = {
+    "deleted": " The deletion is not staged yet.",
+    "ignored": " Git ignores it.",
+    "untracked": " It is untracked: Git does not track it yet.",
+    "modified": " The change is not staged yet.",
+    "typechange": " The change is not staged yet.",
+    None: " It matches the staging area.",
+}
+"""How a file in the working folder stands against the staging area, by its `folder_change`."""
 STARTED = {
     "merge": "A merge is in progress{on}.",
     "rebase": "A rebase is in progress: Git replays commits one at a time, with HEAD detached until the rebase ends.",
@@ -803,6 +812,8 @@ def _absent(path: str) -> FileEntry:
         "ignored": False,
         "conflicted": False,
         "repository": False,
+        "index_change": None,
+        "folder_change": None,
     }
 
 
@@ -818,9 +829,9 @@ def _clean(file: FileEntry) -> bool:
     Returns
     -------
     bool
-        True if all three areas agree (a file in none of them counts).
+        True if `git status` lists nothing for it (a file in none of the areas counts).
     """
-    return version(file, "head") == version(file, "index") == version(file, "folder")
+    return file["index_change"] is None and file["folder_change"] is None and not file["conflicted"]
 
 
 def _tracked(file: FileEntry) -> bool:
@@ -891,7 +902,7 @@ def _staging_news(old: FileEntry, new: FileEntry, committed: bool) -> list[FileN
     if version(old, "index") == version(new, "index"):
         return []
     news: list[FileNews] = []
-    if version(new, "index") == version(new, "head") and not committed:
+    if new["index_change"] is None and not committed:
         again = "it is untracked again" if new["index"] is None else "the staging area has the last commit's version again"
         news.append(("file-unstaged", path, f"`{path}` was unstaged: {again}."))
     elif new["index"] is None:
@@ -950,19 +961,9 @@ def _folder_note(file: FileEntry) -> str:
     str
         A sentence starting with a space, or nothing for an untracked file that was deleted.
     """
-    note = ""
-    if file["folder"] is None and file["index"] is not None:
-        note = " The deletion is not staged yet."
-    elif file["folder"] is None:
+    note = FOLDER_NOTES[file["folder_change"]]
+    if file["folder"] is None and file["folder_change"] != "deleted":
         note = ""
-    elif file["ignored"]:
-        note = " Git ignores it."
-    elif file["index"] is None:
-        note = " It is untracked: Git does not track it yet."
-    elif version(file, "folder") == version(file, "index"):
-        note = " It matches the staging area."
-    else:
-        note = " The change is not staged yet."
     return note
 
 

@@ -256,7 +256,9 @@
        "folder_mode": "100644",
        "ignored": false,
        "conflicted": false,
-       "repository": false
+       "repository": false,
+       "index_change": "added",
+       "folder_change": null
       }
      ],
      "operation": null,
@@ -327,7 +329,9 @@
        "folder_mode": "100644",
        "ignored": false,
        "conflicted": false,
-       "repository": false
+       "repository": false,
+       "index_change": "added",
+       "folder_change": null
       }
      ],
      "operation": null,
@@ -400,7 +404,9 @@
        "folder_mode": "100644",
        "ignored": false,
        "conflicted": false,
-       "repository": false
+       "repository": false,
+       "index_change": null,
+       "folder_change": null
       }
      ],
      "operation": null,
@@ -474,7 +480,9 @@
        "folder_mode": "100644",
        "ignored": false,
        "conflicted": false,
-       "repository": false
+       "repository": false,
+       "index_change": null,
+       "folder_change": null
       }
      ],
      "operation": null,
@@ -548,7 +556,9 @@
        "folder_mode": "100644",
        "ignored": false,
        "conflicted": false,
-       "repository": false
+       "repository": false,
+       "index_change": null,
+       "folder_change": null
       }
      ],
      "operation": null,
@@ -792,7 +802,9 @@
      "folder_mode": "100644",
      "ignored": false,
      "conflicted": false,
-     "repository": false
+     "repository": false,
+     "index_change": "modified",
+     "folder_change": null
     },
     {
      "path": "build.log",
@@ -804,7 +816,9 @@
      "folder_mode": "100644",
      "ignored": true,
      "conflicted": false,
-     "repository": false
+     "repository": false,
+     "index_change": null,
+     "folder_change": "ignored"
     },
     {
      "path": "notes.txt",
@@ -816,7 +830,9 @@
      "folder_mode": "100644",
      "ignored": false,
      "conflicted": false,
-     "repository": false
+     "repository": false,
+     "index_change": null,
+     "folder_change": "modified"
     },
     {
      "path": "old.txt",
@@ -828,7 +844,9 @@
      "folder_mode": null,
      "ignored": false,
      "conflicted": false,
-     "repository": false
+     "repository": false,
+     "index_change": "deleted",
+     "folder_change": null
     },
     {
      "path": "run.sh",
@@ -840,7 +858,9 @@
      "folder_mode": "100755",
      "ignored": false,
      "conflicted": false,
-     "repository": false
+     "repository": false,
+     "index_change": null,
+     "folder_change": "modified"
     },
     {
      "path": "todo.txt",
@@ -852,7 +872,9 @@
      "folder_mode": "100644",
      "ignored": false,
      "conflicted": false,
-     "repository": false
+     "repository": false,
+     "index_change": null,
+     "folder_change": "untracked"
     },
     {
      "path": "vendor",
@@ -864,7 +886,9 @@
      "folder_mode": "160000",
      "ignored": false,
      "conflicted": false,
-     "repository": true
+     "repository": true,
+     "index_change": null,
+     "folder_change": "untracked"
     }
    ],
    "operation": null,
@@ -1225,7 +1249,9 @@
      "folder_mode": "100644",
      "ignored": false,
      "conflicted": false,
-     "repository": false
+     "repository": false,
+     "index_change": "added",
+     "folder_change": null
     }
    ],
    "operation": null,
@@ -1265,7 +1291,9 @@
      "folder_mode": "100644",
      "ignored": false,
      "conflicted": false,
-     "repository": false
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
     }
    ],
    "operation": null,

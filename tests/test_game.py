@@ -45,6 +45,8 @@ def fake_snapshot(path: Path) -> repomap.Snapshot:
             "ignored": False,
             "conflicted": False,
             "repository": False,
+            "index_change": None,
+            "folder_change": "untracked",
         }
         for name in names
     ]
