@@ -88,7 +88,8 @@ class Lab:
 
     ``project`` is the player's repository (the terminal opens there when it exists, else in
     ``root``); ``github`` is the bare repository that stands in for GitHub, for levels with a
-    remote.
+    remote; ``teammate`` is a teammate's clone of it, for levels where someone else shares the
+    remote. A level creates only the parts it needs.
     """
 
     root: Path
@@ -102,6 +103,11 @@ class Lab:
     def github(self) -> Path:
         """The bare repository that plays GitHub."""
         return self.root / "github" / "project.git"
+
+    @property
+    def teammate(self) -> Path:
+        """A teammate's working folder: their own clone of the stand-in GitHub."""
+        return self.root / "teammate" / "project"
 
 
 AnswerCheck = Callable[[Lab, State, str], Verdict]

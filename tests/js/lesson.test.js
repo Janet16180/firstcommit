@@ -13,7 +13,7 @@ function player({ reducedMotion = false, onFinish = () => {}, onExit = () => {},
   const clock = createClock();
   const lesson = record("lesson");
   const made = LessonPlayer.create({ lesson, timers: clock, reducedMotion, onFinish, onExit });
-  const view = { ...made, clock, lesson, q: (selector) => made.element.querySelector(selector), all: (selector) => made.element.querySelectorAll(selector) };
+  const view = { ...made, clock, lesson, q: (selector) => made.element.querySelector(selector), all: (selector) => [...made.element.querySelectorAll(selector)] };
   while (!view.q(".lesson-count").textContent.includes(`${slide} of`)) view.q(".lesson-next").click();
   return view;
 }

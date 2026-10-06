@@ -13,7 +13,7 @@ function home(status = record("status")) {
   const ctx = { game: createGameApi(server.api), status: () => status, refresh: async () => (seen.refreshed += 1), reload: () => (seen.shown += 1) };
   const view = HomeView.create(ctx);
   document.body.replaceChildren(view.element);
-  return { view, server, seen, q: (selector) => view.element.querySelector(selector), all: (selector) => view.element.querySelectorAll(selector) };
+  return { view, server, seen, q: (selector) => view.element.querySelector(selector), all: (selector) => [...view.element.querySelectorAll(selector)] };
 }
 
 test("the rank shows the XP and how far the next rank is", () => {
@@ -46,7 +46,7 @@ test("chapters are listed in order with their levels, done levels marked and emp
   const chapters = run.all(".chapter");
   assert.deepEqual(chapters.map((chapter) => chapter.querySelector("h2").textContent), ["Git, GitHub and your first clone", "The three areas", "Fingerprints"]);
   assert.match(chapters[0].textContent, /Coming soon/);
-  const levels = chapters[1].querySelectorAll("a.level-link");
+  const levels = [...chapters[1].querySelectorAll("a.level-link")];
   assert.deepEqual(levels.map((link) => link.getAttribute("href")), ["#/level/sample-first", "#/level/sample-second"]);
   assert.ok(levels[0].classList.contains("is-done"));
   assert.ok(levels[1].classList.contains("is-active"));
@@ -56,7 +56,7 @@ test("chapters are listed in order with their levels, done levels marked and emp
 
 test("a level's difficulty is shown on the scale the server sends", () => {
   const run = home({ ...record("status"), max_difficulty: 5 });
-  const meta = run.all(".chapter")[1].querySelectorAll(".level-meta").map((item) => item.textContent);
+  const meta = [...run.all(".chapter")[1].querySelectorAll(".level-meta")].map((item) => item.textContent);
   assert.deepEqual(meta, ["●○○○○ · 100 XP", "●●○○○ · 150 XP"]);
 });
 

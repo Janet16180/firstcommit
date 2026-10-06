@@ -18,7 +18,7 @@ function quest(step) {
     onType: (command) => seen.typed.push(command),
     onCheck: () => (seen.checks += 1),
   });
-  return { ...made, seen, q: (selector) => made.element.querySelector(selector), all: (selector) => made.element.querySelectorAll(selector) };
+  return { ...made, seen, q: (selector) => made.element.querySelector(selector), all: (selector) => [...made.element.querySelectorAll(selector)] };
 }
 
 test("done steps fold away, the current step is open, and later steps stay hidden", () => {
