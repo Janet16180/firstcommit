@@ -436,6 +436,11 @@ h2,
   padding: 2rem 0.9rem 0.6rem;
 }
 
+/* Without a GitHub: your computer's three places only. */
+.tt-places.is-local .tt-places-grid {
+  grid-template-columns: minmax(8.5rem, 1fr) 3.6rem minmax(8.5rem, 1fr) 4rem minmax(11rem, 1.7fr);
+}
+
 .tt-frame {
   position: relative;
   grid-row: 1;
@@ -893,6 +898,11 @@ h2,
     grid-template-columns: 0.4rem minmax(0, 1fr) 3.6rem minmax(0, 1fr) 2.4rem;
     grid-template-rows: auto 4.6rem auto 5.2rem auto;
     padding: 2rem 0.4rem 0.6rem;
+  }
+
+  .tt-places.is-local .tt-places-grid {
+    grid-template-columns: 0.4rem minmax(0, 1fr) 3.6rem minmax(0, 1fr) 0.4rem;
+    grid-template-rows: auto 4.6rem auto;
   }
 
   .tt-frame.is-computer {

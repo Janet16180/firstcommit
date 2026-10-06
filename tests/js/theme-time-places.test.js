@@ -243,11 +243,6 @@ test("each place shows the player's real files and commits, origin/main included
   assert.equal(figure.querySelector(".tt-places-caption"), null);
 });
 
-test("without a remote, GitHub's place says so instead of drawing an empty graph", () => {
-  const figure = TimePlaces.render({ project: repo({ commits: ONE }), github: null }, {});
-  assert.match(figure.querySelector('[data-area="remote"]').textContent, /No remote yet/);
-});
-
 test("each arrow says where the work goes: pull's merge half runs from your repository through the staging area", () => {
   const figure = TimePlaces.render({ project: repo({ commits: ONE }), github: hub(ONE) }, {});
   const said = (name) => [...figure.querySelectorAll(".tt-arrow")].find((arrow) => arrow.getAttribute("data-command") === name && arrow.getAttribute("aria-label")).getAttribute("aria-label");
@@ -388,6 +383,25 @@ test("a flight takes 520 ms from place to place, slow enough to follow", () => {
 test("a single command's motion is over within a second and a quarter, and a whole pull within 1.75 seconds", () => {
   for (const call of played(PUSH.before, PUSH.after, ["push"]).calls) assert.ok(end(call) <= 1250, JSON.stringify(call.timing));
   for (const call of played(PULL.before, PULL.after, ["fetch", "pull"]).calls) assert.ok(end(call) <= 1750, JSON.stringify(call.timing));
+});
+
+test("without a GitHub the figure shows your computer's three places only, joined by add and commit", () => {
+  const observation = { project: repo({ commits: ONE, files: [file("README.md", { head: "1", index: "2", folder: "2" })] }), github: null };
+  const figure = TimePlaces.render(observation, { commands: ["commit"] });
+  assert.deepEqual([...figure.querySelectorAll(".tt-place h4")].map((title) => title.textContent), ["Working folder", "Staging area", "Your repository"]);
+  assert.deepEqual([...figure.querySelectorAll(".tt-arrow")].map((arrow) => arrow.getAttribute("data-command")), ["add", "commit"]);
+  assert.equal(figure.querySelector(".tt-frame.is-github"), null);
+  assert.ok(figure.classList.contains("is-local"));
+  assert.match(figure.getAttribute("aria-label"), /^Your computer: Working folder, Staging area, Your repository$/);
+  assert.match(figure.querySelector(".tt-places-caption").textContent, /commit saves the staging area/);
+});
+
+test("without a GitHub a commit still flies from the staging area into your repository, and the graph moves", () => {
+  const before = { project: { ...repo({ commits: ONE }), files: [README("1")] }, github: null };
+  const after = { project: { ...repo({ commits: TWO }), files: [README("2")] }, github: null };
+  const { calls } = played(before, after, ["commit"]);
+  assert.ok(calls.some(isFlyer), "the commit flies");
+  assert.ok(calls.some((call) => call.node.closest('[data-area="repository"] .repo-map')), "your repository's graph moves");
 });
 
 const shortOf = (name) => blob(name).slice(0, 7);

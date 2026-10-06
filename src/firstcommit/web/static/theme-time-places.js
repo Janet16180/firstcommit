@@ -37,7 +37,6 @@ const TimePlaces = (function () {
   const NOTES = { index: "open box: the next commit", repository: "closed boxes: the commits" };
   const COMPUTER = "Your computer";
   const GITHUB = "GitHub (the practice copy)";
-  const NO_REMOTE = "No remote yet.";
   const NO_FILES = "No files.";
 
   /* Each command's arrow: the places its work passes, first to last, and the checked sentence
@@ -200,7 +199,7 @@ const TimePlaces = (function () {
   /* A repository's commits: closed boxes on its timeline. GitHub has no HEAD you are on, so an
      empty GitHub only says it has no commits. */
   function repositoryPlace(area, snapshot, showHead, owner = null) {
-    const empty = !snapshot ? NO_REMOTE : !showHead && !snapshot.commits.length ? boxes.words.noCommits : null;
+    const empty = !showHead && !snapshot.commits.length ? boxes.words.noCommits : null;
     return el("section", { class: `tt-place is-${area}`, "data-area": area },
       title(area, owner),
       empty ? el("p", { class: "tt-place-empty" }, empty) : el("div", { class: "tt-place-graph" }, RepoMap.render(snapshot, { theme: boxes, showHead })),
@@ -250,21 +249,23 @@ const TimePlaces = (function () {
   /* The sentences of the lit arrows; pull's tells its own fetch half. */
   const told = (lit) => (lit.includes("pull") ? lit.filter((name) => name !== "fetch") : lit);
 
-  /* The four places as a figure, lighting `options.commands`' arrows and showing their sentences. */
+  /* The four places as a figure, lighting `options.commands`' arrows and showing their sentences;
+     without a GitHub (`observation.github` null), your computer's three places, joined by add and
+     commit only ("is-local"). */
   function render(observation, { commands: lit = [] } = {}) {
     const { project, github } = observation;
     const merge = ARROWS.pull.path;
-    return el("figure", { class: "tt-places", "aria-label": `The four places: ${Object.values(PLACES).join(", ")}` }, el("div", { class: "tt-places-grid" },
+    const back = (part) => github && arrow("pull", lit, part);
+    const label = github ? `The four places: ${Object.values(PLACES).join(", ")}` : `${COMPUTER}: ${[PLACES.folder, PLACES.index, PLACES.repository].join(", ")}`;
+    return el("figure", { class: github ? "tt-places" : "tt-places is-local", "aria-label": label }, el("div", { class: "tt-places-grid" },
       el("div", { class: "tt-frame is-computer", "aria-hidden": "true" }, el("span", {}, COMPUTER)),
-      el("div", { class: "tt-frame is-github", "aria-hidden": "true" }, el("span", {}, GITHUB)),
+      github && el("div", { class: "tt-frame is-github", "aria-hidden": "true" }, el("span", {}, GITHUB)),
       filePlace("folder", project.files),
-      pair(1, arrow("add", lit), arrow("pull", lit, merge.slice(1))),
+      pair(1, arrow("add", lit), back(merge.slice(1))),
       filePlace("index", project.files),
-      pair(2, arrow("commit", lit), arrow("pull", lit, merge.slice(0, 2))),
+      pair(2, arrow("commit", lit), back(merge.slice(0, 2))),
       repositoryPlace("repository", project, true),
-      pair(3, arrow("push", lit), arrow("fetch", lit)),
-      repositoryPlace("remote", github, false),
-      arrow("clone", lit),
+      github && [pair(3, arrow("push", lit), arrow("fetch", lit)), repositoryPlace("remote", github, false), arrow("clone", lit)],
     ), lit.length > 0 && el("figcaption", { class: "tt-places-caption" }, told(lit).map((name) => el("p", {}, inline(ARROWS[name].text)))));
   }
 
@@ -327,8 +328,9 @@ const TimePlaces = (function () {
 
   /* The commit graph of one place moves from its old drawing to its new one, `offset` ms late. */
   function settle(place, before, after, showHead, offset, reduced) {
+    if (!before || !after) return [];
     const graph = place.querySelector(".repo-map");
-    if (!graph || !before || !after) return [];
+    if (!graph) return [];
     return TimeMotion.playMap(graph, before, after, { theme: boxes, showHead, reduced, offset });
   }
 
