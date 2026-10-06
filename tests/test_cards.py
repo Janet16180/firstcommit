@@ -194,6 +194,7 @@ BROKEN = {
     "a text card with a right option": (VALID_CHOICE.replace('"choice"', '"text"'), "correct"),
     "a text card that accepts nothing": ('id = "basics-t"\nkind = "text"\nlevel = 1\nprompt = "P?"\naccept = []\nexplain = "E."\nsource = "S"\n', "accept"),
     "an empty verify snippet": (VALID_CHOICE + 'verify = ""\n', "verify"),
+    "a placeholder with backticks": ('id = "basics-t"\nkind = "text"\nlevel = 1\nprompt = "P?"\naccept = ["main"]\nplaceholder = "a `branch`"\nexplain = "E."\nsource = "S"\n', "placeholder"),
 }
 
 
