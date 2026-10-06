@@ -317,9 +317,7 @@ const TimePlaces = (function () {
   function settle(place, before, after, showHead, offset, reduced) {
     const graph = place.querySelector(".repo-map");
     if (!graph || !before || !after) return [];
-    const options = { theme: boxes, showHead };
-    const motion = TimeMotion.motions(RepoMap.layout(before, options), RepoMap.layout(after, options), boxes.sizes);
-    return TimeMotion.play(graph, motion, boxes, reduced, offset);
+    return TimeMotion.playMap(graph, before, after, { theme: boxes, showHead, reduced, offset });
   }
 
   /* When each flight leaves: one after another within a group (same arrow, same kind of thing),

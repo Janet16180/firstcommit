@@ -27,11 +27,12 @@
  *   row shows, before the drawing settles.
  * play(figure, motion, theme, reduced, offset) runs them on the figure RepoMap.render just drew,
  * all over within 750 ms of `offset`, with the Web Animations API; under prefers-reduced-motion
- * it does nothing.
- * Needs dom.js and theme-time.js. Defines one global, TimeMotion.
+ * it does nothing. playMap(figure, before, after, {theme, showHead, reduced, offset}) does both
+ * from two snapshots, for a map redrawn in place (the live panel's, the four places').
+ * Needs dom.js, map.js and theme-time.js. Defines one global, TimeMotion.
  */
 
-/* global Dom, TimeTheme */
+/* global Dom, RepoMap, TimeTheme */
 /* exported TimeMotion */
 
 const TimeMotion = (function () {
@@ -212,5 +213,13 @@ const TimeMotion = (function () {
     return started;
   }
 
-  return { motions, play, TIMING };
+  /* Moves a map RepoMap.render just drew from `after` (a snapshot) from its drawing of `before`,
+     laid out with the same theme and showHead; returns the animations it started. */
+  function playMap(figure, before, after, { theme, showHead = true, reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches, offset = 0 }) {
+    const options = { theme, showHead };
+    const motion = motions(RepoMap.layout(before, options), RepoMap.layout(after, options), theme.sizes);
+    return play(figure, motion, theme, reduced, offset);
+  }
+
+  return { motions, play, playMap, TIMING };
 })();
