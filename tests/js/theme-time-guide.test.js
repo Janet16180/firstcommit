@@ -102,7 +102,7 @@ function observing() {
 test("the guide pairs each picture with Git's word, built on the rule that the past never changes", () => {
   const titles = TimeGuide.SECTIONS.map((part) => part.title);
   assert.deepEqual(titles, [
-    "Save point = commit", "Lines = parents", "Timeline = branch", "Now = HEAD", "Now without a label = detached HEAD",
+    "Save point = commit", "Lines = parents", "Timeline = branch", "Now = HEAD", "Now on no branch = detached HEAD",
     "Timelines joining = merge commit", "Milestone = tag", "Shared archive = remote", "Last seen in the archive = remote-tracking branch",
     "Coming later: undoing and rewriting, in the same words",
   ]);
