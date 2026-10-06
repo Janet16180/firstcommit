@@ -499,3 +499,478 @@ h2,
 .tt-guide-part:last-child h3 {
   margin-top: 0.8rem;
 }
+
+/* The four places (theme-time-places.js): your computer's three places and GitHub's, with an
+   arrow for each command; the arrow of what just happened is lit in the "now" colour. In a row
+   when there is room; stacked (your computer above, GitHub below) when the figure is narrow. */
+
+.tt-places {
+  position: relative;
+  margin: 0;
+  container-type: inline-size;
+}
+
+.tt-places-grid {
+  display: grid;
+  grid-template-columns: minmax(7.5rem, 1fr) 3.4rem minmax(7.5rem, 1fr) 3.8rem minmax(10rem, 1.5fr) 4.6rem minmax(10rem, 1.5fr);
+  align-items: start;
+  row-gap: 0.35rem;
+  padding: 2rem 0.9rem 0.6rem;
+}
+
+.tt-frame {
+  position: relative;
+  grid-row: 1;
+  align-self: stretch;
+  margin: -1.6rem -0.55rem -0.55rem;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius);
+  pointer-events: none;
+}
+
+.tt-frame.is-computer {
+  grid-column: 1 / 6;
+  grid-row: 1 / 3;
+}
+
+.tt-frame.is-github {
+  grid-column: 7 / 8;
+}
+
+.tt-frame span {
+  position: absolute;
+  top: 0.3rem;
+  left: 0.7rem;
+  color: var(--muted);
+  font: 650 0.72rem var(--sans);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tt-place {
+  z-index: 1;
+  grid-row: 1;
+  min-width: 0;
+  padding: 0.45rem 0.6rem 0.5rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+}
+
+.tt-place.is-folder {
+  grid-column: 1;
+}
+
+.tt-place.is-index {
+  grid-column: 3;
+}
+
+.tt-place.is-repository {
+  grid-column: 5;
+}
+
+.tt-place.is-remote {
+  grid-column: 7;
+}
+
+.tt-place h4 {
+  margin: 0 0 0.25rem;
+  font: 650 0.78rem var(--serif);
+  letter-spacing: 0.01em;
+}
+
+.tt-place-empty {
+  margin: 0.4rem 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+}
+
+.tt-place-graph {
+  max-height: 16rem;
+  overflow: auto;
+}
+
+.tt-places .map-label text,
+.tt-places .map-hash {
+  font-size: 11px;
+}
+
+.tt-places .map-subject {
+  font-size: 12px;
+}
+
+.tt-files {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.8rem;
+  line-height: 1.35;
+}
+
+.tt-file {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.05rem 0.35rem;
+  padding: 0.28rem 0;
+  border-top: 1px solid var(--line);
+}
+
+.tt-file-name {
+  flex: 1 1 calc(100% - 1.2rem);
+  min-width: 0;
+  overflow: hidden;
+  font: 600 0.8rem var(--mono);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tt-file code {
+  margin-left: 1rem;
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
+.tt-file em {
+  font-size: 0.72rem;
+  font-style: normal;
+  font-weight: 600;
+}
+
+.tt-file.state-same,
+.tt-file.state-committed {
+  opacity: 0.62;
+}
+
+.tt-arrow {
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.1rem;
+  grid-row: 1;
+  align-self: center;
+  padding: 0 0.25rem;
+  color: var(--muted);
+}
+
+.tt-arrow.is-add {
+  grid-column: 2;
+}
+
+.tt-arrow.is-commit {
+  grid-column: 4;
+}
+
+.tt-arrows-pair {
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+  grid-column: 6;
+  grid-row: 1;
+  align-self: center;
+}
+
+/* The long arrows run under the places they pass, on the figure's own columns, with a stop under
+   each place on the way: pull's merge half from your repository through the staging area to the
+   working folder (inside your computer), clone from GitHub through all three. */
+.tt-arrow.is-pull,
+.tt-arrow.is-clone {
+  display: grid;
+  grid-template-columns: subgrid;
+  row-gap: 0.1rem;
+  padding: 0;
+}
+
+.tt-arrow.is-pull {
+  grid-column: 1 / 6;
+  grid-row: 2;
+  margin-top: 0.75rem;
+}
+
+.tt-arrow.is-clone {
+  grid-column: 1 / 8;
+  grid-row: 3;
+  margin-top: 0.4rem;
+}
+
+.tt-arrow.is-pull > *,
+.tt-arrow.is-clone > * {
+  grid-row: 2;
+}
+
+.tt-arrow.is-pull .tt-arrow-label,
+.tt-arrow.is-clone .tt-arrow-label {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  justify-self: center;
+}
+
+.tt-arrow.is-pull .tt-arrow-shaft,
+.tt-arrow.is-clone .tt-arrow-shaft {
+  grid-column: 1 / -1;
+  align-self: center;
+}
+
+.tt-arrow-stop {
+  z-index: 1;
+  align-self: center;
+  justify-self: center;
+  width: 11px;
+  height: 11px;
+  border: 2px solid currentColor;
+  border-radius: 50%;
+  background: var(--surface);
+}
+
+.tt-arrow-stop.is-index {
+  grid-column: 3;
+}
+
+.tt-arrow-stop.is-repository {
+  grid-column: 5;
+}
+
+.tt-arrow-label {
+  align-self: center;
+  font: 600 0.74rem var(--mono);
+  white-space: nowrap;
+}
+
+.tt-arrow-shaft {
+  position: relative;
+  height: 2px;
+  margin: 0 5px;
+  background: currentColor;
+}
+
+.tt-arrow-shaft::after {
+  content: "";
+  position: absolute;
+  top: -5px;
+  right: -6px;
+  width: 9px;
+  height: 12px;
+  background: currentColor;
+  clip-path: polygon(0 0, 100% 50%, 0 100%);
+}
+
+.tt-arrow.is-back .tt-arrow-shaft::after {
+  right: auto;
+  left: -6px;
+  clip-path: polygon(100% 0, 0 50%, 100% 100%);
+}
+
+.tt-arrow.is-clone .tt-arrow-shaft {
+  height: 0;
+  border-top: 2px dashed currentColor;
+  background: none;
+}
+
+.tt-arrow.is-clone .tt-arrow-shaft::after {
+  top: -7px;
+}
+
+.tt-arrow.is-active {
+  color: var(--map-head);
+}
+
+.tt-arrow.is-active .tt-arrow-label {
+  font-weight: 750;
+}
+
+.tt-arrow.is-active .tt-arrow-shaft {
+  height: 3px;
+}
+
+.tt-arrow-shaft {
+  transform-origin: left center;
+}
+
+.tt-arrow.is-back .tt-arrow-shaft {
+  transform-origin: right center;
+}
+
+.tt-flights {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  pointer-events: none;
+}
+
+.tt-flyer {
+  position: absolute;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.65rem 0.15rem 0.35rem;
+  border: 2px solid var(--map-head);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--map-head) 22%, transparent), 0 6px 18px rgb(0 0 0 / 28%);
+  color: var(--ink);
+  font: 700 0.86rem var(--mono);
+  white-space: nowrap;
+}
+
+.tt-flyer .tt-mark {
+  width: 18px;
+  height: 18px;
+}
+
+.tt-flyer .blob-dot {
+  margin-left: 0.15rem;
+}
+
+.tt-places-caption {
+  margin: 0.5rem 0.9rem 0;
+  padding: 0.45rem 0.75rem;
+  border-left: 3px solid var(--map-head);
+  border-radius: var(--radius-small);
+  background: color-mix(in srgb, var(--map-head) 8%, var(--surface));
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.tt-places-caption code {
+  font-weight: 650;
+}
+
+@container (max-width: 1040px) {
+  .tt-places-grid {
+    grid-template-columns: 2.4rem minmax(0, 1fr) 3.4rem minmax(0, 1fr) 2.4rem;
+    grid-template-rows: auto 3.2rem auto 5.2rem auto;
+    padding: 2rem 0.4rem 0.6rem;
+  }
+
+  .tt-frame.is-computer {
+    grid-column: 2 / 5;
+    grid-row: 1 / 4;
+  }
+
+  .tt-frame.is-github {
+    grid-column: 2 / 5;
+    grid-row: 5;
+  }
+
+  .tt-place.is-folder {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .tt-arrow.is-add {
+    grid-column: 3;
+    grid-row: 1;
+  }
+
+  .tt-place.is-index {
+    grid-column: 4;
+    grid-row: 1;
+  }
+
+  .tt-place.is-repository {
+    grid-column: 2 / 5;
+    grid-row: 3;
+  }
+
+  .tt-place.is-remote {
+    grid-column: 2 / 5;
+    grid-row: 5;
+  }
+
+  .tt-arrow.is-commit {
+    grid-column: 4;
+    grid-row: 2;
+    justify-self: center;
+  }
+
+  .tt-arrows-pair {
+    flex-direction: row;
+    justify-content: center;
+    gap: 3.5rem;
+    grid-column: 2 / 5;
+    grid-row: 4;
+    align-self: stretch;
+    padding: 0.2rem 0 1.4rem;
+  }
+
+  .tt-arrow.is-pull {
+    display: flex;
+    grid-column: 1;
+    grid-row: 1 / 4;
+    margin: 0;
+  }
+
+  .tt-arrow.is-clone {
+    display: flex;
+    grid-column: 5;
+    grid-row: 1 / 6;
+    margin: 0;
+  }
+
+  .tt-arrow-stop {
+    display: none;
+  }
+
+  .tt-arrow:not(.is-add) {
+    flex-direction: row;
+    align-self: stretch;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0;
+  }
+
+  .tt-arrow:not(.is-add) .tt-arrow-shaft {
+    align-self: stretch;
+    width: 2px;
+    height: auto;
+    margin: 5px 0;
+  }
+
+  .tt-arrow.is-active:not(.is-add) .tt-arrow-shaft {
+    width: 3px;
+    height: auto;
+  }
+
+  .tt-arrow:not(.is-add) .tt-arrow-shaft::after {
+    top: auto;
+    right: auto;
+    bottom: -7px;
+    left: -5px;
+    width: 12px;
+    height: 9px;
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+  }
+
+  .tt-arrow.is-back:not(.is-add) .tt-arrow-shaft::after {
+    top: -7px;
+    bottom: auto;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+
+  .tt-arrow.is-active:not(.is-add) .tt-arrow-shaft::after {
+    left: -4.5px;
+  }
+
+  .tt-arrow.is-clone .tt-arrow-shaft {
+    width: 0;
+    border-top: 0;
+    border-left: 2px dashed currentColor;
+  }
+
+  .tt-arrow:not(.is-add) .tt-arrow-shaft {
+    transform-origin: center top;
+  }
+
+  .tt-arrow.is-back:not(.is-add) .tt-arrow-shaft {
+    transform-origin: center bottom;
+  }
+
+  .tt-arrow.is-pull .tt-arrow-label,
+  .tt-arrow.is-clone .tt-arrow-label {
+    writing-mode: vertical-rl;
+    transform: rotate(180deg);
+  }
+}
