@@ -39,6 +39,15 @@ after checking the branch's log):
 Integration order: insight -> core -> web -> author -> docker smoke. Merge insight into core,
 web and level as soon as it lands.
 
+## Lessons for the method (to fold into GAME_METHODOLOGY.md)
+
+- A subagent that an agent starts (for example an author's own fact-checker) hands its report
+  to the lead's session, not to the agent that started it. The author waited for a report that
+  never reached it; the lead found out by checking the files on disk and forwarded it. Tell
+  agents that their own subagents report to the lead, or ask them not to start any.
+- The first fact-check of the template level found 7 false statements in one beginner level;
+  the patterns became AUTHORING section 1, rules 8-10.
+
 ## Next
 
 1. Integrate and verify phase 2 (all gates in WSL and in the image; play the level end to end).
