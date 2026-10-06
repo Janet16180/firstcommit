@@ -172,7 +172,7 @@ git init -q
 echo one > a.txt && git add a.txt && git commit -q -m "First"
 echo two > a.txt && git add a.txt && git commit -q -m "Second"
 test "$(git log --oneline)" = "$(git log --pretty=oneline --abbrev-commit)" &&
-  test "$(git log --oneline | cut -d' ' -f2-)" = "$(printf 'Second\\nFirst')"
+  test "$(git log --oneline --no-decorate | cut -d' ' -f2-)" = "$(printf 'Second\\nFirst')"
 """
 
 [[card]]
