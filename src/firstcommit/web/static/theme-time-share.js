@@ -35,11 +35,13 @@ const TimeShare = (function () {
     commit: "`git commit` closed the box and set it on your timeline: a commit in your repository. Alex still can't see it: committing shares nothing, it saves on your computer only.",
     push: "`git push` carried the box to GitHub, and GitHub's `main` moved onto it. Alex still doesn't have it: it is on GitHub, not on Alex's computer.",
     "pull-fetch": "Alex runs `git pull`. First its fetch half: the box arrives in Alex's repository and Alex's `origin/main` moves onto it. Alex's working folder hasn't changed yet.",
-    "pull-merge-half": "Then its merge half: Alex's `main` moves onto the box, and `notes.txt` appears in Alex's staging area and working folder. Now Alex has it.",
-    "alex-shares": "Alex adds a line to `notes.txt`, commits and pushes: GitHub's `main` moves onto Alex's commit. Alex has the new line; your computer still has the old `notes.txt`.",
+    "pull-merge-half": "Then its merge half: Alex's `main` moves onto the box, and `notes.txt` appears in Alex's staging area and working folder. Now Alex's files have it too.",
+    "alex-commit": "Alex adds a line to `notes.txt` and commits: a new box on Alex's timeline, in Alex's repository only. GitHub and your computer don't have it.",
+    "alex-push": "Alex's `git push` carries the box to GitHub, and GitHub's `main` moves onto it. Alex has the new line; your computer still has the old `notes.txt`.",
     "you-commit": "You commit a change of your own, to `README.md`. Alex can't see it, and you don't have Alex's new line yet.",
     refused: "Your `git push` is refused: GitHub has Alex's commit, which your repository doesn't. Nothing moves, on your computer or on GitHub, and Alex still can't see your commit.",
-    "pull-merge": "`git pull` fetches Alex's commit and merges it with yours: a merge commit joins the two timelines, and your `notes.txt` gets Alex's line. Alex can't see your commit yet.",
+    "pull-stops": "Your `git pull` fetches Alex's commit: the box arrives in your repository and your `origin/main` moves onto it. Then it stops: both sides have new commits, and since no setting (`pull.rebase` or `pull.ff`) says how to join them, git asks you to choose: `--no-rebase` merges, `--rebase` rebases. Your `main` and your files don't change, and Alex still can't see your commit.",
+    "pull-merge": "`git pull --no-rebase` merges Alex's commit with yours (`--no-edit` takes git's own merge message instead of opening an editor): a merge commit joins the two timelines, and your `notes.txt` gets Alex's line. Alex can't see your commit yet.",
     "push-again": "Now `git push` works: GitHub gets your commit and the merge commit, and its `main` moves onto them. Alex will have them after the next `git pull`.",
   };
 

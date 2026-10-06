@@ -7,20 +7,23 @@ Run it from the repository::
 
 It builds one lab in the fixed folder `LAB`: a bare practice copy that stands in for GitHub
 (``github/project.git``) and two clones of it, ``you`` and ``alex``. You commit the README and
-push it, Alex clones, then every step of the walk runs as the person it belongs to, Robin Park or
+push it, Alex clones, then every step of `WALK` runs as the person it belongs to, Robin Park or
 Alex Kim, in the lessons' own fixed environment (`firstcommit.demos.environment`: fixed dates,
 the C locale, the game's starting configuration and nothing else from the shell that runs it).
-After each step it snapshots all three repositories with `firstcommit.repomap` and lists what changed
-in each with `firstcommit.changes`, the same events the game's feed shows. It writes the steps
-to the given file as JSON: ``[{id, actor, commands, transcript, before, after, events}]``, the
-observations being ``{you, github, alex}``.
+A command written with a leading ``! `` must fail, as in a lesson; any other must succeed.
+After each step it snapshots all three repositories with `firstcommit.repomap` and lists what
+changed in each with `firstcommit.changes`, the same events the game's feed shows. It writes the
+steps to the given file as JSON: ``[{id, actor, commands, transcript, before, after, events}]``,
+the observations being ``{you, github, alex}``. `LABELS` names each step for a demo's buttons.
 
-Two steps check themselves:
+Three steps check themselves:
 
 - Alex's ``git pull`` is recorded in two halves. A copy of Alex's clone runs ``git fetch`` (the
   drawing between the halves), then ``git merge --ff-only origin/main``, and the copy must end
   exactly where Alex's real ``git pull`` did.
-- The refused push must fail and leave all three repositories exactly as they were.
+- The refused push must leave all three repositories exactly as they were.
+- Your plain ``git pull`` on diverged branches must fail and end exactly where a ``git fetch``
+  in a copy of your clone ends: it fetched, and changed nothing else.
 
 The lab is always the same folder because git writes the practice copy's path into the merge
 message of ``git pull``, so the merge commit's hash depends on it. Every hash and every line of
@@ -33,7 +36,7 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import Literal, NamedTuple, TypedDict
 
 from firstcommit import changes, demos, gitcmd, repomap
 from firstcommit.changes import Event
@@ -43,23 +46,56 @@ LAB = Path("/tmp/firstcommit-share")
 """The lab's folder, also its home: git prints this path, and writes it into the merge commit."""
 PEOPLE = {"you": gitcmd.Person("Robin Park", "robin@example.com"), "alex": gitcmd.Person("Alex Kim", "alex@example.com")}
 
-# Each step: its id, who runs it, the commands, and whether git must refuse it.
-STEPS = [
-    ("create", "you", ["echo 'Meeting at 10.' > notes.txt"], False),
-    ("add", "you", ["git add notes.txt"], False),
-    ("commit", "you", ["git commit -m 'Add the meeting notes'"], False),
-    ("push", "you", ["git push"], False),
-    ("pull", "alex", ["git pull"], False),
-    ("alex-shares", "alex", ["echo 'Bring the slides.' >> notes.txt", "git commit -am 'Ask for the slides'", "git push"], False),
-    ("you-commit", "you", ["echo 'Start here.' >> README.md", "git commit -am 'Say where to start'"], False),
-    ("refused", "you", ["git push"], True),
-    ("pull-merge", "you", ["git pull --no-rebase --no-edit"], False),
-    ("push-again", "you", ["git push"], False),
+Check = Literal["", "halves", "unchanged", "fetch-only"]
+"""What a step must show besides its commands' exit statuses (see the module's description)."""
+
+
+class Walk(NamedTuple):
+    """One step of the walk: its id, who runs it, the commands as typed, and its own check."""
+
+    id: str
+    actor: str
+    commands: list[str]
+    check: Check = ""
+
+
+WALK = [
+    Walk("create", "you", ["echo 'Meeting at 10.' > notes.txt"]),
+    Walk("add", "you", ["git add notes.txt"]),
+    Walk("commit", "you", ["git commit -m 'Add the meeting notes'"]),
+    Walk("push", "you", ["git push"]),
+    Walk("pull", "alex", ["git pull"], "halves"),
+    Walk("alex-commit", "alex", ["echo 'Bring the slides.' >> notes.txt", "git commit -am 'Ask for the slides'"]),
+    Walk("alex-push", "alex", ["git push"]),
+    Walk("you-commit", "you", ["echo 'Start here.' >> README.md", "git commit -am 'Say where to start'"]),
+    Walk("refused", "you", ["! git push"], "unchanged"),
+    Walk("pull-stops", "you", ["! git pull"], "fetch-only"),
+    Walk("pull-merge", "you", ["git pull --no-rebase --no-edit"]),
+    Walk("push-again", "you", ["git push"]),
 ]
+HALVES = ("pull-fetch", "pull-merge-half")
+"""The ids of the two steps a ``halves`` step is recorded as."""
+
+LABELS = {
+    "create": "You: new file",
+    "add": "You: add",
+    "commit": "You: commit",
+    "push": "You: push",
+    "pull-fetch": "Alex: pull, fetch half",
+    "pull-merge-half": "Alex: pull, merge half",
+    "alex-commit": "Alex: edit, commit",
+    "alex-push": "Alex: push",
+    "you-commit": "You: edit, commit",
+    "refused": "You: push (refused)",
+    "pull-stops": "You: pull (stops)",
+    "pull-merge": "You: pull --no-rebase",
+    "push-again": "You: push",
+}
+"""Each recorded step's name on a demo's button, in the walk's order."""
 
 
 class Line(TypedDict):
-    """One command a step ran: as typed, what it printed (output and errors) and its exit status."""
+    """One command a step ran: as shown, what it printed (output and errors) and its exit status."""
 
     command: str
     output: str
@@ -102,9 +138,9 @@ def as_person(environment: dict[str, str], person: str) -> dict[str, str]:
     return {**environment, "GIT_AUTHOR_NAME": name, "GIT_AUTHOR_EMAIL": email, "GIT_COMMITTER_NAME": name, "GIT_COMMITTER_EMAIL": email}
 
 
-def run(cwd: Path, environment: dict[str, str], person: str, command: str, must_fail: bool = False) -> Line:
+def run(cwd: Path, environment: dict[str, str], person: str, command: str) -> Line:
     """
-    Run one shell command as one person, and check it succeeds, or fails when it must.
+    Run one shell command as one person, and check it succeeds, or fails when it starts with ``! ``.
 
     Parameters
     ----------
@@ -115,46 +151,44 @@ def run(cwd: Path, environment: dict[str, str], person: str, command: str, must_
     person : str
         ``"you"`` or ``"alex"``: whose name and email git records.
     command : str
-        A bash command line.
-    must_fail : bool
-        Whether git must refuse it.
+        A bash command line, with ``! `` in front when it must fail.
 
     Returns
     -------
     Line
-        The command, what it printed and its exit status.
+        The command without its ``! ``, what it printed and its exit status.
 
     Raises
     ------
     RuntimeError
         If the command succeeds when it must fail, or fails when it must succeed.
     """
-    done = subprocess.run(["bash", "-c", command], cwd=cwd, env=as_person(environment, person), capture_output=True, text=True)
-    if (done.returncode != 0) != must_fail:
+    shown = command.removeprefix(demos.MUST_FAIL)
+    done = subprocess.run(["bash", "-c", shown], cwd=cwd, env=as_person(environment, person), capture_output=True, text=True)
+    if (done.returncode != 0) != command.startswith(demos.MUST_FAIL):
         raise RuntimeError(f"{command!r} in {cwd.name}: exit {done.returncode}\n{done.stdout}{done.stderr}")
-    return {"command": command, "output": done.stdout + done.stderr, "status": done.returncode}
+    return {"command": shown, "output": done.stdout + done.stderr, "status": done.returncode}
 
 
-def observe(lab: Path, alex: str = "alex") -> Observation:
+def observe(stand_in: dict[str, Path] | None = None) -> Observation:
     """
     Snapshot your clone, GitHub and Alex's clone.
 
     Parameters
     ----------
-    lab : Path
-        The lab folder.
-    alex : str
-        The folder of Alex's clone: a copy, for the pull's halfway state.
+    stand_in : dict[str, Path] | None
+        Folders to snapshot instead of a person's clone: a copy, for a pull's halfway state.
 
     Returns
     -------
     Observation
         The three snapshots.
     """
-    return {"you": repomap.snapshot(lab / "you"), "github": repomap.snapshot(lab / "github" / "project.git"), "alex": repomap.snapshot(lab / alex)}
+    folders = {"you": LAB / "you", "github": LAB / "github" / "project.git", "alex": LAB / "alex", **(stand_in or {})}
+    return {who: repomap.snapshot(folder) for who, folder in folders.items()}
 
 
-def step(name: str, actor: str, commands: list[str], before: Observation, after: Observation, transcript: list[Line]) -> Step:
+def record(name: str, walk: Walk, before: Observation, after: Observation, transcript: list[Line]) -> Step:
     """
     Make one step's record, with the feed events of each repository.
 
@@ -162,10 +196,8 @@ def step(name: str, actor: str, commands: list[str], before: Observation, after:
     ----------
     name : str
         The step's id.
-    actor : str
-        Who ran it: ``"you"`` or ``"alex"``.
-    commands : list[str]
-        What they typed.
+    walk : Walk
+        The step of the walk it records: who ran it and what they typed.
     before : Observation
         The three repositories before the step.
     after : Observation
@@ -178,19 +210,20 @@ def step(name: str, actor: str, commands: list[str], before: Observation, after:
     Step
         The step.
     """
-    events = {key: changes.describe(before[key], after[key]) for key in ("you", "github", "alex")}
-    return {"id": name, "actor": actor, "commands": commands, "transcript": transcript, "before": before, "after": after, "events": events}
+    events = {who: changes.describe(before[who], after[who]) for who in before}
+    commands = [command.removeprefix(demos.MUST_FAIL) for command in walk.commands]
+    return {"id": name, "actor": walk.actor, "commands": commands, "transcript": transcript, "before": before, "after": after, "events": events}
 
 
-def same(one: Any, other: Any) -> bool:
+def same(one: object, other: object) -> bool:
     """
     Tell whether two snapshots, or two observations, are equal field for field.
 
     Parameters
     ----------
-    one : Any
+    one : object
         JSON-shaped data.
-    other : Any
+    other : object
         JSON-shaped data.
 
     Returns
@@ -201,6 +234,96 @@ def same(one: Any, other: Any) -> bool:
     return json.dumps(one, sort_keys=True) == json.dumps(other, sort_keys=True)
 
 
+def fetched_copy(environment: dict[str, str], person: str) -> tuple[Path, Line]:
+    """
+    Copy a person's clone next to it and run ``git fetch`` in the copy.
+
+    Parameters
+    ----------
+    environment : dict[str, str]
+        The lab's whole environment.
+    person : str
+        Whose clone to copy.
+
+    Returns
+    -------
+    tuple[Path, Line]
+        The copy, which the caller removes, and what ``git fetch`` printed there.
+    """
+    copy = LAB / f"{person}-fetched"
+    shutil.copytree(LAB / person, copy, symlinks=True)
+    return copy, run(copy, environment, person, "git fetch")
+
+
+def in_halves(walk: Walk, environment: dict[str, str], before: Observation) -> list[Step]:
+    """
+    Run a person's ``git pull`` and record it as its fetch half, then its merge half.
+
+    Parameters
+    ----------
+    walk : Walk
+        The pull.
+    environment : dict[str, str]
+        The lab's whole environment.
+    before : Observation
+        The three repositories before it.
+
+    Returns
+    -------
+    list[Step]
+        The two steps, named `HALVES`.
+
+    Raises
+    ------
+    RuntimeError
+        If ``git fetch`` then ``git merge --ff-only origin/main`` does not end where the pull did.
+    """
+    copy, fetched = fetched_copy(environment, walk.actor)
+    halfway = observe({walk.actor: copy})
+    transcript = [run(LAB / walk.actor, environment, walk.actor, command) for command in walk.commands]
+    after = observe()
+    run(copy, environment, walk.actor, "git merge -q --ff-only origin/main")
+    if not same(repomap.snapshot(copy), after[walk.actor]):
+        raise RuntimeError(f"{walk.id}: git fetch, then git merge, did not end where git pull did")
+    shutil.rmtree(copy)
+    return [record(HALVES[0], walk, before, halfway, [fetched]), record(HALVES[1], walk, halfway, after, transcript)]
+
+
+def in_one(walk: Walk, environment: dict[str, str], before: Observation) -> Step:
+    """
+    Run one step of the walk and record it, checking what its `Walk.check` asks.
+
+    Parameters
+    ----------
+    walk : Walk
+        The step.
+    environment : dict[str, str]
+        The lab's whole environment.
+    before : Observation
+        The three repositories before it.
+
+    Returns
+    -------
+    Step
+        The step.
+
+    Raises
+    ------
+    RuntimeError
+        If a refused step changed anything, or a fetch-only step did more than ``git fetch``.
+    """
+    copy = fetched_copy(environment, walk.actor)[0] if walk.check == "fetch-only" else None
+    transcript = [run(LAB / walk.actor, environment, walk.actor, command) for command in walk.commands]
+    after = observe()
+    if walk.check == "unchanged" and not same(after, before):
+        raise RuntimeError(f"{walk.id}: a refused command changed something")
+    if copy and not same(repomap.snapshot(copy), after[walk.actor]):
+        raise RuntimeError(f"{walk.id}: did not end where git fetch does")
+    if copy:
+        shutil.rmtree(copy)
+    return record(walk.id, walk, before, after, transcript)
+
+
 def record_sharing() -> list[Step]:
     """
     Record you sharing a file with Alex through GitHub, then a refused push and its fix.
@@ -208,46 +331,27 @@ def record_sharing() -> list[Step]:
     Returns
     -------
     list[Step]
-        One step per entry of `STEPS`; Alex's ``git pull`` is two steps, ``pull-fetch`` and
-        ``pull-merge-half``.
+        One step per entry of `WALK`, in order, except that Alex's ``git pull`` is two steps,
+        `HALVES`.
 
     Raises
     ------
     FileExistsError
         If `LAB` exists already.
     RuntimeError
-        If a command does not end as expected, the pull's two halves do not end where
-        ``git pull`` does, or the refused push changes anything.
+        If a command does not end as expected, or a step fails its own check.
     """
     environment = demos.environment(LAB)
     steps: list[Step] = []
     try:
         run(LAB, environment, "you", "git init -q --bare github/project.git")
         run(LAB, environment, "you", "git clone -q github/project.git you 2>/dev/null")
-        for command in ["echo '# Team handbook' > README.md", "git add README.md", "git commit -qm 'Add the README'", "git push -q"]:
-            run(LAB / "you", environment, "you", command)
+        run(LAB / "you", environment, "you", "echo '# Team handbook' > README.md && git add README.md && git commit -qm 'Add the README' && git push -q")
         run(LAB, environment, "alex", "git clone -q github/project.git alex")
-        before = observe(LAB)
-        for name, actor, commands, must_fail in STEPS:
-            if name == "pull":
-                shutil.copytree(LAB / "alex", LAB / "alex-fetched", symlinks=True)
-                fetched = [run(LAB / "alex-fetched", environment, "alex", "git fetch")]
-                halfway = observe(LAB, "alex-fetched")
-                transcript = [run(LAB / "alex", environment, actor, command) for command in commands]
-                after = observe(LAB)
-                run(LAB / "alex-fetched", environment, "alex", "git merge -q --ff-only origin/main")
-                if not same(observe(LAB, "alex-fetched")["alex"], after["alex"]):
-                    raise RuntimeError("fetch + merge did not end where git pull did")
-                steps.append(step("pull-fetch", actor, commands, before, halfway, fetched))
-                steps.append(step("pull-merge-half", actor, commands, halfway, after, transcript))
-            else:
-                last = len(commands) - 1
-                transcript = [run(LAB / actor, environment, actor, command, must_fail and index == last) for index, command in enumerate(commands)]
-                after = observe(LAB)
-                if must_fail and not same(after, before):
-                    raise RuntimeError(f"{name}: a refused command changed something")
-                steps.append(step(name, actor, commands, before, after, transcript))
-            before = after
+        before = observe()
+        for walk in WALK:
+            steps.extend(in_halves(walk, environment, before) if walk.check == "halves" else [in_one(walk, environment, before)])
+            before = steps[-1]["after"]
     finally:
         shutil.rmtree(LAB)
     return steps
