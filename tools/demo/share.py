@@ -156,7 +156,8 @@ def run(cwd: Path, environment: dict[str, str], person: str, command: str) -> Li
     Returns
     -------
     Line
-        The command without its ``! ``, what it printed and its exit status.
+        The command without its ``! ``, what it printed (output and errors, in the order
+        printed) and its exit status.
 
     Raises
     ------
@@ -164,10 +165,10 @@ def run(cwd: Path, environment: dict[str, str], person: str, command: str) -> Li
         If the command succeeds when it must fail, or fails when it must succeed.
     """
     shown = command.removeprefix(demos.MUST_FAIL)
-    done = subprocess.run(["bash", "-c", shown], cwd=cwd, env=as_person(environment, person), capture_output=True, text=True)
+    done = subprocess.run(["bash", "-c", shown], cwd=cwd, env=as_person(environment, person), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
     if (done.returncode != 0) != command.startswith(demos.MUST_FAIL):
-        raise RuntimeError(f"{command!r} in {cwd.name}: exit {done.returncode}\n{done.stdout}{done.stderr}")
-    return {"command": shown, "output": done.stdout + done.stderr, "status": done.returncode}
+        raise RuntimeError(f"{command!r} in {cwd.name}: exit {done.returncode}\n{done.stdout}")
+    return {"command": shown, "output": done.stdout, "status": done.returncode}
 
 
 def observe(stand_in: dict[str, Path] | None = None) -> Observation:
