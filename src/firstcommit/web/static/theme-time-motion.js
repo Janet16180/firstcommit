@@ -24,8 +24,9 @@
  *   commit grows from the one it was made on, and a merge visibly joins two timelines.
  * - lift: how far to hold the drawing down at first so a ghost or a starting tab above the top
  *   row shows, before the drawing settles.
- * play(figure, motion, theme, reduced) runs them on the figure RepoMap.render just drew, all
- * over within 600 ms, with the Web Animations API; under prefers-reduced-motion it does nothing.
+ * play(figure, motion, theme, reduced, offset) runs them on the figure RepoMap.render just drew,
+ * all over within 600 ms of `offset`, with the Web Animations API; under prefers-reduced-motion
+ * it does nothing.
  * Needs dom.js and theme-time.js. Defines one global, TimeMotion.
  */
 
@@ -180,13 +181,14 @@ const TimeMotion = (function () {
     }
   }
 
-  /* Runs `motion` on a figure RepoMap.render just drew; returns the animations it started. */
-  function play(figure, motion, theme, reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+  /* Runs `motion` on a figure RepoMap.render just drew, every part `offset` ms later; returns the
+     animations it started. */
+  function play(figure, motion, theme, reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches, offset = 0) {
     const graph = figure.querySelector(".map-graph");
     if (reduced || !graph || typeof graph.animate !== "function") return [];
     const started = [];
     const animate = (node, frames, timing) => {
-      const animation = node.animate(frames, { easing: EASE, fill: "backwards", ...timing });
+      const animation = node.animate(frames, { easing: EASE, fill: "backwards", ...timing, delay: (timing.delay || 0) + offset });
       started.push(animation);
       return animation;
     };

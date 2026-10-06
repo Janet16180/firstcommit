@@ -27,7 +27,7 @@ function snap({ commits, refs = [["main", "branch", commits[0][0]]], head = comm
 const drawn = (spec) => RepoMap.layout(snap(spec), { theme });
 
 /* Renders `after`, plays the motions from `before`, and returns what each animate() call got. */
-function played(before, after, reduced = false) {
+function played(before, after, reduced = false, offset = 0) {
   const calls = [];
   const figure = RepoMap.render(snap(after), { theme });
   const proto = Object.getPrototypeOf(figure);
@@ -37,7 +37,7 @@ function played(before, after, reduced = false) {
     return call;
   };
   proto.getTotalLength = () => 100;
-  const animations = TimeMotion.play(figure, TimeMotion.motions(drawn(before), drawn(after), sizes), theme, reduced);
+  const animations = TimeMotion.play(figure, TimeMotion.motions(drawn(before), drawn(after), sizes), theme, reduced, offset);
   delete proto.animate;
   delete proto.getTotalLength;
   return { figure, calls, animations };
@@ -220,6 +220,13 @@ test("a replaced commit fades out before its replacement appears in the same pla
   const out = calls.find((call) => call.node === figure.querySelector(".tt-ghosts"));
   const newText = on(calls, `[data-hash="${full("d")}"]`).filter((call) => call.node.getAttribute("class") === "map-hash");
   assert.ok(end(out) <= newText[0].timing.delay, `${end(out)} > ${newText[0].timing.delay}`);
+});
+
+test("an offset delays every motion by the same amount, so another motion can finish first", () => {
+  const delays = (calls) => calls.map((call) => call.timing.delay || 0);
+  const plain = played(ONE, TWO).calls;
+  const late = played(ONE, TWO, false, 250).calls;
+  assert.deepEqual(delays(late), delays(plain).map((delay) => delay + 250));
 });
 
 test("when the drawing gains a line, tabs and texts start exactly where they were drawn, so they never overlap on the way", () => {
