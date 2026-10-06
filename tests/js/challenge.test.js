@@ -65,7 +65,7 @@ test("with every hint used the button is off, and hints used earlier are counted
 
 test("the result of a check is shown", () => {
   const view = challenge(undefined, asking);
-  view.feedback(record("check_unsolved").message, false);
+  view.checkFeedback(record("check_unsolved").message, false);
   assert.match(view.q(".check-feedback").textContent, /does not hold the new notes\.txt/);
   assert.ok(view.q(".check-feedback").classList.contains("is-wrong"));
 });

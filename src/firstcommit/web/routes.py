@@ -3,13 +3,16 @@ The web interface: the JSON routes, the page's terminal and the server, on terml
 
 Each route checks its query or body (400 when it is not what the page sends), calls one
 `firstcommit.game` function and sends its record back as JSON. An unknown level, card or
-chapter is a 404, an action on the level in progress when there is none a 409, and a damaged
-save file a 500 whose message names the file. No game rule lives here (Ring Zero audit ARCH-1):
-the routes only translate between HTTP and `game`.
+chapter is a 404 and an action on the level in progress when there is none a 409. A 500 says
+its ``kind``: ``"save"`` for a damaged save file (the message names the file), ``"bug"`` for
+anything else, whose traceback goes to the server's terminal. No game rule lives here (Ring
+Zero audit ARCH-1): the routes only translate between HTTP and `game`.
 """
 
 import os
 import re
+import sys
+import traceback
 from collections.abc import Callable, Mapping
 from http import HTTPStatus
 from http.server import ThreadingHTTPServer
@@ -18,7 +21,7 @@ from typing import Any, TypeGuard
 
 from termlab.web import shell, terminal
 
-from firstcommit import game, gitcmd, save
+from firstcommit import game
 
 STATIC = Path(__file__).parent / "static"
 SETTINGS = shell.ShellSettings(name="FirstCommit", command="firstcommit serve", token_header="X-FirstCommit-Token")
@@ -42,10 +45,10 @@ def shell_environment() -> dict[str, str]:
     -------
     dict[str, str]
         The server's environment as a new terminal window would have it, made a game shell by
-        `firstcommit.gitcmd.shell_environment` (no inherited git variables, git kept to the
+        `firstcommit.game.shell_environment` (no inherited git variables, git kept to the
         game's own configuration and labs).
     """
-    return gitcmd.shell_environment(terminal.player_env(os.environ), save.home())
+    return game.shell_environment(terminal.player_env(os.environ))
 
 
 def shell_folder() -> Path:
@@ -84,7 +87,9 @@ def bad(message: str) -> Reply:
 
 def found(lookup: Callable[[], Mapping[str, Any]]) -> Reply:
     """
-    Run a lookup by id, where a KeyError means the id is unknown.
+    Run a lookup by id, where `firstcommit.game.UnknownIdError` means the id is unknown.
+
+    Any other error, a KeyError from a level's setup included, is a bug and is left to `guarded`.
 
     Parameters
     ----------
@@ -94,13 +99,13 @@ def found(lookup: Callable[[], Mapping[str, Any]]) -> Reply:
     Returns
     -------
     Reply
-        200 and the reply, or 404 for an unknown id.
+        200 and the reply, or 404 and the game's message for an unknown id.
     """
     status, payload = HTTPStatus.OK, {}
     try:
         payload = dict(lookup())
-    except KeyError as error:
-        status, payload = HTTPStatus.NOT_FOUND, {"error": f"unknown id: {error.args[0] if error.args else ''}"}
+    except game.UnknownIdError as error:
+        status, payload = HTTPStatus.NOT_FOUND, {"error": str(error)}
     return status, payload
 
 
@@ -128,7 +133,10 @@ def playing(action: Callable[[], Mapping[str, Any]]) -> Reply:
 
 def guarded(route: shell.Route) -> shell.Route:
     """
-    Make a route answer 500 with the save's own message when the save is damaged.
+    Make a route answer 500 instead of failing: the save's own message, or a bug logged to stderr.
+
+    This is the interface's top-level entry point, so it is the one place that catches any
+    exception: without it the page would get no reply at all and read the server as stopped.
 
     Parameters
     ----------
@@ -138,14 +146,19 @@ def guarded(route: shell.Route) -> shell.Route:
     Returns
     -------
     shell.Route
-        The same route, turning `firstcommit.save.SaveError` into a reply the page can show.
+        The same route, answering 500 ``{"error", "kind": "save"}`` for a
+        `firstcommit.game.SaveError` and 500 ``{"error", "kind": "bug"}`` for any other
+        exception, whose traceback it prints to the server's standard error.
     """
 
     def answer(request: dict[str, Any]) -> Reply:
         try:
             reply = route(request)
-        except save.SaveError as error:
-            reply = HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(error)}
+        except game.SaveError as error:
+            reply = HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(error), "kind": "save"}
+        except Exception as error:  # noqa: BLE001 - the last-resort log, printed below
+            traceback.print_exception(error, file=sys.stderr)
+            reply = HTTPStatus.INTERNAL_SERVER_ERROR, {"error": f"{type(error).__name__}: {error}", "kind": "bug"}
         return reply
 
     return answer

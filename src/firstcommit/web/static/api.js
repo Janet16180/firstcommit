@@ -66,7 +66,7 @@ const createGameApi = (function () {
     truncated: flag,
   });
   const OBJECTS = list(record({ hash: text, type: text, size: number }));
-  const ACTIVE = record({ level: text, step: number, steps: number, hints: number, hints_total: number, attempts: number, started: text });
+  const ACTIVE = record({ level: text, step: number, steps: number, hints: number, hints_total: number, attempts: number, started: text, auto_check: flag });
   const PAYOUT = record({ level: text, xp: number, first_time: flag, rank_before: text, rank_after: text });
   const LEVEL_SUMMARY = record({ id: text, title: text, difficulty: number, xp: number, done: flag, has_lesson: flag, has_quest: flag });
 

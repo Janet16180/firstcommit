@@ -15,8 +15,8 @@ from collections.abc import Callable
 
 from termlab.web import terminal
 
-from firstcommit import game, gitcmd, save
-from firstcommit.markup import Block, Span
+from firstcommit import game
+from firstcommit.markup import Block, Span, visible
 
 DEFAULT_PORT = 8820
 PORT = re.compile(r"[0-9]{1,5}")
@@ -64,7 +64,7 @@ def _home_problem() -> str | None:
     """
     problem = None
     try:
-        save.home()
+        game.home()
     except ValueError as error:
         problem = str(error)
     return problem
@@ -91,7 +91,7 @@ def _run(run: Callable[[argparse.Namespace], int], args: argparse.Namespace) -> 
     except game.NotPlayingError:
         print(NO_LEVEL)
         status = 1
-    except save.SaveError as error:
+    except game.SaveError as error:
         print(f"{error}\n{DAMAGED}", file=sys.stderr)
         status = 1
     return status
@@ -186,7 +186,7 @@ def shell(args: argparse.Namespace) -> int:
         The shell's exit status.
     """
     folder = game.terminal_folder()
-    env = {**gitcmd.shell_environment(terminal.player_env(os.environ), save.home()), "PWD": folder}
+    env = {**game.shell_environment(terminal.player_env(os.environ)), "PWD": folder}
     print("This is the game's shell: git here uses the game's own settings, never yours. Type `exit` to leave.", flush=True)
     return subprocess.run([terminal.shell_path(env)], cwd=folder, env=env, check=False).returncode
 
@@ -324,7 +324,9 @@ def render(blocks: list[Block]) -> str:
     -------
     str
         Paragraphs and bullets wrapped at `WIDTH`, verbatim blocks indented as written, code
-        spans between backticks, and a blank line between blocks.
+        spans between backticks, and a blank line between blocks. Control characters other than
+        the line breaks laid out here are shown escaped, as git shows them
+        (`firstcommit.markup.visible`), so a name a player chose can never drive the terminal.
     """
     parts = []
     for block in blocks:
@@ -334,7 +336,7 @@ def render(blocks: list[Block]) -> str:
             parts.append(_wrap(block["spans"], INDENT, INDENT))
         else:
             parts.append("\n".join(_wrap(item, INDENT + "- ", INDENT + "  ") for item in block["items"]))
-    return "\n\n".join(parts)
+    return "\n".join(visible(line) for line in "\n\n".join(parts).split("\n"))
 
 
 def _wrap(spans: list[Span], first: str, rest: str) -> str:

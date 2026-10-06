@@ -98,13 +98,21 @@ const CardsView = (function () {
     );
   }
 
+  /* What the round paid, as the server reported it; "not due" only when no card could pay. */
+  function roundPay(round) {
+    const xp = round.results.reduce((sum, result) => sum + result.xp + result.bonus, 0);
+    let line = "No XP this round.";
+    if (xp > 0) line = `+${xp} XP this round.`;
+    else if (!round.cards.some((card) => card.pays)) line = "No XP this round: these cards were not due yet.";
+    return line;
+  }
+
   function summary(round) {
     const right = round.results.filter((result) => result.correct).length;
-    const xp = round.results.reduce((sum, result) => sum + result.xp + result.bonus, 0);
     return el("section", { class: "cards-summary panel narrow" },
       el("p", { class: "kicker" }, "Round complete"),
       el("h1", {}, `${right} of ${round.results.length} right`),
-      el("p", {}, xp > 0 ? `+${xp} XP this round.` : "No XP this round: these cards were not due yet."),
+      el("p", {}, roundPay(round)),
       el("div", { class: "actions" },
         el("button", { type: "button", class: "btn btn-primary", onclick: () => start(round) }, "Another round"),
         el("a", { class: "btn btn-quiet", href: "#/" }, "Back to the map"),

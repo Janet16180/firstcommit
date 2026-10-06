@@ -20,9 +20,11 @@ test("answer and read steps wait for the player", () => {
   assert.deepEqual(Polling.plan(steps, active(1)), { observe: true, watchStep: false, autoCheck: false });
 });
 
-test("once the quest is done, or when there is none, the level is checked automatically", () => {
-  assert.deepEqual(Polling.plan(steps, active(3)), { observe: true, watchStep: false, autoCheck: true });
-  assert.deepEqual(Polling.plan([], active(0, 0)), { observe: true, watchStep: false, autoCheck: true });
+test("the level is checked automatically when, and only when, the server says it may be", () => {
+  assert.deepEqual(Polling.plan(steps, { ...active(3), auto_check: true }), { observe: true, watchStep: false, autoCheck: true });
+  assert.deepEqual(Polling.plan([], { ...active(0, 0), auto_check: true }), { observe: true, watchStep: false, autoCheck: true });
+  assert.equal(Polling.plan(steps, { ...active(3), auto_check: false }).autoCheck, false);
+  assert.equal(Polling.plan(steps, { ...active(1), auto_check: true }).autoCheck, true);
 });
 
 function counting(ms = 0, clock) {
@@ -70,4 +72,18 @@ test("it rests while the page is hidden and ticks again as soon as it is shown",
   page.dispatchEvent(makeEvent("visibilitychange"));
   await clock.advance(5000);
   assert.equal(ticks.length, 3);
+});
+
+test("a page shown again in the middle of a tick starts no second tick", async () => {
+  const clock = createClock();
+  const { tick, ticks } = counting(400, clock);
+  const poller = Polling.start({ tick, intervalMs: 1500, timers: clock, page });
+  await clock.advance(50);
+  page.hidden = true;
+  page.dispatchEvent(makeEvent("visibilitychange"));
+  page.hidden = false;
+  page.dispatchEvent(makeEvent("visibilitychange"));
+  await clock.advance(5000);
+  poller.stop();
+  assert.deepEqual(ticks, [0, 1900, 3800]);
 });

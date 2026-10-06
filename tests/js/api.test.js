@@ -130,3 +130,10 @@ test("a file entry must carry its mode in each area and whether it is a reposito
     await assert.rejects(game.observe(), new RegExp(`files\\[0\\]\\.${field} should be`), field);
   }
 });
+
+test("the level in progress must say whether the page may check it by itself", async () => {
+  const active = record("active");
+  delete active.auto_check;
+  const { game } = gameApi({ "/api/start": active });
+  await assert.rejects(game.start("x"), /\/api\/start\.auto_check should be/);
+});

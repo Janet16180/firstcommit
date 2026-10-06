@@ -53,7 +53,8 @@
    "hints": 0,
    "hints_total": 3,
    "attempts": 0,
-   "started": "2026-10-06T10:00:00+00:00"
+   "started": "2026-10-06T10:00:00+00:00",
+   "auto_check": false
   },
   "last_payout": {
    "level": "sample-first",
@@ -591,7 +592,8 @@
   "hints": 0,
   "hints_total": 3,
   "attempts": 0,
-  "started": "2026-10-06T10:00:00+00:00"
+  "started": "2026-10-06T10:00:00+00:00",
+  "auto_check": false
  },
  "step": {
   "correct": false,

@@ -4,7 +4,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from firstcommit import kit, repomap
+from firstcommit import kit, markup, repomap
 
 FULL = "ce013625030ba8dba906f756967f9e9ca394464a"
 
@@ -77,6 +77,10 @@ def test_every_step_kind_is_a_step_and_nothing_else_is() -> None:
     ]
     assert all(isinstance(step, kit.Step) for step in steps)
     assert not isinstance(kit.Slide(id="s", title="t", text="x"), kit.Step)
+
+
+def test_a_level_writes_a_name_the_player_chose_with_the_text_parsers_own_code_helper() -> None:
+    assert kit.code is markup.code
 
 
 def test_kit_hands_out_the_status_lists_every_level_asks_for() -> None:

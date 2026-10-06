@@ -16,14 +16,8 @@ import firstcommit
 
 PACKAGE = Path(firstcommit.__file__).parent
 LAYERS = {"data": 0, "core": 1, "orchestration": 2, "interface": 3}
-INTERFACE_MAY_USE = {
-    "firstcommit.game": None,
-    "firstcommit.markup": None,
-    "firstcommit.chapters": None,
-    "firstcommit.gitcmd": {"isolation", "shell_environment"},
-    "firstcommit.save": {"home", "SaveError"},
-}
-"""Package modules an interface may import, with the names it may use from each (None: any)."""
+INTERFACE_MAY_USE = {"firstcommit.game", "firstcommit.markup", "firstcommit.chapters"}
+"""The package modules an interface may import besides the other interfaces (DESIGN.md section 7)."""
 RUNTIME_WORDS = re.compile(r"docker|qemu|wsl", re.IGNORECASE)
 
 
@@ -179,18 +173,13 @@ LEVELS = [module for module in SOURCES if module.startswith("firstcommit.levels.
 def test_the_import_reader_sees_the_known_imports() -> None:
     assert {"firstcommit.runner", "firstcommit.save", "firstcommit.score", "firstcommit.markup"} <= package_imports("firstcommit.game")
     assert "firstcommit.web.routes" in package_imports("firstcommit.cli")
-    assert names_used("firstcommit.cli", "firstcommit.save") == {"home", "SaveError"}
+    assert {"status", "check", "shell_environment"} <= (names_used("firstcommit.cli", "firstcommit.game") or set())
 
 
 @pytest.mark.parametrize("module", INTERFACES)
-def test_an_interface_uses_only_the_game_the_text_parser_the_chapters_and_two_helpers(module: str) -> None:
-    for imported in package_imports(module):
-        if layer(imported) == "interface":
-            continue
-        assert imported in INTERFACE_MAY_USE, f"{module} imports {imported}"
-        allowed = INTERFACE_MAY_USE[imported]
-        used = names_used(module, imported)
-        assert allowed is None or (used is not None and used <= allowed), f"{module} uses {used} from {imported}"
+def test_an_interface_uses_only_the_game_the_text_parser_and_the_chapters(module: str) -> None:
+    beyond = sorted(imported for imported in package_imports(module) if layer(imported) != "interface" and imported not in INTERFACE_MAY_USE)
+    assert not beyond, f"{module} imports {beyond}"
 
 
 @pytest.mark.parametrize("module", SOURCES)

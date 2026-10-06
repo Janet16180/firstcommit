@@ -79,6 +79,7 @@ def mismatches(value: Any, kind: Any, where: str) -> list[str]:
     return problems
 
 
+@pytest.mark.slow
 @pytest.mark.skipif(NODE is None, reason="node is not installed")
 def test_the_page_scripts_pass_their_node_tests() -> None:
     assert NODE is not None

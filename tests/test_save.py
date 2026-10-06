@@ -1,6 +1,6 @@
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal, TypedDict
 
 import pytest
 
@@ -67,7 +67,7 @@ def damaged(record: dict[str, Any], dotted: str, value: Any) -> dict[str, Any]:
     record : dict[str, Any]
         A valid record.
     dotted : str
-        Path to the field, such as ``"levels.basics-first-commit.xp"``.
+        Path to the field, such as ``"levels.basics-first-commit.xp"``; a number picks a list item.
     value : Any
         The new value, or ``...`` to delete the field.
 
@@ -78,13 +78,14 @@ def damaged(record: dict[str, Any], dotted: str, value: Any) -> dict[str, Any]:
     """
     copy: dict[str, Any] = json.loads(json.dumps(record))
     *parents, name = dotted.split(".")
-    target = copy
+    target: Any = copy
     for parent in parents:
-        target = target[parent]
+        target = target[int(parent)] if isinstance(target, list) else target[parent]
+    key: Any = int(name) if isinstance(target, list) else name
     if value is ...:
-        del target[name]
+        del target[key]
     else:
-        target[name] = value
+        target[key] = value
     return copy
 
 
@@ -102,6 +103,9 @@ PROGRESS_DAMAGE = [
     ("levels.basics-first-commit.state", ...),
     ("cards.basics-staging-area.box", ...),
     ("cards.basics-staging-area.due", 20261009),
+    ("cards.basics-staging-area.due", "tomorrow"),
+    ("cards.basics-staging-area.due", "2026-02-30"),
+    ("levels.basics-first-commit.finished", "yesterday"),
     ("streak", None),
     ("best_streak", -3),
     ("last_payout.first_time", "yes"),
@@ -122,6 +126,7 @@ def test_a_damaged_progress_file_names_the_file_and_the_field(game_home: Path, f
 ACTIVE_DAMAGE = [
     ("level", 3),
     ("started", ...),
+    ("started", "this morning"),
     ("step", "1"),
     ("hints", False),
     ("attempts", -2),
@@ -151,10 +156,53 @@ def test_a_save_file_that_is_not_a_json_object_is_damaged(game_home: Path, conte
         save.load_progress()
 
 
-def test_a_damaged_observed_file_names_the_file(game_home: Path) -> None:
-    (game_home / "observed.json").write_text(json.dumps({"level": "x", "project": [], "github": None}))
-    with pytest.raises(save.SaveError, match=r"observed\.json.*`project`"):
-        save.load_observed()
+@pytest.mark.parametrize(
+    "content",
+    [
+        "{damaged",
+        "[]",
+        json.dumps({"level": "x", "project": [], "github": None}),
+        json.dumps({"level": "x", "project": {}}),
+        json.dumps({"level": "x", "project": {}, "github": None, "extra": 1}),
+    ],
+)
+def test_an_observation_that_does_not_match_counts_as_nothing_observed_yet(game_home: Path, content: str) -> None:
+    (game_home / "observed.json").write_text(content)
+    assert save.load_observed() is None
+
+
+class Sample(TypedDict):
+    """A record using every kind of type the save checks: lists, literals, optional and nested records."""
+
+    names: list[str]
+    kind: Literal["branch", "tag"]
+    change: Literal["added", "deleted"] | None
+    items: list[save.CardEntry]
+
+
+SAMPLE: dict[str, Any] = {"names": ["a", "b"], "kind": "tag", "change": None, "items": [{"box": 1, "due": "2026-10-06"}]}
+
+
+def test_lists_and_literals_of_a_record_are_checked_item_by_item() -> None:
+    assert save._mismatch(SAMPLE, Sample, "") is None
+    assert save._mismatch({**SAMPLE, "change": "added"}, Sample, "") is None
+
+
+@pytest.mark.parametrize(
+    ("field", "value", "place"),
+    [
+        ("names", "a", "names"),
+        ("names.1", 3, "names.1"),
+        ("kind", "remote", "kind"),
+        ("kind", None, "kind"),
+        ("change", "renamed", "change"),
+        ("items.0.box", "1", "items.0.box"),
+        ("items.0", {}, "items.0.box"),
+    ],
+)
+def test_a_wrong_list_item_or_literal_names_its_place(field: str, value: Any, place: str) -> None:
+    problem = save._mismatch(damaged(SAMPLE, field, value), Sample, "")
+    assert problem is not None and f"`{place}`" in problem
 
 
 def test_the_game_git_config_starts_from_the_text_given(game_home: Path) -> None:

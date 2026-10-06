@@ -2,9 +2,9 @@
 
 /*
  * The guided quest's steps (firstcommit/game.py's StepView): done steps fold away, the current
- * one is open, later ones stay hidden until reached. It only shows steps and hands the
- * player's actions to its owner; the server decides whether a step passed. Needs dom.js and
- * markup.js. Defines one global, Quest.
+ * one is open, later ones stay hidden until reached. Below them the player can check the whole
+ * level at any time. It only shows steps and hands the player's actions to its owner; the
+ * server decides whether a step passed. Needs dom.js and markup.js. Defines one global, Quest.
  */
 
 /* global Dom, Markup */
@@ -38,21 +38,28 @@ const Quest = (function () {
   }
 
   /* options: steps, step (the current index; steps.length when the quest is done), onAnswer(text),
-     onContinue(), onType(command). */
-  function create({ steps, step, onAnswer, onContinue, onType }) {
+     onContinue(), onType(command), onCheck() to check the whole level now. */
+  function create({ steps, step, onAnswer, onContinue, onType, onCheck }) {
     const count = el("p", { class: "kicker quest-count" });
     const list = el("ol", { class: "quest" });
-    const element = el("section", { class: "quest-panel", "aria-label": "Guided quest" }, count, list);
+    const checkButton = el("button", { type: "button", class: "btn btn-ghost btn-small", onclick: () => onCheck() }, "Check my work");
+    const checkLine = el("div", { class: "check-feedback", "aria-live": "polite" });
+    const element = el("section", { class: "quest-panel", "aria-label": "Guided quest" }, count, list,
+      el("div", { class: "quest-check" }, el("p", { class: "muted" }, "Ahead of the steps? The game can check the whole level now."), checkButton, checkLine),
+    );
     let feedbackLine = null;
+    let shownNote = null;
     let current = step;
 
     function say(text, kind = "is-note") {
+      shownNote = null;
       feedbackLine.className = `step-feedback ${kind}`;
       feedbackLine.replaceChildren(el("p", {}, text));
     }
 
     function currentStep(item, index) {
       feedbackLine = el("div", { class: "step-feedback", "aria-live": "polite" });
+      shownNote = null;
       const actions = {
         answer: () => answerForm(item, onAnswer, say),
         watch: () => el("p", { class: "step-watch" }, el("i", { class: "spinner", "aria-hidden": "true" }), "Waiting for your repository to show it…"),
@@ -92,14 +99,32 @@ const Quest = (function () {
         if (heading) heading.focus();
       },
 
-      /* The server's message about the current step. */
+      /* The server's verdict on the current step. */
       feedback(blocks, correct) {
+        shownNote = null;
         feedbackLine.className = `step-feedback ${correct ? "is-correct" : "is-wrong"}`;
         feedbackLine.replaceChildren(...Markup.render(blocks));
       },
 
+      /* What a watch step says while it has not passed. The same text is left in place, so the
+         live region does not announce it again on every poll. */
+      note(blocks) {
+        const text = JSON.stringify(blocks);
+        if (text === shownNote) return;
+        shownNote = text;
+        feedbackLine.className = "step-feedback is-note";
+        feedbackLine.replaceChildren(...Markup.render(blocks));
+      },
+
+      /* The result of checking the whole level by hand. */
+      checkFeedback(blocks, solved) {
+        checkLine.className = `check-feedback ${solved ? "is-correct" : "is-wrong"}`;
+        checkLine.replaceChildren(...Markup.render(blocks));
+      },
+
       busy(on) {
         for (const control of list.querySelectorAll(".step.is-current button")) control.disabled = on;
+        checkButton.disabled = on;
       },
     };
   }

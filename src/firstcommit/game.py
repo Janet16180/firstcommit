@@ -2,9 +2,11 @@
 Every player action, in one place: the only module the command line and the web routes call.
 
 Each function that changes the save holds its lock (termlab's store) for the whole
-read-modify-write, and returns a plain record that is ready to send as JSON. Text fields are
-filled from the level's state (``{{key}}``) and parsed into blocks (`firstcommit.markup`), so the
-interfaces only render. Game rules never live in the interfaces (Ring Zero audit ARCH-1).
+read-modify-write, and returns a plain record that is ready to send as JSON. A level's text is
+filled from its state (``{{key}}``) and parsed into blocks (`firstcommit.markup`), so the
+interfaces only render. In a step's command each value is filled as one shell word. A check's
+or a watch's message is parsed only, never filled: it may hold names the player chose. Game
+rules never live in the interfaces (Ring Zero audit ARCH-1).
 
 Records returned here are the API contract of the web routes: changing a field is a change to
 the page too. Every field the player reads is parsed blocks; every value the page sends back
@@ -12,9 +14,14 @@ the page too. Every field the player reads is parsed blocks; every value the pag
 UTF-8 cannot encode, such as the lone surrogates JSON can carry, are replaced here, so levels and
 cards only ever see a wrong answer. Errors the interfaces handle:
 
-- ``KeyError``: an unknown level, chapter or card id (the routes answer 404);
+- `UnknownIdError`: an unknown level, chapter or card id (the routes answer 404). It is raised
+  only by the one lookup of each kind of id, at the top of a function, so a ``KeyError`` from a
+  level's setup, the scoring or a lesson stays what it is: a bug;
 - `NotPlayingError`: an action on the level in progress when there is none (409);
-- `firstcommit.save.SaveError`: a damaged save file (``firstcommit reset --yes`` starts over).
+- `SaveError`: a damaged save file (``firstcommit reset --yes`` starts over).
+
+The interfaces import nothing else from the game's lower layers: `SaveError` and `home` are
+handed on from `firstcommit.save`, and `shell_environment` builds the player's shell.
 
 Anything else is a bug.
 """
@@ -22,9 +29,10 @@ Anything else is a bug.
 import os
 import random
 import re
+import shlex
 import subprocess
 import sys
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Literal, TypedDict, cast
@@ -37,6 +45,8 @@ from firstcommit.demos import Line
 from firstcommit.markup import Block
 from firstcommit.repomap import ObjectInfo, Snapshot
 from firstcommit.save import Payout
+from firstcommit.save import SaveError as SaveError
+from firstcommit.save import home as home
 from firstcommit.score import Rank
 
 PLACEHOLDER = re.compile(r"\{\{\s*(\w+)\s*\}\}")
@@ -69,7 +79,12 @@ class ChapterSummary(TypedDict):
 
 
 class ActiveView(TypedDict):
-    """The level being played: how far the quest is, and the hints and attempts used."""
+    """
+    The level being played: how far the quest is, and the hints and attempts used.
+
+    ``auto_check`` says whether the page may check the level by itself: only once the quest is
+    done (`check` refuses an automatic check before that anyway).
+    """
 
     level: str
     step: int
@@ -78,6 +93,7 @@ class ActiveView(TypedDict):
     hints_total: int
     attempts: int
     started: str
+    auto_check: bool
 
 
 class Status(TypedDict):
@@ -246,6 +262,10 @@ class Diagnosis(TypedDict):
     detail: str
 
 
+class UnknownIdError(LookupError):
+    """A level, chapter or card id the game does not have (the web routes answer 404)."""
+
+
 class NotPlayingError(Exception):
     """No level is in progress, for an action that needs one (the web routes answer 409)."""
 
@@ -304,10 +324,10 @@ def level(level_id: str) -> LevelView:
 
     Raises
     ------
-    KeyError
+    UnknownIdError
         If no level has this id.
     """
-    entry = runner.catalogue()[level_id]
+    entry = _level(level_id)
     finished = save.load_progress()["levels"].get(level_id)
     active = save.load_active()
     playing = active if active is not None and active["level"] == level_id else None
@@ -347,10 +367,10 @@ def lesson(level_id: str) -> LessonView:
 
     Raises
     ------
-    KeyError
+    UnknownIdError
         If no level has this id.
     """
-    entry = runner.catalogue()[level_id]
+    entry = _level(level_id)
     slides: list[SlideView] = [
         {
             "id": slide.id,
@@ -382,10 +402,10 @@ def start(level_id: str) -> ActiveView:
 
     Raises
     ------
-    KeyError
+    UnknownIdError
         If no level has this id; the level in progress is then left alone.
     """
-    entry = runner.catalogue()[level_id]
+    entry = _level(level_id)
     with save.lock():
         save.clear_active()
         save.clear_observed()
@@ -423,14 +443,14 @@ def quest_step(answer: str | None) -> StepResult:
         active, entry = _playing()
         correct = False
         message: list[Block] = []
-        if active["step"] < len(entry.quest):
+        if not _quest_done(active, entry):
             verdict = _check_step(entry.quest[active["step"]], runner.lab_of(entry.id), active["state"], _typed(answer))
             correct = verdict.solved
-            message = _blocks(verdict.message, active["state"])
+            message = markup.parse(verdict.message)
         if correct:
             active["step"] += 1
             save.write_active(active)
-    return {"correct": correct, "message": message, "step": active["step"], "quest_done": active["step"] >= len(entry.quest)}
+    return {"correct": correct, "message": message, "step": active["step"], "quest_done": _quest_done(active, entry)}
 
 
 def check(answer: str | None, auto: bool) -> CheckResult:
@@ -465,7 +485,7 @@ def check(answer: str | None, auto: bool) -> CheckResult:
     typed = _typed(answer)
     with save.lock():
         active, entry = _playing()
-        if auto and active["step"] < len(entry.quest):
+        if auto and not _quest_done(active, entry):
             verdict = kit.Verdict(False, QUEST_FIRST.format(step=active["step"] + 1, steps=len(entry.quest)))
         else:
             verdict = entry.check(runner.lab_of(entry.id), active["state"], typed)
@@ -477,7 +497,7 @@ def check(answer: str | None, auto: bool) -> CheckResult:
             save.write_active(active)
     return {
         "solved": verdict.solved,
-        "message": _blocks(verdict.message, active["state"]),
+        "message": markup.parse(verdict.message),
         "payout": payout,
         "debrief": _blocks(entry.debrief, active["state"]) if verdict.solved else None,
     }
@@ -591,9 +611,11 @@ def due_cards(chapter: str | None, limit: int) -> list[CardView]:
 
     Raises
     ------
-    KeyError
+    UnknownIdError
         If `chapter` is not a chapter id.
     """
+    if chapter is not None:
+        _chapter(chapter)
     progress = save.load_progress()
     today = date.today()
     rng = random.Random()
@@ -618,10 +640,10 @@ def answer_card(card_id: str, reply: str) -> CardResult:
 
     Raises
     ------
-    KeyError
+    UnknownIdError
         If no card has this id.
     """
-    card = cards.find(card_id)
+    card = _card(card_id)
     today = date.today()
     correct = cards.judge(card, _encodable(reply))
     with save.lock():
@@ -661,24 +683,43 @@ def notes(chapter: str) -> Notes:
 
     Raises
     ------
-    KeyError
+    UnknownIdError
         If `chapter` is not a chapter id.
     """
-    return {"chapter": chapter, "title": CHAPTERS[chapter], "notes": markup.parse(cards.deck(chapter).notes)}
+    return {"chapter": chapter, "title": _chapter(chapter), "notes": markup.parse(cards.deck(chapter).notes)}
+
+
+def shell_environment(base: Mapping[str, str]) -> dict[str, str]:
+    """
+    Build the environment of a shell the game opens for the player, ready to use.
+
+    Git there is kept to the game (`firstcommit.gitcmd.shell_environment`), and the game's git
+    configuration that it names is created first if it is missing (never overwritten), so the
+    player's first ``git init`` is on ``main``.
+
+    Parameters
+    ----------
+    base : Mapping[str, str]
+        The environment to start from (the web terminal's or the command line's); not changed.
+
+    Returns
+    -------
+    dict[str, str]
+        ``base`` without its git variables, plus the game's isolation.
+    """
+    save.ensure_gitconfig(gitcmd.BASE_CONFIG)
+    return gitcmd.shell_environment(base, save.home())
 
 
 def terminal_folder() -> str:
     """
     Give the folder a new terminal opens in: the lab's project, else the lab, else the player's home.
 
-    The game's git configuration is created first if it is missing, so the shell starts from it.
-
     Returns
     -------
     str
         The folder.
     """
-    save.ensure_gitconfig(gitcmd.BASE_CONFIG)
     active = save.load_active()
     lab = runner.lab_of(active["level"]) if active is not None else None
     folder = Path.home()
@@ -702,6 +743,81 @@ def doctor() -> list[Diagnosis]:
     return [_git_diagnosis(), _python_diagnosis(), _home_diagnosis()]
 
 
+def _level(level_id: str) -> runner.Level:
+    """
+    Look a level up by its id.
+
+    Parameters
+    ----------
+    level_id : str
+        The id the player or the page sent.
+
+    Returns
+    -------
+    runner.Level
+        The level.
+
+    Raises
+    ------
+    UnknownIdError
+        If no level has this id.
+    """
+    levels = runner.catalogue()
+    if level_id not in levels:
+        raise UnknownIdError(f"no level has the id {level_id!r}")
+    return levels[level_id]
+
+
+def _chapter(chapter: str) -> str:
+    """
+    Look a chapter up by its id.
+
+    Parameters
+    ----------
+    chapter : str
+        The id the player or the page sent.
+
+    Returns
+    -------
+    str
+        The chapter's title.
+
+    Raises
+    ------
+    UnknownIdError
+        If no chapter has this id.
+    """
+    if chapter not in CHAPTERS:
+        raise UnknownIdError(f"no chapter has the id {chapter!r}")
+    return CHAPTERS[chapter]
+
+
+def _card(card_id: str) -> cards.Card:
+    """
+    Look a card up by its id; the one place where a missing card becomes an unknown id.
+
+    Parameters
+    ----------
+    card_id : str
+        The id the player or the page sent.
+
+    Returns
+    -------
+    cards.Card
+        The card.
+
+    Raises
+    ------
+    UnknownIdError
+        If no deck holds a card with this id.
+    """
+    try:
+        card = cards.find(card_id)
+    except KeyError as error:
+        raise UnknownIdError(f"no card has the id {card_id!r}") from error
+    return card
+
+
 def _playing() -> tuple[save.Active, runner.Level]:
     """
     Read the level in progress and its record.
@@ -715,12 +831,20 @@ def _playing() -> tuple[save.Active, runner.Level]:
     ------
     NotPlayingError
         If no level is in progress, or the one in progress is no longer in the game.
+    SaveError
+        If the record counts more hints or quest steps than its level has (a damaged save).
     """
     active = save.load_active()
     levels = runner.catalogue()
     if active is None or active["level"] not in levels:
         raise NotPlayingError("no level is in progress")
-    return active, levels[active["level"]]
+    entry = levels[active["level"]]
+    if active["hints"] > len(entry.hints) or active["step"] > len(entry.quest):
+        raise SaveError(
+            f"{save.home() / save.ACTIVE_FILE} is damaged: `hints` is {active['hints']} and `step` is {active['step']}, "
+            f"but level {entry.id} has {len(entry.hints)} hints and {len(entry.quest)} quest steps"
+        )
+    return active, entry
 
 
 def _pay(entry: runner.Level, hints: int, state: kit.State) -> Payout:
@@ -802,11 +926,6 @@ def _cards_to_review(chapter: str | None, progress: save.Progress, limit: int) -
     -------
     list[cards.Card]
         The cards, in the order to ask them.
-
-    Raises
-    ------
-    KeyError
-        If `chapter` is not a chapter id.
     """
     if chapter is not None:
         pool = list(cards.deck(chapter).cards)
@@ -860,7 +979,27 @@ def _active_view(active: save.Active, entry: runner.Level) -> ActiveView:
         "hints_total": len(entry.hints),
         "attempts": active["attempts"],
         "started": active["started"],
+        "auto_check": _quest_done(active, entry),
     }
+
+
+def _quest_done(active: save.Active, entry: runner.Level) -> bool:
+    """
+    Tell whether the guided quest of the level in progress is done; a level without one is.
+
+    Parameters
+    ----------
+    active : save.Active
+        The saved record of the level in progress.
+    entry : runner.Level
+        The level.
+
+    Returns
+    -------
+    bool
+        True once every step has passed.
+    """
+    return active["step"] >= len(entry.quest)
 
 
 def _step_view(step: kit.Step, state: kit.State) -> StepView:
@@ -889,7 +1028,7 @@ def _step_view(step: kit.Step, state: kit.State) -> StepView:
         "id": step.id,
         "kind": kind,
         "text": _blocks(step.text, state),
-        "command": _fill(step.command, state),
+        "command": _fill(step.command, state, _shell_word),
         "question": _blocks(question, state),
         "placeholder": _fill(placeholder, state),
     }
@@ -979,7 +1118,7 @@ def _option_text(card: cards.Card, option: str) -> list[Block]:
     return [{"kind": "code", "text": option}] if card.kind == "predict" else markup.parse(option)
 
 
-def _fill(text: str, state: Mapping[str, Any]) -> str:
+def _fill(text: str, state: Mapping[str, Any], show: Callable[[Any], str] = str) -> str:
     """
     Replace ``{{key}}`` placeholders with values from a level's state.
 
@@ -989,13 +1128,32 @@ def _fill(text: str, state: Mapping[str, Any]) -> str:
         Text that may hold placeholders.
     state : Mapping[str, Any]
         The level's state.
+    show : Callable[[Any], str]
+        Writes one value into the text: as it is, or `_shell_word` in a command.
 
     Returns
     -------
     str
         The text; a placeholder whose key is not in the state stays as written.
     """
-    return PLACEHOLDER.sub(lambda match: str(state[match[1]]) if match[1] in state else match[0], text)
+    return PLACEHOLDER.sub(lambda match: show(state[match[1]]) if match[1] in state else match[0], text)
+
+
+def _shell_word(value: Any) -> str:
+    """
+    Write a value into a command the player may run, as exactly one shell word.
+
+    Parameters
+    ----------
+    value : Any
+        A value from a level's state, such as a branch name read from a repository.
+
+    Returns
+    -------
+    str
+        The value, quoted with `shlex.quote` when the shell would read anything in it.
+    """
+    return shlex.quote(str(value))
 
 
 def _blocks(text: str, state: Mapping[str, Any]) -> list[Block]:

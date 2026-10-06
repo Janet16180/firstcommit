@@ -5,8 +5,9 @@
  *
  * plan(steps, active) says what to ask the server on each tick: always the live lab (observe);
  * the current quest step while it is a watch step (it passes by itself once the lab shows the
- * step was done); and the level itself, as an automatic check, once the quest is done or when
- * there is none. Which step is current and whether anything passed is the server's to say.
+ * step was done); and the level itself, as an automatic check, when the server says it may be
+ * (ActiveView's auto_check). Which step is current and whether anything passed is the server's
+ * to say.
  *
  * start({tick, intervalMs, timers, page}) runs `tick` at once and then `intervalMs` after each
  * tick has finished, so ticks never overlap. It rests while the page is hidden and ticks again
@@ -19,7 +20,7 @@
 const Polling = (function () {
   function plan(steps, active) {
     const current = active.step < active.steps ? steps[active.step] : null;
-    return { observe: true, watchStep: Boolean(current && current.kind === "watch"), autoCheck: active.step >= active.steps };
+    return { observe: true, watchStep: Boolean(current && current.kind === "watch"), autoCheck: active.auto_check };
   }
 
   function start({ tick, intervalMs = 1500, timers = window, page = document }) {
