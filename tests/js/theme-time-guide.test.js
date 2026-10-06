@@ -48,7 +48,7 @@ const FIGURES = {
   },
 };
 
-const section = (id) => document.querySelectorAll("dialog.tt-guide section").find((node) => node.getAttribute("data-section") === id);
+const section = (id) => [...document.querySelectorAll("dialog.tt-guide section")].find((node) => node.getAttribute("data-section") === id);
 const plain = (text) => text.replaceAll("`", "").replaceAll("**", "");
 
 function opened({ figures = FIGURES, reducedMotion = true } = {}) {
@@ -137,7 +137,7 @@ test("closing the guide removes it from the page", () => {
 
 test("Git's words and commands are shown as code and Git's words in captions in bold, with no markup left over", () => {
   const dialog = opened();
-  const code = dialog.querySelectorAll("code").map((node) => node.textContent);
+  const code = [...dialog.querySelectorAll("code")].map((node) => node.textContent);
   for (const word of ["git switch other", "origin/main", "git rebase"]) assert.ok(code.some((text) => text.includes(word)), word);
   assert.deepEqual(dialog.querySelector(".tt-guide-intro strong").textContent, "the past never changes.");
   assert.ok(!dialog.textContent.includes("`") && !dialog.textContent.includes("**"));
@@ -149,7 +149,7 @@ test("a section shows the repository after the change, drawn small, with the git
   const map = branch.querySelector(".tt-guide-figure .repo-map");
   assert.ok(map.querySelector('[data-label="branch:idea"]'));
   assert.equal(map.querySelector(".tt-key"), null, "a small map, without the key");
-  assert.deepEqual(branch.querySelectorAll(".tt-guide-figure figcaption code").map((node) => node.textContent), ["$ git commit -m 'Sketch an idea'"]);
+  assert.deepEqual([...branch.querySelectorAll(".tt-guide-figure figcaption code")].map((node) => node.textContent), ["$ git commit -m 'Sketch an idea'"]);
 });
 
 test("the archive's figure is the practice copy: named as GitHub, with no now mark, showing only the git command", () => {
@@ -157,7 +157,7 @@ test("the archive's figure is the practice copy: named as GitHub, with no now ma
   const archive = section("archive");
   assert.match(archive.querySelector(".tt-guide-place").textContent, /GitHub \(the practice copy\)/);
   assert.equal(archive.querySelector(".tt-now"), null);
-  assert.deepEqual(archive.querySelectorAll(".tt-guide-figure figcaption code").map((node) => node.textContent), ["$ git push"]);
+  assert.deepEqual([...archive.querySelectorAll(".tt-guide-figure figcaption code")].map((node) => node.textContent), ["$ git push"]);
 });
 
 test("a section's caption names the Git word in bold, and its checked text folds under More, word for word", () => {
@@ -169,7 +169,7 @@ test("a section's caption names the Git word in bold, and its checked text folds
   assert.equal(more.open, false);
   assert.equal(more.querySelector("summary").textContent, "More");
   assert.equal(more.querySelector(".tt-guide-picture").textContent, plain(part.picture));
-  assert.deepEqual(more.querySelectorAll("li").map((item) => item.textContent), part.points.map(plain));
+  assert.deepEqual([...more.querySelectorAll("li")].map((item) => item.textContent), part.points.map(plain));
 });
 
 test("a section with no figure, the preview or one not given, shows its caption and text only", () => {

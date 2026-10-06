@@ -24,7 +24,7 @@ function history(commits, refs = [["main", "branch", commits[0][0]]]) {
 }
 
 const MERGED = history([["m", ["c", "b"]], ["c", ["a"]], ["b", ["a"]], ["a", []]]);
-const legendText = (figure) => figure.querySelectorAll(".tt-legend li").map((item) => item.textContent);
+const legendText = (figure) => [...figure.querySelectorAll(".tt-legend li")].map((item) => item.textContent);
 
 test("every save point still shows its commit's real short hash and subject, and its full hash in a tooltip", () => {
   const project = record("observation").project;
@@ -38,17 +38,17 @@ test("every save point still shows its commit's real short hash and subject, and
 
 test("branch, remote-tracking branch and tag names are drawn exactly as Git names them", () => {
   const figure = RepoMap.render(record("observation").project, { theme });
-  const chips = figure.querySelectorAll(".map-label").map((label) => label.textContent);
+  const chips = [...figure.querySelectorAll(".map-label")].map((label) => label.textContent);
   for (const name of ["HEAD", "feature", "main", "origin/main", "v0.1"]) assert.ok(chips.includes(name), name);
 });
 
 test("each tab says which label it is and each line which two commits it joins, so a motion can find them", () => {
   const project = record("observation").project;
   const figure = RepoMap.render(project, { theme });
-  const tabs = figure.querySelectorAll(".map-commits .map-label").map((label) => label.getAttribute("data-label"));
+  const tabs = [...figure.querySelectorAll(".map-commits .map-label")].map((label) => label.getAttribute("data-label"));
   assert.deepEqual(tabs.sort(), ["branch:feature", "branch:main", "head", "remote:origin/main", "tag:v0.1"]);
   assert.equal(TimeTheme.tabKey({ kind: "head", text: "HEAD (detached)" }), "head");
-  const lines = figure.querySelectorAll(".map-edges .tt-edge").map((edge) => `${edge.getAttribute("data-from").slice(0, 7)}>${edge.getAttribute("data-to").slice(0, 7)}`);
+  const lines = [...figure.querySelectorAll(".map-edges .tt-edge")].map((edge) => `${edge.getAttribute("data-from").slice(0, 7)}>${edge.getAttribute("data-to").slice(0, 7)}`);
   const parents = project.commits.flatMap((commit) => commit.parents.map((parent) => `${commit.short}>${parent.slice(0, 7)}`));
   assert.deepEqual(lines.sort(), parents.sort());
 });

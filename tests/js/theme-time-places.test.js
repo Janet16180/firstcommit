@@ -186,11 +186,11 @@ test("nothing flies when no arrow lit or there is no earlier drawing", () => {
 test("the figure shows the four places, every arrow with its Git word, and lights the ones that happened", () => {
   const observation = { project: repo({ commits: TWO, refs: [["main", "branch", "b"], ["origin/main", "remote", "a"]], files: [file("README.md", { head: "1", index: "2", folder: "2" })] }), github: repo({ commits: ONE, bare: true, refs: [["main", "branch", "a"]] }) };
   const figure = TimePlaces.render(observation, { commands: ["commit", "fetch"] });
-  const titles = figure.querySelectorAll(".tt-place h4").map((title) => title.textContent);
+  const titles = [...figure.querySelectorAll(".tt-place h4")].map((title) => title.textContent);
   assert.deepEqual(titles, ["Working folder", "Staging area", "Your repository", "Remote repository"]);
-  const arrows = figure.querySelectorAll(".tt-arrow").map((arrow) => arrow.getAttribute("data-command"));
+  const arrows = [...figure.querySelectorAll(".tt-arrow")].map((arrow) => arrow.getAttribute("data-command"));
   assert.deepEqual([...new Set(arrows)].sort(), ["add", "clone", "commit", "fetch", "pull", "push"]);
-  assert.deepEqual(figure.querySelectorAll(".tt-arrow.is-active").map((arrow) => arrow.getAttribute("data-command")).sort(), ["commit", "fetch"]);
+  assert.deepEqual([...figure.querySelectorAll(".tt-arrow.is-active")].map((arrow) => arrow.getAttribute("data-command")).sort(), ["commit", "fetch"]);
   const caption = figure.querySelector(".tt-places-caption").textContent;
   assert.match(caption, /commit saves the staging area as a new commit.*the staging area keeps its files/);
   assert.match(caption, /fetch downloads.*no branch of yours, no working file/);
@@ -206,7 +206,7 @@ test("a pull's sentence tells its fetch half, so the fetch sentence is not repea
 test("each place shows the player's real files and commits, origin/main included", () => {
   const observation = { project: repo({ commits: TWO, refs: [["main", "branch", "b"], ["origin/main", "remote", "a"]], files: [file("README.md", { head: "1", index: "2", folder: "3" }), file("notes.txt", { folder: "4" })] }), github: repo({ commits: ONE, bare: true, refs: [["main", "branch", "a"]] }) };
   const figure = TimePlaces.render(observation, {});
-  const paths = (area) => figure.querySelectorAll(`[data-area="${area}"] [data-path]`).map((row) => row.getAttribute("data-path"));
+  const paths = (area) => [...figure.querySelectorAll(`[data-area="${area}"] [data-path]`)].map((row) => row.getAttribute("data-path"));
   assert.deepEqual(paths("folder"), ["README.md", "notes.txt"]);
   assert.deepEqual(paths("index"), ["README.md"]);
   const repository = figure.querySelector('[data-area="repository"]');
@@ -223,7 +223,7 @@ test("without a remote, GitHub's place says so instead of drawing an empty graph
 
 test("each arrow says where the work goes: pull's merge half runs from your repository through the staging area", () => {
   const figure = TimePlaces.render({ project: repo({ commits: ONE }), github: hub(ONE) }, {});
-  const said = (name) => figure.querySelectorAll(".tt-arrow").find((arrow) => arrow.getAttribute("data-command") === name && arrow.getAttribute("aria-label")).getAttribute("aria-label");
+  const said = (name) => [...figure.querySelectorAll(".tt-arrow")].find((arrow) => arrow.getAttribute("data-command") === name && arrow.getAttribute("aria-label")).getAttribute("aria-label");
   assert.equal(said("add"), "add: from the working folder to the staging area");
   assert.equal(said("push"), "push: from your repository to the remote repository");
   assert.equal(said("pull"), "pull = fetch + merge: from your repository, through the staging area, to the working folder");
@@ -232,7 +232,7 @@ test("each arrow says where the work goes: pull's merge half runs from your repo
 
 test("each arrow points the way the work moves: towards GitHub for add, commit and push, back for fetch, pull and clone", () => {
   const figure = TimePlaces.render({ project: repo({ commits: ONE }), github: hub(ONE) }, {});
-  const back = figure.querySelectorAll(".tt-arrow.is-back").map((arrow) => arrow.getAttribute("data-command"));
+  const back = [...figure.querySelectorAll(".tt-arrow.is-back")].map((arrow) => arrow.getAttribute("data-command"));
   assert.deepEqual(back.sort(), ["clone", "fetch", "pull", "pull"]);
 });
 
@@ -260,8 +260,8 @@ const PUSH = {
 };
 const end = (call) => (call.timing.delay || 0) + call.timing.duration;
 const isFlyer = (call) => (call.node.getAttribute("class") || "").includes("tt-flyer");
-const rowIn = (figure, area, path) => figure.querySelectorAll(`[data-area="${area}"] [data-path]`).find((node) => node.getAttribute("data-path") === path);
-const shaftOf = (figure, name) => figure.querySelectorAll(".tt-arrow").find((arrow) => arrow.getAttribute("data-command") === name).querySelector(".tt-arrow-shaft");
+const rowIn = (figure, area, path) => [...figure.querySelectorAll(`[data-area="${area}"] [data-path]`)].find((node) => node.getAttribute("data-path") === path);
+const shaftOf = (figure, name) => [...figure.querySelectorAll(".tt-arrow")].find((arrow) => arrow.getAttribute("data-command") === name).querySelector(".tt-arrow-shaft");
 
 test("under reduced motion nothing moves: the lit arrow and its sentence say what happened", () => {
   const { figure, calls, animations } = played(PUSH.before, PUSH.after, ["push"], true);
@@ -384,7 +384,7 @@ test("the staging area is an open box that holds every tracked file, not only th
   const files = [file("README.md", { head: "1", index: "1", folder: "1" }), file("rules.md", { head: "5", index: "6", folder: "6", indexChange: "modified" })];
   const figure = TimePlaces.render({ project: repo({ commits: ONE, files }), github: null }, {});
   const box = figure.querySelector('[data-area="index"] .tt-open-box');
-  assert.deepEqual(box.querySelectorAll("[data-path]").map((node) => node.getAttribute("data-path")), ["README.md", "rules.md"]);
+  assert.deepEqual([...box.querySelectorAll("[data-path]")].map((node) => node.getAttribute("data-path")), ["README.md", "rules.md"]);
 });
 
 test("a file deleted from the working folder is a missing page there, while the open box still holds it", () => {
@@ -401,7 +401,7 @@ test("your repository and GitHub draw each commit as a closed box on its timelin
   const figure = TimePlaces.render({ project: at(TWO, "b", "a"), github: hub(ONE) }, {});
   const repository = figure.querySelector('[data-area="repository"]');
   assert.equal(repository.querySelectorAll(".tt-box").length, 2);
-  assert.deepEqual(repository.querySelectorAll(".map-hash").map((node) => node.textContent), [full("b").slice(0, 7), full("a").slice(0, 7)]);
+  assert.deepEqual([...repository.querySelectorAll(".map-hash")].map((node) => node.textContent), [full("b").slice(0, 7), full("a").slice(0, 7)]);
   assert.equal(figure.querySelector('[data-area="remote"]').querySelectorAll(".tt-box").length, 1);
 });
 
@@ -417,7 +417,7 @@ test("git commit closes a copy of the open box, holding every tracked file, and 
   assert.equal(flyer.querySelectorAll(".tt-flyer-pages .tt-page-icon").length, 2, "both tracked files go into the commit, the unchanged one too");
   const flaps = calls.filter((call) => flyer.contains(call.node) && call.node.getAttribute("class").includes("tt-flap"));
   assert.equal(flaps.length, 2, "the box closes as it leaves");
-  assert.deepEqual(figure.querySelector('[data-area="index"] .tt-open-box').querySelectorAll("[data-path]").map((node) => node.getAttribute("data-path")), ["README.md", "rules.md"]);
+  assert.deepEqual([...figure.querySelector('[data-area="index"] .tt-open-box').querySelectorAll("[data-path]")].map((node) => node.getAttribute("data-path")), ["README.md", "rules.md"]);
 });
 
 test("a page that changes shows its old id fading out as the new one fades in, when the copy arrives", () => {
@@ -441,7 +441,7 @@ test("a page that changes shows its old id fading out as the new one fades in, w
 
 test("pull's merge half is drawn beside commit and add, so its arrow runs where its pages go", () => {
   const figure = TimePlaces.render(PULL.after, { commands: ["fetch", "pull"] });
-  const parts = figure.querySelectorAll(".tt-arrow.is-pull");
+  const parts = [...figure.querySelectorAll(".tt-arrow.is-pull")];
   assert.equal(parts.length, 2);
   const beside = (name) => parts.find((part) => part.parentNode.querySelector(`.tt-arrow.is-${name}`));
   assert.ok(beside("commit"), "from your repository to the staging area, beside commit");
@@ -473,7 +473,7 @@ test("an empty GitHub says it has no commits yet, not that you are on its branch
 
 test("pull's two parts each show the short word, and say the whole name aloud once", () => {
   const figure = TimePlaces.render(PULL.after, { commands: ["fetch", "pull"] });
-  const parts = figure.querySelectorAll(".tt-arrow.is-pull");
+  const parts = [...figure.querySelectorAll(".tt-arrow.is-pull")];
   assert.deepEqual(parts.map((part) => part.querySelector(".tt-arrow-label").textContent), ["pull", "pull"]);
   assert.equal(parts.filter((part) => part.getAttribute("aria-label")).length, 1);
 });

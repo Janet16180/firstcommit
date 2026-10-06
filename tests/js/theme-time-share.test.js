@@ -71,8 +71,8 @@ function played(step, reduced = false) {
   return { figure, calls };
 }
 
-const person = (figure, who) => figure.querySelectorAll("[data-person]").find((node) => node.getAttribute("data-person") === who);
-const areas = (node) => node.querySelectorAll("[data-area]").map((place) => place.getAttribute("data-area"));
+const person = (figure, who) => [...figure.querySelectorAll("[data-person]")].find((node) => node.getAttribute("data-person") === who);
+const areas = (node) => [...node.querySelectorAll("[data-area]")].map((place) => place.getAttribute("data-area"));
 const insideOf = (figure, who) => (call) => person(figure, who).contains(call.node);
 
 test("the figure puts your computer, GitHub and Alex's computer side by side, each computer with its folder, open box and repository", () => {
@@ -104,7 +104,7 @@ test("a step lights the arrows of the person who ran it, from their own events a
 
 test("only the arrows of the person who ran the step light up, with the step's caption under the figure", () => {
   const figure = TimeShare.render(STEPS.fetch);
-  const active = (who) => person(figure, who).querySelectorAll(".tt-arrow.is-active").map((arrow) => arrow.getAttribute("data-command"));
+  const active = (who) => [...person(figure, who).querySelectorAll(".tt-arrow.is-active")].map((arrow) => arrow.getAttribute("data-command"));
   assert.deepEqual(active("alex"), ["fetch"]);
   assert.deepEqual(active("you"), []);
   assert.equal(figure.querySelector(".ts-caption").textContent, TimeShare.CAPTIONS["pull-fetch"].replaceAll("`", ""));
@@ -113,7 +113,7 @@ test("only the arrows of the person who ran the step light up, with the step's c
 
 test("each arrow says aloud whose places it joins", () => {
   const figure = TimeShare.render(STEPS.push);
-  const said = (who, name) => person(figure, who).querySelectorAll(".tt-arrow").find((arrow) => arrow.getAttribute("data-command") === name && arrow.getAttribute("aria-label")).getAttribute("aria-label");
+  const said = (who, name) => [...person(figure, who).querySelectorAll(".tt-arrow")].find((arrow) => arrow.getAttribute("data-command") === name && arrow.getAttribute("aria-label")).getAttribute("aria-label");
   assert.equal(said("you", "push"), "push: from your repository to the remote repository");
   assert.equal(said("alex", "fetch"), "fetch: from the remote repository to Alex's repository");
   assert.equal(said("alex", "add"), "add: from Alex's working folder to Alex's staging area");
@@ -139,7 +139,7 @@ test("the merge half brings the page through Alex's open box into Alex's folder"
   const { figure, calls } = played(STEPS.merge);
   const flyer = figure.querySelector(".tt-flyer.is-file");
   assert.match(flyer.textContent, /notes\.txt/);
-  const page = person(figure, "alex").querySelector('[data-area="folder"]').querySelectorAll("[data-path]").find((node) => node.getAttribute("data-path") === "notes.txt");
+  const page = [...person(figure, "alex").querySelector('[data-area="folder"]').querySelectorAll("[data-path]")].find((node) => node.getAttribute("data-path") === "notes.txt");
   assert.ok(calls.some((call) => call.node === page && call.frames[0].opacity === 0), "the page appears in Alex's folder as it arrives");
 });
 
