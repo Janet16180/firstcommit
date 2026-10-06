@@ -7,7 +7,7 @@ const { fakeServer, httpError, installBrowser, load, record, settle } = require(
 
 installBrowser();
 const { Dom, TimeTheme } = load(
-  ["dom.js", "markup.js", "map.js", "theme-time.js", "api.js", "progress.js", "route.js", "poll.js", "sound.js", "dialog.js", "celebrate.js", "live.js", "lesson.js", "quest.js", "challenge.js", "practice.js", "level.js", "cards.js", "notes.js", "home.js"],
+  ["dom.js", "markup.js", "map.js", "theme-time.js", "theme-time-motion.js", "api.js", "progress.js", "route.js", "poll.js", "sound.js", "dialog.js", "celebrate.js", "live.js", "lesson.js", "quest.js", "challenge.js", "practice.js", "level.js", "cards.js", "notes.js", "home.js"],
   ["Dom", "TimeTheme"],
 );
 
