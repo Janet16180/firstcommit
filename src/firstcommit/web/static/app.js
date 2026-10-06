@@ -7,7 +7,7 @@
  * server sent (refreshed on every view change). Loads last; defines no global.
  */
 
-/* global createClient, createTerminal, createGameApi, Dom, Route, Sound, Celebrate, Dialog, RepoMap, Progress, HomeView, LevelPage, CardsView, NotesView */
+/* global createClient, createTerminal, createGameApi, Dom, Route, Sound, Celebrate, Dialog, TimeTheme, Progress, HomeView, LevelPage, CardsView, NotesView */
 
 (function () {
   const { el } = Dom;
@@ -218,7 +218,8 @@
     sound: Sound,
     timers: window,
     page: document,
-    theme: RepoMap.DEFAULT_THEME,
+    theme: TimeTheme.map,
+    panelWords: TimeTheme.panel,
     reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     terminal,
   };
