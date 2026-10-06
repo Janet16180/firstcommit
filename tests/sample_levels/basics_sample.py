@@ -39,7 +39,7 @@ def is_staged(lab: kit.Lab, state: kit.State) -> kit.Verdict:
     kit.Verdict
         Whether the file is staged.
     """
-    staged = lab.project.is_dir() and kit.git_run(lab.project, "ls-files", "--stage", "--", "hello.txt").stdout != ""
+    staged = kit.git_run(lab.project, "ls-files", "--stage", "--", "hello.txt").stdout != ""
     return kit.Verdict(staged, "Staged." if staged else "Not staged yet.")
 
 
@@ -109,7 +109,7 @@ def check(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict:
     kit.Verdict
         Whether the file is committed on the branch.
     """
-    committed = lab.project.is_dir() and kit.git_run(lab.project, "rev-parse", "--verify", "-q", f"refs/heads/{state['branch']}:hello.txt").returncode == 0
+    committed = kit.git_run(lab.project, "rev-parse", "--verify", "-q", f"refs/heads/{state['branch']}:hello.txt").returncode == 0
     return kit.Verdict(committed, "Committed." if committed else "`hello.txt` is not in a commit yet.")
 
 
