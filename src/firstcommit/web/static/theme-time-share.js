@@ -35,6 +35,9 @@ const TimeShare = (function () {
   const { filePlace, repositoryPlace, arrow, pair, inline } = TimePlaces.parts;
 
   const PEOPLE = { you: { name: "You", owner: null }, alex: { name: "Alex", owner: "Alex" } };
+  /* A timeline wider than its place is drawn smaller, down to this share of its size; past it,
+     its place scrolls rather than shrink the hashes and subjects out of reading. */
+  const FLOOR = 0.8;
   const GITHUB = "GitHub (the practice copy)";
 
   /* One caption per step, each saying what Alex can see. */
@@ -95,11 +98,13 @@ const TimeShare = (function () {
   /* The three repositories in their places, `commands` lit on `person`'s computer. */
   function grid(state, person, commands, slots) {
     const lights = (who) => (who === person ? commands : []);
-    return el("div", { class: "ts-grid" },
+    const drawn = el("div", { class: "ts-grid" },
       computer("you", state.you, lights("you"), slots),
       el("div", { class: "ts-github", role: "group", "aria-label": GITHUB }, el("div", { class: "ts-who" }, el("span", { class: "ts-name" }, GITHUB)), repositoryPlace("remote", state.github, false)),
       computer("alex", state.alex, lights("alex"), slots),
     );
+    for (const graph of drawn.querySelectorAll("svg.map-graph")) graph.style.minWidth = `${Math.round(FLOOR * Number(graph.getAttribute("width")))}px`;
+    return drawn;
   }
 
   /* The narrow screen's person switch: its buttons choose whose slot shows. */
