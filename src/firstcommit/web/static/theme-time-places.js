@@ -77,24 +77,38 @@ const TimePlaces = (function () {
     return seen;
   }
 
-  /* Whether every file that changed in the staging area or the working folder changed between
-     the old tip and the new one too: a merge, fast-forward or rebase only brings in what the
-     commits changed, and keeps the rest. A reset --hard also throws away uncommitted work. */
+  /* Whether every tracked file ends where the checkout of a pull would leave it (mapcheck's rule,
+     checked on 32 real batches). Where the tip's version did not change, the staging area and the
+     folder keep theirs. Where it changed, a staging area that already held the new version keeps
+     both as they were, a file clean at the old version takes the new one in both, and anything
+     else (an unsaved edit, an untracked file in the way, even with the same text) is a state git
+     pull refuses, so the batch was not a pull: a reset --hard, say, which overwrites it. A path
+     only in the folder, untracked or ignored, before and after, says nothing either way: neither
+     moves it. One gone from the folder does say something: a reset deletes an untracked file in
+     a new file's way, and so does git clean. */
   function followsTips(before, after) {
     const was = new Map(before.files.map((file) => [file.path, file]));
     const now = new Map(after.files.map((file) => [file.path, file]));
     const blob = (files, path, area) => (files.get(path) || {})[area] || null;
-    const changed = (path, area) => blob(was, path, area) !== blob(now, path, area);
-    return [...new Set([...was.keys(), ...now.keys()])].every((path) => changed(path, "head") || (!changed(path, "index") && !changed(path, "folder")));
+    const tracked = (files, path) => blob(files, path, "head") !== null || blob(files, path, "index") !== null;
+    const untouched = (path) => now.has(path) && !tracked(now, path) && !tracked(was, path);
+    function lands(path) {
+      const [oldTip, newTip, index, folder] = [blob(was, path, "head"), blob(now, path, "head"), blob(was, path, "index"), blob(was, path, "folder")];
+      let end = null;
+      if (oldTip === newTip || index === newTip) end = [index, folder];
+      else if (index === oldTip && folder === oldTip) end = [newTip, newTip];
+      return end !== null && end[0] === blob(now, path, "index") && end[1] === blob(now, path, "folder");
+    }
+    return [...new Set([...was.keys(), ...now.keys()])].every((path) => untouched(path) || lands(path));
   }
 
   /* Whether your branch took in work from GitHub: it is the same branch, its new tip reaches the
      tip of its upstream, origin/<branch> (as clone and push -u set it), which its old tip did not,
      it kept its own commits (a fast-forward or a merge) or replayed them on top (a rebase), and
-     its files changed only where the commits did. A branch that now sits exactly on its upstream
-     without its old tip was reset there, as by git reset --hard origin/main, and so was one whose
-     uncommitted work is gone. A reset of a branch with no commits of its own and nothing
-     uncommitted looks the same as a fast-forward, and lights pull. */
+     its files ended where a pull leaves them (followsTips). A branch that now sits exactly on its
+     upstream without its old tip was reset there, as by git reset --hard origin/main, and so was
+     one whose files a pull would not have left that way. A reset of a branch with no commits of
+     its own and nothing uncommitted looks the same as a fast-forward, and lights pull. */
   function merged(before, after) {
     const upstream = after.refs.find((ref) => ref.kind === "remote" && ref.name === `origin/${after.branch}`);
     if (!after.branch || after.branch !== before.branch || !upstream) return false;
@@ -143,7 +157,11 @@ const TimePlaces = (function () {
     const fetched = lit.includes("fetch") || lit.includes("clone") ? fresh.filter((hash) => onGithub.has(hash)) : [];
     const made = fresh.filter((hash) => !fetched.includes(hash));
     const pushed = after.github ? newCommits(before.github, after.github) : [];
-    const staged = changedFiles(before.project, after.project, "index");
+    /* git add copies a file's version from the folder into the staging area; a pull's checkout
+       brings one the folder did not have, which is pull's to carry, not add's. */
+    const folderBefore = new Map(before.project.files.map((entry) => [entry.path, entry.folder]));
+    const indexAfter = new Map(after.project.files.map((entry) => [entry.path, entry.index]));
+    const staged = changedFiles(before.project, after.project, "index").filter((path) => indexAfter.get(path) === folderBefore.get(path));
     const checkedOut = changedFiles(before.project, after.project, "folder");
     const commit = (by, path) => (hash) => ({ what: "commit", id: hash, by, path });
     const file = (by, path) => (name) => ({ what: "file", id: name, by, path });

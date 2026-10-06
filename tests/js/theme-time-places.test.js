@@ -102,6 +102,41 @@ test("git reset --hard origin/main that throws away uncommitted work is not draw
   assert.deepEqual(TimePlaces.commands(kinds("branch-moved"), before, { ...PULLED, files: files("2", "6") }), ["pull"], "a pull keeps it");
 });
 
+/* One commit behind; the incoming commit changes rules.md from "1" to "2" (or adds a file).
+   Each case is a batch from mapcheck's table of real git 2.43 labs: before, after, and whether a
+   real git pull would end there. */
+test("pull lights only where every tracked file ends as git pull's checkout would leave it", () => {
+  const entries = (files) => files.map(([path, head, index, folder]) => file(path, { head, index, folder }));
+  const behind = (files) => ({ ...FETCHED, files: entries(files) });
+  const pulled = (files) => ({ ...PULLED, files: entries(files) });
+  const cases = [
+    ["a clean pull", [["rules.md", "1", "1", "1"]], [["rules.md", "2", "2", "2"]], ["pull"]],
+    ["reset, unsaved line in the file the commit changes (pull refuses)", [["rules.md", "1", "1", "u"]], [["rules.md", "2", "2", "2"]], []],
+    ["reset, the incoming text already there, unstaged (pull refuses)", [["rules.md", "1", "1", "2"]], [["rules.md", "2", "2", "2"]], []],
+    ["reset, incoming text staged plus an unstaged line, lost", [["rules.md", "1", "2", "3"]], [["rules.md", "2", "2", "2"]], []],
+    ["pull, incoming text already staged", [["rules.md", "1", "2", "2"]], [["rules.md", "2", "2", "2"]], ["pull"]],
+    ["pull, incoming text staged plus an unstaged line, kept", [["rules.md", "1", "2", "3"]], [["rules.md", "2", "2", "3"]], ["pull"]],
+    ["reset, an untracked file in the way overwritten (pull refuses)", [["new1.txt", null, null, "m"]], [["new1.txt", "t", "t", "t"]], []],
+    ["reset, an untracked file in the way, identical (pull refuses)", [["new2.txt", null, null, "t"]], [["new2.txt", "t", "t", "t"]], []],
+    ["reset, an untracked file doc deleted for doc/x.txt (pull refuses)", [["doc", null, null, "d"]], [["doc/x.txt", "x", "x", "x"]], []],
+    ["reset, an untracked dir/a.txt deleted for a file dir (pull refuses)", [["dir/a.txt", null, null, "a"]], [["dir", "x", "x", "x"]], []],
+    ["reset and git clean, behind only", [["rules.md", "1", "1", "1"], ["scratch.txt", null, null, "s"]], [["rules.md", "2", "2", "2"]], []],
+    ["pull, plus a new untracked file", [["rules.md", "1", "1", "1"]], [["rules.md", "2", "2", "2"], ["scratch.txt", null, null, "s"]], ["pull"]],
+    ["pull, plus an untracked file edited", [["rules.md", "1", "1", "1"], ["scratch.txt", null, null, "s"]], [["rules.md", "2", "2", "2"], ["scratch.txt", null, null, "t"]], ["pull"]],
+    ["pull, an untracked file left alone", [["rules.md", "1", "1", "1"], ["scratch.txt", null, null, "s"]], [["rules.md", "2", "2", "2"], ["scratch.txt", null, null, "s"]], ["pull"]],
+  ];
+  for (const [what, before, after, lit] of cases) assert.deepEqual(TimePlaces.commands(kinds("branch-moved"), behind(before), pulled(after)), lit, what);
+});
+
+test("an add flight carries only what git add copied from the working folder, not a file a pull brought", () => {
+  const before = { project: { ...FETCHED, files: [file("README.md", { head: "1", index: "1", folder: "2" }), file("notes.txt", { head: "5", index: "5", folder: "5" })] }, github: hub([C, ...TWO]) };
+  const after = { project: { ...PULLED, files: [file("README.md", { head: "1", index: "2", folder: "2" }), file("notes.txt", { head: "6", index: "6", folder: "6" })] }, github: hub([C, ...TWO]) };
+  assert.deepEqual(TimePlaces.flights(before, after, ["add"]).map((flight) => flight.id), ["README.md"]);
+  const edited = { project: { ...START, files: [file("README.md", { head: "1", index: "1", folder: "2" })] }, github: null };
+  const committed = { project: { ...MINE, files: [file("README.md", { head: "2", index: "2", folder: "2" })] }, github: null };
+  assert.deepEqual(TimePlaces.flights(edited, committed, ["add", "commit"]).map((flight) => flight.id), ["README.md", full("d")], "git commit -a still adds, then commits");
+});
+
 test("a pull into a branch with no commits yet takes in its upstream", () => {
   const unborn = { ...repo({ commits: [C, ...TWO], refs: [["origin/main", "remote", "c"]] }), head: null };
   assert.deepEqual(TimePlaces.commands(kinds("branch-created"), unborn, PULLED), ["pull"]);
