@@ -185,7 +185,7 @@ def _frames(lesson: tuple[tuple[str, str], ...]) -> list[Frame]:
     list[Frame]
         One frame per slide.
     """
-    lessons = save.home() / "lessons"
+    lessons = save.home() / save.LESSONS_FOLDER
     lessons.mkdir(parents=True, exist_ok=True)
     root = Path(tempfile.mkdtemp(prefix="lesson-", dir=lessons)).resolve()
     try:
