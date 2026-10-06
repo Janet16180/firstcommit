@@ -19,8 +19,9 @@ Event kinds, most important first:
 - ``remote-updated`` (a remote-tracking branch created, moved or deleted);
 - ``push-received`` (any branch or tag update in a bare repository, which only a push changes);
 - ``stash-saved``, ``stash-applied``, ``stash-dropped``;
-- ``file-staged``, ``file-unstaged``, ``file-created``, ``file-changed``, ``file-deleted``,
-  ``file-ignored``, ``file-unignored``.
+- ``file-staged``, ``file-unstaged``, ``file-created``, ``file-changed`` (its content or its
+  executable bit), ``file-deleted``, ``nested-repository-created``, ``nested-repository-deleted``
+  (a separate repository inside the working folder), ``file-ignored``, ``file-unignored``.
 
 Names and short hashes in the text are in backticks, commit subjects in double quotes.
 """
@@ -28,7 +29,7 @@ Names and short hashes in the text are in backticks, commit subjects in double q
 from dataclasses import dataclass
 from typing import Literal, TypedDict
 
-from firstcommit.repomap import Commit, FileEntry, RefKind, Snapshot
+from firstcommit.repomap import EXECUTABLE_MODE, Commit, FileEntry, RefKind, Snapshot
 
 MAX_FILE_EVENTS = 4
 """More events of one kind about files are told as one, naming the first `NAMES_SHOWN` paths."""
@@ -44,6 +45,8 @@ SUMMARIES = {
     "file-deleted": "{count} files were deleted from the working folder: {names}.",
     "file-ignored": "{count} files are now ignored by Git: {names}.",
     "file-unignored": "{count} files are no longer ignored: {names}.",
+    "nested-repository-created": "{count} separate repositories appeared inside this one: {names}.",
+    "nested-repository-deleted": "{count} separate repositories are gone from the working folder: {names}.",
 }
 STARTED = {
     "merge": "A merge is in progress{on}.",
@@ -54,6 +57,7 @@ STARTED = {
 }
 
 Ancestry = Literal["forward", "back", "rewritten", "unknown"]
+Area = Literal["head", "index", "folder"]
 FileNews = tuple[str, str, str]
 """What happened to one file: the event kind, the path and the sentence."""
 
@@ -765,11 +769,13 @@ def _file_events(change: _Change, tidied: bool, committed: bool) -> list[Event]:
         old, new = was.get(path, _absent(path)), now.get(path, _absent(path))
         followed_head = _clean(old) and _clean(new)
         put_back = tidied and _clean(new)
-        if old["conflicted"] or new["conflicted"] or followed_head or put_back:
-            continue
-        staging += _staging_news(old, new, committed)
-        folder += _folder_news(old, new)
-        ignoring += _ignore_news(old, new)
+        nested = (old["repository"] or new["repository"]) and not _tracked(old) and not _tracked(new)
+        if nested:
+            folder += _nested_news(old, new)
+        elif not (old["conflicted"] or new["conflicted"] or followed_head or put_back):
+            staging += _staging_news(old, new, committed)
+            folder += _folder_news(old, new)
+            ignoring += _ignore_news(old, new)
     return [*_told(staging), *_told(folder), *_told(ignoring)]
 
 
@@ -787,7 +793,42 @@ def _absent(path: str) -> FileEntry:
     FileEntry
         The path, in no area.
     """
-    return {"path": path, "head": None, "index": None, "folder": None, "ignored": False, "conflicted": False}
+    return {
+        "path": path,
+        "head": None,
+        "index": None,
+        "folder": None,
+        "head_mode": None,
+        "index_mode": None,
+        "folder_mode": None,
+        "ignored": False,
+        "conflicted": False,
+        "repository": False,
+    }
+
+
+def _version(file: FileEntry, area: Area) -> tuple[str | None, str | None]:
+    """
+    Give a file's id and mode in one area: two areas agree when both agree.
+
+    Parameters
+    ----------
+    file : FileEntry
+        The file.
+    area : Area
+        HEAD, the staging area or the working folder.
+
+    Returns
+    -------
+    tuple[str | None, str | None]
+        The id and the mode, None where the file is absent.
+    """
+    versions = {
+        "head": (file["head"], file["head_mode"]),
+        "index": (file["index"], file["index_mode"]),
+        "folder": (file["folder"], file["folder_mode"]),
+    }
+    return versions[area]
 
 
 def _clean(file: FileEntry) -> bool:
@@ -804,7 +845,53 @@ def _clean(file: FileEntry) -> bool:
     bool
         True if all three areas agree (a file in none of them counts).
     """
-    return file["head"] == file["index"] == file["folder"]
+    return _version(file, "head") == _version(file, "index") == _version(file, "folder")
+
+
+def _tracked(file: FileEntry) -> bool:
+    """
+    Tell whether a path is in HEAD or the staging area.
+
+    Parameters
+    ----------
+    file : FileEntry
+        The path.
+
+    Returns
+    -------
+    bool
+        True if git tracks it.
+    """
+    return file["head"] is not None or file["index"] is not None
+
+
+def _nested_news(old: FileEntry, new: FileEntry) -> list[FileNews]:
+    """
+    Tell that a separate repository appeared in the working folder, or left it.
+
+    Git lists such a repository as one untracked folder and never looks inside; changes inside
+    it are not news for this repository. An ignored one is not told.
+
+    Parameters
+    ----------
+    old : FileEntry
+        The path before.
+    new : FileEntry
+        The path after; neither is tracked.
+
+    Returns
+    -------
+    list[FileNews]
+        Zero or one piece of news.
+    """
+    path = new["path"]
+    news: list[FileNews] = []
+    if new["repository"] and not old["repository"] and not new["ignored"]:
+        text = f"`{path}` is a separate repository inside this one: Git lists it as an untracked folder and does not track the files in it."
+        news.append(("nested-repository-created", path, text))
+    elif old["repository"] and not new["repository"] and not old["ignored"]:
+        news.append(("nested-repository-deleted", path, f"The separate repository `{path}` is gone from the working folder."))
+    return news
 
 
 def _staging_news(old: FileEntry, new: FileEntry, committed: bool) -> list[FileNews]:
@@ -826,10 +913,10 @@ def _staging_news(old: FileEntry, new: FileEntry, committed: bool) -> list[FileN
         Zero or one piece of news.
     """
     path = new["path"]
-    if old["index"] == new["index"]:
+    if _version(old, "index") == _version(new, "index"):
         return []
     news: list[FileNews] = []
-    if new["index"] == new["head"] and not committed:
+    if _version(new, "index") == _version(new, "head") and not committed:
         again = "it is untracked again" if new["index"] is None else "the staging area has the last commit's version again"
         news.append(("file-unstaged", path, f"`{path}` was unstaged: {again}."))
     elif new["index"] is None:
@@ -858,13 +945,17 @@ def _folder_news(old: FileEntry, new: FileEntry) -> list[FileNews]:
         Zero or one piece of news.
     """
     path, note = new["path"], _folder_note(new)
-    if old["folder"] == new["folder"]:
+    if _version(old, "folder") == _version(new, "folder"):
         return []
     news: list[FileNews] = []
     if old["folder"] is None:
         news.append(("file-created", path, f"`{path}` was created in the working folder.{note}"))
     elif new["folder"] is None:
         news.append(("file-deleted", path, f"`{path}` was deleted from the working folder.{note}"))
+    elif old["folder"] == new["folder"] and new["folder_mode"] == EXECUTABLE_MODE:
+        news.append(("file-changed", path, f"`{path}` became executable in the working folder.{note}"))
+    elif old["folder"] == new["folder"] and old["folder_mode"] == EXECUTABLE_MODE:
+        news.append(("file-changed", path, f"`{path}` is no longer executable in the working folder.{note}"))
     else:
         news.append(("file-changed", path, f"`{path}` changed in the working folder.{note}"))
     return news
@@ -893,7 +984,7 @@ def _folder_note(file: FileEntry) -> str:
         note = " Git ignores it."
     elif file["index"] is None:
         note = " It is untracked: Git does not track it yet."
-    elif file["folder"] == file["index"]:
+    elif _version(file, "folder") == _version(file, "index"):
         note = " It matches the staging area."
     else:
         note = " The change is not staged yet."
@@ -917,7 +1008,7 @@ def _ignore_news(old: FileEntry, new: FileEntry) -> list[FileNews]:
         Zero or one piece of news.
     """
     path = new["path"]
-    if old["folder"] is None or old["folder"] != new["folder"] or old["ignored"] == new["ignored"]:
+    if old["folder"] is None or _version(old, "folder") != _version(new, "folder") or old["ignored"] == new["ignored"]:
         return []
     news: list[FileNews] = []
     if new["ignored"]:
