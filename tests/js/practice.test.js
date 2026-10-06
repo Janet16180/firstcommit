@@ -6,9 +6,9 @@ const { makeEvent } = require("./fakedom");
 const { createClock, fakeServer, httpError, installBrowser, load, playgroundObservation, pressView, record, settle } = require("./load");
 
 const document = installBrowser({ reducedMotion: true });
-const { Practice, TimeShare, createGameApi } = load(
+const { Polling, Practice, TimeShare, createGameApi } = load(
   ["dom.js", "markup.js", "map.js", "theme-time.js", "theme-time-motion.js", "theme-time-places.js", "theme-time-share.js", "api.js", "poll.js", "dialog.js", "live.js", "playground.js", "quest.js", "challenge.js", "practice.js"],
-  ["Practice", "TimeShare", "createGameApi"],
+  ["Polling", "Practice", "TimeShare", "createGameApi"],
 );
 
 const correct = (step, questDone = false) => ({ correct: true, message: [{ kind: "para", spans: [{ text: "Right.", code: false }] }], step, quest_done: questDone });
@@ -188,6 +188,27 @@ test("when the server does not answer the page says so and keeps trying", async 
   await run.clock.advance(1500);
   assert.equal(run.q(".offline").hidden, true);
   run.view.dispose();
+});
+
+test("a poll the server gave no answer to reports nothing and polling goes on, while a server error still surfaces", async () => {
+  const surfaced = [];
+  const realStart = Polling.start;
+  Polling.start = (options) => realStart({ ...options, tick: () => options.tick().catch((error) => surfaced.push(error)) });
+  try {
+    let reply = httpError(0, "the game server did not answer. Is `firstcommit` still running?");
+    const run = practice({ replies: { "/api/observe": () => reply } });
+    await settle();
+    await run.clock.advance(1500);
+    assert.equal(run.server.calls.length, 2);
+    assert.equal(run.q(".offline").hidden, false);
+    assert.deepEqual(surfaced, []);
+    reply = httpError(500, "IndexError: tuple index out of range", { error: "IndexError: tuple index out of range", kind: "bug" });
+    await run.clock.advance(1500);
+    assert.deepEqual(surfaced.map((error) => [error.status, error.data.kind]), [[500, "bug"]]);
+    run.view.dispose();
+  } finally {
+    Polling.start = realStart;
+  }
 });
 
 test("leaving asks first, then ends the level", async () => {
