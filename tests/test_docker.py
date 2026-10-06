@@ -2,8 +2,9 @@
 The Docker runtime: ``deploy/docker/run`` and the image it builds.
 
 Tests marked ``docker`` build or run containers; they skip when Docker or its daemon is not
-available. Every image tag, container and volume they create carries a random test name and is
-removed afterwards. One plays the smoke flow of DESIGN.md section 3 on the player image: the
+available. Every image tag, container and volume they create is named after this pytest run
+(`RUN_NAME`) and removed afterwards, and every port they use is one the OS picked, so several runs
+can share the machine. One plays the smoke flow of DESIGN.md section 3 on the player image: the
 template level, solved by typing git into the page's terminal. The other tests check the script's
 messages with a fake ``docker``.
 """
@@ -45,6 +46,7 @@ INPUTS_LABEL = "firstcommit.inputs"
 BUILT_LABEL = "firstcommit.built"
 MAX_AGE = timedelta(days=30)
 TOKEN_HEADER = routes.SETTINGS.token_header
+RUN_NAME = f"firstcommit-test-{secrets.token_hex(3)}"
 LINK = re.compile(r"http://localhost:(?P<port>\d+)/#token=(?P<token>[A-Za-z0-9_-]+)")
 PROMPT = r"\$ $"
 TEMPLATE_LEVEL = "basics-first-commit"
@@ -308,35 +310,17 @@ def read_terminal(leader: int) -> bytes:
 
 def free_port() -> int:
     """
-    Pick a port in the range these tests may use that nothing listens on.
+    Ask the OS for a local port nothing listens on.
 
     Returns
     -------
     int
-        A port between 8851 and 8899.
-    """
-    free = [port for port in range(8851, 8900) if not listening(port)]
-    if not free:
-        raise RuntimeError("every port from 8851 to 8899 is in use")
-    return free[0]
-
-
-def listening(port: int) -> bool:
-    """
-    Tell whether something accepts connections on a local port.
-
-    Parameters
-    ----------
-    port : int
-        The port on 127.0.0.1.
-
-    Returns
-    -------
-    bool
-        True if a connection succeeds.
+        The port; it stays free until something binds it, which the caller does at once.
     """
     with socket.socket() as probe:
-        return probe.connect_ex(("127.0.0.1", port)) == 0
+        probe.bind(("127.0.0.1", 0))
+        port: int = probe.getsockname()[1]
+    return port
 
 
 def call(port: int, method: str, path: str, token: str | None, body: dict[str, Any] | None = None) -> tuple[int, Any]:
@@ -621,7 +605,7 @@ def image(docker_ready: None) -> Iterator[str]:
     str
         The test name, used for the image, its container and its volume.
     """
-    name = f"firstcommit-test-{secrets.token_hex(4)}"
+    name = RUN_NAME
     built = run_script("build", name=name, timeout=900)
     assert built.returncode == 0, built.stdout + built.stderr
     yield name
@@ -643,7 +627,7 @@ def unused_name(docker_ready: None) -> Iterator[str]:
     str
         The name.
     """
-    name = f"firstcommit-test-{secrets.token_hex(4)}"
+    name = f"{RUN_NAME}-{secrets.token_hex(2)}"
     yield name
     remove_docker_objects(name)
 
