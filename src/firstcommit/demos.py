@@ -11,6 +11,10 @@ The lesson runs in one bash shell, so ``cd``, variables and ``$?`` carry over fr
 and slide to slide. Its home folder is shown as `SHOWN_HOME` and it starts in the empty folder
 ``project`` there. After each slide the whole home folder is copied aside, and the slide's
 figure is read from the copy once the shell is done.
+
+Lessons run without a terminal, but show what the player's terminal shows: `TERMINAL_CONFIG`
+turns on what git only does on a terminal, and carriage returns are applied as a terminal
+applies them. Colours, the pager and progress lines stay off.
 """
 
 import copy
@@ -19,7 +23,6 @@ import os
 import re
 import secrets
 import shlex
-import subprocess
 import tempfile
 from collections.abc import Sequence
 from dataclasses import dataclass
@@ -37,6 +40,13 @@ DATE = "2026-01-15T09:00:00+00:00"
 PATH = "/usr/local/bin:/usr/bin:/bin"
 SHOWN_HOME = "/home/you"
 """How the lesson's home folder appears in the output, instead of its random temporary path."""
+TERMINAL_CONFIG = "[log]\n\tdecorate = short\n"
+"""
+Git settings that make lessons print what a terminal shows.
+
+``log.decorate`` defaults to ``auto``: ``short`` on a terminal, no decorations otherwise
+(git-config(1)), so without it ``git log --oneline`` would lose its ``(HEAD -> main)``.
+"""
 PROJECT = "project"
 MUST_FAIL = "! "
 COPY_FAILED = 97
@@ -44,7 +54,7 @@ CACHED_LESSONS = 64
 
 # The shell's own status variable and the function that restores $? before each line, so a
 # line such as `echo $?` sees the status of the line before it, not of the game's bookkeeping.
-PROLOGUE = 'exec 2>&1\numask 022\n__fc_status() { return "$1"; }\n__fc=0\n'
+PROLOGUE = 'umask 022\n__fc_status() { return "$1"; }\n__fc=0\n'
 
 
 class Line(TypedDict):
@@ -77,10 +87,14 @@ def environment(home: Path) -> dict[str, str]:
 
     This is the one definition of the environment lessons, "predict" cards and "verify"
     snippets run in: a minimal ``PATH``, the C locale, a dumb terminal (so git never opens an
-    editor or a pager), UTC, git's global configuration in ``home`` holding only
-    `firstcommit.gitcmd.BASE_CONFIG`, no system configuration, and a fixed author, committer
-    and date, so commit hashes are the same on every run. Git never looks for a repository in
-    or above the folder that holds ``home``.
+    editor or a pager), UTC, git's global configuration in ``home`` holding
+    `firstcommit.gitcmd.BASE_CONFIG` then `TERMINAL_CONFIG`, no system configuration, and a
+    fixed author, committer and date, so commit hashes are the same on every run. Git never
+    looks for a repository in or above the folder that holds ``home``.
+
+    ``GIT_MERGE_AUTOEDIT=yes`` makes ``git merge`` and ``git pull`` want an editor for a merge
+    commit, as they do on a terminal; with no editor they fail, so a lesson has to write
+    ``--no-edit`` or ``-m`` and cannot hide the editor the player will meet.
 
     Run the code in a new folder next to ``home`` or inside it, never in ``home`` itself, where
     the configuration file would show up as an untracked file.
@@ -101,7 +115,7 @@ def environment(home: Path) -> dict[str, str]:
         If ``home`` already exists.
     """
     home.mkdir()
-    (home / ".gitconfig").write_text(gitcmd.BASE_CONFIG)
+    (home / ".gitconfig").write_text(gitcmd.BASE_CONFIG + TERMINAL_CONFIG)
     return {
         "PATH": PATH,
         "HOME": str(home),
@@ -111,6 +125,7 @@ def environment(home: Path) -> dict[str, str]:
         "GIT_CONFIG_GLOBAL": str(home / ".gitconfig"),
         "GIT_CONFIG_NOSYSTEM": "1",
         "GIT_CEILING_DIRECTORIES": str(home.parent),
+        "GIT_MERGE_AUTOEDIT": "yes",
         "GIT_AUTHOR_NAME": AUTHOR.name,
         "GIT_AUTHOR_EMAIL": AUTHOR.email,
         "GIT_AUTHOR_DATE": DATE,
@@ -156,8 +171,9 @@ def _frames(lesson: tuple[tuple[str, str], ...]) -> list[Frame]:
     """
     Run a lesson in a temporary folder of its own, and remove the folder afterwards.
 
-    The folder is under the game's labs folder, which git never looks above, so a lesson's map
-    can never show a repository that happens to contain the game's home.
+    The folder is in the game's ``lessons`` folder, which git never looks above
+    (`firstcommit.gitcmd.isolation`), so a lesson's map can never show a repository that
+    happens to contain the game's home.
 
     Parameters
     ----------
@@ -169,9 +185,9 @@ def _frames(lesson: tuple[tuple[str, str], ...]) -> list[Frame]:
     list[Frame]
         One frame per slide.
     """
-    labs = Path(gitcmd.isolation(save.home())["GIT_CEILING_DIRECTORIES"])
-    labs.mkdir(parents=True, exist_ok=True)
-    root = Path(tempfile.mkdtemp(prefix=".lesson-", dir=labs)).resolve()
+    lessons = save.home() / save.LESSONS_FOLDER
+    lessons.mkdir(parents=True, exist_ok=True)
+    root = Path(tempfile.mkdtemp(prefix="lesson-", dir=lessons)).resolve()
     try:
         built = _run(lesson, root)
     finally:
@@ -202,7 +218,8 @@ def _run(lesson: tuple[tuple[str, str], ...], root: Path) -> list[Frame]:
     token = secrets.token_hex(8)
     commands = [_commands(slide, run) for slide, run in lesson]
     result = snippets.run(_script(commands, token, root, home), home / PROJECT, env)
-    transcripts = _transcripts(result, token, commands, home)
+    printed = (root / "output").read_bytes().decode("utf-8", errors="replace")
+    transcripts = _transcripts(printed, result.returncode, token, commands, home)
     return [_frame(lesson[index][0], transcript, root / "frames" / str(index), home) for index, transcript in enumerate(transcripts)]
 
 
@@ -235,10 +252,13 @@ def _script(commands: list[list[_Command]], token: str, root: Path, home: Path) 
     """
     Write the bash script that runs a lesson.
 
-    Each command runs through ``eval``, so a line that is not a whole command fails on its own
-    instead of swallowing the lines after it. A marker with the command's exit status follows
-    its output. After each slide, the shell's folder is saved in ``frames/<n>.cwd`` and the home
-    folder is copied to ``frames/<n>``.
+    Everything the shell prints goes to the file ``output``, read later as bytes: a pipe read
+    as text would turn carriage returns into line breaks. Each command runs through ``eval``,
+    so a line that is not a whole command fails on its own instead of swallowing the lines
+    after it. A marker with the command's exit status follows
+    its output. After each slide, the top of the repository the shell is in (or the shell's
+    folder, outside one) is saved in ``frames/<n>.cwd``, and the home folder is copied to
+    ``frames/<n>``.
 
     Parameters
     ----------
@@ -256,24 +276,27 @@ def _script(commands: list[list[_Command]], token: str, root: Path, home: Path) 
     str
         The script.
     """
-    lines = [PROLOGUE]
+    lines = [f"exec >{shlex.quote(str(root / 'output'))} 2>&1\n", PROLOGUE]
     for index, slide in enumerate(commands):
         for command in slide:
             lines.append(f'__fc_status "$__fc"; eval {shlex.quote(command.text)}\n')
             lines.append(f"__fc=$?; printf '\\0%s %d\\0' {token} \"$__fc\"\n")
         frame = shlex.quote(str(root / "frames" / str(index)))
-        lines.append(f"pwd -P > {frame}.cwd && cp -a {shlex.quote(str(home))} {frame} || exit {COPY_FAILED}\n")
+        where = "{ git rev-parse --show-toplevel 2>/dev/null || pwd -P; }"
+        lines.append(f"{where} > {frame}.cwd && cp -a {shlex.quote(str(home))} {frame} || exit {COPY_FAILED}\n")
     return "".join(lines)
 
 
-def _transcripts(result: subprocess.CompletedProcess[str], token: str, commands: list[list[_Command]], home: Path) -> list[list[Line]]:
+def _transcripts(printed: str, status: int, token: str, commands: list[list[_Command]], home: Path) -> list[list[Line]]:
     """
     Split a lesson's output into each command's output, and check each command's exit status.
 
     Parameters
     ----------
-    result : subprocess.CompletedProcess[str]
-        The finished lesson script.
+    printed : str
+        Everything the lesson script printed.
+    status : int
+        The script's exit status.
     token : str
         The marker the script printed after each command.
     commands : list[list[_Command]]
@@ -292,11 +315,11 @@ def _transcripts(result: subprocess.CompletedProcess[str], token: str, commands:
         If a command failed unexpectedly, a ``! `` command succeeded, the shell stopped early,
         or the lesson folder could not be copied.
     """
-    pieces = re.split(f"\0{token} ([0-9]+)\0", result.stdout.replace(str(home), SHOWN_HOME))
+    pieces = re.split(f"\0{token} ([0-9]+)\0", printed.replace(str(home), SHOWN_HOME))
     statuses = [int(status) for status in pieces[1::2]]
-    outputs = pieces[0::2]
+    outputs = [_as_on_terminal(output) for output in pieces[0::2]]
     flat = [command for slide in commands for command in slide]
-    if result.returncode == COPY_FAILED:
+    if status == COPY_FAILED:
         raise RuntimeError(f"the lesson folder could not be copied:\n{outputs[-1]}")
     if len(statuses) < len(flat):
         stopped = flat[len(statuses)]
@@ -310,6 +333,33 @@ def _transcripts(result: subprocess.CompletedProcess[str], token: str, commands:
     return [[next(lines) for _ in slide] for slide in commands]
 
 
+def _as_on_terminal(output: str) -> str:
+    """
+    Apply carriage returns as a terminal does.
+
+    A carriage return sends the cursor back to the start of the line, so later text overwrites
+    earlier text; progress counters (``Rebasing (1/1)``) leave only their last state.
+
+    Parameters
+    ----------
+    output : str
+        What a command printed.
+
+    Returns
+    -------
+    str
+        What stays on the screen. Lines without a carriage return are unchanged; the others
+        lose the spaces left at their end.
+    """
+    shown_lines = []
+    for line in output.split("\n"):
+        shown = ""
+        for part in line.split("\r"):
+            shown = part + shown[len(part) :]
+        shown_lines.append(shown.rstrip(" ") if "\r" in line else shown)
+    return "\n".join(shown_lines)
+
+
 def _frame(slide: str, transcript: list[Line], copy_of_home: Path, home: Path) -> Frame:
     """
     Read a slide's figure from the copy of the home folder taken after it.
@@ -321,7 +371,8 @@ def _frame(slide: str, transcript: list[Line], copy_of_home: Path, home: Path) -
     transcript : list[Line]
         Its commands and their output.
     copy_of_home : Path
-        The copy; the shell's folder at that moment is saved next to it, in ``<copy>.cwd``.
+        The copy; the folder whose repository the figure shows is saved next to it, in
+        ``<copy>.cwd``.
     home : Path
         The lesson's home folder.
 

@@ -116,3 +116,10 @@ def test_game_git_never_finds_a_repository_above_a_lesson(game_home: Path) -> No
     lesson = game_home / "lessons" / "some-lesson"
     lesson.mkdir(parents=True)
     assert gitcmd.run(lesson, "rev-parse", "--git-dir").returncode != 0
+
+
+def test_the_game_pages_like_git_does_when_less_is_unset(game_home: Path, tmp_path: Path) -> None:
+    (game_home / "gitconfig").write_text(gitcmd.BASE_CONFIG)
+    env = {**gitcmd.shell_environment({"PATH": os.environ["PATH"], "LESS": "-R"}, game_home), "HOME": str(tmp_path)}
+    result = subprocess.run(["git", "var", "GIT_PAGER"], env=env, capture_output=True, text=True, check=True)
+    assert result.stdout == "less -FRX\n"

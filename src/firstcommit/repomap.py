@@ -125,10 +125,9 @@ class ObjectInfo(TypedDict):
 
 @dataclass(frozen=True)
 class _Repository:
-    """Where git found a repository: its git folder, its working folder's top (None for a bare repository or from inside ``.git``), and its hash function."""
+    """The repository of a folder: its git folder, whether it is bare, and its hash function."""
 
     git_dir: Path
-    top: Path | None
     bare: bool
     object_format: str
 
@@ -137,9 +136,11 @@ def snapshot(path: Path) -> Snapshot:
     """
     Read the state of the repository in a folder.
 
-    The repository is the one git itself finds from ``path``, as a command typed there would:
-    a subfolder shows its whole repository. Nothing in the repository changes, and the staging
-    area is never locked, so the page can poll while the player types.
+    The repository is the folder's own: ``path`` is the top of its working folder, or the bare
+    repository itself. A folder inside a repository that starts higher up (a ``git init`` typed
+    one folder too high, a subfolder, the ``.git`` folder) holds no repository of its own, so a
+    check can never pass on the wrong repository. Nothing in the repository changes, and the
+    staging area is never locked, so the page can poll while the player types.
 
     Whatever a player does to the folder gives a snapshot rather than an error:
 
@@ -147,8 +148,7 @@ def snapshot(path: Path) -> Snapshot:
       or one missing ``HEAD``, ``objects`` or ``refs``) holds no repository: ``exists`` is False;
     - in a damaged repository (missing objects, a deleted staging area), the parts git cannot
       read are left empty and the rest is read as usual;
-    - from inside the ``.git`` folder there is no working folder, so ``files`` is empty, as in a
-      bare repository;
+    - a bare repository has no working folder, so ``files`` is empty;
     - a file that cannot be read (no permission, or deleted while it is read) has no ``folder``
       id; a symbolic link's ``folder`` id is that of the link itself, as ``git add`` stores it;
     - nested repositories and submodules are left out of ``files``, and ignored files are the
@@ -168,21 +168,20 @@ def snapshot(path: Path) -> Snapshot:
     repo = _find(path)
     if repo is None:
         return _no_repository()
-    cwd = repo.top if repo.top is not None else repo.git_dir
-    head = _head(cwd)
-    refs, stashed = _refs(cwd)
-    commits, commits_cut = _commits(cwd, head)
-    files, files_cut = _files(repo.top, head, repo.object_format) if repo.top is not None else ([], False)
+    head = _head(path)
+    refs, stashed = _refs(path)
+    commits, commits_cut = _commits(path, head)
+    files, files_cut = ([], False) if repo.bare else _files(path, head, repo.object_format)
     return {
         "exists": True,
         "bare": repo.bare,
         "head": head,
-        "branch": _branch(cwd),
+        "branch": _branch(path),
         "commits": commits,
         "refs": refs,
         "files": files,
-        "operation": next((operation for marker, operation in OPERATION_MARKERS if (repo.git_dir / marker).exists()), None),
-        "stash": _stash_count(cwd) if stashed else 0,
+        "operation": next((operation for marker, operation in OPERATION_MARKERS if os.path.exists(repo.git_dir / marker)), None),
+        "stash": _stash_count(path) if stashed else 0,
         "truncated": commits_cut or files_cut,
     }
 
@@ -240,7 +239,7 @@ def _no_repository() -> Snapshot:
 
 def _find(path: Path) -> _Repository | None:
     """
-    Find the repository git sees from a folder.
+    Find the folder's own repository.
 
     Parameters
     ----------
@@ -250,20 +249,20 @@ def _find(path: Path) -> _Repository | None:
     Returns
     -------
     _Repository | None
-        The repository, or None if the folder is missing, cannot be entered or holds none.
+        The repository whose working folder starts at ``path``, or the bare repository at
+        ``path``; None if the folder is missing, cannot be entered, or is not the top of one.
     """
-    if not path.is_dir() or not os.access(path, os.X_OK):
-        return None
     result = gitcmd.run(
         path, "rev-parse", "--is-bare-repository", "--is-inside-work-tree", "--show-object-format", "--show-cdup", "--absolute-git-dir"
     )
     if result.returncode != 0:
         return None
     bare, inside, object_format, rest = result.stdout.removesuffix("\n").split("\n", 3)
-    # Outside a working folder, --show-cdup prints no line at all.
-    up, git_dir = rest.split("\n", 1) if inside == "true" else ("", rest)
-    top = (path / up).resolve() if inside == "true" else None
-    return _Repository(Path(git_dir), top, bare == "true", object_format)
+    # Outside a working folder, --show-cdup prints no line at all; at the top it prints an empty one.
+    up, git_dir = rest.split("\n", 1) if inside == "true" else (None, rest)
+    if up != "" and not (bare == "true" and Path(git_dir) == path.resolve()):
+        return None
+    return _Repository(Path(git_dir), bare == "true", object_format)
 
 
 def _lines(result: subprocess.CompletedProcess[str]) -> list[str]:
@@ -535,10 +534,11 @@ def _folder_ids(top: Path, keys: list[str], object_format: str) -> dict[str, str
     for key in keys:
         full = os.fsencode(top) + b"/" + _unquote(key)
         mode = _mode(full)
+        link_id = _link_id(full, object_format) if mode is not None and stat.S_ISLNK(mode) else None
         if mode is not None and stat.S_ISREG(mode):
             files.append(key)
-        elif mode is not None and stat.S_ISLNK(mode):
-            ids[key] = _link_id(full, object_format)
+        elif link_id is not None:
+            ids[key] = link_id
     ids.update(_hash_files(top, files))
     return ids
 
@@ -591,7 +591,7 @@ def _hash_files(top: Path, keys: list[str]) -> dict[str, str]:
     return ids
 
 
-def _link_id(path: bytes, object_format: str) -> str:
+def _link_id(path: bytes, object_format: str) -> str | None:
     """
     Compute the blob id of a symbolic link.
 
@@ -607,11 +607,14 @@ def _link_id(path: bytes, object_format: str) -> str:
 
     Returns
     -------
-    str
-        The blob id.
+    str | None
+        The blob id, or None if the link is gone or was replaced since it was found.
     """
-    target = os.readlink(path)
-    return hashlib.new(object_format, b"blob %d\0" % len(target) + target).hexdigest()
+    try:
+        target: bytes | None = os.readlink(path)
+    except OSError:  # the player can delete or replace the link between lstat and readlink
+        target = None
+    return None if target is None else hashlib.new(object_format, b"blob %d\0" % len(target) + target).hexdigest()
 
 
 def _unquote(key: str) -> bytes:

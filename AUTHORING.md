@@ -46,13 +46,19 @@ For every sentence that states a fact, in a slide, step, briefing, hint, debrief
 8. **Scope every absolute.** "Only", "never", "always", "every" and "after a commit" are almost
    always false for some option (`git commit -a`, `git commit <file>`, `git revert`). Check the
    options that change the claim, then scope it to the exact command you teach ("a plain
-   `git commit`").
+   `git commit`"). The options that broke claims in the first level, to check every time:
+   `git commit -a`, `git commit <path>`, `--author` and the `GIT_AUTHOR_*` variables, a short
+   hash where git needs a full one (`git fetch`), `core.hideDotFiles` on Windows, and commands
+   other than `commit` that make commits (`merge`, `revert`, `cherry-pick`).
 9. **Every command you write is complete and runnable as written.** `git config --global
    user.name` without a value only reads the setting. Placeholders are obvious and safe to paste
    (`"Your Name"`).
 10. **Describe output as the player's terminal shows it.** Some output differs on a terminal:
     `git log --oneline` adds `(HEAD -> main)` there (`log.decorate`, git-config(1)). Lessons show
-    terminal output; check prose against a real terminal, not against memory or a pipe.
+    terminal output; check prose against a real terminal, not against memory or a pipe. To see
+    what a terminal shows from a script, run the command under `script` with the pager off:
+    `GIT_PAGER=cat script -qec 'git log --oneline' /dev/null` (without `GIT_PAGER=cat` the pager
+    waits for a key and the command hangs).
 
 ## 2. Code standards (all Python in this repo)
 
@@ -157,6 +163,10 @@ def solve(lab: kit.Lab, state: kit.State) -> str | None: ...
   - a *watch* step has `watch(lab, state) -> Verdict`, which passes once the lab shows the step
     was done (polled like `check`; same rules);
   - a *read* step has neither.
+
+  A watch's message is shown live, after every poll, while the player works: write it as the
+  next thing to do ("`README.md` is in the working folder; stage it with `git add`"), never as
+  an error. One suggested `command` per step: when a task needs two commands, make two steps.
 - Text fields may contain `{{key}}` placeholders, filled from the state.
 
 ### 3.4 Reading the lab
@@ -183,10 +193,11 @@ for people.
 
 A lesson is a list of `kit.Slide`s. Each slide has a short text and an optional `run`: shell
 lines added to the lesson's demonstration repository. The game runs every slide's `run` lines
-in order in an empty folder, with a fixed identity, date and locale and no global
-configuration, and shows each of the slide's commands with its real output, plus a figure
-(`view`): the repository map, the three areas, the object database, the commands only, or
-nothing. So every hash and line of output a lesson shows is what git really prints.
+in order in an empty folder, with a fixed identity, date and locale, and only the game's
+starting global configuration (`gitcmd.BASE_CONFIG`) plus the settings below that make git
+print what a terminal shows. It shows each of the slide's commands with its real output, plus
+a figure (`view`): the repository map, the three areas, the object database, the commands
+only, or nothing. So every hash and line of output a lesson shows is what git really prints.
 
 - Each non-blank line of `run` is one command. The whole lesson runs in one bash shell, so
   `cd`, variables and `$?` carry over to the next line and the next slide. Keep a command on
@@ -195,17 +206,39 @@ nothing. So every hash and line of output a lesson shows is what git really prin
   staged); any other failing line is a bug in the lesson and fails the tests. So is a `! `
   line that succeeds, a line that ends the shell (`exit`), and a slide that ends outside the
   lesson's home folder.
-- The lesson starts in the empty folder `/home/you/project`, with `HOME` at `/home/you` (that
-  is how the output shows the real temporary folder), the author and committer
-  `Sam Lee <sam@example.com>`, the date 2026-01-15 09:00 UTC, `LC_ALL=C`, `TERM=dumb`, umask
-  022, and a global git configuration that only sets the default branch to `main`.
+- The lesson starts in the empty folder `/home/you/project`, with `HOME` at `/home/you`: the
+  real folder is temporary, and every path under it is shown under `/home/you`, so two runs
+  print the same thing. The author and committer are `Sam Lee <sam@example.com>`, the date is
+  2026-01-15 09:00 UTC, with `LC_ALL=C`, `TERM=dumb` and umask 022.
   `firstcommit.demos.environment` defines it; predict cards and verify snippets use the same.
 - A command's output is its standard output and error together, in order. A slide's figure
-  shows the repository of the shell's current folder after the slide's last line.
+  shows the repository the shell is in after the slide's last line (from a subfolder, the
+  repository's top).
 - Output must be the same on every run and must be text: no `date`, no `ls -l` (it shows
   times), no `$RANDOM`, no binary files printed to the terminal.
 - Write files with plain shell (`echo "hello" > hello.txt`), so the reader can follow along.
 - 4-8 slides; one idea each; text of 2-5 short sentences.
+
+Lessons run without a terminal, and git prints some things differently then. Checked on git
+2.43 against a real terminal:
+
+- `log.decorate = short` is set, so `git log`, `git show` and `git reflog` show
+  `(HEAD -> main)` and tags as on a terminal (git-config(1): `auto` decorates only there).
+- Carriage returns are applied as a terminal applies them: `git rebase` leaves only its last
+  line, not its `Rebasing (1/1)` counter.
+- `git merge` and `git pull` open an editor for a merge commit on a terminal, so the lessons
+  set `GIT_MERGE_AUTOEDIT=yes` and a plain `git merge topic` that makes a merge commit fails:
+  write `--no-edit` or `-m`, and tell the player about the editor. `git revert` also opens an
+  editor only on a terminal and cannot be made to fail: always write `git revert --no-edit`.
+  `git commit` without `-m` and `git tag -a` without `-m` fail in a lesson anyway.
+- `git shortlog` with no revision reads its input instead of the history when it is not on a
+  terminal: write `git shortlog HEAD`.
+- Colours, the pager and progress lines stay off. On a terminal, `push`, `fetch`, `pull` and
+  `gc` also print progress (`Enumerating objects`, `Writing objects` with a speed in KiB/s)
+  that a lesson does not show, so never quote those lines.
+- Everything else a beginner meets prints the same: `init`, `status`, `add`, `commit`,
+  `restore`, `rm`, `switch`, `checkout` (with its detached-HEAD advice), `branch`, `diff`,
+  `merge` with conflicts, `stash`, `cherry-pick`, `reset`, `clone`, `blame`, `cat-file`.
 
 ### 3.6 Testing a level
 
@@ -250,6 +283,16 @@ commands, and returns the answer to type for an answer step (None otherwise). Fo
 order, the harness asserts that a watch step fails before its action and passes after it, and
 that an answer step refuses the empty answer and accepts the action's answer. So each watch must
 notice the very thing its step asks for, and not pass early because of an earlier step.
+
+Two patterns from the template level (`levels/basics_first_commit.py`) keep a level short and
+consistent:
+
+- **One "next move".** Write one function that reads the snapshot and says what the player should
+  do next from any state (no repository, wrong branch, a file not staged, nothing committed...).
+  Every watch and the mission `check` reuse it, so the advice is the same wherever the player is,
+  and advice that depends on the repository (does `main` exist yet?) is written once.
+- **`solve` reuses `QUEST_ACTIONS`**: it runs the actions in order, so the reference solution and
+  the quest walk cannot drift apart.
 
 ## 4. Cards
 
@@ -296,6 +339,9 @@ source = "git-hash-object(1)"
   game's starting configuration `gitcmd.BASE_CONFIG` as the only global configuration), and
   compare standard output (trailing newlines stripped) with `correct`. They must be
   deterministic and must not depend on git's message wording.
+- A **verify** snippet passes only on exit status 0 of its *last* command: bash runs it without
+  `-e`, and a `! cmd` line never stops it. Put the claim in the last line (`test ...`,
+  `grep -q ...`, `git diff --cached --quiet`), and invert it once by hand to see the snippet fail.
 - **text**: short, unambiguous answers; list every reasonable spelling in `accept`.
 
 ### 4.2 What makes a good card
@@ -322,6 +368,9 @@ All text is parsed by `firstcommit.markup` (the page and the command line only r
 - `backticks` mark commands, file names, branch names and hashes.
 - The whole text is dedented first, so a text made *only* of indented lines reads as prose. To
   show output on its own, put one line of prose before it.
+- Write text flush-left inside its triple quotes. When the first paragraph starts right after
+  `"""`, nothing is dedented, so a later paragraph indented to match the code around it becomes
+  a verbatim block.
 
 ## 7. Words and tone
 
