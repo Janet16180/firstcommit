@@ -8,7 +8,7 @@ from pathlib import Path
 import pytest
 from termlab import snippets
 
-from firstcommit import demos, gitcmd, kit
+from firstcommit import demos, gitcmd, kit, save
 
 HELLO = "ce013625030ba8dba906f756967f9e9ca394464a"
 
@@ -228,6 +228,18 @@ def test_the_lesson_folder_is_removed_afterwards(game_home: Path) -> None:
         demos.frames(lesson("echo cleaned up after a failure\nfalse"))
     leftovers = list(game_home.rglob("*"))
     assert leftovers == [game_home / "lessons"]
+
+
+def test_a_game_home_inside_a_repository_never_shows_that_repository(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    gitcmd.output(tmp_path, "init", "-q")
+    home = tmp_path / "home"
+    monkeypatch.setenv("FIRSTCOMMIT_HOME", str(home))
+    outside, inside = demos.frames(lesson("echo no repository here yet", "git init -q demo\ncd demo"))
+    assert not outside["map"]["exists"]
+    assert outside["objects"] == []
+    assert inside["map"]["exists"]
+    assert sorted(path.name for path in tmp_path.iterdir()) == [".git", "home"]
+    assert list(home.rglob("*")) == [home / save.LESSONS_FOLDER]
 
 
 def test_asking_twice_for_a_lesson_runs_it_once(monkeypatch: pytest.MonkeyPatch) -> None:
