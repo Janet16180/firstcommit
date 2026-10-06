@@ -266,3 +266,16 @@ def test_the_games_git_never_asks_for_a_password(tmp_path: Path, password_server
     result = gitcmd.run(tmp_path, "ls-remote", password_server)
     assert result.returncode != 0
     assert "terminal prompts disabled" in result.stderr
+
+
+@pytest.mark.parametrize("email_variable", [{}, {"EMAIL": "sam@example.com"}], ids=["no EMAIL", "EMAIL set"])
+def test_a_commit_with_a_name_but_no_email_stops_instead_of_guessing_one(game_home: Path, tmp_path: Path, email_variable: dict[str, str]) -> None:
+    save.ensure_gitconfig(gitcmd.BASE_CONFIG)
+    repo = tmp_path / "repo"
+    gitcmd.output(tmp_path, "init", "-q", str(repo))
+    gitcmd.output(repo, "config", "user.name", "Sam Lee")
+    shell = gitcmd.shell_environment({"PATH": os.environ["PATH"], "HOME": str(tmp_path), **email_variable}, game_home)
+    result = subprocess.run(["git", "commit", "-q", "--allow-empty", "-m", "First"], cwd=repo, env=shell, capture_output=True, text=True, check=False)
+    assert result.returncode == 128
+    assert "fatal: no email was given and auto-detection is disabled" in result.stderr
+

@@ -38,7 +38,7 @@ the snapshot polled every 1.5 s never starts a file system monitor, a hook or a 
 program from a lab's ``.git/config``. The player's shell keeps the repository's settings.
 """
 
-BASE_CONFIG = "[init]\n\tdefaultBranch = main\n[core]\n\tpager = less -FRX\n\texcludesFile =\n\tattributesFile =\n"
+BASE_CONFIG = "[init]\n\tdefaultBranch = main\n[core]\n\tpager = less -FRX\n\texcludesFile =\n\tattributesFile =\n[user]\n\tuseConfigOnly = true\n"
 """
 The game's global git configuration when it starts: the player's shell and the lessons share it.
 
@@ -48,6 +48,10 @@ is printed without stopping in the pager, whatever ``LESS`` the player's shell s
 personal ignore and attributes files (``~/.config/git/ignore`` and ``attributes``, which it reads
 by default even when ``GIT_CONFIG_GLOBAL`` names another file): a lab shows the same files on
 every machine. A chapter that teaches a global ignore file sets ``core.excludesFile`` itself.
+``user.useConfigOnly`` makes a commit without a configured name or email stop with the same
+message on every machine, ``EMAIL`` ignored, instead of using a guessed address built from the
+login and host names: no machine-dependent identity, and no login or host name in a pushed
+commit.
 """
 
 
