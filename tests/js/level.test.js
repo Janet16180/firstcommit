@@ -113,15 +113,30 @@ test("a win is celebrated, then the debrief teaches and suggests what comes next
   assert.ok(run.q(".debrief a[href=\"#/cards/basics\"]"));
 });
 
-test("a level solved elsewhere is celebrated from the dashboard's last payout", async () => {
+test("a level solved elsewhere is celebrated from the dashboard's last payout, then shows its debrief", async () => {
   const payout = { level: ID, xp: 150, first_time: true, rank_before: "Committer", rank_after: "Committer" };
   const refreshed = { ...record("status"), active: null, last_payout: payout };
-  const run = page({ active: { ...record("active"), level: ID, step: 1 }, refreshed, replies: { "/api/observe": httpError(409, "no level") } });
+  let finished = false;
+  const level = () => ({ ...record("level"), debrief: finished ? record("check_solved").debrief : null });
+  const observe = () => {
+    finished = true;
+    return httpError(409, "no level");
+  };
+  const run = page({ active: { ...record("active"), level: ID, step: 1 }, refreshed, replies: { "/api/level": level, "/api/observe": observe } });
+  await settle();
   await settle();
   await settle();
   assert.equal(run.seen.celebrated.length, 1);
   assert.ok(run.q(".debrief"));
-  assert.match(run.text(), /outside this page/i);
+  assert.match(run.text(), /Git records what is staged/);
+});
+
+test("a finished level offers its debrief again from its introduction, without a payout", async () => {
+  const run = page({ replies: { "/api/level": { ...record("level"), debrief: record("check_solved").debrief } } });
+  await settle();
+  button(run, /Read the debrief/).click();
+  assert.match(run.text(), /Commands to keep/);
+  assert.equal(run.q(".payout"), null);
 });
 
 test("a level ended elsewhere without a win goes back to its introduction with a note", async () => {

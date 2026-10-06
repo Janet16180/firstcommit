@@ -112,3 +112,12 @@ test("a contract error carries no HTTP status", async () => {
   const { game } = gameApi({ "/api/notes": { chapter: "basics" } });
   await assert.rejects(game.notes("basics"), (error) => error.status === undefined && /\/api\/notes/.test(error.message));
 });
+
+test("a level reply must carry its question, the hints shown so far and its debrief", async () => {
+  for (const field of ["question", "placeholder", "hints", "debrief"]) {
+    const level = record("level");
+    delete level[field];
+    const { game } = gameApi({ "/api/level": level });
+    await assert.rejects(game.level("x"), new RegExp(`/api/level\\.${field} should be`), field);
+  }
+});

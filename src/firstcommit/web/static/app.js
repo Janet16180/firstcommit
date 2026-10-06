@@ -7,7 +7,7 @@
  * server sent (refreshed on every view change). Loads last; defines no global.
  */
 
-/* global createClient, createTerminal, createGameApi, Dom, Route, Sound, Celebrate, RepoMap, Progress, HomeView, LevelPage, CardsView, NotesView */
+/* global createClient, createTerminal, createGameApi, Dom, Route, Sound, Celebrate, Dialog, RepoMap, Progress, HomeView, LevelPage, CardsView, NotesView */
 
 (function () {
   const { el } = Dom;
@@ -106,10 +106,14 @@
     setTimeout(() => item.remove(), TOAST_MS);
   }
 
-  /* The last resort for errors no view handled. */
+  /* The last resort for errors no view handled. The server answers 500 only for a damaged save. */
   function report(error) {
     if (app.locked || (error && error.status === 403)) return;
-    const message = error && error.status === 0 ? "The game server did not answer. Is `firstcommit` still running in your terminal?" : `Something went wrong: ${error && error.message ? error.message : error}`;
+    const status = error ? error.status : undefined;
+    const detail = error && error.message ? error.message : String(error);
+    let message = `Something went wrong: ${detail}`;
+    if (status === 0) message = "The game server did not answer. Is `firstcommit` still running in your terminal?";
+    else if (status === 500) message = `Your saved game is damaged: ${detail}. Open the map to start over.`;
     toast(message);
   }
 
@@ -122,6 +126,27 @@
   function showLocked() {
     showScreen("Open the game from its link", el("p", {}, "This page needs the link that ", el("code", {}, "firstcommit"), " printed in your terminal when it started: the link carries the key that lets the page talk to the game."), el("p", {}, "Find the line that starts with http://localhost in that terminal and open it (Ctrl+click in most terminals)."));
     app.locked = true;
+  }
+
+  async function startOver() {
+    const sure = await Dialog.confirm({
+      title: "Start over?",
+      text: "This erases your progress and makes a fresh save. It cannot be undone.",
+      confirm: "Start over",
+      cancel: "Not now",
+      danger: true,
+    });
+    if (!sure) return;
+    await game.reset();
+    show(Route.parse(location.hash));
+  }
+
+  function showDamaged(message) {
+    showScreen("Your saved game is damaged",
+      el("p", {}, message),
+      el("p", {}, "This happens when a save file is edited by hand or cut short. Starting over makes a fresh save; you can also run ", el("code", {}, "firstcommit reset --yes"), " in a terminal."),
+      el("div", { class: "actions" }, el("button", { type: "button", class: "btn btn-danger start-over", onclick: startOver }, "Start over")),
+    );
   }
 
   function disposeTerminal() {
@@ -195,6 +220,7 @@
       await refresh();
     } catch (error) {
       if (error.status === 0) showScreen("Cannot reach the game", el("p", {}, "Is ", el("code", {}, "firstcommit"), " still running in your terminal? Start it again and open the link it prints."));
+      else if (error.status === 500) showDamaged(error.message);
       else if (error.status !== 403) throw error;
       return;
     }

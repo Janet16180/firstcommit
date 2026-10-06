@@ -107,6 +107,8 @@
     ]
    }
   ],
+  "question": "",
+  "placeholder": "",
   "steps": [
    {
     "id": "look",
@@ -176,7 +178,9 @@
    }
   ],
   "hints_total": 3,
-  "has_lesson": true
+  "has_lesson": true,
+  "hints": [],
+  "debrief": null
  },
  "lesson": {
   "level": "sample-second",

@@ -8,9 +8,11 @@ const { installBrowser, load, record } = require("./load");
 installBrowser();
 const { Challenge } = load(["dom.js", "markup.js", "challenge.js"], ["Challenge"]);
 
-function challenge(active = { ...record("active"), step: 3, hints: 0 }) {
+const asking = { ...record("level"), question: "Which commit added notes.txt?", placeholder: "a short hash" };
+
+function challenge(active = { ...record("active"), step: 3, hints: 0 }, level = record("level")) {
   const seen = { checks: [], hints: 0 };
-  const made = Challenge.create({ level: record("level"), active, onCheck: (answer) => seen.checks.push(answer), onHint: () => (seen.hints += 1) });
+  const made = Challenge.create({ level, active, onCheck: (answer) => seen.checks.push(answer), onHint: () => (seen.hints += 1) });
   return { ...made, seen, q: (selector) => made.element.querySelector(selector) };
 }
 
@@ -19,12 +21,28 @@ test("the challenge shows the briefing", () => {
   assert.match(view.q(".briefing").textContent, /record the change to notes\.txt/);
 });
 
-test("checking sends the typed answer, or null when the box is empty", () => {
+test("a level checked against the repository has no answer box, and checking sends no answer", () => {
   const view = challenge();
+  assert.equal(view.q("input"), null);
+  view.q("form").dispatchEvent(makeEvent("submit"));
+  assert.deepEqual(view.seen.checks, [null]);
+});
+
+test("a level that asks a question shows it with its answer box and sends the typed answer", () => {
+  const view = challenge(undefined, asking);
+  assert.equal(view.q("label").textContent, "Which commit added notes.txt?");
+  assert.equal(view.q("input").getAttribute("placeholder"), "a short hash");
   view.q("form").dispatchEvent(makeEvent("submit"));
   view.q("input").value = "  abc123 ";
   view.q("form").dispatchEvent(makeEvent("submit"));
   assert.deepEqual(view.seen.checks, [null, "abc123"]);
+});
+
+test("hints revealed before a reload are shown again", () => {
+  const level = { ...record("level"), hints: [record("hint").hint, [{ kind: "para", spans: [{ text: "Second hint.", code: false }] }]] };
+  const view = challenge({ ...record("active"), step: 3, hints: 2, hints_total: 3 }, level);
+  assert.match(view.q(".hints").textContent, /git status.*Second hint\./);
+  assert.match(view.q(".hint-button").textContent, /1 left/);
 });
 
 test("a hint is asked for on its button and shown with its cost", () => {
@@ -45,7 +63,7 @@ test("with every hint used the button is off, and hints used earlier are counted
 });
 
 test("the result of a check is shown", () => {
-  const view = challenge();
+  const view = challenge(undefined, asking);
   view.feedback(record("check_unsolved").message, false);
   assert.match(view.q(".check-feedback").textContent, /does not hold the new notes\.txt/);
   assert.ok(view.q(".check-feedback").classList.contains("is-wrong"));

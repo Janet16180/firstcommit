@@ -75,9 +75,13 @@ const createGameApi = (function () {
     difficulty: number,
     xp: number,
     briefing: BLOCKS,
+    question: text,
+    placeholder: text,
     steps: list(record({ id: text, kind: oneOf("answer", "watch", "read"), text: BLOCKS, command: text, question: text, placeholder: text })),
     hints_total: number,
     has_lesson: flag,
+    hints: list(BLOCKS),
+    debrief: nullable(BLOCKS),
   });
   const LESSON = record({
     level: text,

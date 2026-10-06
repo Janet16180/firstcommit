@@ -1176,8 +1176,30 @@ input[type="text"]::placeholder {
 
 .feed li {
   padding: 0.35rem 0.55rem;
+  border-left: 3px solid var(--line-strong);
   border-radius: var(--radius-small);
   line-height: 1.45;
+}
+
+.feed li[data-kind^="commit-"],
+.feed li[data-kind="file-staged"] {
+  border-left-color: var(--accent);
+}
+
+.feed li[data-kind^="branch-"],
+.feed li[data-kind^="head-"],
+.feed li[data-kind^="tag-"] {
+  border-left-color: var(--map-branch);
+}
+
+.feed li[data-kind="push-received"],
+.feed li[data-kind="remote-updated"] {
+  border-left-color: var(--map-remote);
+}
+
+.feed li[data-kind^="conflict"],
+.feed li[data-kind$="-aborted"] {
+  border-left-color: var(--danger);
 }
 
 .feed li span {

@@ -13,7 +13,7 @@ const { Practice, createGameApi } = load(
 
 const correct = (step, questDone = false) => ({ correct: true, message: [{ kind: "para", spans: [{ text: "Right.", code: false }] }], step, quest_done: questDone });
 
-function practice({ step = 1, replies = {} } = {}) {
+function practice({ step = 1, replies = {}, level = record("level") } = {}) {
   const clock = createClock();
   const server = fakeServer({ "/api/observe": record("observation"), "/api/step": record("step"), "/api/check": record("check_unsolved"), "/api/hint": record("hint"), "/api/abort": { level: "x" }, ...replies });
   const seen = { solved: [], ended: 0, left: 0, sounds: [], attached: 0, detached: 0, typed: [] };
@@ -25,7 +25,7 @@ function practice({ step = 1, replies = {} } = {}) {
     terminal: { attach: () => (seen.attached += 1), detach: () => (seen.detached += 1), type: (text) => seen.typed.push(text) },
   };
   const view = Practice.create(ctx, {
-    level: record("level"),
+    level,
     active: { ...record("active"), step },
     onSolved: (result) => seen.solved.push(result),
     onEnded: () => (seen.ended += 1),
@@ -95,7 +95,7 @@ test("once the quest is done the level is checked automatically, and a win stops
 });
 
 test("checking by hand sends the answer and shows why it is not solved yet", async () => {
-  const run = practice({ step: 3 });
+  const run = practice({ step: 3, level: { ...record("level"), question: "Which commit?", placeholder: "" } });
   await settle();
   run.q(".challenge input").value = "42";
   run.q(".challenge form").dispatchEvent(makeEvent("submit"));

@@ -50,12 +50,22 @@ const LevelPage = (function () {
     return error.status === 404 || error.status === 0;
   }
 
+  function introActions(page) {
+    const { level } = page;
+    const startButton = el("button", { type: "button", class: `btn ${level.has_lesson ? "btn-ghost" : "btn-primary"}`, onclick: () => start(page, startButton) }, level.has_lesson ? "Skip to the practice" : "Start the practice");
+    return el("div", { class: "actions" },
+      level.has_lesson && el("button", { type: "button", class: "btn btn-primary", onclick: () => lesson(page) }, "Start the lesson"),
+      startButton,
+      level.debrief && el("button", { type: "button", class: "btn btn-quiet", onclick: () => debrief(page, null, level.debrief) }, "Read the debrief again"),
+      el("a", { class: "btn btn-quiet", href: "#/" }, "Back to the map"),
+    );
+  }
+
   function intro(page, notice = "") {
     const { level, levelId } = page;
     const status = page.ctx.status();
     const found = Progress.findLevel(status.chapters, levelId);
     const other = status.active && status.active.level !== levelId ? Progress.findLevel(status.chapters, status.active.level) : null;
-    const startButton = el("button", { type: "button", class: `btn ${level.has_lesson ? "btn-ghost" : "btn-primary"}`, onclick: () => start(page, startButton) }, level.has_lesson ? "Skip to the practice" : "Start the practice");
     mount(page, el("section", { class: "level-intro panel narrow" },
       el("p", { class: "kicker" }, level.chapter_title),
       el("h1", {}, level.title),
@@ -67,11 +77,7 @@ const LevelPage = (function () {
       el("p", { class: "plan" }, planSentence(level)),
       level.steps.length === 0 && el("div", { class: "briefing prose" }, Markup.render(level.briefing)),
       (notice || other) && el("p", { class: "notice", role: "status" }, notice || `Starting this level ends “${other.title}”, which is in progress.`),
-      el("div", { class: "actions" },
-        level.has_lesson && el("button", { type: "button", class: "btn btn-primary", onclick: () => lesson(page) }, "Start the lesson"),
-        startButton,
-        el("a", { class: "btn btn-quiet", href: "#/" }, "Back to the map"),
-      ),
+      introActions(page),
     ));
   }
 
@@ -111,10 +117,12 @@ const LevelPage = (function () {
     mount(page, view.element, view);
   }
 
+  /* A win, from the page's own check (with the debrief) or from the terminal (the level's page
+     then holds the debrief of its last play). */
   async function won(page, payout, blocks) {
     await page.ctx.refresh();
     await page.ctx.celebrate({ kicker: "Level complete", title: page.level.title, xp: payout.xp, firstTime: payout.first_time, rankBefore: payout.rank_before, rankAfter: payout.rank_after, button: "See what you learned" });
-    debrief(page, payout, blocks);
+    debrief(page, payout, blocks || (await page.ctx.game.level(page.levelId)).debrief);
   }
 
   async function endedElsewhere(page) {
@@ -130,8 +138,8 @@ const LevelPage = (function () {
     mount(page, el("section", { class: "debrief panel narrow" },
       el("p", { class: "kicker" }, `Debrief · ${level.chapter_title}`),
       el("h1", {}, level.title),
-      el("p", { class: "payout" }, payoutLine(payout)),
-      blocks ? el("div", { class: "prose" }, Markup.render(blocks)) : el("p", { class: "notice" }, "You solved this level outside this page, so its debrief is not shown here."),
+      payout && el("p", { class: "payout" }, payoutLine(payout)),
+      blocks ? el("div", { class: "prose" }, Markup.render(blocks)) : el("p", { class: "notice" }, "This level's debrief is not available."),
       el("div", { class: "actions" },
         next && el("a", { class: "btn btn-primary next-level", href: `#/level/${encodeURIComponent(next.id)}` }, `Next: ${next.title}`),
         el("a", { class: `btn ${next ? "btn-ghost" : "btn-primary"}`, href: `#/cards/${encodeURIComponent(level.chapter)}` }, "Review this chapter's cards"),

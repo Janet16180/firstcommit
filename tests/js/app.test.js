@@ -120,3 +120,26 @@ test("a server that does not answer at the start says how to start it again", as
   const page = await boot({ replies: { "/api/status": httpError(0, "no answer") } });
   assert.match(page.main.textContent, /Cannot reach the game/);
 });
+
+test("a damaged save is named, and starting over resets it after asking", async () => {
+  let damaged = true;
+  const status = () => (damaged ? httpError(500, "progress.json: xp should be a number") : { ...record("status"), active: null });
+  const reset = () => {
+    damaged = false;
+    return {};
+  };
+  const page = await boot({ replies: { "/api/status": status, "/api/reset": reset } });
+  assert.match(page.main.textContent, /saved game is damaged.*progress\.json: xp should be a number/);
+  page.main.querySelector("button.start-over").click();
+  page.document.body.querySelector("dialog button.is-confirm").click();
+  await settle();
+  await settle();
+  assert.equal(page.server.calls.filter((call) => call.path === "/api/reset").length, 1);
+  assert.ok(page.main.querySelector(".home"));
+});
+
+test("a damaged save met during play is named in a message", async () => {
+  const page = await boot();
+  page.fire("unhandledrejection", { reason: httpError(500, "active.json: step should be a number") });
+  assert.match(page.document.querySelector(".toast").textContent, /saved game is damaged.*active\.json/);
+});
