@@ -14,8 +14,8 @@
  * word Part 2 of docs/drafts/map-guide.md, checked claim by claim against git 2.43, with `code`
  * and **bold** marked as in the draft; tools/guide_text.py writes it here. The button carries a
  * "new" mark until the guide has been opened once in this browser; if storage is blocked the mark
- * shows again next time. Needs dom.js, map.js, theme-time.js and theme-time-motion.js. Defines
- * one global, TimeGuide.
+ * shows again next time. Its look is in theme-time-guide.css. Needs dom.js, map.js, theme-time.js
+ * and theme-time-motion.js. Defines one global, TimeGuide.
  */
 
 /* global Dom, RepoMap, TimeTheme, TimeMotion */
