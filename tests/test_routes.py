@@ -10,7 +10,7 @@ from typing import Any
 
 import pytest
 
-from firstcommit import game
+from firstcommit import game, gitcmd, runner, save
 from firstcommit.web import routes
 
 STATIC = Path(routes.__file__).parent / "static"
@@ -150,7 +150,7 @@ LEVEL_VIEW = {
 def test_the_server_names_the_game_and_asks_for_the_key_from_its_link(site: Site) -> None:
     refused = call(site, "/api/status", token="wrong")
     assert refused[0] == 403
-    assert "`firstcommit`" in refused[2]
+    assert "`firstcommit serve`" in refused[2]
     assert refused[1]["Server"].startswith("FirstCommit")
 
 
@@ -295,7 +295,7 @@ def test_checking_needs_an_answer_and_a_boolean_auto(
 def test_actions_on_the_level_in_progress_conflict_when_there_is_none(
     site: Site, monkeypatch: pytest.MonkeyPatch, route: str, body: Any, name: str
 ) -> None:
-    record(monkeypatch, name, error=routes.NO_LEVEL("no level is in progress"))
+    record(monkeypatch, name, error=game.NotPlayingError("no level is in progress"))
     status, reply = api(site, route, body)
     assert status == 409
     assert reply["error"]
@@ -420,9 +420,7 @@ def test_the_terminal_keeps_git_to_the_games_configuration_and_labs(
     monkeypatch.setenv("GIT_CONFIG_GLOBAL", "/home/player/.gitconfig")
     monkeypatch.setenv("TMUX", "/tmp/tmux-1/default")
     env = routes.TERMINAL.environment()
-    assert env["GIT_CONFIG_GLOBAL"] == str(game_home / "gitconfig")
-    assert env["GIT_CONFIG_NOSYSTEM"] == "1"
-    assert env["GIT_CEILING_DIRECTORIES"] == str(game_home / "labs")
+    assert {name: env[name] for name in gitcmd.isolation(game_home)} == gitcmd.isolation(game_home)
     assert env["FIRSTCOMMIT_HOME"] == str(game_home)
     assert "GIT_DIR" not in env
     assert "TMUX" not in env
@@ -436,7 +434,78 @@ def test_the_terminal_opens_in_the_folder_the_game_names(monkeypatch: pytest.Mon
 def test_serving_on_a_busy_port_fails_with_a_hint(site: Site, capsys: pytest.CaptureFixture[str]) -> None:
     port = int(site.url.rsplit(":", 1)[1])
     assert routes.serve(port) == 1
-    assert f"--port {port + 1}" in capsys.readouterr().out
+    assert f"firstcommit serve --port {port + 1}" in capsys.readouterr().out
+
+
+@pytest.mark.parametrize(
+    ("route", "body", "name"),
+    [
+        ("/api/status", None, "status"),
+        ("/api/level?id=x", None, "level"),
+        ("/api/start", {"level": "x"}, "start"),
+        ("/api/observe", None, "observe"),
+        ("/api/cards", None, "due_cards"),
+        ("/api/reset", {"confirm": True}, "reset"),
+    ],
+)
+def test_a_damaged_save_is_a_server_error_that_names_the_file(
+    site: Site, monkeypatch: pytest.MonkeyPatch, route: str, body: Any, name: str
+) -> None:
+    record(monkeypatch, name, error=save.SaveError("progress.json: xp should be a number"))
+    assert api(site, route, body) == (500, {"error": "progress.json: xp should be a number"})
+
+
+def test_a_fresh_game_lists_its_chapters_and_has_no_level_in_progress(site: Site, sample_level: runner.Level) -> None:
+    status, dashboard = api(site, "/api/status")
+    assert status == 200
+    assert dashboard["active"] is None
+    assert [level["id"] for chapter in dashboard["chapters"] for level in chapter["levels"]] == [sample_level.id]
+
+
+def test_the_real_game_answers_404_for_an_unknown_level_and_409_with_no_level_in_progress(
+    site: Site, sample_level: runner.Level
+) -> None:
+    assert api(site, "/api/level?id=no-such-level")[0] == 404
+    assert api(site, "/api/start", {"level": "no-such-level"})[0] == 404
+    assert api(site, "/api/observe")[0] == 409
+    assert api(site, "/api/hint", {})[0] == 409
+    assert api(site, "/api/step", {"answer": None})[0] == 409
+    assert api(site, "/api/check", {"answer": None, "auto": True})[0] == 409
+    assert api(site, "/api/abort", {}) == (200, {"level": None})
+
+
+def test_a_level_is_played_through_the_routes_from_start_to_payout(site: Site, sample_level: runner.Level) -> None:
+    assert api(site, "/api/start", {"level": sample_level.id})[1]["steps"] == 3
+    project = Path(routes.TERMINAL.start_folder())
+    assert (project / "hello.txt").is_file()
+    assert api(site, "/api/observe")[1]["project"]["branch"] == "trunk"
+    assert api(site, "/api/step", {"answer": None})[1]["correct"] is True
+    assert api(site, "/api/step", {"answer": None})[1]["correct"] is False
+    gitcmd.output(project, "add", "hello.txt")
+    assert api(site, "/api/step", {"answer": None})[1]["correct"] is True
+    assert api(site, "/api/step", {"answer": "main"})[1]["correct"] is False
+    assert api(site, "/api/step", {"answer": "trunk"})[1]["quest_done"] is True
+    assert api(site, "/api/check", {"answer": None, "auto": True})[1]["solved"] is False
+    gitcmd.output(project, "commit", "-q", "-m", "Say hello")
+    status, result = api(site, "/api/check", {"answer": None, "auto": True})
+    assert (status, result["solved"], result["payout"]["xp"]) == (200, True, 100)
+    assert api(site, "/api/status")[1]["active"] is None
+    assert api(site, f"/api/level?id={sample_level.id}")[1]["debrief"]
+
+
+def test_a_lesson_comes_with_its_figures_from_real_git(site: Site, sample_level: runner.Level) -> None:
+    status, lesson = api(site, f"/api/lesson?id={sample_level.id}")
+    assert status == 200
+    assert [slide["view"] for slide in lesson["slides"]] == ["terminal", "objects"]
+    assert lesson["slides"][1]["objects"]
+
+
+def test_cards_and_notes_come_from_the_decks(site: Site, sample_decks: Path) -> None:
+    cards = api(site, "/api/cards?chapter=basics&limit=3")[1]["cards"]
+    assert len(cards) == 3
+    status, result = api(site, "/api/card", {"id": cards[0]["id"], "reply": "nonsense"})
+    assert (status, result["correct"]) == (200, False)
+    assert api(site, "/api/notes?chapter=basics")[1]["title"] == "The three areas"
 
 
 def test_every_route_is_a_get_or_post_under_api() -> None:

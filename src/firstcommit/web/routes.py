@@ -3,8 +3,9 @@ The web interface: the JSON routes, the page's terminal and the server, on terml
 
 Each route checks its query or body (400 when it is not what the page sends), calls one
 `firstcommit.game` function and sends its record back as JSON. An unknown level, card or
-chapter is a 404 and an action on the level in progress when there is none a 409. No game rule
-lives here (Ring Zero audit ARCH-1): the routes only translate between HTTP and `game`.
+chapter is a 404, an action on the level in progress when there is none a 409, and a damaged
+save file a 500 whose message names the file. No game rule lives here (Ring Zero audit ARCH-1):
+the routes only translate between HTTP and `game`.
 """
 
 import os
@@ -20,8 +21,7 @@ from termlab.web import shell, terminal
 from firstcommit import game, gitcmd, save
 
 STATIC = Path(__file__).parent / "static"
-PORT = 8820
-SETTINGS = shell.ShellSettings(name="FirstCommit", command="firstcommit", token_header="X-FirstCommit-Token")
+SETTINGS = shell.ShellSettings(name="FirstCommit", command="firstcommit serve", token_header="X-FirstCommit-Token")
 BANNER = "  First Commit: learn Git by doing"
 
 MAX_ID = 100
@@ -34,30 +34,18 @@ COUNT = re.compile(r"[0-9]{1,3}")
 Reply = tuple[HTTPStatus, dict[str, Any]]
 
 
-class NoLevelError(Exception):
-    """Placeholder for the exception `game` raises when an action needs a level in progress and none is."""
-
-
-NO_LEVEL: type[Exception] = NoLevelError
-"""The exception mapped to 409; the one place to name `game`'s own once it exists."""
-
-
 def shell_environment() -> dict[str, str]:
     """
     Build the environment of the page's shell, again for each new terminal.
 
-    Inherited ``GIT_*`` variables are dropped first, as for the game's own git commands
-    (`firstcommit.gitcmd.environment`), so a ``GIT_DIR`` set around the server cannot redirect
-    the player's git.
-
     Returns
     -------
     dict[str, str]
-        The server's environment as a new terminal window would have it, with git kept to the
-        game's own configuration and stopped from finding a repository above the labs.
+        The server's environment as a new terminal window would have it, made a game shell by
+        `firstcommit.gitcmd.shell_environment` (no inherited git variables, git kept to the
+        game's own configuration and labs).
     """
-    inherited_git = {name for name in os.environ if name.startswith("GIT_")}
-    return {**terminal.player_env(os.environ, drop=inherited_git), **gitcmd.isolation(save.home())}
+    return gitcmd.shell_environment(terminal.player_env(os.environ), save.home())
 
 
 def shell_folder() -> Path:
@@ -133,9 +121,34 @@ def playing(action: Callable[[], Mapping[str, Any]]) -> Reply:
     status, payload = HTTPStatus.OK, {}
     try:
         payload = dict(action())
-    except NO_LEVEL as error:
+    except game.NotPlayingError as error:
         status, payload = HTTPStatus.CONFLICT, {"error": str(error) or "no level is in progress"}
     return status, payload
+
+
+def guarded(route: shell.Route) -> shell.Route:
+    """
+    Make a route answer 500 with the save's own message when the save is damaged.
+
+    Parameters
+    ----------
+    route : shell.Route
+        A route of this module.
+
+    Returns
+    -------
+    shell.Route
+        The same route, turning `firstcommit.save.SaveError` into a reply the page can show.
+    """
+
+    def answer(request: dict[str, Any]) -> Reply:
+        try:
+            reply = route(request)
+        except save.SaveError as error:
+            reply = HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(error)}
+        return reply
+
+    return answer
 
 
 def is_id(value: Any) -> TypeGuard[str]:
@@ -429,19 +442,22 @@ def api_notes(query: dict[str, Any]) -> Reply:
 
 
 ROUTES: dict[tuple[str, str], shell.Route] = {
-    ("GET", "/api/status"): api_status,
-    ("GET", "/api/level"): api_level,
-    ("GET", "/api/lesson"): api_lesson,
-    ("POST", "/api/start"): api_start,
-    ("POST", "/api/step"): api_step,
-    ("POST", "/api/check"): api_check,
-    ("POST", "/api/hint"): api_hint,
-    ("GET", "/api/observe"): api_observe,
-    ("POST", "/api/abort"): api_abort,
-    ("POST", "/api/reset"): api_reset,
-    ("GET", "/api/cards"): api_cards,
-    ("POST", "/api/card"): api_card,
-    ("GET", "/api/notes"): api_notes,
+    key: guarded(route)
+    for key, route in {
+        ("GET", "/api/status"): api_status,
+        ("GET", "/api/level"): api_level,
+        ("GET", "/api/lesson"): api_lesson,
+        ("POST", "/api/start"): api_start,
+        ("POST", "/api/step"): api_step,
+        ("POST", "/api/check"): api_check,
+        ("POST", "/api/hint"): api_hint,
+        ("GET", "/api/observe"): api_observe,
+        ("POST", "/api/abort"): api_abort,
+        ("POST", "/api/reset"): api_reset,
+        ("GET", "/api/cards"): api_cards,
+        ("POST", "/api/card"): api_card,
+        ("GET", "/api/notes"): api_notes,
+    }.items()
 }
 
 
@@ -462,7 +478,7 @@ def create_server(port: int) -> tuple[ThreadingHTTPServer, str]:
     return shell.create_server(port, routes=ROUTES, static_dir=STATIC, terminal=TERMINAL, settings=SETTINGS)
 
 
-def serve(port: int = PORT) -> int:
+def serve(port: int) -> int:
     """
     Serve the game until Ctrl-C.
 
