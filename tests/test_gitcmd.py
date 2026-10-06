@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from firstcommit import gitcmd
+from firstcommit import gitcmd, save
 
 ALEX = gitcmd.Person("Alex Kim", "alex@example.com")
 WHEN = "2026-01-15T09:00:00+00:00"
@@ -69,7 +69,7 @@ def test_run_returns_the_failure_instead_of_raising(tmp_path: Path) -> None:
 
 def test_isolation_names_the_games_config_and_labs(tmp_path: Path) -> None:
     assert gitcmd.isolation(tmp_path) == {
-        "GIT_CONFIG_GLOBAL": str(tmp_path / "gitconfig"),
+        "GIT_CONFIG_GLOBAL": str(tmp_path / save.GITCONFIG_FILE),
         "GIT_CONFIG_NOSYSTEM": "1",
         "GIT_CEILING_DIRECTORIES": f"{tmp_path / 'labs'}:{tmp_path / 'lessons'}",
     }
@@ -186,3 +186,13 @@ def test_the_games_git_never_runs_a_signature_program_to_show_a_log(tmp_path: Pa
 
 def test_the_players_shell_keeps_the_repositorys_own_settings(tmp_path: Path) -> None:
     assert "GIT_CONFIG_COUNT" not in gitcmd.shell_environment({"PATH": "/usr/bin"}, tmp_path)
+
+
+def test_the_games_git_never_opens_the_players_editor(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    repo = tmp_path / "repo"
+    gitcmd.output(tmp_path, "init", "-q", "-b", "main", str(repo))
+    script, marker = program_that_leaves_a_mark(tmp_path)
+    monkeypatch.setenv("EDITOR", str(script))
+    monkeypatch.setenv("VISUAL", str(script))
+    gitcmd.run(repo, "commit", "--allow-empty")
+    assert not marker.exists()
