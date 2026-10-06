@@ -738,7 +738,6 @@ def test_the_whole_suite_passes_inside_the_container(unused_name: str) -> None:
 
 @pytest.mark.docker
 @pytest.mark.slow
-@WAITS_FOR_INTEGRATION
 def test_firstcommit_help_runs_as_the_player(image: str) -> None:
     assert "serve" in in_image(image, "firstcommit --help")
 
