@@ -90,12 +90,14 @@ test("once the quest is done the level is checked automatically, and a win stops
   await settle();
   assert.deepEqual(run.server.calls.map((call) => [call.path, call.body]), [["/api/observe", undefined], ["/api/check", { answer: null, auto: true }]]);
   assert.equal(run.seen.solved.length, 1);
+  assert.match(run.q(".check-feedback").textContent, /Solved\./);
+  assert.ok(run.q(".check-feedback").classList.contains("is-correct"));
   await run.clock.advance(10000);
   assert.equal(run.server.calls.length, 2);
 });
 
 test("checking by hand sends the answer and shows why it is not solved yet", async () => {
-  const run = practice({ step: 3, level: { ...record("level"), question: "Which commit?", placeholder: "" } });
+  const run = practice({ step: 3, level: { ...record("level"), question: [{ kind: "para", spans: [{ text: "Which commit?", code: false }] }], placeholder: "" } });
   await settle();
   run.q(".challenge input").value = "42";
   run.q(".challenge form").dispatchEvent(makeEvent("submit"));

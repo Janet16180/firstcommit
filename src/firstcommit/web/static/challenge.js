@@ -19,7 +19,8 @@ const Challenge = (function () {
 
   /* The answer form: a box for the level's question when it asks one, else only the button. */
   function checkForm(level, checkButton, onCheck) {
-    const input = level.question && el("input", { type: "text", id: "challenge-answer", autocomplete: "off", spellcheck: "false", placeholder: level.placeholder || null });
+    const asks = level.question.length > 0;
+    const input = asks && el("input", { type: "text", "aria-labelledby": "challenge-question", autocomplete: "off", spellcheck: "false", placeholder: level.placeholder || null });
     return el("form", {
       class: "answer",
       onsubmit: (event) => {
@@ -27,7 +28,7 @@ const Challenge = (function () {
         onCheck(input ? input.value.trim() || null : null);
       },
     },
-    input && el("label", { for: "challenge-answer" }, level.question),
+    asks && el("div", { class: "question", id: "challenge-question" }, Markup.render(level.question)),
     el("div", { class: "answer-row" }, input, checkButton),
     );
   }

@@ -75,9 +75,9 @@ const createGameApi = (function () {
     difficulty: number,
     xp: number,
     briefing: BLOCKS,
-    question: text,
+    question: BLOCKS,
     placeholder: text,
-    steps: list(record({ id: text, kind: oneOf("answer", "watch", "read"), text: BLOCKS, command: text, question: text, placeholder: text })),
+    steps: list(record({ id: text, kind: oneOf("answer", "watch", "read"), text: BLOCKS, command: text, question: BLOCKS, placeholder: text })),
     hints_total: number,
     has_lesson: flag,
     hints: list(BLOCKS),
@@ -108,12 +108,12 @@ const createGameApi = (function () {
       level: number,
       prompt: BLOCKS,
       code: text,
-      choices: list(text),
+      choices: list(record({ value: text, text: BLOCKS })),
       placeholder: text,
       pays: flag,
     })),
   });
-  const CARD_RESULT = record({ correct: flag, answer: text, explain: BLOCKS, xp: number, streak: number, bonus: number });
+  const CARD_RESULT = record({ correct: flag, answer: text, answer_text: BLOCKS, explain: BLOCKS, xp: number, streak: number, bonus: number });
   const NOTES = record({ chapter: text, title: text, notes: BLOCKS });
   const ABORTED = record({ level: nullable(text) });
   const NOTHING = record({});

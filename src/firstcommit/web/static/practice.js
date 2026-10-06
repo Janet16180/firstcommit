@@ -117,7 +117,10 @@ const Practice = (function () {
     }, ADVANCE_MS);
   }
 
+  /* A check's result. A solve also replaces any "not yet" on screen, which the player sees
+     again after the celebration. */
   function checked(run, result) {
+    if (result.solved && run.challenge) run.challenge.feedback(result.message, true);
     if (result.solved) {
       finish(run, () => run.on.solved(result));
     } else if (run.challenge) {

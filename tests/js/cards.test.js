@@ -44,12 +44,12 @@ test("choosing sends the reply, then shows the explanation, the XP and the strea
   assert.equal(run.seen.refreshed, 1);
 });
 
-test("a wrong reply shows the right answer", async () => {
+test("a wrong reply shows the right answer as the server words it", async () => {
   const run = cards({ result: wrong });
   await settle();
   run.all("button.choice")[1].click();
   await settle();
-  assert.match(run.q(".card-result").textContent, /Not this time/);
+  assert.match(run.q(".card-result").textContent, /Not this time.*The staging area/);
   assert.ok(run.all("button.choice")[1].classList.contains("is-wrong"));
   assert.ok(run.all("button.choice")[0].classList.contains("is-right"));
 });
@@ -73,6 +73,7 @@ test("a text card takes a typed reply, and a predict card shows its code", async
   assert.deepEqual(run.server.calls[1].body, { id: "sample-card-text", reply: "git status" });
   run.q(".card-next").click();
   assert.match(run.q(".card-code").textContent, /git hash-object hello\.txt/);
+  assert.equal(run.all("button.choice pre.code")[0].textContent, "ce013625030ba8dba906f756967f9e9ca394464a");
   assert.match(run.q(".card-pays").textContent, /no XP/);
 });
 

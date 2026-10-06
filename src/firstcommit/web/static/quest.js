@@ -21,7 +21,8 @@ const Quest = (function () {
   }
 
   function answerForm(step, onAnswer, say) {
-    const input = el("input", { type: "text", id: `answer-${step.id}`, autocomplete: "off", spellcheck: "false", placeholder: step.placeholder || null });
+    const questionId = `question-${step.id}`;
+    const input = el("input", { type: "text", "aria-labelledby": questionId, autocomplete: "off", spellcheck: "false", placeholder: step.placeholder || null });
     return el("form", {
       class: "answer",
       onsubmit: (event) => {
@@ -31,7 +32,7 @@ const Quest = (function () {
         else say("Type your answer in the box first.");
       },
     },
-    el("label", { for: `answer-${step.id}` }, step.question),
+    el("div", { class: "question", id: questionId }, Markup.render(step.question)),
     el("div", { class: "answer-row" }, input, el("button", { type: "submit", class: "btn btn-primary" }, "Check")),
     );
   }

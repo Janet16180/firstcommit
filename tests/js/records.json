@@ -107,7 +107,7 @@
     ]
    }
   ],
-  "question": "",
+  "question": [],
   "placeholder": "",
   "steps": [
    {
@@ -125,7 +125,7 @@
      }
     ],
     "command": "",
-    "question": "",
+    "question": [],
     "placeholder": ""
    },
    {
@@ -147,7 +147,17 @@
      }
     ],
     "command": "git status",
-    "question": "Which file has changes that are not staged?",
+    "question": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "Which file has changes that are not staged?",
+        "code": false
+       }
+      ]
+     }
+    ],
     "placeholder": "a file name"
    },
    {
@@ -173,7 +183,7 @@
      }
     ],
     "command": "git add notes.txt",
-    "question": "",
+    "question": [],
     "placeholder": ""
    }
   ],
@@ -910,10 +920,62 @@
    ],
    "code": "",
    "choices": [
-    "The staging area",
-    "The last commit",
-    "The remote",
-    "Nothing until you push"
+    {
+     "value": "The staging area",
+     "text": [
+      {
+       "kind": "para",
+       "spans": [
+        {
+         "text": "The staging area",
+         "code": false
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "value": "The last commit",
+     "text": [
+      {
+       "kind": "para",
+       "spans": [
+        {
+         "text": "The last commit",
+         "code": false
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "value": "The remote",
+     "text": [
+      {
+       "kind": "para",
+       "spans": [
+        {
+         "text": "The remote",
+         "code": false
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "value": "Nothing until you push",
+     "text": [
+      {
+       "kind": "para",
+       "spans": [
+        {
+         "text": "Nothing until you push",
+         "code": false
+        }
+       ]
+      }
+     ]
+    }
    ],
    "placeholder": "",
    "pays": true
@@ -957,9 +1019,33 @@
    ],
    "code": "git init -q demo && cd demo\nprintf 'hello\\n' > hello.txt\ngit hash-object hello.txt",
    "choices": [
-    "ce013625030ba8dba906f756967f9e9ca394464a",
-    "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
-    "an error: hello.txt is not staged"
+    {
+     "value": "ce013625030ba8dba906f756967f9e9ca394464a",
+     "text": [
+      {
+       "kind": "code",
+       "text": "ce013625030ba8dba906f756967f9e9ca394464a"
+      }
+     ]
+    },
+    {
+     "value": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+     "text": [
+      {
+       "kind": "code",
+       "text": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+      }
+     ]
+    },
+    {
+     "value": "an error: hello.txt is not staged",
+     "text": [
+      {
+       "kind": "code",
+       "text": "an error: hello.txt is not staged"
+      }
+     ]
+    }
    ],
    "placeholder": "",
    "pays": false
@@ -968,6 +1054,17 @@
  "card_result": {
   "correct": true,
   "answer": "The staging area",
+  "answer_text": [
+   {
+    "kind": "para",
+    "spans": [
+     {
+      "text": "The staging area",
+      "code": false
+     }
+    ]
+   }
+  ],
   "explain": [
    {
     "kind": "para",

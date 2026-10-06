@@ -33,7 +33,9 @@ class FakeNode {
     if (value !== "") this.append(String(value));
   }
 
+  /* A browser would turn anything else (false, null, a number) into visible text: refuse it. */
   adopt(item) {
+    if (typeof item !== "string" && !(item instanceof FakeNode)) throw new TypeError(`cannot insert ${String(item)} as a child`);
     const node = typeof item === "string" ? this.ownerDocument.createTextNode(item) : item;
     if (node.nodeType === 11) return [...node.childNodes].flatMap((child) => this.adopt(child));
     if (node.parentNode) node.remove();

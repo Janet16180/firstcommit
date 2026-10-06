@@ -32,7 +32,8 @@ test("done steps fold away, the current step is open, and later steps stay hidde
 
 test("an answer step asks its question and sends the typed answer, trimmed", () => {
   const view = quest(1);
-  assert.match(view.q(".step.is-current label").textContent, /Which file has changes/);
+  assert.match(view.q(".step.is-current .question").textContent, /Which file has changes/);
+  assert.equal(view.q(".step.is-current input").getAttribute("aria-labelledby"), view.q(".step.is-current .question").id);
   const input = view.q(".step.is-current input");
   assert.equal(input.getAttribute("placeholder"), "a file name");
   input.value = "  notes.txt ";

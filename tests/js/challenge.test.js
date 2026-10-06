@@ -8,7 +8,7 @@ const { installBrowser, load, record } = require("./load");
 installBrowser();
 const { Challenge } = load(["dom.js", "markup.js", "challenge.js"], ["Challenge"]);
 
-const asking = { ...record("level"), question: "Which commit added notes.txt?", placeholder: "a short hash" };
+const asking = { ...record("level"), question: [{ kind: "para", spans: [{ text: "Which commit added ", code: false }, { text: "notes.txt", code: true }, { text: "?", code: false }] }], placeholder: "a short hash" };
 
 function challenge(active = { ...record("active"), step: 3, hints: 0 }, level = record("level")) {
   const seen = { checks: [], hints: 0 };
@@ -30,7 +30,8 @@ test("a level checked against the repository has no answer box, and checking sen
 
 test("a level that asks a question shows it with its answer box and sends the typed answer", () => {
   const view = challenge(undefined, asking);
-  assert.equal(view.q("label").textContent, "Which commit added notes.txt?");
+  assert.equal(view.q(".question").textContent, "Which commit added notes.txt?");
+  assert.equal(view.q(".question code").textContent, "notes.txt");
   assert.equal(view.q("input").getAttribute("placeholder"), "a short hash");
   view.q("form").dispatchEvent(makeEvent("submit"));
   view.q("input").value = "  abc123 ";

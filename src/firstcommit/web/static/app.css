@@ -509,12 +509,6 @@ input[type="text"]::placeholder {
   opacity: 0.8;
 }
 
-.answer label {
-  display: block;
-  margin-bottom: 0.4rem;
-  font-weight: 600;
-}
-
 .answer-row {
   display: flex;
   gap: 0.6rem;
@@ -1786,6 +1780,34 @@ input[type="text"]::placeholder {
 
 .choice:disabled {
   cursor: default;
+}
+
+.choice-text p,
+.choice-text pre.code {
+  margin: 0;
+}
+
+.choice-text pre.code {
+  padding: 0.2rem 0.5rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.verdict p {
+  margin: 0;
+}
+
+.right-answer {
+  margin-top: 0.35rem;
+}
+
+.question {
+  margin-bottom: 0.4rem;
+  font-weight: 600;
+}
+
+.question p {
+  margin: 0;
 }
 
 .choice kbd {

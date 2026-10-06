@@ -2,8 +2,9 @@
 
 /*
  * Flashcards (firstcommit/game.py's CardView and CardResult): a round of up to ten cards,
- * due ones first, as the server picks them. Choices are numbered (keys 1 to 9 pick them);
- * the server judges each reply, schedules the card and pays XP. Needs dom.js and markup.js.
+ * due ones first, as the server picks them. Choices are numbered (keys 1 to 9 pick them); each
+ * shows its text and sends its raw value back. The server judges each reply, schedules the
+ * card and pays XP. Needs dom.js and markup.js.
  * Defines one global, CardsView.
  */
 
@@ -54,8 +55,11 @@ const CardsView = (function () {
 
   function showResult(round, result) {
     const nextButton = el("button", { type: "button", class: "btn btn-primary card-next", onclick: () => advance(round) }, round.index + 1 < round.cards.length ? "Next card" : "Finish");
+    const verdict = result.correct
+      ? el("p", { class: "verdict is-correct" }, "Right.")
+      : el("div", { class: "verdict is-wrong" }, el("p", {}, "Not this time. The answer:"), el("div", { class: "right-answer prose" }, Markup.render(result.answer_text)));
     round.element.querySelector(".card-result").replaceChildren(
-      el("p", { class: result.correct ? "verdict is-correct" : "verdict is-wrong" }, result.correct ? "Right." : "Not this time. The answer: ", !result.correct && el("strong", {}, result.answer)),
+      verdict,
       el("div", { class: "prose" }, Markup.render(result.explain)),
       el("p", { class: "card-score" },
         result.xp > 0 && el("span", { class: "xp" }, `+${result.xp} XP`),
@@ -71,7 +75,10 @@ const CardsView = (function () {
     const card = round.cards[round.index];
     const input = el("input", { type: "text", autocomplete: "off", spellcheck: "false", placeholder: card.placeholder || null, "aria-label": "Your answer" });
     const choices = el("ol", { class: "choices" }, card.choices.map((choice, index) => el("li", {},
-      el("button", { type: "button", class: "choice", "data-choice": choice, onclick: (event) => reply(round, choice, event.currentTarget) }, el("kbd", {}, String(index + 1)), choice),
+      el("button", { type: "button", class: "choice", "data-choice": choice.value, onclick: (event) => reply(round, choice.value, event.currentTarget) },
+        el("kbd", {}, String(index + 1)),
+        el("span", { class: "choice-text" }, Markup.render(choice.text)),
+      ),
     )));
     const form = el("form", {
       class: "answer",
