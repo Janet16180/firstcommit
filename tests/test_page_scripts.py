@@ -30,6 +30,7 @@ RECORD_TYPES: dict[str, Any] = {
     "notes": game.Notes,
     "snapshots": dict[str, Snapshot],
     "files": list[records.FileEntry],
+    "guide": game.GuideView,
 }
 
 

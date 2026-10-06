@@ -1,4 +1,4 @@
-# How to read the map (draft, revision 4: picture first)
+# How to read the map (draft, revision 5: picture first)
 
 Draft of the time-travel theme's map guide. Part 1 says where it lives in the game. Part 2 is the
 text players read. Part 3 lists every factual claim in part 2 with a way to check it against
@@ -7,6 +7,22 @@ git 2.43, and what I saw when I checked it myself (git 2.43.0, `GIT_CONFIG_GLOBA
 
 Each factual sentence in part 2 ends with a claim tag such as **[C5]**. Map claims (how the
 drawing behaves, not how Git behaves) are tagged **[M1]** and checked against the code.
+
+## Revision 5: fixes from the revision 4 re-check (for fact-check)
+
+The re-check (end of `.scratch/review/map-guide-check.md`) found 9 of 10 captions correct, K4
+imprecise, and the new detached title imprecise. Both are fixed with the checker's words, and
+its two optional tweaks (K5, K8) are applied. Only these changed since revision 4:
+
+| Tag | Change |
+|---|---|
+| K4 | "Switching moves only HEAD, and your files follow it: every commit and every branch stays where it was" replaces "Travelling changes no commit: only HEAD moves" |
+| detached | the section's title is "Now on no branch = detached HEAD" |
+| K5 | "so no branch moves when you commit" (was "no label moves"): the figure above it shows the "HEAD (detached)" tab moving |
+| K8 | `git push` "sends it the commits it is missing and moves its branch to match" |
+| K10 | the italic copy of the preview line is gone: the line shows once, as the caption |
+
+The figures are drawn larger; no Figure line changed.
 
 ## Revision 4: picture first (for fact-check)
 
@@ -182,8 +198,8 @@ it.*
 **Figure `now`:** `main` and `idea` each with a commit of their own, HEAD on `main`, then `git
 switch idea`: the dial and the HEAD tab travel to `idea`'s commit.
 
-**Caption:** **HEAD** says where you are. Travelling changes no commit: only HEAD moves. **[K4: C12,
-C15]**
+**Caption:** **HEAD** says where you are. Switching moves only HEAD, and your files follow it:
+every commit and every branch stays where it was. **[K4: C12, C14, C15]**
 
 *The picture: the orange dial, and the HEAD tab pointing at it.*
 
@@ -199,12 +215,12 @@ C15]**
 - Travelling changes no commit. Switching back and forth leaves every commit and every branch
   where it was; only HEAD moves. **[C15]**
 
-#### Now without a label = detached HEAD
+#### Now on no branch = detached HEAD
 
 **Figure `detached`:** two commits on `main`, `git switch --detach HEAD~1` and a staged file, then
 `git commit`: a save point appears and only the "HEAD (detached)" tab moves onto it; `main` stays.
 
-**Caption:** **Detached HEAD**: HEAD names a commit directly, not a branch, so no label moves when
+**Caption:** **Detached HEAD**: HEAD names a commit directly, not a branch, so no branch moves when
 you commit. **[K5: C16]**
 
 - Detached HEAD: HEAD names a commit directly, not a branch, so no label moves when you commit;
@@ -249,7 +265,7 @@ stays.
 then `git push`: drawn is the practice copy, whose `main` moves up to the pushed commit.
 
 **Caption:** A **remote** is another repository that yours knows by a name. `git push` sends it the
-commits it is missing. **[K8: C21, C22]**
+commits it is missing and moves its branch to match. **[K8: C21, C22]**
 
 *The picture: the GitHub panel. In the game it is a practice copy on your machine that stands in
 for GitHub.*
@@ -281,9 +297,7 @@ last fetched it or pushed it. **[K9: C23]**
 #### Coming later: undoing and rewriting, in the same words
 
 **Caption:** A preview: later chapters teach these. The rule still holds: no commit is ever
-edited. **[K10: the preview line below, unchanged]**
-
-*A preview: later chapters teach these. The rule still holds: no commit is ever edited.*
+edited. **[K10: the preview line of revision 3, unchanged]**
 
 - `git revert <commit>` adds a new save point whose changes cancel an old one. The old one stays
   on the timeline. **[C26]**

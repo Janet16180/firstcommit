@@ -12,7 +12,7 @@ from pathlib import Path
 import pytest
 from termlab import sandbox
 
-from firstcommit import changes, demos, game, gitcmd, kit, markup, repomap, runner, save, score
+from firstcommit import changes, demos, game, gitcmd, guide, kit, markup, repomap, runner, save, score
 from firstcommit.chapters import CHAPTERS
 
 pytestmark = pytest.mark.usefixtures("sample_decks")
@@ -366,6 +366,17 @@ def test_a_lesson_shows_the_real_commands_their_output_and_the_repository_they_l
     assert (second["view"], second["map"]["branch"]) == ("objects", "main")
     assert [(entry["path"], entry["head"], entry["index"]) for entry in second["map"]["files"]] == [("hello.txt", None, HELLO_BLOB)]
     assert second["objects"] == [{"hash": HELLO_BLOB, "type": "blob", "size": 6}]
+
+
+@pytest.mark.slow
+def test_the_map_guide_shows_each_figure_before_and_after_its_change() -> None:
+    figures = game.guide()
+    assert list(figures) == [figure.section for figure in guide.FIGURES]
+    for figure in guide.FIGURES:
+        view = figures[figure.section]
+        assert view["before"]["exists"] and view["after"] != view["before"], figure.section
+        assert [line["command"] for line in view["transcript"]] == [line for line in figure.change.split("\n") if line.strip()]
+    json.dumps(figures)
 
 
 def test_starting_a_level_builds_its_lab_and_records_it(sample_level: runner.Level, game_home: Path) -> None:

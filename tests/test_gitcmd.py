@@ -128,6 +128,34 @@ def test_the_game_pages_like_git_does_when_less_is_unset(game_home: Path, tmp_pa
     assert result.stdout == "less -FRX\n"
 
 
+
+def players_personal_git_files(home: Path) -> None:
+    """
+    Give a player's home an ignore file and an attributes file in git's default places.
+
+    Parameters
+    ----------
+    home : Path
+        The player's home folder.
+    """
+    personal = home / ".config" / "git"
+    personal.mkdir(parents=True)
+    (personal / "ignore").write_text("*.txt\n")
+    (personal / "attributes").write_text("*.txt -text\n")
+
+
+def test_a_players_personal_ignore_and_attributes_files_never_reach_a_lab(game_home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    (game_home / "gitconfig").write_text(gitcmd.BASE_CONFIG)
+    player_home = tmp_path / "player"
+    players_personal_git_files(player_home)
+    monkeypatch.setenv("HOME", str(player_home))
+    monkeypatch.delenv("XDG_CONFIG_HOME", raising=False)
+    repo = tmp_path / "repo"
+    gitcmd.output(tmp_path, "init", "-q", str(repo))
+    (repo / "notes.txt").write_text("hello\n")
+    assert gitcmd.output(repo, "status", "--porcelain", "--ignored") == "?? notes.txt\n"
+    assert gitcmd.output(repo, "check-attr", "text", "notes.txt") == "notes.txt: text: unspecified\n"
+
 def program_that_leaves_a_mark(folder: Path) -> tuple[Path, Path]:
     """
     Write a script that appends a line to a marker file each time it runs.

@@ -38,6 +38,7 @@ from pathlib import Path
 from typing import Any, Literal, TypedDict
 
 from firstcommit import cards, changes, demos, gitcmd, kit, markup, repomap, runner, save, score
+from firstcommit import guide as map_guide
 from firstcommit.cards import CardKind
 from firstcommit.changes import Event
 from firstcommit.chapters import CHAPTERS
@@ -164,6 +165,18 @@ class LessonView(TypedDict):
     level: str
     title: str
     slides: list[SlideView]
+
+
+class FigureView(TypedDict):
+    """One figure of the map guide: its repository before and after one change, and that change's real commands and output."""
+
+    before: Snapshot
+    after: Snapshot
+    transcript: list[Line]
+
+
+GuideView = dict[str, FigureView]
+"""The map guide's figures by section id, in the guide's order (`firstcommit.guide.FIGURES`)."""
 
 
 class StepResult(TypedDict):
@@ -387,6 +400,27 @@ def lesson(level_id: str) -> LessonView:
         for slide, frame in zip(entry.lesson, demos.frames(entry.lesson), strict=True)
     ]
     return {"level": entry.id, "title": entry.title, "slides": slides}
+
+
+def guide() -> GuideView:
+    """
+    Give the map guide's figures, drawn from real git like a lesson's.
+
+    Each figure runs as a two-slide lesson (`firstcommit.guide.lesson`): the first slide builds
+    its repository, the second makes the change its section is about. `firstcommit.demos`
+    keeps the frames per process, so only the first call runs git.
+
+    Returns
+    -------
+    GuideView
+        Every figure of `firstcommit.guide.FIGURES`, by section id: the first slide's map, the
+        second slide's map, and the second slide's commands with their output.
+    """
+    figures: GuideView = {}
+    for figure in map_guide.FIGURES:
+        before, after = demos.frames(map_guide.lesson(figure))
+        figures[figure.section] = {"before": before["map"], "after": after["map"], "transcript": after["transcript"]}
+    return figures
 
 
 def start(level_id: str) -> ActiveView:
