@@ -5,7 +5,7 @@ const test = require("node:test");
 const { installBrowser, load, record } = require("./load");
 
 const document = installBrowser();
-const { TimeShare } = load(["dom.js", "map.js", "theme-time.js", "theme-time-motion.js", "theme-time-places.js", "theme-time-share.js"], ["TimeShare"]);
+const { TimeShare, TimePlaces } = load(["dom.js", "map.js", "theme-time.js", "theme-time-motion.js", "theme-time-places.js", "theme-time-share.js"], ["TimeShare", "TimePlaces"]);
 
 const full = (name) => name.padEnd(40, "0");
 const blob = (name) => name.padEnd(40, "b");
@@ -184,6 +184,23 @@ test("a refused push shows git's own words, and nothing moves anywhere", () => {
   assert.match(figure.querySelector(".ts-output").textContent, /\[rejected\]/);
   assert.deepEqual(calls, []);
   assert.equal(figure.querySelector(".tt-flyer"), null);
+});
+
+test("the figure's motions take their pace from the four places' shared timing, and follow it when it changes", () => {
+  const { flight, arrow } = TimePlaces.TIMING;
+  const was = { ...flight, arrow };
+  try {
+    Object.assign(flight, { delay: 1001, duration: 1002 });
+    TimePlaces.TIMING.arrow = 1003;
+    const { figure, calls } = played(STEPS.push);
+    const flyer = calls.find((call) => call.node === figure.querySelector(".tt-flyer"));
+    assert.deepEqual([flyer.timing.delay, flyer.timing.duration], [1001, 1002]);
+    const shaft = calls.find((call) => call.node.getAttribute("class") === "tt-arrow-shaft");
+    assert.equal(shaft.timing.duration, 1003);
+  } finally {
+    Object.assign(flight, { delay: was.delay, duration: was.duration });
+    TimePlaces.TIMING.arrow = was.arrow;
+  }
 });
 
 test("under reduced motion nothing moves, and the caption still says what happened", () => {
