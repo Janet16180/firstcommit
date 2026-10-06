@@ -45,12 +45,13 @@ def isolation(home: Path) -> dict[str, str]:
     Returns
     -------
     dict[str, str]
-        ``GIT_CONFIG_GLOBAL``, ``GIT_CONFIG_NOSYSTEM`` and ``GIT_CEILING_DIRECTORIES``.
+        ``GIT_CONFIG_GLOBAL``, ``GIT_CONFIG_NOSYSTEM`` and ``GIT_CEILING_DIRECTORIES`` (the
+        labs folder and the lessons folder, where `firstcommit.demos` runs lessons).
     """
     return {
         "GIT_CONFIG_GLOBAL": str(home / "gitconfig"),
         "GIT_CONFIG_NOSYSTEM": "1",
-        "GIT_CEILING_DIRECTORIES": str(home / "labs"),
+        "GIT_CEILING_DIRECTORIES": f"{home / 'labs'}:{home / 'lessons'}",
     }
 
 

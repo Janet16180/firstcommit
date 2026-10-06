@@ -7,6 +7,7 @@ Files under the game home (`home`):
 - ``observed.json``: an `Observed` record, the lab as the page last saw it;
 - ``gitconfig``: the game's own global git configuration (see `firstcommit.gitcmd`);
 - ``labs/<level>/``: the lab of the level being played (`firstcommit.runner` owns it).
+- ``lessons/``: temporary folders where lessons run (`firstcommit.demos` owns them).
 
 The files are written atomically (termlab's store). Callers hold `lock` around every
 read-modify-write, so the command line and the web server never lose each other's update.
