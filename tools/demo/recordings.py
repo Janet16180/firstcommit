@@ -13,10 +13,6 @@ path (shown as /home/you/lab), which changes from run to run.
   pull on diverged branches, clone), each in its own lab.
 - `record_first_commits`: init, two new files, add, commit, edit, add, commit, remote, push, one
   lab, one step after another.
-- `record_sharing`: you and Alex, two clones of one practice copy, sharing a file. Alex's
-  ``git pull`` is recorded in two halves: a copy of Alex's clone runs ``git fetch`` (the drawing
-  between the halves), then ``git merge --ff-only origin/main``, and the copy must end exactly
-  where the real ``git pull`` did. The refused push must fail and change nothing.
 """
 
 import json
@@ -48,7 +44,7 @@ _BASE = {
     "GIT_AUTHOR_DATE": DATE,
     "GIT_COMMITTER_DATE": DATE,
 }
-_PEOPLE = {"you": ("Robin Park", "robin@example.com"), "alex": ("Alex Kim", "alex@example.com")}
+_YOU = {"GIT_AUTHOR_NAME": "Robin Park", "GIT_AUTHOR_EMAIL": "robin@example.com", "GIT_COMMITTER_NAME": "Robin Park", "GIT_COMMITTER_EMAIL": "robin@example.com"}
 
 Step = dict[str, Any]
 """One recorded step: the observations before and after it, the feed events and the commands."""
@@ -72,9 +68,9 @@ def _lab() -> Iterator[Path]:
         shutil.rmtree(root)
 
 
-def _run(folder: Path, command: str, person: str = "you", must_fail: bool = False) -> dict[str, Any]:
+def _run(folder: Path, command: str) -> None:
     """
-    Run one shell command as one person, and check it succeeds (or fails, when it must).
+    Run one shell command, with git recording Robin Park as its author, and check it succeeds.
 
     Parameters
     ----------
@@ -82,28 +78,15 @@ def _run(folder: Path, command: str, person: str = "you", must_fail: bool = Fals
         Where to run it.
     command : str
         A bash command line.
-    person : str
-        ``"you"`` or ``"alex"``: whose name and email git records.
-    must_fail : bool
-        Whether git must refuse it.
-
-    Returns
-    -------
-    dict[str, Any]
-        ``{command, output, status}``: the command, what it printed (output and errors) and its
-        exit status.
 
     Raises
     ------
     RuntimeError
-        If the command succeeds when it must fail, or fails when it must succeed.
+        If the command fails.
     """
-    name, email = _PEOPLE[person]
-    people = {"GIT_AUTHOR_NAME": name, "GIT_AUTHOR_EMAIL": email, "GIT_COMMITTER_NAME": name, "GIT_COMMITTER_EMAIL": email}
-    done = subprocess.run(["bash", "-euc", command], cwd=folder, env={**_BASE, **people}, capture_output=True, text=True)
-    if (done.returncode != 0) != must_fail:
+    done = subprocess.run(["bash", "-euc", command], cwd=folder, env={**_BASE, **_YOU}, capture_output=True, text=True)
+    if done.returncode != 0:
         raise RuntimeError(f"{command!r} in {folder.name}: exit {done.returncode}\n{done.stdout}{done.stderr}")
-    return {"command": command, "output": done.stdout + done.stderr, "status": done.returncode}
 
 
 def _shown(value: Any, lab: Path) -> Any:
@@ -236,127 +219,3 @@ def record_first_commits() -> list[Step]:
             before = after
         return [_shown(step, lab) for step in steps]
 
-
-_SHARING = [
-    ("create", "you", ["echo 'Meeting at 10.' > notes.txt"], False),
-    ("add", "you", ["git add notes.txt"], False),
-    ("commit", "you", ["git commit -m 'Add the meeting notes'"], False),
-    ("push", "you", ["git push"], False),
-    ("pull", "alex", ["git pull"], False),
-    ("alex-shares", "alex", ["echo 'Bring the slides.' >> notes.txt", "git commit -am 'Ask for the slides'", "git push"], False),
-    ("you-commit", "you", ["echo 'Start here.' >> README.md", "git commit -am 'Say where to start'"], False),
-    ("refused", "you", ["git push"], True),
-    ("pull-merge", "you", ["git pull --no-rebase --no-edit"], False),
-    ("push-again", "you", ["git push"], False),
-]
-
-
-def _three(lab: Path, alex: str = "alex") -> dict[str, Any]:
-    """
-    Observe your clone, GitHub and Alex's clone.
-
-    Parameters
-    ----------
-    lab : Path
-        The sharing lab.
-    alex : str
-        The folder of Alex's clone (a copy, for the pull's halfway state).
-
-    Returns
-    -------
-    dict[str, Any]
-        ``{you, github, alex}`` snapshots.
-    """
-    return {"you": repomap.snapshot(lab / "you"), "github": repomap.snapshot(lab / "github" / "project.git"), "alex": repomap.snapshot(lab / alex)}
-
-
-def _shared_step(name: str, actor: str, commands: list[str], before: dict[str, Any], after: dict[str, Any], transcript: list[dict[str, Any]]) -> Step:
-    """
-    Make one sharing step, with each repository's feed events.
-
-    Parameters
-    ----------
-    name : str
-        The step's id.
-    actor : str
-        Who ran it: ``"you"`` or ``"alex"``.
-    commands : list[str]
-        What they typed.
-    before : dict[str, Any]
-        The three snapshots before.
-    after : dict[str, Any]
-        The three snapshots after.
-    transcript : list[dict[str, Any]]
-        What git printed, command by command.
-
-    Returns
-    -------
-    Step
-        ``{id, actor, commands, transcript, before, after, events}``, events by repository.
-    """
-    events = {key: changes.describe(before[key], after[key]) for key in ("you", "github", "alex")}
-    return {"id": name, "actor": actor, "commands": commands, "transcript": transcript, "before": before, "after": after, "events": events}
-
-
-def _same(one: Any, other: Any) -> bool:
-    """
-    Tell whether two snapshots, or two observations, are identical.
-
-    Parameters
-    ----------
-    one : Any
-        JSON-shaped data.
-    other : Any
-        JSON-shaped data.
-
-    Returns
-    -------
-    bool
-        True when they are equal field for field.
-    """
-    return json.dumps(one, sort_keys=True) == json.dumps(other, sort_keys=True)
-
-
-def record_sharing() -> list[Step]:
-    """
-    Record you sharing a file with Alex through GitHub, then a refused push and its fix.
-
-    Returns
-    -------
-    list[Step]
-        One step per entry of the sharing walk; Alex's ``git pull`` is two steps,
-        ``pull-fetch`` and ``pull-merge-half``.
-
-    Raises
-    ------
-    RuntimeError
-        If the pull's two halves do not end where ``git pull`` does, or the refused push changes
-        anything.
-    """
-    steps: list[Step] = []
-    with _lab() as lab:
-        _run(lab, "git clone -q github/project.git you 2>/dev/null")
-        _run(lab / "you", "echo '# Team handbook' > README.md && git add README.md && git commit -qm 'Add the README' && git push -q")
-        _run(lab, "git clone -q github/project.git alex", "alex")
-        before = _three(lab)
-        for name, actor, commands, must_fail in _SHARING:
-            if name == "pull":
-                shutil.copytree(lab / "alex", lab / "alex-fetched", symlinks=True)
-                fetched = [_run(lab / "alex-fetched", "git fetch", "alex")]
-                halfway = _three(lab, "alex-fetched")
-                transcript = [_run(lab / "alex", command, actor) for command in commands]
-                after = _three(lab)
-                _run(lab / "alex-fetched", "git merge -q --ff-only origin/main", "alex")
-                if not _same(_three(lab, "alex-fetched")["alex"], after["alex"]):
-                    raise RuntimeError("git fetch, then git merge, did not end where git pull did")
-                steps.append(_shared_step("pull-fetch", actor, commands, before, halfway, fetched))
-                steps.append(_shared_step("pull-merge-half", actor, commands, halfway, after, transcript))
-            else:
-                last = len(commands) - 1
-                transcript = [_run(lab / actor, command, actor, must_fail and index == last) for index, command in enumerate(commands)]
-                after = _three(lab)
-                if must_fail and not _same(after, before):
-                    raise RuntimeError(f"{name}: the refused command changed something")
-                steps.append(_shared_step(name, actor, commands, before, after, transcript))
-            before = after
-        return [_shown(step, lab) for step in steps]
