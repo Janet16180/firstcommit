@@ -128,9 +128,13 @@ def home() -> Path:
     Raises
     ------
     ValueError
-        If ``FIRSTCOMMIT_HOME`` is set to a relative or empty path.
+        If ``FIRSTCOMMIT_HOME`` is set to a relative or empty path, or to one holding ``:``,
+        which git's list of ceiling folders would split in two.
     """
-    return store.home(HOME_VARIABLE, DEFAULT_HOME)
+    path = store.home(HOME_VARIABLE, DEFAULT_HOME)
+    if ":" in str(path):
+        raise ValueError(f"{HOME_VARIABLE} must not contain ':', since git splits its folder lists at ':', not {str(path)!r}")
+    return path
 
 
 def lock() -> contextlib.AbstractContextManager[None]:

@@ -245,3 +245,9 @@ def test_the_home_must_be_absolute(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("FIRSTCOMMIT_HOME", "relative/home")
     with pytest.raises(ValueError, match="FIRSTCOMMIT_HOME"):
         save.home()
+
+
+def test_the_home_must_not_hold_a_colon(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("FIRSTCOMMIT_HOME", str(tmp_path / "a:b"))
+    with pytest.raises(ValueError, match="FIRSTCOMMIT_HOME.*':'"):
+        save.home()
