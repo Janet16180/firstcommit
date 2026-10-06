@@ -41,9 +41,16 @@ What is Git?, 1.6 First-Time Git Setup, 2.2 Recording Changes to the Repository)
 | log | `git log --oneline` lists commits newest first, one per line: short hash, then the message | git-log(1), `--oneline` ("--pretty=oneline --abbrev-commit"), format `oneline` (`<hash> <title-line>`), Commit Ordering ("reverse chronological order"); *re-checked*: the slide's output, card `basics-log-oneline` |
 | log | On a terminal, the newest line also shows `(HEAD -> main)` between the hash and the message | git-log(1), `--decorate`: "If auto is specified, then if the output is going to a terminal, the ref names are shown as if short were given ... Default to configuration value of log.decorate if configured, otherwise, auto"; RelNotes 2.13.0 lines 176-177; experiment on a pseudo-terminal: `fecf61d (HEAD -> main) First`, and through a pipe `fecf61d First`; *re-checked*: lesson transcripts use `log.decorate=short` (insight) |
 
-The lesson was run line by line in the lessons' environment: every line succeeds except
-`! git commit -m "Add the README"` (exit status 1). The demonstration folder's path in the `init`
-slide's output is shown as `/home/you/...` (insight's transcripts).
+The lesson was run through the real `demos.frames` on the merged branch: every line succeeds
+except `! git commit -m "Add the README"`, the `init` output reads `/home/you/project/.git/`, and
+each slide's map shows the README in the expected areas. Every card snippet also passes in the
+real `demos.environment`.
+
+The quest was played end to end through the real game layer (`game.start`, `game.quest_step`,
+`game.check`), with the player's commands run as plain `git` in `gitcmd.shell_environment` and
+no identity variables, as in the page's terminal: each step refused its answer or action before
+and accepted it after, every nudge read as intended (wrong branch, wrong case, example name,
+message instead of hash, extra untracked file), and the level paid 100 XP once solved.
 
 ### Guided quest
 
