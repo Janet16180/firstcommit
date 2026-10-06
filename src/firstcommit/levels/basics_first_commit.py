@@ -368,7 +368,7 @@ def commit_move(snap: kit.Snapshot) -> str:
         What to do next.
     """
     if has_file(snap, "index"):
-        move = "`README.md` is in the staging area. Save the staging area as a commit with `git commit`."
+        move = '`README.md` is in the staging area. Save the staging area as a commit with `git commit -m "Add the README"`.'
     elif has_file(snap, "folder"):
         move = "Git sees `README.md` in the working folder, but it is not in the staging area yet, and a new file gets into a commit only once it is staged."
     else:

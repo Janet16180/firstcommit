@@ -340,7 +340,7 @@ def test_staging_without_committing_leaves_the_level_unsolved(lab: kit.Lab) -> N
     play_until(lab, "commit")
     verdict = check(lab)
     assert not verdict.solved
-    assert "git commit" in verdict.message
+    assert '`git commit -m "Add the README"`' in verdict.message
 
 
 def test_a_commit_without_the_readme_does_not_solve_the_level(lab: kit.Lab) -> None:
