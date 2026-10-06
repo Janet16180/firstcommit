@@ -1,0 +1,5 @@
+# The image needs only the game's package from this folder (termlab comes as its own build
+# context), so everything else stays out of the context.
+*
+!src/firstcommit
+**/__pycache__

@@ -1,0 +1,155 @@
+#!/usr/bin/env bash
+# Play First Commit in a Docker container. Run "deploy/docker/run help" for the commands.
+set -euo pipefail
+
+here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+root=$(cd "$here/../.." && pwd)
+termlab=$root/../termlab
+
+# One name for the image, the container and (with -home) the volume; tests set their own.
+name=${FIRSTCOMMIT_DOCKER_NAME:-firstcommit}
+volume=$name-home
+game_home=/home/player/.firstcommit
+label=firstcommit.inputs
+
+usage() {
+    cat <<EOF
+Usage: deploy/docker/run [command]
+
+  play    build the image if needed, then start the game (the default)
+  shell   open a terminal in the running game, with the game's git settings
+  build   build the image if the game or termlab changed, without starting
+  reset   delete your saved game and practice repositories (asks first)
+  help    show this text
+
+PORT=8851 deploy/docker/run starts the game on another port.
+EOF
+}
+
+fail() {
+    printf '%s\n' "$@" >&2
+    exit 1
+}
+
+require_docker() {
+    if ! command -v docker >/dev/null; then
+        fail "Docker is not installed in this WSL." \
+            "Install Docker Engine for Ubuntu (https://docs.docker.com/engine/install/ubuntu/), then run this again." \
+            "Or play without Docker: see README.md."
+    fi
+    local problem
+    if ! problem=$(docker info 2>&1 >/dev/null); then
+        if [[ $problem == *"permission denied"* ]]; then
+            fail "Docker is running, but your user may not use it. Add yourself to the docker group:" \
+                "  sudo usermod -aG docker \"\$USER\"" \
+                "  newgrp docker" \
+                "then run this again."
+        fi
+        fail "Docker is installed but not running." \
+            "Start it with: sudo service docker start" \
+            "then run this again."
+    fi
+}
+
+inputs_hash() {
+    {
+        (cd "$root" && list_files deploy/docker/Dockerfile .dockerignore src/firstcommit)
+        (cd "$termlab/src" && list_files termlab)
+    } | sha256sum | cut -d ' ' -f 1
+}
+
+list_files() {
+    find "$@" -type f ! -path '*/__pycache__/*' -print0 | LC_ALL=C sort -z | xargs -0 sha256sum
+}
+
+ensure_image() {
+    if [ ! -d "$termlab/src/termlab" ]; then
+        fail "termlab is missing: First Commit needs it next to the game, at $termlab."
+    fi
+    local hash
+    hash=$(inputs_hash)
+    if [ -n "$(docker images --quiet --filter "label=$label=$hash" "$name")" ]; then
+        return
+    fi
+    if ! docker buildx version >/dev/null 2>&1; then
+        fail "Docker's build plugin (buildx) is missing." \
+            "Install it with: sudo apt install docker-buildx-plugin" \
+            "(or docker-buildx if your Docker came from Ubuntu's own docker.io package)."
+    fi
+    echo "Building the First Commit image. The first build downloads Ubuntu and takes a few minutes."
+    docker build --file "$here/Dockerfile" --build-context "termlab=$termlab/src" \
+        --label "$label=$hash" --tag "$name" "$root"
+}
+
+container_exists() {
+    docker container inspect "$name" >/dev/null 2>&1
+}
+
+play() {
+    if container_exists; then
+        fail "First Commit is already running in Docker." \
+            "Open the link it printed, or stop it with Ctrl-C in its terminal."
+    fi
+    ensure_image
+    # The server listens on 127.0.0.1 only, which a container's own network would hide from
+    # the browser; the host's network shows it as localhost, exactly as without Docker.
+    local options=(--rm --init --name "$name" --network host --volume "$volume:$game_home")
+    # With a terminal, Docker stops forwarding signals and Ctrl-C reaches the game as a key.
+    if [ -t 0 ] && [ -t 1 ]; then
+        options+=(--interactive --tty)
+    fi
+    # Dates in the game and in git follow the player's clock, not UTC.
+    if [ -f /etc/localtime ]; then
+        options+=(--volume /etc/localtime:/etc/localtime:ro)
+    fi
+    local serve=(firstcommit serve)
+    if [ -n "${PORT:-}" ]; then
+        serve+=(--port "$PORT")
+    fi
+    exec docker run "${options[@]}" "$name" "${serve[@]}"
+}
+
+shell() {
+    if ! container_exists; then
+        fail "First Commit is not running in Docker. Start it first: deploy/docker/run"
+    fi
+    exec docker exec --interactive --tty "$name" firstcommit shell
+}
+
+reset() {
+    if container_exists; then
+        fail "Stop First Commit first (Ctrl-C in its terminal), then run reset again."
+    fi
+    if ! docker volume inspect "$volume" >/dev/null 2>&1; then
+        echo "There is no saved game to delete."
+        return
+    fi
+    local answer=""
+    read -r -p "Delete your First Commit progress and practice repositories? Type yes to confirm: " answer || true
+    if [ "$answer" != yes ]; then
+        echo "Nothing was deleted."
+        return
+    fi
+    docker volume rm "$volume" >/dev/null
+    echo "Your saved game is deleted. The next deploy/docker/run starts a new game."
+}
+
+action=${1:-play}
+case $action in
+    play | shell | build | reset) ;;
+    help | -h | --help)
+        usage
+        exit 0
+        ;;
+    *)
+        usage >&2
+        exit 2
+        ;;
+esac
+require_docker
+case $action in
+    play) play ;;
+    shell) shell ;;
+    build) ensure_image ;;
+    reset) reset ;;
+esac
