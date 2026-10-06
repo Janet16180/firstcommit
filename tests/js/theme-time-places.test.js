@@ -353,9 +353,14 @@ test("what a flight brings shows only as it arrives: a new row appears, a known 
   assert.ok(appear("index").timing.delay < appear("folder").timing.delay, "the staging area updates on the way to the working folder");
 });
 
-test("a single command's motion is over within a second, and a whole pull within 1.4 seconds", () => {
-  for (const call of played(PUSH.before, PUSH.after, ["push"]).calls) assert.ok(end(call) <= 1000, JSON.stringify(call.timing));
-  for (const call of played(PULL.before, PULL.after, ["fetch", "pull"]).calls) assert.ok(end(call) <= 1400, JSON.stringify(call.timing));
+test("a flight takes 520 ms from place to place, slow enough to follow", () => {
+  const flight = played(PUSH.before, PUSH.after, ["push"]).calls.find(isFlyer);
+  assert.equal(flight.timing.duration, 520);
+});
+
+test("a single command's motion is over within a second and a quarter, and a whole pull within 1.75 seconds", () => {
+  for (const call of played(PUSH.before, PUSH.after, ["push"]).calls) assert.ok(end(call) <= 1250, JSON.stringify(call.timing));
+  for (const call of played(PULL.before, PULL.after, ["fetch", "pull"]).calls) assert.ok(end(call) <= 1750, JSON.stringify(call.timing));
 });
 
 const shortOf = (name) => blob(name).slice(0, 7);
@@ -451,11 +456,12 @@ test("both parts of pull's arrow draw as its merge half starts", () => {
   for (const part of figure.querySelectorAll(".tt-arrow.is-pull")) assert.ok(calls.some((call) => call.node === part.querySelector(".tt-arrow-shaft")));
 });
 
-test("a command's motion stays within about a second and a half, however many files it moves", () => {
+test("a command's motion stays within about two seconds, however many files it moves, a clone being the longest", () => {
   const many = Array.from({ length: 12 }, (_, index) => `file${index}.md`);
   const before = { project: { ...START, files: many.map((name) => file(name, { head: "1", index: "1", folder: "1" })) }, github: hub([C, ...TWO]) };
   const after = { project: { ...PULLED, files: many.map((name) => file(name, { head: "2", index: "2", folder: "2" })) }, github: hub([C, ...TWO]) };
-  for (const call of played(before, after, ["fetch", "pull"]).calls) assert.ok(end(call) <= 1500, JSON.stringify(call.timing));
+  for (const call of played(before, after, ["fetch", "pull"]).calls) assert.ok(end(call) <= 1850, JSON.stringify(call.timing));
+  for (const call of played({ project: repo({}), github: after.github }, after, ["clone"]).calls) assert.ok(end(call) <= 2050, JSON.stringify(call.timing));
 });
 
 test("an empty GitHub says it has no commits yet, not that you are on its branch", () => {

@@ -60,7 +60,7 @@ const TimePlaces = (function () {
      new state (their own motions) as the first commit lands. A flight passes its middle place
      halfway and arrives at AT.arrive of its run. */
   const EASE = "cubic-bezier(0.3, 0.7, 0.3, 1)";
-  const TIMING = { arrow: 240, flight: { delay: 120, duration: 420 }, stagger: 80, spread: 240, land: 300, reveal: 160, pulse: 360 };
+  const TIMING = { arrow: 300, flight: { delay: 150, duration: 520 }, stagger: 100, spread: 300, land: 380, reveal: 200, pulse: 450 };
   const AT = { middle: 0.5, arrive: 0.88 };
 
   /* Commits reachable from `hash` in a snapshot: the commit and every ancestor it records. */

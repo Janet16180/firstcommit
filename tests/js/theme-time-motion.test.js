@@ -207,10 +207,16 @@ test("the merge's new line draws in from the merged branch's tip", () => {
   assert.deepEqual(join.frames.map((frame) => frame.strokeDashoffset), [-100, 0]);
 });
 
-test("every motion is over within 600 ms", () => {
+test("a tab slides to its new commit in 480 ms, slow enough to follow", () => {
+  const { calls } = played(ONE, TWO);
+  const tab = on(calls, '[data-label="branch:main"]');
+  assert.equal(tab[0].timing.duration, 480);
+});
+
+test("every motion is over within 750 ms", () => {
   const cases = [[ONE, TWO], [TWO, ONE], [{ commits: [["c", ["a"]], ["f", ["a"]], ["a", []]], refs: [["main", "branch", "c"], ["feature", "branch", "f"]] }, { commits: [["m", ["c", "f"]], ["c", ["a"]], ["f", ["a"]], ["a", []]], refs: [["main", "branch", "m"], ["feature", "branch", "f"]], head: "m" }]];
   for (const [before, after] of cases) {
-    for (const { timing } of played(before, after).calls) assert.ok((timing.delay || 0) + timing.duration <= 600, JSON.stringify(timing));
+    for (const { timing } of played(before, after).calls) assert.ok((timing.delay || 0) + timing.duration <= 750, JSON.stringify(timing));
   }
 });
 

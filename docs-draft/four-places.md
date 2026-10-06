@@ -106,7 +106,9 @@ picture (D3). A pull plays the fetch, then your branch moves and the changed pag
 repository, pass the open box (which updates as they pass) and reach the working folder. Only
 commits that are on GitHub fly from GitHub: a merge or rebase commit appears in your repository.
 A page the player edits or makes changes where it lies. A command's motion stays within about
-1.5 seconds however many files move: the flights of one group spread over at most 240 ms.
+two seconds however many files move, because the flights of one group spread over at most
+300 ms: about 1.1 s for a push, 1.6 s for a pull, 1.8 s for a pull of many files and 2 s for a
+big clone, the longest.
 
 **Where it lives.** As a lesson figure (a slide view next to `map`, `areas` and `objects`), and
 as a toggle in the live panel ("Timelines" or "Four places") once the remote chapter starts. The

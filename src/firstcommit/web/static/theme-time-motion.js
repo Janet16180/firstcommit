@@ -26,7 +26,7 @@
  * - lift: how far to hold the drawing down at first so a ghost or a starting tab above the top
  *   row shows, before the drawing settles.
  * play(figure, motion, theme, reduced, offset) runs them on the figure RepoMap.render just drew,
- * all over within 600 ms of `offset`, with the Web Animations API; under prefers-reduced-motion
+ * all over within 750 ms of `offset`, with the Web Animations API; under prefers-reduced-motion
  * it does nothing.
  * Needs dom.js and theme-time.js. Defines one global, TimeMotion.
  */
@@ -39,14 +39,14 @@ const TimeMotion = (function () {
   const EASE = "cubic-bezier(0.2, 0.8, 0.2, 1)";
   const SAVE_POINT = /^tt-(join|save|core)$/;
   const TIMING = {
-    born: { duration: 260 },
-    replaced: { duration: 200 },
-    replacing: { delay: 200, duration: 260 },
-    appear: { delay: 120, duration: 260 },
-    slide: { delay: 100, duration: 380 },
-    line: { delay: 40, duration: 360 },
-    ghost: { delay: 300, duration: 260 },
-    lift: { delay: 380, duration: 200 },
+    born: { duration: 330 },
+    replaced: { duration: 250 },
+    replacing: { delay: 250, duration: 330 },
+    appear: { delay: 150, duration: 330 },
+    slide: { delay: 130, duration: 480 },
+    line: { delay: 50, duration: 450 },
+    ghost: { delay: 380, duration: 330 },
+    lift: { delay: 480, duration: 250 },
   };
 
   const empty = () => ({ born: [], appear: [], slides: [], texts: [], dial: null, ghosts: [], lines: [], lift: 0 });
