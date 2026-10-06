@@ -80,6 +80,25 @@ test("starting builds the lab, refreshes the dashboard and opens the practice", 
   run.view.dispose();
 });
 
+test("after starting, the level is read again so its text is filled from the new lab", async () => {
+  let started = false;
+  const level = () => {
+    const view = record("level");
+    view.steps[0].text = [{ kind: "para", spans: [{ text: started ? "You are on trunk." : "You are on {{branch}}.", code: false }] }];
+    return view;
+  };
+  const start = () => {
+    started = true;
+    return { ...record("active"), step: 0 };
+  };
+  const run = page({ replies: { "/api/level": level, "/api/start": start } });
+  await settle();
+  button(run, /Skip to the practice/).click();
+  await settle();
+  assert.match(run.q(".step.is-current").textContent, /You are on trunk\./);
+  run.view.dispose();
+});
+
 test("a level already in progress opens straight into the practice", async () => {
   const run = page({ active: { ...record("active"), level: ID, step: 1 } });
   await settle();

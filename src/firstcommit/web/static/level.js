@@ -75,7 +75,6 @@ const LevelPage = (function () {
         found && found.done && el("li", { class: "is-done" }, "✓ Done"),
       ),
       el("p", { class: "plan" }, planSentence(level)),
-      level.steps.length === 0 && el("div", { class: "briefing prose" }, Markup.render(level.briefing)),
       (notice || other) && el("p", { class: "notice", role: "status" }, notice || `Starting this level ends “${other.title}”, which is in progress.`),
       introActions(page),
     ));
@@ -100,6 +99,8 @@ const LevelPage = (function () {
     try {
       const active = await page.ctx.game.start(page.levelId);
       await page.ctx.refresh();
+      /* The level's texts are filled from the state of the lab just built. */
+      page.level = await page.ctx.game.level(page.levelId);
       practice(page, active);
     } catch (error) {
       if (!expected(page, error)) throw error;
