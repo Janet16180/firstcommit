@@ -2,36 +2,40 @@
 The Docker runtime: ``deploy/docker/run`` and the image it builds.
 
 Tests marked ``docker`` build or run containers; they skip when Docker or its daemon is not
-available. Every image tag, container and volume they create carries a random test name and is
-removed afterwards. One plays the smoke flow of DESIGN.md section 3 on the player image: the
-template level, solved by typing git into the page's terminal. The other tests check the script's
-messages with a fake ``docker``.
+available. Every image tag, container and volume they create is named after this pytest run
+(`RUN_NAME`) and removed afterwards, and every port they use is one the OS picked, so several runs
+can share the machine. One plays the smoke flow of DESIGN.md section 3 (``tests/smoke.py``, also
+run on this machine by ``tests/test_smoke.py``) on the player image. The other tests check the
+script's messages with a fake ``docker``.
 """
 
-import base64
-import http.client
 import json
 import os
 import pty
 import re
 import secrets
-import select
 import shlex
 import shutil
-import socket
-import struct
 import subprocess
 import time
 import tomllib
 from collections.abc import Iterator
 from datetime import date, timedelta
 from pathlib import Path, PurePosixPath
-from typing import Any
 
 import pytest
 
-from firstcommit.levels import basics_first_commit as template
-from firstcommit.web import routes
+from smoke import (
+    LINK,
+    PROMPT,
+    TEMPLATE_LEVEL,
+    call,
+    free_port,
+    open_page_terminal,
+    play_the_template_level,
+    read_until,
+    type_and_expect,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
 RUN = ROOT / "deploy" / "docker" / "run"
@@ -44,17 +48,7 @@ GAME_HOME = "/home/player/.firstcommit"
 INPUTS_LABEL = "firstcommit.inputs"
 BUILT_LABEL = "firstcommit.built"
 MAX_AGE = timedelta(days=30)
-TOKEN_HEADER = routes.SETTINGS.token_header
-LINK = re.compile(r"http://localhost:(?P<port>\d+)/#token=(?P<token>[A-Za-z0-9_-]+)")
-PROMPT = r"\$ $"
-TEMPLATE_LEVEL = "basics-first-commit"
-# What a player types to read the answer to a quest question; the marker keeps the typed line
-# itself from matching.
-READ_ANSWER = {
-    "status": 'echo "answer=$(git branch --show-current)"',
-    "hash": 'echo "answer=$(git rev-parse --short HEAD)"',
-}
-ANSWER = r"(?s)answer=([\w.-]+)\r\n.*\$ $"
+RUN_NAME = f"firstcommit-test-{secrets.token_hex(3)}"
 
 
 def volume_of(name: str) -> str:
@@ -245,199 +239,6 @@ def spawn_in_terminal(command: list[str], env: dict[str, str]) -> tuple[subproce
     return process, leader
 
 
-def read_until(leader: int, pattern: re.Pattern[str], timeout: float) -> re.Match[str]:
-    """
-    Read a terminal until its output matches a pattern.
-
-    Parameters
-    ----------
-    leader : int
-        The controlling end of the terminal.
-    pattern : re.Pattern[str]
-        What to wait for.
-    timeout : float
-        Seconds before the test fails.
-
-    Returns
-    -------
-    re.Match[str]
-        The first match in everything read so far.
-
-    Raises
-    ------
-    AssertionError
-        If the terminal closes or the time runs out first; the message holds the output.
-    """
-    deadline = time.monotonic() + timeout
-    seen = ""
-    match = None
-    closed = False
-    while match is None and not closed and time.monotonic() < deadline:
-        ready, _, _ = select.select([leader], [], [], 0.2)
-        if not ready:
-            continue
-        chunk = read_terminal(leader)
-        closed = chunk == b""
-        seen += chunk.decode(errors="replace")
-        match = pattern.search(seen)
-    if match is None:
-        raise AssertionError(f"no {pattern.pattern!r} in the terminal's output:\n{seen}")
-    return match
-
-
-def read_terminal(leader: int) -> bytes:
-    """
-    Read what a terminal has printed.
-
-    Parameters
-    ----------
-    leader : int
-        The controlling end of the terminal.
-
-    Returns
-    -------
-    bytes
-        The output, or nothing once every process on the terminal has closed it.
-    """
-    try:
-        return os.read(leader, 65536)
-    except OSError:
-        # Linux reports a terminal whose other end is closed as EIO.
-        return b""
-
-
-def free_port() -> int:
-    """
-    Pick a port in the range these tests may use that nothing listens on.
-
-    Returns
-    -------
-    int
-        A port between 8851 and 8899.
-    """
-    free = [port for port in range(8851, 8900) if not listening(port)]
-    if not free:
-        raise RuntimeError("every port from 8851 to 8899 is in use")
-    return free[0]
-
-
-def listening(port: int) -> bool:
-    """
-    Tell whether something accepts connections on a local port.
-
-    Parameters
-    ----------
-    port : int
-        The port on 127.0.0.1.
-
-    Returns
-    -------
-    bool
-        True if a connection succeeds.
-    """
-    with socket.socket() as probe:
-        return probe.connect_ex(("127.0.0.1", port)) == 0
-
-
-def call(port: int, method: str, path: str, token: str | None, body: dict[str, Any] | None = None) -> tuple[int, Any]:
-    """
-    Call the game's API as the page does in the browser: through localhost, with the key in its header.
-
-    Parameters
-    ----------
-    port : int
-        The server's port.
-    method : str
-        ``GET`` or ``POST``.
-    path : str
-        The path, with its query.
-    token : str | None
-        The key from the printed link, or None to leave it out.
-    body : dict[str, Any] | None
-        The JSON body of a POST.
-
-    Returns
-    -------
-    tuple[int, Any]
-        The HTTP status, and the decoded reply when it is JSON (else None).
-    """
-    headers = {"Host": f"localhost:{port}"}
-    if token is not None:
-        headers[TOKEN_HEADER] = token
-    payload = None
-    if body is not None:
-        payload = json.dumps(body).encode()
-        headers.update({"Content-Type": "application/json", "Origin": f"http://localhost:{port}"})
-    connection = http.client.HTTPConnection("127.0.0.1", port, timeout=30)
-    connection.request(method, path, body=payload, headers=headers)
-    response = connection.getresponse()
-    raw = response.read()
-    connection.close()
-    reply = None
-    if response.getheader("Content-Type", "").startswith("application/json"):
-        reply = json.loads(raw)
-    return response.status, reply
-
-
-def player_command(command: str) -> str:
-    """
-    Turn a quest step's suggested command into what a player types: their own name and email for the examples.
-
-    Parameters
-    ----------
-    command : str
-        The command the page shows.
-
-    Returns
-    -------
-    str
-        The command with the template level's player in place of its examples.
-    """
-    return command.replace(template.EXAMPLE_NAME, template.PLAYER.name).replace(
-        template.EXAMPLE_EMAIL, template.PLAYER.email
-    )
-
-
-def play_the_template_level(port: int, token: str) -> dict[str, Any]:
-    """
-    Play the smoke flow of DESIGN.md section 3: the template level, through the page's API and terminal.
-
-    Open the level and start it; for each quest step, type its command into the page's terminal,
-    read the answer when the step asks a question, and report the step as the page does; then
-    check the level as the page's polling does.
-
-    Parameters
-    ----------
-    port : int
-        The server's port.
-    token : str
-        The key from the printed link.
-
-    Returns
-    -------
-    dict[str, Any]
-        The last check's reply (`firstcommit.game.CheckResult`).
-    """
-    status, level = call(port, "GET", f"/api/level?id={TEMPLATE_LEVEL}", token)
-    assert status == 200, level
-    status, active = call(port, "POST", "/api/start", token, {"level": TEMPLATE_LEVEL})
-    assert status == 200, active
-    page = open_page_terminal(port, token)
-    type_and_expect(page, "", PROMPT)
-    for step in level["steps"]:
-        type_and_expect(page, player_command(step["command"]) + "\r", PROMPT)
-        answer = None
-        if step["kind"] == "answer":
-            shown = re.search(ANSWER, type_and_expect(page, READ_ANSWER[step["id"]] + "\r", ANSWER))
-            answer = shown[1] if shown else None
-        status, result = call(port, "POST", "/api/step", token, {"answer": answer})
-        assert status == 200 and result["correct"], (step["id"], result)
-    page.close()
-    status, checked = call(port, "POST", "/api/check", token, {"answer": None, "auto": True})
-    assert status == 200, checked
-    return dict(checked)
-
-
 def check_the_page_terminal(port: int, token: str) -> None:
     """
     Check the shell in the page: no privileges, the game's git isolation, and the tools a beginner uses.
@@ -473,108 +274,6 @@ def check_the_page_terminal(port: int, token: str) -> None:
     type_and_expect(page, "\r", PROMPT)
     type_and_expect(page, "git log -1 --format=subject:%s\r", "subject:My first commit")
     page.close()
-
-
-def open_page_terminal(port: int, token: str) -> socket.socket:
-    """
-    Open the page's terminal as the browser does: a WebSocket that carries the key as a subprotocol.
-
-    Parameters
-    ----------
-    port : int
-        The server's port.
-    token : str
-        The key from the printed link.
-
-    Returns
-    -------
-    socket.socket
-        The open connection, past the handshake.
-    """
-    page = socket.create_connection(("127.0.0.1", port), timeout=10)
-    key = base64.b64encode(os.urandom(16)).decode()
-    page.sendall(
-        (
-            "GET /api/terminal HTTP/1.1\r\n"
-            f"Host: localhost:{port}\r\nOrigin: http://localhost:{port}\r\n"
-            f"Sec-WebSocket-Protocol: firstcommit, t.{token}\r\n"
-            "Upgrade: websocket\r\nConnection: Upgrade\r\n"
-            f"Sec-WebSocket-Key: {key}\r\nSec-WebSocket-Version: 13\r\n\r\n"
-        ).encode()
-    )
-    reply = b""
-    while not reply.endswith(b"\r\n\r\n"):
-        reply += page.recv(1)
-    assert reply.startswith(b"HTTP/1.1 101"), reply
-    return page
-
-
-def type_and_expect(page: socket.socket, keys: str, expected: str, timeout: float = 15) -> str:
-    """
-    Type keys into the page's terminal and wait until its output shows what they should cause.
-
-    Parameters
-    ----------
-    page : socket.socket
-        The terminal's open WebSocket.
-    keys : str
-        What to type, control characters included.
-    expected : str
-        A regular expression the output that follows must match.
-    timeout : float
-        Seconds before the test fails.
-
-    Returns
-    -------
-    str
-        The output read after typing, up to the match.
-
-    Raises
-    ------
-    AssertionError
-        If the output does not match in time; the message holds the output.
-    """
-    payload = keys.encode()
-    mask = os.urandom(4)
-    size = bytes([0x80 | len(payload)]) if len(payload) < 126 else bytes([0x80 | 126]) + struct.pack("!H", len(payload))
-    page.sendall(bytes([0x82]) + size + mask + bytes(byte ^ mask[i % 4] for i, byte in enumerate(payload)))
-    deadline = time.monotonic() + timeout
-    pending = b""
-    output = ""
-    while re.search(expected, output) is None and time.monotonic() < deadline:
-        if select.select([page], [], [], 0.2)[0]:
-            pending += page.recv(65536)
-        shown, pending = terminal_output(pending)
-        output += shown
-    assert re.search(expected, output), f"no {expected!r} in the page terminal's output:\n{output}"
-    return output
-
-
-def terminal_output(frames: bytes) -> tuple[str, bytes]:
-    """
-    Take the terminal output out of the complete WebSocket frames a server sent.
-
-    Parameters
-    ----------
-    frames : bytes
-        Bytes received so far; a frame may be cut at the end.
-
-    Returns
-    -------
-    tuple[str, bytes]
-        The text of the complete binary frames, and the bytes of the cut frame, if any.
-    """
-    output = b""
-    while len(frames) >= 2:
-        size, start = frames[1] & 0x7F, 2
-        if size == 126:
-            size, start = struct.unpack("!H", frames[2:4])[0], 4
-        if len(frames) < start + size:
-            break
-        if frames[0] & 0x0F == 0x2:
-            output += frames[start : start + size]
-        frames = frames[start + size :]
-    return output.decode(errors="replace"), frames
 
 
 def fake_docker(folder: Path, message: str) -> str:
@@ -621,7 +320,7 @@ def image(docker_ready: None) -> Iterator[str]:
     str
         The test name, used for the image, its container and its volume.
     """
-    name = f"firstcommit-test-{secrets.token_hex(4)}"
+    name = RUN_NAME
     built = run_script("build", name=name, timeout=900)
     assert built.returncode == 0, built.stdout + built.stderr
     yield name
@@ -643,7 +342,7 @@ def unused_name(docker_ready: None) -> Iterator[str]:
     str
         The name.
     """
-    name = f"firstcommit-test-{secrets.token_hex(4)}"
+    name = f"{RUN_NAME}-{secrets.token_hex(2)}"
     yield name
     remove_docker_objects(name)
 
