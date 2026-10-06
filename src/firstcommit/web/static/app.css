@@ -654,6 +654,27 @@ input[type="text"]::placeholder {
   white-space: nowrap;
 }
 
+.start-here,
+.coming-soon {
+  display: inline-block;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  font: 650 0.75rem var(--sans);
+  white-space: nowrap;
+}
+
+.start-here {
+  margin-left: 0.5rem;
+  background: var(--accent);
+  color: var(--accent-ink);
+}
+
+.coming-soon {
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line-strong);
+  color: var(--muted);
+}
+
 .chapter-links {
   display: flex;
   gap: 1.1rem;
@@ -1932,6 +1953,12 @@ input[type="text"]::placeholder {
 .notes-nav a:hover {
   background: var(--surface);
   color: var(--ink);
+}
+
+.notes-nav .is-soon {
+  display: block;
+  padding: 0.4rem 0.75rem;
+  color: var(--muted);
 }
 
 .notes-nav a[aria-current] {

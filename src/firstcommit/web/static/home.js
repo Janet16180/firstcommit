@@ -34,9 +34,8 @@ const HomeView = (function () {
       return [el("a", { class: "btn btn-primary btn-large", href: levelHref(active.level) }, `Continue: ${activeLevel.title}`), el("p", { class: "muted" }, quest)];
     }
     const next = Progress.nextLevel(status.chapters);
-    const started = status.chapters.some((chapter) => chapter.levels.some((level) => level.done));
     if (!next) return el("p", {}, "You have played every level. Well done.");
-    return el("a", { class: "btn btn-primary btn-large", href: levelHref(next.id) }, `${started ? "Next" : "Start here"}: ${next.title}`);
+    return el("a", { class: "btn btn-primary btn-large", href: levelHref(next.id) }, `${Progress.startLevel(status.chapters) ? "Start here" : "Next"}: ${next.title}`);
   }
 
   function hero(status) {
@@ -49,26 +48,30 @@ const HomeView = (function () {
     );
   }
 
-  function levelLink(level, status) {
+  /* `start` is the level to start with (Progress.startLevel), or null. */
+  function levelLink(level, status, start) {
     const active = status.active && status.active.level === level.id;
     const classes = ["level-link", level.done && "is-done", active && "is-active"].filter(Boolean).join(" ");
     return el("li", {}, el("a", { class: classes, href: levelHref(level.id) },
       el("span", { class: "level-state", "aria-hidden": "true" }, level.done ? "✓" : active ? "▸" : ""),
-      el("span", { class: "level-title" }, level.title, level.done && el("span", { class: "sr-only" }, " (done)"), active && el("span", { class: "sr-only" }, " (in progress)")),
+      el("span", { class: "level-title" }, level.title, level.done && el("span", { class: "sr-only" }, " (done)"), active && el("span", { class: "sr-only" }, " (in progress)"),
+        start && start.id === level.id && el("span", { class: "start-here" }, "Start here")),
       el("span", { class: "level-meta" }, `${"●".repeat(level.difficulty)}${"○".repeat(status.max_difficulty - level.difficulty)}`, ` · ${level.xp} XP`),
     ));
   }
 
-  function chapterItem(chapter, index, status) {
+  /* A chapter with no levels yet is coming soon, with nothing to open. */
+  function chapterItem(chapter, index, status, start) {
     const done = chapter.levels.filter((level) => level.done).length;
     const id = encodeURIComponent(chapter.id);
-    return el("li", { class: `chapter${chapter.levels.length ? "" : " is-empty"}` },
+    const playable = chapter.levels.length > 0;
+    return el("li", { class: `chapter${playable ? "" : " is-empty"}` },
       el("header", { class: "chapter-head" },
         el("span", { class: "chapter-number", "aria-hidden": "true" }, String(index + 1)),
-        el("div", {}, el("h2", {}, chapter.title), el("p", { class: "muted" }, chapter.levels.length ? `${done} of ${plural(chapter.levels.length, "level")} done` : "Coming soon")),
+        el("div", {}, el("h2", {}, chapter.title), playable ? el("p", { class: "muted" }, `${done} of ${plural(chapter.levels.length, "level")} done`) : el("p", {}, el("span", { class: "coming-soon" }, "Coming soon"))),
       ),
-      chapter.levels.length > 0 && el("ul", { class: "levels" }, chapter.levels.map((level) => levelLink(level, status))),
-      chapter.cards > 0 && el("p", { class: "chapter-links" }, el("a", { href: `#/notes/${id}` }, "Notes"), el("a", { href: `#/cards/${id}` }, `Practise ${plural(chapter.cards, "card")}`)),
+      playable && el("ul", { class: "levels" }, chapter.levels.map((level) => levelLink(level, status, start))),
+      playable && chapter.cards > 0 && el("p", { class: "chapter-links" }, el("a", { href: `#/notes/${id}` }, "Notes"), el("a", { href: `#/cards/${id}` }, `Practise ${plural(chapter.cards, "card")}`)),
     );
   }
 
@@ -89,9 +92,10 @@ const HomeView = (function () {
   /* ctx: status(), game, refresh(), reload() (shows this view again). */
   function create(ctx) {
     const status = ctx.status();
+    const start = Progress.startLevel(status.chapters);
     const element = el("div", { class: "home" },
       hero(status),
-      el("ol", { class: "chapters" }, status.chapters.map((chapter, index) => chapterItem(chapter, index, status))),
+      el("ol", { class: "chapters" }, status.chapters.map((chapter, index) => chapterItem(chapter, index, status, start))),
       el("footer", { class: "home-foot" }, el("button", { type: "button", class: "link-button is-danger erase", onclick: () => erase(ctx) }, "Erase all progress…")),
     );
     return { element };

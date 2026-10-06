@@ -19,6 +19,12 @@ const Progress = (function () {
     return ordered.find((level) => !level.done && level.id !== afterId) || null;
   }
 
+  /* The level to start with: the first in play order while no level is finished, else null. */
+  function startLevel(chapters) {
+    const levels = allLevels(chapters);
+    return levels.some((level) => level.done) ? null : levels[0] || null;
+  }
+
   /* A level and its chapter, or null. */
   const findLevel = (chapters, id) => allLevels(chapters).find((level) => level.id === id) || null;
 
@@ -29,5 +35,5 @@ const Progress = (function () {
     return { fraction: (xp - rank.floor) / (rank.next_at - rank.floor), toNext: rank.next_at - xp };
   }
 
-  return { nextLevel, findLevel, rankProgress };
+  return { nextLevel, startLevel, findLevel, rankProgress };
 })();

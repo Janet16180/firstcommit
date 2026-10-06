@@ -36,7 +36,9 @@ const NotesView = (function () {
     const article = el("article", { class: "notes panel" }, el("p", { class: "loading" }, "Loading the notes…"));
     const element = el("div", { class: "notes-page" },
       el("nav", { class: "notes-nav", "aria-label": "Chapters" }, el("ol", {}, status.chapters.map((item) => el("li", {},
-        el("a", { href: `#/notes/${encodeURIComponent(item.id)}`, "aria-current": item.id === open ? "page" : null }, item.title),
+        item.levels.length > 0
+          ? el("a", { href: `#/notes/${encodeURIComponent(item.id)}`, "aria-current": item.id === open ? "page" : null }, item.title)
+          : el("span", { class: "is-soon" }, item.title, " ", el("span", { class: "coming-soon" }, "Coming soon")),
       )))),
       article,
     );
