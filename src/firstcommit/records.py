@@ -93,6 +93,11 @@ class Snapshot(TypedDict):
     progress. ``commits`` lists every commit reachable from HEAD and the refs, newest first, at
     most `firstcommit.repomap.MAX_COMMITS`; ``files`` lists at most `firstcommit.repomap.MAX_FILES` paths, sorted; ``truncated`` says
     whether either was cut.
+
+    ``pushed`` names the remote-tracking branches that a push from this repository moved last,
+    as their reflogs record it, so a commit that reached one by a push was here before the
+    remote had it. Invariant: a sorted subset of the names of ``refs`` of kind ``"remote"``;
+    empty when there are none, or when their reflogs are off.
     """
 
     exists: bool
@@ -101,6 +106,7 @@ class Snapshot(TypedDict):
     branch: str | None
     commits: list[Commit]
     refs: list[Ref]
+    pushed: list[str]
     files: list[FileEntry]
     operation: Operation | None
     stash: int

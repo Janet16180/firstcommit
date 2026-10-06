@@ -395,6 +395,28 @@ def test_a_staged_commit_pushed_in_the_same_batch_is_told_as_made_here(tmp_path:
     assert kinds(happens(clone, "git commit -q -m 'Add b' && git push -q")) == ["commit-created", "remote-updated"]
 
 
+def test_a_pull_of_a_change_already_staged_here_is_not_told_as_made_here(tmp_path: Path) -> None:
+    project(tmp_path)
+    shell(tmp_path, "git clone -q --bare project github.git && git clone -q github.git clone")
+    shell(tmp_path / "project", "echo same > a.txt && git commit -q -am 'Their change' && git push -q ../github.git main")
+    clone = tmp_path / "clone"
+    shell(clone, "echo same > a.txt && git add a.txt")
+    events = happens(clone, "git pull -q")
+    assert kinds(events) == ["branch-moved", "remote-updated"]
+    assert "1 new commit came from the remote" in events[1]["text"]
+
+
+def test_a_merge_made_by_a_pull_and_pushed_in_the_same_batch_is_told_as_made_here(tmp_path: Path) -> None:
+    project(tmp_path)
+    shell(tmp_path, "git clone -q --bare project github.git && git clone -q github.git clone")
+    shell(tmp_path / "project", "echo theirs > b.txt && git add b.txt && git commit -q -m 'Their change' && git push -q ../github.git main")
+    clone = tmp_path / "clone"
+    shell(clone, "echo mine > c.txt && git add c.txt && git commit -q -m 'My change'")
+    events = happens(clone, "git pull -q --no-rebase --no-edit && git push -q")
+    assert kinds(events) == ["merge-commit-created", "remote-updated"]
+    assert "1 new commit came from the remote" in events[1]["text"]
+
+
 def test_a_push_is_seen_on_the_bare_repository(tmp_path: Path) -> None:
     project(tmp_path)
     shell(tmp_path, "git clone -q --bare project github.git && git clone -q github.git clone")
@@ -406,9 +428,9 @@ def test_a_push_is_seen_on_the_bare_repository(tmp_path: Path) -> None:
     assert events[0]["text"].startswith("A push created branch `topic`")
     assert events[1]["text"].startswith("A push moved branch `main`")
     assert "force" not in events[1]["text"]
-    rewritten = happens(tmp_path / "clone", "git commit -q --amend --allow-empty -m 'two, again' && git push -q --force")
-    assert kinds(rewritten) == ["branch-moved", "remote-updated"]
-    assert "rewritten" in rewritten[0]["text"]
+    replaced = happens(tmp_path / "clone", "git commit -q --amend --allow-empty -m 'two, again' && git push -q --force")
+    assert kinds(replaced) == ["commit-replaced", "remote-updated"]
+    assert "came from the remote" not in replaced[1]["text"]
 
 
 def test_a_force_push_says_so(tmp_path: Path) -> None:
@@ -483,6 +505,7 @@ def snapshots(names: st.SearchStrategy[str]) -> st.SearchStrategy[repomap.Snapsh
         branch=st.none() | names,
         commits=st.lists(commits, max_size=5),
         refs=st.lists(refs, max_size=5),
+        pushed=st.lists(names, max_size=3, unique=True).map(sorted),
         files=st.lists(files, max_size=8),
         operation=st.sampled_from([None, "merge", "rebase", "cherry-pick", "revert", "bisect"]),
         stash=st.integers(0, 3),

@@ -1,21 +1,30 @@
 "use strict";
 
 /*
- * "Share a file with Alex": your computer, GitHub and Alex's computer side by side, in the four
- * places' pictures (pages, an open box, closed boxes on a timeline). Each computer stacks its
- * working folder, its open box and its repository, so a file you share travels down your side,
- * across GitHub and up Alex's. The figure plays one step at a time, each with one caption that
- * says what Alex can see: committing shares nothing, pushing puts the commit on GitHub, not on
- * Alex's computer, and only Alex's pull brings it there, first its fetch half, then its merge
- * half.
+ * You and Alex side by side over GitHub, in the four places' pictures (pages, an open box, closed
+ * boxes on a timeline). Each computer stacks its working folder, its open box and its repository,
+ * so a file you share travels down your side into GitHub and up Alex's (theme-time-share.css has
+ * the layouts). One renderer and one player serve two callers:
  *
- * A step is {id, actor ("you" or "alex"), commands, transcript, before, after, events}: real git,
- * a bare GitHub and two clones, a snapshot of each after every step (the generator records the
- * pull's two halves separately and checks they end where git pull does). lit(step) says which of
- * the actor's arrows light, from the actor's and GitHub's feed events; render(step) draws it;
- * play(figure, step) runs it with TimePlaces' motions inside the actor's computer. Every caption
- * goes to the fact-check (docs-draft/share.md). Needs dom.js, map.js, theme-time.js,
- * theme-time-motion.js and theme-time-places.js. Defines one global, TimeShare.
+ * - The playground (live): render(state, {person, commands, shown}) draws the three repositories
+ *   {you, github, alex} (observed(observation) makes that from the game's observation) with the
+ *   arrows `commands` lit on `person`'s computer, and an empty slot under each computer
+ *   (`[data-slot="you"]`, `[data-slot="alex"]`) where the page puts that person's buttons. On a
+ *   narrow screen a person switch (You | Alex) chooses whose slot shows, and nothing else; the
+ *   figure's `data-shown` holds the choice, for the page to pass on as `shown` when it draws
+ *   again. pressed(before, after, person) gives a press's `commands`, from the pressing person's
+ *   feed events and GitHub's (which the observation gives with yours, in `events`).
+ *   play(figure, before, after, person, commands) plays the change inside the pressing person's
+ *   computer and GitHub.
+ * - "Share a file with Alex" (a walkthrough): a step is {id, actor ("you" or "alex"), commands,
+ *   transcript, before, after, events}: real git, a bare GitHub and two clones, a snapshot of each
+ *   after every step (tools/demo/share.py records them and checks the pull's two halves end where
+ *   git pull does). renderStep(step) draws the step with what was typed, git's words when it
+ *   refused and one caption that says what Alex can see; lit(step) says which arrows light;
+ *   playStep(figure, step) plays it. Every caption goes to the fact-check (docs/drafts/share.md).
+ *
+ * Needs dom.js, map.js, theme-time.js, theme-time-motion.js and theme-time-places.js. Defines one
+ * global, TimeShare.
  */
 
 /* global Dom, TimePlaces */
@@ -26,6 +35,9 @@ const TimeShare = (function () {
   const { filePlace, repositoryPlace, arrow, pair, inline } = TimePlaces.parts;
 
   const PEOPLE = { you: { name: "You", owner: null }, alex: { name: "Alex", owner: "Alex" } };
+  /* A timeline wider than its place is drawn smaller, down to this share of its size; past it,
+     its place scrolls rather than shrink the hashes and subjects out of reading. */
+  const FLOOR = 0.8;
   const GITHUB = "GitHub (the practice copy)";
 
   /* One caption per step, each saying what Alex can see. */
@@ -45,6 +57,17 @@ const TimeShare = (function () {
     "push-again": "Now `git push` works: GitHub gets your commit and the merge commit, and its `main` moves onto them. Alex will have them after the next `git pull`.",
   };
 
+  /* The figure's three repositories, from the game's observation: your project, GitHub and the
+     lab's teammate, Alex. */
+  const observed = (observation) => ({ you: observation.project, github: observation.github, alex: observation.teammate });
+
+  /* The pressing person's arrows a press lights, between two observations: from that person's
+     feed events and GitHub's, which come with yours in `events`. */
+  function pressed(before, after, person) {
+    const events = person === "alex" ? [...after.teammate_events, ...after.events] : after.events;
+    return TimePlaces.commands(events, observed(before)[person], observed(after)[person]);
+  }
+
   /* The actor's arrows a step lights, from the actor's feed events and GitHub's. */
   const lit = (step) => TimePlaces.commands([...step.events[step.actor], ...step.events.github], step.before[step.actor], step.after[step.actor]);
 
@@ -55,8 +78,9 @@ const TimeShare = (function () {
   );
 
   /* One person's computer: who, then the working folder, the open box and the repository, with
-     the arrows between them and the pair across to GitHub. */
-  function computer(who, snapshot, commands) {
+     the arrows between them and the pair across to GitHub; with `slot`, an empty place under it
+     for the person's buttons. */
+  function computer(who, snapshot, commands, slot) {
     const { name, owner } = PEOPLE[who];
     const merge = TimePlaces.ARROWS.pull.path;
     return el("div", { class: `ts-computer is-${who}`, "data-person": who, role: "group", "aria-label": `${name === "You" ? "Your" : `${name}'s`} computer` },
@@ -67,7 +91,55 @@ const TimeShare = (function () {
       pair(2, arrow("commit", commands, undefined, owner), arrow("pull", commands, merge.slice(0, 2), owner)),
       repositoryPlace("repository", snapshot, true, owner),
       pair(3, arrow("push", commands, undefined, owner), arrow("fetch", commands, undefined, owner)),
+      slot && el("div", { class: "ts-slot", "data-slot": who }),
     );
+  }
+
+  /* The three repositories in their places, `commands` lit on `person`'s computer. */
+  function grid(state, person, commands, slots) {
+    const lights = (who) => (who === person ? commands : []);
+    const drawn = el("div", { class: "ts-grid" },
+      computer("you", state.you, lights("you"), slots),
+      el("div", { class: "ts-github", role: "group", "aria-label": GITHUB }, el("div", { class: "ts-who" }, el("span", { class: "ts-name" }, GITHUB)), repositoryPlace("remote", state.github, false)),
+      computer("alex", state.alex, lights("alex"), slots),
+    );
+    for (const graph of drawn.querySelectorAll("svg.map-graph")) graph.style.minWidth = `${Math.round(FLOOR * Number(graph.getAttribute("width")))}px`;
+    return drawn;
+  }
+
+  /* The narrow screen's person switch: its buttons choose whose slot shows. */
+  function switcher(shown) {
+    const choose = (event) => {
+      const figure = event.currentTarget.closest(".ts-share");
+      const who = event.currentTarget.getAttribute("data-show");
+      figure.setAttribute("data-shown", who);
+      for (const button of figure.querySelectorAll(".ts-switch button")) button.setAttribute("aria-pressed", String(button.getAttribute("data-show") === who));
+    };
+    return el("div", { class: "ts-switch", role: "group", "aria-label": "Whose buttons to show" },
+      Object.entries(PEOPLE).map(([who, { name }]) => el("button", { type: "button", class: "ts-switch-button", "data-show": who, "aria-pressed": String(who === shown), onclick: choose }, name)),
+    );
+  }
+
+  /* The playground's figure: you, GitHub and Alex as `state` has them, `commands` lit on
+     `person`'s computer, a slot for each person's buttons, and `shown`'s slot chosen for a narrow
+     screen. */
+  function render(state, { person = null, commands = [], shown = "you" } = {}) {
+    const drawn = grid(state, person, commands, true);
+    drawn.append(switcher(shown));
+    return el("figure", { class: "ts-share is-live", "data-shown": shown, "aria-label": "You, GitHub and Alex" }, drawn);
+  }
+
+  /* Plays the change from `before` to `after` on the figure render(after) drew, inside `person`'s
+     computer and GitHub, lighting `commands`; returns the animations started. */
+  function play(figure, before, after, person, commands, reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+    const mine = [...figure.querySelectorAll("[data-person]")].find((node) => node.getAttribute("data-person") === person);
+    const github = figure.querySelector(".ts-github");
+    const lookup = {
+      place: (area) => (area === "remote" ? github : mine).querySelector(`[data-area="${area}"]`),
+      arrows: (name) => [...mine.querySelectorAll(".tt-arrow")].filter((node) => node.getAttribute("data-command") === name),
+    };
+    const view = (state) => state && { project: state[person], github: state.github };
+    return TimePlaces.play(figure, { before: view(before), after: view(after), commands }, reduced, lookup);
   }
 
   /* What the person who ran the step typed, and git's own words when it refused. */
@@ -79,34 +151,19 @@ const TimeShare = (function () {
     ];
   }
 
-  /* The step's state `at` ("after" by default, lit and captioned; "before" plain). */
-  function render(step, { at = "after" } = {}) {
-    const state = step[at];
+  /* A walkthrough step's state `at` ("after" by default, lit and captioned; "before" plain), with
+     what was typed. */
+  function renderStep(step, { at = "after" } = {}) {
     const commands = at === "after" ? lit(step) : [];
-    const lights = (who) => (who === step.actor ? commands : []);
     return el("figure", { class: "ts-share", "aria-label": "You, GitHub and Alex" },
-      el("div", { class: "ts-grid" },
-        computer("you", state.you, lights("you")),
-        el("div", { class: "ts-github", role: "group", "aria-label": GITHUB }, el("div", { class: "ts-who" }, el("span", { class: "ts-name" }, GITHUB)), repositoryPlace("remote", state.github, false)),
-        computer("alex", state.alex, lights("alex")),
-      ),
+      grid(step[at], step.actor, commands, false),
       said(step),
       at === "after" && el("figcaption", { class: "ts-caption" }, inline(CAPTIONS[step.id])),
     );
   }
 
-  /* Plays a step on the figure render(step) drew, inside the actor's computer and GitHub; returns
-     the animations started. */
-  function play(figure, step, reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-    const mine = [...figure.querySelectorAll("[data-person]")].find((node) => node.getAttribute("data-person") === step.actor);
-    const github = figure.querySelector(".ts-github");
-    const lookup = {
-      place: (area) => (area === "remote" ? github : mine).querySelector(`[data-area="${area}"]`),
-      arrows: (name) => [...mine.querySelectorAll(".tt-arrow")].filter((node) => node.getAttribute("data-command") === name),
-    };
-    const view = (state) => ({ project: state[step.actor], github: state.github });
-    return TimePlaces.play(figure, { before: view(step.before), after: view(step.after), commands: lit(step) }, reduced, lookup);
-  }
+  /* Plays a walkthrough step on the figure renderStep(step) drew. */
+  const playStep = (figure, step, reduced) => play(figure, step.before, step.after, step.actor, lit(step), reduced);
 
-  return { CAPTIONS, lit, render, play };
+  return { observed, pressed, render, play, CAPTIONS, lit, renderStep, playStep };
 })();
