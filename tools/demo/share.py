@@ -5,11 +5,12 @@ Run it from the repository::
 
     uv run python tools/demo/share.py share.json
 
-It builds one lab in a temporary folder: a bare practice copy that stands in for GitHub
+It builds one lab in the fixed folder `LAB`: a bare practice copy that stands in for GitHub
 (``github/project.git``) and two clones of it, ``you`` and ``alex``. You commit the README and
-push it, Alex clones, then every step of the walk runs as the person it belongs to (Robin Park
-or Alex Kim, fixed dates, no global or system configuration, ``init.defaultBranch=main``). After
-each step it snapshots all three repositories with `firstcommit.repomap` and lists what changed
+push it, Alex clones, then every step of the walk runs as the person it belongs to, Robin Park or
+Alex Kim, in the lessons' own fixed environment (`firstcommit.demos.environment`: fixed dates,
+the C locale, the game's starting configuration and nothing else from the shell that runs it).
+After each step it snapshots all three repositories with `firstcommit.repomap` and lists what changed
 in each with `firstcommit.changes`, the same events the game's feed shows. It writes the steps
 to the given file as JSON: ``[{id, actor, commands, transcript, before, after, events}]``, the
 observations being ``{you, github, alex}``.
@@ -20,38 +21,27 @@ Two steps check themselves:
   drawing between the halves), then ``git merge --ff-only origin/main``, and the copy must end
   exactly where Alex's real ``git pull`` did.
 - The refused push must fail and leave all three repositories exactly as they were.
+
+The lab is always the same folder because git writes the practice copy's path into the merge
+message of ``git pull``, so the merge commit's hash depends on it. Every hash and every line of
+output is therefore the same on every run with the same git, and nothing is rewritten after
+recording. The lab is removed at the end; the recorder refuses to start if the folder exists.
 """
 
 import json
-import os
 import shutil
 import subprocess
 import sys
-import tempfile
 from pathlib import Path
 from typing import Any, TypedDict
 
-from firstcommit import changes, repomap
+from firstcommit import changes, demos, gitcmd, repomap
 from firstcommit.changes import Event
 from firstcommit.repomap import Snapshot
 
-DATE = "2026-01-15T09:00:00+00:00"
-BASE = {
-    **os.environ,
-    "GIT_CONFIG_GLOBAL": "/dev/null",
-    "GIT_CONFIG_NOSYSTEM": "1",
-    "GIT_CONFIG_COUNT": "1",
-    "GIT_CONFIG_KEY_0": "init.defaultBranch",
-    "GIT_CONFIG_VALUE_0": "main",
-    "GIT_AUTHOR_DATE": DATE,
-    "GIT_COMMITTER_DATE": DATE,
-    "LC_ALL": "C",
-}
-PEOPLE = {
-    "you": {"GIT_AUTHOR_NAME": "Robin Park", "GIT_AUTHOR_EMAIL": "robin@example.com", "GIT_COMMITTER_NAME": "Robin Park", "GIT_COMMITTER_EMAIL": "robin@example.com"},
-    "alex": {"GIT_AUTHOR_NAME": "Alex Kim", "GIT_AUTHOR_EMAIL": "alex@example.com", "GIT_COMMITTER_NAME": "Alex Kim", "GIT_COMMITTER_EMAIL": "alex@example.com"},
-}
-SHOWN_LAB = "/home/you/lab"
+LAB = Path("/tmp/firstcommit-share")
+"""The lab's folder, also its home: git prints this path, and writes it into the merge commit."""
+PEOPLE = {"you": gitcmd.Person("Robin Park", "robin@example.com"), "alex": gitcmd.Person("Alex Kim", "alex@example.com")}
 
 # Each step: its id, who runs it, the commands, and whether git must refuse it.
 STEPS = [
@@ -92,7 +82,27 @@ class Step(TypedDict):
     events: dict[str, list[Event]]
 
 
-def run(cwd: Path, person: str, command: str, must_fail: bool = False) -> Line:
+def as_person(environment: dict[str, str], person: str) -> dict[str, str]:
+    """
+    Give the lab's environment with one person as git's author and committer.
+
+    Parameters
+    ----------
+    environment : dict[str, str]
+        The lab's whole environment.
+    person : str
+        ``"you"`` or ``"alex"``.
+
+    Returns
+    -------
+    dict[str, str]
+        The same environment, with that person's name and email.
+    """
+    name, email = PEOPLE[person].name, PEOPLE[person].email
+    return {**environment, "GIT_AUTHOR_NAME": name, "GIT_AUTHOR_EMAIL": email, "GIT_COMMITTER_NAME": name, "GIT_COMMITTER_EMAIL": email}
+
+
+def run(cwd: Path, environment: dict[str, str], person: str, command: str, must_fail: bool = False) -> Line:
     """
     Run one shell command as one person, and check it succeeds, or fails when it must.
 
@@ -100,6 +110,8 @@ def run(cwd: Path, person: str, command: str, must_fail: bool = False) -> Line:
     ----------
     cwd : Path
         Where to run it.
+    environment : dict[str, str]
+        The lab's whole environment.
     person : str
         ``"you"`` or ``"alex"``: whose name and email git records.
     command : str
@@ -117,7 +129,7 @@ def run(cwd: Path, person: str, command: str, must_fail: bool = False) -> Line:
     RuntimeError
         If the command succeeds when it must fail, or fails when it must succeed.
     """
-    done = subprocess.run(["bash", "-c", command], cwd=cwd, env={**BASE, **PEOPLE[person]}, capture_output=True, text=True)
+    done = subprocess.run(["bash", "-c", command], cwd=cwd, env=as_person(environment, person), capture_output=True, text=True)
     if (done.returncode != 0) != must_fail:
         raise RuntimeError(f"{command!r} in {cwd.name}: exit {done.returncode}\n{done.stdout}{done.stderr}")
     return {"command": command, "output": done.stdout + done.stderr, "status": done.returncode}
@@ -201,44 +213,44 @@ def record_sharing() -> list[Step]:
 
     Raises
     ------
+    FileExistsError
+        If `LAB` exists already.
     RuntimeError
         If a command does not end as expected, the pull's two halves do not end where
         ``git pull`` does, or the refused push changes anything.
     """
-    root = Path(tempfile.mkdtemp(prefix="fc-share-"))
+    environment = demos.environment(LAB)
     steps: list[Step] = []
     try:
-        subprocess.run(["git", "init", "-q", "--bare", "github/project.git"], cwd=root, env=BASE, check=True)
-        run(root, "you", "git clone -q github/project.git you 2>/dev/null")
+        run(LAB, environment, "you", "git init -q --bare github/project.git")
+        run(LAB, environment, "you", "git clone -q github/project.git you 2>/dev/null")
         for command in ["echo '# Team handbook' > README.md", "git add README.md", "git commit -qm 'Add the README'", "git push -q"]:
-            run(root / "you", "you", command)
-        run(root, "alex", "git clone -q github/project.git alex")
-        before = observe(root)
+            run(LAB / "you", environment, "you", command)
+        run(LAB, environment, "alex", "git clone -q github/project.git alex")
+        before = observe(LAB)
         for name, actor, commands, must_fail in STEPS:
             if name == "pull":
-                shutil.copytree(root / "alex", root / "alex-fetched", symlinks=True)
-                fetched = [run(root / "alex-fetched", "alex", "git fetch")]
-                halfway = observe(root, "alex-fetched")
-                transcript = [run(root / "alex", actor, command) for command in commands]
-                after = observe(root)
-                run(root / "alex-fetched", "alex", "git merge -q --ff-only origin/main")
-                if not same(observe(root, "alex-fetched")["alex"], after["alex"]):
+                shutil.copytree(LAB / "alex", LAB / "alex-fetched", symlinks=True)
+                fetched = [run(LAB / "alex-fetched", environment, "alex", "git fetch")]
+                halfway = observe(LAB, "alex-fetched")
+                transcript = [run(LAB / "alex", environment, actor, command) for command in commands]
+                after = observe(LAB)
+                run(LAB / "alex-fetched", environment, "alex", "git merge -q --ff-only origin/main")
+                if not same(observe(LAB, "alex-fetched")["alex"], after["alex"]):
                     raise RuntimeError("fetch + merge did not end where git pull did")
                 steps.append(step("pull-fetch", actor, commands, before, halfway, fetched))
                 steps.append(step("pull-merge-half", actor, commands, halfway, after, transcript))
             else:
                 last = len(commands) - 1
-                transcript = [run(root / actor, actor, command, must_fail and index == last) for index, command in enumerate(commands)]
-                after = observe(root)
+                transcript = [run(LAB / actor, environment, actor, command, must_fail and index == last) for index, command in enumerate(commands)]
+                after = observe(LAB)
                 if must_fail and not same(after, before):
                     raise RuntimeError(f"{name}: a refused command changed something")
                 steps.append(step(name, actor, commands, before, after, transcript))
             before = after
     finally:
-        shutil.rmtree(root)
-    # git prints the lab's random temporary path; show it as a home folder instead.
-    shown: list[Step] = json.loads(json.dumps(steps).replace(str(root), SHOWN_LAB))
-    return shown
+        shutil.rmtree(LAB)
+    return steps
 
 
 def main() -> None:
