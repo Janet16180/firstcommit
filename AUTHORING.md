@@ -173,8 +173,22 @@ configuration, and shows each of the slide's commands with its real output, plus
 (`view`): the repository map, the three areas, the object database, the commands only, or
 nothing. So every hash and line of output a lesson shows is what git really prints.
 
+- Each non-blank line of `run` is one command. The whole lesson runs in one bash shell, so
+  `cd`, variables and `$?` carry over to the next line and the next slide. Keep a command on
+  one line (no here-documents, no `if` or `for` spread over lines); join steps with `&&`.
 - A line that starts with `! ` is expected to fail (`! git commit -m "x"` before anything is
-  staged); any other failing line is a bug in the lesson and fails the tests.
+  staged); any other failing line is a bug in the lesson and fails the tests. So is a `! `
+  line that succeeds, a line that ends the shell (`exit`), and a slide that ends outside the
+  lesson's home folder.
+- The lesson starts in the empty folder `/home/you/project`, with `HOME` at `/home/you` (that
+  is how the output shows the real temporary folder), the author and committer
+  `Sam Lee <sam@example.com>`, the date 2026-01-15 09:00 UTC, `LC_ALL=C`, `TERM=dumb`, umask
+  022, and a global git configuration that only sets the default branch to `main`.
+  `firstcommit.demos.environment` defines it; predict cards and verify snippets use the same.
+- A command's output is its standard output and error together, in order. A slide's figure
+  shows the repository of the shell's current folder after the slide's last line.
+- Output must be the same on every run and must be text: no `date`, no `ls -l` (it shows
+  times), no `$RANDOM`, no binary files printed to the terminal.
 - Write files with plain shell (`echo "hello" > hello.txt`), so the reader can follow along.
 - 4-8 slides; one idea each; text of 2-5 short sentences.
 
