@@ -10,7 +10,11 @@ termlab=$root/../termlab-firstcommit
 name=${FIRSTCOMMIT_DOCKER_NAME:-firstcommit}
 volume=$name-home
 game_home=/home/player/.firstcommit
-label=firstcommit.inputs
+inputs_label=firstcommit.inputs
+built_label=firstcommit.built
+# An older image is rebuilt from scratch, so players who keep it still get Ubuntu's security
+# updates. Tests set their own day to check this.
+max_age_days=30
 # Nothing in the game needs a capability or setuid, so it runs without them.
 hardening=(--cap-drop ALL --security-opt no-new-privileges)
 # With a terminal, Docker stops forwarding signals and Ctrl-C reaches the container as a key.
@@ -26,6 +30,7 @@ Usage: deploy/docker/run [command]
   play    build the image if needed, then start the game (the default)
   shell   open a terminal in the running game, with the game's git settings
   build   build the image if the game or termlab changed, without starting
+  update  rebuild the image now with Ubuntu's latest updates (play does it every $max_age_days days)
   reset   delete your saved game and practice repositories (asks first)
   test    run ruff, mypy and the tests in a container (or: test <pytest arguments>)
   help    show this text
@@ -90,13 +95,43 @@ build() {
 
 ensure_image() {
     require_termlab
-    local hash
+    local hash labels inputs="" built=""
     hash=$(inputs_hash)
-    if [ -n "$(docker images --quiet --filter "label=$label=$hash" "$name:latest")" ]; then
-        return
+    if labels=$(docker image inspect --format "{{ index .Config.Labels \"$inputs_label\" }} {{ index .Config.Labels \"$built_label\" }}" "$name:latest" 2>/dev/null); then
+        read -r inputs built <<<"$labels"
     fi
-    echo "Building the First Commit image. The first build downloads Ubuntu and takes a few minutes."
-    build player "$name:latest" --label "$label=$hash"
+    if [ "$inputs" != "$hash" ]; then
+        echo "Building the First Commit image. The first build downloads Ubuntu and takes a few minutes."
+        build_player "$hash"
+    elif too_old "$built"; then
+        echo "The First Commit image is more than $max_age_days days old: rebuilding it with Ubuntu's latest updates."
+        build_player "$hash" --pull --no-cache
+    fi
+}
+
+update() {
+    require_termlab
+    echo "Rebuilding the First Commit image with Ubuntu's latest updates."
+    build_player "$(inputs_hash)" --pull --no-cache
+}
+
+build_player() {
+    local hash=$1
+    shift
+    build player "$name:latest" --label "$inputs_label=$hash" --label "$built_label=$(today)" "$@"
+}
+
+today() {
+    echo "${FIRSTCOMMIT_DOCKER_TODAY:-$(date -u +%F)}"
+}
+
+too_old() {
+    local built=$1 age
+    if [ -z "$built" ]; then
+        return 0
+    fi
+    age=$(( ($(date -u -d "$(today)" +%s) - $(date -u -d "$built" +%s)) / 86400 ))
+    [ "$age" -gt "$max_age_days" ]
 }
 
 container_exists() {
@@ -163,7 +198,7 @@ reset() {
 
 action=${1:-play}
 case $action in
-    play | shell | build | reset | test) ;;
+    play | shell | build | update | reset | test) ;;
     help | -h | --help)
         usage
         exit 0
@@ -178,6 +213,7 @@ case $action in
     play) play ;;
     shell) shell ;;
     build) ensure_image ;;
+    update) update ;;
     reset) reset ;;
     test) run_tests "${@:2}" ;;
 esac

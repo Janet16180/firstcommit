@@ -75,6 +75,11 @@ NEXT for phase 2, before merging to `main`:
   (`less`); teach `q`, Space and `/` there. Short output no longer stops in the pager
   (`core.pager = less -FRX` in the game's config, git's own default when LESS is unset).
 
+- For the `remote` chapter author (from the map guide fact-check): a plain `git pull` on
+  diverged branches fails on git 2.43 ("Need to specify how to reconcile divergent branches"),
+  and `gitcmd.BASE_CONFIG` sets no `pull.rebase`. Decide whether the chapter teaches the choice
+  (`--no-rebase` / `--rebase`) or the game's config sets one, and say which in the lesson.
+
 - repomap does not see uncommitted changes inside a submodule (`git status` reports them). No
   chapter teaches submodules yet; revisit if one does.
 

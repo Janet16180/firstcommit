@@ -1,10 +1,10 @@
 import json
 from pathlib import Path
-from typing import Any, Literal, TypedDict
+from typing import Any
 
 import pytest
 
-from firstcommit import save
+from firstcommit import records, save
 
 PAYOUT: save.Payout = {"level": "basics-first-commit", "xp": 85, "first_time": True, "rank_before": "Untracked", "rank_after": "Untracked"}
 PROGRESS: save.Progress = {
@@ -49,8 +49,39 @@ def test_clearing_the_active_level_forgets_it(game_home: Path) -> None:
     assert save.load_active() is None
 
 
+HASH = "e" * 40
+SNAPSHOT: records.Snapshot = {
+    "exists": True,
+    "bare": False,
+    "head": HASH,
+    "branch": "main",
+    "commits": [{"hash": HASH, "short": HASH[:7], "parents": [], "subject": "Add a README", "author": "Ada Tester", "time": 1760000000}],
+    "refs": [{"name": "main", "kind": "branch", "target": HASH}],
+    "files": [
+        {
+            "path": "README.md",
+            "head": HASH,
+            "index": HASH,
+            "folder": HASH,
+            "head_mode": "100644",
+            "index_mode": "100644",
+            "folder_mode": "100644",
+            "index_change": None,
+            "folder_change": None,
+            "ignored": False,
+            "conflicted": False,
+            "repository": False,
+        }
+    ],
+    "operation": None,
+    "stash": 0,
+    "truncated": False,
+}
+OBSERVED: save.Observed = {"level": "basics-first-commit", "project": SNAPSHOT, "github": {**SNAPSHOT, "bare": True, "files": []}}
+
+
 def test_observed_snapshots_read_back_and_clear() -> None:
-    observed: save.Observed = {"level": "basics-first-commit", "project": {"exists": True}, "github": None}
+    observed = OBSERVED
     assert save.load_observed() is None
     save.write_observed(observed)
     assert save.load_observed() == observed
@@ -171,38 +202,24 @@ def test_an_observation_that_does_not_match_counts_as_nothing_observed_yet(game_
     assert save.load_observed() is None
 
 
-class Sample(TypedDict):
-    """A record using every kind of type the save checks: lists, literals, optional and nested records."""
-
-    names: list[str]
-    kind: Literal["branch", "tag"]
-    change: Literal["added", "deleted"] | None
-    items: list[save.CardEntry]
-
-
-SAMPLE: dict[str, Any] = {"names": ["a", "b"], "kind": "tag", "change": None, "items": [{"box": 1, "due": "2026-10-06"}]}
-
-
-def test_lists_and_literals_of_a_record_are_checked_item_by_item() -> None:
-    assert save._mismatch(SAMPLE, Sample, "") is None
-    assert save._mismatch({**SAMPLE, "change": "added"}, Sample, "") is None
+OBSERVATION_DAMAGE = [
+    ("project.files.0.repository", ...),
+    ("project.files.0.head", 3),
+    ("project.commits.0.parents", "none"),
+    ("project.commits.0.parents", [3]),
+    ("project.commits.0.time", -1),
+    ("project.refs.0.kind", "remote-tracking"),
+    ("project.operation", "squash"),
+    ("project.stash", True),
+    ("github.exists", None),
+    ("github", {"exists": True}),
+]
 
 
-@pytest.mark.parametrize(
-    ("field", "value", "place"),
-    [
-        ("names", "a", "names"),
-        ("names.1", 3, "names.1"),
-        ("kind", "remote", "kind"),
-        ("kind", None, "kind"),
-        ("change", "renamed", "change"),
-        ("items.0.box", "1", "items.0.box"),
-        ("items.0", {}, "items.0.box"),
-    ],
-)
-def test_a_wrong_list_item_or_literal_names_its_place(field: str, value: Any, place: str) -> None:
-    problem = save._mismatch(damaged(SAMPLE, field, value), Sample, "")
-    assert problem is not None and f"`{place}`" in problem
+@pytest.mark.parametrize(("field", "value"), OBSERVATION_DAMAGE, ids=[f"{field}={value!r}" for field, value in OBSERVATION_DAMAGE])
+def test_a_snapshot_of_another_shape_counts_as_nothing_observed_yet(game_home: Path, field: str, value: Any) -> None:
+    (game_home / "observed.json").write_text(json.dumps(damaged(dict(OBSERVED), field, value)))
+    assert save.load_observed() is None
 
 
 def test_the_game_git_config_starts_from_the_text_given(game_home: Path) -> None:
@@ -225,7 +242,7 @@ def test_the_game_git_config_is_created_in_a_new_home(tmp_path: Path, monkeypatc
 def test_erasing_removes_every_save_file_and_the_git_config(game_home: Path) -> None:
     save.write_progress(PROGRESS)
     save.write_active(ACTIVE)
-    save.write_observed({"level": "x", "project": {}, "github": None})
+    save.write_observed(OBSERVED)
     save.ensure_gitconfig("x\n")
     (game_home / "labs").mkdir()
     save.erase()
@@ -244,4 +261,10 @@ def test_erasing_works_when_the_save_files_are_damaged(game_home: Path) -> None:
 def test_the_home_must_be_absolute(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("FIRSTCOMMIT_HOME", "relative/home")
     with pytest.raises(ValueError, match="FIRSTCOMMIT_HOME"):
+        save.home()
+
+
+def test_the_home_must_not_hold_a_colon(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("FIRSTCOMMIT_HOME", str(tmp_path / "a:b"))
+    with pytest.raises(ValueError, match="FIRSTCOMMIT_HOME.*':'"):
         save.home()

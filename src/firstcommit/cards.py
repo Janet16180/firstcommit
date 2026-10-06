@@ -6,6 +6,7 @@ written by people, so every card is checked when its deck is read: a broken card
 content and raises with the file, the card and the field.
 """
 
+import functools
 import random
 import tomllib
 from collections.abc import Mapping, Sequence
@@ -14,6 +15,7 @@ from datetime import date, timedelta
 from pathlib import Path
 from typing import Any, Literal, cast
 
+from firstcommit import score
 from firstcommit.chapters import CHAPTERS
 from firstcommit.save import CardEntry
 
@@ -21,7 +23,8 @@ CardKind = Literal["choice", "text", "predict"]
 
 DECKS = Path(__file__).parent / "content" / "cards"
 KINDS: tuple[CardKind, ...] = ("choice", "text", "predict")
-LEVELS = (1, 2, 3)
+LEVELS = tuple(score.CARD_XP)
+"""Card levels: exactly the levels the scoring pays for (`firstcommit.score.CARD_XP`)."""
 MIN_WRONG = 2
 MAX_WRONG = 5
 INTERVALS = (0, 1, 3, 7, 16, 35)
@@ -123,9 +126,10 @@ def find(card_id: str) -> Card:
     return matches[0]
 
 
+@functools.cache
 def load_deck(path: Path) -> Deck:
     """
-    Read and validate one deck file.
+    Read and validate one deck file, once per process (decks ship with the game, like its levels).
 
     Parameters
     ----------

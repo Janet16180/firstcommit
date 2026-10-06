@@ -3,7 +3,9 @@ import json
 import os
 import stat
 import threading
+import time
 from collections.abc import Callable, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
 from pathlib import Path
 
@@ -668,6 +670,23 @@ def test_a_check_the_player_asks_for_may_solve_the_level_before_its_quest_is_don
     assert game.check(None, auto=False)["solved"] is True
 
 
+def test_two_checks_of_a_solved_lab_at_the_same_time_pay_once(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    def slow_check(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict:
+        time.sleep(0.2)
+        return sample_level.check(lab, state, answer)
+
+    level = dataclasses.replace(sample_level, check=slow_check)
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    game.start(level.id)
+    solve(level)
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        checks = [pool.submit(game.check, None, auto=False) for _ in range(2)]
+    errors = [type(check.exception()) for check in checks if check.exception() is not None]
+    solved = [check.result()["solved"] for check in checks if check.exception() is None]
+    assert (solved, errors) == ([True], [game.NotPlayingError])
+    assert save.load_progress()["xp"] == 100
+
+
 def test_hints_lower_what_a_level_pays(sample_level: runner.Level) -> None:
     game.start(sample_level.id)
     game.hint()
@@ -753,6 +772,18 @@ def test_observing_a_real_lab_tells_of_the_staging_and_the_commit(sample_level: 
     short = kit.git(lab_project(game_home), "rev-parse", "--short", "HEAD").strip()
     events = game.observe()["events"]
     assert any(event["kind"] == "commit-created" and short in plain(event["text"]) for event in events), events
+
+
+def test_an_observation_saved_by_an_older_game_is_dropped_without_events_or_error(sample_level: runner.Level, game_home: Path) -> None:
+    game.start(sample_level.id)
+    game.observe()
+    observed = json.loads((game_home / "observed.json").read_text())
+    for entry in observed["project"]["files"]:
+        del entry["repository"]
+    (game_home / "observed.json").write_text(json.dumps(observed))
+    (lab_project(game_home) / "notes.txt").write_text("x")
+    assert game.observe()["events"] == []
+    assert game.observe()["events"] == []
 
 
 @pytest.mark.usefixtures("fake_insight")

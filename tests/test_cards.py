@@ -7,7 +7,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from firstcommit import cards
+from firstcommit import cards, score
 from firstcommit.save import CardEntry
 
 TODAY = date(2026, 10, 6)
@@ -340,3 +340,23 @@ def test_judging_any_reply_never_raises(kind: cards.CardKind, reply: str) -> Non
 def test_the_answer_shown_is_the_right_option_or_the_first_accepted_spelling() -> None:
     assert cards.answer(card()) == "right"
     assert cards.answer(card(kind="text")) == "Main Branch"
+
+
+def test_every_card_level_pays_xp() -> None:
+    assert set(cards.LEVELS) == set(score.CARD_XP)
+    assert all(score.card_score(level, correct=True, pays=True, streak=0).xp > 0 for level in cards.LEVELS)
+
+
+def test_a_deck_is_read_once_per_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(cards, "DECKS", tmp_path)
+    write_deck(tmp_path, DECK)
+    assert cards.deck("basics") is cards.deck("basics")
+
+
+def test_decks_from_another_folder_are_never_mixed_up(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    for name, prompt in (("one", "First?"), ("two", "Second?")):
+        folder = tmp_path / name
+        folder.mkdir()
+        write_deck(folder, deck_with(VALID_CHOICE.replace('"P?"', f'"{prompt}"')))
+        monkeypatch.setattr(cards, "DECKS", folder)
+        assert cards.deck("basics").cards[0].prompt == prompt
