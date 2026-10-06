@@ -3,13 +3,14 @@ The Docker runtime: ``deploy/docker/run`` and the image it builds.
 
 Tests marked ``docker`` build or run containers; they skip when Docker or its daemon is not
 available. Every image tag, container and volume they create carries a random test name and is
-removed afterwards. Some build the image around a stand-in game
-(``tests/fixtures/docker_game_cli.py``), so playing is checked even before the game's own server
-exists. The other tests check the script's messages with a fake ``docker``.
+removed afterwards. One plays the smoke flow of DESIGN.md section 3 on the player image: the
+template level, solved by typing git into the page's terminal. The other tests check the script's
+messages with a fake ``docker``.
 """
 
 import base64
 import http.client
+import json
 import os
 import pty
 import re
@@ -22,19 +23,29 @@ import subprocess
 import time
 from collections.abc import Iterator
 from pathlib import Path
+from typing import Any
 
 import pytest
 
+from firstcommit.levels import basics_first_commit as template
 from firstcommit.web import routes
 
 ROOT = Path(__file__).resolve().parents[1]
 RUN = ROOT / "deploy" / "docker" / "run"
 TERMLAB_SRC = ROOT.parent / "termlab" / "src"
-STAND_IN_CLI = ROOT / "tests" / "fixtures" / "docker_game_cli.py"
 GAME_HOME = "/home/player/.firstcommit"
 INPUTS_LABEL = "firstcommit.inputs"
 TOKEN_HEADER = routes.SETTINGS.token_header
 LINK = re.compile(r"http://localhost:(?P<port>\d+)/#token=(?P<token>[A-Za-z0-9_-]+)")
+PROMPT = r"\$ $"
+TEMPLATE_LEVEL = "basics-first-commit"
+# What a player types to read the answer to a quest question; the marker keeps the typed line
+# itself from matching.
+READ_ANSWER = {
+    "status": 'echo "answer=$(git branch --show-current)"',
+    "hash": 'echo "answer=$(git rev-parse --short HEAD)"',
+}
+ANSWER = r"(?s)answer=([\w.-]+)\r\n.*\$ $"
 
 
 def volume_of(name: str) -> str:
@@ -281,29 +292,140 @@ def listening(port: int) -> bool:
         return probe.connect_ex(("127.0.0.1", port)) == 0
 
 
-def get(port: int, path: str, headers: dict[str, str]) -> int:
+def call(port: int, method: str, path: str, token: str | None, body: dict[str, Any] | None = None) -> tuple[int, Any]:
     """
-    Send a GET to the game's server as the player's browser would, through localhost.
+    Call the game's API as the page does in the browser: through localhost, with the key in its header.
 
     Parameters
     ----------
     port : int
         The server's port.
+    method : str
+        ``GET`` or ``POST``.
     path : str
-        The path to request.
-    headers : dict[str, str]
-        Headers besides ``Host``.
+        The path, with its query.
+    token : str | None
+        The key from the printed link, or None to leave it out.
+    body : dict[str, Any] | None
+        The JSON body of a POST.
 
     Returns
     -------
-    int
-        The HTTP status.
+    tuple[int, Any]
+        The HTTP status, and the decoded reply when it is JSON (else None).
     """
-    connection = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
-    connection.request("GET", path, headers={"Host": f"localhost:{port}", **headers})
-    status = connection.getresponse().status
+    headers = {"Host": f"localhost:{port}"}
+    if token is not None:
+        headers[TOKEN_HEADER] = token
+    payload = None
+    if body is not None:
+        payload = json.dumps(body).encode()
+        headers.update({"Content-Type": "application/json", "Origin": f"http://localhost:{port}"})
+    connection = http.client.HTTPConnection("127.0.0.1", port, timeout=30)
+    connection.request(method, path, body=payload, headers=headers)
+    response = connection.getresponse()
+    raw = response.read()
     connection.close()
-    return status
+    reply = None
+    if response.getheader("Content-Type", "").startswith("application/json"):
+        reply = json.loads(raw)
+    return response.status, reply
+
+
+def player_command(command: str) -> str:
+    """
+    Turn a quest step's suggested command into what a player types: their own name and email for the examples.
+
+    Parameters
+    ----------
+    command : str
+        The command the page shows.
+
+    Returns
+    -------
+    str
+        The command with the template level's player in place of its examples.
+    """
+    return command.replace(template.EXAMPLE_NAME, template.PLAYER.name).replace(
+        template.EXAMPLE_EMAIL, template.PLAYER.email
+    )
+
+
+def play_the_template_level(port: int, token: str) -> dict[str, Any]:
+    """
+    Play the smoke flow of DESIGN.md section 3: the template level, through the page's API and terminal.
+
+    Open the level and start it; for each quest step, type its command into the page's terminal,
+    read the answer when the step asks a question, and report the step as the page does; then
+    check the level as the page's polling does.
+
+    Parameters
+    ----------
+    port : int
+        The server's port.
+    token : str
+        The key from the printed link.
+
+    Returns
+    -------
+    dict[str, Any]
+        The last check's reply (`firstcommit.game.CheckResult`).
+    """
+    status, level = call(port, "GET", f"/api/level?id={TEMPLATE_LEVEL}", token)
+    assert status == 200, level
+    status, active = call(port, "POST", "/api/start", token, {"level": TEMPLATE_LEVEL})
+    assert status == 200, active
+    page = open_page_terminal(port, token)
+    type_and_expect(page, "", PROMPT)
+    for step in level["steps"]:
+        type_and_expect(page, player_command(step["command"]) + "\r", PROMPT)
+        answer = None
+        if step["kind"] == "answer":
+            shown = re.search(ANSWER, type_and_expect(page, READ_ANSWER[step["id"]] + "\r", ANSWER))
+            answer = shown[1] if shown else None
+        status, result = call(port, "POST", "/api/step", token, {"answer": answer})
+        assert status == 200 and result["correct"], (step["id"], result)
+    page.close()
+    status, checked = call(port, "POST", "/api/check", token, {"answer": None, "auto": True})
+    assert status == 200, checked
+    return dict(checked)
+
+
+def check_the_page_terminal(port: int, token: str) -> None:
+    """
+    Check the shell in the page: no privileges, the game's git isolation, and the tools a beginner uses.
+
+    Parameters
+    ----------
+    port : int
+        The server's port.
+    token : str
+        The key from the printed link.
+    """
+    page = open_page_terminal(port, token)
+    type_and_expect(page, "", PROMPT)
+    type_and_expect(
+        page,
+        "awk '/CapBnd|NoNewPrivs/' /proc/self/status; echo \"uid=$(id -u)\"\r",
+        r"CapBnd:\s+0{16}\s+NoNewPrivs:\s+1\s+uid=[1-9]",
+    )
+    type_and_expect(
+        page,
+        'echo "config=$GIT_CONFIG_GLOBAL nosystem=$GIT_CONFIG_NOSYSTEM ceiling=$GIT_CEILING_DIRECTORIES"\r',
+        rf"config={GAME_HOME}/\S+ nosystem=1 ceiling={GAME_HOME}/[^:\s]+(:{GAME_HOME}/[^:\s]+)*\r",
+    )
+    type_and_expect(page, "git help commit | head -n 1\r", r"GIT-COMMIT\(1\)")
+    type_and_expect(page, "git chec\t", "git checkout")
+    type_and_expect(
+        page,
+        "\x15cd /tmp && git init -q demo && cd demo && git -c user.name=Player -c user.email=player@example.com commit --allow-empty\r",
+        "GNU nano",
+    )
+    type_and_expect(page, "My first commit\x18", "Save modified buffer")
+    type_and_expect(page, "y", "File Name to Write")
+    type_and_expect(page, "\r", PROMPT)
+    type_and_expect(page, "git log -1 --format=subject:%s\r", "subject:My first commit")
+    page.close()
 
 
 def open_page_terminal(port: int, token: str) -> socket.socket:
@@ -340,7 +462,7 @@ def open_page_terminal(port: int, token: str) -> socket.socket:
     return page
 
 
-def type_and_expect(page: socket.socket, keys: str, expected: str, timeout: float = 15) -> None:
+def type_and_expect(page: socket.socket, keys: str, expected: str, timeout: float = 15) -> str:
     """
     Type keys into the page's terminal and wait until its output shows what they should cause.
 
@@ -354,6 +476,11 @@ def type_and_expect(page: socket.socket, keys: str, expected: str, timeout: floa
         A regular expression the output that follows must match.
     timeout : float
         Seconds before the test fails.
+
+    Returns
+    -------
+    str
+        The output read after typing, up to the match.
 
     Raises
     ------
@@ -373,6 +500,7 @@ def type_and_expect(page: socket.socket, keys: str, expected: str, timeout: floa
         shown, pending = terminal_output(pending)
         output += shown
     assert re.search(expected, output), f"no {expected!r} in the page terminal's output:\n{output}"
+    return output
 
 
 def terminal_output(frames: bytes) -> tuple[str, bytes]:
@@ -471,31 +599,6 @@ def unused_name(docker_ready: None) -> Iterator[str]:
     name = f"firstcommit-test-{secrets.token_hex(4)}"
     yield name
     remove_docker_objects(name)
-
-
-@pytest.fixture
-def stand_in_image(copied_checkout: Path, unused_name: str) -> str:
-    """
-    Build, under an unused name, an image whose game is a termlab server that does not need the game's routes.
-
-    Parameters
-    ----------
-    copied_checkout : Path
-        A copy of the game's folder, whose command line is replaced.
-    unused_name : str
-        The name to build under; removed afterwards.
-
-    Returns
-    -------
-    str
-        The name.
-    """
-    package = copied_checkout / "src" / "firstcommit"
-    shutil.copy2(STAND_IN_CLI, package / "cli.py")
-    (package / "web" / "static").mkdir(parents=True, exist_ok=True)
-    built = run_script("build", name=unused_name, script=copied_checkout / "deploy" / "docker" / "run", timeout=600)
-    assert built.returncode == 0, built.stdout + built.stderr
-    return unused_name
 
 
 @pytest.fixture
@@ -693,42 +796,6 @@ def test_reset_deletes_the_saved_game_after_yes(unused_name: str) -> None:
 
 @pytest.mark.docker
 @pytest.mark.slow
-def test_play_runs_the_game_without_privileges_and_its_terminal_still_works(
-    stand_in_image: str, copied_checkout: Path
-) -> None:
-    port = free_port()
-    env = {**os.environ, "FIRSTCOMMIT_DOCKER_NAME": stand_in_image, "FIRSTCOMMIT_PORT": str(port), "PORT": "1"}
-    process, terminal = spawn_in_terminal([str(copied_checkout / "deploy" / "docker" / "run")], env)
-    try:
-        link = read_until(terminal, LINK, timeout=60)
-        assert link["port"] == str(port)
-        page = open_page_terminal(port, link["token"])
-        type_and_expect(page, "awk '/CapBnd|NoNewPrivs/' /proc/self/status\r", r"CapBnd:\s+0{16}\s+NoNewPrivs:\s+1")
-        type_and_expect(page, "git help commit | head -n 1\r", r"GIT-COMMIT\(1\)")
-        type_and_expect(page, "git chec\t", "git checkout")
-        type_and_expect(
-            page,
-            "\x15cd /tmp && git init -q demo && cd demo && git -c user.name=Player -c user.email=player@example.com commit --allow-empty\r",
-            "GNU nano",
-        )
-        type_and_expect(page, "My first commit\x18", "Save modified buffer")
-        type_and_expect(page, "y", "File Name to Write")
-        type_and_expect(page, "\r", r"\$ $")
-        type_and_expect(page, "git log -1 --format=subject:%s\r", "subject:My first commit")
-        page.close()
-
-        os.write(terminal, b"\x03")
-
-        assert process.wait(timeout=30) == 0
-        assert docker("container", "inspect", stand_in_image).returncode != 0
-    finally:
-        process.kill()
-        os.close(terminal)
-        docker("container", "rm", "--force", stand_in_image)
-
-
-@pytest.mark.docker
-@pytest.mark.slow
 def test_the_whole_suite_passes_inside_the_container(unused_name: str) -> None:
     result = run_script("test", name=unused_name, timeout=1800)
 
@@ -743,15 +810,17 @@ def test_firstcommit_help_runs_as_the_player(image: str) -> None:
 
 @pytest.mark.docker
 @pytest.mark.slow
-def test_play_serves_the_game_through_localhost_until_ctrl_c(image: str) -> None:
+def test_playing_in_docker_runs_the_smoke_flow_unprivileged_and_keeps_the_save(image: str) -> None:
     port = free_port()
-    env = {**os.environ, "FIRSTCOMMIT_DOCKER_NAME": image, "FIRSTCOMMIT_PORT": str(port)}
+    env = {**os.environ, "FIRSTCOMMIT_DOCKER_NAME": image, "FIRSTCOMMIT_PORT": str(port), "PORT": "1"}
     process, terminal = spawn_in_terminal([str(RUN)], env)
     try:
         link = read_until(terminal, LINK, timeout=60)
         assert link["port"] == str(port)
-        assert get(port, "/api/status", {TOKEN_HEADER: link["token"]}) == 200
-        assert get(port, "/api/status", {}) == 403
+        assert call(port, "GET", "/api/status", None)[0] == 403
+        checked = play_the_template_level(port, link["token"])
+        assert checked["solved"], checked
+        check_the_page_terminal(port, link["token"])
         assert docker("exec", image, "date", "+%z").stdout.strip() == time.strftime("%z")
 
         os.write(terminal, b"\x03")
@@ -762,3 +831,7 @@ def test_play_serves_the_game_through_localhost_until_ctrl_c(image: str) -> None
         process.kill()
         os.close(terminal)
         docker("container", "rm", "--force", image)
+    progress = json.loads(
+        in_image(image, "cat ~/.firstcommit/progress.json", "--volume", f"{volume_of(image)}:{GAME_HOME}")
+    )
+    assert progress["levels"][TEMPLATE_LEVEL]["xp"] > 0
