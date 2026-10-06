@@ -92,6 +92,23 @@ def fake_insight(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(demos, "frames", fake_frames)
 
 
+def plain(blocks: list[markup.Block]) -> str:
+    """
+    Join the text of paragraph blocks, without their markup.
+
+    Parameters
+    ----------
+    blocks : list[markup.Block]
+        Parsed text.
+
+    Returns
+    -------
+    str
+        The text of every span of every paragraph.
+    """
+    return "".join(span["text"] for block in blocks if block["kind"] == "para" for span in block["spans"])
+
+
 def lab_project(home: Path) -> Path:
     """
     Give the project folder of the sample level's lab.
@@ -542,7 +559,12 @@ def test_observing_the_lab_snapshots_it_and_tells_what_changed(sample_level: run
     assert [entry["path"] for entry in first["project"]["files"]] == ["hello.txt"]
     (lab_project(game_home) / "notes.txt").write_text("x")
     second = game.observe()
-    assert second["events"] == [{"kind": "file-created", "text": "`notes.txt` appeared."}]
+    assert second["events"] == [
+        {
+            "kind": "file-created",
+            "text": [{"kind": "para", "spans": [{"text": "notes.txt", "code": True}, {"text": " appeared.", "code": False}]}],
+        }
+    ]
     assert game.observe()["events"] == []
 
 
@@ -556,7 +578,7 @@ def test_observing_a_real_lab_tells_of_the_staging_and_the_commit(sample_level: 
     kit.git(lab_project(game_home), "commit", "-q", "-m", "Say hello")
     short = kit.git(lab_project(game_home), "rev-parse", "--short", "HEAD").strip()
     events = game.observe()["events"]
-    assert any(event["kind"] == "commit-created" and short in event["text"] for event in events), events
+    assert any(event["kind"] == "commit-created" and short in plain(event["text"]) for event in events), events
 
 
 @pytest.mark.usefixtures("fake_insight")
@@ -578,7 +600,7 @@ def test_observing_a_lab_with_a_stand_in_github_snapshots_it_too(sample_level: r
     first = game.observe()
     assert first["github"] is not None and first["github"]["exists"] is True
     (github / "pushed").write_text("x")
-    assert game.observe()["events"] == [{"kind": "file-created", "text": "`pushed` appeared."}]
+    assert [(event["kind"], plain(event["text"])) for event in game.observe()["events"]] == [("file-created", "pushed appeared.")]
 
 
 @pytest.mark.usefixtures("fake_insight")
