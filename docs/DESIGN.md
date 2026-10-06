@@ -221,7 +221,8 @@ each phase's review checks the work against it.
 Enforced by tests:
 - an import-graph test: interfaces import only `game`, `markup` and `chapters` from the
   game; core modules import no interface; nothing imports upward; a level imports only `kit`,
-  its chapter's helpers and the standard library;
+  its chapter's helpers and the standard library, minus a short deny-list (processes, network,
+  file deletion, dynamic imports: see `tests/test_layers.py`);
 - the package never reads anything about its runtime: no `docker`, `qemu` or `wsl` in package
   code, and the smoke test runs unchanged in each runtime;
 - every quest question has a check, and every theme covers every level and step id.
