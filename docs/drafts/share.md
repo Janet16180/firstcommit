@@ -124,9 +124,8 @@ copy)", the command line "You: $ git push" or "Alex: $ git pull". The arrows' sp
 Alex's places on Alex's side ("fetch: from the remote repository to Alex's repository").
 **(r2)** Alex's repository is titled "Alex's repository" (yours "Your repository"; "Working
 folder" and "Staging area" stay neutral under each person's name), and the note under both
-repositories reads "closed boxes: the commits". *Pending:* the titles come from
-`theme-time-places.js`, which needs a small hook (an owner for the title, and the note's new
-words); the share figure already passes the owner.
+repositories reads "closed boxes: the commits" (`theme-time-places.js` names the owner in the
+title of a repository on someone else's computer; the share figure passes "Alex").
 
 ---
 
