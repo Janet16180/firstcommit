@@ -701,34 +701,6 @@ files and no commits yet, so it has little to report.
         check=check_branch,
     ),
     kit.WatchStep(
-        id="file",
-        text="""
-Give the project its first file, a `README.md`, the file that tells people what a project is
-about:
-
-    $ echo "# My project" > README.md
-
-`echo` prints a line of text, and `>` writes it into the file: it creates the file, or replaces
-everything in it if the file already exists. Run `git status` again: Git sees the new file, but
-does not track it yet.
-""",
-        command='echo "# My project" > README.md',
-        watch=watch_file,
-    ),
-    kit.WatchStep(
-        id="stage",
-        text="""
-A new file gets into a commit only through the staging area, so copy it there:
-
-    $ git add README.md
-
-`git add` usually prints nothing. Run `git status` once more: `README.md` is now staged, ready
-for the next commit. It is still in your working folder too: `git add` copies, it does not move.
-""",
-        command="git add README.md",
-        watch=watch_stage,
-    ),
-    kit.WatchStep(
         id="name",
         text="""
 Every commit records who made it, with a name and an email. Tell Git your name, keeping the
@@ -756,6 +728,34 @@ Replace `you@example.com` with your own address.
 """,
         command=EMAIL_COMMAND,
         watch=watch_email,
+    ),
+    kit.WatchStep(
+        id="file",
+        text="""
+Give the project its first file, a `README.md`, the file that tells people what a project is
+about:
+
+    $ echo "# My project" > README.md
+
+`echo` prints a line of text, and `>` writes it into the file: it creates the file, or replaces
+everything in it if the file already exists. Run `git status` again: Git sees the new file, but
+does not track it yet.
+""",
+        command='echo "# My project" > README.md',
+        watch=watch_file,
+    ),
+    kit.WatchStep(
+        id="stage",
+        text="""
+A new file gets into a commit only through the staging area, so copy it there:
+
+    $ git add README.md
+
+`git add` usually prints nothing. Run `git status` once more: `README.md` is now staged, ready
+for the next commit. It is still in your working folder too: `git add` copies, it does not move.
+""",
+        command="git add README.md",
+        watch=watch_stage,
     ),
     kit.WatchStep(
         id="commit",
@@ -848,8 +848,8 @@ def solve(lab: kit.Lab, state: kit.State) -> str | None:
     str | None
         None: the level is checked against the repository.
     """
-    for action in QUEST_ACTIONS.values():
-        action(lab, state)
+    for quest_step in QUEST:
+        QUEST_ACTIONS[quest_step.id](lab, state)
     return None
 
 
@@ -1014,10 +1014,10 @@ def read_short_hash(lab: kit.Lab, state: kit.State) -> str | None:
 QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State], str | None]] = {
     "init": init_repository,
     "status": read_branch,
-    "file": write_readme,
-    "stage": stage_readme,
     "name": set_name,
     "email": set_email,
+    "file": write_readme,
+    "stage": stage_readme,
     "commit": commit_readme,
     "hash": read_short_hash,
 }

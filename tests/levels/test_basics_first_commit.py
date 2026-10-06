@@ -206,6 +206,12 @@ def test_the_quest_alternates_watch_steps_and_two_questions() -> None:
     }
 
 
+def test_the_quest_sets_the_identity_before_there_is_anything_to_commit() -> None:
+    ids = [quest_step.id for quest_step in level.QUEST]
+    assert ids.index("name") < ids.index("file")
+    assert ids.index("email") < ids.index("file")
+
+
 def test_the_quest_leads_to_a_solved_level(played: kit.Lab) -> None:
     verdict = check(played)
     assert verdict.solved
