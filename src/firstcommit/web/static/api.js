@@ -121,7 +121,16 @@ const createGameApi = (function () {
   const STEP = record({ correct: flag, message: BLOCKS, step: number, quest_done: flag });
   const CHECK = record({ solved: flag, message: BLOCKS, payout: nullable(PAYOUT), debrief: nullable(BLOCKS) });
   const HINT = record({ hint: BLOCKS, used: number, total: number, cost: number });
-  const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), events: list(record({ kind: text, text: BLOCKS })) });
+  const EVENTS = list(record({ kind: text, text: BLOCKS }));
+  const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), teammate: nullable(SNAPSHOT), events: EVENTS, teammate_events: EVENTS });
+  /* The playground's people and buttons (records.Who and records.Button; a Python test keeps them equal). */
+  const WHO = oneOf("you", "alex");
+  const BUTTON = oneOf("edit", "add", "commit", "push", "fetch", "pull", "pull-no-rebase", "status");
+  const PRESSED = record({
+    press: record({ person: WHO, button: BUTTON, command: text, status: number, output: text }),
+    explanation: nullable(BLOCKS),
+    observation: OBSERVATION,
+  });
   const CARDS = record({
     cards: list(record({
       id: text,
@@ -171,6 +180,8 @@ const createGameApi = (function () {
       notes: (chapter) => checked(NOTES, query("/api/notes", { chapter })),
       /* The map guide's figures by section id, in the guide's order. */
       guide: () => checked(GUIDE, "/api/guide"),
+      /* One person's playground button: the press, its explanation and the lab right after it. */
+      press: (person, button) => checked(PRESSED, "/api/press", { person, button }),
     };
   };
 })();

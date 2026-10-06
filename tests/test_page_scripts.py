@@ -1,6 +1,7 @@
 """Run the node tests of the page scripts (tests/js), and keep their sample records true to `firstcommit.game`."""
 
 import json
+import re
 import shutil
 import subprocess
 import types
@@ -9,11 +10,12 @@ from typing import Any, Literal, Union, get_args, get_origin, get_type_hints, is
 
 import pytest
 
-from firstcommit import game, records
+from firstcommit import game, playground, records
 from firstcommit.repomap import Snapshot
 
 JS_TESTS = Path(__file__).parent / "js"
 RECORDS = JS_TESTS / "records.json"
+API_JS = Path(__file__).parents[1] / "src" / "firstcommit" / "web" / "static" / "api.js"
 NODE = shutil.which("node")
 RECORD_TYPES: dict[str, Any] = {
     "status": game.Status,
@@ -31,6 +33,7 @@ RECORD_TYPES: dict[str, Any] = {
     "snapshots": dict[str, Snapshot],
     "files": list[records.FileEntry],
     "guide": game.GuideView,
+    "press": game.PressView,
 }
 
 
@@ -103,6 +106,30 @@ def test_the_sample_files_hold_every_change_the_server_sends_in_each_column() ->
     assert {file["index_change"] for file in files} >= set(get_args(records.Change))
     assert {file["folder_change"] for file in files} >= set(get_args(records.FolderChange))
     assert any(file["conflicted"] for file in files)
+
+
+def choices_in_api_js(name: str) -> list[str]:
+    """
+    Read the values of one ``const NAME = oneOf(...)`` in the page's api.js.
+
+    Parameters
+    ----------
+    name : str
+        The constant's name.
+
+    Returns
+    -------
+    list[str]
+        The quoted values, in order.
+    """
+    found = re.search(rf"const {name} = oneOf\(([^)]*)\);", API_JS.read_text())
+    assert found is not None, f"api.js has no const {name} = oneOf(...)"
+    return re.findall(r'"([^"]+)"', found.group(1))
+
+
+def test_the_page_accepts_exactly_the_playgrounds_people_and_buttons() -> None:
+    assert choices_in_api_js("WHO") == list(get_args(records.Who)) == list(playground.PEOPLE)
+    assert choices_in_api_js("BUTTON") == list(get_args(records.Button)) == list(playground.BUTTONS)
 
 
 def test_a_record_with_a_missing_or_extra_field_is_caught() -> None:
