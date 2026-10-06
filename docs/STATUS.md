@@ -9,9 +9,13 @@ Read this first when resuming, then `docs/DESIGN.md` and `AUTHORING.md`.
   reports. Correctness first; every chapter gets an independent fact-checker.
 - Engineering rules: `~/.claude/CLAUDE.md` and `AUTHORING.md` section 2.
 - Git: `main` holds reviewed work; each phase is a branch (`phase-2-engine`), each agent a branch
-  `p2/<name>` in a worktree under `.scratch/wt/<name>` (with a `termlab` link next to the
-  worktrees so `../termlab` resolves). Small commits, plain messages, no trailer, never push.
-- termlab (`~/learning/termlab`) is never changed without the user's go-ahead (user, 2026-10-06).
+  `p2/<name>` in a worktree under `.scratch/wt/<name>` (with a `termlab-firstcommit` link next to
+  the worktrees so `../termlab-firstcommit` resolves). Small commits, plain messages, no trailer,
+  never push.
+- termlab: First Commit uses termlab's `firstcommit` branch, checked out as the worktree
+  `~/learning/termlab-firstcommit`; termlab's `main` (`~/learning/termlab`) stays as Ring Zero
+  uses it. The user allowed changes on that branch (2026-10-06). Changes so far: `d98edf1`, an
+  error reply's whole JSON reaches the game as `error.data`.
 
 ## Decisions
 
