@@ -482,7 +482,7 @@ def secret_is_main(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Ve
 
 
 def test_text_the_player_sends_that_utf8_cannot_encode_is_only_a_wrong_answer(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
-    secret_step = kit.Step(id="secret", text="Which branch?", question="Which?", check=secret_is_main)
+    secret_step = kit.AnswerStep(id="secret", text="Which branch?", question="Which?", check=secret_is_main)
     level = dataclasses.replace(sample_level, check=secret_is_main, quest=(secret_step,))
     monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
     game.start(level.id)

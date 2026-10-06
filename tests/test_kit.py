@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
@@ -53,3 +54,26 @@ def test_a_digest_matches_only_its_own_answer() -> None:
 
 def test_levels_can_name_every_part_of_a_snapshot() -> None:
     assert {"Snapshot", "FileEntry", "Commit", "Ref"} <= set(kit.__all__)
+
+
+def test_an_answer_step_cannot_be_built_without_its_question_and_check() -> None:
+    with pytest.raises(TypeError):
+        kit.AnswerStep(id="a", text="t", question="Which branch?")  # type: ignore[call-arg]
+
+
+def test_a_watch_step_cannot_be_built_without_its_watch() -> None:
+    with pytest.raises(TypeError):
+        kit.WatchStep(id="w", text="t")  # type: ignore[call-arg]
+
+
+def test_every_step_kind_is_a_step_and_nothing_else_is() -> None:
+    def never(lab: kit.Lab, state: kit.State, answer: str = "") -> kit.Verdict:
+        return kit.Verdict(False, "")
+
+    steps = [
+        kit.AnswerStep(id="a", text="t", question="q", check=never),
+        kit.WatchStep(id="w", text="t", watch=never),
+        kit.ReadStep(id="r", text="t"),
+    ]
+    assert all(isinstance(step, kit.Step) for step in steps)
+    assert not isinstance(kit.Slide(id="s", title="t", text="x"), kit.Step)

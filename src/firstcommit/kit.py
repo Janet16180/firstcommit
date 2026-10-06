@@ -21,10 +21,12 @@ from firstcommit.repomap import Commit, FileEntry, Ref, Snapshot, snapshot, vers
 __all__ = [
     "GAME",
     "AnswerCheck",
+    "AnswerStep",
     "Commit",
     "FileEntry",
     "Lab",
     "Person",
+    "ReadStep",
     "Ref",
     "Slide",
     "Snapshot",
@@ -32,6 +34,7 @@ __all__ = [
     "Step",
     "Verdict",
     "Watch",
+    "WatchStep",
     "answer_is",
     "digest",
     "git",
@@ -103,26 +106,47 @@ class Slide:
 
 
 @dataclass(frozen=True)
-class Step:
+class AnswerStep:
     """
-    One step of a guided quest.
+    A quest step that asks the player a question about what they saw.
 
-    A step is one of three kinds:
-
-    - an answer step has a ``question`` and a ``check`` of the player's answer;
-    - a watch step has a ``watch`` that passes once the lab shows the step was done;
-    - a read step has neither, and the player continues when ready.
-
-    ``command`` is a suggestion the page can type into the terminal (never with Enter).
+    ``check`` judges the answer. ``command`` is a suggestion the page can type into the terminal
+    (never with Enter); ``placeholder`` is plain text shown in the empty answer box.
     """
 
     id: str
     text: str
+    question: str
+    check: AnswerCheck
     command: str = ""
-    question: str = ""
     placeholder: str = ""
-    check: AnswerCheck | None = None
-    watch: Watch | None = None
+
+
+@dataclass(frozen=True)
+class WatchStep:
+    """
+    A quest step that passes once the lab shows the player did it.
+
+    ``watch`` is polled while the player works; its message is shown live (AUTHORING 3.3).
+    """
+
+    id: str
+    text: str
+    watch: Watch
+    command: str = ""
+
+
+@dataclass(frozen=True)
+class ReadStep:
+    """A quest step the player reads, then continues when ready."""
+
+    id: str
+    text: str
+    command: str = ""
+
+
+Step = AnswerStep | WatchStep | ReadStep
+"""One step of a guided quest: each kind carries exactly what it needs, so no other shape exists."""
 
 
 def parse_int(text: str | None) -> int | None:

@@ -754,8 +754,8 @@ def check_hash(lab: kit.Lab, state: kit.State, answer: str) -> kit.Verdict:
     return kit.Verdict(right, message)
 
 
-QUEST = [
-    kit.Step(
+QUEST: list[kit.Step] = [
+    kit.WatchStep(
         id="init",
         text="""
 Your terminal is open in an empty folder called `project`. To give it a history, make it a Git
@@ -769,7 +769,7 @@ Its first branch is called `main`, the name the game sets as the default.
         command="git init",
         watch=watch_init,
     ),
-    kit.Step(
+    kit.AnswerStep(
         id="status",
         text="""
 `git status` is the command you will run most. It names the branch you are on and lists the
@@ -781,7 +781,7 @@ files and no commits yet, so it has little to report.
         placeholder="a branch name",
         check=check_branch,
     ),
-    kit.Step(
+    kit.WatchStep(
         id="file",
         text="""
 Give the project its first file, a `README.md`, the file that tells people what a project is
@@ -796,7 +796,7 @@ does not track it yet.
         command='echo "# My project" > README.md',
         watch=watch_file,
     ),
-    kit.Step(
+    kit.WatchStep(
         id="stage",
         text="""
 A new file gets into a commit only through the staging area, so copy it there:
@@ -809,7 +809,7 @@ for the next commit. It is still in your working folder too: `git add` copies, i
         command="git add README.md",
         watch=watch_stage,
     ),
-    kit.Step(
+    kit.WatchStep(
         id="name",
         text="""
 Every commit records who made it, with a name and an email. Tell Git your name, keeping the
@@ -826,7 +826,7 @@ already set your name earlier in the game, this step passes at once.
         command=NAME_COMMAND,
         watch=watch_name,
     ),
-    kit.Step(
+    kit.WatchStep(
         id="email",
         text="""
 Now your email. Use the address you will use for work:
@@ -838,7 +838,7 @@ Replace `you@example.com` with your own address.
         command=EMAIL_COMMAND,
         watch=watch_email,
     ),
-    kit.Step(
+    kit.WatchStep(
         id="commit",
         text="""
 Save the staging area as your first commit, with a message that says what it does:
@@ -851,7 +851,7 @@ your first commit on `main`.
         command='git commit -m "Add the README"',
         watch=watch_commit,
     ),
-    kit.Step(
+    kit.AnswerStep(
         id="hash",
         text="""
 List the history:

@@ -121,14 +121,14 @@ def texts(level: runner.Level) -> list[str]:
         Briefing, question, placeholder, hints, debrief, and each quest step's text, command,
         question and placeholder.
     """
-    steps = [field for step in level.quest for field in (step.text, step.command, step.question, step.placeholder)]
+    steps = [field for step in level.quest for field in (step.text, step.command, *((step.question, step.placeholder) if isinstance(step, kit.AnswerStep) else ()))]
     return [level.briefing, level.question, level.placeholder, *level.hints, level.debrief, *steps]
 
 
 @pytest.mark.parametrize(("package", "level"), CASES, ids=IDS)
 def test_the_quest_actions_name_every_step_the_player_must_act_on(package: ModuleType, level: runner.Level) -> None:
     actions = quest_actions(package, level)
-    acting = {step.id for step in level.quest if step.check is not None or step.watch is not None}
+    acting = {step.id for step in level.quest if not isinstance(step, kit.ReadStep)}
     assert set(actions) <= {step.id for step in level.quest}
     assert acting <= set(actions)
     assert all(callable(action) for action in actions.values())
@@ -159,7 +159,7 @@ def test_hostile_answers_never_crash_or_pass_a_quest_step(package: ModuleType, l
     state = runner.start_lab(level)
     lab = runner.lab_of(level.id)
     for step in level.quest:
-        if step.check is not None:
+        if isinstance(step, kit.AnswerStep):
             verdicts = [step.check(lab, state, answer) for answer in HOSTILE]
             assert all(isinstance(verdict, kit.Verdict) and not verdict.solved for verdict in verdicts), step.id
 
@@ -170,12 +170,12 @@ def test_each_quest_step_passes_only_after_the_players_action(package: ModuleTyp
     lab = runner.lab_of(level.id)
     actions = quest_actions(package, level)
     for step in level.quest:
-        if step.watch is not None:
+        if isinstance(step, kit.WatchStep):
             assert not step.watch(lab, state).solved, f"step {step.id} passed before the player acted"
         answer = actions[step.id](lab, state) if step.id in actions else None
-        if step.watch is not None:
+        if isinstance(step, kit.WatchStep):
             assert step.watch(lab, state).solved, f"step {step.id} did not pass after the player acted"
-        if step.check is not None:
+        if isinstance(step, kit.AnswerStep):
             assert not step.check(lab, state, "").solved, f"step {step.id} passed with an empty answer"
             assert answer is not None and step.check(lab, state, answer).solved, f"step {step.id} refused the player's answer {answer!r}"
 
@@ -198,6 +198,6 @@ def test_checks_survive_a_lab_the_player_wrecked(package: ModuleType, level: run
     lab = runner.lab_of(level.id)
     sandbox.remove_tree(lab.project / ".git" if wreck == "the .git folder" else lab.project, game_home)
     verdicts = [level.check(lab, state, None), level.check(lab, state, "x")]
-    verdicts += [step.watch(lab, state) for step in level.quest if step.watch is not None]
-    verdicts += [step.check(lab, state, "x") for step in level.quest if step.check is not None]
+    verdicts += [step.watch(lab, state) for step in level.quest if isinstance(step, kit.WatchStep)]
+    verdicts += [step.check(lab, state, "x") for step in level.quest if isinstance(step, kit.AnswerStep)]
     assert all(isinstance(verdict, kit.Verdict) for verdict in verdicts)

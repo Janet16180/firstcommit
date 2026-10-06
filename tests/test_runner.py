@@ -68,23 +68,21 @@ def test_a_level_without_a_lesson_or_a_quest_has_empty_ones() -> None:
     assert (level.lesson, level.quest) == ((), ())
 
 
-def step(step_id: str, **fields: Any) -> kit.Step:
+def step(step_id: str) -> kit.ReadStep:
     """
-    Make a quest step.
+    Make a read step.
 
     Parameters
     ----------
     step_id : str
         Its id.
-    **fields : Any
-        Other fields of `kit.Step`.
 
     Returns
     -------
-    kit.Step
+    kit.ReadStep
         The step.
     """
-    return kit.Step(id=step_id, text="Do it.", **fields)
+    return kit.ReadStep(id=step_id, text="Do it.")
 
 
 BROKEN: dict[str, tuple[types.ModuleType, str]] = {
@@ -105,16 +103,17 @@ BROKEN: dict[str, tuple[types.ModuleType, str]] = {
     "two slides with one id": (level_module(LESSON=[basics_sample.LESSON[0]] * 2), "init"),
     "a quest that is not a list": (level_module(QUEST=step("a")), "QUEST"),
     "two steps with one id": (level_module(QUEST=[step("a"), step("a")]), "a"),
-    "a question without a check": (level_module(QUEST=[step("a", question="Which?")]), "a"),
-    "a check without a question": (level_module(QUEST=[step("a", check=basics_sample.names_the_branch)]), "a"),
-    "a step with a check and a watch": (level_module(QUEST=[step("a", question="Q?", check=basics_sample.names_the_branch, watch=basics_sample.is_staged)]), "a"),
+    "a quest holding a slide": (level_module(QUEST=[basics_sample.LESSON[0]]), "QUEST"),
     "a setup that is not a function": (level_module(setup="setup"), "setup"),
     "a missing check": (level_module(check=...), "check"),
     "a question that is not text": (level_module(QUESTION=3), "QUESTION"),
     "a placeholder that is not text": (level_module(QUESTION="Which?", PLACEHOLDER=None), "PLACEHOLDER"),
     "a placeholder without a question": (level_module(PLACEHOLDER="a short hash"), "PLACEHOLDER"),
     "a placeholder with backticks": (level_module(QUESTION="Which?", PLACEHOLDER="a `short` hash"), "PLACEHOLDER"),
-    "a step placeholder with backticks": (level_module(QUEST=[step("a", question="Q?", placeholder="`main`", check=basics_sample.names_the_branch)]), "a"),
+    "a step placeholder with backticks": (
+        level_module(QUEST=[kit.AnswerStep(id="a", text="Do it.", question="Q?", placeholder="`main`", check=basics_sample.names_the_branch)]),
+        "a",
+    ),
 }
 
 

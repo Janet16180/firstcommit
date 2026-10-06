@@ -165,11 +165,13 @@ def solve(lab: kit.Lab, state: kit.State) -> str | None: ...
   the quest usually solves the level. The server enforces the order. While the quest is
   unfinished, the page's automatic check never ends the level, even when `check` would pass, so
   the player always reaches the last step; a check the player asks for may still solve it
-  early. Step kinds (`kit.Step`):
-  - an *answer* step has a `question` and `check(lab, state, answer) -> Verdict`;
-  - a *watch* step has `watch(lab, state) -> Verdict`, which passes once the lab shows the step
-    was done (polled like `check`; same rules);
-  - a *read* step has neither.
+  early. A step is one of three types (`kit.Step` names the three together), each carrying
+  exactly what it needs:
+  - `kit.AnswerStep(id, text, question, check, command="", placeholder="")`: `check(lab, state,
+    answer) -> Verdict` judges the player's answer;
+  - `kit.WatchStep(id, text, watch, command="")`: `watch(lab, state) -> Verdict` passes once the
+    lab shows the step was done (polled like `check`; same rules);
+  - `kit.ReadStep(id, text, command="")`: the player reads, then continues.
 
   A watch's message is shown live, after every poll, while the player works: write it as the
   next thing to do ("`README.md` is in the working folder; stage it with `git add`"), never as

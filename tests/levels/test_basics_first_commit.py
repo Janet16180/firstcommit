@@ -119,9 +119,9 @@ def watch(lab: kit.Lab, step_id: str) -> kit.Verdict:
     kit.Verdict
         Its verdict.
     """
-    check = next(quest_step.watch for quest_step in level.QUEST if quest_step.id == step_id)
-    assert check is not None
-    return check(lab, {})
+    step = next(quest_step for quest_step in level.QUEST if quest_step.id == step_id)
+    assert isinstance(step, kit.WatchStep)
+    return step.watch(lab, {})
 
 
 def answer(lab: kit.Lab, step_id: str, text: str) -> kit.Verdict:
@@ -142,9 +142,9 @@ def answer(lab: kit.Lab, step_id: str, text: str) -> kit.Verdict:
     kit.Verdict
         Its verdict.
     """
-    check = next(quest_step.check for quest_step in level.QUEST if quest_step.id == step_id)
-    assert check is not None
-    return check(lab, {}, text)
+    step = next(quest_step for quest_step in level.QUEST if quest_step.id == step_id)
+    assert isinstance(step, kit.AnswerStep)
+    return step.check(lab, {}, text)
 
 
 def check(lab: kit.Lab) -> kit.Verdict:
@@ -193,7 +193,7 @@ def test_the_level_starts_unsolved_and_says_to_create_a_repository(lab: kit.Lab)
 
 
 def test_the_quest_alternates_watch_steps_and_two_questions() -> None:
-    kinds = {quest_step.id: "watch" if quest_step.watch else "question" for quest_step in level.QUEST}
+    kinds = {quest_step.id: "watch" if isinstance(quest_step, kit.WatchStep) else "question" for quest_step in level.QUEST}
     assert kinds == {
         "init": "watch",
         "status": "question",
@@ -496,9 +496,9 @@ def test_checks_never_change_the_repository(played: kit.Lab) -> None:
     before = (index.read_bytes(), index.stat().st_mtime_ns, kit.snapshot(played.project))
     check(played)
     for quest_step in level.QUEST:
-        if quest_step.watch:
+        if isinstance(quest_step, kit.WatchStep):
             quest_step.watch(played, {})
-        if quest_step.check:
+        if isinstance(quest_step, kit.AnswerStep):
             quest_step.check(played, {}, "main")
     assert (index.read_bytes(), index.stat().st_mtime_ns, kit.snapshot(played.project)) == before
 

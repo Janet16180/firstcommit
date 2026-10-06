@@ -777,12 +777,11 @@ def _check_step(step: kit.Step, lab: kit.Lab, state: kit.State, answer: str | No
     kit.Verdict
         The step's verdict; a read step always passes, with no message.
     """
-    if step.check is not None:
+    verdict = kit.Verdict(True, "")
+    if isinstance(step, kit.AnswerStep):
         verdict = step.check(lab, state, answer or "")
-    elif step.watch is not None:
+    elif isinstance(step, kit.WatchStep):
         verdict = step.watch(lab, state)
-    else:
-        verdict = kit.Verdict(True, "")
     return verdict
 
 
@@ -880,14 +879,19 @@ def _step_view(step: kit.Step, state: kit.State) -> StepView:
     StepView
         The view.
     """
-    kind: Literal["answer", "watch", "read"] = "answer" if step.check is not None else "watch" if step.watch is not None else "read"
+    kind: Literal["answer", "watch", "read"] = "read"
+    question, placeholder = "", ""
+    if isinstance(step, kit.AnswerStep):
+        kind, question, placeholder = "answer", step.question, step.placeholder
+    elif isinstance(step, kit.WatchStep):
+        kind = "watch"
     return {
         "id": step.id,
         "kind": kind,
         "text": _blocks(step.text, state),
         "command": _fill(step.command, state),
-        "question": _blocks(step.question, state),
-        "placeholder": _fill(step.placeholder, state),
+        "question": _blocks(question, state),
+        "placeholder": _fill(placeholder, state),
     }
 
 

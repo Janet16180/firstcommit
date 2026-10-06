@@ -71,10 +71,10 @@ def names_the_branch(lab: kit.Lab, state: kit.State, answer: str) -> kit.Verdict
     return kit.Verdict(right, "Right." if right else "Look at the first line of `git status`.")
 
 
-QUEST = [
-    kit.Step(id="look", text="Look at the repository with `git status`.", command="git status"),
-    kit.Step(id="stage", text="Stage `hello.txt`.", command="git add hello.txt", watch=is_staged),
-    kit.Step(id="branch", text="Find the branch.", question="Which branch is `{{branch}}`?", placeholder="a branch name", check=names_the_branch),
+QUEST: list[kit.Step] = [
+    kit.ReadStep(id="look", text="Look at the repository with `git status`.", command="git status"),
+    kit.WatchStep(id="stage", text="Stage `hello.txt`.", command="git add hello.txt", watch=is_staged),
+    kit.AnswerStep(id="branch", text="Find the branch.", question="Which branch is `{{branch}}`?", placeholder="a branch name", check=names_the_branch),
 ]
 
 
