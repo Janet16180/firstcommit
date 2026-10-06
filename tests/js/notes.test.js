@@ -22,11 +22,13 @@ test("a chapter's notes are shown with its title", async () => {
   assert.match(run.q("article").textContent, /git add: stage a file/);
 });
 
-test("every chapter is listed, the open one marked", async () => {
+test("every chapter is listed, the open one marked, and one with no levels is coming soon, not a link", async () => {
   const run = notes("basics");
   await settle();
-  const links = run.q("nav").querySelectorAll("a");
-  assert.equal(links.length, 3);
+  const items = run.q("nav").querySelectorAll("li");
+  assert.equal(items.length, 3);
+  assert.deepEqual(run.q("nav").querySelectorAll("a").map((link) => link.getAttribute("href")), ["#/notes/basics"]);
+  assert.match(items[0].textContent, /Git, GitHub and your first clone.*Coming soon/);
   assert.equal(run.q("nav a[aria-current=\"page\"]").getAttribute("href"), "#/notes/basics");
 });
 

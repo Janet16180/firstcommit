@@ -54,6 +54,39 @@ test("chapters are listed in order with their levels, done levels marked and emp
   assert.match(chapters[1].querySelector("a[href=\"#/cards/basics\"]").textContent, /12 cards/);
 });
 
+test("a level's difficulty is shown on the scale the server sends", () => {
+  const run = home({ ...record("status"), max_difficulty: 5 });
+  const meta = run.all(".chapter")[1].querySelectorAll(".level-meta").map((item) => item.textContent);
+  assert.deepEqual(meta, ["●○○○○ · 100 XP", "●●○○○ · 150 XP"]);
+});
+
+const fresh = () => {
+  const status = { ...record("status"), active: null };
+  status.chapters = status.chapters.map((chapter) => ({ ...chapter, levels: chapter.levels.map((level) => ({ ...level, done: false })) }));
+  return status;
+};
+
+test("a chapter with no levels says it is coming soon and has nothing to click, even with cards", () => {
+  const status = fresh();
+  status.chapters[0] = { ...status.chapters[0], cards: 3 };
+  const first = home(status).all(".chapter")[0];
+  assert.match(first.textContent, /Coming soon/);
+  assert.equal(first.querySelectorAll("a").length, 0);
+});
+
+test("before any level is finished, the first level in play order is marked as the place to start", () => {
+  const run = home(fresh());
+  const marked = run.all(".level-link").filter((link) => link.querySelector(".start-here"));
+  assert.deepEqual(marked.map((link) => link.getAttribute("href")), ["#/level/sample-first"]);
+  assert.match(marked[0].querySelector(".start-here").textContent, /Start here/);
+  assert.match(run.q(".hero a.btn-primary").textContent, /Start here: Your first commit/);
+});
+
+test("once a level is finished, no level is marked as the place to start", () => {
+  const run = home({ ...record("status"), active: null });
+  assert.equal(run.q(".start-here"), null);
+});
+
 test("erasing all progress asks first, then resets and shows the fresh map", async () => {
   const run = home();
   run.q(".erase").click();

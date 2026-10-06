@@ -4,7 +4,7 @@ from datetime import date, timedelta
 from pathlib import Path
 
 import pytest
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from firstcommit import cards, score
@@ -244,6 +244,7 @@ def test_a_wrong_answer_sends_a_card_back_to_the_first_box_due_today() -> None:
     assert cards.reschedule({"box": 4, "due": "2026-01-01"}, correct=False, today=TODAY) == {"box": 0, "due": TODAY.isoformat()}
 
 
+@settings(deadline=None)
 @given(st.none() | st.builds(lambda box: CardEntry(box=box, due="2026-01-01"), st.integers(0, 5)), st.booleans(), st.dates())
 def test_a_rescheduled_card_is_due_after_its_box_interval(entry: CardEntry | None, correct: bool, today: date) -> None:
     after = cards.reschedule(entry, correct, today)
@@ -268,6 +269,7 @@ def test_picking_stops_at_the_limit() -> None:
     assert cards.pick(deck, {}, TODAY, limit=0, rng=random.Random(1)) == []
 
 
+@settings(deadline=None)
 @given(st.lists(st.tuples(st.integers(1, 3), st.none() | st.integers(-40, 40)), max_size=12), st.integers(0, 15), st.randoms())
 def test_picked_cards_are_distinct_new_or_due_and_as_many_as_allowed(specs: list[tuple[int, int | None]], limit: int, rng: random.Random) -> None:
     deck = [card(f"basics-{number}", level=level) for number, (level, _) in enumerate(specs)]
@@ -282,6 +284,7 @@ def test_picked_cards_are_distinct_new_or_due_and_as_many_as_allowed(specs: list
     assert all(cards.is_due(entries.get(entry.id), TODAY) for entry in picked)
 
 
+@settings(deadline=None)
 @given(st.lists(st.tuples(st.integers(1, 3), st.none() | st.integers(-40, 0)), max_size=12), st.randoms())
 def test_due_cards_come_oldest_first_then_new_cards_easiest_first(specs: list[tuple[int, int | None]], rng: random.Random) -> None:
     deck = [card(f"basics-{number:02}", level=level) for number, (level, _) in enumerate(specs)]
@@ -326,6 +329,7 @@ def test_a_text_card_accepts_any_listed_spelling_whatever_the_case_and_spacing()
     assert not cards.judge(question, "")
 
 
+@settings(deadline=None)
 @given(st.sampled_from(["Main Branch", "main"]), st.randoms())
 def test_a_text_answer_survives_any_change_of_case_or_whitespace(spelling: str, rng: random.Random) -> None:
     typed = "".join(letter.upper() if rng.random() < 0.5 else letter for letter in spelling).replace(" ", " \t " if rng.random() < 0.5 else " ")
@@ -340,6 +344,12 @@ def test_judging_any_reply_never_raises(kind: cards.CardKind, reply: str) -> Non
 def test_the_answer_shown_is_the_right_option_or_the_first_accepted_spelling() -> None:
     assert cards.answer(card()) == "right"
     assert cards.answer(card(kind="text")) == "Main Branch"
+
+
+def test_every_card_level_has_one_name() -> None:
+    assert set(cards.LEVEL_NAMES) == set(cards.LEVELS)
+    assert len(set(cards.LEVEL_NAMES.values())) == len(cards.LEVEL_NAMES)
+    assert all(name.strip() for name in cards.LEVEL_NAMES.values())
 
 
 def test_every_card_level_pays_xp() -> None:

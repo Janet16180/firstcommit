@@ -14,7 +14,6 @@
 const CardsView = (function () {
   const { el } = Dom;
   const ROUND = 10;
-  const LEVELS = { 1: "basic", 2: "deeper", 3: "advanced" };
 
   /* Everything below works on one `round`: ctx, chapter, the cards, the index of the one on
      show, its results so far, the element and whether the current card is answered. */
@@ -89,7 +88,7 @@ const CardsView = (function () {
     }, el("div", { class: "answer-row" }, input, el("button", { type: "submit", class: "btn btn-primary" }, "Check")));
     return el("section", { class: "cards panel narrow", "aria-live": "polite" },
       el("p", { class: "kicker card-count" }, `Card ${round.index + 1} of ${round.cards.length} · ${chapterTitle(round)}`),
-      el("p", { class: "card-level" }, LEVELS[card.level] || ""),
+      el("p", { class: "card-level" }, card.level_name),
       !card.pays && el("p", { class: "card-pays muted" }, "Practice only: no XP, this card is not due yet."),
       el("div", { class: "card-prompt prose" }, Markup.render(card.prompt)),
       card.code && el("pre", { class: "code card-code" }, el("code", {}, card.code)),

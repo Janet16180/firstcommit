@@ -12,8 +12,8 @@ const { LevelPage, createGameApi } = load(
 
 const ID = "sample-second";
 
-function page({ active = null, replies = {}, refreshed = null } = {}) {
-  const status = { ...record("status"), active };
+function page({ active = null, replies = {}, refreshed = null, dashboard = {} } = {}) {
+  const status = { ...record("status"), active, ...dashboard };
   const server = fakeServer({
     "/api/level": record("level"),
     "/api/lesson": record("lesson"),
@@ -60,6 +60,15 @@ test("a level not in progress introduces itself with its facts and what comes fi
   assert.match(run.text(), /lesson, then a guided quest/i);
   assert.ok(button(run, /Start the lesson/));
   assert.ok(button(run, /Skip to the practice/));
+});
+
+test("the difficulty is shown on the scale the server sends", async () => {
+  const run = page({ dashboard: { max_difficulty: 5 } });
+  await settle();
+  const scale = run.q(".difficulty");
+  assert.equal(scale.querySelectorAll("i").length, 5);
+  assert.equal(scale.querySelectorAll("i.is-on").length, 2);
+  assert.equal(scale.getAttribute("aria-label"), "difficulty 2 of 5");
 });
 
 test("another level in progress is named, since starting this one ends it", async () => {

@@ -205,6 +205,7 @@ def test_an_observation_that_does_not_match_counts_as_nothing_observed_yet(game_
 OBSERVATION_DAMAGE = [
     ("project.files.0.repository", ...),
     ("project.files.0.head", 3),
+    ("project.files.0.folder_change", "renamed"),
     ("project.commits.0.parents", "none"),
     ("project.commits.0.parents", [3]),
     ("project.commits.0.time", -1),

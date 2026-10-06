@@ -97,7 +97,7 @@ class ActiveView(TypedDict):
 
 
 class Status(TypedDict):
-    """The dashboard."""
+    """The dashboard; ``max_difficulty`` is the highest difficulty a level can have, so the page can show the scale."""
 
     xp: int
     rank: Rank
@@ -105,6 +105,7 @@ class Status(TypedDict):
     active: ActiveView | None
     last_payout: Payout | None
     cards_due: int
+    max_difficulty: int
 
 
 class StepView(TypedDict):
@@ -222,6 +223,7 @@ class CardView(TypedDict):
     chapter: str
     kind: CardKind
     level: int
+    level_name: str
     prompt: list[Block]
     code: str
     choices: list[Choice]
@@ -304,6 +306,7 @@ def status() -> Status:
         "active": _active_view(active, levels[active["level"]]) if active is not None and active["level"] in levels else None,
         "last_payout": progress["last_payout"],
         "cards_due": len(_cards_to_review(None, progress, sys.maxsize)),
+        "max_difficulty": max(runner.DIFFICULTIES),
     }
 
 
@@ -1057,6 +1060,7 @@ def _card_view(card: cards.Card, pays: bool, rng: random.Random) -> CardView:
         "chapter": card.chapter,
         "kind": card.kind,
         "level": card.level,
+        "level_name": cards.LEVEL_NAMES[card.level],
         "prompt": markup.parse(card.prompt),
         "code": card.code,
         "choices": [{"value": option, "text": _option_text(card, option)} for option in cards.choices(card, rng)],

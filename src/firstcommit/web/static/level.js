@@ -15,8 +15,9 @@ const LevelPage = (function () {
   const { el } = Dom;
   const SERVER_DOWN = "The game server did not answer. Is it still running in your terminal?";
 
-  const difficulty = (value) => el("span", { class: "difficulty", "aria-label": `difficulty ${value} of 3` },
-    [1, 2, 3].map((dot) => el("i", { class: dot <= value ? "is-on" : null, "aria-hidden": "true" })));
+  /* Dots on the server's scale, `scale` being the highest difficulty a level can have. */
+  const difficulty = (value, scale) => el("span", { class: "difficulty", "aria-label": `difficulty ${value} of ${scale}` },
+    Array.from({ length: scale }, (_, index) => el("i", { class: index < value ? "is-on" : null, "aria-hidden": "true" })));
 
   function planSentence(level) {
     const parts = [level.has_lesson && "a short lesson", level.steps.length > 0 && "a guided quest in a real terminal", "a challenge"].filter(Boolean);
@@ -70,7 +71,7 @@ const LevelPage = (function () {
       el("p", { class: "kicker" }, level.chapter_title),
       el("h1", {}, level.title),
       el("ul", { class: "facts" },
-        el("li", {}, difficulty(level.difficulty)),
+        el("li", {}, difficulty(level.difficulty, status.max_difficulty)),
         el("li", {}, `${level.xp} XP`),
         found && found.done && el("li", { class: "is-done" }, "✓ Done"),
       ),

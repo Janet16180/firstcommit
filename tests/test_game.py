@@ -199,6 +199,7 @@ def test_a_new_player_sees_every_chapter_no_xp_and_nothing_in_progress(sample_le
     status = game.status()
     assert (status["xp"], status["rank"], status["active"], status["last_payout"], status["cards_due"]) == (0, score.rank(0), None, None, 0)
     assert [(chapter["id"], chapter["title"]) for chapter in status["chapters"]] == list(CHAPTERS.items())
+    assert status["max_difficulty"] == max(runner.DIFFICULTIES) == 3
     basics = status["chapters"][1]
     assert basics["levels"] == [{"id": "basics-sample", "title": "Say hello", "difficulty": 1, "xp": 100, "done": False, "has_lesson": True, "has_quest": True}]
     assert basics["cards"] == 12
@@ -893,6 +894,7 @@ def test_a_due_card_comes_before_new_ones(sample_level: runner.Level) -> None:
 def test_a_card_view_hides_the_answer_among_shuffled_choices(sample_level: runner.Level) -> None:
     views = {card["id"]: card for card in game.due_cards("basics", 50)}
     choice, predict, text = views["basics-c01"], views["basics-predict"], views["basics-text"]
+    assert [view["level_name"] for view in (choice, predict, text)] == ["basic", "deeper", "advanced"]
     assert (choice["kind"], sorted(option["value"] for option in choice["choices"]), choice["code"]) == ("choice", ["right", "worse", "wrong"], "")
     assert all(option["text"] == markup.parse(option["value"]) for option in choice["choices"])
     assert choice["prompt"] == markup.parse("Which one is `right`?")

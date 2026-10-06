@@ -9,7 +9,7 @@ from typing import Any, Literal, Union, get_args, get_origin, get_type_hints, is
 
 import pytest
 
-from firstcommit import game
+from firstcommit import game, records
 from firstcommit.repomap import Snapshot
 
 JS_TESTS = Path(__file__).parent / "js"
@@ -29,6 +29,7 @@ RECORD_TYPES: dict[str, Any] = {
     "card_result": game.CardResult,
     "notes": game.Notes,
     "snapshots": dict[str, Snapshot],
+    "files": list[records.FileEntry],
 }
 
 
@@ -94,6 +95,13 @@ def test_the_page_tests_sample_records_have_exactly_the_fields_of_the_games_reco
     assert set(records) == set(RECORD_TYPES)
     problems = [problem for name, kind in RECORD_TYPES.items() for problem in mismatches(records[name], kind, name)]
     assert problems == []
+
+
+def test_the_sample_files_hold_every_change_the_server_sends_in_each_column() -> None:
+    files = json.loads(RECORDS.read_text())["files"]
+    assert {file["index_change"] for file in files} >= set(get_args(records.Change))
+    assert {file["folder_change"] for file in files} >= set(get_args(records.FolderChange))
+    assert any(file["conflicted"] for file in files)
 
 
 def test_a_record_with_a_missing_or_extra_field_is_caught() -> None:
