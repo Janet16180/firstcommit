@@ -71,8 +71,6 @@ SNAPSHOT: records.Snapshot = {
             "ignored": False,
             "conflicted": False,
             "repository": False,
-            "index_change": None,
-            "folder_change": None,
         }
     ],
     "operation": None,
