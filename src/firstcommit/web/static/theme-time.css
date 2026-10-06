@@ -333,6 +333,16 @@ h2,
   --tt-kind: var(--accent);
 }
 
+.feed li[data-kind^="repository-"] {
+  --tt-icon: var(--tt-icon-timeline);
+  --tt-kind: var(--map-lane-0);
+}
+
+.feed li[data-kind^="nested-repository-"] {
+  --tt-icon: var(--tt-icon-folder);
+  --tt-kind: var(--map-remote);
+}
+
 .feed li[data-kind^="branch-"] {
   --tt-icon: var(--tt-icon-timeline);
   --tt-kind: var(--map-branch);
