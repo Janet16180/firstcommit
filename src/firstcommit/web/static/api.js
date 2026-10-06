@@ -25,9 +25,15 @@ const createGameApi = (function () {
     if (!Array.isArray(value)) fail(where, "a list");
     value.forEach((item, index) => spec(item, `${where}[${index}]`));
   };
+  const isObject = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
   const record = (fields) => (value, where) => {
-    if (value === null || typeof value !== "object" || Array.isArray(value)) fail(where, "an object");
+    if (!isObject(value)) fail(where, "an object");
     for (const [name, spec] of Object.entries(fields)) spec(value[name], `${where}.${name}`);
+  };
+  /* An object whose keys are ids and whose every value fits `spec`. */
+  const mapping = (spec) => (value, where) => {
+    if (!isObject(value)) fail(where, "an object");
+    for (const [key, item] of Object.entries(value)) spec(item, `${where}.${key}`);
   };
 
   const SPANS = list(record({ text, code: flag }));
@@ -97,6 +103,7 @@ const createGameApi = (function () {
     hints: list(BLOCKS),
     debrief: nullable(BLOCKS),
   });
+  const TRANSCRIPT = list(record({ command: text, output: text }));
   const LESSON = record({
     level: text,
     title: text,
@@ -105,11 +112,12 @@ const createGameApi = (function () {
       title: text,
       text: BLOCKS,
       view: oneOf("map", "areas", "objects", "terminal", "none"),
-      transcript: list(record({ command: text, output: text })),
+      transcript: TRANSCRIPT,
       map: SNAPSHOT,
       objects: OBJECTS,
     })),
   });
+  const GUIDE = mapping(record({ before: SNAPSHOT, after: SNAPSHOT, transcript: TRANSCRIPT }));
   const STEP = record({ correct: flag, message: BLOCKS, step: number, quest_done: flag });
   const CHECK = record({ solved: flag, message: BLOCKS, payout: nullable(PAYOUT), debrief: nullable(BLOCKS) });
   const HINT = record({ hint: BLOCKS, used: number, total: number, cost: number });
@@ -161,6 +169,8 @@ const createGameApi = (function () {
       cards: async (chapter, limit) => (await checked(CARDS, query("/api/cards", { chapter, limit }))).cards,
       card: (id, reply) => checked(CARD_RESULT, "/api/card", { id, reply }),
       notes: (chapter) => checked(NOTES, query("/api/notes", { chapter })),
+      /* The map guide's figures by section id, in the guide's order. */
+      guide: () => checked(GUIDE, "/api/guide"),
     };
   };
 })();

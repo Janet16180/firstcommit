@@ -38,12 +38,16 @@ the snapshot polled every 1.5 s never starts a file system monitor, a hook or a 
 program from a lab's ``.git/config``. The player's shell keeps the repository's settings.
 """
 
-BASE_CONFIG = "[init]\n\tdefaultBranch = main\n[core]\n\tpager = less -FRX\n"
+BASE_CONFIG = "[init]\n\tdefaultBranch = main\n[core]\n\tpager = less -FRX\n\texcludesFile =\n\tattributesFile =\n"
 """
 The game's global git configuration when it starts: the player's shell and the lessons share it.
 
 ``core.pager`` is what git uses when ``LESS`` is unset (git-config(1), core.pager): short output
 is printed without stopping in the pager, whatever ``LESS`` the player's shell sets.
+``core.excludesFile`` and ``core.attributesFile`` are empty, so git does not read the player's
+personal ignore and attributes files (``~/.config/git/ignore`` and ``attributes``, which it reads
+by default even when ``GIT_CONFIG_GLOBAL`` names another file): a lab shows the same files on
+every machine. A chapter that teaches a global ignore file sets ``core.excludesFile`` itself.
 """
 
 
