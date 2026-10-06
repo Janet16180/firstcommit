@@ -184,6 +184,36 @@ test("a new commit's save point grows in while the tabs and HEAD's dial start fr
   assert.equal(dial[0].frames[1].transform, "translate(0px, 0px)");
 });
 
+test("playMap moves a map just drawn from its drawing of the snapshot before, and does nothing under reduced motion", () => {
+  const figure = RepoMap.render(snap(TWO), { theme });
+  const proto = Object.getPrototypeOf(figure);
+  const calls = [];
+  proto.animate = function (frames, timing) {
+    calls.push({ node: this, frames, timing });
+    return { onfinish: null };
+  };
+  proto.getTotalLength = () => 100;
+  const moved = TimeMotion.playMap(figure, snap(ONE), snap(TWO), { theme, reduced: false });
+  const still = TimeMotion.playMap(figure, snap(ONE), snap(TWO), { theme, reduced: true });
+  delete proto.animate;
+  delete proto.getTotalLength;
+  assert.equal(moved.length, played(ONE, TWO).animations.length);
+  assert.ok(on(calls, `[data-hash="${full("c")}"]`).length > 0, "the new commit grows in");
+  assert.deepEqual(still, []);
+});
+
+test("a ghost is drawn in the map's own commit shape, so a dropped box fades out as a box", () => {
+  const boxed = TimeTheme.boxes;
+  const figure = RepoMap.render(snap(ONE), { theme: boxed });
+  const proto = Object.getPrototypeOf(figure);
+  proto.animate = () => ({ onfinish: null });
+  const layout = (spec) => RepoMap.layout(snap(spec), { theme: boxed });
+  TimeMotion.play(figure, TimeMotion.motions(layout(TWO), layout(ONE), boxed.sizes), boxed, false);
+  delete proto.animate;
+  assert.ok(figure.querySelector(".tt-ghost .tt-box .tt-save"));
+  assert.ok(played(TWO, ONE).figure.querySelector(".tt-ghost circle.tt-save"));
+});
+
 test("a reset draws a ghost of the dropped commit that fades and is removed when done, with the map lifted meanwhile", () => {
   const { figure, calls } = played(TWO, ONE);
   const ghosts = figure.querySelector(".tt-ghosts");

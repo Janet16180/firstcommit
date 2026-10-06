@@ -112,14 +112,17 @@ const TimeTheme = (function () {
     );
   }
 
-  /* A small picture for the key, drawn with the graph's own shapes: [viewBox, nodes]. */
+  /* A small picture for the key, drawn with the graph's own shapes: [viewBox, nodes]. A commit
+     is drawn with the theme's commit shape, so a map of boxes has boxes in its key. */
   function mark(entry, theme) {
     const { lanes, tag, remote } = theme.colors;
-    const point = (isHead, isMerge) => savePoint({ x: 20, y: 20, color: lanes[0], theme, isHead, isMerge });
+    const middle = theme.sizes.radius + 14;
+    const point = (isHead, isMerge) => theme.shapes.commit({ x: middle, y: middle, color: lanes[0], theme, isHead, isMerge });
+    const around = (reach) => `${middle - reach} ${middle - reach} ${2 * reach} ${2 * reach}`;
     const pictures = {
-      now: () => ["0 0 40 40", point(true, false)],
-      commit: () => ["8 8 24 24", point(false, false)],
-      merge: () => ["8 8 24 24", point(false, true)],
+      now: () => [around(middle), point(true, false)],
+      commit: () => [around(theme.sizes.radius + 6), point(false, false)],
+      merge: () => [around(theme.sizes.radius + 6), point(false, true)],
       branch: () => ["0 0 24 24", [
         svg("path", { class: "map-edge tt-edge is-first", d: "M7,24 V0", style: `--color: ${lanes[0]}` }),
         svg("path", { class: "map-edge tt-edge is-fork", d: "M7,19 C7,12 18,13 18,6 V0", style: `--color: ${lanes[1]}` }),

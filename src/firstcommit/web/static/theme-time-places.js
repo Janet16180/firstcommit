@@ -34,7 +34,7 @@ const TimePlaces = (function () {
     remote: "Remote repository",
   };
   /* What the boxes are, under the titles of the places that hold them. */
-  const NOTES = { index: "open box: the next commit", repository: "closed boxes: commits" };
+  const NOTES = { index: "open box: the next commit", repository: "closed boxes: the commits" };
   const COMPUTER = "Your computer";
   const GITHUB = "GitHub (the practice copy)";
   const NO_REMOTE = "No remote yet.";
@@ -168,25 +168,29 @@ const TimePlaces = (function () {
     );
   }
 
-  const title = (area) => [el("h4", {}, PLACES[area]), NOTES[area] && el("p", { class: "tt-place-note" }, NOTES[area])];
+  /* A place's title and note; a repository on `owner`'s computer is `owner`'s, not yours. */
+  function title(area, owner = null) {
+    const name = owner && area === "repository" ? `${owner}'s repository` : PLACES[area];
+    return [el("h4", {}, name), NOTES[area] && el("p", { class: "tt-place-note" }, NOTES[area])];
+  }
 
   /* The working folder's pages, or the staging area's: an open box holding the next commit. */
-  function filePlace(area, files) {
+  function filePlace(area, files, owner = null) {
     const rows = RepoMap.areaRows(files).filter((row) => row[area]);
     const said = boxes.words.states[area];
     const pages = rows.length ? el("ul", { class: "tt-pages" }, rows.map((row) => page(row.path, row[area], said))) : el("p", { class: "tt-place-empty" }, NO_FILES);
     const held = area === "index"
       ? el("div", { class: "tt-open-box" }, el("span", { class: "tt-flap is-left", "aria-hidden": "true" }), el("span", { class: "tt-flap is-right", "aria-hidden": "true" }), pages)
       : pages;
-    return el("section", { class: `tt-place is-${area}`, "data-area": area }, title(area), held);
+    return el("section", { class: `tt-place is-${area}`, "data-area": area }, title(area, owner), held);
   }
 
   /* A repository's commits: closed boxes on its timeline. GitHub has no HEAD you are on, so an
      empty GitHub only says it has no commits. */
-  function repositoryPlace(area, snapshot, showHead) {
+  function repositoryPlace(area, snapshot, showHead, owner = null) {
     const empty = !snapshot ? NO_REMOTE : !showHead && !snapshot.commits.length ? boxes.words.noCommits : null;
     return el("section", { class: `tt-place is-${area}`, "data-area": area },
-      title(area),
+      title(area, owner),
       empty ? el("p", { class: "tt-place-empty" }, empty) : el("div", { class: "tt-place-graph" }, RepoMap.render(snapshot, { theme: boxes, showHead })),
     );
   }
@@ -313,9 +317,7 @@ const TimePlaces = (function () {
   function settle(place, before, after, showHead, offset, reduced) {
     const graph = place.querySelector(".repo-map");
     if (!graph || !before || !after) return [];
-    const options = { theme: boxes, showHead };
-    const motion = TimeMotion.motions(RepoMap.layout(before, options), RepoMap.layout(after, options), boxes.sizes);
-    return TimeMotion.play(graph, motion, boxes, reduced, offset);
+    return TimeMotion.playMap(graph, before, after, { theme: boxes, showHead, reduced, offset });
   }
 
   /* When each flight leaves: one after another within a group (same arrow, same kind of thing),

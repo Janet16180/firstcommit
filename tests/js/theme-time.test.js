@@ -130,6 +130,15 @@ test("figures can draw each commit as a closed box on its timeline, in the same 
   assert.deepEqual(place(RepoMap.layout(MERGED, { theme: boxes })), place(RepoMap.layout(MERGED, { theme })));
 });
 
+test("the key draws each commit with the map's own shape", () => {
+  const boxed = RepoMap.theme({ ...theme, shapes: { ...theme.shapes, commit: TimeTheme.boxes.shapes.commit } });
+  const key = RepoMap.render(MERGED, { theme: boxed }).querySelector(".tt-key");
+  assert.ok(key.querySelector(".tt-mark.is-now .tt-box"));
+  assert.ok(key.querySelector(".tt-mark.is-commit .tt-box"));
+  assert.ok(key.querySelector(".tt-mark.is-merge .tt-box .tt-join"));
+  assert.equal(RepoMap.render(MERGED, { theme }).querySelector(".tt-key .tt-box"), null);
+});
+
 test("the theme changes the look, never where a commit goes", () => {
   const project = record("observation").project;
   const place = (map) => map.commits.map((commit) => [commit.hash, commit.row, commit.lane]);
