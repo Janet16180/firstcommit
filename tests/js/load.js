@@ -86,7 +86,7 @@ function fakeServer(replies) {
   return { api, calls };
 }
 
-/* An error as client.js throws it for an HTTP status. */
-const httpError = (status, message = `status ${status}`) => Object.assign(new Error(message), { status });
+/* An error as client.js throws it for an HTTP status, with the server's reply as `data`. */
+const httpError = (status, message = `status ${status}`, data = {}) => Object.assign(new Error(message), { status, data });
 
 module.exports = { STATIC, RECORDS, record, installBrowser, load, settle, createClock, fakeServer, httpError };

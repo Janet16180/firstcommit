@@ -106,14 +106,20 @@
     setTimeout(() => item.remove(), TOAST_MS);
   }
 
-  /* The last resort for errors no view handled. The server answers 500 only for a damaged save. */
+  /* A 500 says its kind in the reply: "save" for a damaged save file. Anything else, a 500
+     without a kind included, is a bug, which starting over would not fix. */
+  const damagedSave = (error) => error.status === 500 && Boolean(error.data) && error.data.kind === "save";
+  const BUG_DETAILS = "The details are in the terminal where firstcommit is running.";
+
+  /* The last resort for errors no view handled. */
   function report(error) {
     if (app.locked || (error && error.status === 403)) return;
     const status = error ? error.status : undefined;
     const detail = error && error.message ? error.message : String(error);
     let message = `Something went wrong: ${detail}`;
     if (status === 0) message = "The game server did not answer. Is `firstcommit` still running in your terminal?";
-    else if (status === 500) message = `Your saved game is damaged: ${detail}. Open the map to start over.`;
+    else if (damagedSave(error)) message = `Your saved game is damaged: ${detail}. Open the map to start over.`;
+    else if (status === 500) message = `The game hit a bug: ${detail}. ${BUG_DETAILS}`;
     toast(message);
   }
 
@@ -139,6 +145,14 @@
     if (!sure) return;
     await game.reset();
     show(Route.parse(location.hash));
+  }
+
+  function showBug(message) {
+    showScreen("The game hit a bug",
+      el("p", {}, message),
+      el("p", {}, BUG_DETAILS, " Starting over would not help: try again, and if it keeps happening, those details say what went wrong."),
+      el("div", { class: "actions" }, el("button", { type: "button", class: "btn btn-primary", onclick: () => show(Route.parse(location.hash)) }, "Try again")),
+    );
   }
 
   function showDamaged(message) {
@@ -220,7 +234,8 @@
       await refresh();
     } catch (error) {
       if (error.status === 0) showScreen("Cannot reach the game", el("p", {}, "Is ", el("code", {}, "firstcommit"), " still running in your terminal? Start it again and open the link it prints."));
-      else if (error.status === 500) showDamaged(error.message);
+      else if (damagedSave(error)) showDamaged(error.message);
+      else if (error.status === 500) showBug(error.message);
       else if (error.status !== 403) throw error;
       return;
     }
