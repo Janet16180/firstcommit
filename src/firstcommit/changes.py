@@ -12,8 +12,9 @@ Event kinds, most important first:
   operation is ``merge``, ``rebase``, ``cherry-pick``, ``revert`` or ``bisect`` (a bisect only
   starts and finishes);
 - ``conflict``, ``conflict-resolved``;
-- ``commit-created``, ``merge-created`` (a new commit with two or more parents),
-  ``commit-replaced`` (an amended commit);
+- ``commit-created``, ``merge-commit-created`` (a new commit with two or more parents, apart
+  from the ``merge-*`` kinds of the merge operation above), ``commit-replaced`` (an amended
+  commit);
 - ``branch-switched``, ``head-detached``, ``head-moved`` (a detached HEAD moved);
 - ``branch-renamed``, ``branch-created``, ``branch-moved``, ``branch-deleted``;
 - ``tag-created``, ``tag-moved``, ``tag-deleted``;
@@ -530,7 +531,7 @@ def _commit_events(change: _Change, found: tuple[str, Commit] | None) -> list[Ev
         text = f"Commit {_short(change, change.before['head'] or '')} was replaced by {_at(change, commit['hash'])} on {place}: the new commit has the same parent."
     elif len(parents) > 1:
         joined = ", ".join(_short(change, parent) for parent in parents[:-1]) + f" and {_short(change, parents[-1])}"
-        kind, text = "merge-created", f"Merge commit {_at(change, commit['hash'])} was made on {place}; its parents are {joined}."
+        kind, text = "merge-commit-created", f"Merge commit {_at(change, commit['hash'])} was made on {place}; its parents are {joined}."
     elif parents:
         text = f"Commit {_at(change, commit['hash'])} was made on {place}; its parent is {_short(change, parents[0])}."
     else:

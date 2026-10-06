@@ -162,7 +162,7 @@ def test_a_merge_commit_names_both_parents(tmp_path: Path) -> None:
     repo = project(tmp_path, "git switch -q -c feature && echo f > f.txt && git add f.txt && git commit -q -m feature && git switch -q main && echo m > m.txt && git add m.txt && git commit -q -m main")
     ours, theirs = short(repo, "main"), short(repo, "feature")
     events = happens(repo, "git merge -q --no-edit feature")
-    assert kinds(events) == ["merge-created"]
+    assert kinds(events) == ["merge-commit-created"]
     assert events[0]["text"].startswith("Merge commit")
     assert f"`{ours}` and `{theirs}`" in events[0]["text"]
 
@@ -322,7 +322,7 @@ def test_a_merge_with_a_conflict_starts_flags_resolves_and_finishes(tmp_path: Pa
     resolved = happens(repo, "echo both > a.txt && git add a.txt")
     assert kinds(resolved) == ["conflict-resolved"]
     finished = happens(repo, "git commit -q --no-edit")
-    assert kinds(finished) == ["merge-finished", "merge-created"]
+    assert kinds(finished) == ["merge-finished", "merge-commit-created"]
 
 
 def test_an_abandoned_merge_says_the_branch_did_not_move(tmp_path: Path) -> None:
