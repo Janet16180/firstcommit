@@ -119,9 +119,9 @@ message. On a terminal, the newest line also shows `(HEAD -> main)` between them
 ]
 
 BRIEFING = """
-You are starting a new project, and its history starts today. Turn the empty `project` folder
-into a Git repository on the branch `main`, create a `README.md` file and save it in your first
-commit.
+You are starting a new project, and its history starts today. Your terminal opens in the empty
+`project` folder: make that folder a Git repository on the branch `main`, then create a
+`README.md` file in it and save it in your first commit.
 
 The level is solved when the last commit on `main` contains `README.md`, and `git status` lists
 no untracked, changed or staged files.
@@ -764,8 +764,8 @@ Save the staging area as your first commit, with a message that says what it doe
 
     $ git commit -m "Add the README"
 
-`-m` gives the message. Git answers with a short summary of the new commit, and the map shows
-your first commit on `main`.
+`-m` gives the message; without it, Git opens a text editor for you to write one. Git answers
+with a short summary of the new commit, and the map shows your first commit on `main`.
 """,
         command='git commit -m "Add the README"',
         watch=watch_commit,
