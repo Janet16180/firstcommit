@@ -5,7 +5,7 @@ const test = require("node:test");
 const { installBrowser, load, record } = require("./load");
 
 installBrowser();
-const { RepoMap, TimeTheme } = load(["dom.js", "map.js", "theme-time.js"], ["RepoMap", "TimeTheme"]);
+const { RepoMap, TimeTheme, TimeGuide } = load(["dom.js", "map.js", "theme-time.js", "theme-time-guide.js"], ["RepoMap", "TimeTheme", "TimeGuide"]);
 const theme = TimeTheme.map;
 
 const full = (name) => name.padEnd(40, "0");
@@ -122,4 +122,31 @@ test("the panel titles keep Git's words next to the metaphor", () => {
 
 test("a branch without commits says the first commit starts its timeline", () => {
   assert.match(RepoMap.render(record("snapshots").unborn, { theme }).textContent, /main, which has no commits yet\. Your first commit starts its timeline\./);
+});
+
+/* WCAG contrast of two #rrggbb colours. */
+function contrast(one, other) {
+  const luminance = (hex) => {
+    const [r, g, b] = [1, 3, 5].map((at) => parseInt(hex.slice(at, at + 2), 16) / 255).map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+  };
+  const [light, dark] = [luminance(one), luminance(other)].sort((a, b) => b - a);
+  return (light + 0.05) / (dark + 0.05);
+}
+
+test("the terminal's text colours stay readable on its warm background, light and dark", () => {
+  const TEXT = ["foreground", "red", "green", "yellow", "blue", "magenta", "cyan", "white", "brightRed", "brightGreen", "brightYellow", "brightBlue", "brightMagenta", "brightCyan", "brightWhite"];
+  for (const [name, look] of Object.entries(TimeTheme.terminal)) {
+    for (const colour of TEXT) assert.ok(contrast(look[colour], look.background) >= 4.5, `${name} ${colour} ${contrast(look[colour], look.background).toFixed(2)}`);
+    assert.ok(contrast(look.brightBlack, look.background) >= 3, `${name} brightBlack`);
+    assert.ok(contrast(look.cursor, look.background) >= 3, `${name} cursor`);
+  }
+});
+
+test("every picture the guide names has a small drawing, hidden from screen readers", () => {
+  for (const name of TimeGuide.SECTIONS.map((section) => section.mark).filter(Boolean)) {
+    const drawing = TimeTheme.mark(name);
+    assert.equal(drawing.getAttribute("aria-hidden"), "true", name);
+    assert.ok(drawing.children.length > 0, name);
+  }
 });

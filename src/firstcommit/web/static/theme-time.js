@@ -8,8 +8,9 @@
  * archive (the remote). The metaphor never replaces Git's words: every save point keeps its real
  * short hash and subject, every chip its real name, HEAD's chip reads HEAD, and the key under the
  * graph puts each metaphor next to its Git word. Needs dom.js and map.js. Defines one global,
- * TimeTheme: `map` (a RepoMap theme), `panel` (LivePanel's titles), `legend(layout)` and
- * `tabKey(label)`, the name theme-time-motion.js follows a tab by.
+ * TimeTheme: `map` (a RepoMap theme), `panel` (LivePanel's titles), `terminal` (xterm colours,
+ * light and dark), `legend(layout)`, `mark(name)` (the small picture the key and the guide put
+ * beside a word) and `tabKey(label)`, the name theme-time-motion.js follows a tab by.
  */
 
 /* global Dom, RepoMap */
@@ -103,6 +104,14 @@ const TimeTheme = (function () {
         svg("path", { class: "map-edge tt-edge is-first", d: "M7,24 V0", style: `--color: ${lanes[0]}` }),
         svg("path", { class: "map-edge tt-edge is-fork", d: "M7,19 C7,12 18,13 18,6 V0", style: `--color: ${lanes[1]}` }),
       ]],
+      line: () => ["0 0 24 24", [
+        svg("path", { class: "map-edge tt-edge is-first", d: "M12,5 V19", style: `--color: ${lanes[0]}` }),
+        [5, 19].map((y) => svg("g", { class: "tt-point", style: `--color: ${lanes[0]}` }, svg("circle", { class: "tt-save", cx: 12, cy: y, r: 3.5 }))),
+      ]],
+      archive: () => ["0 0 24 24", svg("g", { class: "tt-archive", style: `--color: ${remote}` },
+        svg("rect", { x: 3, y: 4, width: 18, height: 5, rx: 1 }),
+        svg("path", { d: "M5,9 V20 H19 V9 M10,13 H14" }),
+      )],
       tag: () => ["0 0 24 24", svg("g", { class: "map-label is-tag", style: `--color: ${tag}` }, chipShape("tag", 1, 6, 22, 12))],
       remote: () => ["0 0 24 24", svg("g", { class: "map-label is-remote", style: `--color: ${remote}` }, chipShape("remote", 1, 6, 22, 12))],
     };
@@ -143,5 +152,19 @@ const TimeTheme = (function () {
     feed: "What just happened",
   };
 
-  return { map, panel, legend, tabKey };
+  /* xterm colours on the theme's warm paper and ink; every colour Git uses for text stays readable. */
+  const terminal = {
+    light: {
+      background: "#fdf9f1", foreground: "#2b2620", cursor: "#1b6e68", cursorAccent: "#fdf9f1", selectionBackground: "#e9dfcf",
+      black: "#2b2620", red: "#a8321f", green: "#2f6f2c", yellow: "#7d5700", blue: "#285e96", magenta: "#7d4a8c", cyan: "#12706b", white: "#675c4f",
+      brightBlack: "#8a7d6c", brightRed: "#b8402c", brightGreen: "#3a7d36", brightYellow: "#8a6100", brightBlue: "#2f62a3", brightMagenta: "#8b55a0", brightCyan: "#167a74", brightWhite: "#5e5448",
+    },
+    dark: {
+      background: "#1a1713", foreground: "#ece5d8", cursor: "#5ec8bd", cursorAccent: "#1a1713", selectionBackground: "#3a3328",
+      black: "#4a4339", red: "#f0928a", green: "#9ad08e", yellow: "#e8c06a", blue: "#93bff0", magenta: "#d6a2e6", cyan: "#6fd0c8", white: "#d9d0c1",
+      brightBlack: "#8a7f70", brightRed: "#ffaaa1", brightGreen: "#b3e3a8", brightYellow: "#f5d58a", brightBlue: "#b0d0f5", brightMagenta: "#e5bdf2", brightCyan: "#93e0d8", brightWhite: "#f7f1e6",
+    },
+  };
+
+  return { map, panel, legend, tabKey, terminal, mark: (name) => mark(name, map) };
 })();
