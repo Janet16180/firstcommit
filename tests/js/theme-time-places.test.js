@@ -59,15 +59,17 @@ const REBASED = at([REBASED_D, C, ...TWO], "f", "c");
 const PUSHED = at([D, ...TWO], "d", "d");
 
 test("the arrows that light are the commands that match what just happened, in the order they run", () => {
+  /* README.md edited, then staged, then committed: what add and commit -a leave. */
+  const staging = (snapshot, index, head = "1") => ({ ...snapshot, files: [file("README.md", { head, index, folder: "2" })] });
   const cases = [
-    ["git add", ["file-staged"], START, START, ["add"]],
+    ["git add", ["file-staged"], staging(START, "1"), staging(START, "2"), ["add"]],
     ["git commit", ["commit-created"], START, MINE, ["commit"]],
     ["git commit --amend", ["commit-replaced"], MINE, at([AMENDED, ...TWO], "dd", "b"), ["commit"]],
-    ["git commit -a", ["file-staged", "commit-created"], START, MINE, ["add", "commit"]],
+    ["git commit -a", ["file-staged", "commit-created"], staging(START, "1"), staging(MINE, "2", "2"), ["add", "commit"]],
     ["a merge of a branch of yours", ["merge-commit-created"], START, at([LOCAL_MERGE, AMENDED, ...TWO], "ee", "b"), ["commit"]],
     ["git push", ["remote-updated", "push-received"], MINE, PUSHED, ["push"]],
     ["git commit, then git push", ["commit-created", "remote-updated", "push-received"], START, PUSHED, ["commit", "push"]],
-    ["git commit -a, then git push, in one batch", ["commit-created", "remote-updated", "file-staged", "push-received"], START, PUSHED, ["add", "commit", "push"]],
+    ["git commit -a, then git push, in one batch", ["commit-created", "remote-updated", "file-staged", "push-received"], staging(START, "1"), staging(PUSHED, "2", "2"), ["add", "commit", "push"]],
     ["a refused push", [], MINE, MINE, []],
     ["git fetch", ["remote-updated"], START, FETCHED, ["fetch"]],
     ["git commit and git fetch together", ["commit-created", "remote-updated"], START, BOTH, ["commit", "fetch"]],
@@ -135,6 +137,35 @@ test("an add flight carries only what git add copied from the working folder, no
   const edited = { project: { ...START, files: [file("README.md", { head: "1", index: "1", folder: "2" })] }, github: null };
   const committed = { project: { ...MINE, files: [file("README.md", { head: "2", index: "2", folder: "2" })] }, github: null };
   assert.deepEqual(TimePlaces.flights(edited, committed, ["add", "commit"]).map((flight) => flight.id), ["README.md", full("d")], "git commit -a still adds, then commits");
+});
+
+test("a pull flight carries only what the checkout wrote: no untracked or ignored page rides on it", () => {
+  const before = { project: { ...FETCHED, files: [file("rules.md", { head: "1", index: "1", folder: "1" })] }, github: hub([C, ...TWO]) };
+  const after = {
+    project: { ...PULLED, files: [file("rules.md", { head: "2", index: "2", folder: "2" }), file("scratch.txt", { folder: "s" }), { ...file("build/out.txt", { folder: "o" }), ignored: true }] },
+    github: hub([C, ...TWO]),
+  };
+  assert.deepEqual(TimePlaces.flights(before, after, ["pull"]).map((flight) => flight.id), ["rules.md"]);
+});
+
+test("an add flight carries a file made or edited in the same refresh as its git add", () => {
+  const before = { project: { ...START, files: [file("notes.txt", { head: "1", index: "1", folder: "1" })] }, github: null };
+  const after = { project: { ...START, files: [file("notes.txt", { head: "1", index: "2", folder: "2" }), file("new.txt", { index: "n", folder: "n" })] }, github: null };
+  assert.deepEqual(TimePlaces.flights(before, after, ["add"]).map((flight) => flight.id).sort(), ["new.txt", "notes.txt"]);
+});
+
+test("a commit and a pull in one refresh light pull: only a branch that ends exactly on its upstream can be a reset", () => {
+  const files = (notes, rules) => [file("notes.txt", { head: notes, index: notes, folder: notes }), file("rules.md", { head: rules, index: rules, folder: rules })];
+  const edited = { ...START, files: [file("notes.txt", { head: "1", index: "1", folder: "2" }), file("rules.md", { head: "1", index: "1", folder: "1" })] };
+  assert.deepEqual(TimePlaces.commands(kinds("branch-moved", "remote-updated"), edited, { ...MERGED, files: files("2", "2") }), ["fetch", "pull"], "commit, then a merging pull");
+  const committed = at([["g", ["c"]], C, ...TWO], "g", "c");
+  assert.deepEqual(TimePlaces.commands(kinds("branch-moved", "remote-updated"), edited, { ...committed, files: files("2", "2") }), ["fetch", "pull"], "a pull, then a commit");
+});
+
+test("staging a deletion lights no add: nothing was copied from the working folder", () => {
+  const before = { ...START, files: [file("notes.txt", { head: "1", index: "1", folder: "1" })] };
+  const after = { ...START, files: [file("notes.txt", { head: "1" })] };
+  assert.deepEqual(TimePlaces.commands(kinds("file-staged"), before, after), []);
 });
 
 test("a pull into a branch with no commits yet takes in its upstream", () => {
@@ -456,6 +487,20 @@ test("a timeline wider than its place is drawn smaller, down to four fifths of i
     assert.equal(graph.style.minWidth, `${Math.round(0.8 * Number(graph.getAttribute("width")))}px`);
   }
   assert.equal(figure.querySelectorAll(".tt-place-graph svg.map-graph").length, 2);
+});
+
+test("the three-place figure flies only what it draws: a pull from a remote added by hand does not fly", () => {
+  const before = { project: { ...FETCHED, files: [README("1")] }, github: null };
+  const after = { project: { ...PULLED, files: [README("2")] }, github: null };
+  const { calls } = played(before, after, ["pull"]);
+  assert.equal(calls.filter(isFlyer).length, 0);
+});
+
+test("before git init the staging area says it does not exist yet, rather than that it is empty", () => {
+  const figure = TimePlaces.render({ project: record("snapshots").empty, github: null }, {});
+  assert.equal(figure.querySelector('[data-area="index"] .tt-place-empty').textContent, "No staging area yet: git init makes one.");
+  const started = TimePlaces.render({ project: record("snapshots").unborn, github: null }, {});
+  assert.doesNotMatch(started.querySelector('[data-area="index"]').textContent, /No staging area yet/);
 });
 
 const shortOf = (name) => blob(name).slice(0, 7);
