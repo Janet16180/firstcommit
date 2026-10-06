@@ -53,7 +53,7 @@ test("plain text joins the blocks for labels and titles", () => {
   assert.equal(Markup.plain(blocks), "Run git add.\na\nb");
 });
 
-test("every case of the shared markup fixture renders all of its text", { skip: !fs.existsSync(SHARED_FIXTURE) && "tests/fixtures/markup.json is not there yet" }, () => {
+test("every case of the shared markup fixture renders all of its text", () => {
   const fixture = JSON.parse(fs.readFileSync(SHARED_FIXTURE, "utf8"));
   const cases = Array.isArray(fixture) ? fixture : fixture.cases;
   assert.ok(cases.length > 0);
