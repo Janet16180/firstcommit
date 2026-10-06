@@ -298,11 +298,3 @@ test("the person switch only chooses whose slot a narrow screen shows", () => {
   assert.equal(figure.querySelector(".ts-grid"), drawn, "the figure is not drawn again");
   assert.equal(TimeShare.render(TimeShare.observed(AFTER), { shown: "alex" }).getAttribute("data-shown"), "alex");
 });
-
-test("a timeline drawn smaller to fit its place keeps at least four fifths of its size, in the walkthrough and the playground", () => {
-  for (const figure of [TimeShare.render(TimeShare.observed(AFTER)), TimeShare.renderStep(STEPS.push)]) {
-    const graphs = [...figure.querySelectorAll("svg.map-graph")];
-    assert.equal(graphs.length, 3);
-    for (const graph of graphs) assert.equal(graph.style.minWidth, `${Math.round(0.8 * Number(graph.getAttribute("width")))}px`);
-  }
-});

@@ -18,6 +18,7 @@ const LivePanel = (function () {
     project: "Your repository",
     github: "GitHub (the practice copy)",
     areas: "The three areas",
+    places: "The four places",
     feed: "What just happened",
     quiet: "Nothing yet. Type a command in the terminal and watch this space.",
   };
@@ -29,13 +30,15 @@ const LivePanel = (function () {
 
   /* options: theme (RepoMap's), words (this panel's titles), now (a clock), onChange({newCommits, events}),
      play(figure, before, after, {theme, showHead}) to move a map redrawn after a change from its
-     drawing before (the snapshots before and after). */
-  function create({ theme = RepoMap.DEFAULT_THEME, words = {}, now = () => new Date(), onChange = () => {}, play = () => {} } = {}) {
+     drawing before (the snapshots before and after), and places ({commands, render, play}, as
+     TimePlaces) to draw the three areas as the player's places instead of the strip. */
+  function create({ theme = RepoMap.DEFAULT_THEME, words = {}, now = () => new Date(), onChange = () => {}, play = () => {}, places = null } = {}) {
     const titles = { ...WORDS, ...words };
     const projectBox = el("div", { class: "live-map" });
     const githubBox = el("div", { class: "live-map" });
     const githubPart = el("section", { class: "live-part live-github", hidden: true, "aria-label": titles.github }, el("h3", {}, titles.github), githubBox);
     const areasBox = el("div", { class: "live-areas" });
+    const areasTitle = el("h3", {}, titles.areas);
     const feedList = el("ol", { class: "feed" });
     const quiet = el("p", { class: "feed-quiet" }, titles.quiet);
     const announce = el("p", { class: "sr-only", "aria-live": "polite" });
@@ -47,9 +50,9 @@ const LivePanel = (function () {
         ),
         el("section", { class: "live-part live-feed", "aria-label": titles.feed }, el("h3", {}, titles.feed), quiet, feedList, announce),
       ),
-      el("section", { class: "live-part live-three", "aria-label": titles.areas }, el("h3", {}, titles.areas), areasBox),
+      el("section", { class: "live-part live-three", "aria-label": titles.areas }, areasTitle, areasBox),
     );
-    const drawn = { project: null, github: null, files: null };
+    const drawn = { project: null, github: null, files: null, places: null };
     let feed = [];
 
     function drawMap(box, key, snapshot, showHead) {
@@ -69,6 +72,24 @@ const LivePanel = (function () {
       if (drawn.files === text) return;
       drawn.files = text;
       areasBox.replaceChildren(RepoMap.renderAreas(files, { theme }));
+    }
+
+    /* The places, redrawn when either repository changed: the arrows of what the batch's events
+       did light up, and the work moves from the drawing before. The part is the three areas until
+       there is a GitHub, then the four places. */
+    function drawPlaces({ project, github, events }) {
+      const after = { project, github };
+      const text = JSON.stringify(after);
+      if (drawn.places === text) return;
+      const before = drawn.places === null ? null : JSON.parse(drawn.places);
+      drawn.places = text;
+      const commands = before ? places.commands(events, before.project, project) : [];
+      const figure = places.render(after, { commands });
+      const name = github ? titles.places : titles.areas;
+      areasTitle.textContent = name;
+      areasTitle.parentNode.setAttribute("aria-label", name);
+      areasBox.replaceChildren(figure);
+      if (before) places.play(figure, { before, after, commands });
     }
 
     function drawFeed(events) {
@@ -91,7 +112,8 @@ const LivePanel = (function () {
         const newCommits = drawMap(projectBox, "project", observation.project, true);
         githubPart.hidden = observation.github === null;
         if (observation.github) drawMap(githubBox, "github", observation.github, false);
-        drawAreas(observation.project.files);
+        if (places) drawPlaces(observation);
+        else drawAreas(observation.project.files);
         drawFeed(observation.events);
         onChange({ newCommits, events: observation.events });
       },

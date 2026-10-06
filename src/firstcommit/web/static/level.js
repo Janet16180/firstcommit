@@ -85,7 +85,7 @@ const LevelPage = (function () {
     const { ctx } = page;
     try {
       const view = await ctx.game.lesson(page.levelId);
-      const player = LessonPlayer.create({ lesson: view, theme: ctx.theme, timers: ctx.timers, reducedMotion: ctx.reducedMotion, onFinish: () => start(page, null), onExit: () => intro(page) });
+      const player = LessonPlayer.create({ lesson: view, theme: ctx.theme, timers: ctx.timers, reducedMotion: ctx.reducedMotion, play: ctx.playMap, onFinish: () => start(page, null), onExit: () => intro(page) });
       mount(page, player.element, player);
     } catch (error) {
       if (!expected(page, error)) throw error;
@@ -162,7 +162,7 @@ const LevelPage = (function () {
   }
 
   /* ctx: game, status(), refresh(), celebrate(options), and what practice.js and the lesson need
-     (sound, timers, page, terminal, theme, reducedMotion). */
+     (sound, timers, page, terminal, theme, reducedMotion, playMap, places). */
   function create(ctx, levelId) {
     const page = { ctx, levelId, level: null, part: null, element: el("div", { class: "level-page" }, el("p", { class: "loading" }, "Loading the level…")) };
     load(page);

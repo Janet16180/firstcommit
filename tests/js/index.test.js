@@ -25,7 +25,7 @@ test("the page loads every script another script needs, before it", () => {
   }
 });
 
-test("the page loads the time-travel theme's motions and map guide, and their stylesheets", () => {
-  for (const name of ["theme-time.js", "theme-time-motion.js", "theme-time-guide.js"]) assert.ok(scripts.includes(name), name);
+test("the page loads the time-travel theme's motions, places and map guide, and their stylesheets", () => {
+  for (const name of ["theme-time.js", "theme-time-motion.js", "theme-time-places.js", "theme-time-guide.js"]) assert.ok(scripts.includes(name), name);
   for (const name of ["theme-time.css", "theme-time-share.css", "theme-time-guide.css"]) assert.match(page, new RegExp(`href="/static/${name}"`));
 });

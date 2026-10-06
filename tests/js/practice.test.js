@@ -14,7 +14,7 @@ const { Practice, createGameApi } = load(
 const correct = (step, questDone = false) => ({ correct: true, message: [{ kind: "para", spans: [{ text: "Right.", code: false }] }], step, quest_done: questDone });
 
 /* A practice view on step `step`; `done` is a finished quest (step 3 of 3), which the server lets the page check by itself. */
-function practice({ step = 1, done = false, replies = {}, level = record("level"), playMap } = {}) {
+function practice({ step = 1, done = false, replies = {}, level = record("level"), playMap, places } = {}) {
   const clock = createClock();
   const server = fakeServer({ "/api/observe": record("observation"), "/api/step": record("step"), "/api/check": record("check_unsolved"), "/api/hint": record("hint"), "/api/abort": { level: "x" }, ...replies });
   const seen = { solved: [], ended: 0, left: 0, sounds: [], attached: 0, detached: 0, typed: [] };
@@ -25,6 +25,7 @@ function practice({ step = 1, done = false, replies = {}, level = record("level"
     page: document,
     terminal: { attach: () => (seen.attached += 1), detach: () => (seen.detached += 1), type: (text) => seen.typed.push(text) },
     playMap,
+    places,
   };
   const view = Practice.create(ctx, {
     level,
@@ -243,5 +244,23 @@ test("the live map moves from its drawing before when a commit appears, through 
   assert.equal(plays.length, 1);
   assert.equal(plays[0].figure, run.q(".live-project .repo-map"));
   assert.deepEqual([plays[0].before.commits.length, plays[0].after.commits.length, plays[0].options.showHead], [older.project.commits.length, observation.project.commits.length, true]);
+  run.view.dispose();
+});
+
+test("the live panel draws the page's places in the three areas part when the page gives them", async () => {
+  const drawn = [];
+  const places = {
+    commands: () => [],
+    render: (observation) => {
+      drawn.push(observation);
+      return document.createElement("figure");
+    },
+    play: () => [],
+  };
+  const run = practice({ places });
+  await settle();
+  assert.equal(drawn.length, 1);
+  assert.deepEqual(drawn[0], { project: record("observation").project, github: record("observation").github });
+  assert.equal(run.q(".live-three .areas-row"), null);
   run.view.dispose();
 });

@@ -28,13 +28,6 @@
   font-size: 12px;
 }
 
-/* A timeline wider than its place is drawn smaller rather than cut off, down to the floor
-   theme-time-share.js gives it as a min-width; past that, its place scrolls. */
-.ts-share .tt-place-graph svg.map-graph {
-  max-width: 100%;
-  height: auto;
-}
-
 .ts-grid {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 2rem minmax(0, 1fr);

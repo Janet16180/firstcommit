@@ -186,6 +186,7 @@ const TimeTheme = (function () {
     project: "Your repository · its timelines",
     github: "GitHub (the practice copy) · shared archive",
     areas: "The three areas",
+    places: "The four places",
     feed: "What just happened",
   };
 

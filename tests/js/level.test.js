@@ -12,7 +12,7 @@ const { LevelPage, createGameApi } = load(
 
 const ID = "sample-second";
 
-function page({ active = null, replies = {}, refreshed = null, dashboard = {} } = {}) {
+function page({ active = null, replies = {}, refreshed = null, dashboard = {}, extra = {} } = {}) {
   const status = { ...record("status"), active, ...dashboard };
   const server = fakeServer({
     "/api/level": record("level"),
@@ -37,6 +37,7 @@ function page({ active = null, replies = {}, refreshed = null, dashboard = {} } 
     page: document,
     reducedMotion: true,
     terminal: { attach() {}, detach() {}, type() {} },
+    ...extra,
   };
   const view = LevelPage.create(ctx, ID);
   document.body.replaceChildren(view.element);
@@ -125,6 +126,20 @@ test("the lesson plays, and finishing it starts the level", async () => {
   for (let slide = 0; slide < 5; slide += 1) run.q(".lesson-next").click();
   await settle();
   assert.ok(run.q(".practice"));
+  run.view.dispose();
+});
+
+test("the lesson's map slide moves through the page's playMap once its commands have shown", async () => {
+  const plays = [];
+  const run = page({ extra: { reducedMotion: false, playMap: (figure, before, after) => plays.push({ figure, before, after }) } });
+  await settle();
+  button(run, /Start the lesson/).click();
+  await settle();
+  while (!run.q(".lesson-count").textContent.includes("3 of")) run.q(".lesson-next").click();
+  await run.ctx.timers.advance(20000);
+  assert.equal(plays.length, 1);
+  assert.equal(plays[0].figure, run.q(".lesson-figure .repo-map"));
+  assert.deepEqual(plays[0].after, record("lesson").slides[2].map);
   run.view.dispose();
 });
 
