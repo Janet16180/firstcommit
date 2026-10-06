@@ -155,6 +155,13 @@ def test_an_amended_commit_is_told_as_replaced(tmp_path: Path) -> None:
     assert f"`{short(repo, 'HEAD')}` \"Add a, better\"" in events[0]["text"]
 
 
+def test_a_commit_on_a_branch_just_switched_to_is_told_as_the_switch_and_the_new_branch(tmp_path: Path) -> None:
+    repo = project(tmp_path)
+    events = happens(repo, "git switch -q -c feature && git commit -q --allow-empty -m 'Start feature'")
+    assert kinds(events) == ["branch-switched", "branch-created"]
+    assert '"Start feature"' in events[0]["text"]
+
+
 def test_a_commit_on_a_detached_head_says_so(tmp_path: Path) -> None:
     repo = project(tmp_path, "git switch -q --detach")
     events = happens(repo, "git commit -q --allow-empty -m experiment")
