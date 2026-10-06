@@ -185,28 +185,35 @@ const TimePlaces = (function () {
     );
   }
 
-  const where = (area) => (area === "repository" ? "your repository" : `the ${PLACES[area].toLowerCase()}`);
+  const NOUNS = { folder: "working folder", index: "staging area", repository: "repository", remote: "remote repository" };
+
+  /* A place as said aloud: yours, unless `owner` names whose computer it is on. */
+  function where(area, owner) {
+    let said = area === "repository" ? "your repository" : `the ${NOUNS[area]}`;
+    if (owner && area !== "remote") said = `${owner}'s ${NOUNS[area]}`;
+    return said;
+  }
 
   /* The route an arrow says aloud: "from A, through B and C, to D". */
-  function route(path) {
+  function route(path, owner) {
     const [from, ...rest] = path;
     const to = rest.pop();
-    const through = rest.length ? `, through ${rest.map(where).join(" and ")},` : "";
-    return `from ${where(from)}${through} to ${where(to)}`;
+    const through = rest.length ? `, through ${rest.map((area) => where(area, owner)).join(" and ")},` : "";
+    return `from ${where(from, owner)}${through} to ${where(to, owner)}`;
   }
 
   /* An arrow with its Git word, from the first place of `part` to its last: the whole route, or
      one leg of it for an arrow drawn in parts (pull's merge half runs beside commit, then add),
-     which shows only the command's name. Only the first part says the route aloud. A whole arrow
-     has a stop at each place it passes; `is-back` marks the legs that bring work back from
-     GitHub. */
-  function arrow(name, lit, part = ARROWS[name].path) {
+     which shows only the command's name. Only the first part says the route aloud, naming
+     `owner`'s places when the computer is someone else's. A whole arrow has a stop at each place
+     it passes; `is-back` marks the legs that bring work back from GitHub. */
+  function arrow(name, lit, part = ARROWS[name].path, owner = null) {
     const { path, label } = ARROWS[name];
     const order = Object.keys(PLACES);
     const backwards = order.indexOf(part.at(-1)) < order.indexOf(part[0]);
     const word = label || name;
     const whole = part === path;
-    const spoken = part[0] === path[0] ? { "aria-label": `${word}: ${route(path)}` } : { "aria-hidden": "true" };
+    const spoken = part[0] === path[0] ? { "aria-label": `${word}: ${route(path, owner)}` } : { "aria-hidden": "true" };
     return el("div", { class: `tt-arrow is-${name}${backwards ? " is-back" : ""}${lit.includes(name) ? " is-active" : ""}`, "data-command": name, ...spoken },
       el("span", { class: "tt-arrow-label", "aria-hidden": "true" }, whole ? word : name),
       el("span", { class: "tt-arrow-shaft", "aria-hidden": "true" }),
@@ -240,11 +247,18 @@ const TimePlaces = (function () {
 
   const find = (scope, attribute, value) => [...scope.querySelectorAll(`[${attribute}]`)].find((node) => node.getAttribute(attribute) === value) || null;
 
+  /* Where play finds each place and each command's arrows: in the figure itself, unless the
+     caller (a figure with more than one computer) says. */
+  const within = (figure) => ({
+    place: (area) => find(figure, "data-area", area),
+    arrows: (name) => [...figure.querySelectorAll(".tt-arrow")].filter((node) => node.getAttribute("data-command") === name),
+  });
+
   /* Where a flight starts or ends: the file's page or the commit's box in that place; for files
      leaving your repository, the box HEAD is on; for a commit leaving the staging area, its open
      box; else the place itself. */
-  function spot(figure, area, flight) {
-    const place = find(figure, "data-area", area);
+  function spot(lookup, area, flight) {
+    const place = lookup.place(area);
     const exact = flight.what === "file" ? find(place, "data-path", flight.id) : find(place, "data-hash", flight.id);
     const point = exact && flight.what === "commit" ? exact.querySelector(".tt-save") : exact;
     const head = !point && area === "repository" ? place.querySelector(".map-commit.is-head .tt-save") : null;
@@ -289,8 +303,8 @@ const TimePlaces = (function () {
   }
 
   /* The commit graph of one place moves from its old drawing to its new one, `offset` ms late. */
-  function settle(figure, area, before, after, showHead, offset, reduced) {
-    const graph = find(figure, "data-area", area).querySelector(".repo-map");
+  function settle(place, before, after, showHead, offset, reduced) {
+    const graph = place.querySelector(".repo-map");
     if (!graph || !before || !after) return [];
     const options = { theme: boxes, showHead };
     const motion = TimeMotion.motions(RepoMap.layout(before, options), RepoMap.layout(after, options), boxes.sizes);
@@ -314,8 +328,8 @@ const TimePlaces = (function () {
   }
 
   /* Plays a transition {before, after, commands} on the figure render(after) drew; returns the
-     animations started. */
-  function play(figure, { before, after, commands: lit }, reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+     animations started. `lookup` finds the places and arrows (see `within`). */
+  function play(figure, { before, after, commands: lit }, reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches, lookup = within(figure)) {
     if (reduced || !before || typeof figure.animate !== "function") return [];
     const started = [];
     const animate = (node, frames, timing) => {
@@ -323,7 +337,7 @@ const TimePlaces = (function () {
       started.push(animation);
       return animation;
     };
-    const shafts = (name) => [...figure.querySelectorAll(".tt-arrow")].filter((node) => node.getAttribute("data-command") === name).map((node) => node.querySelector(".tt-arrow-shaft"));
+    const shafts = (name) => lookup.arrows(name).map((node) => node.querySelector(".tt-arrow-shaft"));
     const layer = el("div", { class: "tt-flights", "aria-hidden": "true" });
     figure.append(layer);
     const origin = figure.getBoundingClientRect();
@@ -338,7 +352,7 @@ const TimePlaces = (function () {
        page's old id and colour fade out as the new ones, and git's words for them, fade in; and the
        page glows once. */
     const reveal = (area, path, at) => {
-      const row = find(find(figure, "data-area", area), "data-path", path);
+      const row = find(lookup.place(area), "data-path", path);
       if (!row) return;
       const was = before.project.files.find((entry) => entry.path === path);
       const old = was ? was[area] : null;
@@ -353,7 +367,7 @@ const TimePlaces = (function () {
     };
     trips.forEach((flight, index) => {
       const delay = delays[index];
-      const points = flight.path.map((area) => centre(spot(figure, area, flight), origin));
+      const points = flight.path.map((area) => centre(spot(lookup, area, flight), origin));
       const [from, to] = [points[0], points[points.length - 1]];
       const middle = points.length > 2 ? points[1] : via(shafts(flight.by)[0], from, to, origin);
       const node = flyer(flight, after);
@@ -388,10 +402,13 @@ const TimePlaces = (function () {
       const index = here >= 0 ? here : firstCommit(() => true);
       return index >= 0 ? delays[index] + TIMING.land : 0;
     };
-    started.push(...settle(figure, "repository", before.project, after.project, true, landing("repository"), reduced));
-    started.push(...settle(figure, "remote", before.github, after.github, false, landing("remote"), reduced));
+    started.push(...settle(lookup.place("repository"), before.project, after.project, true, landing("repository"), reduced));
+    started.push(...settle(lookup.place("remote"), before.github, after.github, false, landing("remote"), reduced));
     return started;
   }
 
-  return { commands, flights, render, play, ARROWS, PLACES, TIMING };
+  /* The figure's building blocks, for figures with more than one computer (theme-time-share.js). */
+  const parts = { filePlace, repositoryPlace, arrow, pair, inline };
+
+  return { commands, flights, render, play, parts, ARROWS, PLACES, TIMING };
 })();

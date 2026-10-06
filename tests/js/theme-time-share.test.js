@@ -1,0 +1,157 @@
+"use strict";
+
+const assert = require("node:assert/strict");
+const test = require("node:test");
+const { installBrowser, load, record } = require("./load");
+
+const document = installBrowser();
+const { TimeShare } = load(["dom.js", "map.js", "theme-time.js", "theme-time-motion.js", "theme-time-places.js", "theme-time-share.js"], ["TimeShare"]);
+
+const full = (name) => name.padEnd(40, "0");
+const blob = (name) => name.padEnd(40, "b");
+
+function file(path, { head = null, index = null, folder = null, indexChange = null, folderChange = null } = {}) {
+  const mode = (id) => (id === null ? null : "100644");
+  return {
+    path, head: head && blob(head), index: index && blob(index), folder: folder && blob(folder),
+    head_mode: mode(head), index_mode: mode(index), folder_mode: mode(folder),
+    ignored: false, conflicted: false, repository: false, index_change: indexChange, folder_change: folderChange,
+  };
+}
+
+function repo({ commits = [], refs = [], files = [], bare = false, head = commits.length ? commits[0][0] : null }) {
+  return {
+    ...record("snapshots").one,
+    exists: true,
+    bare,
+    head: bare || head === null ? null : full(head),
+    branch: "main",
+    commits: commits.map(([name, parents], index) => ({
+      hash: full(name), short: full(name).slice(0, 7), parents: parents.map(full), subject: `Commit ${name}`, author: "Robin Park", time: 1000 - index,
+    })),
+    refs: refs.map(([name, kind, target]) => ({ name, kind, target: full(target) })),
+    files,
+  };
+}
+
+const ONE = [["a", []]];
+const TWO = [["b", ["a"]], ["a", []]];
+const README = file("README.md", { head: "1", index: "1", folder: "1" });
+const NOTES = file("notes.txt", { head: "2", index: "2", folder: "2" });
+const clone = (commits, main, origin, files) => repo({ commits, refs: [["main", "branch", main], ["origin/main", "remote", origin]], head: main, files });
+const hub = (commits) => repo({ commits, bare: true, refs: [["main", "branch", commits[0][0]]] });
+const kinds = (...names) => names.map((kind) => ({ kind, text: [] }));
+const none = { you: [], github: [], alex: [] };
+
+const YOU_PUSHED = { you: clone(TWO, "b", "b", [README, NOTES]), github: hub(TWO), alex: clone(ONE, "a", "a", [README]) };
+const ALEX_FETCHED = { ...YOU_PUSHED, alex: clone(TWO, "a", "b", [README]) };
+const ALEX_PULLED = { ...YOU_PUSHED, alex: clone(TWO, "b", "b", [README, NOTES]) };
+const STEPS = {
+  push: { id: "push", actor: "you", before: { ...YOU_PUSHED, you: clone(TWO, "b", "a", [README, NOTES]), github: hub(ONE) }, after: YOU_PUSHED, events: { ...none, you: kinds("remote-updated"), github: kinds("push-received") }, commands: ["git push"], transcript: [{ command: "git push", output: "", status: 0 }] },
+  fetch: { id: "pull-fetch", actor: "alex", before: YOU_PUSHED, after: ALEX_FETCHED, events: { ...none, alex: kinds("remote-updated") }, commands: ["git pull"], transcript: [{ command: "git fetch", output: "", status: 0 }] },
+  merge: { id: "pull-merge-half", actor: "alex", before: ALEX_FETCHED, after: ALEX_PULLED, events: { ...none, alex: kinds("branch-moved") }, commands: ["git pull"], transcript: [{ command: "git pull", output: "", status: 0 }] },
+  refused: { id: "refused", actor: "you", before: YOU_PUSHED, after: YOU_PUSHED, events: none, commands: ["git push"], transcript: [{ command: "git push", output: " ! [rejected]        main -> main (fetch first)\n", status: 1 }] },
+};
+
+/* Renders a step's after state, plays the step, and records every animate() call. */
+function played(step, reduced = false) {
+  const calls = [];
+  const figure = TimeShare.render(step);
+  document.body.replaceChildren(figure);
+  const proto = Object.getPrototypeOf(figure);
+  proto.animate = function (frames, timing) {
+    const call = { node: this, frames, timing, onfinish: null };
+    calls.push(call);
+    return call;
+  };
+  proto.getTotalLength = () => 100;
+  TimeShare.play(figure, step, reduced);
+  delete proto.animate;
+  delete proto.getTotalLength;
+  return { figure, calls };
+}
+
+const person = (figure, who) => figure.querySelectorAll("[data-person]").find((node) => node.getAttribute("data-person") === who);
+const areas = (node) => node.querySelectorAll("[data-area]").map((place) => place.getAttribute("data-area"));
+const insideOf = (figure, who) => (call) => person(figure, who).contains(call.node);
+
+test("the figure puts your computer, GitHub and Alex's computer side by side, each computer with its folder, open box and repository", () => {
+  const figure = TimeShare.render(STEPS.push);
+  assert.deepEqual(areas(person(figure, "you")), ["folder", "index", "repository"]);
+  assert.deepEqual(areas(person(figure, "alex")), ["folder", "index", "repository"]);
+  assert.deepEqual(areas(figure.querySelector(".ts-github")), ["remote"]);
+  assert.ok(person(figure, "alex").querySelector("svg.ts-person"), "Alex is drawn as a person");
+  assert.match(person(figure, "alex").querySelector(".ts-name").textContent, /^Alex$/);
+  assert.match(person(figure, "you").querySelector(".ts-name").textContent, /^You$/);
+});
+
+test("every step's caption says what Alex can see", () => {
+  const ids = ["create", "add", "commit", "push", "pull-fetch", "pull-merge-half", "alex-shares", "you-commit", "refused", "pull-merge", "push-again"];
+  assert.deepEqual(Object.keys(TimeShare.CAPTIONS), ids);
+  for (const id of ids) assert.match(TimeShare.CAPTIONS[id], /Alex/, id);
+});
+
+test("the commit's caption says plainly that committing shares nothing", () => {
+  assert.match(TimeShare.CAPTIONS.commit, /shares nothing/);
+});
+
+test("a step lights the arrows of the person who ran it, from their own events and GitHub's", () => {
+  assert.deepEqual(TimeShare.lit(STEPS.push), ["push"]);
+  assert.deepEqual(TimeShare.lit(STEPS.fetch), ["fetch"]);
+  assert.deepEqual(TimeShare.lit(STEPS.merge), ["pull"]);
+  assert.deepEqual(TimeShare.lit(STEPS.refused), []);
+});
+
+test("only the arrows of the person who ran the step light up, with the step's caption under the figure", () => {
+  const figure = TimeShare.render(STEPS.fetch);
+  const active = (who) => person(figure, who).querySelectorAll(".tt-arrow.is-active").map((arrow) => arrow.getAttribute("data-command"));
+  assert.deepEqual(active("alex"), ["fetch"]);
+  assert.deepEqual(active("you"), []);
+  assert.equal(figure.querySelector(".ts-caption").textContent, TimeShare.CAPTIONS["pull-fetch"].replaceAll("`", ""));
+  assert.match(figure.querySelector(".ts-command").textContent, /Alex.*\$ git pull/);
+});
+
+test("each arrow says aloud whose places it joins", () => {
+  const figure = TimeShare.render(STEPS.push);
+  const said = (who, name) => person(figure, who).querySelectorAll(".tt-arrow").find((arrow) => arrow.getAttribute("data-command") === name && arrow.getAttribute("aria-label")).getAttribute("aria-label");
+  assert.equal(said("you", "push"), "push: from your repository to the remote repository");
+  assert.equal(said("alex", "fetch"), "fetch: from the remote repository to Alex's repository");
+  assert.equal(said("alex", "add"), "add: from Alex's working folder to Alex's staging area");
+});
+
+test("your push flies your box to GitHub, and nothing on Alex's computer moves", () => {
+  const { figure, calls } = played(STEPS.push);
+  assert.equal(figure.querySelectorAll(".tt-flyer.is-commit").length, 1);
+  assert.ok(calls.some((call) => figure.querySelector(".ts-github").contains(call.node)), "GitHub's branch moves");
+  assert.deepEqual(calls.filter(insideOf(figure, "alex")), []);
+});
+
+test("the fetch half of Alex's pull brings the box into Alex's repository and leaves Alex's folder as it was", () => {
+  const { figure, calls } = played(STEPS.fetch);
+  assert.equal(figure.querySelectorAll(".tt-flyer.is-commit").length, 1);
+  const alexFolder = person(figure, "alex").querySelector('[data-area="folder"]');
+  assert.deepEqual(calls.filter((call) => alexFolder.contains(call.node)), []);
+  assert.ok(calls.some((call) => person(figure, "alex").querySelector('[data-area="repository"]').contains(call.node)), "Alex's origin/main moves");
+  assert.deepEqual(calls.filter(insideOf(figure, "you")), []);
+});
+
+test("the merge half brings the page through Alex's open box into Alex's folder", () => {
+  const { figure, calls } = played(STEPS.merge);
+  const flyer = figure.querySelector(".tt-flyer.is-file");
+  assert.match(flyer.textContent, /notes\.txt/);
+  const page = person(figure, "alex").querySelector('[data-area="folder"]').querySelectorAll("[data-path]").find((node) => node.getAttribute("data-path") === "notes.txt");
+  assert.ok(calls.some((call) => call.node === page && call.frames[0].opacity === 0), "the page appears in Alex's folder as it arrives");
+});
+
+test("a refused push shows git's own words, and nothing moves anywhere", () => {
+  const { figure, calls } = played(STEPS.refused);
+  assert.match(figure.querySelector(".ts-output").textContent, /\[rejected\]/);
+  assert.deepEqual(calls, []);
+  assert.equal(figure.querySelector(".tt-flyer"), null);
+});
+
+test("under reduced motion nothing moves, and the caption still says what happened", () => {
+  const { figure, calls } = played(STEPS.push, true);
+  assert.deepEqual(calls, []);
+  assert.ok(figure.querySelector(".ts-caption").textContent.length > 0);
+});
