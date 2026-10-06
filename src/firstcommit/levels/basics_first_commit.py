@@ -214,115 +214,6 @@ def on_main(snap: kit.Snapshot) -> bool:
     return snap["exists"] and not snap["bare"] and snap["branch"] == BRANCH
 
 
-def untracked(snap: kit.Snapshot) -> list[str]:
-    """
-    List the files that are in the working folder but not in the staging area, ignored ones aside.
-
-    Parameters
-    ----------
-    snap : kit.Snapshot
-        The project's repository.
-
-    Returns
-    -------
-    list[str]
-        Their paths.
-    """
-    return [
-        entry["path"]
-        for entry in snap["files"]
-        if entry["folder"] is not None
-        and entry["index"] is None
-        and not entry["ignored"]
-        and not entry["conflicted"]
-        and not entry["repository"]
-    ]
-
-
-def staged(snap: kit.Snapshot) -> list[str]:
-    """
-    List the files whose staging-area content or mode differs from the last commit's.
-
-    Parameters
-    ----------
-    snap : kit.Snapshot
-        The project's repository.
-
-    Returns
-    -------
-    list[str]
-        Their paths.
-    """
-    return [
-        entry["path"]
-        for entry in snap["files"]
-        if not entry["conflicted"] and kit.version(entry, "index") != kit.version(entry, "head")
-    ]
-
-
-def unstaged(snap: kit.Snapshot) -> list[str]:
-    """
-    List the tracked files whose working-folder content differs from the staging area's.
-
-    Parameters
-    ----------
-    snap : kit.Snapshot
-        The project's repository.
-
-    Returns
-    -------
-    list[str]
-        Their paths, conflicted files included.
-    """
-    return [
-        entry["path"]
-        for entry in snap["files"]
-        if entry["conflicted"] or (entry["index"] is not None and entry["folder"] != entry["index"])
-    ]
-
-
-def mode_changed(snap: kit.Snapshot) -> list[str]:
-    """
-    List the tracked files whose content matches the staging area but whose mode does not (``chmod +x``).
-
-    Parameters
-    ----------
-    snap : kit.Snapshot
-        The project's repository.
-
-    Returns
-    -------
-    list[str]
-        Their paths.
-    """
-    return [
-        entry["path"]
-        for entry in snap["files"]
-        if entry["index"] is not None and entry["folder"] == entry["index"] and entry["folder_mode"] != entry["index_mode"]
-    ]
-
-
-def nested(snap: kit.Snapshot) -> list[str]:
-    """
-    List the folders in the working folder that hold a repository of their own, as `git status` lists them.
-
-    Parameters
-    ----------
-    snap : kit.Snapshot
-        The project's repository.
-
-    Returns
-    -------
-    list[str]
-        Their paths, each ending with ``/``.
-    """
-    return [
-        f"{entry['path']}/"
-        for entry in snap["files"]
-        if entry["repository"] and entry["index"] is None and entry["head"] is None and not entry["ignored"]
-    ]
-
-
 def file_names(paths: list[str]) -> str:
     """
     Name a few files for a message.
@@ -421,15 +312,30 @@ def tidy_move(snap: kit.Snapshot) -> str:
     str
         What to do next, or an empty string when `git status` lists nothing.
     """
-    loose, waiting, edited, chmodded, repositories = untracked(snap), staged(snap), unstaged(snap), mode_changed(snap), nested(snap)
-    if loose:
+    clashing = kit.conflicted(snap)
+    loose = kit.untracked(snap)
+    waiting = kit.staged(snap)
+    chmodded = kit.mode_changed(snap)
+    deleted = [entry["path"] for entry in snap["files"] if entry["folder_change"] == "deleted"]
+    edited = [path for path in kit.unstaged(snap) if path not in chmodded and path not in deleted]
+    repositories = [f"{path}/" for path in kit.nested(snap)]
+    if clashing:
+        verb, them = ("is", "it") if len(clashing) == 1 else ("are", "them")
+        move = f"{file_names(clashing)} {verb} in conflict: edit {them} to keep the content you want, then stage and commit {them}."
+    elif loose:
         verb = "is" if len(loose) == 1 else "are"
         move = f"{file_names(loose)} {verb} in the working folder but not in the staging area (untracked). Stage and commit what you need, and delete the rest."
     elif waiting:
         verb = "is" if len(waiting) == 1 else "are"
         move = f"{file_names(waiting)} {verb} staged but not committed yet. Commit, so that your last commit holds what is staged."
+    elif FILE in deleted:
+        move = "`README.md` is deleted from the working folder, and the level needs it. Bring it back with `git restore README.md`."
+    elif deleted:
+        verb, them = ("is", "it") if len(deleted) == 1 else ("are", "them")
+        move = f"{file_names(deleted)} {verb} deleted from the working folder, and the deletion is not staged. Stage and commit {them}, as any other change."
     elif edited:
-        move = f"{file_names(edited)} changed after the last `git add`. Stage and commit what changed."
+        verb = "is" if len(edited) == 1 else "are"
+        move = f"{file_names(edited)} {verb} changed in the working folder, and the change is not staged. Stage and commit what changed."
     elif chmodded:
         whose = "its" if len(chmodded) == 1 else "their"
         move = f"`git status` still lists {file_names(chmodded)}: only {whose} executable permission changed. Stage and commit the change."

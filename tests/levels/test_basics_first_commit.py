@@ -384,6 +384,53 @@ def test_an_edit_after_the_commit_keeps_the_level_unsolved(played: kit.Lab) -> N
     assert "changed" in verdict.message
 
 
+def test_a_change_unstaged_with_restore_is_not_said_to_follow_the_last_add(played: kit.Lab) -> None:
+    append(played, "README.md", "More.")
+    git(played, "add", "README.md")
+    git(played, "restore", "--staged", "README.md")
+    verdict = check(played)
+    assert not verdict.solved
+    assert "not staged" in verdict.message
+    assert "git add`." not in verdict.message
+
+
+def test_a_readme_deleted_from_the_folder_gets_the_command_that_brings_it_back(played: kit.Lab) -> None:
+    (played.project / "README.md").unlink()
+    assert kit.unstaged(kit.snapshot(played.project)) == ["README.md"]
+    verdict = check(played)
+    assert not verdict.solved
+    assert "`git restore README.md`" in verdict.message
+    git(played, "restore", "README.md")
+    assert check(played).solved
+
+
+def test_another_file_deleted_from_the_folder_is_named_as_a_deletion(played: kit.Lab) -> None:
+    append(played, "notes.txt", "notes")
+    git(played, "add", "notes.txt")
+    git(played, "commit", "-m", "Add notes")
+    (played.project / "notes.txt").unlink()
+    verdict = check(played)
+    assert not verdict.solved
+    assert "`notes.txt` is deleted from the working folder" in verdict.message
+    git(played, "add", "notes.txt")
+    git(played, "commit", "-m", "Remove the notes")
+    assert check(played).solved
+
+
+def test_a_conflicted_file_keeps_the_level_unsolved(played: kit.Lab) -> None:
+    git(played, "switch", "-c", "other")
+    append(played, "README.md", "Theirs.")
+    git(played, "commit", "-a", "-m", "Theirs")
+    git(played, "switch", "main")
+    append(played, "README.md", "Ours.")
+    git(played, "commit", "-a", "-m", "Ours")
+    assert kit.git_run(played.project, "merge", "other").returncode != 0
+    assert kit.conflicted(kit.snapshot(played.project)) == ["README.md"]
+    verdict = check(played)
+    assert not verdict.solved
+    assert "`README.md` is in conflict" in verdict.message
+
+
 def test_a_repository_inside_the_project_folder_keeps_the_level_unsolved(played: kit.Lab) -> None:
     git(played, "init", "project")
     assert git(played, "status", "--porcelain").strip() == "?? project/"
