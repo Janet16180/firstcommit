@@ -85,13 +85,12 @@ NEXT for phase 2, before merging to `main`:
 
 ## Level polish for "Your first commit" (from the checker's blind playtest)
 
-- A beginner who commits before setting a name sees git's identity error, which the lesson never
-  shows (the lesson environment sets an identity). Mention it on the commit slide or step.
-- A bare `git commit` opens an editor (nano). The nudges give the full `-m` command, but the
-  second basics level ("A message that helps") should teach the editor: how to write, save, quit.
-- `readme.md` in lower case gets "There is no `README.md`"; point at the letter case.
-- Expect `git init project` typed inside `project` (the briefing says "turn the project folder
-  into a repository"); it now has its own nudge, but consider rewording the briefing.
+Done in the fix round (checker, p2/level-check, merged at b522bb5): the identity steps come
+before the first file, so a commit tried too early fails on the empty staging area instead of
+git's identity error; `readme.md` in another letter case gets its own nudge; the briefing says
+the terminal opens in the empty `project` folder; the commit step says that without `-m` Git
+opens an editor. Left for the second basics level ("A message that helps"): teaching the editor
+itself (write, save, quit).
 
 ## Next
 
