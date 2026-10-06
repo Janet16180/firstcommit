@@ -9,10 +9,10 @@ installBrowser();
 const { LessonPlayer } = load(["dom.js", "markup.js", "map.js", "lesson.js"], ["LessonPlayer"]);
 
 /* A lesson player, moved on with Next to the slide numbered `slide` (from 1). */
-function player({ reducedMotion = false, onFinish = () => {}, onExit = () => {}, slide = 1 } = {}) {
+function player({ reducedMotion = false, onFinish = () => {}, onExit = () => {}, slide = 1, play } = {}) {
   const clock = createClock();
   const lesson = record("lesson");
-  const made = LessonPlayer.create({ lesson, timers: clock, reducedMotion, onFinish, onExit });
+  const made = LessonPlayer.create({ lesson, timers: clock, reducedMotion, onFinish, onExit, play });
   const view = { ...made, clock, lesson, q: (selector) => made.element.querySelector(selector), all: (selector) => [...made.element.querySelectorAll(selector)] };
   while (!view.q(".lesson-count").textContent.includes(`${slide} of`)) view.q(".lesson-next").click();
   return view;
@@ -126,4 +126,32 @@ test("objects new since the previous slide are marked", () => {
   assert.equal(view.all("table.objects tr.is-new").length, 0);
   const commitSlide = player({ reducedMotion: true, slide: 3 });
   assert.equal(commitSlide.all(".map-commit.is-new").length, 1);
+});
+
+test("a map slide moves from the previous slide's map when its last command shows, and again on Replay", async () => {
+  const plays = [];
+  const view = player({ slide: 3, play: (figure, before, after, options) => plays.push({ figure, before, after, options }) });
+  const finish = async () => {
+    await view.clock.advance(LessonPlayer.FIRST_LINE_MS);
+    await view.clock.advance(LessonPlayer.lineDelay(view.lesson.slides[2].transcript[0]));
+  };
+  await finish();
+  assert.equal(plays.length, 1);
+  assert.equal(plays[0].figure, view.q(".lesson-figure .repo-map"));
+  assert.deepEqual([plays[0].before, plays[0].after, plays[0].options.showHead], [view.lesson.slides[1].map, view.lesson.slides[2].map, true]);
+  view.q(".lesson-pause").click();
+  await finish();
+  assert.equal(plays.length, 2, "Replay plays it again");
+});
+
+test("a slide shown finished at once does not move: Next pressed early, Back, or reduced motion", async () => {
+  const plays = [];
+  const play = () => plays.push(1);
+  const early = player({ slide: 3, play });
+  early.q(".lesson-next").click();
+  const back = player({ slide: 4, play });
+  back.q(".lesson-back").click();
+  player({ slide: 3, play, reducedMotion: true });
+  await early.clock.advance(10000);
+  assert.deepEqual(plays, []);
 });
