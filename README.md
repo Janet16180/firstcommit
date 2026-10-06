@@ -24,8 +24,9 @@ deploy/docker/run
 ```
 
 The first run builds the image, which takes a few minutes. Later runs reuse it and rebuild it by
-themselves when the game or termlab changes. The game then prints a link: open it in your Windows
-browser. Ctrl-C stops the game, and your progress stays.
+themselves when the game or termlab changes, and rebuild it from scratch, with Ubuntu's latest
+updates, once it is more than 30 days old, so git's security fixes reach you. The game then
+prints a link: open it in your Windows browser. Ctrl-C stops the game, and your progress stays.
 
 | Command | What it does |
 |---|---|
@@ -33,6 +34,7 @@ browser. Ctrl-C stops the game, and your progress stays.
 | `deploy/docker/run shell` | open a terminal in the running game, with the game's Git settings |
 | `deploy/docker/run reset` | delete your saved game and practice repositories (it asks first) |
 | `deploy/docker/run build` | build the image without starting the game |
+| `deploy/docker/run update` | rebuild the image now from scratch, with Ubuntu's latest updates |
 | `FIRSTCOMMIT_PORT=8851 deploy/docker/run` | start the game on another port |
 | `deploy/docker/run test` | for developers: run ruff, mypy and the tests inside the container, offline |
 

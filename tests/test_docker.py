@@ -16,12 +16,14 @@ import pty
 import re
 import secrets
 import select
+import shlex
 import shutil
 import socket
 import struct
 import subprocess
 import time
 from collections.abc import Iterator
+from datetime import date, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -35,6 +37,8 @@ RUN = ROOT / "deploy" / "docker" / "run"
 TERMLAB_SRC = ROOT.parent / "termlab" / "src"
 GAME_HOME = "/home/player/.firstcommit"
 INPUTS_LABEL = "firstcommit.inputs"
+BUILT_LABEL = "firstcommit.built"
+MAX_AGE = timedelta(days=30)
 TOKEN_HEADER = routes.SETTINGS.token_header
 LINK = re.compile(r"http://localhost:(?P<port>\d+)/#token=(?P<token>[A-Za-z0-9_-]+)")
 PROMPT = r"\$ $"
@@ -66,7 +70,13 @@ def volume_of(name: str) -> str:
 
 
 def run_script(
-    *args: str, name: str, script: Path = RUN, path: str | None = None, stdin: str = "", timeout: float = 60
+    *args: str,
+    name: str,
+    script: Path = RUN,
+    path: str | None = None,
+    today: date | None = None,
+    stdin: str = "",
+    timeout: float = 60,
 ) -> subprocess.CompletedProcess[str]:
     """
     Run ``deploy/docker/run`` to completion, with its own docker names.
@@ -81,6 +91,8 @@ def run_script(
         The script to run (a copy, for the tests that change sources).
     path : str | None
         ``PATH`` for the script, or None to keep this process's.
+    today : date | None
+        The day the script takes as today (``FIRSTCOMMIT_DOCKER_TODAY``), or None for the real one.
     stdin : str
         What the script reads.
     timeout : float
@@ -94,6 +106,8 @@ def run_script(
     env = {**os.environ, "FIRSTCOMMIT_DOCKER_NAME": name}
     if path is not None:
         env["PATH"] = path
+    if today is not None:
+        env["FIRSTCOMMIT_DOCKER_TODAY"] = today.isoformat()
     return subprocess.run(
         [str(script), *args], env=env, input=stdin, capture_output=True, text=True, timeout=timeout, check=False
     )
@@ -141,23 +155,51 @@ def in_image(image: str, script: str, *options: str) -> str:
     return result.stdout.strip()
 
 
-def inputs_label(image: str) -> str:
+def label(image: str, key: str) -> str:
     """
-    Give the hash of the sources an image was built from.
+    Give one of the labels ``deploy/docker/run`` puts on the image.
 
     Parameters
     ----------
     image : str
         The image's name.
+    key : str
+        The label: ``firstcommit.inputs``, the hash of the sources, or ``firstcommit.built``, the build day.
 
     Returns
     -------
     str
-        The image's ``firstcommit.inputs`` label.
+        The label's value.
     """
-    result = docker("image", "inspect", "--format", f'{{{{ index .Config.Labels "{INPUTS_LABEL}" }}}}', image)
+    result = docker("image", "inspect", "--format", f'{{{{ index .Config.Labels "{key}" }}}}', image)
     assert result.returncode == 0, result.stderr
     return result.stdout.strip()
+
+
+def docker_that_records_builds(folder: Path) -> tuple[str, Path]:
+    """
+    Make a ``docker`` command that writes down each build instead of running it, and runs every other command.
+
+    Parameters
+    ----------
+    folder : Path
+        Where to put it and its record.
+
+    Returns
+    -------
+    tuple[str, Path]
+        A ``PATH`` that finds it first, and the file that receives one line of arguments per build.
+    """
+    real = shutil.which("docker")
+    assert real is not None
+    record = folder / "builds"
+    command = folder / "docker"
+    command.write_text(
+        f'#!/bin/sh\nif [ "$1" = build ]; then echo "$*" >> {shlex.quote(str(record))}; exit 0; fi\n'
+        f'exec {shlex.quote(real)} "$@"\n'
+    )
+    command.chmod(0o755)
+    return f"{folder}:{os.environ['PATH']}", record
 
 
 def remove_docker_objects(name: str) -> None:
@@ -659,7 +701,9 @@ def test_run_shows_its_commands_and_refuses_an_unknown_one() -> None:
     refused = run_script("start", name="unused")
 
     assert shown.returncode == 0
-    assert all(command in shown.stdout for command in ("play", "shell", "build", "reset", "test", "FIRSTCOMMIT_PORT"))
+    assert all(
+        command in shown.stdout for command in ("play", "shell", "build", "update", "reset", "test", "FIRSTCOMMIT_PORT")
+    )
     assert refused.returncode == 2
     assert "Usage" in refused.stderr
 
@@ -747,13 +791,13 @@ def test_the_game_home_is_kept_in_the_volume_between_two_containers(image: str) 
 @pytest.mark.docker
 @pytest.mark.slow
 def test_build_reuses_the_image_of_a_checkout_with_the_same_sources(image: str, copied_checkout: Path) -> None:
-    label = inputs_label(image)
+    inputs = label(image, INPUTS_LABEL)
 
     result = run_script("build", name=image, script=copied_checkout / "deploy" / "docker" / "run")
 
     assert result.returncode == 0, result.stderr
     assert "Building" not in result.stdout
-    assert inputs_label(image) == label
+    assert label(image, INPUTS_LABEL) == inputs
 
 
 @pytest.mark.docker
@@ -767,8 +811,49 @@ def test_build_rebuilds_the_image_when_termlab_changes(image: str, copied_checko
 
     assert result.returncode == 0, result.stderr
     assert "Building" in result.stdout
-    assert inputs_label(unused_name) != inputs_label(image)
+    assert label(unused_name, INPUTS_LABEL) != label(image, INPUTS_LABEL)
     assert in_image(unused_name, "tail -n 1 /opt/firstcommit/lib/termlab/store.py") == "# changed by a test"
+
+
+@pytest.mark.docker
+@pytest.mark.slow
+def test_build_keeps_an_image_built_30_days_ago(image: str, tmp_path: Path) -> None:
+    path, builds = docker_that_records_builds(tmp_path)
+    built = date.fromisoformat(label(image, BUILT_LABEL))
+
+    result = run_script("build", name=image, path=path, today=built + MAX_AGE)
+
+    assert result.returncode == 0, result.stderr
+    assert not builds.exists()
+
+
+@pytest.mark.docker
+@pytest.mark.slow
+def test_build_refreshes_an_older_image_from_scratch_and_dates_it(image: str, tmp_path: Path) -> None:
+    path, builds = docker_that_records_builds(tmp_path)
+    today = date.fromisoformat(label(image, BUILT_LABEL)) + MAX_AGE + timedelta(days=1)
+
+    result = run_script("build", name=image, path=path, today=today)
+
+    assert result.returncode == 0, result.stderr
+    assert "more than 30 days old" in result.stdout
+    build = builds.read_text()
+    assert "--pull" in build
+    assert "--no-cache" in build
+    assert f"{BUILT_LABEL}={today.isoformat()}" in build
+
+
+@pytest.mark.docker
+@pytest.mark.slow
+def test_update_rebuilds_the_image_from_scratch_whatever_its_age(image: str, tmp_path: Path) -> None:
+    path, builds = docker_that_records_builds(tmp_path)
+
+    result = run_script("update", name=image, path=path, today=date.fromisoformat(label(image, BUILT_LABEL)))
+
+    assert result.returncode == 0, result.stderr
+    build = builds.read_text()
+    assert "--pull" in build
+    assert "--no-cache" in build
 
 
 @pytest.mark.docker
