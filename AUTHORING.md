@@ -186,6 +186,42 @@ passes through, `solve`, a check that passes, the hostile-input list, and the la
 level's own tests, such as its wrong-approach feedback, in `tests/levels/test_<chapter>_<slug>.py`.
 Then play the level for real in the page, like a player.
 
+What the harness checks, so you know what it will refuse:
+
+- `setup` returns a JSON-serialisable state that has a key for every `{{key}}` in the briefing,
+  hints, debrief and steps.
+- `check` with no answer and with every answer of the hostile-input list (empty, blank, `"\x00"`,
+  `"²"`, `"-1"`, `"9"*5000`, `"word " + "9"*5000`, `--help`, shell syntax, other scripts, 60 000
+  characters...) returns a `kit.Verdict` that is not solved, and leaves every file of the lab as
+  it was.
+- Every answer step refuses the empty answer and the hostile list.
+- With `.git` deleted, or the whole project folder deleted, `check` and every step still return a
+  `kit.Verdict` instead of raising.
+- `solve` then `check` passes, and the lab can be removed.
+
+The quest is walked step by step, as a player would play it. A level with a quest declares the
+player's part of each step in `QUEST_ACTIONS`, a module-level name the game itself never reads:
+
+```python
+def stage_hello(lab: kit.Lab, state: kit.State) -> str | None:
+    kit.git(lab.project, "add", "hello.txt")      # what the player types for this step
+    return None                                   # a watch step needs no answer
+
+
+def read_branch(lab: kit.Lab, state: kit.State) -> str | None:
+    return kit.git(lab.project, "branch", "--show-current").strip()  # what the player reads and types
+
+
+QUEST_ACTIONS = {"stage": stage_hello, "branch": read_branch}
+```
+
+Keys are step ids; every watch step and every answer step needs one (a read step may have one
+when the next step depends on it). Each action does what the player would do, with ordinary
+commands, and returns the answer to type for an answer step (None otherwise). For each step in
+order, the harness asserts that a watch step fails before its action and passes after it, and
+that an answer step refuses the empty answer and accepts the action's answer. So each watch must
+notice the very thing its step asks for, and not pass early because of an earlier step.
+
 ## 4. Cards
 
 ### 4.1 Format
