@@ -139,11 +139,11 @@ body {{ margin: 0; background: var(--bg); }}
     document.getElementById("setup").textContent = `Step ${{chosenEntry.key + 1}} of ${{SHARE.length}}.`;
     document.getElementById("command").replaceChildren();
     document.getElementById("still").hidden = !reduced.matches;
-    box.replaceChildren(TimeShare.render(step, {{ at: "before" }}));
+    box.replaceChildren(TimeShare.renderStep(step, {{ at: "before" }}));
     timer = setTimeout(() => {{
-      const figure = TimeShare.render(step);
+      const figure = TimeShare.renderStep(step);
       box.replaceChildren(figure);
-      TimeShare.play(figure, step);
+      TimeShare.playStep(figure, step);
     }}, reduced.matches ? 0 : 500);
   }}
 
