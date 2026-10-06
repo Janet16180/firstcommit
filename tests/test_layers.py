@@ -70,7 +70,7 @@ def layer(module: str) -> str:
         kind = "interface"
     elif short == "game":
         kind = "orchestration"
-    elif short in ("save", "chapters", ""):
+    elif short in ("save", "records", "chapters", ""):
         kind = "data"
     else:
         kind = "core"

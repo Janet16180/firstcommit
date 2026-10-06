@@ -1,6 +1,9 @@
+import http.server
 import os
 import subprocess
+import threading
 import time
+from collections.abc import Iterator
 from pathlib import Path
 
 import pytest
@@ -196,3 +199,42 @@ def test_the_games_git_never_opens_the_players_editor(tmp_path: Path, monkeypatc
     monkeypatch.setenv("VISUAL", str(script))
     gitcmd.run(repo, "commit", "--allow-empty")
     assert not marker.exists()
+
+
+class AsksForAPassword(http.server.BaseHTTPRequestHandler):
+    """Answer every request as a server that wants a user name and a password."""
+
+    def do_GET(self) -> None:
+        """Refuse the request until it carries credentials."""
+        self.send_response(401)
+        self.send_header("WWW-Authenticate", 'Basic realm="lab"')
+        self.send_header("Content-Length", "0")
+        self.end_headers()
+
+    def log_message(self, format: str, *args: object) -> None:
+        """Keep the test output quiet."""
+
+
+@pytest.fixture
+def password_server() -> Iterator[str]:
+    """
+    Serve a repository address on localhost that asks for a password.
+
+    Yields
+    ------
+    str
+        The address.
+    """
+    server = http.server.ThreadingHTTPServer(("127.0.0.1", 0), AsksForAPassword)
+    thread = threading.Thread(target=server.serve_forever, daemon=True)
+    thread.start()
+    yield f"http://127.0.0.1:{server.server_address[1]}/project.git"
+    server.shutdown()
+    thread.join()
+
+
+def test_the_games_git_never_asks_for_a_password(tmp_path: Path, password_server: str, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("SSH_ASKPASS", raising=False)
+    result = gitcmd.run(tmp_path, "ls-remote", password_server)
+    assert result.returncode != 0
+    assert "terminal prompts disabled" in result.stderr
