@@ -8,11 +8,14 @@ const { createClock, installBrowser, load, record } = require("./load");
 installBrowser();
 const { LessonPlayer } = load(["dom.js", "markup.js", "map.js", "lesson.js"], ["LessonPlayer"]);
 
-function player({ reducedMotion = false, onFinish = () => {}, start = 0 } = {}) {
+/* A lesson player, moved on with Next to the slide numbered `slide` (from 1). */
+function player({ reducedMotion = false, onFinish = () => {}, onExit = () => {}, slide = 1 } = {}) {
   const clock = createClock();
   const lesson = record("lesson");
-  const made = LessonPlayer.create({ lesson, timers: clock, reducedMotion, onFinish, onExit: () => {}, start });
-  return { ...made, clock, lesson, q: (selector) => made.element.querySelector(selector), all: (selector) => made.element.querySelectorAll(selector) };
+  const made = LessonPlayer.create({ lesson, timers: clock, reducedMotion, onFinish, onExit });
+  const view = { ...made, clock, lesson, q: (selector) => made.element.querySelector(selector), all: (selector) => made.element.querySelectorAll(selector) };
+  while (!view.q(".lesson-count").textContent.includes(`${slide} of`)) view.q(".lesson-next").click();
+  return view;
 }
 
 const shownLines = (view) => view.all(".transcript-line").filter((line) => !line.classList.contains("is-pending")).length;
@@ -37,7 +40,7 @@ test("the slide's commands appear one at a time, at a pace the player can read",
 });
 
 test("the figure shows the repository before the commands, then after them with what is new", async () => {
-  const view = player({ start: 2 });
+  const view = player({ slide: 3 });
   assert.equal(view.all(".map-commit").length, 0);
   assert.match(view.q(".lesson-figure").textContent, /no commits yet/);
   await view.clock.advance(60000);
@@ -57,17 +60,16 @@ test("Next first finishes the slide, then moves on", () => {
 
 test("Back shows the previous slide finished, and the first slide's Back leaves the lesson", () => {
   let left = 0;
-  const lesson = record("lesson");
-  const view = LessonPlayer.create({ lesson, timers: createClock(), reducedMotion: false, onFinish: () => {}, onExit: () => (left += 1), start: 1 });
-  view.element.querySelector(".lesson-back").click();
-  assert.match(view.element.querySelector(".lesson-count").textContent, /1 of 5/);
-  assert.equal(view.element.querySelectorAll(".transcript-line.is-pending").length, 0);
-  view.element.querySelector(".lesson-back").click();
+  const view = player({ onExit: () => (left += 1), slide: 2 });
+  view.q(".lesson-back").click();
+  assert.match(view.q(".lesson-count").textContent, /1 of 5/);
+  assert.equal(view.all(".transcript-line.is-pending").length, 0);
+  view.q(".lesson-back").click();
   assert.equal(left, 1);
 });
 
 test("with reduced motion every line and the final figure show at once", () => {
-  const view = player({ reducedMotion: true, start: 2 });
+  const view = player({ reducedMotion: true, slide: 3 });
   assert.equal(shownLines(view), 2);
   assert.equal(view.all(".map-commit").length, 1);
 });
@@ -93,8 +95,8 @@ test("the arrow keys move between slides", () => {
 });
 
 test("each kind of figure shows what it should", () => {
-  const kinds = [0, 1, 2, 3, 4].map((start) => {
-    const view = player({ reducedMotion: true, start });
+  const kinds = [1, 2, 3, 4, 5].map((slide) => {
+    const view = player({ reducedMotion: true, slide });
     return [
       Boolean(view.q(".transcript")),
       Boolean(view.q("svg.map-graph") || view.q(".map-empty")),
@@ -113,15 +115,15 @@ test("each kind of figure shows what it should", () => {
 
 test("the last slide's Next finishes the lesson", () => {
   let finished = 0;
-  const view = player({ reducedMotion: true, start: 4, onFinish: () => (finished += 1) });
+  const view = player({ reducedMotion: true, slide: 5, onFinish: () => (finished += 1) });
   assert.match(view.q(".lesson-next").textContent, /practice/i);
   view.q(".lesson-next").click();
   assert.equal(finished, 1);
 });
 
 test("objects new since the previous slide are marked", () => {
-  const view = player({ reducedMotion: true, start: 3 });
+  const view = player({ reducedMotion: true, slide: 4 });
   assert.equal(view.all("table.objects tr.is-new").length, 0);
-  const commitSlide = player({ reducedMotion: true, start: 2 });
+  const commitSlide = player({ reducedMotion: true, slide: 3 });
   assert.equal(commitSlide.all(".map-commit.is-new").length, 1);
 });
