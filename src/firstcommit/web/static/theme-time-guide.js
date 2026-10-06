@@ -2,112 +2,155 @@
 
 /*
  * "How to read the map": the time-travel map's full guide, opened from a button in the key under
- * every map. Each section pairs a picture with Git's rule, all built on one truth: the past never
- * changes. The text is checked claim by claim against git 2.43 (docs-draft/map-guide.md holds
- * the register). Words in backticks are shown as code. The button carries a "new" mark until the
- * guide has been opened once in this browser; if storage is blocked the mark shows again next
- * time. Needs dom.js. Defines one global, TimeGuide.
+ * every map. Picture first: each section shows a small figure (the repository after one real
+ * command, drawn by the map renderer, with that command under it) and one short caption with
+ * Git's word in bold; the checked text folds under "More". All of it rests on one truth: the
+ * past never changes.
+ *
+ * The figures come from tiny real repositories: create's `figures` gives, per section id,
+ * {before, after, transcript}, the two snapshots and the commands of a two-slide lesson run by
+ * demos.frames. A figure plays its change, from the drawing before, the first time it comes into
+ * view, and again on "Play again"; under reduced motion it stays still. The text is word for
+ * word docs-draft/map-guide.md (revision 4, Part 2), checked claim by claim against git 2.43, with
+ * `code` and **bold** marked as in the draft. The button carries a "new" mark until the guide has
+ * been opened once in this browser; if storage is blocked the mark shows again next time. Needs
+ * dom.js, map.js, theme-time.js and theme-time-motion.js. Defines one global, TimeGuide.
  */
 
-/* global Dom */
+/* global Dom, RepoMap, TimeTheme, TimeMotion */
 /* exported TimeGuide */
 
 const TimeGuide = (function () {
   const { el } = Dom;
   const SEEN = "firstcommit.mapGuideSeen";
   const TITLE = "How to read the map";
+  const GITHUB = "GitHub (the practice copy)";
 
-  const INTRO = "Your project's history is drawn here as timelines of save points. Read every picture with one rule in mind: the past never changes. Git never edits a commit. When history seems to change, Git has written new commits or moved a label, and the old commits are still exactly as they were.";
+  /* Word for word from docs-draft/map-guide.md, Part 2, revision 4 (claim tags left out). */
+  const INTRO = "Your project's history is drawn here as timelines of save points. Read every picture with one rule in mind: **the past never changes.** Git never edits a commit. When history seems to change, Git has written new commits or moved or removed a label, and the old commits are still exactly as they were.";
 
   const SECTIONS = [
     {
+      id: "commit",
       title: "Save point = commit",
       mark: "commit",
-      picture: "A ring with a solid core.",
+      caption: "A **commit** is a snapshot of every tracked file, exactly as the staging area held it when you committed.",
+      picture: "The picture: a ring with a solid core.",
       points: [
         "A commit is a snapshot of every tracked file, exactly as the staging area held it when you committed, not as your working folder looked at that moment.",
-        "It also records who made it and when (an author and a committer, each with a date), your message, and its parent: the commit it was made on top of.",
-        "Its name, the hash, is computed from all of that. The files take part through a chain of hashes: each file's content has a hash, each folder's list of names and hashes has a hash, and the commit records the hash of the top folder.",
+        "It also records who made it and when (an author and a committer, each with a date), your message, and its parent: the commit it was made on top of (the very first commit has none).",
+        "Its name, the hash, is computed from all of that. The files take part through a chain of hashes: each file's content has a hash, each folder's list of names, hashes and file types (such as executable) has a hash, and the commit records the hash of the top folder.",
         "So a commit seals everything about itself. Change one letter of one file, the message, a date or the parent, and the hash comes out different: that is a different commit. This is why a commit can never be edited, only replaced by a new one.",
-        "The map shows the short hash: the first seven of its 40 characters (Git uses more when seven would not be enough to tell objects apart). Hover a save point to see its full hash, author and date.",
+        "The map shows the short hash: the first characters of the full hash, which is 40 characters long in most repositories. Git usually shows seven; it shows more in a big project, or when seven would match two objects.",
+        "Hover a save point to see its full hash, its subject, its author and the date it was first written.",
       ],
     },
     {
+      id: "parents",
       title: "Lines = parents",
       mark: "line",
-      picture: "The lines between save points.",
+      caption: "Each line runs from a commit down to its **parent**, the commit it was made on top of.",
+      picture: "The picture: the lines between save points.",
       points: [
-        "Each line runs from a commit down to its parent. A commit is always drawn above its parents, so along one line, higher means newer.",
-        "Across different lines, height says nothing about dates: the map orders commits by their parents, not by the clock.",
-        "A short dashed line under the lowest save point means the history goes back further than the map draws.",
+        "Each line runs from a commit down to its parent. A commit is always drawn above its parents, so along one line, higher means made later.",
+        "Across different timelines, height does not tell you which commit is older: the map orders commits by their parents, not by the clock.",
+        "A short dashed line that stops under a save point means its parent is not drawn: the history goes back further than the map shows (it draws at most the newest 200 commits). The very first commit has no parent, so no line leaves it.",
       ],
     },
     {
+      id: "branch",
       title: "Timeline = branch",
       mark: "branch",
-      picture: "A coloured line, with a tab naming it.",
+      caption: "A **branch** is only a label: a name that points at one commit. The label moves; commits never do.",
+      picture: "The picture: a line, in ink for `main` and in a colour for each other branch, with a tab naming it.",
       points: [
         "A branch is only a label: a name that points at one commit. Git stores it as a small file (or one line of a shared file, `packed-refs`) holding that commit's hash.",
         "The timeline is every commit you reach from the label by following parents, back to the first commit.",
+        "The map draws each save point once. History a branch shares with `main` sits on `main`'s line, so a branch's coloured line starts where it split off, though its timeline runs on down to the first commit. A line with no tab is history that only a merge reaches: a branch merged and then deleted, or someone else's work that `git pull` merged in.",
         "When you commit, Git writes the new commit with the labelled commit as its parent, then moves the label onto the new commit. The label moves; commits never do.",
         "One commit can sit on several timelines at once: on every branch that reaches it.",
-        "Deleting a branch removes the label, not its commits. Commits that no label reaches leave the map. Git keeps them for a while: its cleanup, `git gc`, deletes them only once nothing refers to them any more, not even the reflog, Git's record of where HEAD and the branches have been.",
+        "Deleting a branch removes the label, not its commits. `git branch -d` deletes it only when the branch you are on already has its commits (or, for a branch you pushed, the archive's copy has them); `git branch -D` deletes the label anyway.",
+        "Commits that no label reaches leave the map. Git keeps them for a while, not for ever: the reflog, Git's record of where HEAD has been, remembers them for about a month after you were last on them. After that, Git's cleanup, `git gc`, which also runs on its own, can delete them.",
       ],
     },
     {
+      id: "now",
       title: "Now = HEAD",
       mark: "now",
-      picture: "The amber dial, and the HEAD tab pointing at it.",
+      caption: "**HEAD** says where you are. Travelling changes no commit: only HEAD moves.",
+      picture: "The picture: the orange dial, and the HEAD tab pointing at it.",
       points: [
-        "HEAD says where you are. Usually it names a branch (`HEAD -> main`), and the branch names the commit.",
+        "HEAD says where you are. Usually it names a branch, and the branch names the commit. On the map, the HEAD tab sits next to that branch's filled tab; `git log` writes this as `HEAD -> main`.",
         "Your next commit attaches here: its parent is HEAD's commit, and the branch HEAD names moves onto the new commit.",
         "`git switch other` moves \"now\" to another timeline: HEAD then names `other`, and Git updates your working folder and staging area to that branch's last commit. Uncommitted changes come along when they do not collide with it; when they would be overwritten, Git refuses to switch.",
         "Travelling changes no commit. Switching back and forth leaves every commit and every branch where it was; only HEAD moves.",
-        "Detached HEAD: HEAD names a commit directly, with no branch. You are visiting an old save point without a label. You can commit there, but no branch holds those commits: when you leave, Git warns you, and only the reflog remembers them. `git switch -c <name>` gives them a label.",
       ],
     },
     {
+      id: "detached",
+      title: "Now without a label = detached HEAD",
+      mark: "now",
+      caption: "**Detached HEAD**: HEAD names a commit directly, not a branch, so no label moves when you commit.",
+      picture: null,
+      points: [
+        "Detached HEAD: HEAD names a commit directly, not a branch, so no label moves when you commit; the map's tab reads \"HEAD (detached)\". You can commit there, but no branch holds those commits. Before you leave, `git switch -c <name>` gives them a label. If you have already left, Git's warning shows the hash to use in its `git branch` line (in `git reflog`, take the newest), and `git branch <name> <hash>` labels them.",
+      ],
+    },
+    {
+      id: "merge",
       title: "Timelines joining = merge commit",
       mark: "merge",
-      picture: "A save point with an outer ring, where two lines meet.",
+      caption: "A **merge commit** is a commit with two parents (Git allows more).",
+      picture: "The picture: a save point with an outer ring, where two lines meet.",
       points: [
         "A merge commit is a commit with two parents (Git allows more). The first parent is the commit you were on; the second is the tip of the branch you merged in.",
-        "Its snapshot combines the changes of both timelines. Neither timeline is altered: their commits keep their hashes.",
+        "Its snapshot combines the changes of both timelines. No commit is altered: every commit keeps its hash. Only your branch's label moves, onto the merge commit; the other branch's label stays where it was.",
         "When your branch has no commits of its own since the other one split off, `git merge` makes no merge commit: it slides your label forward to the other tip. This is a fast-forward (ask for a merge commit anyway with `--no-ff`).",
       ],
     },
     {
+      id: "tag",
       title: "Milestone = tag",
       mark: "tag",
-      picture: "A pennant.",
-      points: ["A tag is a label that stays put: new commits do not move it. Moving a tag on purpose takes `git tag -f`."],
+      caption: "A **tag** is a label that stays put: new commits do not move it.",
+      picture: "The picture: a pennant.",
+      points: [
+        "A tag is a label that stays put: new commits do not move it. Moving a tag on purpose takes `git tag -f`.",
+      ],
     },
     {
+      id: "archive",
       title: "Shared archive = remote",
       mark: "archive",
-      picture: "The GitHub panel. In the game it is a practice copy on your machine that stands in for GitHub.",
+      caption: "A **remote** is another repository that yours knows by a name. `git push` sends it the commits it is missing.",
+      picture: "The picture: the GitHub panel. In the game it is a practice copy on your machine that stands in for GitHub.",
       points: [
-        "A remote is another repository that yours knows by a name. `git clone` names it `origin`; in the game you add it with `git remote add origin <path>`.",
+        "A remote is another repository that yours knows by a name. `git clone` names the one you cloned from `origin`; that is how your repository in the game gets it.",
         "`git push` sends the commits the archive is missing, then moves the archive's branch label. Git refuses a push that is not a fast-forward, one that would leave out commits the archive's branch already has, unless you force it.",
       ],
     },
     {
+      id: "seen",
       title: "Last seen in the archive = remote-tracking branch",
       mark: "remote",
-      picture: "The dashed tab `origin/main`.",
+      caption: "**`origin/main`** is your repository's note of where `main` was in the archive when you last fetched it or pushed it.",
+      picture: "The picture: the dashed tab `origin/main`.",
       points: [
-        "`origin/main` is your repository's note of where `main` was in the archive the last time your repository talked to it. Git moves it when you fetch, pull (which fetches first) or push; it never moves on its own.",
+        "`origin/main` is your repository's note of where `main` was in the archive when you last fetched it or pushed it. Git moves it when you fetch, pull (which fetches first) or push `main`; it never moves on its own.",
         "When someone else pushes, the archive changes but your `origin/main` does not, until your next fetch. On the map, `origin/main` shows what you last saw, not what is there now.",
-        "You do not commit on `origin/main`: `git switch origin/main` refuses, and `git switch --detach origin/main` visits it with a detached HEAD.",
+        "Committing never moves `origin/main`: `git switch origin/main` refuses, and `git switch --detach origin/main` visits it with a detached HEAD.",
       ],
     },
     {
+      id: "later",
       title: "Coming later: undoing and rewriting, in the same words",
       mark: null,
-      picture: "A preview: later chapters teach these. The rule still holds: no commit is ever edited.",
+      caption: "A preview: later chapters teach these. The rule still holds: no commit is ever edited.",
+      picture: null,
       points: [
         "`git revert <commit>` adds a new save point whose changes cancel an old one. The old one stays on the timeline.",
         "`git reset <commit>` moves your branch's label, and HEAD with it, back to an earlier save point. The later commits are not edited: if no label reaches them they leave the map, and `git reflog` still lists them for a while. `--soft` leaves the staging area and the working folder as they are, `--mixed` (the default) resets the staging area, and `--hard` resets both.",
+        "The past never changes, but your unsaved present can be lost: `--hard` throws away uncommitted changes to tracked files, and the reflog cannot bring them back, because it only remembers commits.",
         "`git commit --amend` writes a new commit in place of the last one and moves the label to it. The old commit is still in the reflog.",
         "`git rebase` copies save points onto a new base. Each copy has a new parent, so it gets a new hash. The label moves to the copies; the originals stay exactly as they were until Git's cleanup removes them.",
         "This is why rewriting commits that others already have causes trouble: they still have the originals, and Git refuses to push the rewritten branch unless you force it.",
@@ -115,8 +158,10 @@ const TimeGuide = (function () {
     },
   ];
 
-  /* Text with `code` spans, as nodes. */
-  const inline = (text) => text.split("`").map((part, index) => (index % 2 ? el("code", {}, part) : part));
+  const code = (text) => text.split("`").map((part, index) => (index % 2 ? el("code", {}, part) : part));
+
+  /* Text with **bold** and `code` spans, as nodes. */
+  const inline = (text) => text.split("**").map((part, index) => (index % 2 ? el("strong", {}, code(part)) : code(part)));
 
   function browserStorage() {
     try {
@@ -126,9 +171,67 @@ const TimeGuide = (function () {
     }
   }
 
-  /* options: storage (like localStorage; blocked or absent is fine), drawMark(name) for the small
-     picture beside a section's title, page (the document). */
-  function create({ storage = browserStorage(), drawMark = () => null, page = document } = {}) {
+  /* Calls `callback` once, the first time `node` is mostly in view; at once where the browser
+     cannot tell. */
+  function whenSeen(node, callback) {
+    if (typeof IntersectionObserver !== "function") {
+      callback();
+      return;
+    }
+    const observer = new IntersectionObserver((entries) => {
+      if (entries.some((entry) => entry.isIntersecting)) {
+        observer.disconnect();
+        callback();
+      }
+    }, { threshold: 0.6 });
+    observer.observe(node);
+  }
+
+  /* A section's figure: the repository after the change, drawn small, with the git commands that
+     made it. start() draws it and runs its change once it is in view; "Play again" runs it anew. */
+  function figureOf(pair, reduced) {
+    const { small } = TimeTheme;
+    const options = { theme: small, showHead: !pair.after.bare };
+    const holder = el("div", { class: "tt-guide-map" });
+    const play = () => {
+      const map = RepoMap.render(pair.after, options);
+      holder.replaceChildren(map);
+      const motion = TimeMotion.motions(RepoMap.layout(pair.before, options), RepoMap.layout(pair.after, options), small.sizes);
+      return TimeMotion.play(map, motion, small, reduced);
+    };
+    const commands = pair.transcript.map((line) => line.command).filter((command) => command.startsWith("git "));
+    const node = el("figure", { class: "tt-guide-figure" },
+      pair.after.bare && el("span", { class: "tt-guide-place" }, GITHUB),
+      holder,
+      el("figcaption", {},
+        commands.map((command) => el("code", {}, `$ ${command}`)),
+        !reduced && el("button", { type: "button", class: "btn btn-ghost btn-small tt-guide-replay", onclick: play }, "Play again"),
+      ),
+    );
+    const start = () => {
+      const animations = play();
+      for (const animation of animations) animation.pause();
+      whenSeen(node, () => animations.forEach((animation) => animation.play()));
+    };
+    return { node, start };
+  }
+
+  function sectionOf(part, figure) {
+    return el("section", { class: "tt-guide-part", "data-section": part.id },
+      el("h3", {}, part.mark && TimeTheme.mark(part.mark), part.title),
+      figure && figure.node,
+      el("p", { class: "tt-guide-caption" }, inline(part.caption)),
+      el("details", { class: "tt-guide-more" },
+        el("summary", {}, "More"),
+        part.picture && el("p", { class: "tt-guide-picture" }, inline(part.picture)),
+        el("ul", {}, part.points.map((point) => el("li", {}, inline(point)))),
+      ),
+    );
+  }
+
+  /* options: storage (like localStorage; blocked or absent is fine), page (the document), figures
+     ({section id: {before, after, transcript}}; a section without one shows its words only). */
+  function create({ storage = browserStorage(), page = document, figures = {} } = {}) {
     let seen = false;
     try {
       seen = storage.getItem(SEEN) === "yes";
@@ -148,20 +251,19 @@ const TimeGuide = (function () {
 
     function open() {
       remember();
+      const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      const pictures = new Map(SECTIONS.filter((part) => figures[part.id]).map((part) => [part.id, figureOf(figures[part.id], reduced)]));
       const close = el("button", { type: "button", class: "btn btn-ghost btn-small tt-guide-close", onclick: () => dialog.close() }, "Close");
       const dialog = el("dialog", { class: "dialog tt-guide", "aria-labelledby": "tt-guide-title" },
         el("header", { class: "tt-guide-head" }, el("h2", { id: "tt-guide-title" }, TITLE), close),
-        el("p", { class: "tt-guide-intro" }, INTRO),
-        SECTIONS.map((section) => el("section", { class: "tt-guide-part" },
-          el("h3", {}, section.mark && drawMark(section.mark), section.title),
-          el("p", { class: "tt-guide-picture" }, inline(section.picture)),
-          el("ul", {}, section.points.map((point) => el("li", {}, inline(point)))),
-        )),
+        el("p", { class: "tt-guide-intro" }, inline(INTRO)),
+        SECTIONS.map((part) => sectionOf(part, pictures.get(part.id))),
       );
       dialog.addEventListener("close", () => dialog.remove());
       page.body.append(dialog);
       dialog.showModal();
       close.focus();
+      for (const picture of pictures.values()) picture.start();
       return dialog;
     }
 
