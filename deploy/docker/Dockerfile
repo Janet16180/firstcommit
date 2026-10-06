@@ -50,8 +50,8 @@ CMD ["firstcommit", "serve"]
 FROM player AS test
 COPY --from=ghcr.io/astral-sh/uv:0.12.6@sha256:88bc6eb1ccd4b82efd0e1b530caffabddf50dc2bf612e66c14ea25b8ee8a4d3d /uv /usr/local/bin/uv
 ENV UV_PYTHON_DOWNLOADS=never UV_NO_CACHE=1
-COPY --chown=player:player --from=termlab pyproject.toml README.md /home/player/termlab/
-COPY --chown=player:player --from=termlab src /home/player/termlab/src
+COPY --chown=player:player --from=termlab pyproject.toml README.md /home/player/termlab-firstcommit/
+COPY --chown=player:player --from=termlab src /home/player/termlab-firstcommit/src
 COPY --chown=player:player . /home/player/firstcommit
 WORKDIR /home/player/firstcommit
 RUN uv sync --frozen

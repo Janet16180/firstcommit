@@ -96,7 +96,7 @@ dev = [
 ]
 
 [package.metadata]
-requires-dist = [{ name = "termlab", editable = "../termlab" }]
+requires-dist = [{ name = "termlab", editable = "../termlab-firstcommit" }]
 
 [package.metadata.requires-dev]
 dev = [
@@ -444,7 +444,7 @@ wheels = [
 [[package]]
 name = "termlab"
 version = "0.1.0"
-source = { editable = "../termlab" }
+source = { editable = "../termlab-firstcommit" }
 
 [package.metadata]
 
