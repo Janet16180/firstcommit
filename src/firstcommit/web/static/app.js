@@ -7,7 +7,7 @@
  * server sent (refreshed on every view change). Loads last; defines no global.
  */
 
-/* global createClient, createTerminal, createGameApi, Dom, Route, Sound, Celebrate, Dialog, TimeTheme, TimeMotion, Progress, HomeView, LevelPage, CardsView, NotesView */
+/* global createClient, createTerminal, createGameApi, Dom, Route, Sound, Celebrate, Dialog, TimeTheme, TimeMotion, TimeGuide, Progress, HomeView, LevelPage, CardsView, NotesView */
 
 (function () {
   const { el } = Dom;
@@ -32,6 +32,7 @@
   const app = { status: null, view: null, turn: 0, terminal: null, terminalFor: null, locked: false };
   const client = createClient({ header: "X-FirstCommit-Token", storageKey: "firstcommit.token", command: "firstcommit", onLocked: () => showLocked() });
   const game = createGameApi(client.api);
+  const mapGuide = TimeGuide.create({ figures: game.guide });
   const main = document.getElementById("app");
   const darkScheme = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -204,7 +205,7 @@
     sound: Sound,
     timers: window,
     page: document,
-    theme: TimeTheme.map,
+    theme: TimeTheme.withGuide(mapGuide),
     panelWords: TimeTheme.panel,
     playMap: TimeMotion.playMap,
     reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
