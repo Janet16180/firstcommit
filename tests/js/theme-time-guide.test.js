@@ -101,6 +101,11 @@ test("detached HEAD has its own section, holding the detached rule moved out of 
   assert.deepEqual(others, []);
 });
 
+test("the detached rule and its caption say the same thing in the same words: no branch moves", () => {
+  const detached = TimeGuide.SECTIONS.find((part) => part.id === "detached");
+  for (const text of [detached.caption, detached.points[0]]) assert.match(text, /so no branch moves when you commit/);
+});
+
 test("every section with a picture has a caption with its Git word in bold", () => {
   for (const part of TimeGuide.SECTIONS.filter((entry) => entry.mark)) assert.match(part.caption, /\*\*[^*]+\*\*/, part.title);
 });
