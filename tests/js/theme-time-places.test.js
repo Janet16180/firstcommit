@@ -67,6 +67,7 @@ test("the arrows that light are the commands that match what just happened, in t
     ["a merge of a branch of yours", ["merge-commit-created"], START, at([LOCAL_MERGE, AMENDED, ...TWO], "ee", "b"), ["commit"]],
     ["git push", ["remote-updated", "push-received"], MINE, PUSHED, ["push"]],
     ["git commit, then git push", ["commit-created", "remote-updated", "push-received"], START, PUSHED, ["commit", "push"]],
+    ["git commit -a, then git push, in one batch", ["commit-created", "remote-updated", "file-staged", "push-received"], START, PUSHED, ["add", "commit", "push"]],
     ["a refused push", [], MINE, MINE, []],
     ["git fetch", ["remote-updated"], START, FETCHED, ["fetch"]],
     ["git commit and git fetch together", ["commit-created", "remote-updated"], START, BOTH, ["commit", "fetch"]],
@@ -78,6 +79,25 @@ test("the arrows that light are the commands that match what just happened, in t
     ["git merge origin/main after a git fetch", ["commit-created"], BOTH, MERGED, ["pull"]],
   ];
   for (const [what, events, before, after, lit] of cases) assert.deepEqual(TimePlaces.commands(kinds(...events), before, after), lit, what);
+});
+
+test("only the branch's own upstream counts for a pull: merging a pushed feature branch into main lights nothing", () => {
+  const flow = (main) => repo({ commits: [D, ...TWO], refs: [["main", "branch", main], ["feature", "branch", "d"], ["origin/main", "remote", "b"], ["origin/feature", "remote", "d"]], head: main });
+  assert.deepEqual(TimePlaces.commands(kinds("branch-moved"), flow("b"), flow("d")), []);
+});
+
+test("a pull on a feature branch takes in its own upstream, origin/feature", () => {
+  const feature = (tip, origin) => ({ ...repo({ commits: [C, ...TWO], refs: [["main", "branch", "b"], ["feature", "branch", tip], ["origin/main", "remote", "b"], ["origin/feature", "remote", origin]], head: tip }), branch: "feature" });
+  assert.deepEqual(TimePlaces.commands(kinds("branch-moved", "remote-updated"), feature("b", "b"), feature("c", "c")), ["fetch", "pull"]);
+});
+
+test("git reset --hard origin/main, which drops your own commits, is not drawn as a pull", () => {
+  assert.deepEqual(TimePlaces.commands(kinds("branch-moved"), BOTH, PULLED), []);
+});
+
+test("a pull into a branch with no commits yet takes in its upstream", () => {
+  const unborn = { ...repo({ commits: [C, ...TWO], refs: [["origin/main", "remote", "c"]] }), head: null };
+  assert.deepEqual(TimePlaces.commands(kinds("branch-created"), unborn, PULLED), ["pull"]);
 });
 
 test("a new repository is a clone when it already has a remote-tracking branch, and nothing lights for git init", () => {
@@ -226,7 +246,7 @@ test("each arrow says where the work goes: pull's merge half runs from your repo
   const said = (name) => [...figure.querySelectorAll(".tt-arrow")].find((arrow) => arrow.getAttribute("data-command") === name && arrow.getAttribute("aria-label")).getAttribute("aria-label");
   assert.equal(said("add"), "add: from the working folder to the staging area");
   assert.equal(said("push"), "push: from your repository to the remote repository");
-  assert.equal(said("pull"), "pull = fetch + merge: from your repository, through the staging area, to the working folder");
+  assert.equal(said("pull"), "pull = fetch + merge: the fetch arrow, then from your repository, through the staging area, to the working folder");
   assert.equal(said("clone"), "clone (once): from the remote repository, through your repository and the staging area, to the working folder");
 });
 
@@ -482,7 +502,7 @@ test("the staging area and your repository each say what their boxes are", () =>
   const figure = TimePlaces.render({ project: at(TWO, "b", "b"), github: hub(TWO) }, {});
   const note = (area) => figure.querySelector(`[data-area="${area}"] .tt-place-note`).textContent;
   assert.equal(note("index"), "open box: the next commit");
-  assert.equal(note("repository"), "closed boxes: your commits");
+  assert.equal(note("repository"), "closed boxes: commits");
   assert.equal(figure.querySelector('[data-area="folder"] .tt-place-note'), null);
 });
 
