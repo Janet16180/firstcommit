@@ -38,8 +38,8 @@ Git is a version control system. Each version you save is called a commit.
 Git keeps the history of the project.
 
 A new repository starts with one branch and no commits. A branch is a line of development; this
-chapter uses only one. The game sets Git's `init.defaultBranch` setting to `main`, so here the
-first branch is always called `main`.
+chapter uses only one. The game sets Git's `init.defaultBranch` setting to `main`, so in the
+game a new repository's first branch is called `main`.
 """,
         run="git init\nls -A",
         view="terminal",
@@ -99,8 +99,8 @@ commit hold the same content.
         id="log",
         title="Read the history",
         text="""
-Every new commit goes on top of the one before. `git log --oneline` lists the commits, newest
-first: a short hash, then the message.
+A new commit goes on top of the last one: Git records the last commit as its parent.
+`git log --oneline` lists the commits, newest first: a short hash, then the message.
 """,
         run=(
             'echo "Be kind to each other." >> README.md\n'
@@ -139,7 +139,7 @@ email (`git config --global user.name` and `user.email`).
 
 DEBRIEF = """
 You turned an empty folder into a repository, created a file, staged it and saved it in a
-commit. That is the loop you will repeat every working day: edit, `git add`, `git commit`.
+commit. That loop is the heart of daily work with Git: edit, `git add`, `git commit`.
 
 What a commit really is: a commit records a snapshot of every file in the staging area at that
 moment, not only the lines that changed. Next to the files it stores the author's name and email,
@@ -153,8 +153,8 @@ commits, each with its own message. `git status` shows what is staged before you
 commit holds what you meant it to hold. After a commit, the staging area is not emptied: it
 matches the commit, ready for your next change.
 
-At work: every commit you make carries the name and email Git is set to use, so set them once
-on your own computer (the chapter "Your real setup" walks you through it).
+At work: the commits you make carry the name and email Git is set to use, so set them once on
+your own computer (the chapter "Your real setup" walks you through it).
 
 Commands to keep:
 
@@ -334,7 +334,7 @@ def commit_move(snap: kit.Snapshot) -> str:
     if has_file(snap, "index"):
         move = "`README.md` is in the staging area. Save the staging area as a commit with `git commit`."
     elif has_file(snap, "folder"):
-        move = "Git sees `README.md` in the working folder, but it is not in the staging area yet, and a commit takes only what is staged."
+        move = "Git sees `README.md` in the working folder, but it is not in the staging area yet, and `git commit` takes only what is staged."
     else:
         move = "There is no `README.md` in the `project` folder yet. Create it there."
     return move
@@ -462,7 +462,7 @@ def identity(lab: kit.Lab, key: str, example: str, what: str) -> kit.Verdict:
     elif value == example:
         message = f"Your {what} is set to the example, `{example}`. Run the command again with your own {what}."
     else:
-        message = f"Git will now write your {what} into every commit you make."
+        message = f"Git will now write your {what} into the commits you make."
     return kit.Verdict(bool(value) and value != example, message)
 
 
@@ -709,7 +709,7 @@ again: Git sees the new file, but does not track it yet.
     kit.Step(
         id="stage",
         text="""
-A commit takes only what is in the staging area, so copy the file there:
+`git commit` takes only what is in the staging area, so copy the file there:
 
     $ git add README.md
 

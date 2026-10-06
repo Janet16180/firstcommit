@@ -35,7 +35,7 @@ What is Git?, 1.6 First-Time Git Setup, 2.2 Recording Changes to the Repository)
 | commit | Git answers with a summary that includes the short hash | experiment (shown, not quoted: the first output line holds the branch, the short hash and the message); Pro Git 2.2; *re-checked*: the slide shows the real output |
 | commit | The short hash is the first characters of the hash | git-log(1), `--abbrev-commit`: "show a prefix that names the object uniquely"; gitrevisions(7), `<sha1>` |
 | commit | After the commit, `git status` has nothing to report: the three areas hold the same content | gitglossary(7), clean; experiment; *re-checked*: the slide shows `git status`, test `test_the_quest_leads_to_a_solved_level` |
-| log | A new commit goes on top of the one before | git-commit(1), DESCRIPTION: "The new commit is a direct child of HEAD"; experiment: `git cat-file -p HEAD` shows a `parent` line |
+| log | A new commit goes on top of the last one, which Git records as its parent | git-commit(1), DESCRIPTION: "The new commit is a direct child of HEAD"; experiment: `git cat-file -p HEAD` shows a `parent` line; gitglossary(7), parent |
 | log | `git log --oneline` lists commits newest first: short hash, then the message | git-log(1), `--oneline` ("--pretty=oneline --abbrev-commit"), format `oneline` (`<hash> <title-line>`), Commit Ordering ("reverse chronological order"); *re-checked*: the slide's output, card `basics-log-oneline` |
 
 The lesson was run line by line in the lessons' environment: every line succeeds except
