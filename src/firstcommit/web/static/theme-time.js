@@ -8,7 +8,8 @@
  * archive (the remote). The metaphor never replaces Git's words: every save point keeps its real
  * short hash and subject, every chip its real name, HEAD's chip reads HEAD, and the key under the
  * graph puts each metaphor next to its Git word. Needs dom.js and map.js. Defines one global,
- * TimeTheme: `map` (a RepoMap theme), `panel` (LivePanel's titles) and `legend(layout)`.
+ * TimeTheme: `map` (a RepoMap theme), `panel` (LivePanel's titles), `legend(layout)` and
+ * `tabKey(label)`, the name theme-time-motion.js follows a tab by.
  */
 
 /* global Dom, RepoMap */
@@ -59,7 +60,12 @@ const TimeTheme = (function () {
     );
   }
 
-  const timeline = ({ edge, color }) => svg("path", { class: `map-edge tt-edge is-${edge.kind}${edge.lane === 0 ? " is-first" : ""}`, d: edge.d, style: `--color: ${color}` });
+  const timeline = ({ edge, color }) => svg("path", {
+    class: `map-edge tt-edge is-${edge.kind}${edge.lane === 0 ? " is-first" : ""}`, d: edge.d, style: `--color: ${color}`, "data-from": edge.from, "data-to": edge.to,
+  });
+
+  /* The name a tab keeps from one drawing to the next: HEAD's tab is one, detached or not. */
+  const tabKey = (label) => (label.kind === "head" ? "head" : `${label.kind}:${label.text}`);
 
   /* HEAD's chip points left at its commit and a tag is a pennant; other chips are plain tabs. */
   const OUTLINES = {
@@ -79,7 +85,7 @@ const TimeTheme = (function () {
 
   function chip({ label, x, y, color, theme }) {
     const { chipHeight } = theme.sizes;
-    return svg("g", { class: `map-label is-${label.kind}${label.current ? " is-current" : ""}`, style: `--color: ${color}` },
+    return svg("g", { class: `map-label is-${label.kind}${label.current ? " is-current" : ""}`, style: `--color: ${color}`, "data-label": tabKey(label) },
       chipShape(label.kind, x, y - chipHeight / 2, label.width, chipHeight),
       svg("text", { x: x + label.width / 2 + (TEXT_SHIFT[label.kind] || 0), y, "text-anchor": "middle", "dominant-baseline": "central" }, label.text),
     );
@@ -137,5 +143,5 @@ const TimeTheme = (function () {
     feed: "What just happened",
   };
 
-  return { map, panel, legend };
+  return { map, panel, legend, tabKey };
 })();

@@ -42,6 +42,17 @@ test("branch, remote-tracking branch and tag names are drawn exactly as Git name
   for (const name of ["HEAD", "feature", "main", "origin/main", "v0.1"]) assert.ok(chips.includes(name), name);
 });
 
+test("each tab says which label it is and each line which two commits it joins, so a motion can find them", () => {
+  const project = record("observation").project;
+  const figure = RepoMap.render(project, { theme });
+  const tabs = figure.querySelectorAll(".map-commits .map-label").map((label) => label.getAttribute("data-label"));
+  assert.deepEqual(tabs.sort(), ["branch:feature", "branch:main", "head", "remote:origin/main", "tag:v0.1"]);
+  assert.equal(TimeTheme.tabKey({ kind: "head", text: "HEAD (detached)" }), "head");
+  const lines = figure.querySelectorAll(".map-edges .tt-edge").map((edge) => `${edge.getAttribute("data-from").slice(0, 7)}>${edge.getAttribute("data-to").slice(0, 7)}`);
+  const parents = project.commits.flatMap((commit) => commit.parents.map((parent) => `${commit.short}>${parent.slice(0, 7)}`));
+  assert.deepEqual(lines.sort(), parents.sort());
+});
+
 test("HEAD's commit wears the now mark, and no other commit does", () => {
   const figure = RepoMap.render(record("observation").project, { theme });
   assert.equal(figure.querySelectorAll(".map-commits .tt-now").length, 1);
