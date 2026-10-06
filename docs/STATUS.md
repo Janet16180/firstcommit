@@ -55,6 +55,14 @@ web and level as soon as it lands.
   nothing from an environment variable you also build (keep one named constant), and test the
   isolation with the game home inside a repository.
 
+## Backlog (decided later, not now)
+
+- repomap `outer` field (path to an enclosing repository, e.g. ".."), proposed by insight, for a
+  generic "Git sees a repository one folder up" hint on the map. Deferred: no second use yet.
+- termlab's `snippets.run` decodes output as text with universal newlines, so a `\r` becomes
+  `\n`. demos works around it (writes output to a file read as bytes) without touching termlab.
+  A termlab option to keep raw output would be the user's call.
+
 ## Next
 
 1. Integrate and verify phase 2 (all gates in WSL and in the image; play the level end to end).
