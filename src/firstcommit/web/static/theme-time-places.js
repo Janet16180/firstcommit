@@ -34,7 +34,7 @@ const TimePlaces = (function () {
     remote: "Remote repository",
   };
   /* What the boxes are, under the titles of the places that hold them. */
-  const NOTES = { index: "open box: the next commit", repository: "closed boxes: your commits" };
+  const NOTES = { index: "open box: the next commit", repository: "closed boxes: commits" };
   const COMPUTER = "Your computer";
   const GITHUB = "GitHub (the practice copy)";
   const NO_REMOTE = "No remote yet.";
@@ -42,13 +42,13 @@ const TimePlaces = (function () {
 
   /* Each command's arrow: the places its work passes, first to last, and the checked sentence
      shown when it lights (A1 to A6). The pull arrow is pull's merge half: its fetch half is the
-     fetch arrow, which lights with it. */
+     fetch arrow (`after`), which lights with it and which its spoken route names first. */
   const ARROWS = {
     add: { path: ["folder", "index"], text: "`add` copies a file's current content from the working folder into the staging area; the working folder keeps it." },
     commit: { path: ["index", "repository"], text: "`commit` saves the staging area as a new commit in your repository; the staging area keeps its files. Your branch moves onto the new commit, and `origin/main` does not move." },
     push: { path: ["repository", "remote"], text: "`push` sends the commits GitHub is missing and moves GitHub's branch to your commit; your `origin/main` moves to match. Git refuses a push that is not a fast-forward unless you force it, and a refused push changes nothing on either side." },
     fetch: { path: ["remote", "repository"], text: "`fetch` downloads the commits you do not have and moves `origin/main` (and the other `origin/` names). It changes no branch of yours, no working file and nothing in the staging area." },
-    pull: { path: ["repository", "index", "folder"], label: "pull = fetch + merge", text: "`pull` is a fetch, then a merge of `origin/main` into your branch (or a rebase, if you ask for one). When your branch has no commits of its own, the merge is a fast-forward: your branch slides forward, and the staging area and working folder update to match. When both sides have new commits, git fetches, then stops with an error that asks you to choose: `git pull --no-rebase` merges, `git pull --rebase` rebases." },
+    pull: { path: ["repository", "index", "folder"], label: "pull = fetch + merge", after: "fetch", text: "`pull` is a fetch, then a merge of `origin/main` into your branch (or a rebase, if you ask for one). When your branch has no commits of its own, the merge is a fast-forward: your branch slides forward, and the staging area and working folder update to match. When both sides have new commits, git fetches, then stops with an error that asks you to choose: `git pull --no-rebase` merges, `git pull --rebase` rebases." },
     clone: { path: ["remote", "repository", "index", "folder"], label: "clone (once)", text: "`clone` downloads every commit, branch and tag from GitHub, names that remote `origin` and records its branches as `origin/main` (and other `origin/` names), then makes your own `main` from `origin/main` and fills the staging area and the working folder." },
   };
 
@@ -78,13 +78,19 @@ const TimePlaces = (function () {
     return seen;
   }
 
-  /* Whether your branch took in work from GitHub: it is the same branch, and its new tip reaches a
-     remote-tracking branch's tip that its old tip did not (a fast-forward, a merge or a rebase). */
+  /* Whether your branch took in work from GitHub: it is the same branch, its new tip reaches the
+     tip of its upstream, origin/<branch> (as clone and push -u set it), which its old tip did not,
+     and it kept its own commits (a fast-forward or a merge) or replayed them on top (a rebase).
+     A branch that now sits exactly on its upstream without its old tip was reset there, as by
+     git reset --hard origin/main. A reset of a branch with no commits of its own looks the same as
+     a fast-forward, and lights pull. */
   function merged(before, after) {
+    const upstream = after.refs.find((ref) => ref.kind === "remote" && ref.name === `origin/${after.branch}`);
+    if (!after.branch || after.branch !== before.branch || !upstream) return false;
     const now = history(after, after.head);
-    const then = history(before, before.head);
-    const reached = after.refs.some((ref) => ref.kind === "remote" && now.has(ref.target) && !then.has(ref.target));
-    return Boolean(after.branch) && after.branch === before.branch && reached;
+    const reached = now.has(upstream.target) && !history(before, before.head).has(upstream.target);
+    const kept = !before.head || now.has(before.head) || after.head !== upstream.target;
+    return reached && kept;
   }
 
   /* The commands that match a batch of feed events, in the order they run; [] when none does.
@@ -208,12 +214,13 @@ const TimePlaces = (function () {
      `owner`'s places when the computer is someone else's. A whole arrow has a stop at each place
      it passes; `is-back` marks the legs that bring work back from GitHub. */
   function arrow(name, lit, part = ARROWS[name].path, owner = null) {
-    const { path, label } = ARROWS[name];
+    const { path, label, after } = ARROWS[name];
     const order = Object.keys(PLACES);
     const backwards = order.indexOf(part.at(-1)) < order.indexOf(part[0]);
     const word = label || name;
     const whole = part === path;
-    const spoken = part[0] === path[0] ? { "aria-label": `${word}: ${route(path, owner)}` } : { "aria-hidden": "true" };
+    const first = after ? `the ${after} arrow, then ` : "";
+    const spoken = part[0] === path[0] ? { "aria-label": `${word}: ${first}${route(path, owner)}` } : { "aria-hidden": "true" };
     return el("div", { class: `tt-arrow is-${name}${backwards ? " is-back" : ""}${lit.includes(name) ? " is-active" : ""}`, "data-command": name, ...spoken },
       el("span", { class: "tt-arrow-label", "aria-hidden": "true" }, whole ? word : name),
       el("span", { class: "tt-arrow-shaft", "aria-hidden": "true" }),
