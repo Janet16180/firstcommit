@@ -1,10 +1,10 @@
 "use strict";
 
 /*
- * You, GitHub and Alex side by side, in the four places' pictures (pages, an open box, closed
+ * You and Alex side by side over GitHub, in the four places' pictures (pages, an open box, closed
  * boxes on a timeline). Each computer stacks its working folder, its open box and its repository,
- * so a file you share travels down your side, across GitHub and up Alex's. One renderer and one
- * player serve two callers:
+ * so a file you share travels down your side into GitHub and up Alex's (theme-time-share.css has
+ * the layouts). One renderer and one player serve two callers:
  *
  * - The playground (live): render(state, {person, commands, shown}) draws the three repositories
  *   {you, github, alex} (observed(observation) makes that from the game's observation) with the
