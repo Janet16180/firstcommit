@@ -1,4 +1,6 @@
 import shutil
+import stat
+import subprocess
 import tempfile
 from collections.abc import Iterator
 from contextlib import contextmanager
@@ -13,15 +15,22 @@ from firstcommit import changes, gitcmd, playground, records, repomap, save
 from firstcommit.lab import Lab
 
 PEOPLE: tuple[records.Who, ...] = get_args(records.Who)
-BUTTONS: tuple[records.Button, ...] = get_args(records.Button)
-SHARE: tuple[records.Button, ...] = ("edit", "add", "commit", "push")
-"""The presses that share a change: edit, stage, commit and push it."""
+PLAYER = gitcmd.Person("Robin Park", "robin@example.com")
+"""The player's identity, in the game's global configuration as the basics chapter sets it."""
+NOTES = "notes.txt"
+COMMIT_NOTES: tuple[str, ...] = ("edit:notes.txt", "add:notes.txt", "commit")
+SHARE_NOTES: tuple[str, ...] = (*COMMIT_NOTES, "push")
 
 
 @contextmanager
-def new_lab() -> Iterator[Lab]:
+def new_lab(identity: bool = True) -> Iterator[Lab]:
     """
     Make a lab with the playground set up, in the game's labs folder, and remove it afterwards.
+
+    Parameters
+    ----------
+    identity : bool
+        Whether the game's global configuration holds the player's name and email.
 
     Yields
     ------
@@ -29,6 +38,9 @@ def new_lab() -> Iterator[Lab]:
         The lab: GitHub and both clones.
     """
     save.ensure_gitconfig(gitcmd.BASE_CONFIG)
+    if identity:
+        gitcmd.output(save.home(), "config", "--global", "user.name", PLAYER.name)
+        gitcmd.output(save.home(), "config", "--global", "user.email", PLAYER.email)
     labs = save.home() / save.LABS_FOLDER
     labs.mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(dir=labs) as root:
@@ -73,6 +85,26 @@ def views(lab: Lab) -> dict[str, repomap.Snapshot]:
     return {"github": repomap.snapshot(lab.github), "you": repomap.snapshot(lab.project), "alex": repomap.snapshot(lab.teammate)}
 
 
+def bar(lab: Lab, person: records.Who) -> dict[str, records.ButtonView]:
+    """
+    Give the buttons a person sees now.
+
+    Parameters
+    ----------
+    lab : Lab
+        The lab.
+    person : records.Who
+        Whose bar.
+
+    Returns
+    -------
+    dict[str, records.ButtonView]
+        The buttons by id, in bar order.
+    """
+    snapshots: dict[records.Who, repomap.Snapshot] = {who: repomap.snapshot(clone(lab, who)) for who in PEOPLE}
+    return {view["id"]: view for view in playground.buttons(lab, snapshots)[person]}
+
+
 def target(snap: repomap.Snapshot, name: str = "main") -> str | None:
     """
     Find the commit a ref names.
@@ -92,7 +124,7 @@ def target(snap: repomap.Snapshot, name: str = "main") -> str | None:
     return next((ref["target"] for ref in snap["refs"] if ref["name"] == name), None)
 
 
-def presses(lab: Lab, person: records.Who, *buttons: records.Button) -> list[records.Press]:
+def presses(lab: Lab, person: records.Who, *buttons: str) -> list[records.Press]:
     """
     Press one person's buttons in order.
 
@@ -102,8 +134,8 @@ def presses(lab: Lab, person: records.Who, *buttons: records.Button) -> list[rec
         The lab.
     person : records.Who
         Who presses.
-    *buttons : records.Button
-        The buttons.
+    *buttons : str
+        The button ids.
 
     Returns
     -------
@@ -113,54 +145,145 @@ def presses(lab: Lab, person: records.Who, *buttons: records.Button) -> list[rec
     return [playground.press(lab, person, button) for button in buttons]
 
 
-def test_setup_gives_github_one_commit_and_each_person_a_clone_of_it() -> None:
+def conflicted_lab(lab: Lab) -> records.Press:
+    """
+    Pause a merge on a conflict in ``notes.txt`` in your clone: both people append their line 2, Alex pushes first.
+
+    Parameters
+    ----------
+    lab : Lab
+        A fresh lab.
+
+    Returns
+    -------
+    records.Press
+        Your ``git pull --no-rebase --no-edit``, which stopped on the conflict.
+    """
+    presses(lab, "alex", *SHARE_NOTES)
+    presses(lab, "you", *COMMIT_NOTES)
+    [pull] = presses(lab, "you", "pull-no-rebase")
+    return pull
+
+
+def test_setup_gives_github_one_commit_with_both_files_and_each_person_a_clone_of_it() -> None:
     with new_lab() as lab:
         seen = views(lab)
         assert seen["github"]["bare"]
-        assert [commit["subject"] for commit in seen["github"]["commits"]] == ["Add the README"]
+        assert [commit["subject"] for commit in seen["github"]["commits"]] == ["Start the project"]
         first = seen["github"]["head"]
         for person in PEOPLE:
-            assert seen[person]["branch"] == "main"
-            assert seen[person]["head"] == first
-            assert target(seen[person], "origin/main") == first
-            assert [file["path"] for file in seen[person]["files"]] == ["README.md"]
+            assert (seen[person]["branch"], seen[person]["head"], target(seen[person], "origin/main")) == ("main", first, first)
+            assert [file["path"] for file in seen[person]["files"]] == ["README.md", "notes.txt"]
+        assert (lab.project / NOTES).read_text() == "Notes\n"
+        assert (lab.project / "README.md").read_text() == "# Project\n"
 
 
-def test_each_person_commits_under_their_own_name_in_their_clone() -> None:
+def test_each_clone_reaches_github_by_a_path_from_its_top_folder() -> None:
     with new_lab() as lab:
         for person in PEOPLE:
-            identity = playground.PEOPLE[person]
-            assert gitcmd.output(clone(lab, person), "config", "--local", "user.name").strip() == identity.name
-            assert gitcmd.output(clone(lab, person), "config", "--local", "user.email").strip() == identity.email
-        presses(lab, "alex", "edit", "add", "commit")
-        assert repomap.snapshot(lab.teammate)["commits"][0]["author"] == playground.PEOPLE["alex"].name
+            folder = clone(lab, person)
+            assert gitcmd.output(folder, "remote", "get-url", "origin").strip() == lab.github_url(folder)
 
 
-def test_both_people_have_the_same_buttons() -> None:
-    assert set(playground.BUTTONS) == set(BUTTONS)
-    assert all(set(commands) == set(PEOPLE) for commands in playground.BUTTONS.values())
-
-
-def test_each_person_edits_a_file_of_their_own() -> None:
+def test_only_alexs_clone_has_an_identity_of_its_own() -> None:
     with new_lab() as lab:
-        presses(lab, "you", "edit")
-        presses(lab, "alex", "edit")
+        assert gitcmd.run(lab.project, "config", "--local", "user.name").returncode == 1
+        assert gitcmd.output(lab.teammate, "config", "--local", "user.name").strip() == playground.ALEX.name
+        assert gitcmd.output(lab.teammate, "config", "--local", "user.email").strip() == playground.ALEX.email
+
+
+def test_your_commits_carry_the_players_name_and_alexs_carry_alexs() -> None:
+    with new_lab() as lab:
+        presses(lab, "you", *COMMIT_NOTES)
+        presses(lab, "alex", *COMMIT_NOTES)
+        assert repomap.snapshot(lab.project)["commits"][0]["author"] == PLAYER.name
+        assert repomap.snapshot(lab.teammate)["commits"][0]["author"] == playground.ALEX.name
+
+
+def test_a_commit_without_the_players_identity_fails_as_git_does() -> None:
+    with new_lab(identity=False) as lab:
+        [*_, commit] = presses(lab, "you", *COMMIT_NOTES)
+        assert commit["status"] == 128
+        assert "Please tell me who you are." in commit["output"]
+        assert repomap.snapshot(lab.project)["commits"][0]["subject"] == "Start the project"
+
+
+def test_the_playground_starts_on_main_whatever_default_branch_the_player_set() -> None:
+    save.ensure_gitconfig(gitcmd.BASE_CONFIG)
+    gitcmd.output(save.home(), "config", "--global", "init.defaultBranch", "trunk")
+    with new_lab() as lab:
         seen = views(lab)
-        mine = {file["path"] for file in seen["you"]["files"] if file["folder_change"] == "untracked"}
-        theirs = {file["path"] for file in seen["alex"]["files"] if file["folder_change"] == "untracked"}
-        assert len(mine) == len(theirs) == 1
-        assert mine != theirs
+        assert [seen[name]["branch"] for name in ("github", *PEOPLE)] == ["main", "main", "main"]
 
 
-def test_every_button_shows_one_command_a_player_could_type() -> None:
-    commands = [command for by_person in playground.BUTTONS.values() for command in by_person.values()]
-    assert all(command and "\n" not in command and command == command.strip() for command in commands)
-    assert playground.BUTTONS["push"] == {"you": "git push", "alex": "git push"}
-    assert playground.BUTTONS["pull"] == {"you": "git pull", "alex": "git pull"}
-    assert playground.BUTTONS["pull-no-rebase"] == {"you": "git pull --no-rebase", "alex": "git pull --no-rebase"}
+def test_every_button_id_is_a_kind_or_a_file_kind_with_a_playground_file() -> None:
+    kinds = set(get_args(records.Button))
+    assert {button.partition(":")[0] for button in playground.BUTTON_IDS} == kinds
+    assert {button.partition(":")[2] for button in playground.BUTTON_IDS if ":" in button} == set(playground.FILES)
 
 
-def test_a_press_reports_who_pressed_what_and_what_the_command_printed() -> None:
+def test_both_people_see_the_same_bar_in_the_same_order() -> None:
+    with new_lab() as lab:
+        expected = ["status", "commit", "push", "fetch", "pull", "edit:README.md", "add:README.md", "edit:notes.txt", "add:notes.txt"]
+        assert list(bar(lab, "you")) == list(bar(lab, "alex")) == expected
+
+
+def test_each_button_says_its_label_and_the_exact_line_it_runs_now() -> None:
+    with new_lab() as lab:
+        shown = bar(lab, "alex")
+        assert [(view["label"], view["line"], view["off"]) for view in shown.values()] == [
+            ("git status", "git status", ""),
+            ("git commit", 'git commit -m "Save my work"', ""),
+            ("git push", "git push", ""),
+            ("git fetch", "git fetch", ""),
+            ("git pull", "git pull", ""),
+            ("Edit README.md", 'echo "Alex: line 2" >> README.md', ""),
+            ("git add README.md", "git add README.md", ""),
+            ("Edit notes.txt", 'echo "Alex: line 2" >> notes.txt', ""),
+            ("git add notes.txt", "git add notes.txt", ""),
+        ]
+
+
+def test_the_commit_line_names_what_is_staged() -> None:
+    with new_lab() as lab:
+        presses(lab, "you", "edit:notes.txt", "add:notes.txt")
+        assert bar(lab, "you")["commit"]["line"] == 'git commit -m "Update notes.txt"'
+        presses(lab, "you", "edit:README.md", "add:README.md")
+        assert bar(lab, "you")["commit"]["line"] == 'git commit -m "Update README.md and notes.txt"'
+        gitcmd.output(lab.project, "rm", "-q", "--cached", "README.md")
+        assert bar(lab, "you")["commit"]["line"] == 'git commit -m "Update notes.txt and delete README.md"'
+        (lab.project / "other.txt").write_text("other\n")
+        gitcmd.output(lab.project, "add", "other.txt")
+        assert bar(lab, "you")["commit"]["line"] == 'git commit -m "Save my work"'
+
+
+def test_edit_appends_the_persons_next_numbered_line() -> None:
+    with new_lab() as lab:
+        first, second = presses(lab, "you", "edit:notes.txt", "edit:notes.txt")
+        assert (first["command"], first["status"], first["output"]) == ('echo "You: line 2" >> notes.txt', 0, "")
+        assert second["command"] == 'echo "You: line 3" >> notes.txt'
+        assert (lab.project / NOTES).read_text() == "Notes\nYou: line 2\nYou: line 3\n"
+        assert (lab.teammate / NOTES).read_text() == "Notes\n"
+
+
+@pytest.mark.parametrize("content", [b"Notes\n", b"Notes", b"", None, b"one\ntwo\n\nfour\n"], ids=["line", "no-newline", "empty", "missing", "blank-line"])
+def test_edit_writes_the_same_bytes_and_mode_as_its_line_typed_in_bash(content: bytes | None) -> None:
+    with new_lab() as lab:
+        notes = lab.project / NOTES
+        notes.unlink()
+        if content is not None:
+            notes.write_bytes(content)
+        twin = lab.root / "twin"
+        twin.mkdir()
+        if content is not None:
+            (twin / NOTES).write_bytes(content)
+        [press] = presses(lab, "you", "edit:notes.txt")
+        subprocess.run(["bash", "--norc", "--noprofile", "-c", press["command"]], cwd=twin, check=True)
+        assert notes.read_bytes() == (twin / NOTES).read_bytes()
+        assert stat.S_IMODE(notes.stat().st_mode) == stat.S_IMODE((twin / NOTES).stat().st_mode)
+
+
+def test_a_git_button_shows_its_output_as_the_terminal_does() -> None:
     with new_lab() as lab:
         [press] = presses(lab, "alex", "status")
         assert press == {
@@ -175,148 +298,200 @@ def test_a_press_reports_who_pressed_what_and_what_the_command_printed() -> None
 def test_a_press_changes_only_the_clone_of_the_person_who_pressed() -> None:
     with new_lab() as lab:
         before = views(lab)
-        [press] = presses(lab, "alex", "edit")
+        presses(lab, "alex", *COMMIT_NOTES)
         after = views(lab)
-        assert press["status"] == 0
-        assert after["you"] == before["you"]
-        assert after["github"] == before["github"]
+        assert (after["you"], after["github"]) == (before["you"], before["github"])
         assert after["alex"] != before["alex"]
 
 
 def test_a_push_after_the_other_persons_push_is_refused_in_gits_words_and_moves_nothing() -> None:
     with new_lab() as lab:
-        presses(lab, "alex", *SHARE)
-        presses(lab, "you", "edit", "add", "commit")
+        presses(lab, "alex", *SHARE_NOTES)
+        presses(lab, "you", "edit:README.md", "add:README.md", "commit")
         before = views(lab)
         [press] = presses(lab, "you", "push")
         assert press["status"] == 1
         assert " ! [rejected]        main -> main (fetch first)\n" in press["output"]
-        assert "hint: Updates were rejected because the remote contains work that you do not\n" in press["output"]
+        assert "error: failed to push some refs to '../github/project.git'\n" in press["output"]
         assert views(lab) == before
 
 
 def test_a_plain_pull_on_diverged_branches_fetches_then_asks_how_to_reconcile_them() -> None:
     with new_lab() as lab:
-        presses(lab, "alex", *SHARE)
-        presses(lab, "you", "edit", "add", "commit")
+        presses(lab, "alex", *SHARE_NOTES)
+        presses(lab, "you", "edit:README.md", "add:README.md", "commit")
         mine = repomap.snapshot(lab.project)["head"]
         [press] = presses(lab, "you", "pull")
         assert press["status"] == 128
         assert "fatal: Need to specify how to reconcile divergent branches.\n" in press["output"]
         after = repomap.snapshot(lab.project)
-        assert after["head"] == mine
-        assert target(after, "origin/main") == target(repomap.snapshot(lab.github))
+        assert (after["head"], target(after, "origin/main")) == (mine, target(repomap.snapshot(lab.github)))
 
 
-def test_a_pull_without_rebase_merges_before_the_player_has_chosen_how() -> None:
+def test_pull_without_rebase_shows_only_while_the_branches_have_diverged() -> None:
     with new_lab() as lab:
-        presses(lab, "alex", *SHARE)
-        presses(lab, "you", "edit", "add", "commit")
-        [press] = presses(lab, "you", "pull-no-rebase")
-        assert press["status"] == 0, press["output"]
-        assert "Merge made by the 'ort' strategy.\n" in press["output"]
-        head = repomap.snapshot(lab.project)["commits"][0]
-        assert len(head["parents"]) == 2
-        assert head["subject"].startswith("Merge branch 'main' of ")
+        assert "pull-no-rebase" not in bar(lab, "you")
+        presses(lab, "alex", *SHARE_NOTES)
+        presses(lab, "you", "edit:README.md", "add:README.md", "commit")
+        assert "pull-no-rebase" not in bar(lab, "you")
+        presses(lab, "you", "fetch")
+        assert bar(lab, "you")["pull-no-rebase"]["line"] == "git pull --no-rebase --no-edit"
+        [merge, push] = presses(lab, "you", "pull-no-rebase", "push")
+        assert (merge["status"], push["status"]) == (0, 0), merge["output"] + push["output"]
+        assert repomap.snapshot(lab.project)["commits"][0]["subject"] == "Merge branch 'main' of ../github/project"
+        assert "pull-no-rebase" not in bar(lab, "you")
 
 
 def test_once_the_player_chooses_merge_a_plain_pull_merges_without_waiting_for_an_editor() -> None:
     with new_lab() as lab:
         gitcmd.output(lab.project, "config", "--global", "pull.rebase", "false")
-        presses(lab, "alex", *SHARE)
-        presses(lab, "you", "edit", "add", "commit")
+        presses(lab, "alex", *SHARE_NOTES)
+        presses(lab, "you", "edit:README.md", "add:README.md", "commit")
         [pull, push] = presses(lab, "you", "pull", "push")
-        assert pull["status"] == 0, pull["output"]
-        assert push["status"] == 0, push["output"]
+        assert (pull["status"], push["status"]) == (0, 0), pull["output"] + push["output"]
         assert len(repomap.snapshot(lab.github)["commits"][0]["parents"]) == 2
 
 
-def test_a_commit_with_nothing_staged_fails_as_git_does() -> None:
+def test_during_a_paused_merge_the_bar_adds_abort_and_the_conflicted_files_buttons() -> None:
     with new_lab() as lab:
-        [edit, commit] = presses(lab, "you", "edit", "commit")
-        assert edit["status"] == 0
-        assert commit["status"] == 1
-        assert 'nothing added to commit but untracked files present (use "git add" to track)\n' in commit["output"]
+        pull = conflicted_lab(lab)
+        assert pull["status"] == 1
+        assert "CONFLICT (content): Merge conflict in notes.txt\n" in pull["output"]
+        shown = bar(lab, "you")
+        assert list(shown)[-4:] == ["merge-abort", "keep-ours:notes.txt", "keep-theirs:notes.txt", "pull-no-rebase"]
+        assert [(shown[key]["label"], shown[key]["line"]) for key in ("keep-ours:notes.txt", "keep-theirs:notes.txt", "commit")] == [
+            ("Keep mine in notes.txt", "git restore --ours notes.txt"),
+            ("Keep theirs in notes.txt", "git restore --theirs notes.txt"),
+            ("git commit", "git commit --no-edit"),
+        ]
+        assert "merge-abort" not in bar(lab, "alex")
 
 
-def test_a_press_in_a_clone_the_player_deleted_reports_it_and_runs_nothing_elsewhere() -> None:
+def test_keeping_one_side_adding_it_and_committing_finishes_the_merge_with_gits_message() -> None:
     with new_lab() as lab:
-        shutil.rmtree(lab.teammate)
-        [press] = presses(lab, "alex", "edit")
-        assert press["status"] != 0
-        assert press["output"].endswith(f"cd: {lab.teammate}: No such file or directory\n")
-        assert press["output"].count("\n") == 1
+        conflicted_lab(lab)
+        keep, add, commit, push = presses(lab, "you", "keep-theirs:notes.txt", "add:notes.txt", "commit", "push")
+        assert [keep["status"], add["status"], commit["status"], push["status"]] == [0, 0, 0, 0], commit["output"]
+        assert (lab.project / NOTES).read_text() == "Notes\nAlex: line 2\n"
+        head = repomap.snapshot(lab.project)["commits"][0]
+        assert (head["subject"], len(head["parents"])) == ("Merge branch 'main' of ../github/project", 2)
+        assert "merge-abort" not in bar(lab, "you")
 
 
-def test_the_playground_starts_on_main_whatever_default_branch_the_player_set() -> None:
-    save.ensure_gitconfig(gitcmd.BASE_CONFIG)
-    gitcmd.output(save.home(), "config", "--global", "init.defaultBranch", "trunk")
+def test_aborting_the_merge_puts_your_files_and_branch_back() -> None:
     with new_lab() as lab:
-        seen = views(lab)
-        assert [seen[name]["branch"] for name in ("github", *PEOPLE)] == ["main", "main", "main"]
+        presses(lab, "alex", *SHARE_NOTES)
+        presses(lab, "you", *COMMIT_NOTES)
+        before = repomap.snapshot(lab.project)
+        presses(lab, "you", "pull-no-rebase")
+        [abort] = presses(lab, "you", "merge-abort")
+        after = repomap.snapshot(lab.project)
+        assert (abort["status"], after["operation"], after["head"], after["files"]) == (0, None, before["head"], before["files"])
 
 
-
-def test_each_clone_reaches_github_by_a_path_from_its_top_folder() -> None:
+def test_a_conditional_button_pressed_out_of_its_state_runs_and_git_answers() -> None:
     with new_lab() as lab:
-        for person in PEOPLE:
-            folder = clone(lab, person)
-            assert gitcmd.output(folder, "remote", "get-url", "origin").strip() == lab.github_url(folder)
+        [abort] = presses(lab, "you", "merge-abort")
+        assert abort["status"] == 128
+        assert "fatal: There is no merge to abort (MERGE_HEAD missing).\n" in abort["output"]
 
 
-def test_git_names_github_by_that_path_so_no_output_or_merge_subject_holds_the_players_folders() -> None:
+GONE = "The project folder is gone: start the playground again."
+
+
+@pytest.mark.parametrize("person", PEOPLE)
+@pytest.mark.parametrize("linked", [False, True], ids=["gone", "link"])
+def test_every_button_is_off_and_runs_nothing_when_the_clone_is_gone_or_a_link(person: records.Who, linked: bool) -> None:
     with new_lab() as lab:
-        presses(lab, "alex", *SHARE)
-        [*_, refused, merge, push] = presses(lab, "you", *SHARE, "pull-no-rebase", "push")
-        [pull] = presses(lab, "alex", "pull")
-        assert "error: failed to push some refs to '../github/project.git'\n" in refused["output"]
-        assert push["output"].startswith("To ../github/project.git\n")
-        assert pull["output"].startswith("From ../../github/project\n")
-        assert [str(save.home()) in press["output"] for press in (refused, merge, push, pull)] == [False] * 4
-        assert repomap.snapshot(lab.project)["commits"][0]["subject"] == "Merge branch 'main' of ../github/project"
+        folder = clone(lab, person)
+        moved = folder.with_name("moved")
+        folder.rename(moved)
+        if linked:
+            folder.symlink_to(moved, target_is_directory=True)
+        assert {view["off"] for view in bar(lab, person).values()} == {GONE}
+        with pytest.raises(playground.ButtonOffError, match=GONE):
+            playground.press(lab, person, "edit:notes.txt")
+        with pytest.raises(playground.ButtonOffError, match=GONE):
+            playground.press(lab, person, "status")
+        assert (moved / NOTES).read_text() == "Notes\n"
 
 
-def test_a_clone_reaches_github_from_a_subfolder_too() -> None:
+def test_a_clone_whose_parent_folder_is_a_link_is_off() -> None:
     with new_lab() as lab:
-        presses(lab, "alex", *SHARE)
-        notes = lab.project / "notes"
-        notes.mkdir()
-        (notes / "plan.txt").write_text("A plan.\n")
-        commands = [("add", "plan.txt"), ("commit", "-m", "Add a plan"), ("push",), ("fetch",), ("pull", "--no-rebase"), ("push",), ("status",)]
-        results = [gitcmd.run(notes, *command) for command in commands]
-        assert [result.returncode for result in results] == [0, 0, 1, 0, 0, 0, 0], [result.stderr for result in results]
-        assert target(repomap.snapshot(lab.github)) == repomap.snapshot(lab.project)["head"]
+        outside = Path(tempfile.mkdtemp(dir=save.home()))
+        shutil.move(lab.teammate.parent, outside / "teammate")
+        lab.teammate.parent.symlink_to(outside / "teammate", target_is_directory=True)
+        assert {view["off"] for view in bar(lab, "alex").values()} == {GONE}
 
 
-Step = tuple[records.Who, records.Button]
-ONE_PRESS = st.tuples(st.sampled_from(PEOPLE), st.sampled_from(BUTTONS)).map(lambda step: [step])
-A_COMMIT = st.sampled_from(PEOPLE).map(lambda person: [(person, button) for button in SHARE[:-1]])
-A_SHARE = st.sampled_from(PEOPLE).map(lambda person: [(person, button) for button in SHARE])
+@pytest.mark.parametrize("kind", ["folder", "link"])
+def test_edit_is_off_when_its_file_is_not_a_plain_file(kind: str) -> None:
+    with new_lab() as lab:
+        notes = lab.project / NOTES
+        notes.unlink()
+        outside = lab.root / "outside.txt"
+        outside.write_text("keep me\n")
+        notes.mkdir() if kind == "folder" else notes.symlink_to(outside)
+        shown = bar(lab, "you")
+        assert shown["edit:notes.txt"]["off"] == "notes.txt is not a plain file any more."
+        assert shown["edit:README.md"]["off"] == shown["add:notes.txt"]["off"] == ""
+        with pytest.raises(playground.ButtonOffError, match="notes.txt is not a plain file any more."):
+            playground.press(lab, "you", "edit:notes.txt")
+        assert outside.read_text() == "keep me\n"
+
+
+
+@pytest.mark.parametrize("button", ["edit:../outside.txt", "edit:", "add:other.txt", "rebase", "edit"])
+def test_a_button_the_playground_does_not_have_is_refused_before_anything_runs(button: str) -> None:
+    with new_lab() as lab:
+        before = views(lab)
+        with pytest.raises(KeyError, match="no button"):
+            playground.press(lab, "you", button)
+        assert not (lab.root / "outside.txt").exists()
+        assert views(lab) == before
+
+
+def test_no_press_output_names_the_players_folders() -> None:
+    with new_lab() as lab:
+        done = [*presses(lab, "alex", *SHARE_NOTES), *presses(lab, "you", *COMMIT_NOTES, "push", "pull-no-rebase")]
+        assert [str(save.home()) in press["output"] for press in done] == [False] * len(done)
+
+
+Step = tuple[records.Who, str]
+ONE_PRESS = st.tuples(st.sampled_from(PEOPLE), st.sampled_from(sorted(playground.BUTTON_IDS))).map(lambda step: [step])
+A_COMMIT = st.tuples(st.sampled_from(PEOPLE), st.sampled_from(playground.FILES)).map(lambda pick: [(pick[0], f"edit:{pick[1]}"), (pick[0], f"add:{pick[1]}"), (pick[0], "commit")])
+A_SHARE = A_COMMIT.map(lambda steps: [*steps, (steps[0][0], "push")])
 A_CATCH_UP = st.tuples(st.sampled_from(PEOPLE), st.sampled_from(["pull", "pull-no-rebase"])).map(lambda pull: [pull, (pull[0], "push")])
-MOVES = st.one_of(ONE_PRESS, A_COMMIT, A_SHARE, A_CATCH_UP)
+A_RESOLVE = st.tuples(st.sampled_from(PEOPLE), st.sampled_from(["keep-ours", "keep-theirs"])).map(
+    lambda pick: [(pick[0], f"{pick[1]}:notes.txt"), (pick[0], "add:notes.txt"), (pick[0], "commit"), (pick[0], "push")]
+)
+MOVES = st.one_of(ONE_PRESS, A_COMMIT, A_SHARE, A_CATCH_UP, A_RESOLVE)
 STEPS = st.lists(MOVES, min_size=1, max_size=8).map(lambda moves: [step for move in moves for step in move])
 """
-Press sequences built from moves: one press; a person's edit, add and commit, with or without a push; or a pull then a push.
+Press sequences built from moves: one press; a person's edit, add and commit of one file, with or without a push; a pull then a push; or keeping one side of ``notes.txt``, adding, committing and pushing.
 
-Single presses alone almost never reach a commit, let alone a refused push or a merge.
+Single presses alone almost never reach a commit, let alone a refused push, a merge or a conflict.
 """
 
-DIVERGE_AND_MERGE: list[Step] = [
-    *[("alex", button) for button in SHARE],
-    *[("you", button) for button in SHARE],
+CONFLICT_AND_RESOLVE: list[Step] = [
+    *[("alex", button) for button in SHARE_NOTES],
+    *[("you", button) for button in SHARE_NOTES],
     ("you", "pull"),
     ("you", "pull-no-rebase"),
+    ("you", "keep-ours:notes.txt"),
+    ("you", "add:notes.txt"),
+    ("you", "commit"),
     ("you", "push"),
     ("alex", "pull"),
     ("alex", "status"),
 ]
-"""Alex shares first; your push is refused, your plain pull stops, the pull that merges works, and Alex catches up."""
+"""Alex shares first; your push is refused, your plain pull stops, the pull that merges stops on a conflict, you keep your side, finish and push, and Alex catches up."""
 
 
 @pytest.mark.slow
 @settings(max_examples=25, deadline=None)
 @given(steps=STEPS)
-@example(steps=DIVERGE_AND_MERGE)
+@example(steps=CONFLICT_AND_RESOLVE)
 def test_any_sequence_of_presses_keeps_the_facts_the_figure_draws(steps: list[Step]) -> None:
     with new_lab() as lab:
         seen = views(lab)
@@ -332,17 +507,22 @@ def test_any_sequence_of_presses_keeps_the_facts_the_figure_draws(steps: list[St
             for snap in now.values():
                 remote = {ref["name"] for ref in snap["refs"] if ref["kind"] == "remote"}
                 assert snap["pushed"] == sorted(set(snap["pushed"]) & remote), context
-            if button != "push" or press["status"] != 0:
+            kind = button.partition(":")[0]
+            if kind != "push" or press["status"] != 0:
                 assert now["github"] == seen["github"], context
-            if button == "status" or (button in ("add", "commit", "push") and press["status"] != 0):
+            if kind == "status" or (kind in ("add", "commit", "push") and press["status"] != 0):
                 assert now[person] == seen[person], context
-            if button == "edit":
+            if kind == "edit":
                 assert (now[person]["head"], now[person]["refs"]) == (seen[person]["head"], seen[person]["refs"]), context
-            if button == "push" and press["status"] == 0:
+            if kind == "push" and press["status"] == 0:
                 assert target(now["github"]) == now[person]["head"] == target(now[person], "origin/main"), context
                 assert "came from the remote" not in told, context
-            if button in ("fetch", "pull", "pull-no-rebase"):
+            if kind in ("fetch", "pull", "pull-no-rebase") and seen[person]["operation"] is None:
                 assert target(now[person], "origin/main") == target(now["github"]), context
-            if button == "commit" and press["status"] == 0:
+            if kind == "commit" and press["status"] == 0:
                 assert {event["kind"] for event in events} & {"commit-created", "merge-commit-created"}, context
+            shown = bar(lab, person)
+            assert set(shown) <= playground.BUTTON_IDS, context
+            assert ("merge-abort" in shown) == (now[person]["operation"] == "merge"), context
+            assert all("\n" not in view["line"] and view["off"] == "" for view in shown.values()), context
             seen = now

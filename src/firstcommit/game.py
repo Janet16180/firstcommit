@@ -645,7 +645,7 @@ def press(person: str, button: str) -> PressView:
     person : str
         Who pressed (`firstcommit.records.Who`).
     button : str
-        Which button (`firstcommit.records.Button`).
+        Which button: one of `firstcommit.playground.BUTTON_IDS`.
 
     Returns
     -------
@@ -665,7 +665,7 @@ def press(person: str, button: str) -> PressView:
         If the command runs longer than `firstcommit.gitcmd.TIMEOUT` seconds.
     """
     who = _playground_id(person, playground.PEOPLE, "person")
-    which = _playground_id(button, playground.BUTTONS, "button")
+    which = _playground_id(button, playground.BUTTON_IDS, "button")
     with save.lock():
         active, entry = _playing()
         lab = runner.lab_of(entry.id)

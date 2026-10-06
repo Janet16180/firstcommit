@@ -125,7 +125,7 @@ class ObjectInfo(TypedDict):
 
 Who = Literal["you", "alex"]
 """The two people of the playground (`firstcommit.playground`), who share one remote."""
-Button = Literal["edit", "add", "commit", "push", "fetch", "pull", "pull-no-rebase", "status"]
+Button = Literal["edit", "add", "commit", "push", "fetch", "pull", "pull-no-rebase", "status", "merge-abort", "keep-ours", "keep-theirs"]
 """
 The kinds of the playground's buttons. A button's id is its kind, or ``"<kind>:<file>"`` for a
 kind that acts on one file (``"add:notes.txt"``, ``"keep-ours:README.md"``).
