@@ -41,11 +41,52 @@ screenshots in `.scratch/wt/web/.scratch/real-t96H/engine-shots/`.
 Worktrees of the finished agents stay under `.scratch/wt/` (branches `p2/*`); ask the user before
 deleting branches.
 
-NEXT for phase 2, before merging to `main`:
-1. An independent code review of `phase-2-engine` against `~/.claude/CLAUDE.md` and DESIGN
-   section 7 (report only).
-2. A security review of the game's routes, terminal environment and container (report only).
-3. Theme prototypes on the template level: metro map and time travel, for the user to pick.
+Done since: the code review and the security review (both report only), then a fix round
+(security lows, review findings). Security L3 waits for the user: drop `SSH_AUTH_SOCK`,
+`SSH_AGENT_PID`, `GH_TOKEN`, `GITHUB_TOKEN` and `GH_ENTERPRISE_TOKEN` from the page's shell (the
+lead recommends yes).
+
+## Phase 2b: visual explanations (in progress, 2026-10-06)
+
+The user picked the time-travel theme (over metro) and asked for picture-first explanations
+(AUTHORING 3.5: a figure from real git, at most three short sentences) and an interactive
+playground: two people on one remote, each with the same buttons (edit, add, commit, push,
+fetch, pull, status), common mistakes detected, then the same problem for real in the terminal.
+There is no game story; the visuals are the creative part.
+
+Pictures: a file is a page, the staging area an open box, a commit a closed box. The four
+places are the working folder, the staging area, your repository and GitHub; Alex is an SVG
+person, not an emoji. Every motion is drawn from the diff of two real snapshots.
+
+Agents and branches (worktrees under `.scratch/wt/`):
+- timetravel, `p2/theme-time`: the theme, motions (`TimeMotion.playMap`), the four places
+  figure, the demo generator `tools/demo/`, and the page integration (live-map motion hook from
+  metro's c156a29, the guide's button in the key, index.html).
+- guide, `p2/theme-guide`: "How to read the map" as tiny figures served by `game.guide()`
+  (`/api/guide`); its text is generated from `docs/drafts/map-guide.md` by
+  `tools/guide_text.py --check`.
+- share, `p2/theme-share`: "Share a file with Alex" (13 steps, `tools/demo/share.py`,
+  `docs/drafts/share.md`); next, the two-person playground figure.
+- playground, `p2/playground-design`: the playground's design and its mistakes table, recorded
+  from real git (`docs/drafts/playground-errors.*`); then insight writes
+  `explain(press, before, after)` from it.
+- Merged into `phase-2-engine`: `firstcommit.playground` and `lab.py` (insight), `game.press`
+  and the teammate in `observe` (core, d1d7726). web is adding `POST /api/press`.
+- mapcheck re-runs every claim of every draft on git 2.43 (`.scratch/review/`). Order: four
+  places revision 4, share revision 2, then the playground mistakes table.
+- metro, `p2/theme-metro` and `p2/boxes-live`: the earlier metro look; the boxes and cardboard
+  live-map variants wait for the user's choice.
+
+Integration order into `phase-2-engine`: theme-time, then theme-guide, then theme-share. At that
+merge, add `tools` to mypy's files with `mypy_path = "src"`.
+
+Shared with the user (private artifacts): the Four Places Demo
+(https://claude.ai/artifact/72KsUGhDae4pErRzU7Kzrv, published from `tools/demo/build.py` output
+with the page skeleton stripped; the share walkthrough is left out until its check passes) and
+Commit Shape Choice (https://claude.ai/artifact/GB9XGi8bZC5oz21zDja7du).
+
+Waiting for the user: rings or boxes for commits in the live map (the lead recommends plain
+boxes, one picture of a commit everywhere), and security L3.
 
 ## Lessons for the method (to fold into GAME_METHODOLOGY.md)
 
@@ -76,9 +117,9 @@ NEXT for phase 2, before merging to `main`:
   (`core.pager = less -FRX` in the game's config, git's own default when LESS is unset).
 
 - For the `remote` chapter author (from the map guide fact-check): a plain `git pull` on
-  diverged branches fails on git 2.43 ("Need to specify how to reconcile divergent branches"),
-  and `gitcmd.BASE_CONFIG` sets no `pull.rebase`. Decide whether the chapter teaches the choice
-  (`--no-rebase` / `--rebase`) or the game's config sets one, and say which in the lesson.
+  diverged branches fails on git 2.43 ("Need to specify how to reconcile divergent branches").
+  Decided: the game's config leaves `pull.rebase` unset, as git ships, and the chapter teaches the
+  choice (`--no-rebase` / `--rebase`); the playground's Pull button shows the real error.
 
 - repomap does not see uncommitted changes inside a submodule (`git status` reports them). No
   chapter teaches submodules yet; revisit if one does.
@@ -94,9 +135,10 @@ itself (write, save, quit).
 
 ## Next
 
-1. Integrate and verify phase 2 (all gates in WSL and in the image; play the level end to end).
-2. A fresh fact-checker for the basics level and cards.
-3. Theme prototypes on the template level: metro map and time travel; the user picks.
-4. Security review of the routes, the terminal environment and the container.
-5. Chapter authors in parallel, each followed by a fact-checker.
-6. The VM adapter (`vm/game.env`, `vm/guest-setup.sh`, wrapper) on termlab's VM.
+1. Finish phase 2b (above): the page integration, `/api/press`, the playground figure and its
+   explanations, each draft through mapcheck; merge the theme branches.
+2. The user plays the template level with the new look; then merge `phase-2-engine` to `main`
+   (ask first).
+3. Chapter authors in parallel, picture first, each followed by a fact-checker. Chapter 1 has
+   only the template level today.
+4. The VM adapter (`vm/game.env`, `vm/guest-setup.sh`, wrapper) on termlab's VM.

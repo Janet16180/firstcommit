@@ -933,6 +933,7 @@
    "stash": 0,
    "truncated": false
   },
+  "teammate": null,
   "events": [
    {
     "kind": "commit-created",
@@ -982,7 +983,8 @@
      }
     ]
    }
-  ]
+  ],
+  "teammate_events": []
  },
  "cards": [
   {
@@ -2687,6 +2689,270 @@
     {
      "command": "git fetch",
      "output": "From /home/you/project/../github/project\n   5941dbe..a0c26f8  main       -> origin/main\n"
+    }
+   ]
+  }
+ },
+ "press": {
+  "press": {
+   "person": "alex",
+   "button": "push",
+   "command": "git push",
+   "status": 0,
+   "output": "To ../../github/project.git\n   72be22a..890d579  main -> main\n"
+  },
+  "explanation": null,
+  "observation": {
+   "level": "basics-sample",
+   "project": {
+    "exists": true,
+    "bare": false,
+    "head": "72be22ae33d512ce24d4b4f127d3c33f36d764c7",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "72be22ae33d512ce24d4b4f127d3c33f36d764c7",
+      "short": "72be22a",
+      "parents": [],
+      "subject": "Add the README",
+      "author": "First Commit",
+      "time": 1791325791
+     }
+    ],
+    "refs": [
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "72be22ae33d512ce24d4b4f127d3c33f36d764c7"
+     },
+     {
+      "name": "origin/main",
+      "kind": "remote",
+      "target": "72be22ae33d512ce24d4b4f127d3c33f36d764c7"
+     }
+    ],
+    "files": [
+     {
+      "path": "README.md",
+      "head": "3f97d6f343caec3213538d3d92ed335757db5adc",
+      "index": "3f97d6f343caec3213538d3d92ed335757db5adc",
+      "folder": "3f97d6f343caec3213538d3d92ed335757db5adc",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "github": {
+    "exists": true,
+    "bare": true,
+    "head": "890d57934ac537c8d74da5d244f19ab8bacfaeef",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "890d57934ac537c8d74da5d244f19ab8bacfaeef",
+      "short": "890d579",
+      "parents": [
+       "72be22ae33d512ce24d4b4f127d3c33f36d764c7"
+      ],
+      "subject": "Add a line to alex.txt",
+      "author": "Alex",
+      "time": 1791325791
+     },
+     {
+      "hash": "72be22ae33d512ce24d4b4f127d3c33f36d764c7",
+      "short": "72be22a",
+      "parents": [],
+      "subject": "Add the README",
+      "author": "First Commit",
+      "time": 1791325791
+     }
+    ],
+    "refs": [
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "890d57934ac537c8d74da5d244f19ab8bacfaeef"
+     }
+    ],
+    "files": [],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "teammate": {
+    "exists": true,
+    "bare": false,
+    "head": "890d57934ac537c8d74da5d244f19ab8bacfaeef",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "890d57934ac537c8d74da5d244f19ab8bacfaeef",
+      "short": "890d579",
+      "parents": [
+       "72be22ae33d512ce24d4b4f127d3c33f36d764c7"
+      ],
+      "subject": "Add a line to alex.txt",
+      "author": "Alex",
+      "time": 1791325791
+     },
+     {
+      "hash": "72be22ae33d512ce24d4b4f127d3c33f36d764c7",
+      "short": "72be22a",
+      "parents": [],
+      "subject": "Add the README",
+      "author": "First Commit",
+      "time": 1791325791
+     }
+    ],
+    "refs": [
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "890d57934ac537c8d74da5d244f19ab8bacfaeef"
+     },
+     {
+      "name": "origin/main",
+      "kind": "remote",
+      "target": "890d57934ac537c8d74da5d244f19ab8bacfaeef"
+     }
+    ],
+    "files": [
+     {
+      "path": "README.md",
+      "head": "3f97d6f343caec3213538d3d92ed335757db5adc",
+      "index": "3f97d6f343caec3213538d3d92ed335757db5adc",
+      "folder": "3f97d6f343caec3213538d3d92ed335757db5adc",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     },
+     {
+      "path": "alex.txt",
+      "head": "d8b832cc9f6d3a2c4ad67d4104c224bcf24d00fb",
+      "index": "d8b832cc9f6d3a2c4ad67d4104c224bcf24d00fb",
+      "folder": "d8b832cc9f6d3a2c4ad67d4104c224bcf24d00fb",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "events": [
+    {
+     "kind": "push-received",
+     "text": [
+      {
+       "kind": "para",
+       "spans": [
+        {
+         "text": "A push moved branch ",
+         "code": false
+        },
+        {
+         "text": "main",
+         "code": true
+        },
+        {
+         "text": " from ",
+         "code": false
+        },
+        {
+         "text": "72be22a",
+         "code": true
+        },
+        {
+         "text": " to ",
+         "code": false
+        },
+        {
+         "text": "890d579",
+         "code": true
+        },
+        {
+         "text": " (",
+         "code": false
+        },
+        {
+         "text": "Add a line to alex.txt",
+         "code": true
+        },
+        {
+         "text": ").",
+         "code": false
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "teammate_events": [
+    {
+     "kind": "remote-updated",
+     "text": [
+      {
+       "kind": "para",
+       "spans": [
+        {
+         "text": "Remote-tracking branch ",
+         "code": false
+        },
+        {
+         "text": "origin/main",
+         "code": true
+        },
+        {
+         "text": " moved from ",
+         "code": false
+        },
+        {
+         "text": "72be22a",
+         "code": true
+        },
+        {
+         "text": " to ",
+         "code": false
+        },
+        {
+         "text": "890d579",
+         "code": true
+        },
+        {
+         "text": " (",
+         "code": false
+        },
+        {
+         "text": "Add a line to alex.txt",
+         "code": true
+        },
+        {
+         "text": ").",
+         "code": false
+        }
+       ]
+      }
+     ]
     }
    ]
   }
