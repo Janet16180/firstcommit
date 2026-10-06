@@ -21,7 +21,7 @@ from typing import Any, TypeGuard
 
 from termlab.web import shell, terminal
 
-from firstcommit import game, gitcmd, save
+from firstcommit import game
 
 STATIC = Path(__file__).parent / "static"
 SETTINGS = shell.ShellSettings(name="FirstCommit", command="firstcommit serve", token_header="X-FirstCommit-Token")
@@ -45,10 +45,10 @@ def shell_environment() -> dict[str, str]:
     -------
     dict[str, str]
         The server's environment as a new terminal window would have it, made a game shell by
-        `firstcommit.gitcmd.shell_environment` (no inherited git variables, git kept to the
+        `firstcommit.game.shell_environment` (no inherited git variables, git kept to the
         game's own configuration and labs).
     """
-    return gitcmd.shell_environment(terminal.player_env(os.environ), save.home())
+    return game.shell_environment(terminal.player_env(os.environ))
 
 
 def shell_folder() -> Path:
@@ -147,14 +147,14 @@ def guarded(route: shell.Route) -> shell.Route:
     -------
     shell.Route
         The same route, answering 500 ``{"error", "kind": "save"}`` for a
-        `firstcommit.save.SaveError` and 500 ``{"error", "kind": "bug"}`` for any other
+        `firstcommit.game.SaveError` and 500 ``{"error", "kind": "bug"}`` for any other
         exception, whose traceback it prints to the server's standard error.
     """
 
     def answer(request: dict[str, Any]) -> Reply:
         try:
             reply = route(request)
-        except save.SaveError as error:
+        except game.SaveError as error:
             reply = HTTPStatus.INTERNAL_SERVER_ERROR, {"error": str(error), "kind": "save"}
         except Exception as error:  # noqa: BLE001 - the last-resort log, printed below
             traceback.print_exception(error, file=sys.stderr)
