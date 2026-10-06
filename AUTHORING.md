@@ -46,13 +46,19 @@ For every sentence that states a fact, in a slide, step, briefing, hint, debrief
 8. **Scope every absolute.** "Only", "never", "always", "every" and "after a commit" are almost
    always false for some option (`git commit -a`, `git commit <file>`, `git revert`). Check the
    options that change the claim, then scope it to the exact command you teach ("a plain
-   `git commit`").
+   `git commit`"). The options that broke claims in the first level, to check every time:
+   `git commit -a`, `git commit <path>`, `--author` and the `GIT_AUTHOR_*` variables, a short
+   hash where git needs a full one (`git fetch`), `core.hideDotFiles` on Windows, and commands
+   other than `commit` that make commits (`merge`, `revert`, `cherry-pick`).
 9. **Every command you write is complete and runnable as written.** `git config --global
    user.name` without a value only reads the setting. Placeholders are obvious and safe to paste
    (`"Your Name"`).
 10. **Describe output as the player's terminal shows it.** Some output differs on a terminal:
     `git log --oneline` adds `(HEAD -> main)` there (`log.decorate`, git-config(1)). Lessons show
-    terminal output; check prose against a real terminal, not against memory or a pipe.
+    terminal output; check prose against a real terminal, not against memory or a pipe. To see
+    what a terminal shows from a script, run the command under `script` with the pager off:
+    `GIT_PAGER=cat script -qec 'git log --oneline' /dev/null` (without `GIT_PAGER=cat` the pager
+    waits for a key and the command hangs).
 
 ## 2. Code standards (all Python in this repo)
 
@@ -255,6 +261,16 @@ order, the harness asserts that a watch step fails before its action and passes 
 that an answer step refuses the empty answer and accepts the action's answer. So each watch must
 notice the very thing its step asks for, and not pass early because of an earlier step.
 
+Two patterns from the template level (`levels/basics_first_commit.py`) keep a level short and
+consistent:
+
+- **One "next move".** Write one function that reads the snapshot and says what the player should
+  do next from any state (no repository, wrong branch, a file not staged, nothing committed...).
+  Every watch and the mission `check` reuse it, so the advice is the same wherever the player is,
+  and advice that depends on the repository (does `main` exist yet?) is written once.
+- **`solve` reuses `QUEST_ACTIONS`**: it runs the actions in order, so the reference solution and
+  the quest walk cannot drift apart.
+
 ## 4. Cards
 
 ### 4.1 Format
@@ -300,6 +316,9 @@ source = "git-hash-object(1)"
   game's starting configuration `gitcmd.BASE_CONFIG` as the only global configuration), and
   compare standard output (trailing newlines stripped) with `correct`. They must be
   deterministic and must not depend on git's message wording.
+- A **verify** snippet passes only on exit status 0 of its *last* command: bash runs it without
+  `-e`, and a `! cmd` line never stops it. Put the claim in the last line (`test ...`,
+  `grep -q ...`, `git diff --cached --quiet`), and invert it once by hand to see the snippet fail.
 - **text**: short, unambiguous answers; list every reasonable spelling in `accept`.
 
 ### 4.2 What makes a good card
@@ -326,6 +345,8 @@ All text is parsed by `firstcommit.markup` (the page and the command line only r
 - `backticks` mark commands, file names, branch names and hashes.
 - The whole text is dedented first, so a text made *only* of indented lines reads as prose. To
   show output on its own, put one line of prose before it.
+- Write text flush-left inside its triple quotes. A text whose first line starts right after
+  `"""` and whose next lines are indented is not dedented, so those lines become a verbatim block.
 
 ## 7. Words and tone
 
