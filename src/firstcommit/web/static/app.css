@@ -405,6 +405,16 @@ code.words > span {
   white-space: nowrap;
 }
 
+/* In a narrow line of text (a press's result, the feed), long code such as a merge subject wraps
+   anywhere rather than run off a phone's screen. */
+.pg-result code,
+.pg-result code.words > span,
+.feed-text code,
+.feed-text code.words > span {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .practice-side pre.code {
   white-space: pre-wrap;
   overflow-wrap: anywhere;

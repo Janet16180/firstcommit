@@ -36,3 +36,20 @@ test("events with no rule of their own keep the plain border", () => {
   assert.equal(feedColour("file-created"), null);
   assert.equal(feedColour("conflict"), "var(--danger)");
 });
+
+/* The value a property gets in the last rule naming exactly `selector` in its selector list, or null. */
+function declared(selector, property) {
+  let value = null;
+  for (const [, selectors, body] of CSS.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+    const found = body.match(new RegExp(`(?:^|;|\\s)${property}:\\s*([^;]+);`));
+    if (found && selectors.split(",").some((item) => item.trim() === selector)) value = found[1].trim();
+  }
+  return value;
+}
+
+test("long code in a press's result and in the feed wraps rather than run off a narrow screen", () => {
+  for (const selector of [".pg-result code", ".pg-result code.words > span", ".feed-text code", ".feed-text code.words > span"]) {
+    assert.equal(declared(selector, "white-space"), "normal", selector);
+    assert.equal(declared(selector, "overflow-wrap"), "anywhere", selector);
+  }
+});
