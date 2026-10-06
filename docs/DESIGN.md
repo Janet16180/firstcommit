@@ -159,28 +159,45 @@ Dependencies point downward only:
 runtime        WSL (nothing) | deploy/docker/ | vm/ (later)          outside the package
 interface      cli.py | web/routes.py, web/static/*                    parse input, render output
 orchestration  game.py                                                 every player action, under the save lock
-core           levels/*, runner.py, score.py, cards.py, markup.py, repomap.py, kit.py
-data           save.py (typed records), chapters.py
+core           levels/*, runner.py, score.py, cards.py, markup.py, gitcmd.py, repomap.py,
+               changes.py, demos.py, kit.py
+data           save.py (the save's records), records.py (snapshot records), chapters.py
 infrastructure termlab: store, sandbox, snippets, web.shell, web.terminal, client.js, terminal.js, VM
 ```
 
-- `game.py` is the only thing the interfaces call: `status`, `start`, `lesson`, `quest_step`,
-  `check`, `hint`, `debrief`, `abort`, `reset`, `due_cards`, `answer_card`. It returns typed
-  results. Quest progress and the last payout live in the save, so the page keeps no game state
-  (only view preferences in `localStorage`), and solving from the terminal celebrates correctly.
+- `game.py` is the only thing the interfaces call: `status`, `level`, `lesson`, `start`,
+  `quest_step`, `check`, `hint`, `observe`, `abort`, `reset`, `due_cards`, `answer_card`,
+  `notes`, `shell_environment`, `terminal_folder` and `doctor`. It returns typed records (the
+  debrief comes inside `LevelView` and `CheckResult`), raises `UnknownIdError` for an id it does
+  not have and `NotPlayingError` when no level is in progress, and re-exports `SaveError` and
+  `home`, so an interface never imports `save` or `gitcmd`. Quest progress and the last payout
+  live in the save, so the page keeps no game state (only view preferences in `localStorage`),
+  and solving from the terminal celebrates correctly. The server also says when the page may
+  check a level automatically (`ActiveView.auto_check`).
 - `runner.py` reads each level module once into a typed `Level` record and owns the lab
   lifecycle (a fresh lab and its bare "GitHub", cleanup through `termlab.sandbox`).
 - `score.py` (pure): ranks, mission reward, hint cost, card XP and streak.
 - `cards.py`: loads and validates decks, Leitner scheduling, judging an answer. No printing.
 - `markup.py`: the one parser for lesson and debrief text into blocks; the CLI and the page both
-  render blocks.
+  render blocks. `markup.code` writes any text (a file name, a commit subject) as one code span
+  that shows it exactly, so a name can never forge the game's own text.
+- `gitcmd.py`: every git command the game itself runs: isolated from the player's configuration,
+  never running programs a repository names, never opening an editor or asking for a password
+  in the terminal.
 - `repomap.py`: a snapshot of a repository (commits, parents, refs, HEAD, and the files in the
-  folder, the staging area and the last commit), read with plumbing. It feeds the live map, which
+  folder, the staging area and the last commit), read with plumbing. Each file is also classified
+  once, the way `git status` does it (`index_change`, `folder_change`), and the page and the
+  levels use that classification instead of comparing areas themselves. The records live in
+  `records.py`, so the save can check a saved snapshot. `changes.py` turns two snapshots into the
+  "what just happened" events, and `demos.py` runs lesson scripts for the lesson figures.
+  The snapshot feeds the live map, which
   is therefore generic: every lab is a Git repo. A mission may also declare its goal as a graph,
   drawn beside the live one (an idea from Learn Git Branching, found by Ring Zero's prior-art
   research).
 - `kit.py`: the level authors' toolkit: run git in a lab under the game environment, the fixed
-  identity and dates, answer parsing (short hashes, numbers), answer digests.
+  identity and dates, the three kinds of quest step, the `git status` lists (`untracked`,
+  `staged`, `unstaged` and others), `code` for names, answer parsing (short hashes, numbers),
+  answer digests.
 - `save.py`: the game's records as `TypedDict`s, validated on load, on top of `termlab.store`.
 - `web/routes.py`: the route table and terminal settings handed to `termlab.web.shell`; each
   route validates its body (400) and calls one `game` function.
@@ -203,7 +220,8 @@ each phase's review checks the work against it.
 
 Enforced by tests:
 - an import-graph test: interfaces import only `game`, `markup` and `chapters` from the
-  game; core modules import no interface; nothing imports upward;
+  game; core modules import no interface; nothing imports upward; a level imports only `kit`,
+  its chapter's helpers and the standard library;
 - the package never reads anything about its runtime: no `docker`, `qemu` or `wsl` in package
   code, and the smoke test runs unchanged in each runtime;
 - every quest question has a check, and every theme covers every level and step id.
