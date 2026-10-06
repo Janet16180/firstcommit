@@ -1,24 +1,15 @@
-from pathlib import Path
 
 import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from firstcommit import kit, markup, repomap
+from firstcommit import kit, lab, markup, repomap
 
 FULL = "ce013625030ba8dba906f756967f9e9ca394464a"
 
 
-def test_a_lab_keeps_the_project_and_the_stand_in_github_under_its_root(tmp_path: Path) -> None:
-    lab = kit.Lab(tmp_path)
-    assert lab.project == tmp_path / "project"
-    assert lab.github == tmp_path / "github" / "project.git"
-
-
-def test_a_lab_keeps_the_teammates_clone_apart_from_the_players_project(tmp_path: Path) -> None:
-    lab = kit.Lab(tmp_path)
-    assert lab.teammate == tmp_path / "teammate" / "project"
-    assert lab.teammate.parent != lab.project.parent
+def test_a_level_gets_its_lab_from_the_toolkit() -> None:
+    assert kit.Lab is lab.Lab
 
 
 def test_parse_int_reads_plain_digits() -> None:
