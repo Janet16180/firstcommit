@@ -48,6 +48,12 @@ CMD ["firstcommit", "serve"]
 # source resolves. Dependencies come from PyPI while building; the tests then run offline, on
 # the image's own Python.
 FROM player AS test
+# Ubuntu's nodejs runs the page's node tests (built 2026-10-06 with nodejs 18.19.1+dfsg-6ubuntu5).
+USER root
+RUN apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends nodejs \
+ && rm -rf /var/lib/apt/lists/*
+USER player
 COPY --from=ghcr.io/astral-sh/uv:0.12.6@sha256:88bc6eb1ccd4b82efd0e1b530caffabddf50dc2bf612e66c14ea25b8ee8a4d3d /uv /usr/local/bin/uv
 ENV UV_PYTHON_DOWNLOADS=never UV_NO_CACHE=1
 COPY --chown=player:player --from=termlab pyproject.toml README.md /home/player/termlab/
@@ -56,4 +62,4 @@ COPY --chown=player:player . /home/player/firstcommit
 WORKDIR /home/player/firstcommit
 RUN uv sync --frozen
 ENV UV_NO_SYNC=1 UV_OFFLINE=1
-CMD ["sh", "-c", "uv run ruff check && uv run mypy && uv run pytest -q"]
+CMD ["sh", "-c", "uv run ruff check && uv run mypy && uv run pytest -q -rs"]

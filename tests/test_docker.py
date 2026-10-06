@@ -796,10 +796,13 @@ def test_reset_deletes_the_saved_game_after_yes(unused_name: str) -> None:
 
 @pytest.mark.docker
 @pytest.mark.slow
-def test_the_whole_suite_passes_inside_the_container(unused_name: str) -> None:
+def test_the_whole_suite_passes_inside_the_container_where_only_the_docker_tests_skip(unused_name: str) -> None:
     result = run_script("test", name=unused_name, timeout=1800)
 
+    skipped = [line for line in result.stdout.splitlines() if line.startswith("SKIPPED")]
     assert result.returncode == 0, result.stdout[-4000:] + result.stderr[-4000:]
+    assert skipped, "the container's pytest run lists no skip reasons"
+    assert all("Docker or its daemon is not available" in line for line in skipped), skipped
 
 
 @pytest.mark.docker
