@@ -236,15 +236,20 @@ class Observation(TypedDict):
 
 class PressView(TypedDict):
     """
-    One press of a playground button: the command and what it printed, what it shows, and the lab right after it.
+    One press of a playground button: the command and what it printed, the lab before and after it, and what it shows.
 
-    ``explanation`` is None until the playground's explanations exist; ``observation`` is what
-    `observe` would give right after the press.
+    ``before`` is the lab just before the press: its events are what the terminal changed since
+    the last observation. ``observation`` is the lab right after it: its events are the press's
+    own. ``explanation``, ``fix`` (a button id the explanation offers) and ``fix_line`` (a line
+    to type instead, or "") are None, None and "" until the playground's explanations exist.
     """
 
     press: Press
-    explanation: list[Block] | None
+    before: Observation
     observation: Observation
+    explanation: list[Block] | None
+    fix: str | None
+    fix_line: str
 
 
 class Choice(TypedDict):
@@ -616,18 +621,24 @@ def observe() -> Observation:
     """
     with save.lock():
         active, entry = _playing()
-        observation = _observe(entry.id, runner.lab_of(entry.id))
+        last = save.load_observed()
+        now = _snapshots(entry.id, runner.lab_of(entry.id))
+        observation = _observation(last, now)
+        if now != last:
+            save.write_observed(now)
     return observation
 
 
 def press(person: str, button: str) -> PressView:
     """
-    Press one person's playground button in the level in progress, then observe the lab.
+    Press one person's playground button in the level in progress, observing the lab before and after.
 
     The button's command runs for real in that person's clone (`firstcommit.playground.press`);
-    a command that fails is reported with its status, as a terminal shows it. The press and the
-    observation after it hold the save's lock together, so no other observation can come in
-    between and tell the press's changes first.
+    a command that fails is reported with its status, as a terminal shows it. The observation
+    before, the press and the observation after hold the save's lock together, so what the
+    player typed before is told apart from the press's own changes, and no other observation
+    can come in between. Nothing is saved until the press has run: a press that raises leaves
+    the typed changes to the next observation.
 
     Parameters
     ----------
@@ -639,8 +650,8 @@ def press(person: str, button: str) -> PressView:
     Returns
     -------
     PressView
-        The press, its explanation and the lab right after it; a later `observe` does not tell
-        the same changes again.
+        The press, the lab before and after it, and its explanation; a later `observe` does not
+        tell the same changes again.
 
     Raises
     ------
@@ -660,9 +671,22 @@ def press(person: str, button: str) -> PressView:
         lab = runner.lab_of(entry.id)
         if not lab.teammate.exists():
             raise NoPlaygroundError(f"the level {entry.id!r} has no playground")
+        last = save.load_observed()
+        then = _snapshots(entry.id, lab)
+        before = _observation(last, then)
         pressed = playground.press(lab, who, which)
-        observation = _observe(entry.id, lab)
-    return {"press": pressed, "explanation": None, "observation": observation}
+        now = _snapshots(entry.id, lab)
+        observation = _observation(then, now)
+        if now != last:
+            save.write_observed(now)
+    return {
+        "press": pressed,
+        "before": before,
+        "observation": observation,
+        "explanation": None,
+        "fix": None,
+        "fix_line": "",
+    }
 
 
 def abort() -> str | None:
@@ -947,9 +971,9 @@ def _playground_id[Name: str](name: str, names: Iterable[Name], what: str) -> Na
     return known[0]
 
 
-def _observe(level_id: str, lab: Lab) -> Observation:
+def _snapshots(level_id: str, lab: Lab) -> save.Observed:
     """
-    Snapshot a level's lab and tell what changed since the last observation; the caller holds the save's lock.
+    Snapshot every repository of a level's lab; the caller holds the save's lock.
 
     Parameters
     ----------
@@ -960,26 +984,43 @@ def _observe(level_id: str, lab: Lab) -> Observation:
 
     Returns
     -------
-    Observation
-        The lab as `observe` gives it. The snapshots are saved when they changed.
+    save.Observed
+        The player's repository, and the stand-in GitHub and the teammate's clone where they exist.
     """
-    project = repomap.snapshot(lab.project)
-    github = repomap.snapshot(lab.github) if lab.github.exists() else None
-    teammate = repomap.snapshot(lab.teammate) if lab.teammate.exists() else None
-    before = save.load_observed()
-    events: list[Event] = []
-    teammate_events: list[Event] = []
-    if before is not None and before["level"] == level_id:
-        events = changes.describe(before["project"], project) + _changes(before["github"], github)
-        teammate_events = _changes(before["teammate"], teammate)
-    current: save.Observed = {"level": level_id, "project": project, "github": github, "teammate": teammate}
-    if current != before:
-        save.write_observed(current)
     return {
         "level": level_id,
-        "project": project,
-        "github": github,
-        "teammate": teammate,
+        "project": repomap.snapshot(lab.project),
+        "github": repomap.snapshot(lab.github) if lab.github.exists() else None,
+        "teammate": repomap.snapshot(lab.teammate) if lab.teammate.exists() else None,
+    }
+
+
+def _observation(last: save.Observed | None, now: save.Observed) -> Observation:
+    """
+    Tell what changed in a lab between two observations.
+
+    Parameters
+    ----------
+    last : save.Observed | None
+        The earlier observation, or None; one of another level counts as none.
+    now : save.Observed
+        The lab now.
+
+    Returns
+    -------
+    Observation
+        The lab now, with no events when there is no earlier observation of the same level.
+    """
+    events: list[Event] = []
+    teammate_events: list[Event] = []
+    if last is not None and last["level"] == now["level"]:
+        events = changes.describe(last["project"], now["project"]) + _changes(last["github"], now["github"])
+        teammate_events = _changes(last["teammate"], now["teammate"])
+    return {
+        "level": now["level"],
+        "project": now["project"],
+        "github": now["github"],
+        "teammate": now["teammate"],
         "events": _event_views(events),
         "teammate_events": _event_views(teammate_events),
     }
