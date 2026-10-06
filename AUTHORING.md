@@ -270,6 +270,8 @@ All text is parsed by `firstcommit.markup` (the page and the command line only r
   output and file contents there, separated from prose by blank lines.
 - Lines starting with `- ` are bullets.
 - `backticks` mark commands, file names, branch names and hashes.
+- The whole text is dedented first, so a text made *only* of indented lines reads as prose. To
+  show output on its own, put one line of prose before it.
 
 ## 7. Words and tone
 
