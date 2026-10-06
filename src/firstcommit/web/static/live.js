@@ -20,6 +20,7 @@ const LivePanel = (function () {
     project: "Your repository",
     github: "GitHub (the practice copy)",
     areas: "The three areas",
+    places: "The four places",
     playground: "You, GitHub and Alex",
     feed: "What just happened",
     teammate: "On Alex's computer:",
@@ -30,6 +31,12 @@ const LivePanel = (function () {
   const mergeEvents = (feed, events, at, max = MAX_EVENTS) => [...events.map((event) => ({ ...event, at })), ...feed].slice(0, max);
 
   const hashes = (snapshot) => new Set(snapshot.commits.map((commit) => commit.hash));
+
+  /* Names a part: its heading, and its section's label. */
+  function retitle(heading, name) {
+    heading.textContent = name;
+    heading.parentNode.setAttribute("aria-label", name);
+  }
 
   /* A feed event's words, after where it happened when that was the teammate's clone (`teammate`, the title saying so). */
   const where = (event, teammate) => (event.teammate ? `${teammate} ` : "");
@@ -90,7 +97,8 @@ const LivePanel = (function () {
     }
 
     /* The places, redrawn when either repository changed: the arrows of what the batch's events
-       did light up, and the work moves from the drawing before. */
+       did light up, and the work moves from the drawing before. The part is the three areas until
+       there is a GitHub, then the four places. */
     function drawPlaces({ project, github, events }) {
       const after = { project, github };
       const text = JSON.stringify(after);
@@ -99,6 +107,7 @@ const LivePanel = (function () {
       drawn.places = text;
       const commands = before ? places.commands(events, before.project, project) : [];
       const figure = places.render(after, { commands });
+      retitle(areasTitle, github ? titles.places : titles.areas);
       areasBox.replaceChildren(figure);
       if (before) places.play(figure, { before, after, commands });
     }
@@ -107,7 +116,7 @@ const LivePanel = (function () {
     function drawPlayground(observation, person) {
       if (areasBox.firstChild !== playground.element) {
         areasBox.replaceChildren(playground.element);
-        areasTitle.textContent = titles.playground;
+        retitle(areasTitle, titles.playground);
       }
       playground.draw(observation, { person });
     }

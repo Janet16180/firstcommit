@@ -93,7 +93,7 @@ test("given places, the three areas part draws them instead, lit from the batch'
   assert.deepEqual(seen.renders[0].options, { commands: [] }, "nothing lights on the first drawing");
   assert.deepEqual(seen.plays, [], "and nothing plays");
   const part = panel.element.querySelector(".live-three");
-  assert.equal(part.querySelector("h3").textContent, "The three areas");
+  assert.equal(part.querySelector("h3").textContent, "The four places", "the part keeps its place and names what it shows");
   assert.ok(part.querySelector("figure.places"));
   assert.equal(part.querySelector(".areas-row"), null, "no three areas strip");
   panel.update(older);
@@ -105,6 +105,16 @@ test("given places, the three areas part draws them instead, lit from the batch'
   assert.equal(seen.plays.length, 1);
   assert.equal(seen.plays[0].figure, part.querySelector("figure.places"));
   assert.deepEqual(seen.plays[0].transition, { before: { project: older.project, github: older.github }, after: { project: observation.project, github: observation.github }, commands: ["commit"] });
+});
+
+test("with places, the part is called the three areas until a GitHub is there, then the four places", () => {
+  const places = { commands: () => [], render: () => document.createElement("figure"), play: () => [] };
+  const panel = LivePanel.create({ places });
+  const part = panel.element.querySelector(".live-three");
+  panel.update({ ...record("observation"), github: null });
+  assert.deepEqual([part.querySelector("h3").textContent, part.getAttribute("aria-label")], ["The three areas", "The three areas"]);
+  panel.update(record("observation"));
+  assert.deepEqual([part.querySelector("h3").textContent, part.getAttribute("aria-label")], ["The four places", "The four places"]);
 });
 
 test("what just happened lists the events newest first, with the time they were seen", () => {
@@ -136,6 +146,7 @@ test("given a playground, an observation with Alex's clone puts it in the places
   panel.update(observation);
   const part = panel.element.querySelector(".live-three");
   assert.equal(part.querySelector("h3").textContent, "The playground");
+  assert.equal(part.getAttribute("aria-label"), "The playground");
   assert.ok(part.querySelector(".playground"));
   assert.equal(part.querySelector(".areas-row"), null);
   assert.deepEqual(playground.draws, [{ observation, options: { person: null } }]);
