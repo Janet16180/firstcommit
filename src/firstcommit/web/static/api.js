@@ -123,13 +123,23 @@ const createGameApi = (function () {
   const HINT = record({ hint: BLOCKS, used: number, total: number, cost: number });
   const EVENTS = list(record({ kind: text, text: BLOCKS }));
   const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), teammate: nullable(SNAPSHOT), events: EVENTS, teammate_events: EVENTS });
-  /* The playground's people and buttons (records.Who and records.Button; a Python test keeps them equal). */
+  /* The playground's people and kinds of button (records.Who and records.Button; a Python test
+     keeps them equal). A button's id is its kind, or "<kind>:<file>" for one that acts on a file. */
   const WHO = oneOf("you", "alex");
-  const BUTTON = oneOf("edit", "add", "commit", "push", "fetch", "pull", "pull-no-rebase", "status");
+  const KIND = oneOf("edit", "add", "commit", "push", "fetch", "pull", "pull-no-rebase", "status");
+  const BUTTON_ID = (value, where) => {
+    text(value, where);
+    const [kind, ...file] = value.split(":");
+    KIND(kind, where);
+    if (file.length && !file.join(":")) fail(where, "a kind, or a kind and a file");
+  };
   const PRESSED = record({
-    press: record({ person: WHO, button: BUTTON, command: text, status: number, output: text }),
-    explanation: nullable(BLOCKS),
+    press: record({ person: WHO, button: BUTTON_ID, command: text, status: number, output: text }),
+    before: OBSERVATION,
     observation: OBSERVATION,
+    explanation: nullable(BLOCKS),
+    fix: nullable(text),
+    fix_line: text,
   });
   const CARDS = record({
     cards: list(record({

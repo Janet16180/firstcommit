@@ -2727,36 +2727,35 @@
    "button": "push",
    "command": "git push",
    "status": 0,
-   "output": "To ../../github/project.git\n   72be22a..890d579  main -> main\n"
+   "output": "To ../../github/project.git\n   d412c6b..31071a7  main -> main\n"
   },
-  "explanation": null,
-  "observation": {
+  "before": {
    "level": "basics-sample",
    "project": {
     "exists": true,
     "bare": false,
-    "head": "72be22ae33d512ce24d4b4f127d3c33f36d764c7",
+    "head": "d412c6bdf2bac0062df873b413cf5f43434dae4e",
     "branch": "main",
     "commits": [
      {
-      "hash": "72be22ae33d512ce24d4b4f127d3c33f36d764c7",
-      "short": "72be22a",
+      "hash": "d412c6bdf2bac0062df873b413cf5f43434dae4e",
+      "short": "d412c6b",
       "parents": [],
       "subject": "Add the README",
       "author": "First Commit",
-      "time": 1791325791
+      "time": 1791330047
      }
     ],
     "refs": [
      {
       "name": "main",
       "kind": "branch",
-      "target": "72be22ae33d512ce24d4b4f127d3c33f36d764c7"
+      "target": "d412c6bdf2bac0062df873b413cf5f43434dae4e"
      },
      {
       "name": "origin/main",
       "kind": "remote",
-      "target": "72be22ae33d512ce24d4b4f127d3c33f36d764c7"
+      "target": "d412c6bdf2bac0062df873b413cf5f43434dae4e"
      }
     ],
     "pushed": [],
@@ -2783,33 +2782,23 @@
    "github": {
     "exists": true,
     "bare": true,
-    "head": "890d57934ac537c8d74da5d244f19ab8bacfaeef",
+    "head": "d412c6bdf2bac0062df873b413cf5f43434dae4e",
     "branch": "main",
     "commits": [
      {
-      "hash": "890d57934ac537c8d74da5d244f19ab8bacfaeef",
-      "short": "890d579",
-      "parents": [
-       "72be22ae33d512ce24d4b4f127d3c33f36d764c7"
-      ],
-      "subject": "Add a line to alex.txt",
-      "author": "Alex",
-      "time": 1791325791
-     },
-     {
-      "hash": "72be22ae33d512ce24d4b4f127d3c33f36d764c7",
-      "short": "72be22a",
+      "hash": "d412c6bdf2bac0062df873b413cf5f43434dae4e",
+      "short": "d412c6b",
       "parents": [],
       "subject": "Add the README",
       "author": "First Commit",
-      "time": 1791325791
+      "time": 1791330047
      }
     ],
     "refs": [
      {
       "name": "main",
       "kind": "branch",
-      "target": "890d57934ac537c8d74da5d244f19ab8bacfaeef"
+      "target": "d412c6bdf2bac0062df873b413cf5f43434dae4e"
      }
     ],
     "pushed": [],
@@ -2821,41 +2810,206 @@
    "teammate": {
     "exists": true,
     "bare": false,
-    "head": "890d57934ac537c8d74da5d244f19ab8bacfaeef",
+    "head": "31071a7d66f2ea5a0b3a57c618e053c383877a9e",
     "branch": "main",
     "commits": [
      {
-      "hash": "890d57934ac537c8d74da5d244f19ab8bacfaeef",
-      "short": "890d579",
+      "hash": "31071a7d66f2ea5a0b3a57c618e053c383877a9e",
+      "short": "31071a7",
       "parents": [
-       "72be22ae33d512ce24d4b4f127d3c33f36d764c7"
+       "d412c6bdf2bac0062df873b413cf5f43434dae4e"
       ],
       "subject": "Add a line to alex.txt",
       "author": "Alex",
-      "time": 1791325791
+      "time": 1791330048
      },
      {
-      "hash": "72be22ae33d512ce24d4b4f127d3c33f36d764c7",
-      "short": "72be22a",
+      "hash": "d412c6bdf2bac0062df873b413cf5f43434dae4e",
+      "short": "d412c6b",
       "parents": [],
       "subject": "Add the README",
       "author": "First Commit",
-      "time": 1791325791
+      "time": 1791330047
      }
     ],
     "refs": [
      {
       "name": "main",
       "kind": "branch",
-      "target": "890d57934ac537c8d74da5d244f19ab8bacfaeef"
+      "target": "31071a7d66f2ea5a0b3a57c618e053c383877a9e"
      },
      {
       "name": "origin/main",
       "kind": "remote",
-      "target": "890d57934ac537c8d74da5d244f19ab8bacfaeef"
+      "target": "d412c6bdf2bac0062df873b413cf5f43434dae4e"
      }
     ],
     "pushed": [],
+    "files": [
+     {
+      "path": "README.md",
+      "head": "3f97d6f343caec3213538d3d92ed335757db5adc",
+      "index": "3f97d6f343caec3213538d3d92ed335757db5adc",
+      "folder": "3f97d6f343caec3213538d3d92ed335757db5adc",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     },
+     {
+      "path": "alex.txt",
+      "head": "d8b832cc9f6d3a2c4ad67d4104c224bcf24d00fb",
+      "index": "d8b832cc9f6d3a2c4ad67d4104c224bcf24d00fb",
+      "folder": "d8b832cc9f6d3a2c4ad67d4104c224bcf24d00fb",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "events": [],
+   "teammate_events": []
+  },
+  "observation": {
+   "level": "basics-sample",
+   "project": {
+    "exists": true,
+    "bare": false,
+    "head": "d412c6bdf2bac0062df873b413cf5f43434dae4e",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "d412c6bdf2bac0062df873b413cf5f43434dae4e",
+      "short": "d412c6b",
+      "parents": [],
+      "subject": "Add the README",
+      "author": "First Commit",
+      "time": 1791330047
+     }
+    ],
+    "refs": [
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "d412c6bdf2bac0062df873b413cf5f43434dae4e"
+     },
+     {
+      "name": "origin/main",
+      "kind": "remote",
+      "target": "d412c6bdf2bac0062df873b413cf5f43434dae4e"
+     }
+    ],
+    "pushed": [],
+    "files": [
+     {
+      "path": "README.md",
+      "head": "3f97d6f343caec3213538d3d92ed335757db5adc",
+      "index": "3f97d6f343caec3213538d3d92ed335757db5adc",
+      "folder": "3f97d6f343caec3213538d3d92ed335757db5adc",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "github": {
+    "exists": true,
+    "bare": true,
+    "head": "31071a7d66f2ea5a0b3a57c618e053c383877a9e",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "31071a7d66f2ea5a0b3a57c618e053c383877a9e",
+      "short": "31071a7",
+      "parents": [
+       "d412c6bdf2bac0062df873b413cf5f43434dae4e"
+      ],
+      "subject": "Add a line to alex.txt",
+      "author": "Alex",
+      "time": 1791330048
+     },
+     {
+      "hash": "d412c6bdf2bac0062df873b413cf5f43434dae4e",
+      "short": "d412c6b",
+      "parents": [],
+      "subject": "Add the README",
+      "author": "First Commit",
+      "time": 1791330047
+     }
+    ],
+    "refs": [
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "31071a7d66f2ea5a0b3a57c618e053c383877a9e"
+     }
+    ],
+    "pushed": [],
+    "files": [],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "teammate": {
+    "exists": true,
+    "bare": false,
+    "head": "31071a7d66f2ea5a0b3a57c618e053c383877a9e",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "31071a7d66f2ea5a0b3a57c618e053c383877a9e",
+      "short": "31071a7",
+      "parents": [
+       "d412c6bdf2bac0062df873b413cf5f43434dae4e"
+      ],
+      "subject": "Add a line to alex.txt",
+      "author": "Alex",
+      "time": 1791330048
+     },
+     {
+      "hash": "d412c6bdf2bac0062df873b413cf5f43434dae4e",
+      "short": "d412c6b",
+      "parents": [],
+      "subject": "Add the README",
+      "author": "First Commit",
+      "time": 1791330047
+     }
+    ],
+    "refs": [
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "31071a7d66f2ea5a0b3a57c618e053c383877a9e"
+     },
+     {
+      "name": "origin/main",
+      "kind": "remote",
+      "target": "31071a7d66f2ea5a0b3a57c618e053c383877a9e"
+     }
+    ],
+    "pushed": [
+     "origin/main"
+    ],
     "files": [
      {
       "path": "README.md",
@@ -2910,7 +3064,7 @@
          "code": false
         },
         {
-         "text": "72be22a",
+         "text": "d412c6b",
          "code": true
         },
         {
@@ -2918,7 +3072,7 @@
          "code": false
         },
         {
-         "text": "890d579",
+         "text": "31071a7",
          "code": true
         },
         {
@@ -2958,7 +3112,7 @@
          "code": false
         },
         {
-         "text": "72be22a",
+         "text": "d412c6b",
          "code": true
         },
         {
@@ -2966,7 +3120,7 @@
          "code": false
         },
         {
-         "text": "890d579",
+         "text": "31071a7",
          "code": true
         },
         {
@@ -2986,6 +3140,9 @@
      ]
     }
    ]
-  }
+  },
+  "explanation": null,
+  "fix": null,
+  "fix_line": ""
  }
 }

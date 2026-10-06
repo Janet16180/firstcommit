@@ -189,7 +189,7 @@ test("a press must say who pressed which button, what ran and what it printed, a
     delete pressed.press[field];
     await assert.rejects(gameApi({ "/api/press": pressed }).game.press("alex", "push"), new RegExp(`/api/press\\.press\\.${field} should be`), field);
   }
-  for (const field of ["explanation", "observation"]) {
+  for (const field of ["before", "observation", "explanation", "fix", "fix_line"]) {
     const pressed = record("press");
     delete pressed[field];
     await assert.rejects(gameApi({ "/api/press": pressed }).game.press("alex", "push"), new RegExp(`/api/press\\.${field} should be`), field);
@@ -197,4 +197,14 @@ test("a press must say who pressed which button, what ran and what it printed, a
   const stranger = record("press");
   stranger.press.person = "bob";
   await assert.rejects(gameApi({ "/api/press": stranger }).game.press("alex", "push"), /press\.person should be one of you, alex/);
+});
+
+test("a press names its button by id: a kind the playground has, or that kind and the file it acts on", async () => {
+  const pressing = (button) => {
+    const pressed = record("press");
+    pressed.press.button = button;
+    return gameApi({ "/api/press": pressed }).game.press("you", button);
+  };
+  assert.equal((await pressing("add:you.txt")).press.button, "add:you.txt");
+  for (const button of ["rebase", "rebase:you.txt", "add:", ":you.txt"]) await assert.rejects(pressing(button), /press\.button should be/, button);
 });
