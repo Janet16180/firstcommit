@@ -113,3 +113,24 @@ class ObjectInfo(TypedDict):
     hash: str
     type: ObjectType
     size: int
+
+
+Who = Literal["you", "alex"]
+"""The two people of the playground (`firstcommit.playground`), who share one remote."""
+Button = Literal["edit", "add", "commit", "push", "fetch", "pull", "pull-no-rebase", "status"]
+"""The playground's buttons: each person has all of them."""
+
+
+class Press(TypedDict):
+    """
+    One press of a playground button: who pressed which button, the command it ran, and what that printed.
+
+    ``command`` is exactly what ran, as the player could type it; ``status`` is its exit status
+    and ``output`` its standard output and error, interleaved, as a terminal shows them.
+    """
+
+    person: Who
+    button: Button
+    command: str
+    status: int
+    output: str
