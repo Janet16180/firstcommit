@@ -7,21 +7,23 @@ Git works with three areas:
 
 - the working folder (Git says working tree): the files you see and edit;
 - the staging area (Git says index): what the next commit will contain;
-- the repository: the commits, each a snapshot of the staged files with an author, a date, a message and its parent.
+- the repository: the commits, each a snapshot of the project's files with an author, a date, a message and its parent.
 
 A new file is untracked until you stage it. `git add` copies a file's current content into the
-staging area; edit the file again and you must add it again. `git commit` saves the staging area
-as a new commit, and afterwards the staging area still matches that commit. `git status` shows
-where every file stands, so run it often.
+staging area; edit the file again, and you add it again to stage the new content. A plain
+`git commit` saves the staging area as a new commit, and afterwards the staging area still
+matches that commit. `git status` lists the files that are untracked, staged, or changed but not
+staged, so run it often.
 
-Git writes your name and email into every commit. Set them once with `git config --global`; in
-a single repository, the same command without `--global` overrides them.
+Git records your name and email as the author of your commits. Set them once with the two
+`git config --global` commands below; inside one repository, the same commands without
+`--global` override them.
 
     $ git init                           # make the current folder a repository
-    $ git status                         # the branch, and where each file stands
+    $ git status                         # the branch, and untracked, staged and changed files
     $ git add README.md                  # copy a file's current content into the staging area
     $ git commit -m "Add the README"     # save the staging area as a new commit
-    $ git log --oneline                  # one line per commit, newest first: short hash, message
+    $ git log --oneline                  # one line per commit, newest first
     $ git config --global user.name "Your Name"
     $ git config --global user.email you@example.com
 """
@@ -39,10 +41,10 @@ wrong = [
 ]
 explain = """
 `git init` creates a `.git` folder in the current folder: that is the repository, with the
-project's commits, branches and settings. It is hidden only because its name starts with a dot;
-`ls -A` shows it. Your home folder holds your personal Git settings, not a project's history.
-GitHub is a hosting service: a repository works on your computer without it. And Git never
-changes your files to store history in them; the history lives in `.git`.
+project's commits, branches and settings. Its name starts with a dot, so a plain `ls` leaves it
+out; `ls -A` shows it. Your home folder holds your personal Git settings, not a project's history.
+GitHub is a hosting service: a repository works on your computer without it. And Git does not
+store history inside your files; the history lives in `.git`.
 """
 source = "git-init(1), DESCRIPTION; Pro Git 2nd ed., 1.3 (the Git directory)"
 verify = """
@@ -62,8 +64,8 @@ wrong = [
     "Git makes a commit with the message and no files",
 ]
 explain = """
-A commit takes the content of the staging area, and a new file only gets there with `git add`.
-With nothing staged, `git commit` stops with an error and makes no commit. Being in the working
+A plain `git commit` takes the content of the staging area, and a new file gets there with
+`git add`. With nothing staged, `git commit` stops without making a commit. Being in the working
 folder is not enough: a new file goes into a commit only after `git add`. Git does not stage new
 files on its own, and it does not record a commit without files here either.
 """
@@ -88,7 +90,7 @@ wrong = [
 ]
 explain = """
 `git add` copies the content the file has at that moment into the staging area, the list of
-what the next commit will contain. Nothing is committed until you run `git commit`. The file
+what the next commit will contain. `git add` itself commits nothing: `git commit` does. The file
 stays in the working folder: `git add` copies, it does not move. And it is a one-time copy: after
 another edit, you run `git add` again to stage the new content.
 """
@@ -106,18 +108,20 @@ id = "basics-identity"
 kind = "choice"
 level = 1
 prompt = "Why do you set `user.name` and `user.email` before your first commit?"
-correct = "Git writes them into every commit as its author"
+correct = "Git records them as the author of your commits"
 wrong = [
     "GitHub uses them to log you in when you push",
     "Git refuses to run any command until they are set",
     "They make you the owner of the repository's files",
 ]
 explain = """
-Every commit records an author: a name and an email, taken from `user.name` and `user.email`.
-They are plain text in the commit and are not a login: signing in to GitHub is a separate
-matter. Most commands, such as `git init`, `git add` and `git status`, work without them. They
-grant no ownership or permissions on files either. Set them with `git config --global` once per
-computer; inside one repository, the same command without `--global` overrides them.
+Every commit records an author, a name and an email, which Git normally takes from
+`user.name` and `user.email`. They are plain text in the commit and are not a login: signing in
+to GitHub is a separate matter. Most commands, such as `git init`, `git add` and `git status`,
+work without them. They grant no ownership or permissions on files either. Set them once per
+computer with `git config --global user.name "Your Name"` and
+`git config --global user.email you@example.com`; inside one repository, the same commands
+without `--global` override them.
 """
 source = "git-commit(1), COMMIT INFORMATION; git-config(1), FILES; Pro Git 2nd ed., 1.6 (Your Identity)"
 verify = """
@@ -154,12 +158,13 @@ test "$(git config --global init.defaultBranch)" = main &&
 id = "basics-log-oneline"
 kind = "text"
 level = 1
-prompt = "Which option makes `git log` show each commit on one line: a short hash, then the message?"
+prompt = "Which option makes `git log` show each commit on one line, starting with a short hash?"
 accept = ["--oneline", "git log --oneline"]
 explain = """
 `--oneline` is shorthand for `--pretty=oneline --abbrev-commit`. Each commit gets one line: its
-hash shortened to a prefix that is unique in the repository, then the first line of its
-message. Commits are listed newest first.
+hash shortened to a prefix that is unique in the repository, then its message's title (the text
+up to the first blank line, usually one line). Commits are listed newest first. On a terminal,
+branch names such as `(HEAD -> main)` appear between the hash and the title.
 """
 source = "git-log(1), --oneline, --abbrev-commit and Commit Ordering"
 verify = """
@@ -188,8 +193,8 @@ correct = "1"
 wrong = ["2", "0"]
 explain = """
 `git log --oneline` prints one line per commit, and there is only one commit. The second change
-was staged with `git add` but never committed: staging prepares the next commit, and only
-`git commit` adds one to the history. The answer is not 0 either: the first commit was made.
+was staged with `git add` but never committed: staging prepares the next commit, and it takes
+`git commit` to add it to the history. The answer is not 0 either: the first commit was made.
 """
 source = "git-log(1), DESCRIPTION; git-commit(1), DESCRIPTION"
 
@@ -198,18 +203,17 @@ id = "basics-commit-records"
 kind = "choice"
 level = 2
 prompt = "What does a commit record?"
-correct = "A snapshot of the staged files, with author, date and message"
+correct = "A snapshot of the project's files, with author, date and message"
 wrong = [
     "Only the lines that changed since the previous commit",
     "The commands you ran since the previous commit",
     "A copy of the whole working folder, untracked files too",
 ]
 explain = """
-A commit stores the content of every file in the staging area, plus who made it, when, the
-message and its parent commit. Git thinks in snapshots, not in lists of changed lines: when
+A plain `git commit` stores the content of every file in the staging area, plus who made it,
+when, the message and its parent commit. Git thinks in snapshots, not in lists of changed lines: when
 `git show` displays a commit's changes, it computes them by comparing the commit with its parent.
-Git records files, never the commands you typed. Untracked files stay out: only what is staged
-goes in.
+Git records files, not the commands you typed. Untracked files stay out of the commit.
 """
 source = "git-commit(1), DESCRIPTION; git-show(1), DESCRIPTION; Pro Git 2nd ed., 1.3 (Snapshots, Not Differences)"
 verify = """
@@ -288,8 +292,8 @@ wrong = [
 ]
 explain = """
 The staging area is not a queue that a commit empties: it is the full list of files for the next
-commit, and a commit records it as it is. Right after a commit, the staging area and the commit
-hold the same content, which is why `git status` has nothing staged to report. `git ls-files`
+commit, and a plain `git commit` records it as it is. Right after a plain `git commit`, the
+staging area and the commit hold the same content, which is why `git status` has nothing staged to report. `git ls-files`
 lists the staging area, and still lists every tracked file. Changes you did not stage stay in the
 working folder, not in the staging area.
 """
@@ -322,7 +326,7 @@ wrong = ["2", "0"]
 explain = """
 `git commit -a` stages the changes to files Git already tracks, then commits. `a.txt` is
 tracked, so its edit goes into the second commit. `b.txt` is new: `-a` leaves it untracked, so
-the staging area still lists only `a.txt`. The answer is not 0: a commit never empties the
-staging area.
+the staging area still lists only `a.txt`. The answer is not 0: committing does not clear the
+staging area, so `a.txt` is still listed.
 """
 source = "git-commit(1), -a; Pro Git 2nd ed., 2.2 (Skipping the Staging Area)"

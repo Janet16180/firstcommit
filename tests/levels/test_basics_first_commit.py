@@ -266,14 +266,31 @@ def test_typing_the_commit_message_instead_of_the_hash_gets_a_nudge_without_the_
     assert git(played, "rev-parse", "--short=4", "HEAD").strip() not in verdict.message
 
 
-@pytest.mark.parametrize(
-    ("step_id", "key", "example"), [("name", "user.name", "Your Name"), ("email", "user.email", "you@example.com")]
-)
-def test_the_identity_steps_refuse_the_example_values(lab: kit.Lab, step_id: str, key: str, example: str) -> None:
+IDENTITY = [
+    ("name", "user.name", "Your Name", level.NAME_COMMAND),
+    ("email", "user.email", "you@example.com", level.EMAIL_COMMAND),
+]
+
+
+@pytest.mark.parametrize(("step_id", "key", "example", "command"), IDENTITY)
+def test_the_identity_steps_refuse_the_example_values(
+    lab: kit.Lab, step_id: str, key: str, example: str, command: str
+) -> None:
     git(lab, "config", "--global", key, example)
     verdict = watch(lab, step_id)
     assert not verdict.solved
     assert "example" in verdict.message
+    assert f"`{command}`" in verdict.message
+
+
+@pytest.mark.parametrize(("step_id", "key", "example", "command"), IDENTITY)
+def test_a_missing_identity_gets_a_complete_command_to_set_it(
+    lab: kit.Lab, step_id: str, key: str, example: str, command: str
+) -> None:
+    verdict = watch(lab, step_id)
+    assert not verdict.solved
+    assert f"`{command}`" in verdict.message
+    assert command.endswith(example) or command.endswith(f'"{example}"')
 
 
 def test_an_identity_set_without_global_also_counts(lab: kit.Lab) -> None:
@@ -366,11 +383,32 @@ def test_a_repository_on_another_branch_gets_the_rename_command(lab: kit.Lab) ->
     assert check(lab).solved
 
 
+def test_another_branch_while_main_exists_gets_the_switch_command(played: kit.Lab) -> None:
+    git(played, "switch", "-c", "draft")
+    verdict = check(played)
+    assert not verdict.solved
+    assert "`git switch main`" in verdict.message
+    git(played, "switch", "main")
+    assert check(played).solved
+
+
 def test_a_detached_head_does_not_solve_the_level(played: kit.Lab) -> None:
     git(played, "switch", "--detach")
     verdict = check(played)
     assert not verdict.solved
-    assert "git switch main" in verdict.message
+    assert "`git switch main`" in verdict.message
+
+
+def test_a_detached_head_without_main_gets_the_command_that_creates_it(lab: kit.Lab) -> None:
+    git(lab, "init", "-b", "master")
+    for step_id in ["file", "stage", "commit"]:
+        level.QUEST_ACTIONS[step_id](lab, {})
+    git(lab, "switch", "--detach")
+    verdict = check(lab)
+    assert not verdict.solved
+    assert "`git switch -c main`" in verdict.message
+    git(lab, "switch", "-c", "main")
+    assert check(lab).solved
 
 
 def test_a_bare_repository_does_not_count(lab: kit.Lab) -> None:

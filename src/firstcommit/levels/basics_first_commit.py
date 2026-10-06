@@ -13,6 +13,8 @@ BRANCH = "main"
 FILE = "README.md"
 EXAMPLE_NAME = "Your Name"
 EXAMPLE_EMAIL = "you@example.com"
+NAME_COMMAND = f'git config --global user.name "{EXAMPLE_NAME}"'
+EMAIL_COMMAND = f"git config --global user.email {EXAMPLE_EMAIL}"
 PLAYER = kit.Person("Robin Park", "robin@example.com")
 
 Area = Literal["folder", "index", "head"]
@@ -53,17 +55,18 @@ the working tree). The staging area holds what will go into the next commit (Git
 index). The repository holds the commits.
 
 A new file starts in the working folder only. Git calls it untracked: it is in no commit and
-not in the staging area. `git status` shows where each file stands.
+not in the staging area. `git status` lists the files that are untracked, staged, or changed but
+not staged.
 """,
         run='echo "# Team handbook" > README.md\ngit status',
         view="areas",
     ),
     kit.Slide(
         id="nothing-staged",
-        title="A commit takes what is staged",
+        title="Staging comes first",
         text="""
-Committing now fails. A commit takes the content of the staging area, and the staging area is
-still empty: a file being in the working folder is not enough.
+Committing now fails. A plain `git commit` takes the content of the staging area, and the
+staging area is still empty: a file being in the working folder is not enough.
 """,
         run='! git commit -m "Add the README"',
         view="areas",
@@ -75,8 +78,8 @@ still empty: a file being in the working folder is not enough.
 `git add` copies the file's current content into the staging area. The file stays in the
 working folder too.
 
-If you edit the file after `git add`, run `git add` again: the staging area keeps the content
-as it was when you added it.
+If you edit the file after `git add`, the staging area keeps the content as it was when you
+added it: run `git add` again to stage the new content.
 """,
         run="git add README.md\ngit status",
         view="areas",
@@ -100,7 +103,9 @@ commit hold the same content.
         title="Read the history",
         text="""
 A new commit goes on top of the last one: Git records the last commit as its parent.
-`git log --oneline` lists the commits, newest first: a short hash, then the message.
+`git log --oneline` lists the commits, newest first, one per line: a short hash, then the
+message. On a terminal, the newest line also shows `(HEAD -> main)` between them: the branch
+`main` points to that commit, and you are on that branch.
 """,
         run=(
             'echo "Be kind to each other." >> README.md\n'
@@ -127,13 +132,14 @@ Run `git status` after every command. It names the branch you are on, and lists 
 are untracked, staged or changed.
 """,
     """
-A file reaches a commit in two moves: `git add` copies it into the staging area, then
+A new file reaches a commit in two moves: `git add` copies it into the staging area, then
 `git commit` saves the staging area as a commit.
 """,
     """
 In the `project` folder: run `git init`, create `README.md`, run `git add README.md`,
 then `git commit -m "Add the README"`. Before the commit, make sure Git knows your name and
-email (`git config --global user.name` and `user.email`).
+email: run `git config --global user.name "Your Name"` and
+`git config --global user.email you@example.com`, with your own name and address.
 """,
 ]
 
@@ -141,8 +147,9 @@ DEBRIEF = """
 You turned an empty folder into a repository, created a file, staged it and saved it in a
 commit. That loop is the heart of daily work with Git: edit, `git add`, `git commit`.
 
-What a commit really is: a commit records a snapshot of every file in the staging area at that
-moment, not only the lines that changed. Next to the files it stores the author's name and email,
+What a commit really is: a commit records a complete snapshot of the project's files, not only
+the lines that changed; a plain `git commit` takes that snapshot from the staging area. Next to
+the files it stores the author's name and email,
 the date, the message, and the commit that came before it (its parent; your first commit has
 none). Git names the commit with a hash computed from all of that. Files that did not change are
 not stored twice: the new commit points to the content Git already has.
@@ -150,8 +157,8 @@ not stored twice: the new commit points to the content Git already has.
 Why the staging area exists: it lets you choose what goes into each commit. When you have
 changed three files for two different reasons, you can stage and commit them as two focused
 commits, each with its own message. `git status` shows what is staged before you commit, so a
-commit holds what you meant it to hold. After a commit, the staging area is not emptied: it
-matches the commit, ready for your next change.
+commit holds what you meant it to hold. After a plain `git commit`, the staging area is not
+emptied: it matches the new commit, ready for your next change.
 
 At work: the commits you make carry the name and email Git is set to use, so set them once on
 your own computer (the chapter "Your real setup" walks you through it).
@@ -159,7 +166,7 @@ your own computer (the chapter "Your real setup" walks you through it).
 Commands to keep:
 
     $ git init                  # make the current folder a repository
-    $ git status                # where each file stands
+    $ git status                # untracked, staged and changed files
     $ git add README.md         # copy a file into the staging area
     $ git commit -m "Message"   # save the staging area as a commit
     $ git log --oneline         # list the commits, newest first
@@ -167,7 +174,7 @@ Commands to keep:
     $ git config --global user.email you@example.com
 """
 
-SOLVED = "Your first commit contains `README.md`, and the working folder, the staging area and the commit all agree."
+SOLVED = "Your last commit contains `README.md`, and the working folder, the staging area and that commit all agree."
 
 
 def has_file(snap: kit.Snapshot, area: Area) -> bool:
@@ -301,6 +308,7 @@ def repository_move(lab: kit.Lab, snap: kit.Snapshot) -> str:
     str
         What to do next.
     """
+    has_main = any(ref["kind"] == "branch" and ref["name"] == BRANCH for ref in snap["refs"])
     if not snap["exists"] and kit.snapshot(lab.root)["exists"]:
         move = (
             "You created the repository one folder too high, in the lab folder above `project`. "
@@ -310,8 +318,12 @@ def repository_move(lab: kit.Lab, snap: kit.Snapshot) -> str:
         move = "There is no repository in the `project` folder yet. Create one with `git init`."
     elif snap["bare"]:
         move = "This is a bare repository: it has no working folder to edit files in. Restart the level to get an empty folder back."
-    elif snap["branch"] is None:
+    elif snap["branch"] is None and has_main:
         move = "You are not on a branch (HEAD is detached). Go back to `main` with `git switch main`."
+    elif snap["branch"] is None:
+        move = "You are not on a branch (HEAD is detached). Create the branch `main` here with `git switch -c main`."
+    elif has_main:
+        move = f"You are on the branch `{snap['branch']}`, and this level uses `main`. Switch to it with `git switch main`."
     else:
         move = f"You are on the branch `{snap['branch']}`, and this level uses `main`. Rename it with `git branch -m main`."
     return move
@@ -334,7 +346,7 @@ def commit_move(snap: kit.Snapshot) -> str:
     if has_file(snap, "index"):
         move = "`README.md` is in the staging area. Save the staging area as a commit with `git commit`."
     elif has_file(snap, "folder"):
-        move = "Git sees `README.md` in the working folder, but it is not in the staging area yet, and `git commit` takes only what is staged."
+        move = "Git sees `README.md` in the working folder, but it is not in the staging area yet, and a new file gets into a commit only once it is staged."
     else:
         move = "There is no `README.md` in the `project` folder yet. Create it there."
     return move
@@ -357,7 +369,7 @@ def tidy_move(snap: kit.Snapshot) -> str:
     loose, waiting, edited = untracked(snap), staged(snap), unstaged(snap)
     if loose:
         verb = "is" if len(loose) == 1 else "are"
-        move = f"{file_names(loose)} {verb} in the working folder but in no commit (untracked). Commit what you need, and delete the rest."
+        move = f"{file_names(loose)} {verb} in the working folder but not in the staging area (untracked). Stage and commit what you need, and delete the rest."
     elif waiting:
         verb = "is" if len(waiting) == 1 else "are"
         move = f"{file_names(waiting)} {verb} staged but not committed yet. Commit, so that your last commit holds what is staged."
@@ -436,7 +448,7 @@ def configured(lab: kit.Lab, key: str) -> str:
     return result.stdout.strip() if result.returncode == 0 else ""
 
 
-def identity(lab: kit.Lab, key: str, example: str, what: str) -> kit.Verdict:
+def identity(lab: kit.Lab, key: str, example: str, what: str, command: str) -> kit.Verdict:
     """
     Judge a quest step that sets the player's name or email.
 
@@ -450,6 +462,8 @@ def identity(lab: kit.Lab, key: str, example: str, what: str) -> kit.Verdict:
         The example value in the step's suggested command.
     what : str
         ``"name"`` or ``"email"``, for the messages.
+    command : str
+        The complete command that sets it, with the example value.
 
     Returns
     -------
@@ -458,9 +472,9 @@ def identity(lab: kit.Lab, key: str, example: str, what: str) -> kit.Verdict:
     """
     value = configured(lab, key)
     if not value:
-        message = f"Git does not know your {what} yet. Set it with `git config --global {key}`."
+        message = f"Git does not know your {what} yet. Set it with `{command}`, using your own {what}."
     elif value == example:
-        message = f"Your {what} is set to the example, `{example}`. Run the command again with your own {what}."
+        message = f"Your {what} is set to the example, `{example}`. Run `{command}` again with your own {what}."
     else:
         message = f"Git will now write your {what} into the commits you make."
     return kit.Verdict(bool(value) and value != example, message)
@@ -566,7 +580,7 @@ def watch_stage(lab: kit.Lab, state: kit.State) -> kit.Verdict:
         lab,
         snap,
         on_main(snap) and has_file(snap, "index"),
-        "`README.md` is in the staging area: the next commit takes it from there.",
+        "`README.md` is in the staging area, ready to be committed.",
     )
 
 
@@ -586,7 +600,7 @@ def watch_name(lab: kit.Lab, state: kit.State) -> kit.Verdict:
     kit.Verdict
         The step's verdict.
     """
-    return identity(lab, "user.name", EXAMPLE_NAME, "name")
+    return identity(lab, "user.name", EXAMPLE_NAME, "name", NAME_COMMAND)
 
 
 def watch_email(lab: kit.Lab, state: kit.State) -> kit.Verdict:
@@ -605,7 +619,7 @@ def watch_email(lab: kit.Lab, state: kit.State) -> kit.Verdict:
     kit.Verdict
         The step's verdict.
     """
-    return identity(lab, "user.email", EXAMPLE_EMAIL, "email")
+    return identity(lab, "user.email", EXAMPLE_EMAIL, "email", EMAIL_COMMAND)
 
 
 def watch_commit(lab: kit.Lab, state: kit.State) -> kit.Verdict:
@@ -629,7 +643,7 @@ def watch_commit(lab: kit.Lab, state: kit.State) -> kit.Verdict:
         lab,
         snap,
         on_main(snap) and has_file(snap, "head"),
-        "Your first commit is in the repository, on `main`.",
+        "Your last commit on `main` contains `README.md`.",
     )
 
 
@@ -659,9 +673,9 @@ def check_hash(lab: kit.Lab, state: kit.State, answer: str) -> kit.Verdict:
     elif right:
         message = "Right: that is the start of your commit's hash. Git names every commit this way."
     elif any(answer.strip() == commit["subject"] for commit in commits):
-        message = "That is your commit's message. Its short hash is the code in front of it."
+        message = "That is your commit's message. Its short hash is at the start of the same line."
     else:
-        message = "That is not the start of a commit hash in this repository. Run `git log --oneline` and look before your message."
+        message = "That is not the start of a commit hash in this repository. Run `git log --oneline`: each line starts with a short hash."
     return kit.Verdict(right, message)
 
 
@@ -674,7 +688,7 @@ repository:
 
     $ git init
 
-`git init` creates a hidden `.git` folder: that is where Git keeps every commit of the project.
+`git init` creates a hidden `.git` folder: that is where Git keeps the project's commits.
 Its first branch is called `main`, the name the game sets as the default.
 """,
         command="git init",
@@ -683,8 +697,8 @@ Its first branch is called `main`, the name the game sets as the default.
     kit.Step(
         id="status",
         text="""
-`git status` is the command you will run most. It names the branch you are on and tells you
-where each file stands in the three areas. Run it now. The repository has no files and no
+`git status` is the command you will run most. It names the branch you are on and lists the
+files that are untracked, staged, or changed but not staged. Run it now. The repository has no files and no
 commits yet, so it has little to report.
 """,
         command="git status",
@@ -700,8 +714,9 @@ about:
 
     $ echo "# My project" > README.md
 
-`echo` prints a line of text, and `>` writes it into the file, creating it. Run `git status`
-again: Git sees the new file, but does not track it yet.
+`echo` prints a line of text, and `>` writes it into the file: it creates the file, or replaces
+everything in it if the file already exists. Run `git status` again: Git sees the new file, but
+does not track it yet.
 """,
         command='echo "# My project" > README.md',
         watch=watch_file,
@@ -709,7 +724,7 @@ again: Git sees the new file, but does not track it yet.
     kit.Step(
         id="stage",
         text="""
-`git commit` takes only what is in the staging area, so copy the file there:
+A new file gets into a commit only through the staging area, so copy it there:
 
     $ git add README.md
 
@@ -727,13 +742,13 @@ quotes so that a name with spaces stays one value:
 
     $ git config --global user.name "Your Name"
 
-Replace `Your Name` with your own. `--global` means "for every repository of mine on this
-computer". Inside the game, it writes the game's own settings file instead of your real one, so
+Replace `Your Name` with your own. `--global` means "for all my repositories on this computer,
+unless one of them sets its own". Inside the game, it writes the game's own settings file instead of your real one, so
 nothing outside the game changes. At work you will run the same commands in your own terminal;
 the chapter "Your real setup" walks you through it. If you already set your name earlier in
 the game, this step passes at once.
 """,
-        command='git config --global user.name "Your Name"',
+        command=NAME_COMMAND,
         watch=watch_name,
     ),
     kit.Step(
@@ -745,7 +760,7 @@ Now your email. Use the address you will use for work:
 
 Replace `you@example.com` with your own address.
 """,
-        command="git config --global user.email you@example.com",
+        command=EMAIL_COMMAND,
         watch=watch_email,
     ),
     kit.Step(
@@ -768,8 +783,9 @@ List the history:
 
     $ git log --oneline
 
-Each line is one commit, newest first: a short hash, then the message. The short hash is the
-start of the commit's full hash, which has 40 characters here. Git accepts the short form
+Each line is one commit, newest first: a short hash, then the message. On your terminal, the
+newest line also shows `(HEAD -> main)` between them: your branch points to that commit. The
+short hash is the start of the commit's full hash, which has 40 characters here. Git accepts the short form
 wherever it needs a commit, as long as no other object's hash starts the same way.
 """,
         command="git log --oneline",
