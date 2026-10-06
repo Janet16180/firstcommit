@@ -17,13 +17,13 @@ HOSTILE = [
     "\n\n",
     "a" * 100_000,
     "MAIN",
-    "ｍａｉｎ",
+    "\N{FULLWIDTH LATIN SMALL LETTER M}ain",
     "main\x00",
     "$(rm -rf ~)",
     "../../..",
     "HEAD",
     "-n",
-    "K",
+    "\N{KELVIN SIGN}",
 ]
 
 
