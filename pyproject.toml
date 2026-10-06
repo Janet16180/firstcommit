@@ -1,0 +1,60 @@
+[project]
+name = "firstcommit"
+version = "0.1.0"
+description = "First Commit: a hands-on game that teaches Git to people who are starting out."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["termlab"]
+
+[project.scripts]
+firstcommit = "firstcommit.cli:main"
+
+[dependency-groups]
+dev = ["pytest>=8", "hypothesis>=6.100", "ruff>=0.16,<0.17", "mypy>=2.4,<2.5"]
+
+[tool.uv.sources]
+termlab = { path = "../termlab", editable = true }
+
+[build-system]
+requires = ["uv_build>=0.12.6,<0.13.0"]
+build-backend = "uv_build"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = [
+    "slow: takes 0.5 s or more; left out of the fast run",
+    "docker: builds or runs the Docker image; skipped when Docker is not available",
+]
+addopts = "--strict-markers"
+
+[tool.ruff]
+target-version = "py312"
+line-length = 120
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W", "F", "I", "B", "UP", "SIM", "BLE", "N",
+    "ANN",
+    "D", "D213",
+    "C90", "PLR0911", "PLR0912", "PLR0915",
+    "RUF100",
+]
+ignore = [
+    "E501",    # long user-facing strings
+    "ANN401",  # Any is the honest type for JSON-shaped data at the boundary
+]
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.mccabe]
+max-complexity = 12
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["D100", "D103"]  # a test's name is its specification
+
+[tool.mypy]
+python_version = "3.12"
+files = ["src", "tests"]
+strict = true

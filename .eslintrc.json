@@ -1,0 +1,24 @@
+{
+  "root": true,
+  "extends": "eslint:recommended",
+  "parserOptions": { "ecmaVersion": 2020, "sourceType": "script" },
+  "env": { "browser": true, "es6": true },
+  "globals": { "createTerminal": "readonly", "createClient": "readonly" },
+  "rules": {
+    "eqeqeq": "error",
+    "no-var": "error",
+    "prefer-const": "error",
+    "no-shadow": "error",
+    "no-sequences": "error",
+    "no-unused-vars": ["error", { "args": "after-used", "caughtErrors": "none" }],
+    "no-redeclare": ["error", { "builtinGlobals": false }],
+    // Noisy in ESLint 6 (dropped from "recommended" in 7).
+    "require-atomic-updates": "off",
+    "max-depth": ["error", 3],
+    "complexity": ["warn", 12],
+    "max-lines-per-function": ["warn", { "max": 80, "skipBlankLines": true, "skipComments": true }]
+  },
+  "overrides": [
+    { "files": ["tests/js/*.js"], "env": { "browser": false, "node": true } }
+  ]
+}
