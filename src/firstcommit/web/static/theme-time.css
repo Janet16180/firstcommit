@@ -519,6 +519,13 @@ h2,
   overflow: auto;
 }
 
+/* A timeline wider than its place is drawn smaller, down to the min-width theme-time-places.js
+   gives it; past that, the place scrolls. */
+.tt-place-graph svg.map-graph {
+  max-width: 100%;
+  height: auto;
+}
+
 .tt-places .map-empty {
   margin: 0.4rem 0 0;
   color: var(--muted);

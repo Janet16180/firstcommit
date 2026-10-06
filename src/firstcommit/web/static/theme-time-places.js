@@ -215,13 +215,21 @@ const TimePlaces = (function () {
     return el("section", { class: `tt-place is-${area}`, "data-area": area }, title(area, owner), held);
   }
 
+  /* A timeline wider than its place is drawn smaller, down to this share of its size (the CSS
+     lets it shrink); past it, its place scrolls rather than shrink hashes and subjects out of
+     reading. Each commit's tooltip keeps its whole subject. */
+  const FLOOR = 0.8;
+
   /* A repository's commits: closed boxes on its timeline. GitHub has no HEAD you are on, so an
      empty GitHub only says it has no commits. */
   function repositoryPlace(area, snapshot, showHead, owner = null) {
     const empty = !showHead && !snapshot.commits.length ? boxes.words.noCommits : null;
+    const map = empty ? null : RepoMap.render(snapshot, { theme: boxes, showHead });
+    const graph = map && map.querySelector("svg.map-graph");
+    if (graph) graph.style.minWidth = `${Math.round(FLOOR * Number(graph.getAttribute("width")))}px`;
     return el("section", { class: `tt-place is-${area}`, "data-area": area },
       title(area, owner),
-      empty ? el("p", { class: "tt-place-empty" }, empty) : el("div", { class: "tt-place-graph" }, RepoMap.render(snapshot, { theme: boxes, showHead })),
+      empty ? el("p", { class: "tt-place-empty" }, empty) : el("div", { class: "tt-place-graph" }, map),
     );
   }
 

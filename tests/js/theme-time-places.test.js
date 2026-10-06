@@ -450,6 +450,14 @@ test("a caption names no remote the figure does not show: without a GitHub, or b
   assert.match(linked.querySelector(".tt-places-caption").textContent, /origin\/main does not move/);
 });
 
+test("a timeline wider than its place is drawn smaller, down to four fifths of its size, then its place scrolls", () => {
+  const figure = TimePlaces.render({ project: at(TWO, "b", "b"), github: hub(TWO) }, {});
+  for (const graph of figure.querySelectorAll(".tt-place-graph svg.map-graph")) {
+    assert.equal(graph.style.minWidth, `${Math.round(0.8 * Number(graph.getAttribute("width")))}px`);
+  }
+  assert.equal(figure.querySelectorAll(".tt-place-graph svg.map-graph").length, 2);
+});
+
 const shortOf = (name) => blob(name).slice(0, 7);
 const wordsOf = (node) => (node.querySelector("em") || { textContent: "" }).textContent;
 
