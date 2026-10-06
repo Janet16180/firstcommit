@@ -29,8 +29,10 @@ from firstcommit.records import (
     FILE_MODE,
     GITLINK_MODE,
     LINK_MODE,
+    Change,
     Commit,
     FileEntry,
+    FolderChange,
     ObjectInfo,
     ObjectType,
     Operation,
@@ -47,16 +49,24 @@ __all__ = [
     "MAX_COMMITS",
     "MAX_FILES",
     "Area",
+    "Change",
     "Commit",
     "FileEntry",
+    "FolderChange",
     "ObjectInfo",
     "ObjectType",
     "Operation",
     "Ref",
     "RefKind",
     "Snapshot",
+    "conflicted",
+    "mode_changed",
+    "nested",
     "objects",
     "snapshot",
+    "staged",
+    "unstaged",
+    "untracked",
     "version",
 ]
 
@@ -73,6 +83,8 @@ COMMIT_FORMAT = "%H%x00%h%x00%P%x00%an%x00%at%x00%s"
 COMMIT_FIELDS = 6
 OBJECT_FORMAT = "%(objectname) %(objecttype) %(objectsize)"
 NOWHERE: tuple[None, None] = (None, None)
+KINDS = {FILE_MODE: "file", EXECUTABLE_MODE: "file", LINK_MODE: "link", GITLINK_MODE: "repository"}
+"""What a mode makes a path: a change between two of these is a type change, as git calls it."""
 OPERATION_MARKERS: tuple[tuple[str, Operation], ...] = (
     ("rebase-merge", "rebase"),
     ("rebase-apply", "rebase"),
@@ -114,6 +126,108 @@ def version(file: FileEntry, area: Area) -> tuple[str | None, str | None]:
         "folder": (file["folder"], file["folder_mode"]),
     }
     return versions[area]
+
+
+def untracked(snap: Snapshot) -> list[str]:
+    """
+    List the untracked files, as `git status` lists them, nested repositories aside.
+
+    Parameters
+    ----------
+    snap : Snapshot
+        A snapshot.
+
+    Returns
+    -------
+    list[str]
+        Their paths, in the snapshot's order.
+    """
+    return [file["path"] for file in snap["files"] if file["folder_change"] == "untracked" and not file["repository"]]
+
+
+def nested(snap: Snapshot) -> list[str]:
+    """
+    List the repositories nested in the working folder that `git status` lists as untracked folders.
+
+    Parameters
+    ----------
+    snap : Snapshot
+        A snapshot.
+
+    Returns
+    -------
+    list[str]
+        Their paths, without a final ``/``, in the snapshot's order.
+    """
+    return [file["path"] for file in snap["files"] if file["folder_change"] == "untracked" and file["repository"]]
+
+
+def staged(snap: Snapshot) -> list[str]:
+    """
+    List the files with changes to be committed: the staging area differs from HEAD.
+
+    Parameters
+    ----------
+    snap : Snapshot
+        A snapshot.
+
+    Returns
+    -------
+    list[str]
+        Their paths, in the snapshot's order.
+    """
+    return [file["path"] for file in snap["files"] if file["index_change"] is not None]
+
+
+def unstaged(snap: Snapshot) -> list[str]:
+    """
+    List the tracked files with changes not staged: modified, deleted or changed in type in the working folder.
+
+    Parameters
+    ----------
+    snap : Snapshot
+        A snapshot.
+
+    Returns
+    -------
+    list[str]
+        Their paths, in the snapshot's order; conflicted files are listed by `conflicted`.
+    """
+    return [file["path"] for file in snap["files"] if file["folder_change"] in ("modified", "deleted", "typechange")]
+
+
+def mode_changed(snap: Snapshot) -> list[str]:
+    """
+    List the files whose only change not staged is their mode (``chmod +x``): same content as the staging area.
+
+    Parameters
+    ----------
+    snap : Snapshot
+        A snapshot.
+
+    Returns
+    -------
+    list[str]
+        Their paths, in the snapshot's order.
+    """
+    return [file["path"] for file in snap["files"] if file["folder_change"] == "modified" and file["folder"] == file["index"]]
+
+
+def conflicted(snap: Snapshot) -> list[str]:
+    """
+    List the files in conflict (unmerged), which `git status` lists apart from staged and unstaged changes.
+
+    Parameters
+    ----------
+    snap : Snapshot
+        A snapshot.
+
+    Returns
+    -------
+    list[str]
+        Their paths, in the snapshot's order.
+    """
+    return [file["path"] for file in snap["files"] if file["conflicted"]]
 
 
 @dataclass(frozen=True)
@@ -415,6 +529,7 @@ def _files(top: Path, head: str | None, object_format: str) -> tuple[list[FileEn
     untracked, nested = _others(top)
     ignored, nested_ignored = _others(top, "--ignored")
     nested |= nested_ignored | {key for key, (_, mode) in [*in_head.items(), *in_index.items()] if mode == GITLINK_MODE}
+    others = set(untracked) | set(ignored)
     shown = set(in_head) | set(in_index) | conflicted | set(untracked)
     kept = (sorted(shown, key=_display) + sorted(set(ignored), key=_display))[:MAX_FILES]
     in_folder = _folder_versions(top, kept, in_index, object_format)
@@ -423,6 +538,9 @@ def _files(top: Path, head: str | None, object_format: str) -> tuple[list[FileEn
         head_id, head_mode = in_head.get(key, NOWHERE)
         index_id, index_mode = in_index.get(key, NOWHERE)
         folder_id, folder_mode = in_folder.get(key, NOWHERE)
+        listed: FolderChange = "ignored" if key in ignored else "untracked"
+        index_change = None if key in conflicted else _index_change((head_id, head_mode), (index_id, index_mode))
+        folder_change = None if key in conflicted else _folder_change((index_id, index_mode), (folder_id, folder_mode), listed if key in others else None)
         files.append(
             {
                 "path": _display(key),
@@ -435,9 +553,89 @@ def _files(top: Path, head: str | None, object_format: str) -> tuple[list[FileEn
                 "ignored": key in ignored,
                 "conflicted": key in conflicted,
                 "repository": key in nested,
+                "index_change": index_change,
+                "folder_change": folder_change,
             }
         )
     return sorted(files, key=lambda file: file["path"]), len(shown) + len(ignored) > MAX_FILES
+
+
+def _index_change(head: tuple[str | None, str | None], index: tuple[str | None, str | None]) -> Change | None:
+    """
+    Classify how the staging area differs from HEAD, as the first column of `git status`.
+
+    Parameters
+    ----------
+    head : tuple[str | None, str | None]
+        The file's id and mode in HEAD.
+    index : tuple[str | None, str | None]
+        Its id and mode in the staging area.
+
+    Returns
+    -------
+    Change | None
+        ``added``, ``deleted``, ``modified`` or ``typechange``; None when they agree.
+    """
+    change: Change | None = _difference(head, index)
+    if head[0] is None and index[0] is not None:
+        change = "added"
+    elif head[0] is not None and index[0] is None:
+        change = "deleted"
+    return change
+
+
+def _folder_change(
+    index: tuple[str | None, str | None], folder: tuple[str | None, str | None], listed: FolderChange | None
+) -> FolderChange | None:
+    """
+    Classify how the working folder differs from the staging area, as the second column of `git status`.
+
+    Parameters
+    ----------
+    index : tuple[str | None, str | None]
+        The file's id and mode in the staging area.
+    folder : tuple[str | None, str | None]
+        Its id and mode in the working folder.
+    listed : FolderChange | None
+        ``untracked`` or ``ignored`` if ``git ls-files --others`` lists the path, else None.
+
+    Returns
+    -------
+    FolderChange | None
+        ``untracked`` or ``ignored`` for a path the staging area lacks, else ``deleted``,
+        ``modified`` or ``typechange``; None when they agree.
+    """
+    change: FolderChange | None = _difference(index, folder)
+    if index[0] is None:
+        change = listed
+    elif folder[0] is None:
+        change = "deleted"
+    return change
+
+
+def _difference(one: tuple[str | None, str | None], other: tuple[str | None, str | None]) -> Literal["modified", "typechange"] | None:
+    """
+    Tell how a file present in two areas differs between them.
+
+    Parameters
+    ----------
+    one : tuple[str | None, str | None]
+        Its id and mode in one area.
+    other : tuple[str | None, str | None]
+        Its id and mode in the other.
+
+    Returns
+    -------
+    Literal["modified", "typechange"] | None
+        None when they agree, ``typechange`` when it became another kind of thing (a file, a
+        link, a repository), ``modified`` otherwise (content or executable bit).
+    """
+    difference: Literal["modified", "typechange"] | None = None
+    if one != other and KINDS.get(one[1] or "") != KINDS.get(other[1] or ""):
+        difference = "typechange"
+    elif one != other:
+        difference = "modified"
+    return difference
 
 
 def _tree(top: Path, commit: str) -> dict[str, tuple[str, str]]:

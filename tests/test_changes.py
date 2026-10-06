@@ -402,6 +402,8 @@ def snapshots(names: st.SearchStrategy[str]) -> st.SearchStrategy[repomap.Snapsh
         ignored=st.booleans(),
         conflicted=st.booleans(),
         repository=st.booleans(),
+        index_change=st.sampled_from([None, "added", "modified", "deleted", "typechange"]),
+        folder_change=st.sampled_from([None, "modified", "deleted", "typechange", "untracked", "ignored"]),
     )
     return st.builds(
         repomap.Snapshot,
