@@ -41,9 +41,9 @@ Git is a version control system. Each version you save is called a commit.
 `git init` turns the current folder into a repository: it creates a hidden `.git` folder, where
 Git keeps the history of the project.
 
-A new repository starts with one branch and no commits. A branch is a line of development; this
-chapter uses only one. The game sets Git's `init.defaultBranch` setting to `main`, so in the
-game a new repository's first branch is called `main`.
+A new repository has no commits yet, but you are already on its first branch. A branch is a line
+of development; this chapter uses only one. The game sets Git's `init.defaultBranch` setting to
+`main`, so in the game a new repository's first branch is called `main`.
 """,
         run="git init\nls -A",
         view="terminal",
@@ -90,12 +90,12 @@ added it: run `git add` again to stage the new content.
         id="commit",
         title="Commit",
         text="""
-`git commit` saves the content of the staging area as a new commit, with the author's name and
-email, the date and the message given with `-m`. Git answers with a summary that includes the
-commit's short hash: the first characters of its hash, the name Git computes for it.
+A plain `git commit` saves the content of the staging area as a new commit, with the author's
+name and email, the date and the message given with `-m`. Git answers with a summary that
+includes the commit's short hash: the first characters of its hash, the name Git computes for it.
 
-`git status` has nothing left to report: the working folder, the staging area and the last
-commit hold the same content.
+`git status` lists no files any more: the working folder, the staging area and the last commit
+hold the same content.
 """,
         run='git commit -m "Add the README"\ngit status',
         view="map",
@@ -124,8 +124,8 @@ You are starting a new project, and its history starts today. Turn the empty `pr
 into a Git repository on the branch `main`, create a `README.md` file and save it in your first
 commit.
 
-The level is solved when the repository has a commit on `main` that contains `README.md`, and
-`git status` lists no untracked, changed or staged files.
+The level is solved when the last commit on `main` contains `README.md`, and `git status` lists
+no untracked, changed or staged files.
 """
 
 HINTS = [

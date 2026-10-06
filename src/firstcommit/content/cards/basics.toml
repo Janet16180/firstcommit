@@ -7,7 +7,7 @@ Git works with three areas:
 
 - the working folder (Git says working tree): the files you see and edit;
 - the staging area (Git says index): what the next commit will contain;
-- the repository: the commits, each a snapshot of the project's files with an author, a date, a message and its parent.
+- the repository: the commits, each a snapshot of the project's files with an author, a date, a message and its parent (the first commit has none).
 
 A new file is untracked until you stage it. `git add` copies a file's current content into the
 staging area; edit the file again, and you add it again to stage the new content. A plain
@@ -141,8 +141,8 @@ level = 1
 prompt = "Which command turns the current folder into a new, empty Git repository?"
 accept = ["git init", "git init .", "git init -b main", "git init --initial-branch=main"]
 explain = """
-`git init` creates the `.git` folder that holds the repository, with one branch and no commits
-yet. In the game that branch is called `main`, because the game sets Git's `init.defaultBranch`
+`git init` creates the `.git` folder that holds the repository, with no commits yet. In the
+game its first branch is called `main`, because the game sets Git's `init.defaultBranch`
 setting. `git init -b main` names it `main` whatever the settings say.
 """
 source = "git-init(1), DESCRIPTION and --initial-branch"
@@ -164,7 +164,7 @@ explain = """
 `--oneline` is shorthand for `--pretty=oneline --abbrev-commit`. Each commit gets one line: its
 hash shortened to a prefix that is unique in the repository, then its message's title (the text
 up to the first blank line, usually one line). Commits are listed newest first. On a terminal,
-branch names such as `(HEAD -> main)` appear between the hash and the title.
+names such as `(HEAD -> main)` appear between the hash and the title of the commit they point to.
 """
 source = "git-log(1), --oneline, --abbrev-commit and Commit Ordering"
 verify = """
