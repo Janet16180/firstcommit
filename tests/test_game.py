@@ -33,7 +33,21 @@ def fake_snapshot(path: Path) -> repomap.Snapshot:
         A snapshot whose ``files`` are the folder's top-level names besides ``.git``.
     """
     names = sorted(entry.name for entry in path.iterdir() if entry.name != ".git") if path.is_dir() else []
-    files: list[repomap.FileEntry] = [{"path": name, "head": None, "index": None, "folder": "0" * 40, "ignored": False, "conflicted": False} for name in names]
+    files: list[repomap.FileEntry] = [
+        {
+            "path": name,
+            "head": None,
+            "index": None,
+            "folder": "0" * 40,
+            "head_mode": None,
+            "index_mode": None,
+            "folder_mode": "100644",
+            "ignored": False,
+            "conflicted": False,
+            "repository": False,
+        }
+        for name in names
+    ]
     return {"exists": path.is_dir(), "bare": False, "head": None, "branch": None, "commits": [], "refs": [], "files": files, "operation": None, "stash": 0, "truncated": False}
 
 

@@ -141,7 +141,18 @@ def test_a_commit_puts_the_same_blob_in_head_the_staging_area_and_the_folder(tmp
     ]
     assert snap["refs"] == [{"name": "main", "kind": "branch", "target": head}]
     assert snap["files"] == [
-        {"path": "hello.txt", "head": HELLO, "index": HELLO, "folder": HELLO, "ignored": False, "conflicted": False}
+        {
+            "path": "hello.txt",
+            "head": HELLO,
+            "index": HELLO,
+            "folder": HELLO,
+            "head_mode": "100644",
+            "index_mode": "100644",
+            "folder_mode": "100644",
+            "ignored": False,
+            "conflicted": False,
+            "repository": False,
+        }
     ]
 
 
@@ -165,7 +176,18 @@ def test_each_area_shows_untracked_staged_changed_and_deleted_files(tmp_path: Pa
 def test_ignored_files_are_listed_and_marked_ignored(tmp_path: Path) -> None:
     repo = new_repo(tmp_path, "printf '*.log\\nbuild/\\n' > .gitignore && mkdir build && echo x > build/app.o && echo y > debug.log")
     snap = repomap.snapshot(repo)
-    assert entry(snap, "build/app.o") == {"path": "build/app.o", "head": None, "index": None, "folder": blob_id(b"x\n"), "ignored": True, "conflicted": False}
+    assert entry(snap, "build/app.o") == {
+        "path": "build/app.o",
+        "head": None,
+        "index": None,
+        "folder": blob_id(b"x\n"),
+        "head_mode": None,
+        "index_mode": None,
+        "folder_mode": "100644",
+        "ignored": True,
+        "conflicted": False,
+        "repository": False,
+    }
     assert entry(snap, "debug.log")["ignored"]
     assert not entry(snap, ".gitignore")["ignored"]
 
@@ -359,16 +381,94 @@ def test_a_file_named_like_a_commit_hides_no_history(tmp_path: Path) -> None:
     assert [commit["subject"] for commit in repomap.snapshot(repo)["commits"]] == ["one"]
 
 
-def test_a_nested_repository_is_left_out_of_the_files(tmp_path: Path) -> None:
-    repo = new_repo(tmp_path, "echo a > a.txt && git init -q inner && echo b > inner/b.txt")
-    assert [file["path"] for file in repomap.snapshot(repo)["files"]] == ["a.txt"]
+def modes(snap: repomap.Snapshot, path: str) -> tuple[str | None, str | None, str | None]:
+    """
+    Give a path's modes in the three areas.
+
+    Parameters
+    ----------
+    snap : repomap.Snapshot
+        The snapshot.
+    path : str
+        A path it lists.
+
+    Returns
+    -------
+    tuple[str | None, str | None, str | None]
+        The modes in HEAD, the staging area and the working folder.
+    """
+    file = entry(snap, path)
+    return file["head_mode"], file["index_mode"], file["folder_mode"]
 
 
-def test_a_nested_repository_added_as_a_submodule_is_left_out_of_the_files(tmp_path: Path) -> None:
-    repo = new_repo(tmp_path, "git init -q inner && git -C inner commit -q --allow-empty -m inner && git add inner && git commit -q -m outer")
+def test_modes_tell_plain_files_executables_and_links_apart(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "echo a > plain && echo b > tool && chmod +x tool && ln -s plain link && git add . && git commit -q -m modes")
     snap = repomap.snapshot(repo)
-    assert snap["files"] == []
+    assert modes(snap, "plain") == ("100644", "100644", "100644")
+    assert modes(snap, "tool") == ("100755", "100755", "100755")
+    assert modes(snap, "link") == ("120000", "120000", "120000")
+
+
+def test_making_a_file_executable_changes_its_mode_but_not_its_blob(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "echo a > README.md && git add README.md && git commit -q -m one && chmod +x README.md")
+    snap = repomap.snapshot(repo)
+    assert modes(snap, "README.md") == ("100644", "100644", "100755")
+    assert areas(snap, "README.md") == (blob_id(b"a\n"),) * 3
+    shell(repo, "git add README.md")
+    assert modes(repomap.snapshot(repo), "README.md") == ("100644", "100755", "100755")
+
+
+def test_a_mode_change_git_is_set_to_ignore_is_no_change(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "echo a > README.md && git add README.md && git commit -q -m one && git config core.fileMode false && chmod +x README.md")
+    assert modes(repomap.snapshot(repo), "README.md") == ("100644", "100644", "100644")
+
+
+def test_a_file_missing_from_an_area_has_no_mode_there(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "echo a > a.txt")
+    assert modes(repomap.snapshot(repo), "a.txt") == (None, None, "100644")
+
+
+def test_a_repository_nested_in_the_working_folder_is_one_untracked_entry(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "echo a > a.txt && git init -q inner && echo b > inner/b.txt")
+    snap = repomap.snapshot(repo)
+    assert [file["path"] for file in snap["files"]] == ["a.txt", "inner"]
+    assert entry(snap, "inner") == {
+        "path": "inner",
+        "head": None,
+        "index": None,
+        "folder": None,
+        "head_mode": None,
+        "index_mode": None,
+        "folder_mode": None,
+        "ignored": False,
+        "conflicted": False,
+        "repository": True,
+    }
+    assert not entry(snap, "a.txt")["repository"]
+
+
+def test_a_nested_repository_with_commits_shows_its_head_commit_in_the_folder(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "git init -q inner && git -C inner commit -q --allow-empty -m inner")
+    snap = repomap.snapshot(repo)
+    assert areas(snap, "inner") == (None, None, rev(repo / "inner", "HEAD"))
+    assert modes(snap, "inner") == (None, None, "160000")
+
+
+def test_an_ignored_nested_repository_is_listed_as_ignored(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "echo inner/ > .gitignore && git init -q inner")
+    assert entry(repomap.snapshot(repo), "inner")["ignored"]
+
+
+def test_a_nested_repository_added_as_a_submodule_compares_commits(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "git init -q inner && git -C inner commit -q --allow-empty -m inner && git add inner 2>/dev/null && git commit -q -m outer")
+    recorded = rev(repo / "inner", "HEAD")
+    snap = repomap.snapshot(repo)
+    assert areas(snap, "inner") == (recorded, recorded, recorded)
+    assert modes(snap, "inner") == ("160000", "160000", "160000")
+    assert entry(snap, "inner")["repository"]
     assert [commit["subject"] for commit in snap["commits"]] == ["outer"]
+    shell(repo, "git -C inner commit -q --allow-empty -m newer")
+    assert areas(repomap.snapshot(repo), "inner") == (recorded, recorded, rev(repo / "inner", "HEAD"))
 
 
 def test_a_repository_one_folder_too_high_is_not_the_folders_own(tmp_path: Path) -> None:
@@ -416,8 +516,12 @@ def test_a_deleted_index_shows_committed_files_as_staged_for_deletion_and_untrac
         "head": blob_id(b"a\n"),
         "index": None,
         "folder": blob_id(b"a\n"),
+        "head_mode": "100644",
+        "index_mode": None,
+        "folder_mode": "100644",
         "ignored": False,
         "conflicted": False,
+        "repository": False,
     }
 
 
