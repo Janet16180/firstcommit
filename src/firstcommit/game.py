@@ -2,9 +2,11 @@
 Every player action, in one place: the only module the command line and the web routes call.
 
 Each function that changes the save holds its lock (termlab's store) for the whole
-read-modify-write, and returns a plain record that is ready to send as JSON. Text fields are
-filled from the level's state (``{{key}}``) and parsed into blocks (`firstcommit.markup`), so the
-interfaces only render. Game rules never live in the interfaces (Ring Zero audit ARCH-1).
+read-modify-write, and returns a plain record that is ready to send as JSON. A level's text is
+filled from its state (``{{key}}``) and parsed into blocks (`firstcommit.markup`), so the
+interfaces only render. In a step's command each value is filled as one shell word. A check's
+or a watch's message is parsed only, never filled: it may hold names the player chose. Game
+rules never live in the interfaces (Ring Zero audit ARCH-1).
 
 Records returned here are the API contract of the web routes: changing a field is a change to
 the page too. Every field the player reads is parsed blocks; every value the page sends back
@@ -27,9 +29,10 @@ Anything else is a bug.
 import os
 import random
 import re
+import shlex
 import subprocess
 import sys
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Literal, TypedDict, cast
@@ -443,7 +446,7 @@ def quest_step(answer: str | None) -> StepResult:
         if not _quest_done(active, entry):
             verdict = _check_step(entry.quest[active["step"]], runner.lab_of(entry.id), active["state"], _typed(answer))
             correct = verdict.solved
-            message = _blocks(verdict.message, active["state"])
+            message = markup.parse(verdict.message)
         if correct:
             active["step"] += 1
             save.write_active(active)
@@ -494,7 +497,7 @@ def check(answer: str | None, auto: bool) -> CheckResult:
             save.write_active(active)
     return {
         "solved": verdict.solved,
-        "message": _blocks(verdict.message, active["state"]),
+        "message": markup.parse(verdict.message),
         "payout": payout,
         "debrief": _blocks(entry.debrief, active["state"]) if verdict.solved else None,
     }
@@ -1025,7 +1028,7 @@ def _step_view(step: kit.Step, state: kit.State) -> StepView:
         "id": step.id,
         "kind": kind,
         "text": _blocks(step.text, state),
-        "command": _fill(step.command, state),
+        "command": _fill(step.command, state, _shell_word),
         "question": _blocks(question, state),
         "placeholder": _fill(placeholder, state),
     }
@@ -1115,7 +1118,7 @@ def _option_text(card: cards.Card, option: str) -> list[Block]:
     return [{"kind": "code", "text": option}] if card.kind == "predict" else markup.parse(option)
 
 
-def _fill(text: str, state: Mapping[str, Any]) -> str:
+def _fill(text: str, state: Mapping[str, Any], show: Callable[[Any], str] = str) -> str:
     """
     Replace ``{{key}}`` placeholders with values from a level's state.
 
@@ -1125,13 +1128,32 @@ def _fill(text: str, state: Mapping[str, Any]) -> str:
         Text that may hold placeholders.
     state : Mapping[str, Any]
         The level's state.
+    show : Callable[[Any], str]
+        Writes one value into the text: as it is, or `_shell_word` in a command.
 
     Returns
     -------
     str
         The text; a placeholder whose key is not in the state stays as written.
     """
-    return PLACEHOLDER.sub(lambda match: str(state[match[1]]) if match[1] in state else match[0], text)
+    return PLACEHOLDER.sub(lambda match: show(state[match[1]]) if match[1] in state else match[0], text)
+
+
+def _shell_word(value: Any) -> str:
+    """
+    Write a value into a command the player may run, as exactly one shell word.
+
+    Parameters
+    ----------
+    value : Any
+        A value from a level's state, such as a branch name read from a repository.
+
+    Returns
+    -------
+    str
+        The value, quoted with `shlex.quote` when the shell would read anything in it.
+    """
+    return shlex.quote(str(value))
 
 
 def _blocks(text: str, state: Mapping[str, Any]) -> list[Block]:

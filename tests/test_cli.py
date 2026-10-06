@@ -198,6 +198,19 @@ def test_text_is_rendered_as_wrapped_paragraphs_code_and_bullets() -> None:
     assert "  - `one`\n  - two" in rendered
 
 
+def test_control_characters_never_reach_the_players_terminal() -> None:
+    blocks: list[markup.Block] = [
+        {"kind": "para", "spans": [{"text": "esc\x1b]0;PWNED\x07title", "code": True}, {"text": " is untracked\x9b.", "code": False}]},
+        {"kind": "code", "text": "line one\x1b[2K\nline two\x7f"},
+        {"kind": "bullets", "items": [[{"text": "bell\x07", "code": False}]]},
+    ]
+    rendered = cli.render(blocks)
+    assert not any(ord(char) < 0x20 and char != "\n" or 0x7F <= ord(char) <= 0x9F for char in rendered)
+    assert "`esc\\033]0;PWNED\\atitle` is untracked\\302\\233." in rendered
+    assert "    line one\\033[2K\n    line two\\177" in rendered
+    assert "  - bell\\a" in rendered
+
+
 def test_the_module_runs_as_a_program(game_home: Path) -> None:
     env = {**os.environ, "FIRSTCOMMIT_HOME": str(game_home)}
     result = subprocess.run([sys.executable, "-m", "firstcommit", "status"], capture_output=True, text=True, env=env, check=False)

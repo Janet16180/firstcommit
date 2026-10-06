@@ -16,7 +16,7 @@ from collections.abc import Callable
 from termlab.web import terminal
 
 from firstcommit import game
-from firstcommit.markup import Block, Span
+from firstcommit.markup import Block, Span, visible
 
 DEFAULT_PORT = 8820
 PORT = re.compile(r"[0-9]{1,5}")
@@ -324,7 +324,9 @@ def render(blocks: list[Block]) -> str:
     -------
     str
         Paragraphs and bullets wrapped at `WIDTH`, verbatim blocks indented as written, code
-        spans between backticks, and a blank line between blocks.
+        spans between backticks, and a blank line between blocks. Control characters other than
+        the line breaks laid out here are shown escaped, as git shows them
+        (`firstcommit.markup.visible`), so a name a player chose can never drive the terminal.
     """
     parts = []
     for block in blocks:
@@ -334,7 +336,7 @@ def render(blocks: list[Block]) -> str:
             parts.append(_wrap(block["spans"], INDENT, INDENT))
         else:
             parts.append("\n".join(_wrap(item, INDENT + "- ", INDENT + "  ") for item in block["items"]))
-    return "\n\n".join(parts)
+    return "\n".join(visible(line) for line in "\n\n".join(parts).split("\n"))
 
 
 def _wrap(spans: list[Span], first: str, rest: str) -> str:

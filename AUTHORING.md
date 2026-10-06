@@ -176,7 +176,12 @@ def solve(lab: kit.Lab, state: kit.State) -> str | None: ...
   A watch's message is shown live, after every poll, while the player works: write it as the
   next thing to do ("`README.md` is in the working folder; stage it with `git add`"), never as
   an error. One suggested `command` per step: when a task needs two commands, make two steps.
-- Text fields may contain `{{key}}` placeholders, filled from the state.
+- Text fields may contain `{{key}}` placeholders, filled from the state. In a step's `command`,
+  each value is filled as one shell word (`shlex.quote`), so a value read from a repository can
+  never run as a second command when the player presses Enter.
+- The message of a `check` or a `watch` is shown as it is: it is never filled, because it may
+  hold names the player chose (a file named `{{answer}}` must not reveal `state["answer"]`).
+  Build it with the values it needs, and put each name the player chose through `kit.code`.
 
 ### 3.4 Reading the lab
 
