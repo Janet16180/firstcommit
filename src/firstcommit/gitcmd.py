@@ -63,8 +63,8 @@ login and host names: no machine-dependent identity, and no login or host name i
 commit.
 """
 
-TERMINAL_SETTINGS = {"color.ui": "never"}
-"""Settings of `run_on_terminal`, as ``GIT_CONFIG_COUNT`` entries that outrank every configuration file."""
+TERMINAL_SETTINGS = {**NO_PROGRAMS, "color.ui": "never"}
+"""Settings of `run_on_terminal`: `NO_PROGRAMS` and no colours, as ``GIT_CONFIG_COUNT`` entries that outrank every configuration file."""
 
 
 def isolation(home: Path) -> dict[str, str]:
@@ -222,6 +222,10 @@ def run_on_terminal(cwd: Path, *args: str) -> tuple[int, str]:
     Nothing can wait for an answer: standard input is empty, git's terminal prompts are off and
     the command has no controlling terminal. As in `run`, git starts as ``git -C <cwd>`` from
     ``/``, and its output is decoded as UTF-8 with undecodable bytes replaced.
+
+    The command is the game's, even when the player chose it, so it runs no program a
+    repository names (`NO_PROGRAMS`), and a hook that hangs cannot turn it into a timeout. The
+    cost: hooks a player installs run in their terminal but not here; no level teaches hooks.
 
     Parameters
     ----------

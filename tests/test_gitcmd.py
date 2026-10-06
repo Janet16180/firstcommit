@@ -421,6 +421,15 @@ def test_a_command_on_a_terminal_reads_no_answer_to_its_own_questions(tmp_path: 
     assert gitcmd.output(repo, "diff", "--name-only") == "notes.txt\n"
 
 
+
+def test_a_command_on_a_terminal_never_runs_the_repositorys_hooks(tmp_path: Path) -> None:
+    repo = diverged(tmp_path)
+    script, marker = program_that_leaves_a_mark(tmp_path)
+    (repo / ".git" / "hooks" / "pre-commit").write_text(script.read_text())
+    (repo / ".git" / "hooks" / "pre-commit").chmod(0o755)
+    assert gitcmd.run_on_terminal(repo, "commit", "-q", "--allow-empty", "-m", "x") == (0, "")
+    assert not marker.exists()
+
 def test_a_command_on_a_terminal_commits_as_the_configured_identity_whatever_the_environment_says(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     for variable in ["GIT_AUTHOR_NAME", "GIT_COMMITTER_NAME"]:
         monkeypatch.setenv(variable, "Intruder")
