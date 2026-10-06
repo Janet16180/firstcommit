@@ -233,7 +233,11 @@ only, or nothing. So every hash and line of output a lesson shows is what git re
 - Output must be the same on every run and must be text: no `date`, no `ls -l` (it shows
   times), no `$RANDOM`, no binary files printed to the terminal.
 - Write files with plain shell (`echo "hello" > hello.txt`), so the reader can follow along.
-- 4-8 slides; one idea each; text of 2-5 short sentences.
+- 4-8 slides; one idea each. Picture first (the user's direction, 2026-10-06): every slide
+  shows a figure that makes its idea visible, and its text is at most 3 short sentences that
+  read the picture ("the new save point sits on top of the old one"). Use "commands only" or no
+  figure only when no picture fits the idea, and say why in a comment. An idea that involves
+  another repository (clone, push, fetch, pull) uses a figure that shows both repositories.
 
 Lessons run without a terminal, and git prints some things differently then. Checked on git
 2.43 against a real terminal:
