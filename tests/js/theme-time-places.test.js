@@ -479,3 +479,12 @@ test("the staging area and your repository each say what their boxes are", () =>
   assert.equal(note("repository"), "closed boxes: your commits");
   assert.equal(figure.querySelector('[data-area="folder"] .tt-place-note'), null);
 });
+
+test("a page changed in the working folder, with no command moving it, changes where it lies, and a new file's page appears", () => {
+  const before = { project: repo({ commits: ONE, files: [README("1")] }), github: null };
+  const after = { project: repo({ commits: ONE, files: [file("README.md", { head: "1", index: "1", folder: "2", folderChange: "modified" }), file("notes.txt", { folder: "3", folderChange: "untracked" })] }), github: null };
+  const { figure, calls } = played(before, after, []);
+  assert.equal(figure.querySelector(".tt-flyer"), null);
+  assert.equal(rowIn(figure, "folder", "README.md").querySelector(".tt-page-was code").textContent, shortOf("1"));
+  assert.ok(calls.some((call) => call.node === rowIn(figure, "folder", "notes.txt") && call.frames[0].opacity === 0));
+});

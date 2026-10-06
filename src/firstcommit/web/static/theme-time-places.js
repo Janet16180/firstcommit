@@ -376,6 +376,10 @@ const TimePlaces = (function () {
       const stops = flight.what === "file" ? flight.path.slice(1) : [];
       stops.forEach((area, step) => reveal(area, flight.id, delay + TIMING.flight.duration * (step === stops.length - 1 ? AT.arrive : AT.middle)));
     });
+    /* Pages changed in the working folder that no flight brought (the player edited or made
+       them) change where they lie. */
+    const brought = new Set(trips.filter((flight) => flight.what === "file").map((flight) => flight.id));
+    for (const path of changedFiles(before.project, after.project, "folder").filter((name) => !brought.has(name))) reveal("folder", path, TIMING.flight.delay);
     /* A graph moves as the first commit lands in it, or, for your origin/main after a push, as
        the commit lands on GitHub. */
     const firstCommit = (lands) => trips.findIndex((flight) => flight.what === "commit" && lands(flight));
