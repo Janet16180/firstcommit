@@ -205,6 +205,8 @@ def _card_problem(entry: dict[str, Any], chapter: str) -> str | None:
         problem = f"`level` must be one of {LEVELS}"
     elif bad_texts:
         problem = f"`{bad_texts[0]}` must be text that is not empty"
+    elif "`" in entry.get("placeholder", ""):
+        problem = "`placeholder` is plain text: no backticks"
     elif kind == "text":
         problem = _list_problem(entry["accept"], "accept", 1, None)
     else:
