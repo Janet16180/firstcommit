@@ -157,6 +157,10 @@ def solve(lab: kit.Lab, state: kit.State) -> str | None: ...
   - a *watch* step has `watch(lab, state) -> Verdict`, which passes once the lab shows the step
     was done (polled like `check`; same rules);
   - a *read* step has neither.
+
+  A watch's message is shown live, after every poll, while the player works: write it as the
+  next thing to do ("`README.md` is in the working folder; stage it with `git add`"), never as
+  an error. One suggested `command` per step: when a task needs two commands, make two steps.
 - Text fields may contain `{{key}}` placeholders, filled from the state.
 
 ### 3.4 Reading the lab
