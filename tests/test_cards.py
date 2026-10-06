@@ -251,14 +251,14 @@ def test_a_rescheduled_card_is_due_after_its_box_interval(entry: CardEntry | Non
 
 
 def test_cards_due_for_review_come_first_oldest_first_then_new_cards_easiest_first() -> None:
-    deck = [card("basics-new-hard", level=3), card("basics-later"), card("basics-due-recent"), card("basics-new-easy"), card("basics-due-old")]
+    deck = [card("basics-a-new", level=3), card("basics-b-later"), card("basics-c-due-recent"), card("basics-d-new", level=1), card("basics-e-due-old")]
     entries: dict[str, CardEntry] = {
-        "basics-later": {"box": 3, "due": "2026-10-10"},
-        "basics-due-recent": {"box": 1, "due": "2026-10-06"},
-        "basics-due-old": {"box": 2, "due": "2026-10-01"},
+        "basics-b-later": {"box": 3, "due": "2026-10-10"},
+        "basics-c-due-recent": {"box": 1, "due": "2026-10-06"},
+        "basics-e-due-old": {"box": 2, "due": "2026-10-01"},
     }
     picked = cards.pick(deck, entries, TODAY, limit=10, rng=random.Random(1))
-    assert [entry.id for entry in picked] == ["basics-due-old", "basics-due-recent", "basics-new-easy", "basics-new-hard"]
+    assert [entry.id for entry in picked] == ["basics-e-due-old", "basics-c-due-recent", "basics-d-new", "basics-a-new"]
 
 
 def test_picking_stops_at_the_limit() -> None:
@@ -279,6 +279,22 @@ def test_picked_cards_are_distinct_new_or_due_and_as_many_as_allowed(specs: list
     eligible = [entry for entry in deck if cards.is_due(entries.get(entry.id), TODAY)]
     assert len({entry.id for entry in picked}) == len(picked) == min(limit, len(eligible))
     assert all(cards.is_due(entries.get(entry.id), TODAY) for entry in picked)
+
+
+@given(st.lists(st.tuples(st.integers(1, 3), st.none() | st.integers(-40, 0)), max_size=12), st.randoms())
+def test_due_cards_come_oldest_first_then_new_cards_easiest_first(specs: list[tuple[int, int | None]], rng: random.Random) -> None:
+    deck = [card(f"basics-{number:02}", level=level) for number, (level, _) in enumerate(specs)]
+    entries: dict[str, CardEntry] = {
+        f"basics-{number:02}": {"box": 1, "due": (TODAY + timedelta(days=offset)).isoformat()}
+        for number, (_, offset) in enumerate(specs)
+        if offset is not None
+    }
+    picked = cards.pick(deck, entries, TODAY, len(deck), rng)
+    seen = [entries[entry.id]["due"] for entry in picked if entry.id in entries]
+    new = [entry.level for entry in picked if entry.id not in entries]
+    assert [entry.id in entries for entry in picked] == [True] * len(seen) + [False] * len(new)
+    assert seen == sorted(seen)
+    assert new == sorted(new)
 
 
 def test_choices_are_the_answer_and_the_distractors_shuffled() -> None:
