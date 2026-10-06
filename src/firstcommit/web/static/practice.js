@@ -6,11 +6,13 @@
  * solved come from the server's replies, and the page polls the lab while the player works
  * (poll.js). Expected failures are handled here, by HTTP status: 409 means the level is no
  * longer in progress (solved or ended from the command line or another tab), 0 means the server
- * did not answer. Anything else is a bug and is left to surface. Needs dom.js, markup.js,
- * map.js, poll.js, dialog.js, live.js, quest.js and challenge.js. Defines one global, Practice.
+ * did not answer. Anything else is a bug and is left to surface. On a playground level the live
+ * panel holds the playground (playground.js), whose presses go to the server from here. Needs
+ * dom.js, markup.js, map.js, poll.js, dialog.js, live.js, playground.js, quest.js and
+ * challenge.js. Defines one global, Practice.
  */
 
-/* global Dom, Dialog, LivePanel, Polling, Quest, Challenge */
+/* global Dom, Dialog, LivePanel, PlaygroundPanel, Polling, Quest, Challenge */
 /* exported Practice */
 
 const Practice = (function () {
@@ -135,6 +137,30 @@ const Practice = (function () {
     }
   }
 
+  /* A 409 for a playground button that was off when the press arrived: the level goes on. */
+  const offButton = (error) => error.status === 409 && Boolean(error.data) && error.data.kind === "off";
+
+  /* One playground press: the lab drawn as it was just before it (what the terminal changed),
+     then as the press left it, played in the pressing person's computer; then its result. */
+  async function pressButton(run, person, id) {
+    const { playground, live, ctx } = run;
+    run.presses += 1;
+    playground.busy(true);
+    run.pressing = true;
+    try {
+      const view = await ctx.game.press(person, id);
+      live.update(view.before);
+      live.update(view.observation, { person });
+      playground.result(view);
+    } catch (error) {
+      if (offButton(error)) playground.refused(error.message);
+      else if (!expected(run, error)) throw error;
+    } finally {
+      run.pressing = false;
+      playground.busy(false);
+    }
+  }
+
   function hinted(run, hint) {
     run.state.hints = hint.used;
     run.challenge.addHint(hint);
@@ -145,7 +171,11 @@ const Practice = (function () {
     const { game } = run.ctx;
     try {
       const plan = Polling.plan(run.level.steps, run.state);
-      run.live.update(await game.observe());
+      const asked = run.presses;
+      const observation = await game.observe();
+      /* An answer asked for before the last press began, or while one runs, would draw an older
+         lab over the press's: it is dropped. */
+      if (!run.pressing && asked === run.presses) run.live.update(observation);
       run.ui.offline.hidden = true;
       if (plan.watchStep) stepped(run, await game.step(null), true);
       if (plan.autoCheck && !run.state.finished) checked(run, await game.check(null, true), true);
@@ -168,11 +198,14 @@ const Practice = (function () {
   }
 
   /* ctx: game (api.js), sound, timers, page, terminal ({attach(host), detach(), type(text)}),
-     theme (RepoMap's), panelWords (LivePanel's titles), playMap and places (LivePanel's play and places). options: level (LevelView), active (ActiveView), onSolved(CheckResult),
-     onEnded() when the level stopped being in progress elsewhere, onLeft() after the player left. */
+     theme (RepoMap's), panelWords (LivePanel's titles), playMap and places (LivePanel's play and
+     places), share (TimeShare, for a playground level's figure). options: level (LevelView),
+     active (ActiveView), onSolved(CheckResult), onEnded() when the level stopped being in
+     progress elsewhere, onLeft() after the player left. */
   function create(ctx, { level, active, onSolved, onEnded, onLeft }) {
-    const live = LivePanel.create({ theme: ctx.theme, words: ctx.panelWords, play: ctx.playMap, places: ctx.places, onChange: ({ newCommits }) => newCommits > 0 && ctx.sound.play("commit") });
-    const run = { ctx, level, live, state: { ...active, finished: false }, quest: null, challenge: null, poller: null, on: { solved: onSolved, ended: onEnded, left: onLeft } };
+    const playground = ctx.share ? PlaygroundPanel.create({ share: ctx.share, onPress: (person, id) => pressButton(run, person, id), onType: ctx.terminal.type }) : null;
+    const live = LivePanel.create({ theme: ctx.theme, words: ctx.panelWords, play: ctx.playMap, places: ctx.places, playground, onChange: ({ newCommits }) => newCommits > 0 && ctx.sound.play("commit") });
+    const run = { ctx, level, live, playground, presses: 0, pressing: false, state: { ...active, finished: false }, quest: null, challenge: null, poller: null, on: { solved: onSolved, ended: onEnded, left: onLeft } };
     run.ui = layout(level, live, () => leave(run));
     showPhase(run);
     ctx.terminal.attach(run.ui.terminalHost);

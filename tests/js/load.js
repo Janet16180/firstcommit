@@ -89,4 +89,20 @@ function fakeServer(replies) {
 /* An error as client.js throws it for an HTTP status, with the server's reply as `data`. */
 const httpError = (status, message = `status ${status}`, data = {}) => Object.assign(new Error(message), { status, data });
 
-module.exports = { STATIC, RECORDS, record, installBrowser, load, settle, createClock, fakeServer, httpError };
+/* The playground's buttons as Observation.buttons sends them (ButtonView), until records.json has the server's own. */
+const button = (id, label, line, off = "") => ({ id, label, line, off });
+const BUTTONS = {
+  you: [button("edit:you.txt", "Edit you.txt", "echo 'A line from you' >> you.txt"), button("add:you.txt", "git add you.txt", "git add you.txt"), button("push", "git push", "git push")],
+  alex: [button("edit:alex.txt", "Edit alex.txt", "echo 'A line from Alex' >> alex.txt"), button("pull", "git pull", "git pull"), button("push", "git push", "git push", "Alex has no commit GitHub lacks.")],
+};
+
+/* An observation of the two-person playground, with each person's buttons. */
+const playgroundObservation = (buttons = BUTTONS) => ({ ...record("press").observation, buttons });
+
+/* A press's reply (PressView), as the server sends it once the playground explains presses. */
+function pressView({ person = "alex", command = "git push", status = 0, output = "", explanation = null, fix = null, fixLine = "", before = playgroundObservation(), after = playgroundObservation() } = {}) {
+  const view = record("press");
+  return { ...view, press: { ...view.press, person, command, status, output }, before, observation: after, explanation, fix, fix_line: fixLine };
+}
+
+module.exports = { STATIC, RECORDS, record, installBrowser, load, settle, createClock, fakeServer, httpError, BUTTONS, playgroundObservation, pressView };

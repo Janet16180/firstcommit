@@ -3,7 +3,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const { makeEvent } = require("./fakedom");
-const { installBrowser, load, record } = require("./load");
+const { BUTTONS, installBrowser, load, playgroundObservation, pressView } = require("./load");
 
 const document = installBrowser({ reducedMotion: true });
 const { PlaygroundPanel, TimeShare } = load(
@@ -11,18 +11,8 @@ const { PlaygroundPanel, TimeShare } = load(
   ["PlaygroundPanel", "TimeShare"],
 );
 
-const button = (id, label, line, off = "") => ({ id, label, line, off });
-const BUTTONS = {
-  you: [button("edit:you.txt", "Edit you.txt", "echo 'A line from you' >> you.txt"), button("add:you.txt", "git add you.txt", "git add you.txt"), button("push", "git push", "git push")],
-  alex: [button("edit:alex.txt", "Edit alex.txt", "echo 'A line from Alex' >> alex.txt"), button("pull", "git pull", "git pull"), button("push", "git push", "git push", "Alex has no commit GitHub lacks.")],
-};
-const observation = (buttons = BUTTONS) => ({ ...record("press").observation, buttons });
+const observation = playgroundObservation;
 const para = (text) => [{ kind: "para", spans: [{ text, code: false }] }];
-
-function pressView({ person = "alex", command = "git push", status = 0, output = "", explanation = null, fix = null, fixLine = "" } = {}) {
-  const view = record("press");
-  return { ...view, press: { ...view.press, person, command, status, output }, before: observation(), observation: observation(), explanation, fix, fix_line: fixLine };
-}
 
 /* A panel on the real share figure, its plays and the owner's callbacks recorded. */
 function panel() {
