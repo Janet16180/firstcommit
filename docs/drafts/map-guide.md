@@ -1,4 +1,4 @@
-# How to read the map (draft, revision 5: picture first)
+# How to read the map (draft, revision 6: picture first)
 
 Draft of the time-travel theme's map guide. Part 1 says where it lives in the game. Part 2 is the
 text players read. Part 3 lists every factual claim in part 2 with a way to check it against
@@ -7,6 +7,16 @@ git 2.43, and what I saw when I checked it myself (git 2.43.0, `GIT_CONFIG_GLOBA
 
 Each factual sentence in part 2 ends with a claim tag such as **[C5]**. Map claims (how the
 drawing behaves, not how Git behaves) are tagged **[M1]** and checked against the code.
+
+## Revision 6: the revision 5 re-check's answer on C16
+
+The re-check (end of `.scratch/review/map-guide-check.md`) found all five revision 5 changes
+correct, and answered the open question: C16's first clause now says what K5 above it says.
+Only this changed since revision 5:
+
+| Tag | Change |
+|---|---|
+| C16 | "so no branch moves when you commit" (was "no label moves"): the "HEAD (detached)" tab moves in the figure, and a beginner counts it as a label. "gives them a label" and "labels them" stay: there the label is a branch (C7). |
 
 ## Revision 5: fixes from the revision 4 re-check (for fact-check)
 
@@ -223,7 +233,7 @@ every commit and every branch stays where it was. **[K4: C12, C14, C15]**
 **Caption:** **Detached HEAD**: HEAD names a commit directly, not a branch, so no branch moves when
 you commit. **[K5: C16]**
 
-- Detached HEAD: HEAD names a commit directly, not a branch, so no label moves when you commit;
+- Detached HEAD: HEAD names a commit directly, not a branch, so no branch moves when you commit;
   the map's tab reads "HEAD (detached)". You can commit there, but no branch holds those
   commits. Before you leave, `git switch -c <name>` gives them a label. If you have already left,
   Git's warning shows the hash to use in its `git branch` line (in `git reflog`, take the
