@@ -63,6 +63,10 @@ web and level as soon as it lands.
   `\n`. demos works around it (writes output to a file read as bytes) without touching termlab.
   A termlab option to keep raw output would be the user's call.
 
+- For the `history` chapter author: long `git log` and `git diff` output still opens the pager
+  (`less`); teach `q`, Space and `/` there. Short output no longer stops in the pager
+  (`core.pager = less -FRX` in the game's config, git's own default when LESS is unset).
+
 ## Next
 
 1. Integrate and verify phase 2 (all gates in WSL and in the image; play the level end to end).
