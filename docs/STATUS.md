@@ -48,6 +48,13 @@ web and level as soon as it lands.
 - The first fact-check of the template level found 7 false statements in one beginner level;
   the patterns became AUTHORING section 1, rules 8-10.
 
+- A lead change to a shared value (GIT_CEILING_DIRECTORIES became a list) broke a consumer that
+  parsed the variable back into a path. The suite stayed green because every test home lived in
+  /tmp, with no repository above it; a player whose home is a dotfiles repository would have seen
+  their own files in lesson figures. Core caught it by reasoning about the merge. Rules: derive
+  nothing from an environment variable you also build (keep one named constant), and test the
+  isolation with the game home inside a repository.
+
 ## Next
 
 1. Integrate and verify phase 2 (all gates in WSL and in the image; play the level end to end).
