@@ -28,6 +28,13 @@
   font-size: 12px;
 }
 
+/* A timeline wider than its place is drawn smaller rather than cut off: the share figure's places
+   are narrower than the four places'. */
+.ts-share .tt-place-graph svg.map-graph {
+  max-width: 100%;
+  height: auto;
+}
+
 .ts-grid {
   display: grid;
   grid-template-columns: minmax(0, 1.1fr) 5rem minmax(0, 0.9fr) 5rem minmax(0, 1.1fr);
