@@ -15,7 +15,7 @@ from firstcommit.cards import CardKind
 from firstcommit.changes import Event
 from firstcommit.demos import Line
 from firstcommit.markup import Block
-from firstcommit.repomap import Snapshot
+from firstcommit.repomap import ObjectInfo, Snapshot
 from firstcommit.save import Payout
 
 
@@ -107,6 +107,7 @@ class SlideView(TypedDict):
     view: Literal["map", "areas", "objects", "terminal", "none"]
     transcript: list[Line]
     map: Snapshot
+    objects: list[ObjectInfo]
 
 
 class LessonView(TypedDict):

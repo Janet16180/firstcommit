@@ -79,6 +79,14 @@ class Snapshot(TypedDict):
     truncated: bool
 
 
+class ObjectInfo(TypedDict):
+    """One object in a repository's object database."""
+
+    hash: str
+    type: Literal["blob", "tree", "commit", "tag"]
+    size: int
+
+
 def snapshot(path: Path) -> Snapshot:
     """
     Read the state of the repository in a folder.
@@ -92,5 +100,22 @@ def snapshot(path: Path) -> Snapshot:
     -------
     Snapshot
         Its state.
+    """
+    raise NotImplementedError
+
+
+def objects(path: Path) -> list[ObjectInfo]:
+    """
+    List every object in the object database of the repository in a folder.
+
+    Parameters
+    ----------
+    path : Path
+        A working folder or a bare repository. It may hold no repository, or not exist.
+
+    Returns
+    -------
+    list[ObjectInfo]
+        The objects, sorted by hash; empty without a repository.
     """
     raise NotImplementedError

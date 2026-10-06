@@ -12,7 +12,7 @@ from collections.abc import Sequence
 from typing import TypedDict
 
 from firstcommit.kit import Slide
-from firstcommit.repomap import Snapshot
+from firstcommit.repomap import ObjectInfo, Snapshot
 
 
 class Line(TypedDict):
@@ -23,10 +23,11 @@ class Line(TypedDict):
 
 
 class Frame(TypedDict):
-    """A slide's figure: its commands with their output, and the repository after them."""
+    """A slide's figure: its commands with their output, and the repository and its objects after them."""
 
     transcript: list[Line]
     map: Snapshot
+    objects: list[ObjectInfo]
 
 
 def frames(slides: Sequence[Slide]) -> list[Frame]:

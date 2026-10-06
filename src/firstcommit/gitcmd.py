@@ -29,6 +29,9 @@ class Person:
 
 GAME = Person("First Commit", "game@example.com")
 
+BASE_CONFIG = "[init]\n\tdefaultBranch = main\n"
+"""The game's global git configuration when it starts: the player's shell and the lessons share it."""
+
 
 def isolation(home: Path) -> dict[str, str]:
     """
