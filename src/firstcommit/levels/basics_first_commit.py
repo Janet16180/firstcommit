@@ -136,8 +136,8 @@ A new file reaches a commit in two moves: `git add` copies it into the staging a
 `git commit` saves the staging area as a commit.
 """,
     """
-In the `project` folder: run `git init`, create `README.md`, run `git add README.md`,
-then `git commit -m "Add the README"`. Before the commit, make sure Git knows your name and
+In the `project` folder: run `git init`, create `README.md`, run `git add README.md`, then
+`git commit -m "Add the README"`. Before the commit, make sure Git knows your name and
 email: run `git config --global user.name "Your Name"` and
 `git config --global user.email you@example.com`, with your own name and address.
 """,
@@ -149,10 +149,10 @@ commit. That loop is the heart of daily work with Git: edit, `git add`, `git com
 
 What a commit really is: a commit records a complete snapshot of the project's files, not only
 the lines that changed; a plain `git commit` takes that snapshot from the staging area. Next to
-the files it stores the author's name and email,
-the date, the message, and the commit that came before it (its parent; your first commit has
-none). Git names the commit with a hash computed from all of that. Files that did not change are
-not stored twice: the new commit points to the content Git already has.
+the files it stores the author's name and email, the date, the message, and the commit that came
+before it (its parent; your first commit has none). Git names the commit with a hash computed
+from all of that. Files that did not change are not stored twice: the new commit points to the
+content Git already has.
 
 Why the staging area exists: it lets you choose what goes into each commit. When you have
 changed three files for two different reasons, you can stage and commit them as two focused
@@ -698,8 +698,8 @@ Its first branch is called `main`, the name the game sets as the default.
         id="status",
         text="""
 `git status` is the command you will run most. It names the branch you are on and lists the
-files that are untracked, staged, or changed but not staged. Run it now. The repository has no files and no
-commits yet, so it has little to report.
+files that are untracked, staged, or changed but not staged. Run it now. The repository has no
+files and no commits yet, so it has little to report.
 """,
         command="git status",
         question="Which branch does `git status` say you are on?",
@@ -743,10 +743,10 @@ quotes so that a name with spaces stays one value:
     $ git config --global user.name "Your Name"
 
 Replace `Your Name` with your own. `--global` means "for all my repositories on this computer,
-unless one of them sets its own". Inside the game, it writes the game's own settings file instead of your real one, so
-nothing outside the game changes. At work you will run the same commands in your own terminal;
-the chapter "Your real setup" walks you through it. If you already set your name earlier in
-the game, this step passes at once.
+unless one of them sets its own". Inside the game, it writes the game's own settings file
+instead of your real one, so nothing outside the game changes. At work you will run the same
+commands in your own terminal; the chapter "Your real setup" walks you through it. If you
+already set your name earlier in the game, this step passes at once.
 """,
         command=NAME_COMMAND,
         watch=watch_name,
@@ -784,9 +784,11 @@ List the history:
     $ git log --oneline
 
 Each line is one commit, newest first: a short hash, then the message. On your terminal, the
-newest line also shows `(HEAD -> main)` between them: your branch points to that commit. The
-short hash is the start of the commit's full hash, which has 40 characters here. Git accepts the short form
-wherever it needs a commit, as long as no other object's hash starts the same way.
+newest line also shows `(HEAD -> main)` between them: your branch points to that commit.
+
+The short hash is the start of the commit's full hash, which has 40 characters here. Commands
+such as `git show` accept the short form in place of the full hash, as long as no other object
+in the repository has a hash that starts the same way.
 """,
         command="git log --oneline",
         question="What is your commit's short hash?",

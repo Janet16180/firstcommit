@@ -211,9 +211,9 @@ wrong = [
 ]
 explain = """
 A plain `git commit` stores the content of every file in the staging area, plus who made it,
-when, the message and its parent commit. Git thinks in snapshots, not in lists of changed lines: when
-`git show` displays a commit's changes, it computes them by comparing the commit with its parent.
-Git records files, not the commands you typed. Untracked files stay out of the commit.
+when, the message and its parent commit. Git thinks in snapshots, not in lists of changed lines:
+when `git show` displays a commit's changes, it computes them by comparing the commit with its
+parent. Git records files, not the commands you typed. Untracked files stay out of the commit.
 """
 source = "git-commit(1), DESCRIPTION; git-show(1), DESCRIPTION; Pro Git 2nd ed., 1.3 (Snapshots, Not Differences)"
 verify = """
@@ -293,9 +293,9 @@ wrong = [
 explain = """
 The staging area is not a queue that a commit empties: it is the full list of files for the next
 commit, and a plain `git commit` records it as it is. Right after a plain `git commit`, the
-staging area and the commit hold the same content, which is why `git status` has nothing staged to report. `git ls-files`
-lists the staging area, and still lists every tracked file. Changes you did not stage stay in the
-working folder, not in the staging area.
+staging area and the commit hold the same content, which is why `git status` has nothing staged
+to report. `git ls-files` lists the staging area, and still lists every tracked file. Changes you
+did not stage stay in the working folder, not in the staging area.
 """
 source = "gitglossary(7), index; git-add(1), DESCRIPTION; git-ls-files(1)"
 verify = """

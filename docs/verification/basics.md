@@ -66,7 +66,7 @@ slide's output is shown as `/home/you/...` (insight's transcripts).
 | commit | `-m` gives the message | git-commit(1), `-m` |
 | hash | Each line of `git log --oneline` is one commit, newest first: short hash, then message; on the terminal the newest line shows `(HEAD -> main)` | as the `log` slide |
 | hash | The full hash has 40 characters here | gitglossary(7), object name ("usually represented by a 40 character hexadecimal string"); experiment: `git rev-parse HEAD` is 40 characters |
-| hash | Git accepts the short form as long as no other object's hash starts the same way | gitrevisions(7), `<sha1>`: "a leading substring that is unique within the repository" |
+| hash | Commands such as `git show` accept the short form, as long as no other object's hash starts the same way | gitrevisions(7), `<sha1>`: "a leading substring that is unique within the repository"; experiment: `git show <short hash>` shows the commit, while `git fetch <repository> <short hash>` fails (exit 128) and needs the full hash, so the text gives `git show` as its example instead of saying "wherever" |
 
 Watch and answer checks read `kit.snapshot(lab.project)` and `git config --get` (meant for
 scripts) only. Each step's check fails before the player's action and passes after it
@@ -160,7 +160,8 @@ on Windows, `core.hideDotFiles`), "Nothing is committed until you run `git commi
 them into every commit" (`--author`, environment variables), "`--global` means for every
 repository" (a local setting overrides), "every new commit goes on top" (the root commit), "the
 first branch is always called `main`" (`git init -b`), and the slide title "A commit takes what
-is staged". Each was rescoped.
+is staged", and "Git accepts the short form wherever it needs a commit" (`git fetch` needs the full
+hash). Each was rescoped.
 
 ## Left out
 
