@@ -221,3 +221,24 @@ test("a replaced commit fades out before its replacement appears in the same pla
   const newText = on(calls, `[data-hash="${full("d")}"]`).filter((call) => call.node.getAttribute("class") === "map-hash");
   assert.ok(end(out) <= newText[0].timing.delay, `${end(out)} > ${newText[0].timing.delay}`);
 });
+
+test("when the drawing gains a line, tabs and texts start exactly where they were drawn, so they never overlap on the way", () => {
+  const before = drawn({ commits: [["b", ["a"]], ["a", []]], refs: [["main", "branch", "b"], ["origin/main", "remote", "b"]] });
+  const after = drawn({ commits: [["c", ["b"]], ["b", ["a"]], ["a", []]], refs: [["main", "branch", "b"], ["origin/main", "remote", "c"]], head: "b" });
+  assert.ok(after.textStart > before.textStart, "the fetched commit draws a second line");
+  const motion = motions(before, after);
+  const tabX = (map, hash, kind) => {
+    const commit = at(map, hash);
+    let x = map.textStart;
+    for (const label of commit.labels) {
+      if (label.kind === kind) return x;
+      x += label.width + sizes.chipPad;
+    }
+    return null;
+  };
+  const slide = motion.slides.find((move) => move.key === "remote:origin/main");
+  assert.equal(tabX(after, "c", "remote") + slide.dx, tabX(before, "b", "remote"));
+  const text = motion.texts.find((move) => move.hash === full("b"));
+  const textX = (map, name) => at(map, name).labels.reduce((x, label) => x + label.width + sizes.chipPad, map.textStart);
+  assert.equal(textX(after, "b") + text.dx, textX(before, "b"));
+});

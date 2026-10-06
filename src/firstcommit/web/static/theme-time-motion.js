@@ -96,7 +96,7 @@ const TimeMotion = (function () {
     for (const [key, tab] of tabs(after, sizes)) {
       const was = old.get(key);
       const from = was ? place(was.hash) : null;
-      const dx = from ? was.offset - tab.offset : 0;
+      const dx = from ? before.textStart + was.offset - (after.textStart + tab.offset) : 0;
       const dy = from ? from.y - byHash.get(tab.hash).y : 0;
       if (!from) appear.push(key);
       else if (dx !== 0 || dy !== 0) slides.push({ key, dx, dy });
