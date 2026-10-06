@@ -10,7 +10,7 @@ from hypothesis import example, given, settings
 from hypothesis import strategies as st
 
 from firstcommit import changes, gitcmd, playground, records, repomap, save
-from firstcommit.kit import Lab
+from firstcommit.lab import Lab
 
 PEOPLE: tuple[records.Who, ...] = get_args(records.Who)
 BUTTONS: tuple[records.Button, ...] = get_args(records.Button)
@@ -256,6 +256,38 @@ def test_the_playground_starts_on_main_whatever_default_branch_the_player_set() 
         assert [seen[name]["branch"] for name in ("github", *PEOPLE)] == ["main", "main", "main"]
 
 
+
+def test_each_clone_reaches_github_by_a_path_from_its_top_folder() -> None:
+    with new_lab() as lab:
+        for person in PEOPLE:
+            folder = clone(lab, person)
+            assert gitcmd.output(folder, "remote", "get-url", "origin").strip() == lab.github_url(folder)
+
+
+def test_git_names_github_by_that_path_so_no_output_or_merge_subject_holds_the_players_folders() -> None:
+    with new_lab() as lab:
+        presses(lab, "alex", *SHARE)
+        [*_, refused, merge, push] = presses(lab, "you", *SHARE, "pull-no-rebase", "push")
+        [pull] = presses(lab, "alex", "pull")
+        assert "error: failed to push some refs to '../github/project.git'\n" in refused["output"]
+        assert push["output"].startswith("To ../github/project.git\n")
+        assert pull["output"].startswith("From ../../github/project\n")
+        assert [str(save.home()) in press["output"] for press in (refused, merge, push, pull)] == [False] * 4
+        assert repomap.snapshot(lab.project)["commits"][0]["subject"] == "Merge branch 'main' of ../github/project"
+
+
+def test_a_clone_reaches_github_from_a_subfolder_too() -> None:
+    with new_lab() as lab:
+        presses(lab, "alex", *SHARE)
+        notes = lab.project / "notes"
+        notes.mkdir()
+        (notes / "plan.txt").write_text("A plan.\n")
+        commands = [("add", "plan.txt"), ("commit", "-m", "Add a plan"), ("push",), ("fetch",), ("pull", "--no-rebase"), ("push",), ("status",)]
+        results = [gitcmd.run(notes, *command) for command in commands]
+        assert [result.returncode for result in results] == [0, 0, 1, 0, 0, 0, 0], [result.stderr for result in results]
+        assert target(repomap.snapshot(lab.github)) == repomap.snapshot(lab.project)["head"]
+
+
 Step = tuple[records.Who, records.Button]
 ONE_PRESS = st.tuples(st.sampled_from(PEOPLE), st.sampled_from(BUTTONS)).map(lambda step: [step])
 A_COMMIT = st.sampled_from(PEOPLE).map(lambda person: [(person, button) for button in SHARE[:-1]])
@@ -296,6 +328,7 @@ def test_any_sequence_of_presses_keeps_the_facts_the_figure_draws(steps: list[St
             told = " ".join(event["text"] for event in events)
             context = (steps, press, events)
             assert now[other] == seen[other], context
+            assert str(save.home()) not in press["output"], context
             if button != "push" or press["status"] != 0:
                 assert now["github"] == seen["github"], context
             if button == "status" or (button in ("add", "commit", "push") and press["status"] != 0):

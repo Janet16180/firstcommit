@@ -57,7 +57,7 @@ README = "# Shared notes\n\nYou and Alex both work on this project.\n"
 
 def setup(lab: Lab) -> None:
     """
-    Create the playground: GitHub with one commit, and a clone of it for each person.
+    Create the playground: GitHub with one commit, and a clone of it for each person that reaches it by `Lab.github_url`.
 
     Parameters
     ----------
@@ -81,6 +81,7 @@ def setup(lab: Lab) -> None:
     for person, identity in PEOPLE.items():
         folder = _clone(lab, person)
         gitcmd.output(folder.parent, "clone", "--quiet", str(lab.github), folder.name)
+        gitcmd.output(folder, "remote", "set-url", "origin", lab.github_url(folder))
         gitcmd.output(folder, "config", "user.name", identity.name)
         gitcmd.output(folder, "config", "user.email", identity.email)
 
