@@ -8,7 +8,7 @@ whatever command (or editor, or file manager) caused the change.
 Event kinds, most important first:
 
 - ``repository-created``, ``repository-removed`` (told alone);
-- ``<operation>-finished``, ``<operation>-abandoned`` and ``<operation>-started``, where the
+- ``<operation>-finished``, ``<operation>-aborted`` and ``<operation>-started``, where the
   operation is ``merge``, ``rebase``, ``cherry-pick``, ``revert`` or ``bisect`` (a bisect only
   starts and finishes);
 - ``conflict``, ``conflict-resolved``;
@@ -156,14 +156,14 @@ def _working_events(change: _Change) -> list[Event]:
     """
     before, after = change.before, change.after
     ended = before["operation"] is not None and before["operation"] != after["operation"]
-    abandoned = ended and not _branch_moved(change)
+    aborted = ended and not _branch_moved(change)
     commit = _new_head_commit(change)
     renamed = _renamed_branch(change)
-    tidied = abandoned or after["stash"] > before["stash"]
+    tidied = aborted or after["stash"] > before["stash"]
     head_explained = ended or commit is not None or (renamed is not None and renamed[0] == before["branch"])
     return [
-        *_operation_events(change, abandoned),
-        *_conflict_events(change, abandoned),
+        *_operation_events(change, aborted),
+        *_conflict_events(change, aborted),
         *_commit_events(change, commit),
         *([] if head_explained else _head_events(change)),
         *_branch_events(change, commit, renamed),
@@ -429,7 +429,7 @@ def _renamed_branch(change: _Change) -> tuple[str, str] | None:
     return renamed
 
 
-def _operation_events(change: _Change, abandoned: bool) -> list[Event]:
+def _operation_events(change: _Change, aborted: bool) -> list[Event]:
     """
     Tell that a merge, rebase, cherry-pick, revert or bisect ended or started.
 
@@ -437,7 +437,7 @@ def _operation_events(change: _Change, abandoned: bool) -> list[Event]:
     ----------
     change : _Change
         The two snapshots.
-    abandoned : bool
+    aborted : bool
         Whether an operation that ended left HEAD's branch where it was.
 
     Returns
@@ -451,8 +451,8 @@ def _operation_events(change: _Change, abandoned: bool) -> list[Event]:
         where = f"{_place(change.after)} points at {_at(change, change.after['head'])}" if change.after["head"] else f"{_place(change.after)} has no commits"
         if was == "bisect":
             events.append({"kind": "bisect-finished", "text": "The bisect is over."})
-        elif abandoned:
-            events.append({"kind": f"{was}-abandoned", "text": f"The {was} was abandoned: {where}, as before it started."})
+        elif aborted:
+            events.append({"kind": f"{was}-aborted", "text": f"The {was} was aborted: {where}, as before it started."})
         else:
             events.append({"kind": f"{was}-finished", "text": f"The {was} is finished: {where}."})
     if now is not None and now != was:
@@ -461,7 +461,7 @@ def _operation_events(change: _Change, abandoned: bool) -> list[Event]:
     return events
 
 
-def _conflict_events(change: _Change, abandoned: bool) -> list[Event]:
+def _conflict_events(change: _Change, aborted: bool) -> list[Event]:
     """
     Tell which files came into conflict and which were resolved.
 
@@ -469,8 +469,8 @@ def _conflict_events(change: _Change, abandoned: bool) -> list[Event]:
     ----------
     change : _Change
         The two snapshots.
-    abandoned : bool
-        Whether the operation was abandoned, which ends its conflicts without resolving them.
+    aborted : bool
+        Whether the operation was aborted, which ends its conflicts without resolving them.
 
     Returns
     -------
@@ -483,7 +483,7 @@ def _conflict_events(change: _Change, abandoned: bool) -> list[Event]:
     news: list[FileNews] = [
         ("conflict", path, f"`{path}` has a conflict: Git could not combine the two versions by itself.") for path in sorted(now.keys() - was)
     ]
-    for path in [] if abandoned else sorted(was - now.keys()):
+    for path in [] if aborted else sorted(was - now.keys()):
         staged = path in after and after[path]["index"] is not None
         news.append(("conflict-resolved", path, f"`{path}` is resolved: " + ("the staging area holds its new version." if staged else "it was removed.")))
     return _told(news)
@@ -746,7 +746,7 @@ def _file_events(change: _Change, tidied: bool, committed: bool) -> list[Event]:
     change : _Change
         The two snapshots.
     tidied : bool
-        Whether a stash or an abandoned operation put files back, which its own event tells.
+        Whether a stash or an aborted operation put files back, which its own event tells.
     committed : bool
         Whether a commit was just made at HEAD.
 

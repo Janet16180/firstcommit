@@ -267,7 +267,7 @@ def test_an_abandoned_merge_says_the_branch_did_not_move(tmp_path: Path) -> None
     repo = project(tmp_path, "git switch -q -c feature && echo theirs > a.txt && git commit -q -am theirs && git switch -q main && echo ours > a.txt && git commit -q -am ours")
     shell(repo, "git merge -q feature >/dev/null || true")
     events = happens(repo, "git merge --abort")
-    assert events == [{"kind": "merge-abandoned", "text": f'The merge was abandoned: branch `main` points at `{short(repo, "HEAD")}` "ours", as before it started.'}]
+    assert events == [{"kind": "merge-aborted", "text": f'The merge was aborted: branch `main` points at `{short(repo, "HEAD")}` "ours", as before it started.'}]
 
 
 def test_a_rebase_starts_with_head_detached_and_finishes_rewriting_the_branch(tmp_path: Path) -> None:
