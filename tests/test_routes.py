@@ -291,6 +291,7 @@ def test_checking_needs_an_answer_and_a_boolean_auto(
         ("/api/check", {"answer": None, "auto": True}, "check"),
         ("/api/hint", {}, "hint"),
         ("/api/observe", None, "observe"),
+        ("/api/press", {"person": "you", "button": "edit"}, "press"),
     ],
 )
 def test_actions_on_the_level_in_progress_conflict_when_there_is_none(
@@ -533,6 +534,52 @@ def test_cards_and_notes_come_from_the_decks(site: Site, sample_decks: Path) -> 
     assert api(site, "/api/notes?chapter=basics")[1]["title"] == "The three areas"
 
 
+def test_a_press_sends_who_pressed_which_button_and_gives_the_games_view(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
+    view = {"press": {"person": "alex", "button": "push", "command": "git push", "status": 0, "output": ""}, "explanation": None, "observation": {}}
+    calls = record(monkeypatch, "press", view)
+    assert api(site, "/api/press", {"person": "alex", "button": "push"}) == (200, view)
+    assert calls == [("alex", "push")]
+
+
+@pytest.mark.parametrize(
+    "body",
+    [{}, {"person": "you"}, {"button": "edit"}, {"person": None, "button": "edit"}, {"person": "you", "button": 3}, {"person": "you", "button": "x" * 101}],
+)
+def test_a_press_needs_a_person_and_a_button_as_text(site: Site, monkeypatch: pytest.MonkeyPatch, body: dict[str, Any]) -> None:
+    calls = record(monkeypatch, "press", {})
+    assert api(site, "/api/press", body)[0] == 400
+    assert calls == []
+
+
+def test_a_press_by_someone_or_on_a_button_the_playground_does_not_have_is_not_found(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
+    record(monkeypatch, "press", error=game.UnknownIdError("no person 'bob'"))
+    assert api(site, "/api/press", {"person": "bob", "button": "edit"}) == (404, {"error": "no person 'bob'"})
+
+
+def test_a_press_in_a_level_without_a_playground_conflicts(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
+    record(monkeypatch, "press", error=game.NoPlaygroundError("this level has no playground"))
+    assert api(site, "/api/press", {"person": "you", "button": "edit"}) == (409, {"error": "this level has no playground"})
+
+
+def test_the_real_playground_runs_each_press_and_a_failed_command_is_an_answer_not_an_error(site: Site, playground_level: runner.Level) -> None:
+    assert api(site, "/api/start", {"level": playground_level.id})[0] == 200
+    assert api(site, "/api/observe")[1]["teammate"] is not None
+    status, edited = api(site, "/api/press", {"person": "alex", "button": "edit"})
+    assert status == 200
+    assert (edited["press"]["person"], edited["press"]["button"], edited["press"]["status"]) == ("alex", "edit", 0)
+    assert [event["kind"] for event in edited["observation"]["teammate_events"]] == ["file-created"]
+    status, failed = api(site, "/api/press", {"person": "you", "button": "commit"})
+    assert (status, failed["press"]["status"]) == (200, 1)
+    assert "nothing to commit" in failed["press"]["output"]
+
+
+def test_the_real_game_refuses_a_press_without_a_playground(site: Site, sample_level: runner.Level) -> None:
+    assert api(site, "/api/press", {"person": "you", "button": "edit"})[0] == 409
+    assert api(site, "/api/start", {"level": sample_level.id})[0] == 200
+    assert api(site, "/api/press", {"person": "you", "button": "edit"})[0] == 409
+    assert api(site, "/api/press", {"person": "bob", "button": "edit"})[0] == 404
+
+
 def test_the_guide_gives_the_games_figures_by_section(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
     figures = {"commit": {"before": {"exists": False}, "after": {"exists": True}, "transcript": [{"command": "git commit", "output": ""}]}}
     calls = record(monkeypatch, "guide", figures)
@@ -564,5 +611,6 @@ def test_every_route_is_a_get_or_post_under_api() -> None:
         ("POST", "/api/card"),
         ("GET", "/api/notes"),
         ("GET", "/api/guide"),
+        ("POST", "/api/press"),
     }
     assert set(routes.ROUTES) == expected

@@ -22,6 +22,7 @@ const REPLIES = {
   "/api/card": record("card_result"),
   "/api/notes": record("notes"),
   "/api/guide": record("guide"),
+  "/api/press": record("press"),
 };
 
 function gameApi(replies = REPLIES) {
@@ -47,6 +48,7 @@ test("each action calls its route with the body the server expects", async () =>
   await game.card("card-1", "The staging area");
   await game.notes("basics");
   await game.guide();
+  await game.press("alex", "push");
   assert.deepEqual(calls.map((call) => [call.path, call.body]), [
     ["/api/status", undefined],
     ["/api/level?id=a%20level%2Fx", undefined],
@@ -64,6 +66,7 @@ test("each action calls its route with the body the server expects", async () =>
     ["/api/card", { id: "card-1", reply: "The staging area" }],
     ["/api/notes?chapter=basics", undefined],
     ["/api/guide", undefined],
+    ["/api/press", { person: "alex", button: "push" }],
   ]);
 });
 
@@ -75,6 +78,7 @@ test("every sample record is accepted as it is", async () => {
   assert.equal(await game.abort(), "sample-second");
   assert.deepEqual(await game.check(null, false), record("check_solved"));
   assert.deepEqual(await game.guide(), record("guide"));
+  assert.deepEqual(await game.press("alex", "push"), record("press"));
   for (const action of ["level", "lesson", "start", "step", "hint", "notes"]) await game[action]("x");
   await game.card("x", "y");
 });
@@ -167,4 +171,30 @@ test("each guide figure must carry its repository before and after the change, a
   }
   const { game } = gameApi({ "/api/guide": [record("guide").commit] });
   await assert.rejects(game.guide(), /\/api\/guide should be an object/);
+});
+
+test("an observation must carry the teammate's clone, or null without a playground, and its events apart", async () => {
+  for (const field of ["teammate", "teammate_events"]) {
+    const observation = record("observation");
+    delete observation[field];
+    await assert.rejects(gameApi({ "/api/observe": observation }).game.observe(), new RegExp(`/api/observe\\.${field} should be`), field);
+  }
+  const withTeammate = { ...record("observation"), teammate: record("snapshots").one };
+  assert.deepEqual(await gameApi({ "/api/observe": withTeammate }).game.observe(), withTeammate);
+});
+
+test("a press must say who pressed which button, what ran and what it printed, and carry the lab after it", async () => {
+  for (const field of ["person", "button", "command", "status", "output"]) {
+    const pressed = record("press");
+    delete pressed.press[field];
+    await assert.rejects(gameApi({ "/api/press": pressed }).game.press("alex", "push"), new RegExp(`/api/press\\.press\\.${field} should be`), field);
+  }
+  for (const field of ["explanation", "observation"]) {
+    const pressed = record("press");
+    delete pressed[field];
+    await assert.rejects(gameApi({ "/api/press": pressed }).game.press("alex", "push"), new RegExp(`/api/press\\.${field} should be`), field);
+  }
+  const stranger = record("press");
+  stranger.press.person = "bob";
+  await assert.rejects(gameApi({ "/api/press": stranger }).game.press("alex", "push"), /press\.person should be one of you, alex/);
 });
