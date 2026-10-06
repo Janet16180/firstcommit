@@ -49,6 +49,12 @@ def test_a_level_module_is_read_into_a_typed_record() -> None:
     assert level.hints == tuple(basics_sample.HINTS)
     assert (level.briefing, level.debrief) == (basics_sample.BRIEFING, basics_sample.DEBRIEF)
     assert (level.setup, level.check, level.solve) == (basics_sample.setup, basics_sample.check, basics_sample.solve)
+    assert (level.question, level.placeholder) == ("", "")
+
+
+def test_a_level_solved_by_a_typed_answer_reads_its_question_and_placeholder() -> None:
+    level = runner.load(level_module(QUESTION="Which commit broke it?", PLACEHOLDER="a short hash"))
+    assert (level.question, level.placeholder) == ("Which commit broke it?", "a short hash")
 
 
 def test_a_level_record_cannot_be_changed() -> None:
@@ -104,6 +110,9 @@ BROKEN: dict[str, tuple[types.ModuleType, str]] = {
     "a step with a check and a watch": (level_module(QUEST=[step("a", question="Q?", check=basics_sample.names_the_branch, watch=basics_sample.is_staged)]), "a"),
     "a setup that is not a function": (level_module(setup="setup"), "setup"),
     "a missing check": (level_module(check=...), "check"),
+    "a question that is not text": (level_module(QUESTION=3), "QUESTION"),
+    "a placeholder that is not text": (level_module(QUESTION="Which?", PLACEHOLDER=None), "PLACEHOLDER"),
+    "a placeholder without a question": (level_module(PLACEHOLDER="a short hash"), "PLACEHOLDER"),
 }
 
 

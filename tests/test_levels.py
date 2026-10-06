@@ -118,10 +118,11 @@ def texts(level: runner.Level) -> list[str]:
     Returns
     -------
     list[str]
-        Briefing, hints, debrief, and each quest step's text, command, question and placeholder.
+        Briefing, question, placeholder, hints, debrief, and each quest step's text, command,
+        question and placeholder.
     """
     steps = [field for step in level.quest for field in (step.text, step.command, step.question, step.placeholder)]
-    return [level.briefing, *level.hints, level.debrief, *steps]
+    return [level.briefing, level.question, level.placeholder, *level.hints, level.debrief, *steps]
 
 
 @pytest.mark.parametrize(("package", "level"), CASES, ids=IDS)
@@ -184,6 +185,7 @@ def test_the_reference_solution_solves_the_level_and_the_lab_is_removed_afterwar
     state = runner.start_lab(level)
     lab = runner.lab_of(level.id)
     answer = level.solve(lab, state)
+    assert (answer is not None) == bool(level.question), "solve returns an answer exactly when the level asks a QUESTION"
     assert level.check(lab, state, answer).solved
     runner.remove_labs()
     assert not (game_home / "labs").exists()

@@ -40,7 +40,8 @@ class Level:
     One level, as read from its module.
 
     ``id`` is the module name with ``_`` turned into ``-``; ``chapter`` is the part before the
-    first ``_``. The other fields are the module's names of AUTHORING.md section 3.3.
+    first ``_``. The other fields are the module's names of AUTHORING.md section 3.3;
+    ``question`` and ``placeholder`` are empty for a level checked against the repository only.
     """
 
     id: str
@@ -51,6 +52,8 @@ class Level:
     lesson: tuple[kit.Slide, ...]
     quest: tuple[kit.Step, ...]
     briefing: str
+    question: str
+    placeholder: str
     hints: tuple[str, ...]
     debrief: str
     setup: Setup
@@ -82,11 +85,19 @@ def load(module: ModuleType) -> Level:
     values: dict[str, Any] = {key: getattr(module, key, None) for key in ("TITLE", "DIFFICULTY", "XP", "BRIEFING", "HINTS", "DEBRIEF", "setup", "check", "solve")}
     lesson = getattr(module, "LESSON", [])
     quest = getattr(module, "QUEST", [])
+    question = getattr(module, "QUESTION", "")
+    placeholder = getattr(module, "PLACEHOLDER", "")
     problem = None
     if match is None or match[1] not in CHAPTERS:
         problem = f"the module name must be <chapter>_<slug>, with a chapter among {', '.join(CHAPTERS)}"
     else:
-        problem = _texts_problem(values) or _numbers_problem(values) or _lesson_problem(lesson) or _quest_problem(quest)
+        problem = (
+            _texts_problem(values)
+            or _question_problem(question, placeholder)
+            or _numbers_problem(values)
+            or _lesson_problem(lesson)
+            or _quest_problem(quest)
+        )
     if problem is not None:
         raise ValueError(f"level module {module.__name__}: {problem}")
     return Level(
@@ -98,6 +109,8 @@ def load(module: ModuleType) -> Level:
         lesson=tuple(lesson),
         quest=tuple(quest),
         briefing=values["BRIEFING"],
+        question=question,
+        placeholder=placeholder,
         hints=tuple(values["HINTS"]),
         debrief=values["DEBRIEF"],
         setup=values["setup"],
@@ -144,6 +157,32 @@ def _texts_problem(values: dict[str, Any]) -> str | None:
         problem = f"{blank[0]} must be text that is not empty"
     elif not isinstance(hints, list) or not MIN_HINTS <= len(hints) <= MAX_HINTS or not all(_is_text(hint) for hint in hints):
         problem = f"HINTS must be a list of {MIN_HINTS} to {MAX_HINTS} texts that are not empty"
+    return problem
+
+
+def _question_problem(question: Any, placeholder: Any) -> str | None:
+    """
+    Check the optional question of a level solved by a typed answer, and its placeholder.
+
+    Parameters
+    ----------
+    question : Any
+        The module's ``QUESTION``, ``""`` when missing.
+    placeholder : Any
+        The module's ``PLACEHOLDER``, ``""`` when missing.
+
+    Returns
+    -------
+    str | None
+        What is wrong, or None.
+    """
+    problem = None
+    if not isinstance(question, str):
+        problem = "QUESTION must be text"
+    elif not isinstance(placeholder, str):
+        problem = "PLACEHOLDER must be text"
+    elif placeholder and not _is_text(question):
+        problem = "PLACEHOLDER shows the shape of an answer, so it needs a QUESTION"
     return problem
 
 
