@@ -206,7 +206,31 @@ def test_the_dashboard_shows_the_level_in_progress(sample_level: runner.Level) -
     game.hint()
     active = game.status()["active"]
     assert active is not None
-    assert {key: value for key, value in active.items() if key != "started"} == {"level": "basics-sample", "step": 0, "steps": 3, "hints": 1, "hints_total": 3, "attempts": 0}
+    assert {key: value for key, value in active.items() if key != "started"} == {
+        "level": "basics-sample",
+        "step": 0,
+        "steps": 3,
+        "hints": 1,
+        "hints_total": 3,
+        "attempts": 0,
+        "auto_check": False,
+    }
+
+
+def test_the_page_may_check_automatically_once_the_quest_is_done(sample_level: runner.Level, game_home: Path) -> None:
+    assert game.start(sample_level.id)["auto_check"] is False
+    game.quest_step(None)
+    kit.git(lab_project(game_home), "add", "hello.txt")
+    game.quest_step(None)
+    assert game.quest_step("trunk")["quest_done"] is True
+    active = game.status()["active"]
+    assert active is not None and active["auto_check"] is True
+
+
+def test_the_page_may_check_a_level_without_a_quest_automatically_from_the_start(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    level = dataclasses.replace(sample_level, quest=())
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    assert game.start(level.id)["auto_check"] is True
 
 
 def test_an_unknown_level_id_raises_unknown_id_error(sample_level: runner.Level) -> None:

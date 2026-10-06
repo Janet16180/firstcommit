@@ -71,7 +71,12 @@ class ChapterSummary(TypedDict):
 
 
 class ActiveView(TypedDict):
-    """The level being played: how far the quest is, and the hints and attempts used."""
+    """
+    The level being played: how far the quest is, and the hints and attempts used.
+
+    ``auto_check`` says whether the page may check the level by itself: only once the quest is
+    done (`check` refuses an automatic check before that anyway).
+    """
 
     level: str
     step: int
@@ -80,6 +85,7 @@ class ActiveView(TypedDict):
     hints_total: int
     attempts: int
     started: str
+    auto_check: bool
 
 
 class Status(TypedDict):
@@ -429,14 +435,14 @@ def quest_step(answer: str | None) -> StepResult:
         active, entry = _playing()
         correct = False
         message: list[Block] = []
-        if active["step"] < len(entry.quest):
+        if not _quest_done(active, entry):
             verdict = _check_step(entry.quest[active["step"]], runner.lab_of(entry.id), active["state"], _typed(answer))
             correct = verdict.solved
             message = _blocks(verdict.message, active["state"])
         if correct:
             active["step"] += 1
             save.write_active(active)
-    return {"correct": correct, "message": message, "step": active["step"], "quest_done": active["step"] >= len(entry.quest)}
+    return {"correct": correct, "message": message, "step": active["step"], "quest_done": _quest_done(active, entry)}
 
 
 def check(answer: str | None, auto: bool) -> CheckResult:
@@ -471,7 +477,7 @@ def check(answer: str | None, auto: bool) -> CheckResult:
     typed = _typed(answer)
     with save.lock():
         active, entry = _playing()
-        if auto and active["step"] < len(entry.quest):
+        if auto and not _quest_done(active, entry):
             verdict = kit.Verdict(False, QUEST_FIRST.format(step=active["step"] + 1, steps=len(entry.quest)))
         else:
             verdict = entry.check(runner.lab_of(entry.id), active["state"], typed)
@@ -938,7 +944,27 @@ def _active_view(active: save.Active, entry: runner.Level) -> ActiveView:
         "hints_total": len(entry.hints),
         "attempts": active["attempts"],
         "started": active["started"],
+        "auto_check": _quest_done(active, entry),
     }
+
+
+def _quest_done(active: save.Active, entry: runner.Level) -> bool:
+    """
+    Tell whether the guided quest of the level in progress is done; a level without one is.
+
+    Parameters
+    ----------
+    active : save.Active
+        The saved record of the level in progress.
+    entry : runner.Level
+        The level.
+
+    Returns
+    -------
+    bool
+        True once every step has passed.
+    """
+    return active["step"] >= len(entry.quest)
 
 
 def _step_view(step: kit.Step, state: kit.State) -> StepView:
