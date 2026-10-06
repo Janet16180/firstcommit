@@ -87,18 +87,11 @@ const RepoMap = (function () {
         show: "Show them",
         repository: "a separate repository",
       },
-      marks: { executable: "executable", link: "symbolic link" },
+      /* git status's two columns: how the working folder differs from the staging area, and how
+         the staging area differs from the last commit. */
       states: {
-        untracked: "untracked",
-        changed: "changed, not staged",
-        same: "",
-        deleted: "deleted, not staged",
-        ignored: "ignored",
-        conflicted: "conflict",
-        new: "new, staged",
-        staged: "staged",
-        removed: "removal staged",
-        committed: "",
+        folder: { modified: "modified, not staged", deleted: "deleted, not staged", typechange: "type changed, not staged", untracked: "untracked", ignored: "ignored" },
+        index: { added: "new file, staged", modified: "modified, staged", deleted: "deleted, staged", typechange: "type changed, staged", conflicted: "in conflict" },
       },
       objects: { type: "Type", hash: "Hash", size: "Size", bytes: (count) => `${count} B`, empty: "No objects yet." },
     },
@@ -356,36 +349,20 @@ const RepoMap = (function () {
     );
   }
 
-  /* Two areas agree when both the id and the mode agree: `chmod +x` alone is a change. */
-  const agree = (file, one, other) => file[one] === file[other] && file[`${one}_mode`] === file[`${other}_mode`];
-  const MARKS = { 100755: "executable", 120000: "link" };
-
-  function folderCell(file) {
-    const { head, index, folder, ignored, conflicted, repository } = file;
-    if (folder === null && repository && index === null && head === null) return { blob: null, state: "untracked", mark: null };
-    if (folder === null) return index !== null ? { blob: null, state: "deleted", mark: null } : null;
-    const state = ignored ? "ignored" : conflicted ? "conflicted" : index === null ? "untracked" : agree(file, "folder", "index") ? "same" : "changed";
-    return { blob: folder, state, mark: MARKS[file.folder_mode] || null };
-  }
-
-  function indexCell(file) {
-    const { head, index, conflicted } = file;
-    if (index === null && head === null && !conflicted) return null;
-    const state = conflicted ? "conflicted" : index === null ? "removed" : head === null ? "new" : agree(file, "index", "head") ? "same" : "staged";
-    return { blob: index, state, mark: MARKS[file.index_mode] || null };
-  }
-
-  /* A file's state in each area, from its ids and modes. `changed` is false when all three agree
-     (an ignored file is not a change); `repository` marks a repository inside the working folder. */
+  /* A file in each area as the server classified it (FileEntry's index_change and folder_change,
+     git status's two columns): an area is shown where the file is, or where git says it went.
+     A conflicted file's change is "conflicted", in the staging area, where git keeps its
+     unmerged versions. `changed` is false when git status would not list the file. */
   function areaRow(file) {
-    const folder = folderCell(file);
-    const index = indexCell(file);
+    const { path, head, index, folder, conflicted } = file;
+    const indexChange = conflicted ? "conflicted" : file.index_change;
+    const folderChange = file.folder_change;
     return {
-      path: file.path,
-      folder,
-      index,
-      head: file.head !== null ? { blob: file.head, state: "committed", mark: MARKS[file.head_mode] || null } : null,
-      changed: [folder, index].some((cell) => cell !== null && cell.state !== "same" && cell.state !== "ignored"),
+      path,
+      folder: folder !== null || folderChange !== null ? { blob: folder, change: folderChange } : null,
+      index: index !== null || indexChange !== null ? { blob: index, change: indexChange } : null,
+      head: head !== null ? { blob: head, change: null } : null,
+      changed: indexChange !== null || (folderChange !== null && folderChange !== "ignored"),
       repository: file.repository,
     };
   }
@@ -395,14 +372,14 @@ const RepoMap = (function () {
   /* A hue from the first hex digits of a blob id, so the same content always looks the same. */
   const blobHue = (blob) => parseInt(blob.slice(0, 6), 16) % 360;
 
-  function areaCell(cell, words) {
+  /* One area of a file: its blob, and the change git lists there in the theme's words (`said`
+     is the area's part of words.states, none for the last commit). */
+  function areaCell(cell, area, said) {
     if (!cell) return el("span", { class: "areas-cell is-absent", role: "cell" }, el("span", { class: "sr-only" }, "absent"));
-    const state = words.states[cell.state];
-    return el("span", { class: `areas-cell state-${cell.state}`, role: "cell" },
+    return el("span", { class: `areas-cell in-${area}`, role: "cell", "data-change": cell.change },
       cell.blob && el("i", { class: "blob-dot", style: `--hue: ${blobHue(cell.blob)}`, "aria-hidden": "true" }),
       cell.blob && el("code", { title: cell.blob }, cell.blob.slice(0, 7)),
-      cell.mark && el("span", { class: "areas-mark" }, words.marks[cell.mark]),
-      state && el("em", {}, state),
+      cell.change && el("em", {}, said[cell.change]),
     );
   }
 
@@ -413,11 +390,11 @@ const RepoMap = (function () {
         el("span", { class: "areas-name", title: row.path }, row.path),
         row.repository && el("span", { class: "areas-repo" }, words.areas.repository),
       ),
-      areaCell(row.folder, words),
+      areaCell(row.folder, "folder", words.states.folder),
       el("span", { class: "areas-gap", "aria-hidden": "true" }),
-      areaCell(row.index, words),
+      areaCell(row.index, "index", words.states.index),
       el("span", { class: "areas-gap", "aria-hidden": "true" }),
-      areaCell(row.head, words),
+      areaCell(row.head, "head", {}),
     );
   }
 

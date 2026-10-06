@@ -122,8 +122,8 @@ test("a level reply must carry its question, the hints shown so far and its debr
   }
 });
 
-test("a file entry must carry its mode in each area and whether it is a repository", async () => {
-  for (const field of ["head_mode", "index_mode", "folder_mode", "repository"]) {
+test("a file entry must carry its mode in each area, whether it is a repository and git status's two columns", async () => {
+  for (const field of ["head_mode", "index_mode", "folder_mode", "repository", "index_change", "folder_change"]) {
     const observation = record("observation");
     delete observation.project.files[0][field];
     const { game } = gameApi({ "/api/observe": observation });
@@ -136,4 +136,11 @@ test("the level in progress must say whether the page may check it by itself", a
   delete active.auto_check;
   const { game } = gameApi({ "/api/start": active });
   await assert.rejects(game.start("x"), /\/api\/start\.auto_check should be/);
+});
+
+test("a change git status does not list is refused, so the page never shows a column it has no words for", async () => {
+  const observation = record("observation");
+  observation.project.files[0].folder_change = "renamed";
+  const { game } = gameApi({ "/api/observe": observation });
+  await assert.rejects(game.observe(), /files\[0\]\.folder_change should be/);
 });

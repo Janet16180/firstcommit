@@ -60,6 +60,8 @@ const createGameApi = (function () {
       ignored: flag,
       conflicted: flag,
       repository: flag,
+      index_change: nullable(oneOf("added", "modified", "deleted", "typechange")),
+      folder_change: nullable(oneOf("modified", "deleted", "typechange", "untracked", "ignored")),
     })),
     operation: nullable(text),
     stash: number,

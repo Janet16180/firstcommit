@@ -1424,7 +1424,6 @@ input[type="text"]::placeholder {
   min-width: 0;
 }
 
-.areas-mark,
 .areas-repo {
   padding: 0 0.4rem;
   border-radius: 999px;
@@ -1461,24 +1460,24 @@ input[type="text"]::placeholder {
   background: hsl(var(--hue) 55% 50%);
 }
 
-.state-changed em,
-.state-untracked em,
-.state-deleted em {
+.areas-cell.in-folder em {
   color: var(--warn);
 }
 
-.state-staged em,
-.state-new em,
-.state-removed em {
+.areas-cell.in-index em {
   color: var(--accent-strong);
 }
 
-.state-conflicted em {
+.areas-cell[data-change="conflicted"] em {
   color: var(--danger);
 }
 
-.state-ignored {
+.areas-cell[data-change="ignored"] {
   opacity: 0.6;
+}
+
+.areas-cell[data-change="ignored"] em {
+  color: var(--muted);
 }
 
 .areas-fold {

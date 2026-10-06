@@ -202,35 +202,44 @@ test("a theme changes the colours, words and shapes without touching the layout"
   assert.deepEqual(RepoMap.layout(snapshot, { theme }).commits.map((commit) => commit.lane), [0]);
 });
 
-test("a file's state in each area comes from comparing its blob ids", () => {
+const entry = (path, fields) => ({ path, head: null, index: null, folder: null, head_mode: null, index_mode: null, folder_mode: null, ignored: false, conflicted: false, repository: false, index_change: null, folder_change: null, ...fields });
+
+test("each area shows the change git status lists in its column, as the server classified it", () => {
   const rows = Object.fromEntries(RepoMap.areaRows(record("observation").project.files).map((row) => [row.path, row]));
-  const states = (path) => ["folder", "index", "head"].map((area) => rows[path][area] && rows[path][area].state);
-  assert.deepEqual(states("README.md"), ["same", "staged", "committed"]);
-  assert.deepEqual(states("notes.txt"), ["changed", "same", "committed"]);
-  assert.deepEqual(states("todo.txt"), ["untracked", null, null]);
-  assert.deepEqual(states("build.log"), ["ignored", null, null]);
-  assert.deepEqual(states("old.txt"), [null, "removed", "committed"]);
+  const changes = (path) => ["folder", "index", "head"].map((area) => rows[path][area] && (rows[path][area].change || "same"));
+  assert.deepEqual(changes("README.md"), ["same", "modified", "same"]);
+  assert.deepEqual(changes("notes.txt"), ["modified", "same", "same"]);
+  assert.deepEqual(changes("run.sh"), ["modified", "same", "same"]);
+  assert.deepEqual(changes("todo.txt"), ["untracked", null, null]);
+  assert.deepEqual(changes("build.log"), ["ignored", null, null]);
+  assert.deepEqual(changes("old.txt"), [null, "deleted", "same"]);
 });
 
-test("new, deleted and conflicted files have their own states", () => {
-  const files = [
-    { path: "new.txt", head: null, index: "b1", folder: "b1", ignored: false, conflicted: false },
-    { path: "gone.txt", head: "b2", index: "b2", folder: null, ignored: false, conflicted: false },
-    { path: "both.txt", head: "b3", index: null, folder: "b4", ignored: false, conflicted: true },
-  ];
-  const rows = RepoMap.areaRows(files);
-  assert.deepEqual(rows.map((row) => [row.folder && row.folder.state, row.index && row.index.state]), [
-    ["same", "new"],
-    ["deleted", "same"],
-    ["conflicted", "conflicted"],
-  ]);
-  assert.equal(rows[0].changed, true);
-  assert.equal(rows[1].changed, true);
+test("every change the server sends reads as words a beginner knows, in the column git lists it", () => {
+  const strip = RepoMap.renderAreas(record("files"));
+  const words = (row, column) => {
+    const said = row.querySelectorAll("[role=\"cell\"]")[column].querySelector("em");
+    return said ? said.textContent : "";
+  };
+  const rows = strip.querySelectorAll(".areas-row").filter((row) => row.querySelector(".areas-name"));
+  const shown = Object.fromEntries(rows.map((row) => [row.querySelector(".areas-name").textContent, [words(row, 0), words(row, 1)]]));
+  assert.deepEqual(shown, {
+    "added.txt": ["", "new file, staged"],
+    "staged.txt": ["", "modified, staged"],
+    "removed.txt": ["", "deleted, staged"],
+    "staged-link": ["", "type changed, staged"],
+    "edited.txt": ["modified, not staged", ""],
+    "gone.txt": ["deleted, not staged", ""],
+    "link": ["type changed, not staged", ""],
+    "new.txt": ["untracked", ""],
+    "debug.log": ["ignored", ""],
+    "both.txt": ["", "in conflict"],
+  });
 });
 
-test("a file that is the same in all three areas is unchanged", () => {
-  const [row] = RepoMap.areaRows([{ path: "a.txt", head: "b1", index: "b1", folder: "b1", ignored: false, conflicted: false }]);
-  assert.equal(row.changed, false);
+test("a file git status would not list is unchanged, and an ignored one too", () => {
+  const rows = RepoMap.areaRows([entry("a.txt", { head: "b1", index: "b1", folder: "b1" }), ...record("files")]);
+  assert.deepEqual(rows.filter((row) => !row.changed).map((row) => row.path), ["a.txt", "debug.log"]);
 });
 
 test("the same blob always gets the same colour", () => {
@@ -249,8 +258,8 @@ test("the areas strip shows every file with its short blob id in each area", () 
 });
 
 test("unchanged files fold into one line when there are many", () => {
-  const files = Array.from({ length: 20 }, (_, index) => ({ path: `f${index}.txt`, head: "b", index: "b", folder: "b", ignored: false, conflicted: false }));
-  files.push({ path: "changed.txt", head: "b", index: "b", folder: "c", ignored: false, conflicted: false });
+  const files = Array.from({ length: 20 }, (_, index) => entry(`f${index}.txt`, { head: "b", index: "b", folder: "b" }));
+  files.push(entry("changed.txt", { head: "b", index: "b", folder: "c", folder_change: "modified" }));
   const strip = RepoMap.renderAreas(files);
   assert.ok(strip.textContent.includes("changed.txt"));
   assert.ok(!strip.textContent.includes("f3.txt"));
@@ -271,24 +280,18 @@ test("the object list shows each object's type, hash and size, marking new ones"
   assert.equal(list.querySelectorAll(".is-new").length, objects.length - 1);
 });
 
-const entry = (path, fields) => ({ path, head: null, index: null, folder: null, head_mode: null, index_mode: null, folder_mode: null, ignored: false, conflicted: false, repository: false, ...fields });
-
-test("a change of mode alone is a change, and the area that has a special mode says which", () => {
-  const madeExecutable = entry("run.sh", { head: "b1", index: "b1", folder: "b1", head_mode: "100644", index_mode: "100644", folder_mode: "100755" });
-  const staged = entry("run.sh", { head: "b1", index: "b1", folder: "b1", head_mode: "100644", index_mode: "100755", folder_mode: "100755" });
-  const [folderOnly] = RepoMap.areaRows([madeExecutable]);
-  assert.deepEqual([folderOnly.folder.state, folderOnly.index.state, folderOnly.changed], ["changed", "same", true]);
-  assert.deepEqual([folderOnly.folder.mark, folderOnly.index.mark], ["executable", null]);
-  const [stagedRow] = RepoMap.areaRows([staged]);
-  assert.deepEqual([stagedRow.folder.state, stagedRow.index.state], ["same", "staged"]);
-  assert.match(RepoMap.renderAreas([madeExecutable]).textContent, /executable/);
+test("a change of mode alone is listed as modified, though the content and its id stay the same", () => {
+  const madeExecutable = entry("run.sh", { head: "b1", index: "b1", folder: "b1", head_mode: "100644", index_mode: "100644", folder_mode: "100755", folder_change: "modified" });
+  const [row] = RepoMap.areaRows([madeExecutable]);
+  assert.deepEqual([row.folder.blob, row.index.blob, row.folder.change, row.changed], ["b1", "b1", "modified", true]);
+  assert.match(RepoMap.renderAreas([madeExecutable]).textContent, /modified, not staged/);
 });
 
 test("a repository inside the working folder is one row, marked as a repository, even before its first commit", () => {
-  const nested = entry("vendor", { folder: "c1", folder_mode: "160000", repository: true });
-  const empty = entry("tools", { repository: true });
+  const nested = entry("vendor", { folder: "c1", folder_mode: "160000", repository: true, folder_change: "untracked" });
+  const empty = entry("tools", { repository: true, folder_change: "untracked" });
   const rows = RepoMap.areaRows([nested, empty]);
-  assert.deepEqual(rows.map((row) => [row.repository, row.folder && row.folder.state]), [[true, "untracked"], [true, "untracked"]]);
+  assert.deepEqual(rows.map((row) => [row.repository, row.folder && row.folder.change]), [[true, "untracked"], [true, "untracked"]]);
   const strip = RepoMap.renderAreas([nested, empty]);
   assert.equal(strip.querySelectorAll(".areas-row.is-repository").length, 2);
   assert.match(strip.textContent, /vendor.*repository/);
@@ -296,7 +299,7 @@ test("a repository inside the working folder is one row, marked as a repository,
 
 test("a long file name is shortened on its own, so the repository mark beside it stays readable", () => {
   const path = "third_party/a-very-long-vendored-library-name";
-  const row = RepoMap.renderAreas([entry(path, { folder: "c1", folder_mode: "160000", repository: true })]).querySelector(".is-repository");
+  const row = RepoMap.renderAreas([entry(path, { folder: "c1", folder_mode: "160000", repository: true, folder_change: "untracked" })]).querySelector(".is-repository");
   const name = row.querySelector(".areas-name");
   assert.equal(name.textContent, path);
   assert.equal(name.getAttribute("title"), path);
