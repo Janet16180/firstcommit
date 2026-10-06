@@ -345,8 +345,9 @@ All text is parsed by `firstcommit.markup` (the page and the command line only r
 - `backticks` mark commands, file names, branch names and hashes.
 - The whole text is dedented first, so a text made *only* of indented lines reads as prose. To
   show output on its own, put one line of prose before it.
-- Write text flush-left inside its triple quotes. A text whose first line starts right after
-  `"""` and whose next lines are indented is not dedented, so those lines become a verbatim block.
+- Write text flush-left inside its triple quotes. When the first paragraph starts right after
+  `"""`, nothing is dedented, so a later paragraph indented to match the code around it becomes
+  a verbatim block.
 
 ## 7. Words and tone
 
