@@ -6,10 +6,19 @@ The game's own git commands and the shell it gives the player share three variab
 never looks for a repository above the labs folder. A player's credential helpers, aliases,
 ``push.autoSetupRemote`` or a repository in their home folder can therefore never change what a
 level does.
+
+`run_on_terminal` runs a command as the player's terminal would show it, for the playground's
+buttons; `as_on_terminal` applies carriage returns as a terminal does, for it and the lessons.
 """
 
+import errno
 import os
+import pty
+import select
+import signal
 import subprocess
+import termios
+import time
 from collections.abc import Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -38,7 +47,7 @@ the snapshot polled every 1.5 s never starts a file system monitor, a hook or a 
 program from a lab's ``.git/config``. The player's shell keeps the repository's settings.
 """
 
-BASE_CONFIG = "[init]\n\tdefaultBranch = main\n[core]\n\tpager = less -FRX\n\texcludesFile =\n\tattributesFile =\n"
+BASE_CONFIG = "[init]\n\tdefaultBranch = main\n[core]\n\tpager = less -FRX\n\texcludesFile =\n\tattributesFile =\n[user]\n\tuseConfigOnly = true\n"
 """
 The game's global git configuration when it starts: the player's shell and the lessons share it.
 
@@ -48,7 +57,14 @@ is printed without stopping in the pager, whatever ``LESS`` the player's shell s
 personal ignore and attributes files (``~/.config/git/ignore`` and ``attributes``, which it reads
 by default even when ``GIT_CONFIG_GLOBAL`` names another file): a lab shows the same files on
 every machine. A chapter that teaches a global ignore file sets ``core.excludesFile`` itself.
+``user.useConfigOnly`` makes a commit without a configured name or email stop with the same
+message on every machine, ``EMAIL`` ignored, instead of using a guessed address built from the
+login and host names: no machine-dependent identity, and no login or host name in a pushed
+commit.
 """
+
+TERMINAL_SETTINGS = {"color.ui": "never"}
+"""Settings of `run_on_terminal`, as ``GIT_CONFIG_COUNT`` entries that outrank every configuration file."""
 
 
 def isolation(home: Path) -> dict[str, str]:
@@ -190,6 +206,141 @@ def run(
         timeout=TIMEOUT,
         check=False,
     )
+
+
+def run_on_terminal(cwd: Path, *args: str) -> tuple[int, str]:
+    """
+    Run one git command as the player's terminal would, and give what the terminal would show.
+
+    Git's standard output and error both go to a pseudo-terminal, so git behaves as it does for
+    the player (progress lines, the order of its lines: through a pipe git holds its standard
+    output back, so a refused ``git pull`` prints ``Updating`` after ``Aborting``). The command
+    runs with the player's shell environment (`shell_environment`), so no author variable is
+    set and the configured identity applies, plus the C locale (so the output can be read
+    back), a dumb terminal (no escape sequences), no colours, ``cat`` as the pager and no
+    editor (the message git suggests is kept, as when the player closes the editor unchanged).
+    Nothing can wait for an answer: standard input is empty, git's terminal prompts are off and
+    the command has no controlling terminal. As in `run`, git starts as ``git -C <cwd>`` from
+    ``/``, and its output is decoded as UTF-8 with undecodable bytes replaced.
+
+    Parameters
+    ----------
+    cwd : Path
+        Folder to run in. It may not exist.
+    *args : str
+        Arguments after ``git``.
+
+    Returns
+    -------
+    tuple[int, str]
+        Git's exit status, and its output as a terminal shows it (`as_on_terminal`).
+
+    Raises
+    ------
+    subprocess.TimeoutExpired
+        If the command runs longer than `TIMEOUT` seconds; it is stopped first, with every
+        process it started.
+    """
+    env = shell_environment(os.environ, save.home())
+    env.update({"LC_ALL": "C", "TERM": "dumb", "GIT_PAGER": "cat", "GIT_EDITOR": ":", "GIT_TERMINAL_PROMPT": "0"})
+    env["GIT_CONFIG_COUNT"] = str(len(TERMINAL_SETTINGS))
+    for index, (key, value) in enumerate(TERMINAL_SETTINGS.items()):
+        env[f"GIT_CONFIG_KEY_{index}"] = key
+        env[f"GIT_CONFIG_VALUE_{index}"] = value
+    deadline = time.monotonic() + TIMEOUT
+    controller, terminal = pty.openpty()
+    modes = termios.tcgetattr(terminal)
+    modes[1] &= ~termios.ONLCR  # keep git's "\n" instead of the "\r\n" a terminal sends to the screen
+    termios.tcsetattr(terminal, termios.TCSANOW, modes)
+    try:
+        process = subprocess.Popen(
+            ["git", "-C", str(cwd), *args],
+            cwd="/",
+            env=env,
+            stdin=subprocess.DEVNULL,
+            stdout=terminal,
+            stderr=terminal,
+            start_new_session=True,
+        )
+    finally:
+        os.close(terminal)
+    try:
+        printed = _read_to_the_end(controller, process, deadline)
+        status = process.wait()
+    except subprocess.TimeoutExpired:
+        os.killpg(process.pid, signal.SIGKILL)
+        process.wait()
+        raise
+    finally:
+        os.close(controller)
+    return status, as_on_terminal(printed.decode("utf-8", "replace"))
+
+
+def _read_to_the_end(controller: int, process: subprocess.Popen[bytes], deadline: float) -> bytes:
+    """
+    Read what a command prints to a pseudo-terminal until every process holding it has closed it.
+
+    Parameters
+    ----------
+    controller : int
+        The pseudo-terminal's controlling end.
+    process : subprocess.Popen[bytes]
+        The command, for the timeout's message.
+    deadline : float
+        When to give up, on the `time.monotonic` clock.
+
+    Returns
+    -------
+    bytes
+        Everything printed.
+
+    Raises
+    ------
+    subprocess.TimeoutExpired
+        If the deadline passes first.
+    """
+    printed = bytearray()
+    chunk = b"started"
+    while chunk:
+        ready, _, _ = select.select([controller], [], [], max(deadline - time.monotonic(), 0))
+        if not ready:
+            raise subprocess.TimeoutExpired(process.args, TIMEOUT)
+        try:
+            chunk = os.read(controller, 65536)
+        except OSError as error:
+            # Linux reports a pseudo-terminal whose other end is closed as EIO, not as an empty read.
+            if error.errno != errno.EIO:
+                raise
+            chunk = b""
+        printed += chunk
+    return bytes(printed)
+
+
+def as_on_terminal(output: str) -> str:
+    """
+    Apply carriage returns as a terminal does.
+
+    A carriage return sends the cursor back to the start of the line, so later text overwrites
+    earlier text; progress counters (``Rebasing (1/1)``) leave only their last state.
+
+    Parameters
+    ----------
+    output : str
+        What a command printed.
+
+    Returns
+    -------
+    str
+        What stays on the screen. Lines without a carriage return are unchanged; the others
+        lose the spaces left at their end.
+    """
+    shown_lines = []
+    for line in output.split("\n"):
+        shown = ""
+        for part in line.split("\r"):
+            shown = part + shown[len(part) :]
+        shown_lines.append(shown.rstrip(" ") if "\r" in line else shown)
+    return "\n".join(shown_lines)
 
 
 def output(cwd: Path, *args: str, author: Person = GAME, when: str | None = None, stdin: str | None = None) -> str:
