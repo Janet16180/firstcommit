@@ -94,7 +94,7 @@ environment with `bash -c` (no `-e`), and each fails when its claim is inverted 
 | Card | Claim | Evidence |
 |---|---|---|
 | basics-repository-folder | History lives in a hidden `.git` folder in the project folder | git-init(1), DESCRIPTION; Pro Git 1.3; *verify* |
-| basics-commit-needs-staging | Committing with nothing staged makes no commit | git-commit(1), DESCRIPTION; *verify* (commit fails, `HEAD` does not resolve) |
+| basics-commit-needs-staging | Committing with nothing staged makes no commit; a new file reaches a commit only after `git add` | git-commit(1), DESCRIPTION (paths given to `git commit` "must already be known to Git") and `-a` ("new files you have not told Git about are not affected"); experiment: `git commit -m x new.txt` on an untracked file fails and makes no commit; *verify* (commit fails, `HEAD` does not resolve) |
 | basics-add-copies | `git add` copies the current content; nothing is committed; a later edit needs another add | git-add(1), DESCRIPTION; *verify* |
 | basics-identity | Every commit records `user.name` and `user.email` as its author; they are not a login; most commands work without them; local overrides global | git-commit(1), COMMIT INFORMATION ("This name has no effect on authentication"); experiment: `git init`, `git add` and `git status` succeed with no identity set; git-config(1), FILES ("last value found taking precedence"); experiment: global and local name set, `git config --get` returns the local one; *verify* (commit author comes from the settings) |
 | basics-init-command | `git init` creates a repository; `-b main` vs `init.defaultBranch` vs `master` | git-init(1); *verify* (with `-b main` and with no settings) |

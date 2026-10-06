@@ -63,8 +63,8 @@ wrong = [
 explain = """
 A commit takes the content of the staging area, and a new file only gets there with `git add`.
 With nothing staged, `git commit` stops with an error and makes no commit. Being in the working
-folder is not enough: Git never commits a file you did not stage. It does not stage new files on
-its own, and it does not record a commit without files here either.
+folder is not enough: a new file goes into a commit only after `git add`. Git does not stage new
+files on its own, and it does not record a commit without files here either.
 """
 source = "git-commit(1), DESCRIPTION; git-add(1), DESCRIPTION"
 verify = """
@@ -277,7 +277,7 @@ id = "basics-index-after-commit"
 kind = "choice"
 level = 2
 prompt = "Right after `git commit`, what is in the staging area?"
-correct = "The same content as the commit you just made"
+correct = "The same content as the new commit"
 wrong = [
     "Nothing: committing emptied it",
     "Only the files that changed in that last commit",

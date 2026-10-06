@@ -644,7 +644,7 @@ def check_hash(lab: kit.Lab, state: kit.State, answer: str) -> kit.Verdict:
     elif right:
         message = "Right: that is the start of your commit's hash. Git names every commit this way."
     elif any(answer.strip() == commit["subject"] for commit in commits):
-        message = "That is your commit's message. Its short hash is the code just before it."
+        message = "That is your commit's message. Its short hash is the code in front of it."
     else:
         message = "That is not the start of a commit hash in this repository. Run `git log --oneline` and look before your message."
     return kit.Verdict(right, message)
