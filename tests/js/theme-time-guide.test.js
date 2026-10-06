@@ -16,37 +16,8 @@ function storage({ blocked = false, items = {} } = {}) {
   return blocked ? { getItem: refuse, setItem: refuse } : { getItem: (key) => kept.get(key) ?? null, setItem: (key, value) => kept.set(key, value), kept };
 }
 
-const full = (name) => name.padEnd(40, "0");
-
-/* A snapshot: commits newest first as [name, [parents]], refs as [name, kind, target]. */
-function repo({ commits = [], refs = [], branch = "main", head = commits.length ? commits[0][0] : null, bare = false }) {
-  return {
-    ...record("snapshots").one,
-    bare,
-    head: bare || head === null ? null : full(head),
-    branch,
-    commits: commits.map(([name, parents], index) => ({
-      hash: full(name), short: full(name).slice(0, 7), parents: parents.map(full), subject: `Commit ${name}`, author: "Sam Lee", time: 1000 - index,
-    })),
-    refs: refs.map(([name, kind, target]) => ({ name, kind, target: full(target) })),
-    files: [],
-  };
-}
-
-const TWO = [["b", ["a"]], ["a", []]];
-const THREE = [["c", ["b"]], ...TWO];
-const FIGURES = {
-  branch: {
-    before: repo({ commits: TWO, refs: [["idea", "branch", "b"], ["main", "branch", "b"]], branch: "idea" }),
-    after: repo({ commits: THREE, refs: [["idea", "branch", "c"], ["main", "branch", "b"]], branch: "idea" }),
-    transcript: [{ command: "git commit -m 'Sketch an idea'", output: "[idea c000000] Sketch an idea\n" }],
-  },
-  archive: {
-    before: repo({ commits: TWO.slice(1), refs: [["main", "branch", "a"]], bare: true }),
-    after: repo({ commits: TWO, refs: [["main", "branch", "b"]], bare: true }),
-    transcript: [{ command: "cd ../../project", output: "" }, { command: "git push", output: "To ../github/project.git\n" }, { command: "cd ../github/project.git", output: "" }],
-  },
-};
+/* What game.guide() gives: every figure, from real git (tests/js/records.json). */
+const FIGURES = record("guide");
 
 const section = (id) => [...document.querySelectorAll("dialog.tt-guide section")].find((node) => node.getAttribute("data-section") === id);
 const plain = (text) => text.replaceAll("`", "").replaceAll("**", "");
@@ -227,7 +198,7 @@ test("a section's caption names the Git word in bold, and its checked text folds
 });
 
 test("a section with no figure, the preview or one not given, shows its caption and text only", async () => {
-  await opened();
+  await opened({ figures: { branch: FIGURES.branch } });
   for (const id of ["later", "tag"]) {
     assert.equal(section(id).querySelector(".tt-guide-figure"), null, id);
     assert.ok(section(id).querySelector(".tt-guide-caption"), id);
