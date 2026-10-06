@@ -128,13 +128,14 @@ def run(
     Run one git command for the game and return its result, whatever its exit status.
 
     Use it when failing is an expected outcome, such as resolving a name that may not exist.
-    Output is decoded as UTF-8 with undecodable bytes replaced, so file names a player invents
-    can always be shown.
+    Git is started as ``git -C <cwd>`` from ``/``, so a folder the player deleted gives git's own
+    failure (exit status 128) instead of an exception. Output is decoded as UTF-8 with
+    undecodable bytes replaced, so file names a player invents can always be shown.
 
     Parameters
     ----------
     cwd : Path
-        Folder to run in.
+        Folder to run in; relative paths in ``args`` resolve there. It may not exist.
     *args : str
         Arguments after ``git``.
     author : Person
@@ -155,8 +156,8 @@ def run(
         If git runs longer than `TIMEOUT` seconds.
     """
     return subprocess.run(
-        ["git", *args],
-        cwd=cwd,
+        ["git", "-C", str(cwd), *args],
+        cwd="/",
         env=environment(os.environ, save.home(), author, when),
         input=stdin if stdin is not None else "",
         capture_output=True,

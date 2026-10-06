@@ -162,8 +162,8 @@ for people.
 | Helper | Use |
 |---|---|
 | `kit.git(cwd, *args, author=, when=, stdin=)` | run git; returns stdout; raises if git fails (setup, solve) |
-| `kit.git_run(cwd, *args, ...)` | run git; returns the result whatever the exit status (checks) |
-| `kit.snapshot(path)` | the repository in a folder, as the map shows it |
+| `kit.git_run(cwd, *args, ...)` | run git; returns the result whatever the exit status, even when `cwd` was deleted (checks) |
+| `kit.snapshot(path)` | the repository in a folder, as the map shows it (`kit.Snapshot`, `kit.FileEntry`, `kit.Commit`, `kit.Ref`) |
 | `kit.Person`, `kit.GAME` | commit identities |
 | `kit.parse_int(text)` | a typed number, or None (never `isdigit()` + `int()`) |
 | `kit.is_hash_of(text, full)` | the player typed this object id, whole or abbreviated |
@@ -232,7 +232,8 @@ source = "git-hash-object(1)"
   than the longest distractor, and the longest option in at most half of a deck's choice cards
   (the tests enforce both). No "all of the above".
 - **predict** and **verify**: the tests run `code` with bash in an empty folder, with the same
-  fixed environment as the lessons (identity, date, `LC_ALL=C`, no global configuration), and
+  fixed environment as the lessons (`demos.environment`: identity, date, `LC_ALL=C`, and the
+  game's starting configuration `gitcmd.BASE_CONFIG` as the only global configuration), and
   compare standard output (trailing newlines stripped) with `correct`. They must be
   deterministic and must not depend on git's message wording.
 - **text**: short, unambiguous answers; list every reasonable spelling in `accept`.
