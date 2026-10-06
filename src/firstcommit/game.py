@@ -7,7 +7,8 @@ filled from the level's state (``{{key}}``) and parsed into blocks (`firstcommit
 interfaces only render. Game rules never live in the interfaces (Ring Zero audit ARCH-1).
 
 Records returned here are the API contract of the web routes: changing a field is a change to
-the page too. Text the player sends (answers, card replies) may hold anything; characters that
+the page too. Every field the player reads is parsed blocks; every value the page sends back
+(a step's command, a card option's ``value``, an answer) stays a raw string. Text the player sends (answers, card replies) may hold anything; characters that
 UTF-8 cannot encode, such as the lone surrogates JSON can carry, are replaced here, so levels and
 cards only ever see a wrong answer. Errors the interfaces handle:
 
@@ -90,13 +91,13 @@ class Status(TypedDict):
 
 
 class StepView(TypedDict):
-    """A guided-quest step as the page shows it (its checks stay on the server)."""
+    """A guided-quest step as the page shows it (its checks stay on the server); ``question`` is empty unless it is an answer step."""
 
     id: str
     kind: Literal["answer", "watch", "read"]
     text: list[Block]
     command: str
-    question: str
+    question: list[Block]
     placeholder: str
 
 
@@ -118,7 +119,7 @@ class LevelView(TypedDict):
     difficulty: int
     xp: int
     briefing: list[Block]
-    question: str
+    question: list[Block]
     placeholder: str
     steps: list[StepView]
     hints_total: int
@@ -190,6 +191,13 @@ class Observation(TypedDict):
     events: list[EventView]
 
 
+class Choice(TypedDict):
+    """One option of a choice or predict card: the page shows ``text`` and sends ``value`` back as the reply."""
+
+    value: str
+    text: list[Block]
+
+
 class CardView(TypedDict):
     """A flashcard to answer. Choices are shuffled on the server; the right answer is not sent."""
 
@@ -199,16 +207,22 @@ class CardView(TypedDict):
     level: int
     prompt: list[Block]
     code: str
-    choices: list[str]
+    choices: list[Choice]
     placeholder: str
     pays: bool
 
 
 class CardResult(TypedDict):
-    """The result of answering a card."""
+    """
+    The result of answering a card.
+
+    ``answer`` is the right reply as sent (for choice and predict cards, the ``value`` of one
+    `Choice`, so the page can mark it); ``answer_text`` is how to show it.
+    """
 
     correct: bool
     answer: str
+    answer_text: list[Block]
     explain: list[Block]
     xp: int
     streak: int
@@ -306,7 +320,7 @@ def level(level_id: str) -> LevelView:
         "difficulty": entry.difficulty,
         "xp": entry.xp,
         "briefing": _blocks(entry.briefing, state),
-        "question": _fill(entry.question, state),
+        "question": _blocks(entry.question, state),
         "placeholder": _fill(entry.placeholder, state),
         "steps": [_step_view(step, state) for step in entry.quest],
         "hints_total": len(entry.hints),
@@ -612,7 +626,16 @@ def answer_card(card_id: str, reply: str) -> CardResult:
         progress["best_streak"] = max(progress["best_streak"], earned.streak)
         progress["cards"][card_id] = cards.reschedule(entry, correct, today)
         save.write_progress(progress)
-    return {"correct": correct, "answer": cards.answer(card), "explain": markup.parse(card.explain), "xp": earned.xp, "streak": earned.streak, "bonus": earned.bonus}
+    right = cards.answer(card)
+    return {
+        "correct": correct,
+        "answer": right,
+        "answer_text": _option_text(card, right),
+        "explain": markup.parse(card.explain),
+        "xp": earned.xp,
+        "streak": earned.streak,
+        "bonus": earned.bonus,
+    }
 
 
 def notes(chapter: str) -> Notes:
@@ -856,7 +879,7 @@ def _step_view(step: kit.Step, state: kit.State) -> StepView:
         "kind": kind,
         "text": _blocks(step.text, state),
         "command": _fill(step.command, state),
-        "question": _fill(step.question, state),
+        "question": _blocks(step.question, state),
         "placeholder": _fill(step.placeholder, state),
     }
 
@@ -886,7 +909,7 @@ def _card_view(card: cards.Card, pays: bool, rng: random.Random) -> CardView:
         "level": card.level,
         "prompt": markup.parse(card.prompt),
         "code": card.code,
-        "choices": cards.choices(card, rng),
+        "choices": [{"value": option, "text": _option_text(card, option)} for option in cards.choices(card, rng)],
         "placeholder": card.placeholder,
         "pays": pays,
     }
@@ -924,6 +947,25 @@ def _encodable(text: str) -> str:
         The same text where it can be encoded.
     """
     return text.encode("utf-8", "replace").decode("utf-8")
+
+
+def _option_text(card: cards.Card, option: str) -> list[Block]:
+    """
+    Show one answer of a card: a predict card's options are program output, shown as written.
+
+    Parameters
+    ----------
+    card : cards.Card
+        The card.
+    option : str
+        One of its options, or its right answer.
+
+    Returns
+    -------
+    list[Block]
+        One verbatim block for a predict card, else the parsed text.
+    """
+    return [{"kind": "code", "text": option}] if card.kind == "predict" else markup.parse(option)
 
 
 def _fill(text: str, state: Mapping[str, Any]) -> str:

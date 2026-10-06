@@ -113,6 +113,8 @@ BROKEN: dict[str, tuple[types.ModuleType, str]] = {
     "a question that is not text": (level_module(QUESTION=3), "QUESTION"),
     "a placeholder that is not text": (level_module(QUESTION="Which?", PLACEHOLDER=None), "PLACEHOLDER"),
     "a placeholder without a question": (level_module(PLACEHOLDER="a short hash"), "PLACEHOLDER"),
+    "a placeholder with backticks": (level_module(QUESTION="Which?", PLACEHOLDER="a `short` hash"), "PLACEHOLDER"),
+    "a step placeholder with backticks": (level_module(QUEST=[step("a", question="Q?", placeholder="`main`", check=basics_sample.names_the_branch)]), "a"),
 }
 
 

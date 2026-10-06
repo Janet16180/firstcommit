@@ -217,7 +217,7 @@ def test_a_level_page_shows_its_briefing_steps_and_hint_count(sample_level: runn
     assert view["steps"][1]["command"] == "git add hello.txt"
     assert view["steps"][2]["placeholder"] == "a branch name"
     assert view["briefing"] == markup.parse(sample_level.briefing)
-    assert (view["question"], view["placeholder"], view["debrief"]) == ("", "", None)
+    assert (view["question"], view["placeholder"], view["debrief"]) == ([], "", None)
 
 
 def test_a_level_solved_by_a_typed_answer_shows_its_question_filled_from_its_state(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -225,14 +225,15 @@ def test_a_level_solved_by_a_typed_answer_shows_its_question_filled_from_its_sta
     monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
     game.start(level.id)
     view = game.level(level.id)
-    assert (view["question"], view["placeholder"]) == ("Which branch is `trunk` on?", "like trunk")
+    assert (view["question"], view["placeholder"]) == (markup.parse("Which branch is `trunk` on?"), "like trunk")
 
 
 def test_text_of_the_level_in_progress_is_filled_from_its_state(sample_level: runner.Level) -> None:
     game.start(sample_level.id)
     view = game.level(sample_level.id)
     assert "trunk" in text_of(view["briefing"])
-    assert view["steps"][2]["question"] == "Which branch is `trunk`?"
+    assert view["steps"][2]["question"] == markup.parse("Which branch is `trunk`?")
+    assert [step["question"] for step in view["steps"][:2]] == [[], []]
 
 
 def test_a_level_page_lists_the_hints_already_revealed(sample_level: runner.Level) -> None:
@@ -679,11 +680,36 @@ def test_a_due_card_comes_before_new_ones(sample_level: runner.Level) -> None:
 def test_a_card_view_hides_the_answer_among_shuffled_choices(sample_level: runner.Level) -> None:
     views = {card["id"]: card for card in game.due_cards("basics", 50)}
     choice, predict, text = views["basics-c01"], views["basics-predict"], views["basics-text"]
-    assert (choice["kind"], sorted(choice["choices"]), choice["code"]) == ("choice", ["right", "worse", "wrong"], "")
+    assert (choice["kind"], sorted(option["value"] for option in choice["choices"]), choice["code"]) == ("choice", ["right", "worse", "wrong"], "")
+    assert all(option["text"] == markup.parse(option["value"]) for option in choice["choices"])
     assert choice["prompt"] == markup.parse("Which one is `right`?")
-    assert (predict["code"], sorted(predict["choices"])) == ("echo hi", ["ha", "hi", "ho"])
+    assert (predict["code"], sorted(option["value"] for option in predict["choices"])) == ("echo hi", ["ha", "hi", "ho"])
+    assert all(option["text"] == [{"kind": "code", "text": option["value"]}] for option in predict["choices"])
     assert (text["choices"], text["placeholder"]) == ([], "a branch")
     assert "correct" not in choice and "accept" not in text
+
+
+def test_choice_options_are_shown_as_parsed_text_and_answered_with_their_raw_value(sample_level: runner.Level, sample_decks: Path) -> None:
+    (sample_decks / "branch.toml").write_text(
+        """
+[[card]]
+id = "branch-ticks"
+kind = "choice"
+level = 1
+prompt = "Which file does the commit hold?"
+correct = "`note.txt` as it was when you ran `git add`"
+wrong = ["`note.txt` as it is now", "No file at all"]
+explain = "A commit takes the staging area."
+source = "git-commit(1)"
+"""
+    )
+    (view,) = game.due_cards("branch", 5)
+    right = next(option for option in view["choices"] if option["value"] == "`note.txt` as it was when you ran `git add`")
+    assert right["text"] == [
+        {"kind": "para", "spans": [{"text": "note.txt", "code": True}, {"text": " as it was when you ran ", "code": False}, {"text": "git add", "code": True}]}
+    ]
+    result = game.answer_card("branch-ticks", right["value"])
+    assert (result["correct"], result["answer"], result["answer_text"]) == (True, right["value"], right["text"])
 
 
 def test_an_unknown_chapter_or_card_raises_key_error(sample_level: runner.Level) -> None:
@@ -697,7 +723,7 @@ def test_an_unknown_chapter_or_card_raises_key_error(sample_level: runner.Level)
 
 def test_a_right_answer_to_a_new_card_pays_and_schedules_it(sample_level: runner.Level) -> None:
     result = game.answer_card("basics-predict", "hi")
-    assert result == {"correct": True, "answer": "hi", "explain": markup.parse("It echoes."), "xp": 20, "streak": 1, "bonus": 0}
+    assert result == {"correct": True, "answer": "hi", "answer_text": [{"kind": "code", "text": "hi"}], "explain": markup.parse("It echoes."), "xp": 20, "streak": 1, "bonus": 0}
     progress = save.load_progress()
     assert (progress["xp"], progress["streak"], progress["best_streak"]) == (20, 1, 1)
     assert progress["cards"]["basics-predict"] == {"box": 1, "due": (date.today() + timedelta(days=1)).isoformat()}
@@ -706,7 +732,7 @@ def test_a_right_answer_to_a_new_card_pays_and_schedules_it(sample_level: runner
 def test_a_wrong_answer_pays_nothing_and_brings_the_card_back_today(sample_level: runner.Level) -> None:
     game.answer_card("basics-c01", "right")
     result = game.answer_card("basics-text", "master")
-    assert (result["correct"], result["answer"], result["xp"], result["streak"]) == (False, "main", 0, 0)
+    assert (result["correct"], result["answer"], result["answer_text"], result["xp"], result["streak"]) == (False, "main", markup.parse("main"), 0, 0)
     progress = save.load_progress()
     assert (progress["streak"], progress["best_streak"]) == (0, 1)
     assert progress["cards"]["basics-text"] == {"box": 0, "due": date.today().isoformat()}

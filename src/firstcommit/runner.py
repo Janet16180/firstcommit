@@ -184,6 +184,8 @@ def _question_problem(question: Any, placeholder: Any) -> str | None:
         problem = "PLACEHOLDER must be text"
     elif placeholder and not _is_text(question):
         problem = "PLACEHOLDER shows the shape of an answer, so it needs a QUESTION"
+    elif "`" in placeholder:
+        problem = "PLACEHOLDER is plain text: no backticks"
     return problem
 
 
@@ -253,9 +255,12 @@ def _quest_problem(quest: Any) -> str | None:
     if not isinstance(quest, list) or not all(isinstance(step, kit.Step) for step in quest):
         return "QUEST must be a list of kit.Step"
     mixed = [step.id for step in quest if (step.check is None) != (step.question == "") or (step.check is not None and step.watch is not None)]
+    marked = [step.id for step in quest if "`" in step.placeholder]
     problem = _duplicate_problem("step", [step.id for step in quest])
     if problem is None and mixed:
         problem = f"step {mixed[0]!r} must have a question and a check, or a watch, or neither"
+    elif problem is None and marked:
+        problem = f"step {marked[0]!r}: its placeholder is plain text: no backticks"
     return problem
 
 
