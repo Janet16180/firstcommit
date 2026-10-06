@@ -22,7 +22,7 @@ Usage: deploy/docker/run [command]
   reset   delete your saved game and practice repositories (asks first)
   help    show this text
 
-PORT=8851 deploy/docker/run starts the game on another port.
+FIRSTCOMMIT_PORT=8851 deploy/docker/run starts the game on another port.
 EOF
 }
 
@@ -103,8 +103,8 @@ play() {
         options+=(--volume /etc/localtime:/etc/localtime:ro)
     fi
     local serve=(firstcommit serve)
-    if [ -n "${PORT:-}" ]; then
-        serve+=(--port "$PORT")
+    if [ -n "${FIRSTCOMMIT_PORT:-}" ]; then
+        serve+=(--port "$FIRSTCOMMIT_PORT")
     fi
     exec docker run "${options[@]}" "$name" "${serve[@]}"
 }

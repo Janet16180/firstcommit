@@ -33,12 +33,12 @@ browser. Ctrl-C stops the game, and your progress stays.
 | `deploy/docker/run shell` | open a terminal in the running game, with the game's Git settings |
 | `deploy/docker/run reset` | delete your saved game and practice repositories (it asks first) |
 | `deploy/docker/run build` | build the image without starting the game |
-| `PORT=8851 deploy/docker/run` | start the game on another port |
+| `FIRSTCOMMIT_PORT=8851 deploy/docker/run` | start the game on another port |
 
 Your progress and practice repositories live in the Docker volume `firstcommit-home`, which the
 container sees as `~/.firstcommit`. They survive restarts and rebuilds until you run `reset`. If
-the game says its port is in use, start it again with another `PORT`: the game's own hint shows
-the command for playing without Docker.
+the game says its port is in use, start it again with another `FIRSTCOMMIT_PORT`: the game's own
+hint shows the command for playing without Docker.
 
 **What the container keeps apart.** The game sees only its own files: its volume and the image.
 Your WSL home, your repositories and your `~/.gitconfig` are not mounted (the only file shared is

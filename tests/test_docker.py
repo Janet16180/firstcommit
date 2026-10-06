@@ -431,7 +431,7 @@ def test_run_shows_its_commands_and_refuses_an_unknown_one() -> None:
     refused = run_script("start", name="unused")
 
     assert shown.returncode == 0
-    assert all(command in shown.stdout for command in ("play", "shell", "build", "reset"))
+    assert all(command in shown.stdout for command in ("play", "shell", "build", "reset", "FIRSTCOMMIT_PORT"))
     assert refused.returncode == 2
     assert "Usage" in refused.stderr
 
@@ -578,7 +578,7 @@ def test_firstcommit_help_runs_as_the_player(image: str) -> None:
 @WAITS_FOR_INTEGRATION
 def test_play_serves_the_game_through_localhost_until_ctrl_c(image: str) -> None:
     port = free_port()
-    env = {**os.environ, "FIRSTCOMMIT_DOCKER_NAME": image, "PORT": str(port)}
+    env = {**os.environ, "FIRSTCOMMIT_DOCKER_NAME": image, "FIRSTCOMMIT_PORT": str(port)}
     process, terminal = spawn_in_terminal([str(RUN)], env)
     try:
         link = read_until(terminal, LINK, timeout=60)
