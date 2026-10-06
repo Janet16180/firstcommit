@@ -204,6 +204,23 @@ test("a theme changes the colours, words and shapes without touching the layout"
 
 const entry = (path, fields) => ({ path, head: null, index: null, folder: null, head_mode: null, index_mode: null, folder_mode: null, ignored: false, conflicted: false, repository: false, index_change: null, folder_change: null, ...fields });
 
+test("a theme can draw its own key under the graph, from the snapshot and the layout", () => {
+  const seen = [];
+  const theme = RepoMap.theme({
+    shapes: {
+      key: ({ snapshot, map }) => {
+        seen.push({ branch: snapshot.branch, commits: map.commits.length });
+        return RepoMap.svg("g", { class: "own-key" });
+      },
+    },
+  });
+  const project = record("observation").project;
+  assert.ok(RepoMap.render(project, { theme }).querySelector(".own-key"));
+  assert.equal(RepoMap.render(project, { theme }).querySelector(".map-key"), null);
+  assert.deepEqual(seen[0], { branch: project.branch, commits: project.commits.length });
+  assert.equal(RepoMap.render(record("observation").github, { theme, showHead: false }).querySelector(".own-key"), null);
+});
+
 test("each area shows the change git status lists in its column, as the server classified it", () => {
   const rows = Object.fromEntries(RepoMap.areaRows(record("observation").project.files).map((row) => [row.path, row]));
   const changes = (path) => ["folder", "index", "head"].map((area) => rows[path][area] && (rows[path][area].change || "same"));
