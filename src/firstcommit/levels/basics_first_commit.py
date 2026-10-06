@@ -1,5 +1,6 @@
 """Your first commit: the three areas, and the first commit of a new repository."""
 
+import shlex
 from collections.abc import Callable
 from typing import Literal
 
@@ -289,10 +290,22 @@ def commit_move(snap: kit.Snapshot) -> str:
     str
         What to do next.
     """
+    misnamed = [
+        entry
+        for entry in snap["files"]
+        if entry["path"] != FILE and entry["path"].casefold() == FILE.casefold() and entry["folder"] is not None
+    ]
     if has_file(snap, "index"):
         move = '`README.md` is in the staging area. Save the staging area as a commit with `git commit -m "Add the README"`.'
     elif has_file(snap, "folder"):
         move = "Git sees `README.md` in the working folder, but it is not in the staging area yet, and a new file gets into a commit only once it is staged."
+    elif misnamed:
+        name = misnamed[0]["path"]
+        rename = "git mv" if misnamed[0]["index"] is not None else "mv"
+        move = (
+            f"There is no `README.md` yet, but there is {kit.code(name)}: the level needs the name `README.md`, "
+            f"with the same capital and small letters. Rename it with {kit.code(f'{rename} {shlex.quote(name)} {FILE}')}."
+        )
     else:
         move = "There is no `README.md` in the `project` folder yet. Create it there."
     return move

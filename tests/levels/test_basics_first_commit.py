@@ -335,6 +335,25 @@ def test_an_identity_set_without_global_also_counts(lab: kit.Lab) -> None:
     assert watch(lab, "email").solved
 
 
+def test_a_readme_in_the_wrong_letter_case_gets_the_command_that_renames_it(lab: kit.Lab) -> None:
+    level.init_repository(lab, {})
+    append(lab, "readme.md", "# My project")
+    verdict = watch(lab, "file")
+    assert not verdict.solved
+    assert "`mv readme.md README.md`" in verdict.message
+    git(lab, "add", "readme.md")
+    assert "`git mv readme.md README.md`" in watch(lab, "file").message
+    git(lab, "mv", "readme.md", "README.md")
+    assert watch(lab, "file").solved
+    assert watch(lab, "stage").solved
+
+
+def test_a_readme_in_the_wrong_letter_case_is_named_as_the_player_wrote_it(lab: kit.Lab) -> None:
+    level.init_repository(lab, {})
+    append(lab, "Readme.MD", "# My project")
+    assert "`mv Readme.MD README.md`" in check(lab).message
+
+
 def test_committing_before_staging_leaves_the_level_unsolved(lab: kit.Lab) -> None:
     play_until(lab, "stage")
     assert kit.git_run(lab.project, "commit", "-m", "Add the README", author=level.PLAYER).returncode != 0
