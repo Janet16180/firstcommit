@@ -174,13 +174,20 @@ class HintView(TypedDict):
     cost: int
 
 
+class EventView(TypedDict):
+    """One "what just happened" event, its text parsed like every other text the page shows."""
+
+    kind: str
+    text: list[Block]
+
+
 class Observation(TypedDict):
     """The live lab: the player's repository, the stand-in GitHub (if the level has one), and what changed."""
 
     level: str
     project: Snapshot
     github: Snapshot | None
-    events: list[Event]
+    events: list[EventView]
 
 
 class CardView(TypedDict):
@@ -513,7 +520,8 @@ def observe() -> Observation:
         current: save.Observed = {"level": entry.id, "project": dict(project), "github": dict(github) if github is not None else None}
         if current != before:
             save.write_observed(current)
-    return {"level": entry.id, "project": project, "github": github, "events": events}
+    views: list[EventView] = [{"kind": event["kind"], "text": markup.parse(event["text"])} for event in events]
+    return {"level": entry.id, "project": project, "github": github, "events": views}
 
 
 def abort() -> str | None:

@@ -64,7 +64,8 @@ class Event(TypedDict):
 
     ``kind`` is a short stable identifier (such as ``"commit-created"`` or ``"file-staged"``) the
     page may style by; ``text`` is one plain sentence that names the real files, branches and
-    short hashes involved.
+    short hashes involved, written in the game's markup (names in backticks, AUTHORING section
+    6); `firstcommit.game.observe` parses it for the page.
     """
 
     kind: str
