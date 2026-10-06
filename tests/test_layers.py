@@ -185,10 +185,7 @@ def test_the_import_reader_sees_the_known_imports() -> None:
     assert {"status", "check", "shell_environment"} <= (names_used("firstcommit.cli", "firstcommit.game") or set())
 
 
-ROUTES_PENDING = pytest.mark.xfail(strict=True, reason="routes still build the shell environment from gitcmd and save; remove this mark once they use game")
-
-
-@pytest.mark.parametrize("module", [pytest.param(module, marks=ROUTES_PENDING) if module == "firstcommit.web.routes" else module for module in INTERFACES])
+@pytest.mark.parametrize("module", INTERFACES)
 def test_an_interface_uses_only_the_game_the_text_parser_and_the_chapters(module: str) -> None:
     beyond = sorted(imported for imported in package_imports(module) if layer(imported) != "interface" and imported not in INTERFACE_MAY_USE)
     assert not beyond, f"{module} imports {beyond}"

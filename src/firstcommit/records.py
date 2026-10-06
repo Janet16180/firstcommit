@@ -11,6 +11,10 @@ from typing import Literal, TypedDict
 RefKind = Literal["branch", "remote", "tag"]
 Operation = Literal["merge", "rebase", "cherry-pick", "revert", "bisect"]
 ObjectType = Literal["blob", "tree", "commit", "tag"]
+Change = Literal["added", "modified", "deleted", "typechange"]
+"""How the staging area differs from HEAD, as `git status` letters it: A, M, D, T."""
+FolderChange = Literal["modified", "deleted", "typechange", "untracked", "ignored"]
+"""How the working folder differs from the staging area, as `git status` letters it: M, D, T, ?? and !!."""
 
 FILE_MODE = "100644"
 EXECUTABLE_MODE = "100755"
@@ -54,6 +58,15 @@ class FileEntry(TypedDict):
     folder (``git status`` lists it as an untracked folder; its ``folder`` is its HEAD commit, or
     None before its first commit) or one recorded as a submodule (its ids are commits). Git
     never looks at the files inside it.
+
+    ``index_change`` and ``folder_change`` classify the file the way ``git status`` does, in its
+    two columns. ``index_change`` is how the staging area differs from HEAD ("Changes to be
+    committed"); ``folder_change`` is how the working folder differs from the staging area
+    ("Changes not staged for commit"), or ``"untracked"`` / ``"ignored"`` for a path the staging
+    area does not have. Either is None where the two areas agree. A mode change (``chmod +x``)
+    is ``"modified"``; a file that became a link or a repository is ``"typechange"``. After
+    ``git rm --cached`` a file is ``"deleted"`` and ``"untracked"`` at once, as git lists it twice.
+    A ``conflicted`` path has neither: git lists it apart, as unmerged.
     """
 
     path: str
@@ -66,6 +79,8 @@ class FileEntry(TypedDict):
     ignored: bool
     conflicted: bool
     repository: bool
+    index_change: Change | None
+    folder_change: FolderChange | None
 
 
 class Snapshot(TypedDict):

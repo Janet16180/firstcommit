@@ -63,11 +63,11 @@ const LessonPlayer = (function () {
   }
 
   /* options: lesson, theme, timers, reducedMotion, onFinish (after the last slide), onExit
-     (Back on the first slide), start (slide index), finishLabel. */
-  function create({ lesson, theme = RepoMap.DEFAULT_THEME, timers = window, reducedMotion = false, onFinish, onExit, start = 0, finishLabel = "Start the practice" }) {
+     (Back on the first slide). */
+  function create({ lesson, theme = RepoMap.DEFAULT_THEME, timers = window, reducedMotion = false, onFinish, onExit }) {
     const { slides } = lesson;
     const { element, count, title, text, figure, pauseButton, nextButton, dots } = skeleton(lesson, { back: () => back(), toggle: () => toggle(), next: () => next() });
-    let index = start;
+    let index = 0;
     let shown = 0;
     let playing = !reducedMotion;
     let timer = null;
@@ -87,7 +87,7 @@ const LessonPlayer = (function () {
     function drawControls() {
       pauseButton.textContent = done() ? "Replay" : playing ? "Pause" : "Play";
       pauseButton.hidden = !lines().length;
-      nextButton.textContent = index === slides.length - 1 ? finishLabel : "Next";
+      nextButton.textContent = index === slides.length - 1 ? "Start the practice" : "Next";
     }
 
     function schedule() {
@@ -136,7 +136,7 @@ const LessonPlayer = (function () {
       return schedule();
     }
 
-    show(start, reducedMotion);
+    show(0, reducedMotion);
 
     return {
       element,

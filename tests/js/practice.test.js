@@ -13,7 +13,8 @@ const { Practice, createGameApi } = load(
 
 const correct = (step, questDone = false) => ({ correct: true, message: [{ kind: "para", spans: [{ text: "Right.", code: false }] }], step, quest_done: questDone });
 
-function practice({ step = 1, replies = {}, level = record("level") } = {}) {
+/* A practice view on step `step`; `done` is a finished quest (step 3 of 3), which the server lets the page check by itself. */
+function practice({ step = 1, done = false, replies = {}, level = record("level") } = {}) {
   const clock = createClock();
   const server = fakeServer({ "/api/observe": record("observation"), "/api/step": record("step"), "/api/check": record("check_unsolved"), "/api/hint": record("hint"), "/api/abort": { level: "x" }, ...replies });
   const seen = { solved: [], ended: 0, left: 0, sounds: [], attached: 0, detached: 0, typed: [] };
@@ -26,7 +27,7 @@ function practice({ step = 1, replies = {}, level = record("level") } = {}) {
   };
   const view = Practice.create(ctx, {
     level,
-    active: { ...record("active"), step },
+    active: done ? { ...record("active"), step: 3, auto_check: true } : { ...record("active"), step },
     onSolved: (result) => seen.solved.push(result),
     onEnded: () => (seen.ended += 1),
     onLeft: () => (seen.left += 1),
@@ -71,12 +72,16 @@ test("a right answer is confirmed, then the next step opens", async () => {
   run.view.dispose();
 });
 
-test("while a watch step is current the page asks about it on every tick, and moves on once it passes", async () => {
+test("while a watch step is current the page asks about it on every tick, shows its nudge, and moves on once it passes", async () => {
   let passes = false;
   const run = practice({ step: 2, replies: { "/api/step": () => (passes ? correct(3, true) : { ...record("step"), step: 2 }) } });
+  await settle();
+  const nudge = run.q(".step-feedback p");
+  assert.match(run.q(".step-feedback").textContent, /Not quite: look for the line that says modified/);
+  assert.ok(run.q(".step-feedback").classList.contains("is-note"));
   await run.clock.advance(1500);
   assert.deepEqual(run.routes(), ["/api/observe", "/api/step", "/api/observe", "/api/step"]);
-  assert.equal(run.q(".step-feedback").textContent, "");
+  assert.equal(run.q(".step-feedback p"), nudge, "the same nudge is not announced again");
   passes = true;
   await run.clock.advance(1500 + Practice.ADVANCE_MS);
   assert.ok(run.q(".challenge"));
@@ -86,7 +91,7 @@ test("while a watch step is current the page asks about it on every tick, and mo
 });
 
 test("once the quest is done the level is checked automatically, and a win stops the polling", async () => {
-  const run = practice({ step: 3, replies: { "/api/check": record("check_solved") } });
+  const run = practice({ done: true, replies: { "/api/check": record("check_solved") } });
   await settle();
   assert.deepEqual(run.server.calls.map((call) => [call.path, call.body]), [["/api/observe", undefined], ["/api/check", { answer: null, auto: true }]]);
   assert.equal(run.seen.solved.length, 1);
@@ -96,8 +101,23 @@ test("once the quest is done the level is checked automatically, and a win stops
   assert.equal(run.server.calls.length, 2);
 });
 
+test("a solve reported by two checks at once is handled once", async () => {
+  const run = practice({ done: true, replies: { "/api/check": record("check_solved") } });
+  run.q(".challenge form").dispatchEvent(makeEvent("submit"));
+  await settle();
+  assert.equal(run.server.calls.filter((call) => call.path === "/api/check").length, 2);
+  assert.equal(run.seen.solved.length, 1);
+});
+
+test("once the last step passes, the page checks the level by itself", async () => {
+  const run = practice({ step: 2, replies: { "/api/step": correct(3, true), "/api/check": record("check_solved") } });
+  await run.clock.advance(Practice.ADVANCE_MS + 1500);
+  assert.deepEqual(run.server.calls.find((call) => call.path === "/api/check").body, { answer: null, auto: true });
+  assert.equal(run.seen.solved.length, 1);
+});
+
 test("an automatic check that does not solve stays silent; it is not a failure of the player's", async () => {
-  const run = practice({ step: 3 });
+  const run = practice({ done: true });
   await run.clock.advance(3000);
   assert.ok(run.server.calls.filter((call) => call.path === "/api/check").length >= 2);
   assert.equal(run.q(".check-feedback").textContent, "");
@@ -106,7 +126,7 @@ test("an automatic check that does not solve stays silent; it is not a failure o
 });
 
 test("checking by hand sends the answer and shows why it is not solved yet", async () => {
-  const run = practice({ step: 3, level: { ...record("level"), question: [{ kind: "para", spans: [{ text: "Which commit?", code: false }] }], placeholder: "" } });
+  const run = practice({ done: true, level: { ...record("level"), question: [{ kind: "para", spans: [{ text: "Which commit?", code: false }] }], placeholder: "" } });
   await settle();
   run.q(".challenge input").value = "42";
   run.q(".challenge form").dispatchEvent(makeEvent("submit"));
@@ -116,8 +136,31 @@ test("checking by hand sends the answer and shows why it is not solved yet", asy
   run.view.dispose();
 });
 
+test("during the quest the player can check the whole level by hand, and hears why it is not solved", async () => {
+  const run = practice({ step: 1 });
+  await settle();
+  run.q(".quest-check button").click();
+  await settle();
+  assert.deepEqual(run.server.calls.at(-1), { path: "/api/check", body: { answer: null, auto: false } });
+  assert.match(run.q(".quest-check .check-feedback").textContent, /does not hold/);
+  assert.deepEqual(run.seen.sounds, ["wrong"]);
+  run.view.dispose();
+});
+
+test("a check by hand during the quest may solve the level early, which stops the polling", async () => {
+  const run = practice({ step: 0, replies: { "/api/check": record("check_solved") } });
+  await settle();
+  run.q(".quest-check button").click();
+  await settle();
+  assert.equal(run.seen.solved.length, 1);
+  assert.match(run.q(".quest-check .check-feedback").textContent, /Solved\./);
+  const calls = run.server.calls.length;
+  await run.clock.advance(10000);
+  assert.equal(run.server.calls.length, calls);
+});
+
 test("a hint is revealed in the challenge", async () => {
-  const run = practice({ step: 3 });
+  const run = practice({ done: true });
   await settle();
   run.q(".hint-button").click();
   await settle();

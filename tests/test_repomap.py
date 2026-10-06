@@ -8,10 +8,12 @@ import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from firstcommit import repomap
+from firstcommit import gitcmd, repomap
 from repo_helpers import ALEX, WHEN, entry, shell
 
 HELLO = "ce013625030ba8dba906f756967f9e9ca394464a"
+LETTERS = {"added": "A", "modified": "M", "deleted": "D", "typechange": "T"}
+UNMERGED = {"DD", "AU", "UD", "UA", "DU", "AA", "UU"}
 NOTHING: repomap.Snapshot = {
     "exists": False,
     "bare": False,
@@ -152,6 +154,8 @@ def test_a_commit_puts_the_same_blob_in_head_the_staging_area_and_the_folder(tmp
             "ignored": False,
             "conflicted": False,
             "repository": False,
+            "index_change": None,
+            "folder_change": None,
         }
     ]
 
@@ -187,6 +191,8 @@ def test_ignored_files_are_listed_and_marked_ignored(tmp_path: Path) -> None:
         "ignored": True,
         "conflicted": False,
         "repository": False,
+        "index_change": None,
+        "folder_change": "ignored",
     }
     assert entry(snap, "debug.log")["ignored"]
     assert not entry(snap, ".gitignore")["ignored"]
@@ -432,6 +438,13 @@ def test_a_mode_change_git_is_set_to_ignore_is_no_change(tmp_path: Path) -> None
     assert modes(repomap.snapshot(repo), "README.md") == ("100644", "100644", "100644")
 
 
+def test_with_the_executable_bit_ignored_the_folder_keeps_the_staging_areas_mode(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "echo a > tool && chmod +x tool && git add tool && git commit -q -m one && git config core.fileMode false && chmod -x tool")
+    snap = repomap.snapshot(repo)
+    assert modes(snap, "tool") == ("100755", "100755", "100755")
+    assert as_git_status(snap) == git_status(repo) == set()
+
+
 def test_a_file_missing_from_an_area_has_no_mode_there(tmp_path: Path) -> None:
     repo = new_repo(tmp_path, "echo a > a.txt")
     assert modes(repomap.snapshot(repo), "a.txt") == (None, None, "100644")
@@ -452,6 +465,8 @@ def test_a_repository_nested_in_the_working_folder_is_one_untracked_entry(tmp_pa
         "ignored": False,
         "conflicted": False,
         "repository": True,
+        "index_change": None,
+        "folder_change": "untracked",
     }
     assert not entry(snap, "a.txt")["repository"]
 
@@ -531,6 +546,8 @@ def test_a_deleted_index_shows_committed_files_as_staged_for_deletion_and_untrac
         "ignored": False,
         "conflicted": False,
         "repository": False,
+        "index_change": "deleted",
+        "folder_change": "untracked",
     }
 
 
@@ -617,3 +634,178 @@ def test_objects_lists_annotated_tags(tmp_path: Path) -> None:
 def test_objects_of_a_folder_without_a_repository_is_empty(tmp_path: Path) -> None:
     assert repomap.objects(tmp_path / "missing") == []
     assert repomap.objects(tmp_path) == []
+
+
+def git_status(repo: Path) -> set[tuple[str, str]]:
+    """
+    Read what ``git status --porcelain=v1`` lists, every untracked and ignored file one by one.
+
+    Parameters
+    ----------
+    repo : Path
+        The repository.
+
+    Returns
+    -------
+    set[tuple[str, str]]
+        Two-letter code and path; every conflict code is written ``UU`` and a folder loses its
+        final ``/``.
+    """
+    listed = gitcmd.output(repo, "status", "--porcelain=v1", "-z", "--untracked-files=all", "--ignored", "--no-renames")
+    pairs = {(item[:2], item[3:].removesuffix("/")) for item in listed.split("\0") if item}
+    return {("UU" if code in UNMERGED else code, path) for code, path in pairs}
+
+
+def as_git_status(snap: repomap.Snapshot) -> set[tuple[str, str]]:
+    """
+    Write a snapshot's classified files the way `git_status` reads git's own list.
+
+    Parameters
+    ----------
+    snap : repomap.Snapshot
+        The snapshot.
+
+    Returns
+    -------
+    set[tuple[str, str]]
+        Two-letter code and path for every file that is not clean.
+    """
+    codes: set[tuple[str, str]] = set()
+    for file in snap["files"]:
+        staged = LETTERS.get(file["index_change"] or "", " ")
+        folder = file["folder_change"]
+        if file["conflicted"]:
+            codes.add(("UU", file["path"]))
+        elif folder in ("untracked", "ignored"):
+            codes |= {(staged + " ", file["path"])} if staged != " " else set()
+            codes.add(("??" if folder == "untracked" else "!!", file["path"]))
+        elif staged != " " or folder is not None:
+            codes.add((staged + LETTERS.get(folder or "", " "), file["path"]))
+    return codes
+
+
+def changes_of(snap: repomap.Snapshot, path: str) -> tuple[str | None, str | None]:
+    """
+    Give a path's classified changes.
+
+    Parameters
+    ----------
+    snap : repomap.Snapshot
+        The snapshot.
+    path : str
+        A path it lists.
+
+    Returns
+    -------
+    tuple[str | None, str | None]
+        Its ``index_change`` and ``folder_change``.
+    """
+    file = entry(snap, path)
+    return file["index_change"], file["folder_change"]
+
+
+EVERY_KIND_OF_CHANGE = (
+    "for f in a b c d e; do echo $f > $f; done && git add . && git commit -q -m one\n"
+    "git rm -q --cached a\n"
+    "rm b && ln -s c b\n"
+    "chmod +x c\n"
+    "rm d\n"
+    "echo E > e && git add e && echo EE > e\n"
+    "echo f > f && git add f\n"
+    "mkdir build && echo x > build/o && echo y > z.log && printf 'build/\\n*.log\\n' > .gitignore\n"
+    "git init -q inner\n"
+)
+
+
+def test_each_file_is_classified_in_git_status_columns(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, EVERY_KIND_OF_CHANGE)
+    snap = repomap.snapshot(repo)
+    assert changes_of(snap, "a") == ("deleted", "untracked")
+    assert changes_of(snap, "b") == (None, "typechange")
+    assert changes_of(snap, "c") == (None, "modified")
+    assert changes_of(snap, "d") == (None, "deleted")
+    assert changes_of(snap, "e") == ("modified", "modified")
+    assert changes_of(snap, "f") == ("added", None)
+    assert changes_of(snap, ".gitignore") == (None, "untracked")
+    assert changes_of(snap, "build/o") == (None, "ignored")
+    assert changes_of(snap, "inner") == (None, "untracked")
+    assert as_git_status(snap) == git_status(repo)
+
+
+def test_the_status_lists_answer_the_questions_a_level_asks(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, EVERY_KIND_OF_CHANGE)
+    snap = repomap.snapshot(repo)
+    assert repomap.untracked(snap) == [".gitignore", "a"]
+    assert repomap.nested(snap) == ["inner"]
+    assert repomap.staged(snap) == ["a", "e", "f"]
+    assert repomap.unstaged(snap) == ["b", "c", "d", "e"]
+    assert repomap.mode_changed(snap) == ["c"]
+    assert repomap.conflicted(snap) == []
+
+
+def test_a_staged_type_change_and_mode_change_are_staged_changes(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "echo a > a && echo b > b && git add . && git commit -q -m one && rm a && ln -s b a && chmod +x b && git add .")
+    snap = repomap.snapshot(repo)
+    assert changes_of(snap, "a") == ("typechange", None)
+    assert changes_of(snap, "b") == ("modified", None)
+    assert as_git_status(snap) == git_status(repo)
+
+
+def test_a_mode_change_git_is_set_to_ignore_is_classified_as_no_change(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "echo a > a && git add a && git commit -q -m one && git config core.fileMode false && chmod +x a")
+    snap = repomap.snapshot(repo)
+    assert changes_of(snap, "a") == (None, None)
+    assert repomap.unstaged(snap) == []
+    assert as_git_status(snap) == git_status(repo) == set()
+
+
+@pytest.mark.parametrize(
+    ("ours", "theirs"),
+    [
+        ("echo ours > a.txt && git commit -q -am ours", "echo theirs > a.txt && git commit -q -am theirs"),
+        ("echo ours > new.txt && git add new.txt && git commit -q -m ours", "echo theirs > new.txt && git add new.txt && git commit -q -m theirs"),
+        ("git rm -q a.txt && git commit -q -m ours", "echo theirs > a.txt && git commit -q -am theirs"),
+        ("echo ours > a.txt && git commit -q -am ours", "git rm -q a.txt && git commit -q -m theirs"),
+    ],
+    ids=["both-modified", "both-added", "deleted-by-us", "deleted-by-them"],
+)
+def test_a_conflicted_file_is_unmerged_and_neither_staged_nor_changed(tmp_path: Path, ours: str, theirs: str) -> None:
+    repo = new_repo(tmp_path, f"echo base > a.txt && git add a.txt && git commit -q -m base && git switch -q -c theirs && {theirs} && git switch -q main && {ours}")
+    shell(repo, "git merge -q theirs >/dev/null 2>&1 || true")
+    snap = repomap.snapshot(repo)
+    conflicted = repomap.conflicted(snap)
+    assert len(conflicted) == 1
+    assert changes_of(snap, conflicted[0]) == (None, None)
+    assert repomap.staged(snap) == repomap.unstaged(snap) == []
+    assert as_git_status(snap) == git_status(repo)
+
+
+FILES = ["a.txt", "b.txt", "sub/c.txt"]
+STEPS = st.one_of(
+    st.builds("mkdir -p sub && printf {1} > {0}".format, st.sampled_from(FILES), st.sampled_from(["one", "two"])),
+    st.builds("rm -f {0}".format, st.sampled_from(FILES)),
+    st.builds("chmod {1} {0}".format, st.sampled_from(FILES), st.sampled_from(["+x", "-x"])),
+    st.builds("mkdir -p sub && rm -f {0} && ln -s a.txt {0}".format, st.sampled_from(FILES)),
+    st.builds("git add -A -- {0}".format, st.sampled_from(FILES)),
+    st.builds("git rm -q --cached {0}".format, st.sampled_from(FILES)),
+    st.sampled_from(
+        [
+            "git add -A",
+            "git commit -q -m step",
+            "git init -q inner",
+            "git init -q inner && git -C inner commit -q --allow-empty -m inner",
+            "git config core.fileMode false",
+            "printf '*.log\\n' > .gitignore && echo x > debug.log",
+        ]
+    ),
+)
+
+
+@pytest.mark.slow
+@settings(max_examples=40, deadline=None)
+@given(steps=st.lists(STEPS, min_size=1, max_size=8))
+def test_the_classification_matches_git_status_on_any_history(steps: list[str]) -> None:
+    with tempfile.TemporaryDirectory() as folder:
+        repo = new_repo(Path(folder), "mkdir sub && echo a > a.txt && echo b > b.txt && echo c > sub/c.txt && git add -A && git commit -q -m base")
+        shell(repo, "".join(f"{{ {step}; }} >/dev/null 2>&1 || true\n" for step in steps))
+        assert as_git_status(repomap.snapshot(repo)) == git_status(repo), steps

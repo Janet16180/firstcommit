@@ -17,7 +17,20 @@ from firstcommit.gitcmd import GAME, Person
 from firstcommit.gitcmd import output as git
 from firstcommit.gitcmd import run as git_run
 from firstcommit.markup import code
-from firstcommit.repomap import Commit, FileEntry, Ref, Snapshot, snapshot, version
+from firstcommit.repomap import (
+    Commit,
+    FileEntry,
+    Ref,
+    Snapshot,
+    conflicted,
+    mode_changed,
+    nested,
+    snapshot,
+    staged,
+    unstaged,
+    untracked,
+    version,
+)
 
 __all__ = [
     "GAME",
@@ -38,12 +51,18 @@ __all__ = [
     "WatchStep",
     "answer_is",
     "code",
+    "conflicted",
     "digest",
     "git",
     "git_run",
     "is_hash_of",
+    "mode_changed",
+    "nested",
     "parse_int",
     "snapshot",
+    "staged",
+    "unstaged",
+    "untracked",
     "version",
 ]
 

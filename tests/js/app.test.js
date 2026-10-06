@@ -12,7 +12,7 @@ const { Dom } = load(
 );
 
 /* A fresh page with index.html's header, the given address, key and server; then app.js boots. */
-async function boot({ hash = "#/", token = "KEY", replies = {}, stored = {} } = {}) {
+async function boot({ hash = "#/", token = "KEY", replies = {}, stored = {}, wrap = (api) => api } = {}) {
   const document = installBrowser();
   const { el } = Dom;
   document.body.append(
@@ -36,7 +36,7 @@ async function boot({ hash = "#/", token = "KEY", replies = {}, stored = {} } = 
     scrollTo: () => {},
     createClient: (options) => {
       if (global.location.hash.includes("token=")) global.location.hash = "";
-      return { token: () => token, api: server.api, options };
+      return { token: () => token, api: wrap(server.api), options };
     },
     createTerminal: () => {
       seen.terminals += 1;
@@ -82,6 +82,27 @@ test("changing the address shows its view and marks it in the menu", async () =>
   assert.ok(page.document.querySelector(".nav a[data-view=\"cards\"]").hasAttribute("aria-current"));
 });
 
+test("a newer navigation wins over a slower one that started before it", async () => {
+  const held = [];
+  let hold = false;
+  const wrap = (api) => (target, body) => (hold && target === "/api/status" ? new Promise((resolve) => held.push(() => resolve(api(target, body)))) : api(target, body));
+  const page = await boot({ wrap });
+  hold = true;
+  global.location.hash = "#/cards";
+  page.fire("hashchange", makeEvent("hashchange"));
+  hold = false;
+  global.location.hash = "#/notes";
+  page.fire("hashchange", makeEvent("hashchange"));
+  await settle();
+  await settle();
+  assert.ok(page.main.querySelector(".notes-page"));
+  held.forEach((release) => release());
+  await settle();
+  await settle();
+  assert.ok(page.main.querySelector(".notes-page"));
+  assert.equal(page.main.querySelector(".cards"), null);
+});
+
 test("the look follows the system until the player picks light or dark, and the choice is kept", async () => {
   const page = await boot({ stored: { "firstcommit.theme": "dark" } });
   assert.equal(page.document.documentElement.dataset.theme, "dark");
@@ -123,7 +144,7 @@ test("a server that does not answer at the start says how to start it again", as
 
 test("a damaged save is named, and starting over resets it after asking", async () => {
   let damaged = true;
-  const status = () => (damaged ? httpError(500, "progress.json: xp should be a number") : { ...record("status"), active: null });
+  const status = () => (damaged ? httpError(500, "progress.json: xp should be a number", { kind: "save" }) : { ...record("status"), active: null });
   const reset = () => {
     damaged = false;
     return {};
@@ -140,6 +161,32 @@ test("a damaged save is named, and starting over resets it after asking", async 
 
 test("a damaged save met during play is named in a message", async () => {
   const page = await boot();
-  page.fire("unhandledrejection", { reason: httpError(500, "active.json: step should be a number") });
+  page.fire("unhandledrejection", { reason: httpError(500, "active.json: step should be a number", { kind: "save" }) });
   assert.match(page.document.querySelector(".toast").textContent, /saved game is damaged.*active\.json/);
+});
+
+const bug = () => httpError(500, "IndexError: tuple index out of range", { error: "IndexError: tuple index out of range", kind: "bug" });
+
+test("a bug met at the start is named as a bug, points to the server's terminal and offers no start over", async () => {
+  const page = await boot({ replies: { "/api/status": bug() } });
+  assert.match(page.main.textContent, /The game hit a bug/);
+  assert.match(page.main.textContent, /IndexError: tuple index out of range/);
+  assert.match(page.main.textContent, /terminal where firstcommit is running/);
+  assert.doesNotMatch(page.main.textContent, /damaged|did not answer|Cannot reach/);
+  assert.equal(page.main.querySelector("button.start-over"), null);
+});
+
+test("a bug met during play is named as a bug, not as a damaged save or a stopped server", async () => {
+  const page = await boot();
+  page.fire("unhandledrejection", { reason: bug() });
+  const toast = page.document.querySelector(".toast").textContent;
+  assert.match(toast, /The game hit a bug: IndexError/);
+  assert.match(toast, /terminal where firstcommit is running/);
+  assert.doesNotMatch(toast, /damaged|did not answer/);
+});
+
+test("a 500 that does not say its kind is never taken for a damaged save", async () => {
+  const page = await boot({ replies: { "/api/status": httpError(500, "500 Internal Server Error") } });
+  assert.equal(page.main.querySelector("button.start-over"), null);
+  assert.match(page.main.textContent, /The game hit a bug/);
 });

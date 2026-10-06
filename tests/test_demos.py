@@ -242,6 +242,23 @@ def test_a_game_home_inside_a_repository_never_shows_that_repository(tmp_path: P
     assert list(home.rglob("*")) == [home / save.LESSONS_FOLDER]
 
 
+def test_a_lessons_folder_that_is_a_link_elsewhere_is_refused_before_anything_runs(game_home: Path, tmp_path: Path) -> None:
+    victim = tmp_path / "victim"
+    victim.mkdir()
+    (game_home / save.LESSONS_FOLDER).symlink_to(victim)
+    with pytest.raises(ValueError, match="must be a folder inside the game home"):
+        demos.frames(lesson("echo never run elsewhere"))
+    assert list(victim.iterdir()) == []
+
+
+def test_a_lessons_folder_that_is_a_link_inside_the_home_is_refused_too(game_home: Path) -> None:
+    (game_home / "elsewhere").mkdir()
+    (game_home / save.LESSONS_FOLDER).symlink_to(game_home / "elsewhere")
+    with pytest.raises(ValueError, match="must be a folder inside the game home"):
+        demos.frames(lesson("echo never run through a link"))
+    assert list((game_home / "elsewhere").iterdir()) == []
+
+
 def test_asking_twice_for_a_lesson_runs_it_once(monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[str] = []
     real_run: Callable[..., subprocess.CompletedProcess[str]] = snippets.run

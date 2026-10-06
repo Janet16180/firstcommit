@@ -160,6 +160,8 @@ def frames(slides: Sequence[Slide]) -> list[Frame]:
         If a command exits with an error the lesson did not expect, a ``! `` line succeeds, a
         line ends the shell, or a slide ends outside the lesson's home folder (a bug in the
         lesson).
+    ValueError
+        If the game home's ``lessons`` folder is a link or lies outside the game home.
     subprocess.TimeoutExpired
         If the lesson runs longer than termlab's snippet timeout.
     """
@@ -184,14 +186,23 @@ def _frames(lesson: tuple[tuple[str, str], ...]) -> list[Frame]:
     -------
     list[Frame]
         One frame per slide.
+
+    Raises
+    ------
+    ValueError
+        If the ``lessons`` folder is a link, or lies outside the game home: a lesson would run,
+        and leave its files, somewhere else. Nothing is created first.
     """
-    lessons = save.home() / save.LESSONS_FOLDER
+    home = save.home()
+    lessons = home / save.LESSONS_FOLDER
+    if lessons.is_symlink() or not lessons.resolve().is_relative_to(home.resolve()):
+        raise ValueError(f"refusing to run lessons in {lessons}: the lessons folder must be a folder inside the game home, not a link")
     lessons.mkdir(parents=True, exist_ok=True)
     root = Path(tempfile.mkdtemp(prefix="lesson-", dir=lessons)).resolve()
     try:
         built = _run(lesson, root)
     finally:
-        sandbox.remove_tree(root, save.home())
+        sandbox.remove_tree(root, home)
     return built
 
 

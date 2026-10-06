@@ -7,6 +7,9 @@ FROM ubuntu:24.04@sha256:534baea6a22c03a63003dbc8dbe78fe34bc0d7e595d9a9dc9834884
 # The base image is minimized: it leaves out manuals and replaces man with a notice. Beginners
 # use git help, so manuals come back for the packages installed here (as unminimize does).
 #
+# The upgrade brings the base image's own packages up to date as well; deploy/docker/run
+# repeats this whole step when the image is more than 30 days old.
+#
 # Ubuntu's archive keeps only the newest build of each package, so exact pins would break the
 # build at the next security update. The upstream versions are checked instead. Built
 # 2026-10-06 with git 1:2.43.0-1ubuntu7.3, python3.12 3.12.3-1ubuntu0.17, nano 7.2-2ubuntu0.2,
@@ -14,6 +17,7 @@ FROM ubuntu:24.04@sha256:534baea6a22c03a63003dbc8dbe78fe34bc0d7e595d9a9dc9834884
 RUN rm /etc/dpkg/dpkg.cfg.d/excludes /usr/bin/man \
  && dpkg-divert --quiet --remove --rename /usr/bin/man \
  && apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get upgrade --yes \
  && DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends \
     git python3 nano less bash-completion man-db \
  && rm -rf /var/lib/apt/lists/* \
@@ -48,6 +52,12 @@ CMD ["firstcommit", "serve"]
 # source resolves. Dependencies come from PyPI while building; the tests then run offline, on
 # the image's own Python.
 FROM player AS test
+# Ubuntu's nodejs runs the page's node tests (built 2026-10-06 with nodejs 18.19.1+dfsg-6ubuntu5).
+USER root
+RUN apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends nodejs \
+ && rm -rf /var/lib/apt/lists/*
+USER player
 COPY --from=ghcr.io/astral-sh/uv:0.12.6@sha256:88bc6eb1ccd4b82efd0e1b530caffabddf50dc2bf612e66c14ea25b8ee8a4d3d /uv /usr/local/bin/uv
 ENV UV_PYTHON_DOWNLOADS=never UV_NO_CACHE=1
 COPY --chown=player:player --from=termlab pyproject.toml README.md /home/player/termlab-firstcommit/
@@ -56,4 +66,4 @@ COPY --chown=player:player . /home/player/firstcommit
 WORKDIR /home/player/firstcommit
 RUN uv sync --frozen
 ENV UV_NO_SYNC=1 UV_OFFLINE=1
-CMD ["sh", "-c", "uv run ruff check && uv run mypy && uv run pytest -q"]
+CMD ["sh", "-c", "uv run ruff check && uv run mypy && uv run pytest -q -rs"]
