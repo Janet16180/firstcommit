@@ -79,6 +79,7 @@ const createGameApi = (function () {
     active: nullable(ACTIVE),
     last_payout: nullable(PAYOUT),
     cards_due: number,
+    max_difficulty: number,
   });
   const LEVEL = record({
     id: text,
@@ -119,6 +120,7 @@ const createGameApi = (function () {
       chapter: text,
       kind: oneOf("choice", "text", "predict"),
       level: number,
+      level_name: text,
       prompt: BLOCKS,
       code: text,
       choices: list(record({ value: text, text: BLOCKS })),

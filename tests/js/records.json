@@ -63,7 +63,8 @@
    "rank_before": "Newcomer",
    "rank_after": "Committer"
   },
-  "cards_due": 4
+  "cards_due": 4,
+  "max_difficulty": 3
  },
  "level": {
   "id": "sample-second",
@@ -1068,7 +1069,8 @@
     }
    ],
    "placeholder": "",
-   "pays": true
+   "pays": true,
+   "level_name": "basic"
   },
   {
    "id": "sample-card-text",
@@ -1089,7 +1091,8 @@
    "code": "",
    "choices": [],
    "placeholder": "a git command",
-   "pays": true
+   "pays": true,
+   "level_name": "deeper"
   },
   {
    "id": "sample-card-predict",
@@ -1138,7 +1141,8 @@
     }
    ],
    "placeholder": "",
-   "pays": false
+   "pays": false,
+   "level_name": "deeper"
   }
  ],
  "card_result": {

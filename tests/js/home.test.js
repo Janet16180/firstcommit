@@ -54,6 +54,12 @@ test("chapters are listed in order with their levels, done levels marked and emp
   assert.match(chapters[1].querySelector("a[href=\"#/cards/basics\"]").textContent, /12 cards/);
 });
 
+test("a level's difficulty is shown on the scale the server sends", () => {
+  const run = home({ ...record("status"), max_difficulty: 5 });
+  const meta = run.all(".chapter")[1].querySelectorAll(".level-meta").map((item) => item.textContent);
+  assert.deepEqual(meta, ["●○○○○ · 100 XP", "●●○○○ · 150 XP"]);
+});
+
 test("erasing all progress asks first, then resets and shows the fresh map", async () => {
   const run = home();
   run.q(".erase").click();

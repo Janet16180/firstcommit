@@ -55,7 +55,7 @@ const HomeView = (function () {
     return el("li", {}, el("a", { class: classes, href: levelHref(level.id) },
       el("span", { class: "level-state", "aria-hidden": "true" }, level.done ? "✓" : active ? "▸" : ""),
       el("span", { class: "level-title" }, level.title, level.done && el("span", { class: "sr-only" }, " (done)"), active && el("span", { class: "sr-only" }, " (in progress)")),
-      el("span", { class: "level-meta" }, `${"●".repeat(level.difficulty)}${"○".repeat(3 - level.difficulty)}`, ` · ${level.xp} XP`),
+      el("span", { class: "level-meta" }, `${"●".repeat(level.difficulty)}${"○".repeat(status.max_difficulty - level.difficulty)}`, ` · ${level.xp} XP`),
     ));
   }
 

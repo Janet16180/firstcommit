@@ -54,6 +54,12 @@ test("a wrong reply shows the right answer as the server words it", async () => 
   assert.ok(run.all("button.choice")[0].classList.contains("is-right"));
 });
 
+test("a card shows its level's name as the server words it", async () => {
+  const run = cards({ list: [{ ...record("cards")[0], level: 2, level_name: "intermediate" }] });
+  await settle();
+  assert.equal(run.q(".card-level").textContent, "intermediate");
+});
+
 test("number keys pick a choice", async () => {
   const run = cards();
   await settle();
