@@ -1,0 +1,1274 @@
+{
+ "status": {
+  "xp": 260,
+  "rank": {
+   "title": "Committer",
+   "floor": 200,
+   "next_title": "Brancher",
+   "next_at": 500
+  },
+  "chapters": [
+   {
+    "id": "start",
+    "title": "Git, GitHub and your first clone",
+    "levels": [],
+    "cards": 0
+   },
+   {
+    "id": "basics",
+    "title": "The three areas",
+    "levels": [
+     {
+      "id": "sample-first",
+      "title": "Your first commit",
+      "difficulty": 1,
+      "xp": 100,
+      "done": true,
+      "has_lesson": true,
+      "has_quest": true
+     },
+     {
+      "id": "sample-second",
+      "title": "A message that helps",
+      "difficulty": 2,
+      "xp": 150,
+      "done": false,
+      "has_lesson": false,
+      "has_quest": false
+     }
+    ],
+    "cards": 12
+   },
+   {
+    "id": "hash",
+    "title": "Fingerprints",
+    "levels": [],
+    "cards": 0
+   }
+  ],
+  "active": {
+   "level": "sample-second",
+   "step": 1,
+   "steps": 3,
+   "hints": 0,
+   "hints_total": 3,
+   "attempts": 0,
+   "started": "2026-10-06T10:00:00+00:00"
+  },
+  "last_payout": {
+   "level": "sample-first",
+   "xp": 100,
+   "first_time": true,
+   "rank_before": "Newcomer",
+   "rank_after": "Committer"
+  },
+  "cards_due": 4
+ },
+ "level": {
+  "id": "sample-second",
+  "chapter": "basics",
+  "chapter_title": "The three areas",
+  "title": "A message that helps",
+  "difficulty": 2,
+  "xp": 150,
+  "briefing": [
+   {
+    "kind": "para",
+    "spans": [
+     {
+      "text": "A teammate asked you to record the change to ",
+      "code": false
+     },
+     {
+      "text": "notes.txt",
+      "code": true
+     },
+     {
+      "text": " in a commit of its own.",
+      "code": false
+     }
+    ]
+   },
+   {
+    "kind": "para",
+    "spans": [
+     {
+      "text": "The level is solved once the last commit holds the new ",
+      "code": false
+     },
+     {
+      "text": "notes.txt",
+      "code": true
+     },
+     {
+      "text": " and nothing else changed.",
+      "code": false
+     }
+    ]
+   }
+  ],
+  "question": [],
+  "placeholder": "",
+  "steps": [
+   {
+    "id": "look",
+    "kind": "read",
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "Your repository is in the terminal below. Every command you type there changes the map on the right.",
+        "code": false
+       }
+      ]
+     }
+    ],
+    "command": "",
+    "question": [],
+    "placeholder": ""
+   },
+   {
+    "id": "status",
+    "kind": "answer",
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "Ask Git what changed since the last commit.",
+        "code": false
+       }
+      ]
+     },
+     {
+      "kind": "code",
+      "text": "$ git status"
+     }
+    ],
+    "command": "git status",
+    "question": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "Which file has changes that are not staged?",
+        "code": false
+       }
+      ]
+     }
+    ],
+    "placeholder": "a file name"
+   },
+   {
+    "id": "stage",
+    "kind": "watch",
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "Stage the change with ",
+        "code": false
+       },
+       {
+        "text": "git add",
+        "code": true
+       },
+       {
+        "text": ". Watch the file move to the staging area.",
+        "code": false
+       }
+      ]
+     }
+    ],
+    "command": "git add notes.txt",
+    "question": [],
+    "placeholder": ""
+   }
+  ],
+  "hints_total": 3,
+  "has_lesson": true,
+  "hints": [],
+  "debrief": null
+ },
+ "lesson": {
+  "level": "sample-second",
+  "title": "A message that helps",
+  "slides": [
+   {
+    "id": "folder",
+    "title": "A folder becomes a repository",
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "git init",
+        "code": true
+       },
+       {
+        "text": " adds a hidden ",
+        "code": false
+       },
+       {
+        "text": ".git",
+        "code": true
+       },
+       {
+        "text": " folder: the repository.",
+        "code": false
+       }
+      ]
+     }
+    ],
+    "view": "terminal",
+    "transcript": [
+     {
+      "command": "git init -q",
+      "output": ""
+     },
+     {
+      "command": "echo 'hello' > hello.txt",
+      "output": ""
+     },
+     {
+      "command": "git status --short",
+      "output": "?? hello.txt\n"
+     }
+    ],
+    "map": {
+     "exists": true,
+     "bare": false,
+     "head": null,
+     "branch": "main",
+     "commits": [],
+     "refs": [],
+     "files": [
+      {
+       "path": "hello.txt",
+       "head": null,
+       "index": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+       "folder": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+       "head_mode": null,
+       "index_mode": "100644",
+       "folder_mode": "100644",
+       "ignored": false,
+       "conflicted": false,
+       "repository": false
+      }
+     ],
+     "operation": null,
+     "stash": 0,
+     "truncated": false
+    },
+    "objects": []
+   },
+   {
+    "id": "areas",
+    "title": "Three areas",
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "A file lives in up to three places.",
+        "code": false
+       }
+      ]
+     },
+     {
+      "kind": "bullets",
+      "items": [
+       [
+        {
+         "text": "the working folder",
+         "code": false
+        }
+       ],
+       [
+        {
+         "text": "the staging area",
+         "code": false
+        }
+       ],
+       [
+        {
+         "text": "the last commit",
+         "code": false
+        }
+       ]
+      ]
+     }
+    ],
+    "view": "areas",
+    "transcript": [
+     {
+      "command": "git add hello.txt",
+      "output": ""
+     }
+    ],
+    "map": {
+     "exists": true,
+     "bare": false,
+     "head": null,
+     "branch": "main",
+     "commits": [],
+     "refs": [],
+     "files": [
+      {
+       "path": "hello.txt",
+       "head": null,
+       "index": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+       "folder": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+       "head_mode": null,
+       "index_mode": "100644",
+       "folder_mode": "100644",
+       "ignored": false,
+       "conflicted": false,
+       "repository": false
+      }
+     ],
+     "operation": null,
+     "stash": 0,
+     "truncated": false
+    },
+    "objects": [
+     {
+      "hash": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+      "type": "blob",
+      "size": 6
+     }
+    ]
+   },
+   {
+    "id": "commit",
+    "title": "A commit",
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "A commit records the staging area.",
+        "code": false
+       }
+      ]
+     }
+    ],
+    "view": "map",
+    "transcript": [
+     {
+      "command": "git commit -q -m 'First commit'",
+      "output": ""
+     },
+     {
+      "command": "git log --oneline",
+      "output": "ae23b94 First commit\n"
+     }
+    ],
+    "map": {
+     "exists": true,
+     "bare": false,
+     "head": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df",
+     "branch": "main",
+     "commits": [
+      {
+       "hash": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df",
+       "short": "ae23b94",
+       "parents": [],
+       "subject": "First commit",
+       "author": "Alex Kim",
+       "time": 1768467700
+      }
+     ],
+     "refs": [
+      {
+       "name": "main",
+       "kind": "branch",
+       "target": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df"
+      }
+     ],
+     "files": [
+      {
+       "path": "hello.txt",
+       "head": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+       "index": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+       "folder": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+       "head_mode": "100644",
+       "index_mode": "100644",
+       "folder_mode": "100644",
+       "ignored": false,
+       "conflicted": false,
+       "repository": false
+      }
+     ],
+     "operation": null,
+     "stash": 0,
+     "truncated": false
+    },
+    "objects": [
+     {
+      "hash": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+      "type": "blob",
+      "size": 6
+     },
+     {
+      "hash": "081b3bbbc244693f20cf87f9de45db666faa4dc8",
+      "type": "tree",
+      "size": 37
+     },
+     {
+      "hash": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df",
+      "type": "commit",
+      "size": 172
+     }
+    ]
+   },
+   {
+    "id": "objects",
+    "title": "Objects",
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "Every object has a hash.",
+        "code": false
+       }
+      ]
+     }
+    ],
+    "view": "objects",
+    "transcript": [],
+    "map": {
+     "exists": true,
+     "bare": false,
+     "head": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df",
+     "branch": "main",
+     "commits": [
+      {
+       "hash": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df",
+       "short": "ae23b94",
+       "parents": [],
+       "subject": "First commit",
+       "author": "Alex Kim",
+       "time": 1768467700
+      }
+     ],
+     "refs": [
+      {
+       "name": "main",
+       "kind": "branch",
+       "target": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df"
+      }
+     ],
+     "files": [
+      {
+       "path": "hello.txt",
+       "head": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+       "index": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+       "folder": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+       "head_mode": "100644",
+       "index_mode": "100644",
+       "folder_mode": "100644",
+       "ignored": false,
+       "conflicted": false,
+       "repository": false
+      }
+     ],
+     "operation": null,
+     "stash": 0,
+     "truncated": false
+    },
+    "objects": [
+     {
+      "hash": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+      "type": "blob",
+      "size": 6
+     },
+     {
+      "hash": "081b3bbbc244693f20cf87f9de45db666faa4dc8",
+      "type": "tree",
+      "size": 37
+     },
+     {
+      "hash": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df",
+      "type": "commit",
+      "size": 172
+     }
+    ]
+   },
+   {
+    "id": "recap",
+    "title": "Recap",
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "That is all.",
+        "code": false
+       }
+      ]
+     }
+    ],
+    "view": "none",
+    "transcript": [],
+    "map": {
+     "exists": true,
+     "bare": false,
+     "head": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df",
+     "branch": "main",
+     "commits": [
+      {
+       "hash": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df",
+       "short": "ae23b94",
+       "parents": [],
+       "subject": "First commit",
+       "author": "Alex Kim",
+       "time": 1768467700
+      }
+     ],
+     "refs": [
+      {
+       "name": "main",
+       "kind": "branch",
+       "target": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df"
+      }
+     ],
+     "files": [
+      {
+       "path": "hello.txt",
+       "head": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+       "index": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+       "folder": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+       "head_mode": "100644",
+       "index_mode": "100644",
+       "folder_mode": "100644",
+       "ignored": false,
+       "conflicted": false,
+       "repository": false
+      }
+     ],
+     "operation": null,
+     "stash": 0,
+     "truncated": false
+    },
+    "objects": [
+     {
+      "hash": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+      "type": "blob",
+      "size": 6
+     },
+     {
+      "hash": "081b3bbbc244693f20cf87f9de45db666faa4dc8",
+      "type": "tree",
+      "size": 37
+     },
+     {
+      "hash": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df",
+      "type": "commit",
+      "size": 172
+     }
+    ]
+   }
+  ]
+ },
+ "active": {
+  "level": "sample-second",
+  "step": 1,
+  "steps": 3,
+  "hints": 0,
+  "hints_total": 3,
+  "attempts": 0,
+  "started": "2026-10-06T10:00:00+00:00"
+ },
+ "step": {
+  "correct": false,
+  "message": [
+   {
+    "kind": "para",
+    "spans": [
+     {
+      "text": "Not quite: look for the line that says ",
+      "code": false
+     },
+     {
+      "text": "modified",
+      "code": true
+     },
+     {
+      "text": ".",
+      "code": false
+     }
+    ]
+   }
+  ],
+  "step": 1,
+  "quest_done": false
+ },
+ "check_unsolved": {
+  "solved": false,
+  "message": [
+   {
+    "kind": "para",
+    "spans": [
+     {
+      "text": "The last commit does not hold the new ",
+      "code": false
+     },
+     {
+      "text": "notes.txt",
+      "code": true
+     },
+     {
+      "text": " yet.",
+      "code": false
+     }
+    ]
+   }
+  ],
+  "payout": null,
+  "debrief": null
+ },
+ "check_solved": {
+  "solved": true,
+  "message": [
+   {
+    "kind": "para",
+    "spans": [
+     {
+      "text": "Solved.",
+      "code": false
+     }
+    ]
+   }
+  ],
+  "payout": {
+   "level": "sample-second",
+   "xp": 150,
+   "first_time": true,
+   "rank_before": "Committer",
+   "rank_after": "Committer"
+  },
+  "debrief": [
+   {
+    "kind": "para",
+    "spans": [
+     {
+      "text": "Git records what is staged, not what is in the folder.",
+      "code": false
+     }
+    ]
+   },
+   {
+    "kind": "para",
+    "spans": [
+     {
+      "text": "Commands to keep:",
+      "code": false
+     }
+    ]
+   },
+   {
+    "kind": "code",
+    "text": "$ git status\n$ git add <file>\n$ git commit -m \"<message>\""
+   }
+  ]
+ },
+ "hint": {
+  "hint": [
+   {
+    "kind": "para",
+    "spans": [
+     {
+      "text": "Look at what ",
+      "code": false
+     },
+     {
+      "text": "git status",
+      "code": true
+     },
+     {
+      "text": " lists under the changes not staged.",
+      "code": false
+     }
+    ]
+   }
+  ],
+  "used": 1,
+  "total": 3,
+  "cost": 10
+ },
+ "observation": {
+  "level": "sample-second",
+  "project": {
+   "exists": true,
+   "bare": false,
+   "head": "547cd2ba3a17b483651496c5ba8c78f1789b5cbd",
+   "branch": "feature",
+   "commits": [
+    {
+     "hash": "547cd2ba3a17b483651496c5ba8c78f1789b5cbd",
+     "short": "547cd2b",
+     "parents": [
+      "adfec5772ae8932aa10896037b0779bec915015b"
+     ],
+     "subject": "Add a greeting to the readme",
+     "author": "Alex Kim",
+     "time": 1768468100
+    },
+    {
+     "hash": "862a51f8b6294a4b0729a7c5c929bfd67068d962",
+     "short": "862a51f",
+     "parents": [
+      "32d332da761f44df7959e5887b6b94cb4667d781"
+     ],
+     "subject": "Fix a typo in the notes",
+     "author": "Alex Kim",
+     "time": 1768468000
+    },
+    {
+     "hash": "adfec5772ae8932aa10896037b0779bec915015b",
+     "short": "adfec57",
+     "parents": [
+      "32d332da761f44df7959e5887b6b94cb4667d781"
+     ],
+     "subject": "Start the greeting feature",
+     "author": "Alex Kim",
+     "time": 1768467900
+    },
+    {
+     "hash": "32d332da761f44df7959e5887b6b94cb4667d781",
+     "short": "32d332d",
+     "parents": [
+      "ae23b94ccaf714337e4ce5ba99ef3dc257e300df"
+     ],
+     "subject": "Add notes",
+     "author": "Alex Kim",
+     "time": 1768467800
+    },
+    {
+     "hash": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df",
+     "short": "ae23b94",
+     "parents": [],
+     "subject": "First commit",
+     "author": "Alex Kim",
+     "time": 1768467700
+    }
+   ],
+   "refs": [
+    {
+     "name": "feature",
+     "kind": "branch",
+     "target": "547cd2ba3a17b483651496c5ba8c78f1789b5cbd"
+    },
+    {
+     "name": "main",
+     "kind": "branch",
+     "target": "862a51f8b6294a4b0729a7c5c929bfd67068d962"
+    },
+    {
+     "name": "origin/main",
+     "kind": "remote",
+     "target": "32d332da761f44df7959e5887b6b94cb4667d781"
+    },
+    {
+     "name": "v0.1",
+     "kind": "tag",
+     "target": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df"
+    }
+   ],
+   "files": [
+    {
+     "path": "README.md",
+     "head": "92307fb726f9ead3b06bce244ab99fe6b397ed9f",
+     "index": "3c64b02e037fd91999c109a914fc64ba825f83ea",
+     "folder": "3c64b02e037fd91999c109a914fc64ba825f83ea",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false
+    },
+    {
+     "path": "build.log",
+     "head": null,
+     "index": null,
+     "folder": "0e1790696e1b3a7d7b6896a37332833d345720f4",
+     "head_mode": null,
+     "index_mode": null,
+     "folder_mode": "100644",
+     "ignored": true,
+     "conflicted": false,
+     "repository": false
+    },
+    {
+     "path": "notes.txt",
+     "head": "6381d61d612a680ca5731e9daa3c7159ce095fe7",
+     "index": "6381d61d612a680ca5731e9daa3c7159ce095fe7",
+     "folder": "5a756a0f89761abfdf745fea5d21bc7bf237aeb6",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false
+    },
+    {
+     "path": "old.txt",
+     "head": "53169d90d08f1ce60f0af65818e7eefd0475b2ae",
+     "index": null,
+     "folder": null,
+     "head_mode": "100644",
+     "index_mode": null,
+     "folder_mode": null,
+     "ignored": false,
+     "conflicted": false,
+     "repository": false
+    },
+    {
+     "path": "run.sh",
+     "head": "4d859a974871cca4a04b68671fb12dbc381511a9",
+     "index": "4d859a974871cca4a04b68671fb12dbc381511a9",
+     "folder": "4d859a974871cca4a04b68671fb12dbc381511a9",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100755",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false
+    },
+    {
+     "path": "todo.txt",
+     "head": null,
+     "index": null,
+     "folder": "9fb39b7184ab0ae5747cfa9a1bd43dce202e4931",
+     "head_mode": null,
+     "index_mode": null,
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false
+    },
+    {
+     "path": "vendor",
+     "head": null,
+     "index": null,
+     "folder": "eb9de1fb05f522780f89b263a4e55cf42f3d1332",
+     "head_mode": null,
+     "index_mode": null,
+     "folder_mode": "160000",
+     "ignored": false,
+     "conflicted": false,
+     "repository": true
+    }
+   ],
+   "operation": null,
+   "stash": 0,
+   "truncated": false
+  },
+  "github": {
+   "exists": true,
+   "bare": true,
+   "head": "32d332da761f44df7959e5887b6b94cb4667d781",
+   "branch": "main",
+   "commits": [
+    {
+     "hash": "32d332da761f44df7959e5887b6b94cb4667d781",
+     "short": "32d332d",
+     "parents": [
+      "ae23b94ccaf714337e4ce5ba99ef3dc257e300df"
+     ],
+     "subject": "Add notes",
+     "author": "Alex Kim",
+     "time": 1768467800
+    },
+    {
+     "hash": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df",
+     "short": "ae23b94",
+     "parents": [],
+     "subject": "First commit",
+     "author": "Alex Kim",
+     "time": 1768467700
+    }
+   ],
+   "refs": [
+    {
+     "name": "main",
+     "kind": "branch",
+     "target": "32d332da761f44df7959e5887b6b94cb4667d781"
+    }
+   ],
+   "files": [],
+   "operation": null,
+   "stash": 0,
+   "truncated": false
+  },
+  "events": [
+   {
+    "kind": "commit-created",
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "You made commit ",
+        "code": false
+       },
+       {
+        "text": "547cd2b",
+        "code": true
+       },
+       {
+        "text": " on ",
+        "code": false
+       },
+       {
+        "text": "feature",
+        "code": true
+       },
+       {
+        "text": ": Add a greeting to the readme.",
+        "code": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "kind": "file-staged",
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "README.md",
+        "code": true
+       },
+       {
+        "text": " is staged: its new version goes into the next commit.",
+        "code": false
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "cards": [
+  {
+   "id": "sample-card-choice",
+   "chapter": "basics",
+   "kind": "choice",
+   "level": 1,
+   "prompt": [
+    {
+     "kind": "para",
+     "spans": [
+      {
+       "text": "What does ",
+       "code": false
+      },
+      {
+       "text": "git add",
+       "code": true
+      },
+      {
+       "text": " change?",
+       "code": false
+      }
+     ]
+    }
+   ],
+   "code": "",
+   "choices": [
+    {
+     "value": "The staging area",
+     "text": [
+      {
+       "kind": "para",
+       "spans": [
+        {
+         "text": "The staging area",
+         "code": false
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "value": "The last commit",
+     "text": [
+      {
+       "kind": "para",
+       "spans": [
+        {
+         "text": "The last commit",
+         "code": false
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "value": "The remote",
+     "text": [
+      {
+       "kind": "para",
+       "spans": [
+        {
+         "text": "The remote",
+         "code": false
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "value": "Nothing until you push",
+     "text": [
+      {
+       "kind": "para",
+       "spans": [
+        {
+         "text": "Nothing until you push",
+         "code": false
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "placeholder": "",
+   "pays": true
+  },
+  {
+   "id": "sample-card-text",
+   "chapter": "basics",
+   "kind": "text",
+   "level": 2,
+   "prompt": [
+    {
+     "kind": "para",
+     "spans": [
+      {
+       "text": "Which command shows the state of the three areas?",
+       "code": false
+      }
+     ]
+    }
+   ],
+   "code": "",
+   "choices": [],
+   "placeholder": "a git command",
+   "pays": true
+  },
+  {
+   "id": "sample-card-predict",
+   "chapter": "basics",
+   "kind": "predict",
+   "level": 2,
+   "prompt": [
+    {
+     "kind": "para",
+     "spans": [
+      {
+       "text": "What does the last command print?",
+       "code": false
+      }
+     ]
+    }
+   ],
+   "code": "git init -q demo && cd demo\nprintf 'hello\\n' > hello.txt\ngit hash-object hello.txt",
+   "choices": [
+    {
+     "value": "ce013625030ba8dba906f756967f9e9ca394464a",
+     "text": [
+      {
+       "kind": "code",
+       "text": "ce013625030ba8dba906f756967f9e9ca394464a"
+      }
+     ]
+    },
+    {
+     "value": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+     "text": [
+      {
+       "kind": "code",
+       "text": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+      }
+     ]
+    },
+    {
+     "value": "an error: hello.txt is not staged",
+     "text": [
+      {
+       "kind": "code",
+       "text": "an error: hello.txt is not staged"
+      }
+     ]
+    }
+   ],
+   "placeholder": "",
+   "pays": false
+  }
+ ],
+ "card_result": {
+  "correct": true,
+  "answer": "The staging area",
+  "answer_text": [
+   {
+    "kind": "para",
+    "spans": [
+     {
+      "text": "The staging area",
+      "code": false
+     }
+    ]
+   }
+  ],
+  "explain": [
+   {
+    "kind": "para",
+    "spans": [
+     {
+      "text": "git add",
+      "code": true
+     },
+     {
+      "text": " copies the file into the staging area; the next commit records it.",
+      "code": false
+     }
+    ]
+   }
+  ],
+  "xp": 5,
+  "streak": 3,
+  "bonus": 0
+ },
+ "notes": {
+  "chapter": "basics",
+  "title": "The three areas",
+  "notes": [
+   {
+    "kind": "para",
+    "spans": [
+     {
+      "text": "Git keeps three areas.",
+      "code": false
+     }
+    ]
+   },
+   {
+    "kind": "code",
+    "text": "$ git status\n$ git add <file>"
+   },
+   {
+    "kind": "bullets",
+    "items": [
+     [
+      {
+       "text": "git status",
+       "code": true
+      },
+      {
+       "text": ": what changed",
+       "code": false
+      }
+     ],
+     [
+      {
+       "text": "git add",
+       "code": true
+      },
+      {
+       "text": ": stage a file",
+       "code": false
+      }
+     ]
+    ]
+   }
+  ]
+ },
+ "snapshots": {
+  "empty": {
+   "exists": false,
+   "bare": false,
+   "head": null,
+   "branch": null,
+   "commits": [],
+   "refs": [],
+   "files": [],
+   "operation": null,
+   "stash": 0,
+   "truncated": false
+  },
+  "unborn": {
+   "exists": true,
+   "bare": false,
+   "head": null,
+   "branch": "main",
+   "commits": [],
+   "refs": [],
+   "files": [
+    {
+     "path": "hello.txt",
+     "head": null,
+     "index": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+     "folder": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+     "head_mode": null,
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false
+    }
+   ],
+   "operation": null,
+   "stash": 0,
+   "truncated": false
+  },
+  "one": {
+   "exists": true,
+   "bare": false,
+   "head": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df",
+   "branch": "main",
+   "commits": [
+    {
+     "hash": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df",
+     "short": "ae23b94",
+     "parents": [],
+     "subject": "First commit",
+     "author": "Alex Kim",
+     "time": 1768467700
+    }
+   ],
+   "refs": [
+    {
+     "name": "main",
+     "kind": "branch",
+     "target": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df"
+    }
+   ],
+   "files": [
+    {
+     "path": "hello.txt",
+     "head": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+     "index": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+     "folder": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false
+    }
+   ],
+   "operation": null,
+   "stash": 0,
+   "truncated": false
+  }
+ }
+}
