@@ -27,6 +27,7 @@ Usage: deploy/docker/run [command]
   shell   open a terminal in the running game, with the game's git settings
   build   build the image if the game or termlab changed, without starting
   reset   delete your saved game and practice repositories (asks first)
+  test    run ruff, mypy and the tests in a container (or: test <pytest arguments>)
   help    show this text
 
 FIRSTCOMMIT_PORT=8851 deploy/docker/run starts the game on another port.
@@ -61,7 +62,7 @@ require_docker() {
 inputs_hash() {
     {
         (cd "$root" && list_files deploy/docker/Dockerfile .dockerignore src/firstcommit)
-        (cd "$termlab/src" && list_files termlab)
+        (cd "$termlab" && list_files src/termlab)
     } | sha256sum | cut -d ' ' -f 1
 }
 
@@ -69,23 +70,33 @@ list_files() {
     find "$@" -type f ! -path '*/__pycache__/*' -print0 | LC_ALL=C sort -z | xargs -0 sha256sum
 }
 
-ensure_image() {
+require_termlab() {
     if [ ! -d "$termlab/src/termlab" ]; then
         fail "termlab is missing: First Commit needs it next to the game, at $termlab."
     fi
-    local hash
-    hash=$(inputs_hash)
-    if [ -n "$(docker images --quiet --filter "label=$label=$hash" "$name")" ]; then
-        return
-    fi
+}
+
+build() {
+    local target=$1 tag=$2
+    shift 2
     if ! docker buildx version >/dev/null 2>&1; then
         fail "Docker's build plugin (buildx) is missing." \
             "Install it with: sudo apt install docker-buildx-plugin" \
             "(or docker-buildx if your Docker came from Ubuntu's own docker.io package)."
     fi
+    docker build --file "$here/Dockerfile" --build-context "termlab=$termlab" \
+        --target "$target" --tag "$tag" "$@" "$root"
+}
+
+ensure_image() {
+    require_termlab
+    local hash
+    hash=$(inputs_hash)
+    if [ -n "$(docker images --quiet --filter "label=$label=$hash" "$name:latest")" ]; then
+        return
+    fi
     echo "Building the First Commit image. The first build downloads Ubuntu and takes a few minutes."
-    docker build --file "$here/Dockerfile" --build-context "termlab=$termlab/src" \
-        --label "$label=$hash" --tag "$name" "$root"
+    build player "$name:latest" --label "$label=$hash"
 }
 
 container_exists() {
@@ -110,7 +121,7 @@ play() {
     if [ -n "${FIRSTCOMMIT_PORT:-}" ]; then
         serve+=(--port "$FIRSTCOMMIT_PORT")
     fi
-    exec docker run "${options[@]}" "$name" "${serve[@]}"
+    exec docker run "${options[@]}" "$name:latest" "${serve[@]}"
 }
 
 shell() {
@@ -118,6 +129,18 @@ shell() {
         fail "First Commit is not running in Docker. Start it first: deploy/docker/run"
     fi
     exec docker exec --interactive --tty "$name" firstcommit shell
+}
+
+run_tests() {
+    require_termlab
+    build test "$name:test"
+    local checks=()
+    if [ "$#" -gt 0 ]; then
+        checks=(uv run pytest "$@")
+    fi
+    # No network: the suite must pass offline, as levels never use one.
+    exec docker run --rm --init "${hardening[@]}" "${interactive[@]}" --network none \
+        "$name:test" "${checks[@]}"
 }
 
 reset() {
@@ -140,7 +163,7 @@ reset() {
 
 action=${1:-play}
 case $action in
-    play | shell | build | reset) ;;
+    play | shell | build | reset | test) ;;
     help | -h | --help)
         usage
         exit 0
@@ -156,4 +179,5 @@ case $action in
     shell) shell ;;
     build) ensure_image ;;
     reset) reset ;;
+    test) run_tests "${@:2}" ;;
 esac

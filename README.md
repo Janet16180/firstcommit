@@ -34,6 +34,7 @@ browser. Ctrl-C stops the game, and your progress stays.
 | `deploy/docker/run reset` | delete your saved game and practice repositories (it asks first) |
 | `deploy/docker/run build` | build the image without starting the game |
 | `FIRSTCOMMIT_PORT=8851 deploy/docker/run` | start the game on another port |
+| `deploy/docker/run test` | for developers: run ruff, mypy and the tests inside the container, offline |
 
 Your progress and practice repositories live in the Docker volume `firstcommit-home`, which the
 container sees as `~/.firstcommit`. They survive restarts and rebuilds until you run `reset`. If

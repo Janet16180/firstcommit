@@ -1,5 +1,11 @@
-# The image needs only the game's package from this folder (termlab comes as its own build
-# context), so everything else stays out of the context.
-*
-!src/firstcommit
+# The player image copies only src/firstcommit; the test image copies the whole repository, so
+# only local state stays out of the build context.
+.git
+.venv
+.scratch
 **/__pycache__
+.pytest_cache
+.mypy_cache
+.ruff_cache
+.hypothesis
+*.egg-info

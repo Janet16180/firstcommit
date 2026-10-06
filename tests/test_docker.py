@@ -161,7 +161,7 @@ def remove_docker_objects(name: str) -> None:
     """
     docker("container", "rm", "--force", name)
     docker("volume", "rm", volume_of(name))
-    docker("image", "rm", name)
+    docker("image", "rm", name, f"{name}:test")
 
 
 def spawn_in_terminal(command: list[str], env: dict[str, str]) -> tuple[subprocess.Popen[bytes], int]:
@@ -557,7 +557,7 @@ def test_run_shows_its_commands_and_refuses_an_unknown_one() -> None:
     refused = run_script("start", name="unused")
 
     assert shown.returncode == 0
-    assert all(command in shown.stdout for command in ("play", "shell", "build", "reset", "FIRSTCOMMIT_PORT"))
+    assert all(command in shown.stdout for command in ("play", "shell", "build", "reset", "test", "FIRSTCOMMIT_PORT"))
     assert refused.returncode == 2
     assert "Usage" in refused.stderr
 
@@ -726,6 +726,14 @@ def test_play_runs_the_game_without_privileges_and_its_terminal_still_works(
         process.kill()
         os.close(terminal)
         docker("container", "rm", "--force", stand_in_image)
+
+
+@pytest.mark.docker
+@pytest.mark.slow
+def test_the_whole_suite_passes_inside_the_container(unused_name: str) -> None:
+    result = run_script("test", name=unused_name, timeout=1800)
+
+    assert result.returncode == 0, result.stdout[-4000:] + result.stderr[-4000:]
 
 
 @pytest.mark.docker
