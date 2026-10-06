@@ -338,6 +338,11 @@ def repository_move(lab: kit.Lab, snap: kit.Snapshot) -> str:
             "You created the repository one folder too high, in the lab folder above `project`. "
             "Restart the level, then run `git init` inside `project`."
         )
+    elif not snap["exists"] and kit.snapshot(lab.project / "project")["exists"]:
+        move = (
+            "The repository is in a new folder `project` inside `project`: `git init project` creates that folder. "
+            "Restart the level, then run `git init` with nothing after it."
+        )
     elif not snap["exists"]:
         move = "There is no repository in the `project` folder yet. Create one with `git init`."
     elif snap["bare"]:

@@ -474,6 +474,14 @@ def test_a_repository_one_folder_too_high_gets_its_own_nudge(lab: kit.Lab) -> No
     assert "one folder too high" in check(lab).message
 
 
+def test_git_init_project_inside_the_project_folder_gets_its_own_nudge(lab: kit.Lab) -> None:
+    git(lab, "init", "project")
+    verdict = watch(lab, "init")
+    assert not verdict.solved
+    assert "`git init project`" in verdict.message
+    assert "`git init project`" in check(lab).message
+
+
 def test_deleting_the_git_folder_unsolves_the_level(played: kit.Lab) -> None:
     shutil.rmtree(played.project / ".git")
     verdict = check(played)
