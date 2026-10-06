@@ -121,3 +121,12 @@ test("a level reply must carry its question, the hints shown so far and its debr
     await assert.rejects(game.level("x"), new RegExp(`/api/level\\.${field} should be`), field);
   }
 });
+
+test("a file entry must carry its mode in each area and whether it is a repository", async () => {
+  for (const field of ["head_mode", "index_mode", "folder_mode", "repository"]) {
+    const observation = record("observation");
+    delete observation.project.files[0][field];
+    const { game } = gameApi({ "/api/observe": observation });
+    await assert.rejects(game.observe(), new RegExp(`files\\[0\\]\\.${field} should be`), field);
+  }
+});

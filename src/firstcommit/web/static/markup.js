@@ -13,7 +13,15 @@
 const Markup = (() => {
   const { el } = Dom;
 
-  const spans = (list) => list.map((span) => (span.code ? el("code", {}, span.text) : span.text));
+  /* Code of several words is split into words that never break inside (the stylesheet keeps
+     each word whole), so a line may break only at a space: `--global` never splits at a hyphen. */
+  function codeSpan(text) {
+    const words = text.split(" ");
+    if (words.length === 1) return el("code", {}, text);
+    return el("code", { class: "words" }, words.flatMap((word, index) => (index ? [" ", el("span", {}, word)] : [el("span", {}, word)])));
+  }
+
+  const spans = (list) => list.map((span) => (span.code ? codeSpan(span.text) : span.text));
 
   const BLOCKS = {
     para: (block) => el("p", {}, spans(block.spans)),

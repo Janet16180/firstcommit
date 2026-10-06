@@ -250,8 +250,12 @@
        "head": null,
        "index": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
        "folder": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+       "head_mode": null,
+       "index_mode": "100644",
+       "folder_mode": "100644",
        "ignored": false,
-       "conflicted": false
+       "conflicted": false,
+       "repository": false
       }
      ],
      "operation": null,
@@ -317,8 +321,12 @@
        "head": null,
        "index": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
        "folder": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+       "head_mode": null,
+       "index_mode": "100644",
+       "folder_mode": "100644",
        "ignored": false,
-       "conflicted": false
+       "conflicted": false,
+       "repository": false
       }
      ],
      "operation": null,
@@ -386,8 +394,12 @@
        "head": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
        "index": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
        "folder": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+       "head_mode": "100644",
+       "index_mode": "100644",
+       "folder_mode": "100644",
        "ignored": false,
-       "conflicted": false
+       "conflicted": false,
+       "repository": false
       }
      ],
      "operation": null,
@@ -456,8 +468,12 @@
        "head": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
        "index": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
        "folder": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+       "head_mode": "100644",
+       "index_mode": "100644",
+       "folder_mode": "100644",
        "ignored": false,
-       "conflicted": false
+       "conflicted": false,
+       "repository": false
       }
      ],
      "operation": null,
@@ -526,8 +542,12 @@
        "head": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
        "index": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
        "folder": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+       "head_mode": "100644",
+       "index_mode": "100644",
+       "folder_mode": "100644",
        "ignored": false,
-       "conflicted": false
+       "conflicted": false,
+       "repository": false
       }
      ],
      "operation": null,
@@ -765,40 +785,84 @@
      "head": "92307fb726f9ead3b06bce244ab99fe6b397ed9f",
      "index": "3c64b02e037fd91999c109a914fc64ba825f83ea",
      "folder": "3c64b02e037fd91999c109a914fc64ba825f83ea",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
      "ignored": false,
-     "conflicted": false
+     "conflicted": false,
+     "repository": false
     },
     {
      "path": "build.log",
      "head": null,
      "index": null,
      "folder": "0e1790696e1b3a7d7b6896a37332833d345720f4",
+     "head_mode": null,
+     "index_mode": null,
+     "folder_mode": "100644",
      "ignored": true,
-     "conflicted": false
+     "conflicted": false,
+     "repository": false
     },
     {
      "path": "notes.txt",
      "head": "6381d61d612a680ca5731e9daa3c7159ce095fe7",
      "index": "6381d61d612a680ca5731e9daa3c7159ce095fe7",
      "folder": "5a756a0f89761abfdf745fea5d21bc7bf237aeb6",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
      "ignored": false,
-     "conflicted": false
+     "conflicted": false,
+     "repository": false
     },
     {
      "path": "old.txt",
      "head": "53169d90d08f1ce60f0af65818e7eefd0475b2ae",
      "index": null,
      "folder": null,
+     "head_mode": "100644",
+     "index_mode": null,
+     "folder_mode": null,
      "ignored": false,
-     "conflicted": false
+     "conflicted": false,
+     "repository": false
+    },
+    {
+     "path": "run.sh",
+     "head": "4d859a974871cca4a04b68671fb12dbc381511a9",
+     "index": "4d859a974871cca4a04b68671fb12dbc381511a9",
+     "folder": "4d859a974871cca4a04b68671fb12dbc381511a9",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100755",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false
     },
     {
      "path": "todo.txt",
      "head": null,
      "index": null,
      "folder": "9fb39b7184ab0ae5747cfa9a1bd43dce202e4931",
+     "head_mode": null,
+     "index_mode": null,
+     "folder_mode": "100644",
      "ignored": false,
-     "conflicted": false
+     "conflicted": false,
+     "repository": false
+    },
+    {
+     "path": "vendor",
+     "head": null,
+     "index": null,
+     "folder": "eb9de1fb05f522780f89b263a4e55cf42f3d1332",
+     "head_mode": null,
+     "index_mode": null,
+     "folder_mode": "160000",
+     "ignored": false,
+     "conflicted": false,
+     "repository": true
     }
    ],
    "operation": null,
@@ -1154,8 +1218,12 @@
      "head": null,
      "index": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
      "folder": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+     "head_mode": null,
+     "index_mode": "100644",
+     "folder_mode": "100644",
      "ignored": false,
-     "conflicted": false
+     "conflicted": false,
+     "repository": false
     }
    ],
    "operation": null,
@@ -1190,8 +1258,12 @@
      "head": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
      "index": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
      "folder": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
      "ignored": false,
-     "conflicted": false
+     "conflicted": false,
+     "repository": false
     }
    ],
    "operation": null,

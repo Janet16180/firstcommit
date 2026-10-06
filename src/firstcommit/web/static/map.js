@@ -85,7 +85,9 @@ const RepoMap = (function () {
         empty: "No files in the working folder yet.",
         unchanged: (count) => `${count} unchanged files`,
         show: "Show them",
+        repository: "a separate repository",
       },
+      marks: { executable: "executable", link: "symbolic link" },
       states: {
         untracked: "untracked",
         changed: "changed, not staged",
@@ -354,26 +356,37 @@ const RepoMap = (function () {
     );
   }
 
-  function folderCell({ index, folder, ignored, conflicted }) {
-    if (folder === null) return index !== null ? { blob: null, state: "deleted" } : null;
-    const state = ignored ? "ignored" : conflicted ? "conflicted" : index === null ? "untracked" : folder !== index ? "changed" : "same";
-    return { blob: folder, state };
+  /* Two areas agree when both the id and the mode agree: `chmod +x` alone is a change. */
+  const agree = (file, one, other) => file[one] === file[other] && file[`${one}_mode`] === file[`${other}_mode`];
+  const MARKS = { 100755: "executable", 120000: "link" };
+
+  function folderCell(file) {
+    const { head, index, folder, ignored, conflicted, repository } = file;
+    if (folder === null && repository && index === null && head === null) return { blob: null, state: "untracked", mark: null };
+    if (folder === null) return index !== null ? { blob: null, state: "deleted", mark: null } : null;
+    const state = ignored ? "ignored" : conflicted ? "conflicted" : index === null ? "untracked" : agree(file, "folder", "index") ? "same" : "changed";
+    return { blob: folder, state, mark: MARKS[file.folder_mode] || null };
   }
 
-  function indexCell({ head, index, conflicted }) {
+  function indexCell(file) {
+    const { head, index, conflicted } = file;
     if (index === null && head === null && !conflicted) return null;
-    const state = conflicted ? "conflicted" : index === null ? "removed" : head === null ? "new" : index !== head ? "staged" : "same";
-    return { blob: index, state };
+    const state = conflicted ? "conflicted" : index === null ? "removed" : head === null ? "new" : agree(file, "index", "head") ? "same" : "staged";
+    return { blob: index, state, mark: MARKS[file.index_mode] || null };
   }
 
-  /* A file's state in each area, from its blob ids. `changed` is false when all three agree. */
+  /* A file's state in each area, from its ids and modes. `changed` is false when all three agree
+     (an ignored file is not a change); `repository` marks a repository inside the working folder. */
   function areaRow(file) {
+    const folder = folderCell(file);
+    const index = indexCell(file);
     return {
       path: file.path,
-      folder: folderCell(file),
-      index: indexCell(file),
-      head: file.head !== null ? { blob: file.head, state: "committed" } : null,
-      changed: file.conflicted || (!file.ignored && (file.folder !== file.index || file.index !== file.head)),
+      folder,
+      index,
+      head: file.head !== null ? { blob: file.head, state: "committed", mark: MARKS[file.head_mode] || null } : null,
+      changed: [folder, index].some((cell) => cell !== null && cell.state !== "same" && cell.state !== "ignored"),
+      repository: file.repository,
     };
   }
 
@@ -388,13 +401,15 @@ const RepoMap = (function () {
     return el("span", { class: `areas-cell state-${cell.state}`, role: "cell" },
       cell.blob && el("i", { class: "blob-dot", style: `--hue: ${blobHue(cell.blob)}`, "aria-hidden": "true" }),
       cell.blob && el("code", { title: cell.blob }, cell.blob.slice(0, 7)),
+      cell.mark && el("span", { class: "areas-mark" }, words.marks[cell.mark]),
       state && el("em", {}, state),
     );
   }
 
   function areaLine(row, words) {
-    return el("div", { class: `areas-row${row.changed ? " is-changed" : ""}`, role: "row" },
-      el("span", { class: "areas-path", role: "rowheader", title: row.path }, row.path),
+    const classes = ["areas-row", row.changed && "is-changed", row.repository && "is-repository"].filter(Boolean).join(" ");
+    return el("div", { class: classes, role: "row" },
+      el("span", { class: "areas-path", role: "rowheader", title: row.path }, row.path, row.repository && el("span", { class: "areas-repo" }, words.areas.repository)),
       areaCell(row.folder, words),
       el("span", { class: "areas-gap", "aria-hidden": "true" }),
       areaCell(row.index, words),

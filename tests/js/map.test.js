@@ -270,3 +270,26 @@ test("the object list shows each object's type, hash and size, marking new ones"
   }
   assert.equal(list.querySelectorAll(".is-new").length, objects.length - 1);
 });
+
+const entry = (path, fields) => ({ path, head: null, index: null, folder: null, head_mode: null, index_mode: null, folder_mode: null, ignored: false, conflicted: false, repository: false, ...fields });
+
+test("a change of mode alone is a change, and the area that has a special mode says which", () => {
+  const madeExecutable = entry("run.sh", { head: "b1", index: "b1", folder: "b1", head_mode: "100644", index_mode: "100644", folder_mode: "100755" });
+  const staged = entry("run.sh", { head: "b1", index: "b1", folder: "b1", head_mode: "100644", index_mode: "100755", folder_mode: "100755" });
+  const [folderOnly] = RepoMap.areaRows([madeExecutable]);
+  assert.deepEqual([folderOnly.folder.state, folderOnly.index.state, folderOnly.changed], ["changed", "same", true]);
+  assert.deepEqual([folderOnly.folder.mark, folderOnly.index.mark], ["executable", null]);
+  const [stagedRow] = RepoMap.areaRows([staged]);
+  assert.deepEqual([stagedRow.folder.state, stagedRow.index.state], ["same", "staged"]);
+  assert.match(RepoMap.renderAreas([madeExecutable]).textContent, /executable/);
+});
+
+test("a repository inside the working folder is one row, marked as a repository, even before its first commit", () => {
+  const nested = entry("vendor", { folder: "c1", folder_mode: "160000", repository: true });
+  const empty = entry("tools", { repository: true });
+  const rows = RepoMap.areaRows([nested, empty]);
+  assert.deepEqual(rows.map((row) => [row.repository, row.folder && row.folder.state]), [[true, "untracked"], [true, "untracked"]]);
+  const strip = RepoMap.renderAreas([nested, empty]);
+  assert.equal(strip.querySelectorAll(".areas-row.is-repository").length, 2);
+  assert.match(strip.textContent, /vendor.*repository/);
+});

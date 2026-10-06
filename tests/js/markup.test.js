@@ -15,8 +15,13 @@ const span = (text, code = false) => ({ text, code });
 const rendered = (blocks) => Markup.render(blocks).map(html).join("");
 
 test("a paragraph shows its spans, with code spans as code", () => {
-  const blocks = [{ kind: "para", spans: [span("Run "), span("git status", true), span(" now.")] }];
-  assert.equal(rendered(blocks), "<p>Run <code>git status</code> now.</p>");
+  const blocks = [{ kind: "para", spans: [span("Open "), span("README.md", true), span(" now.")] }];
+  assert.equal(rendered(blocks), "<p>Open <code>README.md</code> now.</p>");
+});
+
+test("a command of several words may break only between its words, never inside one", () => {
+  const blocks = [{ kind: "para", spans: [span("Run "), span("git config --global user.name", true), span(".")] }];
+  assert.equal(rendered(blocks), '<p>Run <code class="words"><span>git</span> <span>config</span> <span>--global</span> <span>user.name</span></code>.</p>');
 });
 
 test("a verbatim block is preformatted code, kept exactly", () => {
