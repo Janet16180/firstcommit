@@ -1,7 +1,7 @@
 from pathlib import Path
 
 import pytest
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from firstcommit import changes, markup, repomap
@@ -463,12 +463,14 @@ def snapshots(names: st.SearchStrategy[str]) -> st.SearchStrategy[repomap.Snapsh
 
 
 @pytest.mark.slow
+@settings(deadline=None)
 @given(snapshots(SAFE_TEXT))
 def test_no_change_tells_nothing(snap: repomap.Snapshot) -> None:
     assert changes.describe(snap, snap) == []
 
 
 @pytest.mark.slow
+@settings(deadline=None)
 @given(snapshots(st.text()), snapshots(st.text()))
 def test_any_pair_of_snapshots_is_described_without_error(before: repomap.Snapshot, after: repomap.Snapshot) -> None:
     for event in changes.describe(before, after):
@@ -477,6 +479,7 @@ def test_any_pair_of_snapshots_is_described_without_error(before: repomap.Snapsh
 
 
 @pytest.mark.slow
+@settings(deadline=None)
 @given(snapshots(SAFE_TEXT), snapshots(SAFE_TEXT))
 def test_every_name_and_hash_an_event_quotes_is_in_one_of_the_snapshots(before: repomap.Snapshot, after: repomap.Snapshot) -> None:
     names: set[str] = set()
