@@ -3,20 +3,24 @@ The level authors' toolkit: what a level is made of, and the helpers a level may
 
 A level module imports this module and the standard library only (AUTHORING.md section 3):
 the types of its lesson and quest, its lab, git kept to the game's configuration, the snapshot
-its checks read, and helpers that parse what a player types.
+its checks read, helpers that parse what a player types, and the two-person playground
+(`setup_playground` builds it in a lab; `press` runs one of its buttons, the same real command
+the page's button runs, so a level can prepare a state such as "Alex already pushed").
 """
 
 import hashlib
 import re
 from collections.abc import Callable
 from dataclasses import dataclass
-from pathlib import Path
 from typing import Any, Literal
 
 from firstcommit.gitcmd import GAME, Person
 from firstcommit.gitcmd import output as git
 from firstcommit.gitcmd import run as git_run
+from firstcommit.lab import Lab
 from firstcommit.markup import code
+from firstcommit.playground import press
+from firstcommit.playground import setup as setup_playground
 from firstcommit.repomap import (
     Commit,
     FileEntry,
@@ -59,6 +63,8 @@ __all__ = [
     "mode_changed",
     "nested",
     "parse_int",
+    "press",
+    "setup_playground",
     "snapshot",
     "staged",
     "unstaged",
@@ -80,34 +86,6 @@ class Verdict:
     solved: bool
     message: str
 
-
-@dataclass(frozen=True)
-class Lab:
-    """
-    The folders of one level's lab. Everything a level creates lives under ``root``.
-
-    ``project`` is the player's repository (the terminal opens there when it exists, else in
-    ``root``); ``github`` is the bare repository that stands in for GitHub, for levels with a
-    remote; ``teammate`` is a teammate's clone of it, for levels where someone else shares the
-    remote. A level creates only the parts it needs.
-    """
-
-    root: Path
-
-    @property
-    def project(self) -> Path:
-        """The player's working folder."""
-        return self.root / "project"
-
-    @property
-    def github(self) -> Path:
-        """The bare repository that plays GitHub."""
-        return self.root / "github" / "project.git"
-
-    @property
-    def teammate(self) -> Path:
-        """A teammate's working folder: their own clone of the stand-in GitHub."""
-        return self.root / "teammate" / "project"
 
 
 AnswerCheck = Callable[[Lab, State, str], Verdict]

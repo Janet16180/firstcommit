@@ -1446,5 +1446,1249 @@
    "index_change": null,
    "folder_change": null
   }
- ]
+ ],
+ "guide": {
+  "commit": {
+   "before": {
+    "exists": true,
+    "bare": false,
+    "head": null,
+    "branch": "main",
+    "commits": [],
+    "refs": [],
+    "files": [
+     {
+      "path": "README.md",
+      "head": null,
+      "index": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "folder": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "head_mode": null,
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": "added",
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "after": {
+    "exists": true,
+    "bare": false,
+    "head": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+      "short": "5941dbe",
+      "parents": [],
+      "subject": "Add the README",
+      "author": "Sam Lee",
+      "time": 1768467600
+     }
+    ],
+    "refs": [
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "5941dbe88c0a17b6310a603afeb5821f69082d70"
+     }
+    ],
+    "files": [
+     {
+      "path": "README.md",
+      "head": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "index": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "folder": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "transcript": [
+    {
+     "command": "git commit -m 'Add the README'",
+     "output": "[main (root-commit) 5941dbe] Add the README\n 1 file changed, 1 insertion(+)\n create mode 100644 README.md\n"
+    }
+   ]
+  },
+  "parents": {
+   "before": {
+    "exists": true,
+    "bare": false,
+    "head": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+      "short": "5941dbe",
+      "parents": [],
+      "subject": "Add the README",
+      "author": "Sam Lee",
+      "time": 1768467600
+     }
+    ],
+    "refs": [
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "5941dbe88c0a17b6310a603afeb5821f69082d70"
+     }
+    ],
+    "files": [
+     {
+      "path": "README.md",
+      "head": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "index": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "folder": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     },
+     {
+      "path": "rules.md",
+      "head": null,
+      "index": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "folder": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "head_mode": null,
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": "added",
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "after": {
+    "exists": true,
+    "bare": false,
+    "head": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782",
+      "short": "a0c26f8",
+      "parents": [
+       "5941dbe88c0a17b6310a603afeb5821f69082d70"
+      ],
+      "subject": "Add the rules",
+      "author": "Sam Lee",
+      "time": 1768467600
+     },
+     {
+      "hash": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+      "short": "5941dbe",
+      "parents": [],
+      "subject": "Add the README",
+      "author": "Sam Lee",
+      "time": 1768467600
+     }
+    ],
+    "refs": [
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782"
+     }
+    ],
+    "files": [
+     {
+      "path": "README.md",
+      "head": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "index": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "folder": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     },
+     {
+      "path": "rules.md",
+      "head": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "index": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "folder": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "transcript": [
+    {
+     "command": "git commit -m 'Add the rules'",
+     "output": "[main a0c26f8] Add the rules\n 1 file changed, 1 insertion(+)\n create mode 100644 rules.md\n"
+    }
+   ]
+  },
+  "branch": {
+   "before": {
+    "exists": true,
+    "bare": false,
+    "head": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782",
+    "branch": "idea",
+    "commits": [
+     {
+      "hash": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782",
+      "short": "a0c26f8",
+      "parents": [
+       "5941dbe88c0a17b6310a603afeb5821f69082d70"
+      ],
+      "subject": "Add the rules",
+      "author": "Sam Lee",
+      "time": 1768467600
+     },
+     {
+      "hash": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+      "short": "5941dbe",
+      "parents": [],
+      "subject": "Add the README",
+      "author": "Sam Lee",
+      "time": 1768467600
+     }
+    ],
+    "refs": [
+     {
+      "name": "idea",
+      "kind": "branch",
+      "target": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782"
+     },
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782"
+     }
+    ],
+    "files": [
+     {
+      "path": "README.md",
+      "head": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "index": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "folder": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     },
+     {
+      "path": "idea.md",
+      "head": null,
+      "index": "d70c225636a015b68295b3ac4236390357e6eda5",
+      "folder": "d70c225636a015b68295b3ac4236390357e6eda5",
+      "head_mode": null,
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": "added",
+      "folder_change": null
+     },
+     {
+      "path": "rules.md",
+      "head": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "index": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "folder": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "after": {
+    "exists": true,
+    "bare": false,
+    "head": "c012c4f47089a31dc84b58862c90b9189c9b6f20",
+    "branch": "idea",
+    "commits": [
+     {
+      "hash": "c012c4f47089a31dc84b58862c90b9189c9b6f20",
+      "short": "c012c4f",
+      "parents": [
+       "a0c26f82f8b538ab73f2576ac9cae13cb49b8782"
+      ],
+      "subject": "Sketch an idea",
+      "author": "Sam Lee",
+      "time": 1768467600
+     },
+     {
+      "hash": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782",
+      "short": "a0c26f8",
+      "parents": [
+       "5941dbe88c0a17b6310a603afeb5821f69082d70"
+      ],
+      "subject": "Add the rules",
+      "author": "Sam Lee",
+      "time": 1768467600
+     },
+     {
+      "hash": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+      "short": "5941dbe",
+      "parents": [],
+      "subject": "Add the README",
+      "author": "Sam Lee",
+      "time": 1768467600
+     }
+    ],
+    "refs": [
+     {
+      "name": "idea",
+      "kind": "branch",
+      "target": "c012c4f47089a31dc84b58862c90b9189c9b6f20"
+     },
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782"
+     }
+    ],
+    "files": [
+     {
+      "path": "README.md",
+      "head": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "index": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "folder": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     },
+     {
+      "path": "idea.md",
+      "head": "d70c225636a015b68295b3ac4236390357e6eda5",
+      "index": "d70c225636a015b68295b3ac4236390357e6eda5",
+      "folder": "d70c225636a015b68295b3ac4236390357e6eda5",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     },
+     {
+      "path": "rules.md",
+      "head": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "index": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "folder": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "transcript": [
+    {
+     "command": "git commit -m 'Sketch an idea'",
+     "output": "[idea c012c4f] Sketch an idea\n 1 file changed, 1 insertion(+)\n create mode 100644 idea.md\n"
+    }
+   ]
+  },
+  "now": {
+   "before": {
+    "exists": true,
+    "bare": false,
+    "head": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "39cdb34a094b4f029eee7d49261b39a098524cbf",
+      "short": "39cdb34",
+      "parents": [
+       "5941dbe88c0a17b6310a603afeb5821f69082d70"
+      ],
+      "subject": "Sketch an idea",
+      "author": "Sam Lee",
+      "time": 1768467600
+     },
+     {
+      "hash": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782",
+      "short": "a0c26f8",
+      "parents": [
+       "5941dbe88c0a17b6310a603afeb5821f69082d70"
+      ],
+      "subject": "Add the rules",
+      "author": "Sam Lee",
+      "time": 1768467600
+     },
+     {
+      "hash": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+      "short": "5941dbe",
+      "parents": [],
+      "subject": "Add the README",
+      "author": "Sam Lee",
+      "time": 1768467600
+     }
+    ],
+    "refs": [
+     {
+      "name": "idea",
+      "kind": "branch",
+      "target": "39cdb34a094b4f029eee7d49261b39a098524cbf"
+     },
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782"
+     }
+    ],
+    "files": [
+     {
+      "path": "README.md",
+      "head": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "index": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "folder": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     },
+     {
+      "path": "rules.md",
+      "head": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "index": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "folder": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "after": {
+    "exists": true,
+    "bare": false,
+    "head": "39cdb34a094b4f029eee7d49261b39a098524cbf",
+    "branch": "idea",
+    "commits": [
+     {
+      "hash": "39cdb34a094b4f029eee7d49261b39a098524cbf",
+      "short": "39cdb34",
+      "parents": [
+       "5941dbe88c0a17b6310a603afeb5821f69082d70"
+      ],
+      "subject": "Sketch an idea",
+      "author": "Sam Lee",
+      "time": 1768467600
+     },
+     {
+      "hash": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782",
+      "short": "a0c26f8",
+      "parents": [
+       "5941dbe88c0a17b6310a603afeb5821f69082d70"
+      ],
+      "subject": "Add the rules",
+      "author": "Sam Lee",
+      "time": 1768467600
+     },
+     {
+      "hash": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+      "short": "5941dbe",
+      "parents": [],
+      "subject": "Add the README",
+      "author": "Sam Lee",
+      "time": 1768467600
+     }
+    ],
+    "refs": [
+     {
+      "name": "idea",
+      "kind": "branch",
+      "target": "39cdb34a094b4f029eee7d49261b39a098524cbf"
+     },
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782"
+     }
+    ],
+    "files": [
+     {
+      "path": "README.md",
+      "head": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "index": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "folder": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     },
+     {
+      "path": "idea.md",
+      "head": "d70c225636a015b68295b3ac4236390357e6eda5",
+      "index": "d70c225636a015b68295b3ac4236390357e6eda5",
+      "folder": "d70c225636a015b68295b3ac4236390357e6eda5",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "transcript": [
+    {
+     "command": "git switch idea",
+     "output": "Switched to branch 'idea'\n"
+    }
+   ]
+  },
+  "detached": {
+   "before": {
+    "exists": true,
+    "bare": false,
+    "head": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+    "branch": null,
+    "commits": [
+     {
+      "hash": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782",
+      "short": "a0c26f8",
+      "parents": [
+       "5941dbe88c0a17b6310a603afeb5821f69082d70"
+      ],
+      "subject": "Add the rules",
+      "author": "Sam Lee",
+      "time": 1768467600
+     },
+     {
+      "hash": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+      "short": "5941dbe",
+      "parents": [],
+      "subject": "Add the README",
+      "author": "Sam Lee",
+      "time": 1768467600
+     }
+    ],
+    "refs": [
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782"
+     }
+    ],
+    "files": [
+     {
+      "path": "README.md",
+      "head": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "index": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "folder": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     },
+     {
+      "path": "try.md",
+      "head": null,
+      "index": "fcc6d6e83171e9c0bd7580969ae9bdd6f8b77a1e",
+      "folder": "fcc6d6e83171e9c0bd7580969ae9bdd6f8b77a1e",
+      "head_mode": null,
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": "added",
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "after": {
+    "exists": true,
+    "bare": false,
+    "head": "e571d786cdc217a7a9a5b1f15a1b8b0e8a76b3f1",
+    "branch": null,
+    "commits": [
+     {
+      "hash": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782",
+      "short": "a0c26f8",
+      "parents": [
+       "5941dbe88c0a17b6310a603afeb5821f69082d70"
+      ],
+      "subject": "Add the rules",
+      "author": "Sam Lee",
+      "time": 1768467600
+     },
+     {
+      "hash": "e571d786cdc217a7a9a5b1f15a1b8b0e8a76b3f1",
+      "short": "e571d78",
+      "parents": [
+       "5941dbe88c0a17b6310a603afeb5821f69082d70"
+      ],
+      "subject": "Try something",
+      "author": "Sam Lee",
+      "time": 1768467600
+     },
+     {
+      "hash": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+      "short": "5941dbe",
+      "parents": [],
+      "subject": "Add the README",
+      "author": "Sam Lee",
+      "time": 1768467600
+     }
+    ],
+    "refs": [
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782"
+     }
+    ],
+    "files": [
+     {
+      "path": "README.md",
+      "head": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "index": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "folder": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     },
+     {
+      "path": "try.md",
+      "head": "fcc6d6e83171e9c0bd7580969ae9bdd6f8b77a1e",
+      "index": "fcc6d6e83171e9c0bd7580969ae9bdd6f8b77a1e",
+      "folder": "fcc6d6e83171e9c0bd7580969ae9bdd6f8b77a1e",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "transcript": [
+    {
+     "command": "git commit -m 'Try something'",
+     "output": "[detached HEAD e571d78] Try something\n 1 file changed, 1 insertion(+)\n create mode 100644 try.md\n"
+    }
+   ]
+  },
+  "merge": {
+   "before": {
+    "exists": true,
+    "bare": false,
+    "head": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "39cdb34a094b4f029eee7d49261b39a098524cbf",
+      "short": "39cdb34",
+      "parents": [
+       "5941dbe88c0a17b6310a603afeb5821f69082d70"
+      ],
+      "subject": "Sketch an idea",
+      "author": "Sam Lee",
+      "time": 1768467600
+     },
+     {
+      "hash": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782",
+      "short": "a0c26f8",
+      "parents": [
+       "5941dbe88c0a17b6310a603afeb5821f69082d70"
+      ],
+      "subject": "Add the rules",
+      "author": "Sam Lee",
+      "time": 1768467600
+     },
+     {
+      "hash": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+      "short": "5941dbe",
+      "parents": [],
+      "subject": "Add the README",
+      "author": "Sam Lee",
+      "time": 1768467600
+     }
+    ],
+    "refs": [
+     {
+      "name": "idea",
+      "kind": "branch",
+      "target": "39cdb34a094b4f029eee7d49261b39a098524cbf"
+     },
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782"
+     }
+    ],
+    "files": [
+     {
+      "path": "README.md",
+      "head": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "index": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "folder": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     },
+     {
+      "path": "rules.md",
+      "head": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "index": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "folder": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "after": {
+    "exists": true,
+    "bare": false,
+    "head": "950c6ca98ed8da51d750adf7b32be67c0418a695",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "950c6ca98ed8da51d750adf7b32be67c0418a695",
+      "short": "950c6ca",
+      "parents": [
+       "a0c26f82f8b538ab73f2576ac9cae13cb49b8782",
+       "39cdb34a094b4f029eee7d49261b39a098524cbf"
+      ],
+      "subject": "Merge branch 'idea'",
+      "author": "Sam Lee",
+      "time": 1768467600
+     },
+     {
+      "hash": "39cdb34a094b4f029eee7d49261b39a098524cbf",
+      "short": "39cdb34",
+      "parents": [
+       "5941dbe88c0a17b6310a603afeb5821f69082d70"
+      ],
+      "subject": "Sketch an idea",
+      "author": "Sam Lee",
+      "time": 1768467600
+     },
+     {
+      "hash": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782",
+      "short": "a0c26f8",
+      "parents": [
+       "5941dbe88c0a17b6310a603afeb5821f69082d70"
+      ],
+      "subject": "Add the rules",
+      "author": "Sam Lee",
+      "time": 1768467600
+     },
+     {
+      "hash": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+      "short": "5941dbe",
+      "parents": [],
+      "subject": "Add the README",
+      "author": "Sam Lee",
+      "time": 1768467600
+     }
+    ],
+    "refs": [
+     {
+      "name": "idea",
+      "kind": "branch",
+      "target": "39cdb34a094b4f029eee7d49261b39a098524cbf"
+     },
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "950c6ca98ed8da51d750adf7b32be67c0418a695"
+     }
+    ],
+    "files": [
+     {
+      "path": "README.md",
+      "head": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "index": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "folder": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     },
+     {
+      "path": "idea.md",
+      "head": "d70c225636a015b68295b3ac4236390357e6eda5",
+      "index": "d70c225636a015b68295b3ac4236390357e6eda5",
+      "folder": "d70c225636a015b68295b3ac4236390357e6eda5",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     },
+     {
+      "path": "rules.md",
+      "head": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "index": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "folder": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "transcript": [
+    {
+     "command": "git merge --no-edit idea",
+     "output": "Merge made by the 'ort' strategy.\n idea.md | 1 +\n 1 file changed, 1 insertion(+)\n create mode 100644 idea.md\n"
+    }
+   ]
+  },
+  "tag": {
+   "before": {
+    "exists": true,
+    "bare": false,
+    "head": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+      "short": "5941dbe",
+      "parents": [],
+      "subject": "Add the README",
+      "author": "Sam Lee",
+      "time": 1768467600
+     }
+    ],
+    "refs": [
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "5941dbe88c0a17b6310a603afeb5821f69082d70"
+     },
+     {
+      "name": "v1",
+      "kind": "tag",
+      "target": "5941dbe88c0a17b6310a603afeb5821f69082d70"
+     }
+    ],
+    "files": [
+     {
+      "path": "README.md",
+      "head": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "index": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "folder": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     },
+     {
+      "path": "rules.md",
+      "head": null,
+      "index": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "folder": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "head_mode": null,
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": "added",
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "after": {
+    "exists": true,
+    "bare": false,
+    "head": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782",
+      "short": "a0c26f8",
+      "parents": [
+       "5941dbe88c0a17b6310a603afeb5821f69082d70"
+      ],
+      "subject": "Add the rules",
+      "author": "Sam Lee",
+      "time": 1768467600
+     },
+     {
+      "hash": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+      "short": "5941dbe",
+      "parents": [],
+      "subject": "Add the README",
+      "author": "Sam Lee",
+      "time": 1768467600
+     }
+    ],
+    "refs": [
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782"
+     },
+     {
+      "name": "v1",
+      "kind": "tag",
+      "target": "5941dbe88c0a17b6310a603afeb5821f69082d70"
+     }
+    ],
+    "files": [
+     {
+      "path": "README.md",
+      "head": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "index": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "folder": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     },
+     {
+      "path": "rules.md",
+      "head": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "index": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "folder": "6b1b585c9943cf9487830aaf780ea853cc0b44d2",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "transcript": [
+    {
+     "command": "git commit -m 'Add the rules'",
+     "output": "[main a0c26f8] Add the rules\n 1 file changed, 1 insertion(+)\n create mode 100644 rules.md\n"
+    }
+   ]
+  },
+  "archive": {
+   "before": {
+    "exists": true,
+    "bare": true,
+    "head": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+      "short": "5941dbe",
+      "parents": [],
+      "subject": "Add the README",
+      "author": "Sam Lee",
+      "time": 1768467600
+     }
+    ],
+    "refs": [
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "5941dbe88c0a17b6310a603afeb5821f69082d70"
+     }
+    ],
+    "files": [],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "after": {
+    "exists": true,
+    "bare": true,
+    "head": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782",
+      "short": "a0c26f8",
+      "parents": [
+       "5941dbe88c0a17b6310a603afeb5821f69082d70"
+      ],
+      "subject": "Add the rules",
+      "author": "Sam Lee",
+      "time": 1768467600
+     },
+     {
+      "hash": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+      "short": "5941dbe",
+      "parents": [],
+      "subject": "Add the README",
+      "author": "Sam Lee",
+      "time": 1768467600
+     }
+    ],
+    "refs": [
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782"
+     }
+    ],
+    "files": [],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "transcript": [
+    {
+     "command": "cd ../../project",
+     "output": ""
+    },
+    {
+     "command": "git push",
+     "output": "To /home/you/project/../github/project.git\n   5941dbe..a0c26f8  main -> main\n"
+    },
+    {
+     "command": "cd ../github/project.git",
+     "output": ""
+    }
+   ]
+  },
+  "seen": {
+   "before": {
+    "exists": true,
+    "bare": false,
+    "head": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+      "short": "5941dbe",
+      "parents": [],
+      "subject": "Add the README",
+      "author": "Sam Lee",
+      "time": 1768467600
+     }
+    ],
+    "refs": [
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "5941dbe88c0a17b6310a603afeb5821f69082d70"
+     },
+     {
+      "name": "origin/main",
+      "kind": "remote",
+      "target": "5941dbe88c0a17b6310a603afeb5821f69082d70"
+     }
+    ],
+    "files": [
+     {
+      "path": "README.md",
+      "head": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "index": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "folder": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "after": {
+    "exists": true,
+    "bare": false,
+    "head": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782",
+      "short": "a0c26f8",
+      "parents": [
+       "5941dbe88c0a17b6310a603afeb5821f69082d70"
+      ],
+      "subject": "Add the rules",
+      "author": "Sam Lee",
+      "time": 1768467600
+     },
+     {
+      "hash": "5941dbe88c0a17b6310a603afeb5821f69082d70",
+      "short": "5941dbe",
+      "parents": [],
+      "subject": "Add the README",
+      "author": "Sam Lee",
+      "time": 1768467600
+     }
+    ],
+    "refs": [
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "5941dbe88c0a17b6310a603afeb5821f69082d70"
+     },
+     {
+      "name": "origin/main",
+      "kind": "remote",
+      "target": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782"
+     }
+    ],
+    "files": [
+     {
+      "path": "README.md",
+      "head": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "index": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "folder": "8a732bf9b212b4ed86481a585feb613dc9e9c9b0",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "transcript": [
+    {
+     "command": "git fetch",
+     "output": "From /home/you/project/../github/project\n   5941dbe..a0c26f8  main       -> origin/main\n"
+    }
+   ]
+  }
+ }
 }

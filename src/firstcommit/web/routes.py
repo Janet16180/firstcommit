@@ -454,6 +454,23 @@ def api_notes(query: dict[str, Any]) -> Reply:
     return found(lambda: game.notes(chapter))
 
 
+
+def api_guide(query: dict[str, Any]) -> Reply:
+    """
+    GET /api/guide: the map guide's figures.
+
+    Parameters
+    ----------
+    query : dict[str, Any]
+        Unused.
+
+    Returns
+    -------
+    Reply
+        200 and `game.GuideView`, the figures by section id in the guide's order.
+    """
+    return HTTPStatus.OK, dict(game.guide())
+
 ROUTES: dict[tuple[str, str], shell.Route] = {
     key: guarded(route)
     for key, route in {
@@ -470,6 +487,7 @@ ROUTES: dict[tuple[str, str], shell.Route] = {
         ("GET", "/api/cards"): api_cards,
         ("POST", "/api/card"): api_card,
         ("GET", "/api/notes"): api_notes,
+        ("GET", "/api/guide"): api_guide,
     }.items()
 }
 

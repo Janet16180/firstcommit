@@ -14,10 +14,11 @@ the page too. Every field the player reads is parsed blocks; every value the pag
 UTF-8 cannot encode, such as the lone surrogates JSON can carry, are replaced here, so levels and
 cards only ever see a wrong answer. Errors the interfaces handle:
 
-- `UnknownIdError`: an unknown level, chapter or card id (the routes answer 404). It is raised
-  only by the one lookup of each kind of id, at the top of a function, so a ``KeyError`` from a
-  level's setup, the scoring or a lesson stays what it is: a bug;
+- `UnknownIdError`: an unknown level, chapter or card id, or a playground person or button (the
+  routes answer 404). It is raised only by the one lookup of each kind of id, at the top of a
+  function, so a ``KeyError`` from a level's setup, the scoring or a lesson stays what it is: a bug;
 - `NotPlayingError`: an action on the level in progress when there is none (409);
+- `NoPlaygroundError`: a playground button pressed in a level that has no playground (409);
 - `SaveError`: a damaged save file (``firstcommit reset --yes`` starts over).
 
 The interfaces import nothing else from the game's lower layers: `SaveError` and `home` are
@@ -32,17 +33,20 @@ import re
 import shlex
 import subprocess
 import sys
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Literal, TypedDict
 
-from firstcommit import cards, changes, demos, gitcmd, kit, markup, repomap, runner, save, score
+from firstcommit import cards, changes, demos, gitcmd, kit, markup, playground, repomap, runner, save, score
+from firstcommit import guide as map_guide
 from firstcommit.cards import CardKind
 from firstcommit.changes import Event
 from firstcommit.chapters import CHAPTERS
 from firstcommit.demos import Line
+from firstcommit.lab import Lab
 from firstcommit.markup import Block
+from firstcommit.records import Press
 from firstcommit.repomap import ObjectInfo, Snapshot
 from firstcommit.save import Payout
 from firstcommit.save import SaveError as SaveError
@@ -166,6 +170,18 @@ class LessonView(TypedDict):
     slides: list[SlideView]
 
 
+class FigureView(TypedDict):
+    """One figure of the map guide: its repository before and after one change, and that change's real commands and output."""
+
+    before: Snapshot
+    after: Snapshot
+    transcript: list[Line]
+
+
+GuideView = dict[str, FigureView]
+"""The map guide's figures by section id, in the guide's order (`firstcommit.guide.FIGURES`)."""
+
+
 class StepResult(TypedDict):
     """The result of a quest step: right or not, feedback, and where the quest stands now."""
 
@@ -201,12 +217,34 @@ class EventView(TypedDict):
 
 
 class Observation(TypedDict):
-    """The live lab: the player's repository, the stand-in GitHub (if the level has one), and what changed."""
+    """
+    The live lab and what changed in it since the last observation.
+
+    ``github`` and ``teammate`` (the teammate's clone of the playground, `firstcommit.playground`)
+    are None when the level has none. ``events`` tells the changes in the player's repository and
+    the stand-in GitHub; ``teammate_events`` those in the teammate's clone, kept apart because an
+    event's sentence does not say which clone it happened in.
+    """
 
     level: str
     project: Snapshot
     github: Snapshot | None
+    teammate: Snapshot | None
     events: list[EventView]
+    teammate_events: list[EventView]
+
+
+class PressView(TypedDict):
+    """
+    One press of a playground button: the command and what it printed, what it shows, and the lab right after it.
+
+    ``explanation`` is None until the playground's explanations exist; ``observation`` is what
+    `observe` would give right after the press.
+    """
+
+    press: Press
+    explanation: list[Block] | None
+    observation: Observation
 
 
 class Choice(TypedDict):
@@ -270,6 +308,10 @@ class UnknownIdError(LookupError):
 
 class NotPlayingError(Exception):
     """No level is in progress, for an action that needs one (the web routes answer 409)."""
+
+
+class NoPlaygroundError(Exception):
+    """The level in progress has no playground, for a button press (the web routes answer 409)."""
 
 
 def status() -> Status:
@@ -387,6 +429,27 @@ def lesson(level_id: str) -> LessonView:
         for slide, frame in zip(entry.lesson, demos.frames(entry.lesson), strict=True)
     ]
     return {"level": entry.id, "title": entry.title, "slides": slides}
+
+
+def guide() -> GuideView:
+    """
+    Give the map guide's figures, drawn from real git like a lesson's.
+
+    Each figure runs as a two-slide lesson (`firstcommit.guide.lesson`): the first slide builds
+    its repository, the second makes the change its section is about. `firstcommit.demos`
+    keeps the frames per process, so only the first call runs git.
+
+    Returns
+    -------
+    GuideView
+        Every figure of `firstcommit.guide.FIGURES`, by section id: the first slide's map, the
+        second slide's map, and the second slide's commands with their output.
+    """
+    figures: GuideView = {}
+    for figure in map_guide.FIGURES:
+        before, after = demos.frames(map_guide.lesson(figure))
+        figures[figure.section] = {"before": before["map"], "after": after["map"], "transcript": after["transcript"]}
+    return figures
 
 
 def start(level_id: str) -> ActiveView:
@@ -543,7 +606,8 @@ def observe() -> Observation:
     Returns
     -------
     Observation
-        The player's repository, the stand-in GitHub (None when the level has none) and the changes.
+        The player's repository, the stand-in GitHub and the teammate's clone (each None when
+        the level has none), and the changes.
 
     Raises
     ------
@@ -552,20 +616,53 @@ def observe() -> Observation:
     """
     with save.lock():
         active, entry = _playing()
+        observation = _observe(entry.id, runner.lab_of(entry.id))
+    return observation
+
+
+def press(person: str, button: str) -> PressView:
+    """
+    Press one person's playground button in the level in progress, then observe the lab.
+
+    The button's command runs for real in that person's clone (`firstcommit.playground.press`);
+    a command that fails is reported with its status, as a terminal shows it. The press and the
+    observation after it hold the save's lock together, so no other observation can come in
+    between and tell the press's changes first.
+
+    Parameters
+    ----------
+    person : str
+        Who pressed (`firstcommit.records.Who`).
+    button : str
+        Which button (`firstcommit.records.Button`).
+
+    Returns
+    -------
+    PressView
+        The press, its explanation and the lab right after it; a later `observe` does not tell
+        the same changes again.
+
+    Raises
+    ------
+    UnknownIdError
+        If the person or the button is not the playground's; checked before anything else.
+    NotPlayingError
+        If no level is in progress.
+    NoPlaygroundError
+        If the level in progress has no playground: its lab has no teammate's clone.
+    subprocess.TimeoutExpired
+        If the command runs longer than `firstcommit.gitcmd.TIMEOUT` seconds.
+    """
+    who = _playground_id(person, playground.PEOPLE, "person")
+    which = _playground_id(button, playground.BUTTONS, "button")
+    with save.lock():
+        active, entry = _playing()
         lab = runner.lab_of(entry.id)
-        project = repomap.snapshot(lab.project)
-        github = repomap.snapshot(lab.github) if lab.github.exists() else None
-        before = save.load_observed()
-        events: list[Event] = []
-        if before is not None and before["level"] == entry.id:
-            events = changes.describe(before["project"], project)
-            if before["github"] is not None and github is not None:
-                events += changes.describe(before["github"], github)
-        current: save.Observed = {"level": entry.id, "project": project, "github": github}
-        if current != before:
-            save.write_observed(current)
-    views: list[EventView] = [{"kind": event["kind"], "text": markup.parse(event["text"])} for event in events]
-    return {"level": entry.id, "project": project, "github": github, "events": views}
+        if not lab.teammate.exists():
+            raise NoPlaygroundError(f"the level {entry.id!r} has no playground")
+        pressed = playground.press(lab, who, which)
+        observation = _observe(entry.id, lab)
+    return {"press": pressed, "explanation": None, "observation": observation}
 
 
 def abort() -> str | None:
@@ -819,6 +916,112 @@ def _card(card_id: str) -> cards.Card:
     except KeyError as error:
         raise UnknownIdError(f"no card has the id {card_id!r}") from error
     return card
+
+
+def _playground_id[Name: str](name: str, names: Iterable[Name], what: str) -> Name:
+    """
+    Look a playground person or button up by its name.
+
+    Parameters
+    ----------
+    name : str
+        The name the page sent.
+    names : Iterable[Name]
+        The playground's names of that kind.
+    what : str
+        The kind, for the message: ``"person"`` or ``"button"``.
+
+    Returns
+    -------
+    Name
+        The name, as one of the playground's.
+
+    Raises
+    ------
+    UnknownIdError
+        If the playground has no such name.
+    """
+    known = [candidate for candidate in names if candidate == name]
+    if not known:
+        raise UnknownIdError(f"the playground has no {what} {name!r}")
+    return known[0]
+
+
+def _observe(level_id: str, lab: Lab) -> Observation:
+    """
+    Snapshot a level's lab and tell what changed since the last observation; the caller holds the save's lock.
+
+    Parameters
+    ----------
+    level_id : str
+        The level in progress.
+    lab : Lab
+        Its lab.
+
+    Returns
+    -------
+    Observation
+        The lab as `observe` gives it. The snapshots are saved when they changed.
+    """
+    project = repomap.snapshot(lab.project)
+    github = repomap.snapshot(lab.github) if lab.github.exists() else None
+    teammate = repomap.snapshot(lab.teammate) if lab.teammate.exists() else None
+    before = save.load_observed()
+    events: list[Event] = []
+    teammate_events: list[Event] = []
+    if before is not None and before["level"] == level_id:
+        events = changes.describe(before["project"], project) + _changes(before["github"], github)
+        teammate_events = _changes(before["teammate"], teammate)
+    current: save.Observed = {"level": level_id, "project": project, "github": github, "teammate": teammate}
+    if current != before:
+        save.write_observed(current)
+    return {
+        "level": level_id,
+        "project": project,
+        "github": github,
+        "teammate": teammate,
+        "events": _event_views(events),
+        "teammate_events": _event_views(teammate_events),
+    }
+
+
+def _changes(before: Snapshot | None, after: Snapshot | None) -> list[Event]:
+    """
+    Tell what changed in a repository the level may not have, such as the stand-in GitHub.
+
+    Parameters
+    ----------
+    before : Snapshot | None
+        The last observation, or None.
+    after : Snapshot | None
+        The repository now, or None.
+
+    Returns
+    -------
+    list[Event]
+        The changes, or none when either snapshot is missing.
+    """
+    events: list[Event] = []
+    if before is not None and after is not None:
+        events = changes.describe(before, after)
+    return events
+
+
+def _event_views(events: list[Event]) -> list[EventView]:
+    """
+    Parse events for the page.
+
+    Parameters
+    ----------
+    events : list[Event]
+        Events of `firstcommit.changes`.
+
+    Returns
+    -------
+    list[EventView]
+        The same events, their text parsed into blocks.
+    """
+    return [{"kind": event["kind"], "text": markup.parse(event["text"])} for event in events]
 
 
 def _playing() -> tuple[save.Active, runner.Level]:

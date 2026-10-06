@@ -21,6 +21,7 @@ const REPLIES = {
   "/api/cards": { cards: record("cards") },
   "/api/card": record("card_result"),
   "/api/notes": record("notes"),
+  "/api/guide": record("guide"),
 };
 
 function gameApi(replies = REPLIES) {
@@ -45,6 +46,7 @@ test("each action calls its route with the body the server expects", async () =>
   await game.cards(null, 5);
   await game.card("card-1", "The staging area");
   await game.notes("basics");
+  await game.guide();
   assert.deepEqual(calls.map((call) => [call.path, call.body]), [
     ["/api/status", undefined],
     ["/api/level?id=a%20level%2Fx", undefined],
@@ -61,6 +63,7 @@ test("each action calls its route with the body the server expects", async () =>
     ["/api/cards?limit=5", undefined],
     ["/api/card", { id: "card-1", reply: "The staging area" }],
     ["/api/notes?chapter=basics", undefined],
+    ["/api/guide", undefined],
   ]);
 });
 
@@ -71,6 +74,7 @@ test("every sample record is accepted as it is", async () => {
   assert.deepEqual(await game.cards(null, 3), record("cards"));
   assert.equal(await game.abort(), "sample-second");
   assert.deepEqual(await game.check(null, false), record("check_solved"));
+  assert.deepEqual(await game.guide(), record("guide"));
   for (const action of ["level", "lesson", "start", "step", "hint", "notes"]) await game[action]("x");
   await game.card("x", "y");
 });
@@ -152,4 +156,15 @@ test("the dashboard must say the difficulty scale, and each card its level's nam
   const cards = record("cards");
   delete cards[0].level_name;
   await assert.rejects(gameApi({ "/api/cards": { cards } }).game.cards(null, 10), /level_name should be/);
+});
+
+test("each guide figure must carry its repository before and after the change, and the change's commands", async () => {
+  for (const field of ["before", "after", "transcript"]) {
+    const guide = record("guide");
+    delete guide.merge[field];
+    const { game } = gameApi({ "/api/guide": guide });
+    await assert.rejects(game.guide(), new RegExp(`/api/guide\\.merge\\.${field} should be`), field);
+  }
+  const { game } = gameApi({ "/api/guide": [record("guide").commit] });
+  await assert.rejects(game.guide(), /\/api\/guide should be an object/);
 });

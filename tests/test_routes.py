@@ -11,6 +11,7 @@ from typing import Any
 import pytest
 
 from firstcommit import game, gitcmd, kit, runner, save
+from firstcommit import guide as map_guide
 from firstcommit.web import routes
 
 STATIC = Path(routes.__file__).parent / "static"
@@ -532,6 +533,21 @@ def test_cards_and_notes_come_from_the_decks(site: Site, sample_decks: Path) -> 
     assert api(site, "/api/notes?chapter=basics")[1]["title"] == "The three areas"
 
 
+def test_the_guide_gives_the_games_figures_by_section(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
+    figures = {"commit": {"before": {"exists": False}, "after": {"exists": True}, "transcript": [{"command": "git commit", "output": ""}]}}
+    calls = record(monkeypatch, "guide", figures)
+    assert api(site, "/api/guide") == (200, figures)
+    assert calls == [()]
+
+
+@pytest.mark.slow
+def test_the_real_guide_draws_every_section_in_the_guides_order_from_real_git(site: Site) -> None:
+    status, figures = api(site, "/api/guide")
+    assert status == 200
+    assert list(figures) == [figure.section for figure in map_guide.FIGURES]
+    assert all(figure["transcript"] and figure["after"]["exists"] for figure in figures.values())
+
+
 def test_every_route_is_a_get_or_post_under_api() -> None:
     expected = {
         ("GET", "/api/status"),
@@ -547,5 +563,6 @@ def test_every_route_is_a_get_or_post_under_api() -> None:
         ("GET", "/api/cards"),
         ("POST", "/api/card"),
         ("GET", "/api/notes"),
+        ("GET", "/api/guide"),
     }
     assert set(routes.ROUTES) == expected

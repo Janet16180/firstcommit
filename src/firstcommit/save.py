@@ -110,14 +110,16 @@ class Observed(TypedDict):
     """
     The lab of the level in progress as last observed.
 
-    ``github`` is None when the level has no stand-in GitHub. The snapshots are checked field by
-    field like every record, so one of another shape (written by another version of the game)
-    is dropped on load (`load_observed`).
+    ``github`` is None when the level has no stand-in GitHub, and ``teammate`` when it has no
+    teammate's clone (`firstcommit.playground`). The snapshots are checked field by field like
+    every record, so one of another shape (written by another version of the game) is dropped
+    on load (`load_observed`).
     """
 
     level: str
     project: Snapshot
     github: Snapshot | None
+    teammate: Snapshot | None
 
 
 def home() -> Path:
