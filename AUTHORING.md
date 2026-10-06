@@ -235,6 +235,10 @@ only, or nothing. So every hash and line of output a lesson shows is what git re
   print the same thing. The author and committer are `Sam Lee <sam@example.com>`, the date is
   2026-01-15 09:00 UTC, with `LC_ALL=C`, `TERM=dumb` and umask 022.
   `firstcommit.demos.environment` defines it; predict cards and verify snippets use the same.
+  Only printed paths are rewritten; what git stores keeps the real one. `git clone` saves the
+  absolute path as `origin`, so a lesson clone that pulls a merge must first run
+  `git remote set-url origin <relative path>`, as in 3.2. Otherwise the merge subject, and with
+  it the hash, change every run.
 - A command's output is its standard output and error together, in order. A slide's figure
   shows the repository the shell is in after the slide's last line (from a subfolder, the
   repository's top).

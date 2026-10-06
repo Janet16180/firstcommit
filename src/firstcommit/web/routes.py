@@ -111,7 +111,7 @@ def found(lookup: Callable[[], Mapping[str, Any]]) -> Reply:
 
 def playing(action: Callable[[], Mapping[str, Any]]) -> Reply:
     """
-    Run an action on the level in progress.
+    Run an action on the level in progress, which may also look an id up (`found`).
 
     Parameters
     ----------
@@ -121,14 +121,14 @@ def playing(action: Callable[[], Mapping[str, Any]]) -> Reply:
     Returns
     -------
     Reply
-        200 and the reply, or 409 when no level is in progress.
+        200 and the reply; 404 for an unknown id; 409 when no level is in progress, or when it
+        has no playground for a press.
     """
-    status, payload = HTTPStatus.OK, {}
     try:
-        payload = dict(action())
-    except game.NotPlayingError as error:
-        status, payload = HTTPStatus.CONFLICT, {"error": str(error) or "no level is in progress"}
-    return status, payload
+        reply = found(action)
+    except (game.NotPlayingError, game.NoPlaygroundError) as error:
+        reply = HTTPStatus.CONFLICT, {"error": str(error) or "no level is in progress"}
+    return reply
 
 
 def guarded(route: shell.Route) -> shell.Route:
@@ -455,6 +455,29 @@ def api_notes(query: dict[str, Any]) -> Reply:
 
 
 
+def api_press(body: dict[str, Any]) -> Reply:
+    """
+    POST /api/press {"person": who, "button": button}: press one person's playground button.
+
+    Parameters
+    ----------
+    body : dict[str, Any]
+        The JSON body.
+
+    Returns
+    -------
+    Reply
+        200 and `game.PressView`, a git command that failed included (its status says so); 400
+        for a malformed body, 404 for a person or button the playground does not have, 409 when
+        no level is in progress or it has no playground.
+    """
+    person = body.get("person")
+    button = body.get("button")
+    if not is_id(person) or not is_id(button):
+        return bad('send {"person": "<who>", "button": "<button>"}')
+    return playing(lambda: game.press(person, button))
+
+
 def api_guide(query: dict[str, Any]) -> Reply:
     """
     GET /api/guide: the map guide's figures.
@@ -488,6 +511,7 @@ ROUTES: dict[tuple[str, str], shell.Route] = {
         ("POST", "/api/card"): api_card,
         ("GET", "/api/notes"): api_notes,
         ("GET", "/api/guide"): api_guide,
+        ("POST", "/api/press"): api_press,
     }.items()
 }
 
