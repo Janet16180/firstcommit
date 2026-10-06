@@ -723,7 +723,7 @@ def check_hash(lab: kit.Lab, state: kit.State, answer: str) -> kit.Verdict:
     elif any(typed == commit["subject"] for commit in commits):
         message = "That is your commit's message. Its short hash is at the start of the same line."
     elif len(words) > 1 and any(kit.is_hash_of(words[0], commit["hash"]) for commit in commits):
-        message = "Type only the short hash: the first word of the line, without the message."
+        message = "Type only the short hash, the first word of the line."
     elif any(commit["hash"].startswith(typed.lower()) for commit in commits):
         message = f"Git needs at least {kit.MIN_HASH_PREFIX} characters of a hash. Type the whole short hash that `git log --oneline` shows."
     else:
