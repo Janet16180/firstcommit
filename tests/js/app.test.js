@@ -6,9 +6,9 @@ const { makeEvent } = require("./fakedom");
 const { fakeServer, httpError, installBrowser, load, record, settle } = require("./load");
 
 installBrowser();
-const { Dom } = load(
-  ["dom.js", "markup.js", "map.js", "api.js", "progress.js", "route.js", "poll.js", "sound.js", "dialog.js", "celebrate.js", "live.js", "lesson.js", "quest.js", "challenge.js", "practice.js", "level.js", "cards.js", "notes.js", "home.js"],
-  ["Dom"],
+const { Dom, TimeTheme } = load(
+  ["dom.js", "markup.js", "map.js", "theme-time.js", "theme-time-motion.js", "theme-time-guide.js", "api.js", "progress.js", "route.js", "poll.js", "sound.js", "dialog.js", "celebrate.js", "live.js", "lesson.js", "quest.js", "challenge.js", "practice.js", "level.js", "cards.js", "notes.js", "home.js"],
+  ["Dom", "TimeTheme"],
 );
 
 /* A fresh page with index.html's header, the given address, key and server; then app.js boots. */
@@ -38,8 +38,9 @@ async function boot({ hash = "#/", token = "KEY", replies = {}, stored = {}, wra
       if (global.location.hash.includes("token=")) global.location.hash = "";
       return { token: () => token, api: wrap(server.api), options };
     },
-    createTerminal: () => {
+    createTerminal: (options) => {
       seen.terminals += 1;
+      seen.looks = options.looks;
       return { element: el("div", { class: "term-dock" }), start() {}, setLook() {}, type() {}, dispose() {} };
     },
   });
@@ -54,6 +55,45 @@ test("without an access key the page asks for the link and calls no route", asyn
   const page = await boot({ token: null });
   assert.match(page.main.textContent, /link that firstcommit printed/);
   assert.equal(page.server.calls.length, 0);
+});
+
+test("the terminal wears the time-travel colours, light and dark", async () => {
+  const active = record("active");
+  const page = await boot({
+    hash: `#/level/${active.level}`,
+    replies: { "/api/status": { ...record("status"), active }, "/api/level": record("level"), "/api/observe": record("observation"), "/api/step": record("step"), "/api/check": record("check_unsolved") },
+  });
+  await settle();
+  assert.equal(page.seen.terminals, 1);
+  assert.deepEqual(page.seen.looks.light.theme, TimeTheme.terminal.light);
+  assert.deepEqual(page.seen.looks.dark.theme, TimeTheme.terminal.dark);
+  global.location.hash = "#/";
+  page.fire("hashchange", {});
+  await settle();
+});
+
+test("the live map's key opens the map guide, which asks the server for its figures once", async () => {
+  const active = record("active");
+  const page = await boot({
+    hash: `#/level/${active.level}`,
+    replies: { "/api/status": { ...record("status"), active }, "/api/level": record("level"), "/api/observe": record("observation"), "/api/step": record("step"), "/api/check": record("check_unsolved"), "/api/guide": record("guide") },
+  });
+  try {
+    await settle();
+    const button = page.main.querySelector(".live-project .tt-key .tt-guide-button");
+    assert.ok(button, "the guide's button is in the key");
+    button.dispatchEvent(makeEvent("click"));
+    await settle();
+    assert.ok(page.document.querySelector("dialog.tt-guide[open]"));
+    page.document.querySelector("dialog.tt-guide").close();
+    page.main.querySelector(".live-project .tt-key .tt-guide-button").dispatchEvent(makeEvent("click"));
+    await settle();
+    assert.equal(page.server.calls.filter((call) => call.path === "/api/guide").length, 1);
+  } finally {
+    global.location.hash = "#/";
+    page.fire("hashchange", {});
+    await settle();
+  }
 });
 
 test("with a key the map shows, and the header shows the rank, the XP and the cards due", async () => {

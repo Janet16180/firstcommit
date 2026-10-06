@@ -1,0 +1,200 @@
+/*
+ * The map guide (theme-time-guide.js), in the time-travel look: loads after theme-time.css.
+ */
+
+/* "How to read the map" (theme-time-guide.js): a button at the end of the key, and the guide */
+
+.tt-guide-button {
+  display: inline-flex;
+  margin: 0.1rem 0;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.05rem 0.6rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--link);
+  font: 600 0.8rem/1.5 var(--sans);
+  vertical-align: middle;
+  cursor: pointer;
+}
+
+.tt-guide-button:hover {
+  border-color: var(--link);
+}
+
+.tt-new {
+  display: none;
+  padding: 0 0.35rem;
+  border-radius: 999px;
+  background: var(--map-head);
+  color: var(--map-surface);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.tt-guide-button.is-new .tt-new {
+  display: inline;
+}
+
+.tt-guide {
+  width: min(46rem, calc(100vw - 2rem));
+  max-width: none;
+  max-height: 86vh;
+  padding: 0 1.75rem 1.5rem;
+  overflow-y: auto;
+  line-height: 1.55;
+}
+
+.tt-guide-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.4rem 0 0.6rem;
+  border-bottom: 1px solid var(--line-strong);
+  background: var(--surface);
+}
+
+.tt-guide-head h2 {
+  margin: 0;
+}
+
+.tt-guide-intro {
+  margin: 1rem 0 0;
+  font-family: var(--serif);
+  font-size: 1.08rem;
+}
+
+.tt-guide-part {
+  scroll-margin-top: 4.5rem;
+}
+
+.tt-guide-part h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 1.4rem 0 0.15rem;
+  font-family: var(--serif);
+  font-size: 1.12rem;
+}
+
+/* Picture first: each section's figure, the largest thing in it and centred, the command under
+   it, one caption, then "More". The drawing is the figure theme (theme-time-guide.js) zoomed, so
+   its lines, chips and text keep their proportions, and its motions scale with it. */
+.tt-guide-figure {
+  position: relative;
+  margin: 0.5rem 0 0;
+  padding: 1.1rem 1rem 0.8rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--surface-2);
+}
+
+/* A figure's place while the figures are on their way: the first time, the server runs git. */
+.tt-guide-slot {
+  min-height: 9rem;
+  margin: 0.5rem 0 0;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-small);
+  background: var(--surface-2);
+}
+
+.tt-guide-place {
+  display: block;
+  margin-bottom: 0.3rem;
+  color: var(--muted);
+  font: 650 0.78rem var(--sans);
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.tt-guide-map {
+  overflow-x: auto;
+}
+
+/* Centred while it fits; when it does not, it starts at the left and scrolls. */
+.tt-guide-map .repo-map {
+  width: fit-content;
+  margin: 0 auto;
+}
+
+.tt-guide-map .map-graph {
+  zoom: 1.6;
+}
+
+.tt-guide-figure .map-label text,
+.tt-guide-figure .map-hash {
+  font-size: 11px;
+}
+
+.tt-guide-figure .map-subject {
+  font-size: 12px;
+}
+
+.tt-guide-figure figcaption {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.3rem 1rem;
+  margin-top: 0.6rem;
+}
+
+.tt-guide-figure figcaption code {
+  font-size: 0.95rem;
+  font-weight: 650;
+}
+
+.tt-guide-replay {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
+}
+
+.tt-guide-caption {
+  margin: 0.55rem 0 0.2rem;
+  font-size: 1.02rem;
+}
+
+.tt-guide-more summary {
+  width: fit-content;
+  color: var(--link);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.tt-guide-more[open] summary {
+  margin-bottom: 0.35rem;
+}
+
+.tt-guide-picture {
+  margin: 0 0 0.35rem;
+  color: var(--muted);
+  font-style: italic;
+}
+
+.tt-guide-part ul {
+  margin: 0;
+  padding-left: 1.2rem;
+}
+
+.tt-guide-part li + li {
+  margin-top: 0.3rem;
+}
+
+.tt-guide-part:last-child {
+  padding: 0.1rem 1rem 0.9rem;
+  margin-top: 1.4rem;
+  border-radius: var(--radius-small);
+  background: var(--surface-2);
+}
+
+.tt-guide-part:last-child h3 {
+  margin-top: 0.8rem;
+}

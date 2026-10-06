@@ -5,7 +5,7 @@ const test = require("node:test");
 const { installBrowser, load, record } = require("./load");
 
 installBrowser();
-const { LivePanel } = load(["dom.js", "markup.js", "map.js", "live.js"], ["LivePanel"]);
+const { LivePanel, RepoMap } = load(["dom.js", "markup.js", "map.js", "live.js"], ["LivePanel", "RepoMap"]);
 
 const clockAt = (text) => () => new Date(`2026-10-06T${text}`);
 const said = (kind, ...spans) => ({ kind, text: [{ kind: "para", spans: spans.map((span) => (Array.isArray(span) ? { text: span[0], code: true } : { text: span, code: false })) }] });
@@ -51,6 +51,25 @@ test("a new commit is marked new and reported, and an unchanged repository is no
   assert.equal(panel.element.querySelectorAll(".map-commit.is-new").length, 1);
   assert.equal(panel.element.querySelector(".map-commit.is-new").getAttribute("data-hash"), newest.hash);
   assert.deepEqual(changes.map((change) => change.newCommits), [0, 0, 1]);
+});
+
+test("a map redrawn after a change plays its motion from the drawing before, and the first drawing plays none", () => {
+  const plays = [];
+  const theme = RepoMap.DEFAULT_THEME;
+  const panel = LivePanel.create({ theme, play: (figure, before, after, options) => plays.push({ figure, before, after, ...options }) });
+  const observation = record("observation");
+  const older = record("observation");
+  older.project.commits.shift();
+  older.project.refs[0].target = older.project.commits[0].hash;
+  older.project.head = older.project.commits[0].hash;
+  panel.update({ ...older, events: [] });
+  assert.equal(plays.length, 0);
+  panel.update({ ...older, events: [] });
+  assert.equal(plays.length, 0, "nothing changed, nothing plays");
+  panel.update(observation);
+  assert.equal(plays.length, 1);
+  assert.equal(plays[0].figure, panel.element.querySelector(".live-project .repo-map"));
+  assert.deepEqual([plays[0].before.commits.length, plays[0].after.commits.length, plays[0].showHead, plays[0].theme], [older.project.commits.length, observation.project.commits.length, true, theme]);
 });
 
 test("what just happened lists the events newest first, with the time they were seen", () => {

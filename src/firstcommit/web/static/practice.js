@@ -168,10 +168,10 @@ const Practice = (function () {
   }
 
   /* ctx: game (api.js), sound, timers, page, terminal ({attach(host), detach(), type(text)}),
-     theme (RepoMap's). options: level (LevelView), active (ActiveView), onSolved(CheckResult),
+     theme (RepoMap's), panelWords (LivePanel's titles), playMap (LivePanel's play). options: level (LevelView), active (ActiveView), onSolved(CheckResult),
      onEnded() when the level stopped being in progress elsewhere, onLeft() after the player left. */
   function create(ctx, { level, active, onSolved, onEnded, onLeft }) {
-    const live = LivePanel.create({ theme: ctx.theme, onChange: ({ newCommits }) => newCommits > 0 && ctx.sound.play("commit") });
+    const live = LivePanel.create({ theme: ctx.theme, words: ctx.panelWords, play: ctx.playMap, onChange: ({ newCommits }) => newCommits > 0 && ctx.sound.play("commit") });
     const run = { ctx, level, live, state: { ...active, finished: false }, quest: null, challenge: null, poller: null, on: { solved: onSolved, ended: onEnded, left: onLeft } };
     run.ui = layout(level, live, () => leave(run));
     showPhase(run);

@@ -27,6 +27,8 @@
  *   one edge path or one label chip. `ctx` has the position, `color`, the theme, and the
  *   commit, edge or label; RepoMap.svg makes SVG elements. The map adds the classes
  *   map-commit (is-head, is-new, is-merge), the commit's tooltip, and the hash and subject.
+ *   key(ctx) returns the element under the graph that explains HEAD's mark (and anything else
+ *   the theme wants to explain); `ctx` has the snapshot, the map (the layout) and the theme.
  * The default look comes from map rules in app.css and the --map-* custom properties, which a
  * theme stylesheet can also change.
  */
@@ -51,6 +53,7 @@ const RepoMap = (function () {
         svg("text", { x: x + label.width / 2, y, "text-anchor": "middle", "dominant-baseline": "central" }, label.text),
       );
     },
+    key,
   };
 
   const DEFAULT_THEME = {
@@ -321,7 +324,7 @@ const RepoMap = (function () {
   }
 
   /* One line under the graph: the theme's own HEAD mark and what it means. */
-  function key(snapshot, theme) {
+  function key({ snapshot, theme }) {
     const { sizes, words } = theme;
     const half = sizes.radius + 7;
     return el("p", { class: "map-key" },
@@ -344,7 +347,7 @@ const RepoMap = (function () {
     const headShown = map && map.commits.some((commit) => commit.isHead);
     return el("figure", { class: "repo-map" },
       map ? graph(snapshot, map, theme) : el("p", { class: "map-empty" }, emptyText(snapshot, theme.words)),
-      headShown && key(snapshot, theme),
+      headShown && theme.shapes.key({ snapshot, map, theme }),
       notes(snapshot, { theme }).map((note) => el("p", { class: "map-note" }, note)),
     );
   }

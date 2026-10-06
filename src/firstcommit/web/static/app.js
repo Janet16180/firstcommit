@@ -7,7 +7,7 @@
  * server sent (refreshed on every view change). Loads last; defines no global.
  */
 
-/* global createClient, createTerminal, createGameApi, Dom, Route, Sound, Celebrate, Dialog, RepoMap, Progress, HomeView, LevelPage, CardsView, NotesView */
+/* global createClient, createTerminal, createGameApi, Dom, Route, Sound, Celebrate, Dialog, TimeTheme, TimeMotion, TimeGuide, Progress, HomeView, LevelPage, CardsView, NotesView */
 
 (function () {
   const { el } = Dom;
@@ -16,22 +16,8 @@
   const TOAST_MS = 9000;
   const MONO = "\"Cascadia Mono\", \"DejaVu Sans Mono\", \"Liberation Mono\", Menlo, Consolas, monospace";
   const TERMINAL_LOOKS = {
-    light: {
-      fontFamily: MONO,
-      theme: {
-        background: "#fbfaf7", foreground: "#1f2328", cursor: "#1f7a5a", cursorAccent: "#fbfaf7", selectionBackground: "#cfe3d9",
-        black: "#1f2328", red: "#b42332", green: "#1a7f37", yellow: "#8a5a00", blue: "#2756a8", magenta: "#8b3fa0", cyan: "#147a83", white: "#6e7781",
-        brightBlack: "#57606a", brightRed: "#cf222e", brightGreen: "#2c974b", brightYellow: "#9a6700", brightBlue: "#3b6fd4", brightMagenta: "#a04fb8", brightCyan: "#1b8a94", brightWhite: "#8c959f",
-      },
-    },
-    dark: {
-      fontFamily: MONO,
-      theme: {
-        background: "#11151a", foreground: "#dde3ea", cursor: "#5fd19b", cursorAccent: "#11151a", selectionBackground: "#2c4a3d",
-        black: "#3a414a", red: "#f0868f", green: "#6fd49c", yellow: "#e8c06a", blue: "#8ab4ff", magenta: "#d59cf0", cyan: "#6fd0d8", white: "#c9d1d9",
-        brightBlack: "#6e7781", brightRed: "#ff9ea6", brightGreen: "#8ee5b2", brightYellow: "#f5d58a", brightBlue: "#a8c7ff", brightMagenta: "#e3b6f5", brightCyan: "#8fe0e6", brightWhite: "#f0f3f6",
-      },
-    },
+    light: { fontFamily: MONO, theme: TimeTheme.terminal.light },
+    dark: { fontFamily: MONO, theme: TimeTheme.terminal.dark },
   };
   const VIEWS = {
     home: (ctx) => HomeView.create(ctx),
@@ -46,6 +32,7 @@
   const app = { status: null, view: null, turn: 0, terminal: null, terminalFor: null, locked: false };
   const client = createClient({ header: "X-FirstCommit-Token", storageKey: "firstcommit.token", command: "firstcommit", onLocked: () => showLocked() });
   const game = createGameApi(client.api);
+  const mapGuide = TimeGuide.create({ figures: game.guide });
   const main = document.getElementById("app");
   const darkScheme = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -218,7 +205,9 @@
     sound: Sound,
     timers: window,
     page: document,
-    theme: RepoMap.DEFAULT_THEME,
+    theme: TimeTheme.withGuide(mapGuide),
+    panelWords: TimeTheme.panel,
+    playMap: TimeMotion.playMap,
     reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     terminal,
   };

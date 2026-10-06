@@ -77,8 +77,11 @@ Agents and branches (worktrees under `.scratch/wt/`):
 - metro, `p2/theme-metro` and `p2/boxes-live`: the earlier metro look; the boxes and cardboard
   live-map variants wait for the user's choice.
 
-Integration order into `phase-2-engine`: theme-time, then theme-guide, then theme-share. At that
-merge, add `tools` to mypy's files with `mypy_path = "src"`.
+Merged into `phase-2-engine` (fc8e000, 924 passed with Docker, mypy over `tools` too): the theme
+in the live page (the map's motion, the guide's button in the key), the guide at revision 6, and
+the Alex walkthrough at share revision 2, all fact-checked. Next for timetravel: four places
+revision 5, then the four places replacing the "Three areas" table in the live page. The agents
+keep working on their branches and merge `phase-2-engine` back.
 
 Shared with the user (private artifacts): the Four Places Demo
 (https://claude.ai/artifact/72KsUGhDae4pErRzU7Kzrv, published from `tools/demo/build.py` output

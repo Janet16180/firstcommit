@@ -27,8 +27,10 @@ const LivePanel = (function () {
 
   const hashes = (snapshot) => new Set(snapshot.commits.map((commit) => commit.hash));
 
-  /* options: theme (RepoMap's), words (this panel's titles), now (a clock), onChange({newCommits, events}). */
-  function create({ theme = RepoMap.DEFAULT_THEME, words = {}, now = () => new Date(), onChange = () => {} } = {}) {
+  /* options: theme (RepoMap's), words (this panel's titles), now (a clock), onChange({newCommits, events}),
+     play(figure, before, after, {theme, showHead}) to move a map redrawn after a change from its
+     drawing before (the snapshots before and after). */
+  function create({ theme = RepoMap.DEFAULT_THEME, words = {}, now = () => new Date(), onChange = () => {}, play = () => {} } = {}) {
     const titles = { ...WORDS, ...words };
     const projectBox = el("div", { class: "live-map" });
     const githubBox = el("div", { class: "live-map" });
@@ -53,9 +55,12 @@ const LivePanel = (function () {
     function drawMap(box, key, snapshot, showHead) {
       const text = JSON.stringify(snapshot);
       if (drawn[key] === text) return 0;
-      const previous = drawn[key] === null ? null : hashes(JSON.parse(drawn[key]));
+      const before = drawn[key] === null ? null : JSON.parse(drawn[key]);
+      const previous = before && hashes(before);
       drawn[key] = text;
-      box.replaceChildren(RepoMap.render(snapshot, { theme, previous, showHead }));
+      const figure = RepoMap.render(snapshot, { theme, previous, showHead });
+      box.replaceChildren(figure);
+      if (before) play(figure, before, snapshot, { theme, showHead });
       return previous ? snapshot.commits.filter((commit) => !previous.has(commit.hash)).length : 0;
     }
 
