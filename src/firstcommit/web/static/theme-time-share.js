@@ -61,11 +61,11 @@ const TimeShare = (function () {
     const merge = TimePlaces.ARROWS.pull.path;
     return el("div", { class: `ts-computer is-${who}`, "data-person": who, role: "group", "aria-label": `${name === "You" ? "Your" : `${name}'s`} computer` },
       el("div", { class: "ts-who" }, figureOf(), el("span", { class: "ts-name" }, name)),
-      filePlace("folder", snapshot.files),
+      filePlace("folder", snapshot.files, owner),
       pair(1, arrow("add", commands, undefined, owner), arrow("pull", commands, merge.slice(1), owner)),
-      filePlace("index", snapshot.files),
+      filePlace("index", snapshot.files, owner),
       pair(2, arrow("commit", commands, undefined, owner), arrow("pull", commands, merge.slice(0, 2), owner)),
-      repositoryPlace("repository", snapshot, true),
+      repositoryPlace("repository", snapshot, true, owner),
       pair(3, arrow("push", commands, undefined, owner), arrow("fetch", commands, undefined, owner)),
     );
   }

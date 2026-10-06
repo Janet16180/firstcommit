@@ -95,6 +95,15 @@ test("the figure puts your computer, GitHub and Alex's computer side by side, ea
   assert.match(person(figure, "you").querySelector(".ts-name").textContent, /^You$/);
 });
 
+test("Alex's column is titled Alex's repository, and both repositories hold the commits, not only yours", () => {
+  const figure = TimeShare.render(STEPS.push);
+  const titles = (who) => [...person(figure, who).querySelectorAll("h4")].map((node) => node.textContent);
+  assert.deepEqual(titles("you"), ["Working folder", "Staging area", "Your repository"]);
+  assert.deepEqual(titles("alex"), ["Working folder", "Staging area", "Alex's repository"]);
+  const notes = [...figure.querySelectorAll('[data-area="repository"] .tt-place-note')].map((node) => node.textContent);
+  assert.deepEqual(notes, ["closed boxes: the commits", "closed boxes: the commits"]);
+});
+
 test("every step's caption says what Alex can see", () => {
   const ids = ["create", "add", "commit", "push", "pull-fetch", "pull-merge-half", "alex-commit", "alex-push", "you-commit", "refused", "pull-stops", "pull-merge", "push-again"];
   assert.deepEqual(Object.keys(TimeShare.CAPTIONS), ids);
