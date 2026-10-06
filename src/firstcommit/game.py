@@ -35,7 +35,7 @@ import sys
 from collections.abc import Callable, Mapping
 from datetime import date, datetime
 from pathlib import Path
-from typing import Any, Literal, TypedDict, cast
+from typing import Any, Literal, TypedDict
 
 from firstcommit import cards, changes, demos, gitcmd, kit, markup, repomap, runner, save, score
 from firstcommit.cards import CardKind
@@ -555,10 +555,10 @@ def observe() -> Observation:
         before = save.load_observed()
         events: list[Event] = []
         if before is not None and before["level"] == entry.id:
-            events = changes.describe(cast(Snapshot, before["project"]), project)
+            events = changes.describe(before["project"], project)
             if before["github"] is not None and github is not None:
-                events += changes.describe(cast(Snapshot, before["github"]), github)
-        current: save.Observed = {"level": entry.id, "project": dict(project), "github": dict(github) if github is not None else None}
+                events += changes.describe(before["github"], github)
+        current: save.Observed = {"level": entry.id, "project": project, "github": github}
         if current != before:
             save.write_observed(current)
     views: list[EventView] = [{"kind": event["kind"], "text": markup.parse(event["text"])} for event in events]

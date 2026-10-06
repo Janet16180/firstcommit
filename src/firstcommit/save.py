@@ -27,6 +27,8 @@ from typing import Annotated, Any, Literal, TypedDict, cast
 
 from termlab import store
 
+from firstcommit.records import Snapshot
+
 HOME_VARIABLE = "FIRSTCOMMIT_HOME"
 DEFAULT_HOME = "~/.firstcommit"
 PROGRESS_FILE = "progress.json"
@@ -106,14 +108,16 @@ class Active(TypedDict):
 
 class Observed(TypedDict):
     """
-    The lab of the level in progress as last observed (`firstcommit.repomap.Snapshot` records).
+    The lab of the level in progress as last observed.
 
-    ``github`` is None when the level has no stand-in GitHub.
+    ``github`` is None when the level has no stand-in GitHub. The snapshots are checked field by
+    field like every record, so one of another shape (written by another version of the game)
+    is dropped on load (`load_observed`).
     """
 
     level: str
-    project: dict[str, Any]
-    github: dict[str, Any] | None
+    project: Snapshot
+    github: Snapshot | None
 
 
 def home() -> Path:

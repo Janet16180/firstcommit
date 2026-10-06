@@ -772,6 +772,18 @@ def test_observing_a_real_lab_tells_of_the_staging_and_the_commit(sample_level: 
     assert any(event["kind"] == "commit-created" and short in plain(event["text"]) for event in events), events
 
 
+def test_an_observation_saved_by_an_older_game_is_dropped_without_events_or_error(sample_level: runner.Level, game_home: Path) -> None:
+    game.start(sample_level.id)
+    game.observe()
+    observed = json.loads((game_home / "observed.json").read_text())
+    for entry in observed["project"]["files"]:
+        del entry["repository"]
+    (game_home / "observed.json").write_text(json.dumps(observed))
+    (lab_project(game_home) / "notes.txt").write_text("x")
+    assert game.observe()["events"] == []
+    assert game.observe()["events"] == []
+
+
 @pytest.mark.usefixtures("fake_insight")
 def test_a_stale_or_damaged_observation_is_dropped_without_events_or_error(sample_level: runner.Level, game_home: Path) -> None:
     game.start(sample_level.id)
