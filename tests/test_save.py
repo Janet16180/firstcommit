@@ -66,6 +66,8 @@ SNAPSHOT: records.Snapshot = {
             "head_mode": "100644",
             "index_mode": "100644",
             "folder_mode": "100644",
+            "index_change": None,
+            "folder_change": None,
             "ignored": False,
             "conflicted": False,
             "repository": False,
