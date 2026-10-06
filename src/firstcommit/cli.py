@@ -163,8 +163,7 @@ def serve(args: argparse.Namespace) -> int:
     int
         The server's exit status.
     """
-    # Imported here so the other commands never load the web server. The ignore is for the
-    # branch where web/routes.py is not merged yet; it can go once it is.
+    # Imported here so the other commands never load the web server.
     from firstcommit.web import routes
 
     exit_status: int = routes.serve(args.port)
