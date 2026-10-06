@@ -180,7 +180,7 @@ def snapshot(path: Path) -> Snapshot:
         "commits": commits,
         "refs": refs,
         "files": files,
-        "operation": next((operation for marker, operation in OPERATION_MARKERS if (repo.git_dir / marker).exists()), None),
+        "operation": next((operation for marker, operation in OPERATION_MARKERS if os.path.exists(repo.git_dir / marker)), None),
         "stash": _stash_count(path) if stashed else 0,
         "truncated": commits_cut or files_cut,
     }
@@ -534,10 +534,11 @@ def _folder_ids(top: Path, keys: list[str], object_format: str) -> dict[str, str
     for key in keys:
         full = os.fsencode(top) + b"/" + _unquote(key)
         mode = _mode(full)
+        link_id = _link_id(full, object_format) if mode is not None and stat.S_ISLNK(mode) else None
         if mode is not None and stat.S_ISREG(mode):
             files.append(key)
-        elif mode is not None and stat.S_ISLNK(mode):
-            ids[key] = _link_id(full, object_format)
+        elif link_id is not None:
+            ids[key] = link_id
     ids.update(_hash_files(top, files))
     return ids
 
@@ -590,7 +591,7 @@ def _hash_files(top: Path, keys: list[str]) -> dict[str, str]:
     return ids
 
 
-def _link_id(path: bytes, object_format: str) -> str:
+def _link_id(path: bytes, object_format: str) -> str | None:
     """
     Compute the blob id of a symbolic link.
 
@@ -606,11 +607,14 @@ def _link_id(path: bytes, object_format: str) -> str:
 
     Returns
     -------
-    str
-        The blob id.
+    str | None
+        The blob id, or None if the link is gone or was replaced since it was found.
     """
-    target = os.readlink(path)
-    return hashlib.new(object_format, b"blob %d\0" % len(target) + target).hexdigest()
+    try:
+        target: bytes | None = os.readlink(path)
+    except OSError:  # the player can delete or replace the link between lstat and readlink
+        target = None
+    return None if target is None else hashlib.new(object_format, b"blob %d\0" % len(target) + target).hexdigest()
 
 
 def _unquote(key: str) -> bytes:
