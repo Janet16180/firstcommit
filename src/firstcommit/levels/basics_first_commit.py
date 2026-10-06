@@ -821,7 +821,7 @@ def check(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict:
 
 def solve(lab: kit.Lab, state: kit.State) -> str | None:
     """
-    Play the level like a player: create the repository, the file, and the first commit.
+    Play the level like a player: every quest step's action, in order (AUTHORING section 3.6).
 
     Parameters
     ----------
@@ -835,7 +835,7 @@ def solve(lab: kit.Lab, state: kit.State) -> str | None:
     str | None
         None: the level is checked against the repository.
     """
-    for action in (init_repository, write_readme, stage_readme, commit_readme):
+    for action in QUEST_ACTIONS.values():
         action(lab, state)
     return None
 

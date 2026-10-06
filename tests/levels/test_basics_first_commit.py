@@ -212,6 +212,13 @@ def test_the_quest_leads_to_a_solved_level(played: kit.Lab) -> None:
     assert verdict.message == level.SOLVED
 
 
+def test_the_reference_solution_plays_every_quest_step_identity_included(lab: kit.Lab) -> None:
+    assert level.solve(lab, {}) is None
+    assert git(lab, "config", "--global", "user.name").strip() == level.PLAYER.name
+    assert git(lab, "config", "--global", "user.email").strip() == level.PLAYER.email
+    assert check(lab).solved
+
+
 def test_plain_git_init_starts_on_main_with_the_games_starting_settings(lab: kit.Lab) -> None:
     level.init_repository(lab, {})
     assert kit.snapshot(lab.project)["branch"] == "main"
