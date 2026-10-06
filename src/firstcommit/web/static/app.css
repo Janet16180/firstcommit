@@ -141,7 +141,8 @@ pre {
   border-radius: 4px;
 }
 
-main:focus {
+main:focus,
+[tabindex="-1"]:focus {
   outline: none;
 }
 
