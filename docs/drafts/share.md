@@ -9,7 +9,7 @@ new for the checker is marked **(r2)**:
 | S7 is now two steps, each lighting its own arrow: Alex commits (S7a), then pushes (S7b) | Part 1 table, Part 2, Part 3 |
 | S6 ends "Now Alex's files have it too." | Part 2 |
 | Alex's column says "Alex's repository"; both repositories' notes say "closed boxes: the commits" | Part 2 "Other words" |
-| The recording: one fixed folder, so the merge commit's hash belongs to the subject shown; the lessons' own environment; S11's hash | Part 1, Part 3 |
+| The recording: clones reach GitHub by a relative path, as the game's labs now do, so the merge commit's hash belongs to the subject shown; the lessons' own environment; S11's hash | Part 1, Part 3 |
 | Below about 800 px the three columns stack | Part 1 |
 
 S1 to S5, S8, S9 and S11's words are unchanged.
@@ -34,10 +34,15 @@ are the stepping person's commands (`TimePlaces.commands`) from those events.
 **(r2)** The generator is `tools/demo/share.py` (`uv run python tools/demo/share.py share.json`).
 It runs in the lessons' own environment (`firstcommit.demos.environment`: the game's starting
 configuration and nothing from the shell that runs it, so no `GIT_*` variable of whoever runs it
-applies) and always in the same folder, `/tmp/firstcommit-share`. Git writes the practice copy's
-path into the merge message of `git pull`, so a fixed folder makes the merge commit's hash the
-same on every run, and the subject shown is the real one: nothing is rewritten after recording.
-Two runs give byte-identical recordings. A command written `! git push` must fail, as in a
+applies), in a level's lab layout (`firstcommit.lab.Lab`: your clone is the lab's project,
+Alex's its teammate). Right after cloning, each clone is pointed at GitHub by its relative path
+(`git remote set-url origin` with `Lab.github_url`), as AUTHORING section 3.2 now asks of every
+level, so `git remote -v` in your clone shows `../github/project.git`. Git prints that URL in
+push and pull output and writes it into the merge commit's message
+(`Merge branch 'main' of ../github/project`), so nothing recorded names the temporary folder:
+the merge commit's hash is the same on every run, and the subject shown is the real one. Nothing
+is rewritten after recording. Two runs, in two different temporary folders, give byte-identical
+recordings. A command written `! git push` must fail, as in a
 lesson; any other must succeed. What a command prints is recorded with its errors, in the order
 a terminal shows them.
 
@@ -130,7 +135,7 @@ words); the share figure already passes the owner.
 "Seen" is what the generator recorded (git 2.43.0, `tools/demo/share.py`): the feed events of
 each repository after the step (`you`, `github`, `alex`), exit statuses, and git's output where it
 matters. Commits: `8c50576` Add the README, `40404d5` Add the meeting notes (yours), `69c7214`
-Ask for the slides (Alex's), `714a65d` Say where to start (yours), `a7dab99` the merge commit.
+Ask for the slides (Alex's), `714a65d` Say where to start (yours), `75b4b62` the merge commit.
 
 | Tag | Claim | Check | Seen |
 |---|---|---|---|
@@ -144,9 +149,9 @@ Ask for the slides (Alex's), `714a65d` Say where to start (yours), `a7dab99` the
 | S7b (r2) | Alex's push moves GitHub's `main` to Alex's commit; your computer unchanged | your `git rev-parse main origin/main`, `cat notes.txt` | `40404d5..69c7214  main -> main`; events: github `push-received`, alex `remote-updated`; you none (your `notes.txt` still 5f0f9bb) |
 | S8 | Your new commit is on your computer only; you do not have Alex's commit | GitHub's `main` and Alex's refs unchanged; your `git log` lacks Alex's commit | `[main 714a65d] Say where to start`; events: you `commit-created`; github and alex none |
 | S9 | Your push is refused because GitHub has a commit you do not; nothing changes on your computer or GitHub | `git push`; exit status; snapshots before and after | exit 1, `! [rejected]        main -> main (fetch first)` with the hint to `git pull`; no events anywhere; all three snapshots identical (asserted) |
-| S10a (r2) | A plain `git pull` on diverged branches fetches (your `origin/main` moves to Alex's commit), then stops, with no `pull.rebase` or `pull.ff` set; your `main`, staging area and working folder unchanged | `man git-pull`: "If the current branch and the remote have diverged, the user needs to specify how to reconcile the divergent branches with --rebase or --no-rebase (or the corresponding configuration option in pull.rebase)"; the generator's copy after `git fetch` | exit 128; `40404d5..69c7214  main       -> origin/main`, hints, `fatal: Need to specify how to reconcile divergent branches.`; `main` stayed 714a65d, `origin/main` 40404d5 to 69c7214; files unchanged; events: you `remote-updated`; ends exactly where the copy's `git fetch` ends (asserted). In a lab of the same shape (both sides one new commit), `git -c pull.ff=false pull`, `-c pull.ff=true` or `-c pull.rebase=false`: exit 0, merged; `-c pull.ff=only`: exit 128, `Not possible to fast-forward, aborting.` |
-| S10b (r2) | `git pull --no-rebase` makes a merge commit with two parents; your `notes.txt` gets Alex's line; `--no-edit` takes git's own merge message, and without it git opens an editor for it | `git cat-file -p HEAD` (two parents); `cat notes.txt`; `man git-merge` (`--edit, -e, --no-edit`: "The --no-edit option can be used to accept the auto-generated message") | `Merge made by the 'ort' strategy.`, `notes.txt \| 1 +`; `a7dab99` with parents 714a65d (yours) and 69c7214 (Alex's); `notes.txt` 3748852 in the staging area and folder; events: you `merge-commit-created`; github and alex none. The editor: the checker's run with `GIT_MERGE_AUTOEDIT=yes GIT_EDITOR=false` (revision 1 check) |
-| S11 (r2) | The push is accepted and GitHub's `main` moves to the merge commit; GitHub then has your commit and the merge commit; Alex does not until the next pull | `git push`; `git -C github/project.git log --oneline`; Alex's refs | exit 0, `69c7214..a7dab99  main -> main`; the merge commit's subject `Merge branch 'main' of /tmp/firstcommit-share/github/project`; events: you `remote-updated`, github `push-received`; alex none |
+| S10a (r2) | A plain `git pull` on diverged branches fetches (your `origin/main` moves to Alex's commit), then stops, with no `pull.rebase` or `pull.ff` set; your `main`, staging area and working folder unchanged | `man git-pull`: "If the current branch and the remote have diverged, the user needs to specify how to reconcile the divergent branches with --rebase or --no-rebase (or the corresponding configuration option in pull.rebase)"; the generator's copy after `git fetch` | exit 128; `From ../github/project`, `40404d5..69c7214  main       -> origin/main`, hints, `fatal: Need to specify how to reconcile divergent branches.`; `main` stayed 714a65d, `origin/main` 40404d5 to 69c7214; files unchanged; events: you `remote-updated`; ends exactly where the copy's `git fetch` ends (asserted). In a lab of the same shape (both sides one new commit), `git -c pull.ff=false pull`, `-c pull.ff=true` or `-c pull.rebase=false`: exit 0, merged; `-c pull.ff=only`: exit 128, `Not possible to fast-forward, aborting.` |
+| S10b (r2) | `git pull --no-rebase` makes a merge commit with two parents; your `notes.txt` gets Alex's line; `--no-edit` takes git's own merge message, and without it git opens an editor for it | `git cat-file -p HEAD` (two parents); `cat notes.txt`; `man git-merge` (`--edit, -e, --no-edit`: "The --no-edit option can be used to accept the auto-generated message") | `Merge made by the 'ort' strategy.`, `notes.txt \| 1 +`; `75b4b62` with parents 714a65d (yours) and 69c7214 (Alex's); `notes.txt` 3748852 in the staging area and folder; events: you `merge-commit-created`; github and alex none. The editor: the checker's run with `GIT_MERGE_AUTOEDIT=yes GIT_EDITOR=false` (revision 1 check) |
+| S11 (r2) | The push is accepted and GitHub's `main` moves to the merge commit; GitHub then has your commit and the merge commit; Alex does not until the next pull | `git push`; `git -C github/project.git log --oneline`; Alex's refs | exit 0, `To ../github/project.git`, `69c7214..75b4b62  main -> main`; the merge commit's subject `Merge branch 'main' of ../github/project`; events: you `remote-updated`, github `push-received`; alex none |
 
 Notes for the checker:
 
@@ -158,4 +163,5 @@ Notes for the checker:
   pull-merge-half pull; alex-commit commit; alex-push push; you-commit commit; refused none;
   pull-stops fetch; pull-merge pull; push-again push.
 - **(r2)** `git pull` has no `-m` in git 2.43 (`git pull --no-rebase -m '...'` exits 129 with
-  "unknown switch `m'"), so the recording uses a fixed folder rather than a fixed merge message.
+  "unknown switch `m'"), so the recording cannot fix the merge message; the relative URL makes
+  git's own message the same on every run instead.
