@@ -40,11 +40,12 @@ const TimePlaces = (function () {
   const NO_FILES = "No files.";
 
   /* Each command's arrow: the places its work passes, first to last, and the checked sentence
-     shown when it lights (A1 to A6). The pull arrow is pull's merge half: its fetch half is the
-     fetch arrow (`after`), which lights with it and which its spoken route names first. */
+     shown when it lights (A1 to A6), with `alone` in its place while your repository has no
+     origin/ branch to name. The pull arrow is pull's merge half: its fetch half is the fetch
+     arrow (`after`), which lights with it and which its spoken route names first. */
   const ARROWS = {
     add: { path: ["folder", "index"], text: "`add` copies a file's current content from the working folder into the staging area; the working folder keeps it." },
-    commit: { path: ["index", "repository"], text: "`commit` saves the staging area as a new commit in your repository; the staging area keeps its files. Your branch moves onto the new commit, and `origin/main` does not move." },
+    commit: { path: ["index", "repository"], text: "`commit` saves the staging area as a new commit in your repository; the staging area keeps its files. Your branch moves onto the new commit, and `origin/main` does not move.", alone: "`commit` saves the staging area as a new commit in your repository; the staging area keeps its files. Your branch moves onto the new commit." },
     push: { path: ["repository", "remote"], text: "`push` sends the commits GitHub is missing and moves GitHub's branch to your commit; your `origin/main` moves to match. Git refuses a push that is not a fast-forward unless you force it, and a refused push changes nothing on either side." },
     fetch: { path: ["remote", "repository"], text: "`fetch` downloads the commits you do not have and moves `origin/main` (and the other `origin/` names). It changes no branch of yours, no working file and nothing in the staging area." },
     pull: { path: ["repository", "index", "folder"], label: "pull = fetch + merge", after: "fetch", text: "`pull` is a fetch, then a merge of `origin/main` into your branch (or a rebase, if you ask for one). When your branch has no commits of its own, the merge is a fast-forward: your branch slides forward, and the staging area and working folder update to match. When both sides have new commits, git fetches, then stops with an error that asks you to choose: `git pull --no-rebase` merges, `git pull --rebase` rebases." },
@@ -264,14 +265,23 @@ const TimePlaces = (function () {
   /* Two arrows across one gap between places: the one towards GitHub above, the one back below. */
   const pair = (gap, ...arrows) => el("div", { class: `tt-arrows-pair is-gap-${gap}` }, arrows);
 
-  /* The sentences of the lit arrows; pull's tells its own fetch half. */
-  const told = (lit) => (lit.includes("pull") ? lit.filter((name) => name !== "fetch") : lit);
+  /* The sentences of the lit arrows; pull's tells its own fetch half. A sentence names
+     origin/main only when `project` has an origin/ branch. */
+  function told(lit, project) {
+    const linked = project.refs.some((ref) => ref.kind === "remote");
+    const names = lit.includes("pull") ? lit.filter((name) => name !== "fetch") : lit;
+    return names.map((name) => (!linked && ARROWS[name].alone) || ARROWS[name].text);
+  }
+
+  /* The arrows of a figure without a GitHub. */
+  const LOCAL = ["add", "commit"];
 
   /* The four places as a figure, lighting `options.commands`' arrows and showing their sentences;
      without a GitHub (`observation.github` null), your computer's three places, joined by add and
      commit only ("is-local"). */
-  function render(observation, { commands: lit = [] } = {}) {
+  function render(observation, { commands: matched = [] } = {}) {
     const { project, github } = observation;
+    const lit = github ? matched : matched.filter((name) => LOCAL.includes(name));
     const merge = ARROWS.pull.path;
     const back = (part) => github && arrow("pull", lit, part);
     const label = github ? `The four places: ${Object.values(PLACES).join(", ")}` : `${COMPUTER}: ${[PLACES.folder, PLACES.index, PLACES.repository].join(", ")}`;
@@ -284,7 +294,7 @@ const TimePlaces = (function () {
       pair(2, arrow("commit", lit), back(merge.slice(0, 2))),
       repositoryPlace("repository", project, true),
       github && [pair(3, arrow("push", lit), arrow("fetch", lit)), repositoryPlace("remote", github, false), arrow("clone", lit)],
-    ), lit.length > 0 && el("figcaption", { class: "tt-places-caption" }, told(lit).map((name) => el("p", {}, inline(ARROWS[name].text)))));
+    ), lit.length > 0 && el("figcaption", { class: "tt-places-caption" }, told(lit, project).map((sentence) => el("p", {}, inline(sentence)))));
   }
 
   const find = (scope, attribute, value) => [...scope.querySelectorAll(`[${attribute}]`)].find((node) => node.getAttribute(attribute) === value) || null;

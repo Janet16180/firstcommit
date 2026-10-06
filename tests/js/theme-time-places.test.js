@@ -439,6 +439,17 @@ test("without a GitHub a commit still flies from the staging area into your repo
   assert.ok(calls.some((call) => call.node.closest('[data-area="repository"] .repo-map')), "your repository's graph moves");
 });
 
+test("a caption names no remote the figure does not show: without a GitHub, or before your repository has an origin/ branch", () => {
+  const everything = Object.keys(TimePlaces.ARROWS);
+  const local = TimePlaces.render({ project: repo({ commits: ONE }), github: null }, { commands: everything });
+  assert.doesNotMatch(local.querySelector(".tt-places-caption").textContent, /origin|GitHub/);
+  assert.deepEqual([...local.querySelectorAll(".tt-places-caption p")].length, 2, "only the arrows drawn, add and commit, are told");
+  const unlinked = TimePlaces.render({ project: repo({ commits: ONE }), github: hub(ONE) }, { commands: ["commit"] });
+  assert.doesNotMatch(unlinked.querySelector(".tt-places-caption").textContent, /origin/);
+  const linked = TimePlaces.render({ project: at(ONE, "a", "a"), github: hub(ONE) }, { commands: ["commit"] });
+  assert.match(linked.querySelector(".tt-places-caption").textContent, /origin\/main does not move/);
+});
+
 const shortOf = (name) => blob(name).slice(0, 7);
 const wordsOf = (node) => (node.querySelector("em") || { textContent: "" }).textContent;
 

@@ -5,7 +5,9 @@
 mapcheck's: every tracked file ends where the checkout of a pull would leave it, and a file only
 in the folder is set aside only while it is there before and after (Part 1, "What lights up").
 The reason sentence no longer claims a rebase keeps unsaved work, the limits are restated, and
-`add` carries only what `git add` copied (Part 1, motion). Register rows L6 to L9 are new, run on
+`add` carries only what `git add` copied (Part 1, motion). Commit's sentence drops its
+`origin/main` clause while there is no `origin/` branch, and the three-place figure tells only add
+and commit (Part 2, A2). Register rows L6 to L9 are new, run on
 real git 2.43 labs like L1 to L5 (`rev6_check.py` in my job folder).
 
 **Revision 5** applies the revision 4 re-check (`.scratch/review/four-places-check.md`, item 5).
@@ -192,6 +194,10 @@ Titles: **Your computer** (with *Working folder*, *Staging area*, *Your reposito
   working folder keeps it. **[A1]**
 - **commit**: saves the staging area as a new commit in your repository; the staging area keeps
   its files. Your branch moves onto the new commit, and `origin/main` does not move. **[A2]**
+  **(r6)** While your repository has no `origin/` branch (no GitHub yet, or before the first
+  fetch, push or clone), the sentence ends at "Your branch moves onto the new commit." A caption
+  names only what the figure shows: without a GitHub only add and commit are drawn, and only
+  their sentences are told.
 - **push**: sends the commits GitHub is missing and moves GitHub's branch to your commit; your
   `origin/main` moves to match. Git refuses a push that is not a fast-forward unless you force
   it, and a refused push changes nothing on either side. **[A3]**
