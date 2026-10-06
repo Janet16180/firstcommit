@@ -26,8 +26,8 @@ const LevelPage = (function () {
 
   function payoutLine(payout) {
     if (!payout.first_time) return "Played again: no XP this time.";
-    const rank = payout.rank_after !== payout.rank_before ? ` New rank: ${payout.rank_after}.` : "";
-    return `+${payout.xp} XP.${rank}`;
+    const rank = payout.rank_after !== payout.rank_before ? ` · New rank: ${payout.rank_after}` : "";
+    return `+${payout.xp} XP${rank}`;
   }
 
   /* Everything below works on one `page`: ctx, levelId, level (LevelView, once loaded), the

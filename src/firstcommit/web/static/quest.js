@@ -16,7 +16,7 @@ const Quest = (function () {
   function commandLine(command, onType) {
     return el("div", { class: "command" },
       el("code", {}, command),
-      el("button", { type: "button", class: "btn btn-quiet btn-small type-command", title: "Types the command at the prompt; press Enter in the terminal to run it", onclick: () => onType(command) }, "Type it in the terminal"),
+      el("button", { type: "button", class: "btn btn-ghost btn-small type-command", title: "Types the command at the prompt; press Enter in the terminal to run it", onclick: () => onType(command) }, "Type it in the terminal"),
     );
   }
 

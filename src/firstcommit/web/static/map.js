@@ -55,7 +55,7 @@ const RepoMap = (function () {
 
   const DEFAULT_THEME = {
     trunk: ["main", "master"],
-    sizes: { pad: 14, row: 34, lane: 22, radius: 6, gap: 12, chipPad: 8, chipHeight: 20, char: 7.8, subject: 52 },
+    sizes: { pad: 14, row: 34, lane: 22, radius: 6, gap: 12, chipPad: 8, chipHeight: 20, char: 7.8, subject: 48 },
     colors: {
       lanes: [0, 1, 2, 3, 4, 5].map((lane) => `var(--map-lane-${lane})`),
       head: "var(--map-head)",
@@ -64,8 +64,10 @@ const RepoMap = (function () {
       tag: "var(--map-tag)",
     },
     words: {
-      here: "HEAD (you are here)",
-      detached: "HEAD (detached, you are here)",
+      head: "HEAD",
+      detachedHead: "HEAD (detached)",
+      here: "HEAD: you are here",
+      hereDetached: "HEAD: you are here, on no branch (detached)",
       noRepository: "No repository in this folder yet.",
       noCommits: "No commits yet.",
       unborn: (branch) => `You are on ${branch}, which has no commits yet.`,
@@ -226,7 +228,7 @@ const RepoMap = (function () {
     const kinds = ["branch", "remote", "tag"];
     const sorted = here.sort((a, b) => kinds.indexOf(a.kind) - kinds.indexOf(b.kind) || current(b) - current(a) || a.name.localeCompare(b.name));
     const labels = sorted.map((ref) => ({ kind: ref.kind, text: ref.name, current: current(ref) }));
-    if (showHead && snapshot.head === commit.hash) labels.unshift({ kind: "head", text: snapshot.branch ? words.here : words.detached, current: false });
+    if (showHead && snapshot.head === commit.hash) labels.unshift({ kind: "head", text: snapshot.branch ? words.head : words.detachedHead, current: false });
     return labels.map((label) => ({ ...label, width: Math.ceil(label.text.length * sizes.char + 2 * sizes.chipPad) }));
   }
 
@@ -323,16 +325,33 @@ const RepoMap = (function () {
     );
   }
 
+  /* One line under the graph: the theme's own HEAD mark and what it means. */
+  function key(snapshot, theme) {
+    const { sizes, words } = theme;
+    const half = sizes.radius + 7;
+    return el("p", { class: "map-key" },
+      svg("svg", { width: 2 * half, height: 2 * half, viewBox: `0 0 ${2 * half} ${2 * half}`, "aria-hidden": "true" },
+        theme.shapes.commit({ x: half, y: half, color: laneColor(theme, 0), theme, isHead: true, isNew: false, isMerge: false }),
+      ),
+      snapshot.branch ? words.here : words.hereDetached,
+    );
+  }
+
   function emptyText(snapshot, words) {
     if (!snapshot.exists) return words.noRepository;
     return snapshot.branch ? words.unborn(snapshot.branch) : words.noCommits;
   }
 
-  /* The commit graph as a figure, with its notes; a sentence instead when there is nothing to draw. */
+  /* The commit graph as a figure, with its key and notes; a sentence instead when there is nothing to draw. */
   function render(snapshot, options = {}) {
     const theme = options.theme || DEFAULT_THEME;
-    const body = snapshot.commits.length ? graph(snapshot, layout(snapshot, options), theme) : el("p", { class: "map-empty" }, emptyText(snapshot, theme.words));
-    return el("figure", { class: "repo-map" }, body, notes(snapshot, { theme }).map((note) => el("p", { class: "map-note" }, note)));
+    const map = snapshot.commits.length ? layout(snapshot, options) : null;
+    const headShown = map && map.commits.some((commit) => commit.isHead);
+    return el("figure", { class: "repo-map" },
+      map ? graph(snapshot, map, theme) : el("p", { class: "map-empty" }, emptyText(snapshot, theme.words)),
+      headShown && key(snapshot, theme),
+      notes(snapshot, { theme }).map((note) => el("p", { class: "map-note" }, note)),
+    );
   }
 
   function folderCell({ index, folder, ignored, conflicted }) {

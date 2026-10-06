@@ -12,7 +12,7 @@
 
 const Celebrate = (function () {
   const { el, svg } = Dom;
-  const CONFETTI_MS = 3200;
+  const CONFETTI_MS = 4500;
   const COUNT_MS = 1200;
   const COLORS = ["--map-lane-0", "--map-lane-1", "--map-lane-2", "--map-lane-3", "--map-head"];
 
@@ -41,7 +41,7 @@ const Celebrate = (function () {
     const colors = COLORS.map((name) => style.getPropertyValue(name).trim() || "#888");
     const pieces = Array.from({ length: 90 }, (_, index) => ({
       x: Math.random() * width,
-      y: -20 - Math.random() * height * 0.5,
+      y: Math.random() * height * 0.35 - height * 0.15,
       vx: (Math.random() - 0.5) * 1.2,
       vy: 1.2 + Math.random() * 1.8,
       spin: Math.random() * Math.PI,

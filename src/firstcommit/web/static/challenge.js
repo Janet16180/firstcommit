@@ -17,10 +17,10 @@ const Challenge = (function () {
   function create({ level, active, onCheck, onHint }) {
     let used = active.hints;
     const total = active.hints_total;
-    const input = el("input", { type: "text", id: "challenge-answer", autocomplete: "off", spellcheck: "false", placeholder: "only if the task asks a question" });
+    const input = el("input", { type: "text", id: "challenge-answer", autocomplete: "off", spellcheck: "false" });
     const checkButton = el("button", { type: "submit", class: "btn btn-primary" }, "Check my work");
     const feedbackLine = el("div", { class: "check-feedback", "aria-live": "polite" });
-    const hintButton = el("button", { type: "button", class: "btn btn-quiet hint-button", onclick: () => onHint() });
+    const hintButton = el("button", { type: "button", class: "btn btn-ghost btn-small hint-button", onclick: () => onHint() });
     const usedLine = el("p", { class: "hints-used muted" });
     const hintList = el("ol", { class: "hints" });
     const element = el("section", { class: "challenge", "aria-label": "Challenge" },
@@ -34,7 +34,7 @@ const Challenge = (function () {
           onCheck(input.value.trim() || null);
         },
       },
-      el("label", { for: "challenge-answer" }, "Your answer"),
+      el("label", { for: "challenge-answer" }, "Your answer, if the task asks a question"),
       el("div", { class: "answer-row" }, input, checkButton),
       ),
       feedbackLine,

@@ -38,14 +38,14 @@ const LivePanel = (function () {
     const quiet = el("p", { class: "feed-quiet" }, titles.quiet);
     const announce = el("p", { class: "sr-only", "aria-live": "polite" });
     const element = el("div", { class: "live" },
-      el("div", { class: "live-maps" },
-        el("section", { class: "live-part live-project", "aria-label": titles.project }, el("h3", {}, titles.project), projectBox),
-        githubPart,
-      ),
-      el("div", { class: "live-lower" },
-        el("section", { class: "live-part live-three", "aria-label": titles.areas }, el("h3", {}, titles.areas), areasBox),
+      el("div", { class: "live-top" },
+        el("div", { class: "live-maps" },
+          el("section", { class: "live-part live-project", "aria-label": titles.project }, el("h3", {}, titles.project), projectBox),
+          githubPart,
+        ),
         el("section", { class: "live-part live-feed", "aria-label": titles.feed }, el("h3", {}, titles.feed), quiet, feedList, announce),
       ),
+      el("section", { class: "live-part live-three", "aria-label": titles.areas }, el("h3", {}, titles.areas), areasBox),
     );
     const drawn = { project: null, github: null, files: null };
     let feed = [];

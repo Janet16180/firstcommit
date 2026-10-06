@@ -105,14 +105,14 @@ test("HEAD's commit carries the marker, then its branch, the other branches, rem
       refs: [["v1", "tag", "b"], ["origin/main", "remote", "b"], ["zeta", "branch", "b"], ["main", "branch", "b"]],
     }),
   );
-  assert.deepEqual(labelsAt(map, "b"), ["head:HEAD (you are here)", "branch:main*", "branch:zeta", "remote:origin/main", "tag:v1"]);
+  assert.deepEqual(labelsAt(map, "b"), ["head:HEAD", "branch:main*", "branch:zeta", "remote:origin/main", "tag:v1"]);
   assert.equal(map.commits[0].isHead, true);
   assert.equal(map.commits[1].isHead, false);
 });
 
 test("a detached HEAD says so and marks no branch as current", () => {
   const map = RepoMap.layout(history({ commits: [["b", ["a"]], ["a", []]], head: "a", branch: null, refs: [["main", "branch", "b"]] }));
-  assert.deepEqual(labelsAt(map, "a"), ["head:HEAD (detached, you are here)"]);
+  assert.deepEqual(labelsAt(map, "a"), ["head:HEAD (detached)"]);
   assert.deepEqual(labelsAt(map, "b"), ["branch:main"]);
 });
 
@@ -165,6 +165,13 @@ test("the map shows each commit's short hash and subject, with its full hash in 
   assert.ok(figure.querySelector("svg[role=\"img\"]").getAttribute("aria-label").includes("HEAD"));
 });
 
+test("a key under the graph says the ringed commit is where the player is", () => {
+  assert.match(RepoMap.render(record("observation").project).querySelector(".map-key").textContent, /HEAD: you are here/);
+  const detached = { ...record("snapshots").one, branch: null };
+  assert.match(RepoMap.render(detached).querySelector(".map-key").textContent, /detached/);
+  assert.equal(RepoMap.render(record("observation").github, { showHead: false }).querySelector(".map-key"), null);
+});
+
 test("a folder without a repository and a branch without commits each say so", () => {
   assert.match(RepoMap.render(record("snapshots").empty).textContent, /No repository/);
   assert.match(RepoMap.render(record("snapshots").unborn).textContent, /main.*no commits yet/);
@@ -184,13 +191,13 @@ test("a theme changes the colours, words and shapes without touching the layout"
   const snapshot = record("snapshots").one;
   const theme = RepoMap.theme({
     colors: { lanes: ["tomato"] },
-    words: { here: "you are here" },
+    words: { here: "Here you are" },
     shapes: { commit: ({ x, y, color }) => RepoMap.svg("rect", { class: "station", x, y, width: 4, height: 4, fill: color }) },
   });
   const figure = RepoMap.render(snapshot, { theme });
   assert.ok(figure.querySelector("rect.station"));
   assert.ok(html(figure).includes("tomato"));
-  assert.ok(figure.textContent.includes("you are here"));
+  assert.ok(figure.querySelector(".map-key").textContent.includes("Here you are"));
   assert.equal(RepoMap.theme({}).words.here, RepoMap.DEFAULT_THEME.words.here);
   assert.deepEqual(RepoMap.layout(snapshot, { theme }).commits.map((commit) => commit.lane), [0]);
 });
