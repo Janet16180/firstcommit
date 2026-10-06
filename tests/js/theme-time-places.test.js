@@ -95,6 +95,13 @@ test("git reset --hard origin/main, which drops your own commits, is not drawn a
   assert.deepEqual(TimePlaces.commands(kinds("branch-moved"), BOTH, PULLED), []);
 });
 
+test("git reset --hard origin/main that throws away uncommitted work is not drawn as a pull, though no commit of yours is lost", () => {
+  const files = (readme, notes) => [file("README.md", { head: readme, index: readme, folder: readme }), file("notes.txt", { head: "5", index: "5", folder: notes })];
+  const before = { ...FETCHED, files: files("1", "6") };
+  assert.deepEqual(TimePlaces.commands(kinds("branch-moved"), before, { ...PULLED, files: files("2", "5") }), [], "notes.txt lost its unsaved line");
+  assert.deepEqual(TimePlaces.commands(kinds("branch-moved"), before, { ...PULLED, files: files("2", "6") }), ["pull"], "a pull keeps it");
+});
+
 test("a pull into a branch with no commits yet takes in its upstream", () => {
   const unborn = { ...repo({ commits: [C, ...TWO], refs: [["origin/main", "remote", "c"]] }), head: null };
   assert.deepEqual(TimePlaces.commands(kinds("branch-created"), unborn, PULLED), ["pull"]);

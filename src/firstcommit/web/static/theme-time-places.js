@@ -78,19 +78,31 @@ const TimePlaces = (function () {
     return seen;
   }
 
+  /* Whether every file that changed in the staging area or the working folder changed between
+     the old tip and the new one too: a merge, fast-forward or rebase only brings in what the
+     commits changed, and keeps the rest. A reset --hard also throws away uncommitted work. */
+  function followsTips(before, after) {
+    const was = new Map(before.files.map((file) => [file.path, file]));
+    const now = new Map(after.files.map((file) => [file.path, file]));
+    const blob = (files, path, area) => (files.get(path) || {})[area] || null;
+    const changed = (path, area) => blob(was, path, area) !== blob(now, path, area);
+    return [...new Set([...was.keys(), ...now.keys()])].every((path) => changed(path, "head") || (!changed(path, "index") && !changed(path, "folder")));
+  }
+
   /* Whether your branch took in work from GitHub: it is the same branch, its new tip reaches the
      tip of its upstream, origin/<branch> (as clone and push -u set it), which its old tip did not,
-     and it kept its own commits (a fast-forward or a merge) or replayed them on top (a rebase).
-     A branch that now sits exactly on its upstream without its old tip was reset there, as by
-     git reset --hard origin/main. A reset of a branch with no commits of its own looks the same as
-     a fast-forward, and lights pull. */
+     it kept its own commits (a fast-forward or a merge) or replayed them on top (a rebase), and
+     its files changed only where the commits did. A branch that now sits exactly on its upstream
+     without its old tip was reset there, as by git reset --hard origin/main, and so was one whose
+     uncommitted work is gone. A reset of a branch with no commits of its own and nothing
+     uncommitted looks the same as a fast-forward, and lights pull. */
   function merged(before, after) {
     const upstream = after.refs.find((ref) => ref.kind === "remote" && ref.name === `origin/${after.branch}`);
     if (!after.branch || after.branch !== before.branch || !upstream) return false;
     const now = history(after, after.head);
     const reached = now.has(upstream.target) && !history(before, before.head).has(upstream.target);
     const kept = !before.head || now.has(before.head) || after.head !== upstream.target;
-    return reached && kept;
+    return reached && kept && followsTips(before, after);
   }
 
   /* The commands that match a batch of feed events, in the order they run; [] when none does.
