@@ -27,11 +27,12 @@
  *   row shows, before the drawing settles.
  * play(figure, motion, theme, reduced, offset) runs them on the figure RepoMap.render just drew,
  * all over within 750 ms of `offset`, with the Web Animations API; under prefers-reduced-motion
- * it does nothing.
- * Needs dom.js and theme-time.js. Defines one global, TimeMotion.
+ * it does nothing. playMap(figure, before, after, {theme, showHead, reduced, offset}) does both
+ * from two snapshots, for a map redrawn in place (the live panel's, the four places').
+ * Needs dom.js, map.js and theme-time.js. Defines one global, TimeMotion.
  */
 
-/* global Dom, TimeTheme */
+/* global Dom, RepoMap, TimeTheme */
 /* exported TimeMotion */
 
 const TimeMotion = (function () {
@@ -149,7 +150,7 @@ const TimeMotion = (function () {
     const { colors, sizes } = theme;
     return svg("g", { class: "tt-ghosts", "aria-hidden": "true" }, ghosts.map((ghost) => svg("g", { class: "tt-ghost", style: `--color: ${colors.lanes[ghost.lane % colors.lanes.length]}` },
       ghost.parent && svg("path", { class: "tt-ghost-line", d: `M${ghost.x},${ghost.y} L${ghost.parent.x},${ghost.parent.y}` }),
-      svg("circle", { class: "tt-save", cx: ghost.x, cy: ghost.y, r: sizes.radius }),
+      theme.shapes.commit({ x: ghost.x, y: ghost.y, color: colors.lanes[ghost.lane % colors.lanes.length], theme, isHead: false, isMerge: false }),
       svg("text", { class: "map-hash", x: ghost.textX, y: ghost.y, "dominant-baseline": "central" }, ghost.short),
       svg("text", { class: "map-subject", x: ghost.textX + (ghost.short.length + 1) * sizes.char, y: ghost.y, "dominant-baseline": "central" }, ` ${ghost.subject}`.slice(1)),
     )));
@@ -212,5 +213,13 @@ const TimeMotion = (function () {
     return started;
   }
 
-  return { motions, play, TIMING };
+  /* Moves a map RepoMap.render just drew from `after` (a snapshot) from its drawing of `before`,
+     laid out with the same theme and showHead; returns the animations it started. */
+  function playMap(figure, before, after, { theme, showHead = true, reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches, offset = 0 }) {
+    const options = { theme, showHead };
+    const motion = motions(RepoMap.layout(before, options), RepoMap.layout(after, options), theme.sizes);
+    return play(figure, motion, theme, reduced, offset);
+  }
+
+  return { motions, play, playMap, TIMING };
 })();
