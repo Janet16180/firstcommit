@@ -3,7 +3,9 @@
 /*
  * The moment a level is solved: a calm card with the XP paid and any new rank, the XP counting
  * up, and a few seconds of soft confetti (none, and no counting, under prefers-reduced-motion).
- * It is a modal <dialog>: focus goes to its button, and Escape continues too. Needs dom.js.
+ * It is a modal <dialog>: focus starts on its title and reaches its button a moment later, so
+ * an Enter the player was typing in the terminal cannot dismiss it unseen; Escape continues
+ * too. Needs dom.js.
  * Defines one global, Celebrate.
  */
 
@@ -14,6 +16,7 @@ const Celebrate = (function () {
   const { el, svg } = Dom;
   const CONFETTI_MS = 4500;
   const COUNT_MS = 1200;
+  const FOCUS_DELAY_MS = 900;
   const COLORS = ["--map-lane-0", "--map-lane-1", "--map-lane-2", "--map-lane-3", "--map-head"];
 
   const calm = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -71,7 +74,7 @@ const Celebrate = (function () {
   );
 
   /* Shows the card; resolves when the player continues. `xp` is what the server paid. */
-  function show({ kicker, title, subtitle = "", xp, firstTime, rankBefore, rankAfter, button }) {
+  function show({ kicker, title, subtitle = "", xp, firstTime, rankBefore, rankAfter, button, timers = window }) {
     return new Promise((resolve) => {
       const reduced = calm();
       const value = el("span", { class: "celebration-xp-value" }, reduced ? `+${xp}` : "+0");
@@ -82,7 +85,7 @@ const Celebrate = (function () {
         el("div", { class: "celebration-card" },
           emblem(),
           el("p", { class: "kicker" }, kicker),
-          el("h2", { id: "celebration-title" }, title),
+          el("h2", { id: "celebration-title", tabindex: "-1", autofocus: true }, title),
           subtitle && el("p", { class: "celebration-sub" }, subtitle),
           el("p", { class: "celebration-xp" }, firstTime ? [value, " XP"] : "Played again: no XP this time"),
           el("p", { class: "celebration-rank", hidden: rankBefore === rankAfter }, "New rank: ", el("strong", {}, rankAfter)),
@@ -95,12 +98,13 @@ const Celebrate = (function () {
       });
       document.body.append(dialog);
       dialog.showModal();
-      continueButton.focus();
+      dialog.querySelector("h2").focus();
+      timers.setTimeout(() => dialog.open && continueButton.focus(), FOCUS_DELAY_MS);
       if (reduced) return;
       if (firstTime) countUp(value, xp);
       confetti(canvas);
     });
   }
 
-  return { show };
+  return { show, FOCUS_DELAY_MS };
 })();

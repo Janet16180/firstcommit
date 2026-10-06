@@ -313,6 +313,10 @@ class FakeElement extends FakeNode {
     return this.querySelectorAll(selector)[0] || null;
   }
 
+  get open() {
+    return this.hasAttribute("open");
+  }
+
   showModal() {
     this.setAttribute("open", "");
   }
