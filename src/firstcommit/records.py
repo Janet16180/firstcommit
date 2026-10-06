@@ -124,19 +124,36 @@ class ObjectInfo(TypedDict):
 Who = Literal["you", "alex"]
 """The two people of the playground (`firstcommit.playground`), who share one remote."""
 Button = Literal["edit", "add", "commit", "push", "fetch", "pull", "pull-no-rebase", "status"]
-"""The playground's buttons: each person has all of them."""
+"""
+The kinds of the playground's buttons. A button's id is its kind, or ``"<kind>:<file>"`` for a
+kind that acts on one file (``"add:notes.txt"``, ``"keep-ours:README.md"``).
+"""
+
+
+class ButtonView(TypedDict):
+    """
+    A playground button as the page draws it now.
+
+    ``id`` is what the page sends back to press it; ``line`` is the exact line it runs in the
+    current state; ``off`` says why it cannot be pressed now, or is empty.
+    """
+
+    id: str
+    label: str
+    line: str
+    off: str
 
 
 class Press(TypedDict):
     """
-    One press of a playground button: who pressed which button, the command it ran, and what that printed.
+    One press of a playground button: who pressed which button (its id), the command it ran, and what that printed.
 
     ``command`` is exactly what ran, as the player could type it; ``status`` is its exit status
     and ``output`` its standard output and error, interleaved, as a terminal shows them.
     """
 
     person: Who
-    button: Button
+    button: str
     command: str
     status: int
     output: str
