@@ -367,6 +367,25 @@ def test_a_pull_moves_the_branch_forward_without_claiming_a_local_commit(tmp_pat
     assert kinds(happens(tmp_path / "clone", "git pull -q --ff-only")) == ["branch-moved", "remote-updated"]
 
 
+
+def test_files_made_changed_and_deleted_before_git_init_are_told(tmp_path: Path) -> None:
+    folder = tmp_path / "project"
+    folder.mkdir()
+    no_repository = "There is no repository here, so Git does not track it."
+    created = happens(folder, "echo Notes > notes.txt")
+    assert created == [{"kind": "file-created", "text": f"`notes.txt` was created in the working folder. {no_repository}"}]
+    changed = happens(folder, "echo 'Line 2' >> notes.txt && chmod +x notes.txt")
+    assert changed == [{"kind": "file-changed", "text": f"`notes.txt` changed in the working folder. {no_repository}"}]
+    assert happens(folder, "rm notes.txt") == [{"kind": "file-deleted", "text": "`notes.txt` was deleted from the working folder."}]
+
+
+def test_git_init_in_a_folder_with_files_tells_only_the_new_repository(tmp_path: Path) -> None:
+    folder = tmp_path / "project"
+    folder.mkdir()
+    shell(folder, "echo Notes > notes.txt")
+    assert kinds(happens(folder, "git init -q -b main")) == ["repository-created"]
+
+
 def test_a_pull_of_a_commit_that_changes_a_file_is_not_told_as_made_here(tmp_path: Path) -> None:
     project(tmp_path)
     shell(tmp_path, "git clone -q --bare project github.git && git clone -q github.git clone")

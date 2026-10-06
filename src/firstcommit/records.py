@@ -87,7 +87,9 @@ class Snapshot(TypedDict):
     """
     The state of one repository.
 
-    ``exists`` is False when the folder holds no repository (all else empty). ``branch`` names
+    ``exists`` is False when the folder holds no repository. All else is then empty, except that
+    a folder no repository holds lists its own files in ``files`` (cut as below), with only
+    ``folder``, ``folder_mode`` and ``repository`` set: no area of git holds them. ``branch`` names
     the branch HEAD is on, even before its first commit (when ``head`` is None); it is None when
     HEAD is detached. ``operation`` names a merge, rebase, cherry-pick, revert or bisect in
     progress. ``commits`` lists every commit reachable from HEAD and the refs, newest first, at

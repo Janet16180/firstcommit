@@ -69,6 +69,7 @@ FOLDER_NOTES: dict[FolderChange | None, str] = {
     None: " It matches the staging area.",
 }
 """How a file in the working folder stands against the staging area, by its `folder_change`."""
+NO_REPOSITORY_NOTE = " There is no repository here, so Git does not track it."
 STARTED = {
     "merge": "A merge is in progress{on}.",
     "rebase": "A rebase is in progress: Git replays commits one at a time, with HEAD detached until the rebase ends.",
@@ -130,7 +131,7 @@ def describe(before: Snapshot, after: Snapshot) -> list[Event]:
     if before["exists"] != after["exists"] or before["bare"] != after["bare"]:
         events = [_repository_event(change)]
     elif not after["exists"]:
-        events = []
+        events = _loose_file_events(change)
     elif after["bare"]:
         events = _push_events(change)
     else:
@@ -800,9 +801,35 @@ def _file_events(change: _Change, tidied: bool, committed: bool) -> list[Event]:
             folder += _nested_news(old, new)
         elif not (old["conflicted"] or new["conflicted"] or followed_head or put_back):
             staging += _staging_news(old, new, committed)
-            folder += _folder_news(old, new)
+            folder += _folder_news(old, new, _folder_note(new))
             ignoring += _ignore_news(old, new)
     return [*_told(staging), *_told(folder), *_told(ignoring)]
+
+
+def _loose_file_events(change: _Change) -> list[Event]:
+    """
+    Tell which files were created, changed or deleted in a folder that no repository holds.
+
+    A repository inside the folder is not told: it is not a file, and no repository here lists it.
+
+    Parameters
+    ----------
+    change : _Change
+        The two snapshots, both of a folder with no repository.
+
+    Returns
+    -------
+    list[Event]
+        The working-folder events.
+    """
+    was = {file["path"]: file for file in change.before["files"]}
+    now = {file["path"]: file for file in change.after["files"]}
+    news: list[FileNews] = []
+    for path in sorted(was.keys() | now.keys()):
+        old, new = was.get(path, _absent(path)), now.get(path, _absent(path))
+        if not (old["repository"] or new["repository"]):
+            news += _folder_news(old, new, NO_REPOSITORY_NOTE if new["folder"] is not None else "")
+    return _told(news)
 
 
 def _absent(path: str) -> FileEntry:
@@ -932,7 +959,7 @@ def _staging_news(old: FileEntry, new: FileEntry, committed: bool) -> list[FileN
     return news
 
 
-def _folder_news(old: FileEntry, new: FileEntry) -> list[FileNews]:
+def _folder_news(old: FileEntry, new: FileEntry, note: str) -> list[FileNews]:
     """
     Tell how a file changed in the working folder.
 
@@ -942,13 +969,15 @@ def _folder_news(old: FileEntry, new: FileEntry) -> list[FileNews]:
         The file before.
     new : FileEntry
         The file after.
+    note : str
+        What follows the sentence: how the file now stands for git, starting with a space, or nothing.
 
     Returns
     -------
     list[FileNews]
         Zero or one piece of news.
     """
-    path, note = new["path"], _folder_note(new)
+    path = new["path"]
     if version(old, "folder") == version(new, "folder"):
         return []
     news: list[FileNews] = []
