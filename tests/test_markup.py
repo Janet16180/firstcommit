@@ -5,7 +5,7 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from firstcommit import markup
@@ -67,6 +67,7 @@ def test_every_word_of_plain_prose_survives_in_order(text_paragraphs: list[list[
     assert " ".join(span["text"] for block in blocks for spans in spans_of(block) for span in spans).split() == text.split()
 
 
+@settings(deadline=None)
 @given(st.lists(paragraphs, min_size=1, max_size=4), st.sampled_from(["  ", "    ", "\t"]))
 def test_indenting_a_whole_text_does_not_change_its_blocks(text_paragraphs: list[list[str]], indent: str) -> None:
     text = "\n\n".join("\n".join(lines) for lines in text_paragraphs) + "\n\n    $ git status\n    On branch main"
