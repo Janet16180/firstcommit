@@ -24,7 +24,7 @@ What is Git?, 1.6 First-Time Git Setup, 2.2 Recording Changes to the Repository)
 | history | A version control system records changes over time; you can see what changed, who and when, and get an earlier version back | Pro Git 1.1: "records changes to a file or set of files over time so that you can recall specific versions later"; "revert ... compare changes over time, see who last modified something" |
 | history | Each version you save is called a commit | gitglossary(7), commit: "used ... in the same places other revision control systems use the words 'revision' or 'version'" |
 | init | `git init` creates a hidden `.git` folder where Git keeps the history | git-init(1), DESCRIPTION: "basically a .git directory with subdirectories for objects, refs/heads, refs/tags"; *re-checked*: the slide runs `ls -A` and shows `.git` |
-| init | A new repository starts with one branch and no commits | git-init(1), DESCRIPTION: "An initial branch without any commits will be created"; experiment: `git rev-parse --verify HEAD` fails, `git symbolic-ref HEAD` names the branch |
+| init | A new repository has no commits yet, but you are already on its first branch | git-init(1), DESCRIPTION: "An initial branch without any commits will be created"; experiment: `git rev-parse --verify HEAD` fails, `git symbolic-ref HEAD` gives `refs/heads/main` and `git status` names `main`, but `git branch` lists nothing and `git rev-parse --verify -q main` fails until the first commit, so the text no longer says the repository "starts with one branch" (fact-check 2) |
 | init | A branch is a line of development | gitglossary(7), branch: "A 'branch' is a line of development" |
 | init | The game sets `init.defaultBranch` to `main`, so in the game a new repository's first branch is `main` | `gitcmd.BASE_CONFIG` (the game's starting global configuration, written by `game.start` and used by lessons, cards and the player's shell); git-init(1), `--initial-branch` ("the name can be customized via the init.defaultBranch configuration variable"); RelNotes 2.28.0 lines 107-110; experiment: with that file as the global configuration, `git init` gives `refs/heads/main`; *re-checked*: the lesson runs plain `git init`, card `basics-init-command`, test `test_plain_git_init_starts_on_main_with_the_games_starting_settings` |
 | areas | Three areas: working folder (working tree), staging area (index), repository | Pro Git 1.3, "the three main sections of a Git project: the working tree, the staging area, and the Git directory"; gitglossary(7), working tree, index |
@@ -33,13 +33,13 @@ What is Git?, 1.6 First-Time Git Setup, 2.2 Recording Changes to the Repository)
 | nothing-staged | With only an untracked file, committing fails; a plain `git commit` takes the staging area, which is empty | git-commit(1), DESCRIPTION: "containing the current contents of the index"; experiment: exit status 1, no commit made; *re-checked*: the slide's `! ` line must fail, card `basics-commit-needs-staging` |
 | add | `git add` copies the file's current content into the staging area; the file stays in the folder | git-add(1), DESCRIPTION: "updates the index using the current content found in the working tree"; experiment: `git show :README.md` gives the staged content, the file is still there; *re-checked*: card `basics-add-copies` |
 | add | After another edit, the staging area keeps the old content; `git add` again stages the new one | git-add(1), DESCRIPTION: "It only adds the content of the specified file(s) at the time the add command is run"; Pro Git 2.2; *re-checked*: card `basics-staged-version` |
-| commit | `git commit` saves the staging area with the author's name and email, the date and the `-m` message | git-commit(1), DESCRIPTION, `-m`, COMMIT INFORMATION; experiment: `git cat-file -p HEAD` shows tree, author, committer with date, message |
+| commit | A plain `git commit` saves the staging area with the author's name and email, the date and the `-m` message | git-commit(1), DESCRIPTION, `-m`, COMMIT INFORMATION; experiment: `git cat-file -p HEAD` shows tree, author, committer with date, message |
 | commit | Git answers with a summary that includes the short hash | experiment (shown, not quoted: the first output line holds the branch, the short hash and the message); Pro Git 2.2; *re-checked*: the slide shows the real output |
 | commit | The short hash is the first characters of the hash | git-log(1), `--abbrev-commit`: "show a prefix that names the object uniquely"; gitrevisions(7), `<sha1>` |
-| commit | After this commit, `git status` has nothing to report: the three areas hold the same content | gitglossary(7), clean; experiment; *re-checked*: the slide shows `git status`, test `test_the_quest_leads_to_a_solved_level` |
+| commit | After this commit, `git status` lists no files (it still names the branch): the three areas hold the same content | gitglossary(7), clean; experiment; *re-checked*: the slide shows `git status`, test `test_the_quest_leads_to_a_solved_level` |
 | log | A new commit goes on top of the last one, which Git records as its parent | git-commit(1), DESCRIPTION: "The new commit is a direct child of HEAD"; experiment: `git cat-file -p HEAD` shows a `parent` line; gitglossary(7), parent |
 | log | `git log --oneline` lists commits newest first, one per line: short hash, then the message | git-log(1), `--oneline` ("--pretty=oneline --abbrev-commit"), format `oneline` (`<hash> <title-line>`), Commit Ordering ("reverse chronological order"); *re-checked*: the slide's output, card `basics-log-oneline` |
-| log | On a terminal, the newest line also shows `(HEAD -> main)` between the hash and the message | git-log(1), `--decorate`: "If auto is specified, then if the output is going to a terminal, the ref names are shown as if short were given ... Default to configuration value of log.decorate if configured, otherwise, auto"; RelNotes 2.13.0 lines 176-177; experiment on a pseudo-terminal: `fecf61d (HEAD -> main) First`, and through a pipe `fecf61d First`; *re-checked*: lesson transcripts use `log.decorate=short` (insight) |
+| log | On a terminal, the newest line also shows `(HEAD -> main)` between the hash and the message | git-log(1), `--decorate`: "If auto is specified, then if the output is going to a terminal, the ref names are shown as if short were given ... Default to configuration value of log.decorate if configured, otherwise, auto"; RelNotes 2.13.0 lines 176-177; experiment on a pseudo-terminal: `fecf61d (HEAD -> main) First`, and through a pipe `fecf61d First`; *re-checked* from phase-2-engine 1f3a7d4 on, where lesson transcripts use `log.decorate=short` (`demos.TERMINAL_CONFIG`); this branch's engine merge (379f5d6) predates it, so its `log` slide still shows `git log --oneline` undecorated (fact-check 2) |
 
 The lesson was run line by line in the lessons' environment: every line succeeds except
 `! git commit -m "Add the README"` (exit status 1). The demonstration folder's path in the `init`
@@ -84,12 +84,19 @@ tests).
 | untracked file | It is in the working folder but not in the staging area; stage and commit it, or delete it | git-status(1); experiment: after `git rm --cached README.md` the file is untracked though still in the last commit, so the message does not say "in no commit" |
 | file not staged | A new file gets into a commit only once it is staged | as the `stage` step |
 | solved, commit step | "Your last commit contains `README.md`" | the check reads the last commit (`head` in the snapshot), not the first one |
+| `git init project` inside `project` | `git init project` creates that folder | git-init(1), DESCRIPTION: "If this directory does not exist, it will be created"; *re-checked*: `test_git_init_project_inside_the_project_folder_gets_its_own_nudge` |
+| repository inside `project` | `git status` lists a folder with its own repository as untracked | experiment: `git init project` inside the solved repository gives `?? project/` in `git status --porcelain`; *re-checked*: `test_a_repository_inside_the_project_folder_keeps_the_level_unsolved` |
+| something only `git status` lists | Staging and committing clears it | experiment: after `chmod 755 README.md`, `git status --porcelain` gives ` M README.md`; `git add` then `git commit` leave it clean; *re-checked*: `test_a_changed_file_mode_keeps_the_level_unsolved` |
+| commit step | `git commit -m "Add the README"`, the complete command (a bare `git commit` opens an editor) | git-commit(1), `-m` and ENVIRONMENT AND CONFIGURATION VARIABLES ("The editor used to edit the commit log message"); experiment: with `GIT_EDITOR` set to a script, a bare `git commit` runs it; *re-checked*: `test_staging_without_committing_leaves_the_level_unsolved` |
+| status question, wrong case | Type the name with the same capital and small letters | no claim about case-sensitivity: branches can be stored as files under `.git/refs` (gitrepository-layout(5), refs), and git-config(1), `core.ignoreCase`, names file systems that are not case sensitive (APFS, NTFS), so whether `Main` and `main` differ depends on the file system (not observable on this machine); *re-checked*: `test_a_branch_name_in_the_wrong_case_gets_a_hint_about_case` |
+| hash question, too short | Git needs at least 4 characters of a hash | git-rev-parse(1), `--short`: "The minimum length is 4"; experiment: `git show <3 characters>` fails (exit 128), 4 characters show the commit; `kit.MIN_HASH_PREFIX`; *re-checked*: `test_a_hash_start_shorter_than_git_accepts_is_not_called_wrong` |
+| hash question, whole line | The short hash is the first word of the line | as the `log` slide; *re-checked*: `test_the_whole_log_line_gets_a_nudge_to_type_only_the_hash` |
 
 ### Briefing, hints and debrief
 
 | Where | Claim | Evidence |
 |---|---|---|
-| briefing | Solved when a commit on `main` contains `README.md` and nothing is untracked, changed or staged | `check`; *re-checked*: the wrong-approach tests (no staging, staged only, extra untracked file, staged or unstaged edit, other branch, detached HEAD, bare repository, repository one folder too high, deleted `.git`) |
+| briefing | Solved when the last commit on `main` contains `README.md` and `git status` lists nothing untracked, changed or staged | `check` reads the last commit (`head` in the snapshot), then `git status --porcelain=v2` for what the snapshot leaves out (a nested repository, a file mode change); git-status(1), DESCRIPTION and Porcelain Format Version 2; *re-checked*: the wrong-approach tests (no staging, staged only, extra untracked file, staged or unstaged edit, other branch, detached HEAD, bare repository, repository one folder too high, deleted `.git`, a repository inside `project`, a file mode change) |
 | hint 1 | `git status` names the branch and lists untracked, staged and changed files | git-status(1), DESCRIPTION; experiment |
 | hint 2 | A new file reaches a commit in two moves: `git add`, then `git commit` | git-add(1), git-commit(1), DESCRIPTION; as the `stage` step |
 | hint 3 | The listed commands, complete, solve the level | *re-checked*: `test_the_quest_leads_to_a_solved_level`; the harness's `solve` then `check` |
@@ -116,8 +123,8 @@ fails when its claim is inverted (mutation run).
 | basics-commit-needs-staging | Committing with nothing staged makes no commit; a new file reaches a commit only after `git add` | git-commit(1), DESCRIPTION (paths given to `git commit` "must already be known to Git") and `-a` ("new files you have not told Git about are not affected"); experiment: `git commit -m x new.txt` and `git commit -i -m x new.txt` on an untracked file fail; experiment: with nothing staged, `git commit` exits 1 with a status summary and no error line, so the card says "stops without making a commit"; *verify* (commit fails, `HEAD` does not resolve) |
 | basics-add-copies | `git add` copies the current content and commits nothing; a later edit needs another add to be staged | git-add(1), DESCRIPTION; *verify* |
 | basics-identity | Git records `user.name` and `user.email` as the author of your commits, normally; they are not a login; most commands work without them; local overrides global | git-commit(1), COMMIT INFORMATION ("This name has no effect on authentication"; environment variables override) and `--author`; experiment: `git init`, `git add` and `git status` succeed with no identity set; git-config(1), FILES ("last value found taking precedence"); experiment: global and local name set, `git config --get` returns the local one; *verify* (commit author comes from the settings) |
-| basics-init-command | `git init` creates a repository with one branch and no commits; the game's `init.defaultBranch` makes it `main`; `-b main` names it whatever the settings | git-init(1), DESCRIPTION and `--initial-branch`; *verify* (plain `git init` under the game's settings, and `-b main` with no settings at all) |
-| basics-log-oneline | `--oneline` is `--pretty=oneline --abbrev-commit`, newest first; the line shows the message's title; a terminal adds branch names | git-log(1), `--oneline`, `--decorate`; git-commit(1), DISCUSSION: "The text up to the first blank line in a commit message is treated as the commit title"; experiment: a message `line one`, `line two`, blank, `body` shows as `b7d3812 line one line two`; *verify* |
+| basics-init-command | `git init` creates a repository with no commits; the game's `init.defaultBranch` makes its first branch `main`; `-b main` names it whatever the settings | git-init(1), DESCRIPTION and `--initial-branch`; *verify* (plain `git init` under the game's settings, and `-b main` with no settings at all) |
+| basics-log-oneline | `--oneline` is `--pretty=oneline --abbrev-commit`, newest first; the line shows the message's title; a terminal adds names such as `(HEAD -> main)` | git-log(1), `--oneline`, `--decorate`; git-commit(1), DISCUSSION: "The text up to the first blank line in a commit message is treated as the commit title"; experiment: a message `line one`, `line two`, blank, `body` shows as `b7d3812 line one line two`; *verify* |
 | basics-staged-not-committed | A staged change is not in `git log` until committed | git-log(1), git-commit(1); *predict* output `1`; the explain no longer says "only `git commit` adds a commit" (`git revert --no-edit HEAD` adds one too: experiment, 3 commits after it) |
 | basics-commit-records | A commit records a snapshot of the project's files; a plain `git commit` stores the staging area; `git show` computes changes against the parent; untracked files stay out | git-commit(1), git-show(1) DESCRIPTION ("the log message and textual diff"); Pro Git 1.3; *verify* (second commit lists the unchanged file, not the untracked one) |
 | basics-why-staging | The staging area lets you choose what goes into each commit | git-add(1); Pro Git 1.3; *verify* (two files, two commits, one file each) |
@@ -132,7 +139,7 @@ Every statement in the notes repeats a claim above: the `.git` folder and the `m
 slide), untracked files, `git add` and re-adding to stage new content (add slide), a plain
 `git commit` and the staging area afterwards (debrief), the identity, the two complete commands
 and the local override (card `basics-identity`), and each command's one-line summary (lesson and
-quest).
+quest). The parent of the first commit: none (debrief, gitglossary(7), parent).
 
 ## Fact-check 1 (independent agent, 2026-10-06)
 
@@ -162,6 +169,38 @@ repository" (a local setting overrides), "every new commit goes on top" (the roo
 first branch is always called `main`" (`git init -b`), and the slide title "A commit takes what
 is staged", and "Git accepts the short form wherever it needs a commit" (`git fetch` needs the full
 hash). Each was rescoped.
+
+## Fact-check 2 (independent agent, 2026-10-06)
+
+Played blind first through the game API and the game's shell (`firstcommit shell`), then checked
+every sentence again. Each finding was reproduced on git 2.43.0. The fixes are in the rows above,
+and each new check has a test that fails when the check is inverted (mutation run).
+
+| Where | Finding | Fix |
+|---|---|---|
+| `check`, `SOLVED` | The level said "the working folder, the staging area and that commit all agree" while `git status` still listed `project/` (a repository made by `git init project`, which the snapshot leaves out) or ` M README.md` (`chmod 755`: the snapshot compares contents, not modes) | `tidy_move` reads `git status --porcelain=v2 -z --no-renames` once the snapshot is clean, with a nudge for a nested repository |
+| `check_hash` | A correct hash start of 3 characters got "That is not the start of a commit hash": git needs at least 4 (git-rev-parse(1), `--short`) | its own nudge, from `kit.MIN_HASH_PREFIX` |
+| `check_hash`, `check_branch` | The whole pasted line (`e177e43 (HEAD -> main) Add the README`, `On branch main`) got "not the start of a commit hash" and "not the branch you are on" | "Type only the short hash" and "Type only the name of the branch" |
+| `check_branch` | "branch names are case-sensitive" depends on the file system (refs can be files, see the feedback row; AUTHORING rule 5) | "with the same capital and small letters", no claim |
+| `commit_move` | "with `git commit`": a bare `git commit` opens an editor, which the level never taught | the complete `git commit -m "Add the README"` |
+| `repository_move` | `git init project`, typed inside `project`, got only "There is no repository in the `project` folder yet" | its own nudge: restart, then `git init` with nothing after it |
+| slide `init`, card `basics-init-command` | "starts with one branch": `git branch` lists nothing and `main` does not resolve until the first commit | "has no commits yet, but you are already on its first branch" |
+| slide `commit` | "`git commit` saves the content of the staging area" unscoped (rule 8), and "`git status` has nothing left to report" while it still prints the branch | "A plain `git commit`", "`git status` lists no files any more" |
+| briefing | "a commit on `main` that contains `README.md`": the check reads the last commit (a later `git rm README.md` commit leaves it unsolved) | "the last commit on `main`" |
+| card `basics-log-oneline` | The `verify` fails under `log.decorate=short`, which phase-2-engine's lesson environment sets (`cut` keeps `(HEAD -> main)`); the explain called `(HEAD -> main)` "branch names" | `--no-decorate` in the `verify`; "names such as `(HEAD -> main)`" |
+| notes | "a message and its parent": the first commit has none | "(the first commit has none)" |
+| this log | "lesson transcripts use `log.decorate=short`" is not true on this branch's engine merge | dated in the `log` row |
+
+Reported to the lead, not fixed here (not this chapter's files): `demos.py` built the lessons
+folder from the whole `GIT_CEILING_DIRECTORIES` value, so lessons ran outside the ceiling and an
+empty slide showed any repository around the game home (fixed on phase-2-engine by 58ae4b5).
+
+Checked and left as they are: "only through the staging area" and "only once it is staged" (with
+an untracked file, `git commit <path>`, `-i`, `-o` and `-a` all fail and make no commit); "for
+all my repositories on this computer" (Pro Git 1.6: "all of the repositories you work with on your
+system"); the `nothing-staged` slide (in the player's shell, a commit before the identity is set
+fails for the identity first, but the lessons set one); `git add -N`, `--assume-unchanged` and
+`--skip-worktree` states, where the check is stricter than `git status` (none of them is taught).
 
 ## Left out
 
