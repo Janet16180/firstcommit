@@ -140,17 +140,22 @@ two seconds however many files move, because the flights of one group spread ove
 300 ms: about 1.1 s for a push, 1.6 s for a pull, 1.8 s for a pull of many files and 2 s for a
 big clone, the longest.
 
-**Where it lives.** As a lesson figure (a slide view next to `map`, `areas` and `objects`), and
-as a toggle in the live panel ("Timelines" or "Four places") once the remote chapter starts. The
-map key's "How to read the map" guide links to it from the "Shared archive" entry.
+**Where it lives.** **(r5)** In the live panel beside the terminal, in place of the three areas
+strip, under the same heading, from the first level on: your computer's three places while the
+lab has no GitHub, all four once it has one. It is redrawn when either repository changes, lights
+the arrows of what that batch did and plays its motion; the first drawing plays nothing. Later,
+also as a lesson figure (a slide view next to `map`, `areas` and `objects`).
 
 ---
 
 ## Part 2: the words the figure shows
 
 **(r3)** Notes under the titles: "open box: the next commit" (staging area), "closed boxes:
-the commits" (your repository). Empty places: "No files.", "No commits yet." (GitHub), "No remote
-yet." Pull's two parts each read "pull". Each arrow's spoken route (`aria-label`), exactly:
+the commits" (your repository). Empty places: "No files.", "No commits yet." (GitHub). **(r5)**
+Without a GitHub there is no remote place and no push, fetch, pull or clone arrow, and the figure
+is said as `Your computer: Working folder, Staging area, Your repository` (with one, `The four
+places: Working folder, Staging area, Your repository, Remote repository`). Pull's two parts each
+read "pull". Each arrow's spoken route (`aria-label`), exactly:
 
 - `add: from the working folder to the staging area`
 - `commit: from the staging area to your repository`

@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const { installBrowser, load, record } = require("./load");
 
-installBrowser();
+const document = installBrowser();
 const { LivePanel, RepoMap } = load(["dom.js", "markup.js", "map.js", "live.js"], ["LivePanel", "RepoMap"]);
 
 const clockAt = (text) => () => new Date(`2026-10-06T${text}`);
@@ -70,6 +70,41 @@ test("a map redrawn after a change plays its motion from the drawing before, and
   assert.equal(plays.length, 1);
   assert.equal(plays[0].figure, panel.element.querySelector(".live-project .repo-map"));
   assert.deepEqual([plays[0].before.commits.length, plays[0].after.commits.length, plays[0].showHead, plays[0].theme], [older.project.commits.length, observation.project.commits.length, true, theme]);
+});
+
+test("given places, the three areas part draws them instead, lit from the batch's events and played from the drawing before", () => {
+  const seen = { renders: [], commands: [], plays: [] };
+  const places = {
+    commands: (events, before, after) => {
+      seen.commands.push({ events, before, after });
+      return ["commit"];
+    },
+    render: (observation, options) => {
+      seen.renders.push({ observation, options });
+      return Object.assign(document.createElement("figure"), { className: "places" });
+    },
+    play: (figure, transition) => seen.plays.push({ figure, transition }),
+  };
+  const panel = LivePanel.create({ places });
+  const observation = record("observation");
+  const older = { ...observation, project: { ...observation.project, commits: observation.project.commits.slice(1) }, events: [] };
+  panel.update(older);
+  assert.equal(seen.renders.length, 1);
+  assert.deepEqual(seen.renders[0].options, { commands: [] }, "nothing lights on the first drawing");
+  assert.deepEqual(seen.plays, [], "and nothing plays");
+  const part = panel.element.querySelector(".live-three");
+  assert.equal(part.querySelector("h3").textContent, "The three areas");
+  assert.ok(part.querySelector("figure.places"));
+  assert.equal(part.querySelector(".areas-row"), null, "no three areas strip");
+  panel.update(older);
+  assert.equal(seen.renders.length, 1, "nothing changed, nothing redrawn");
+  panel.update(observation);
+  assert.deepEqual(seen.commands, [{ events: observation.events, before: older.project, after: observation.project }]);
+  assert.deepEqual(seen.renders[1].options, { commands: ["commit"] });
+  assert.deepEqual(seen.renders[1].observation, { project: observation.project, github: observation.github });
+  assert.equal(seen.plays.length, 1);
+  assert.equal(seen.plays[0].figure, part.querySelector("figure.places"));
+  assert.deepEqual(seen.plays[0].transition, { before: { project: older.project, github: older.github }, after: { project: observation.project, github: observation.github }, commands: ["commit"] });
 });
 
 test("what just happened lists the events newest first, with the time they were seen", () => {
