@@ -193,7 +193,9 @@ def test_the_level_starts_unsolved_and_says_to_create_a_repository(lab: kit.Lab)
 
 
 def test_the_quest_alternates_watch_steps_and_two_questions() -> None:
-    kinds = {quest_step.id: "watch" if isinstance(quest_step, kit.WatchStep) else "question" for quest_step in level.QUEST}
+    kinds = {
+        quest_step.id: "watch" if isinstance(quest_step, kit.WatchStep) else "question" for quest_step in level.QUEST
+    }
     assert kinds == {
         "init": "watch",
         "status": "question",
