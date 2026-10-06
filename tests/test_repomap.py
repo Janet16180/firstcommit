@@ -418,6 +418,15 @@ def test_making_a_file_executable_changes_its_mode_but_not_its_blob(tmp_path: Pa
     assert modes(repomap.snapshot(repo), "README.md") == ("100644", "100755", "100755")
 
 
+def test_a_files_version_in_an_area_is_its_id_and_mode_together(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "echo a > run.sh && git add run.sh && git commit -q -m one && chmod +x run.sh && echo b > new.txt")
+    snap = repomap.snapshot(repo)
+    script, new = entry(snap, "run.sh"), entry(snap, "new.txt")
+    assert repomap.version(script, "head") == repomap.version(script, "index") == (blob_id(b"a\n"), "100644")
+    assert repomap.version(script, "folder") == (blob_id(b"a\n"), "100755")
+    assert repomap.version(new, "index") == (None, None)
+
+
 def test_a_mode_change_git_is_set_to_ignore_is_no_change(tmp_path: Path) -> None:
     repo = new_repo(tmp_path, "echo a > README.md && git add README.md && git commit -q -m one && git config core.fileMode false && chmod +x README.md")
     assert modes(repomap.snapshot(repo), "README.md") == ("100644", "100644", "100644")

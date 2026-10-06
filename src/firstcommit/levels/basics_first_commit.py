@@ -256,7 +256,7 @@ def staged(snap: kit.Snapshot) -> list[str]:
     return [
         entry["path"]
         for entry in snap["files"]
-        if not entry["conflicted"] and (entry["index"], entry["index_mode"]) != (entry["head"], entry["head_mode"])
+        if not entry["conflicted"] and kit.version(entry, "index") != kit.version(entry, "head")
     ]
 
 

@@ -29,7 +29,7 @@ Names and short hashes in the text are in backticks, commit subjects in double q
 from dataclasses import dataclass
 from typing import Literal, TypedDict
 
-from firstcommit.repomap import EXECUTABLE_MODE, Commit, FileEntry, RefKind, Snapshot
+from firstcommit.repomap import EXECUTABLE_MODE, Commit, FileEntry, RefKind, Snapshot, version
 
 MAX_FILE_EVENTS = 4
 """More events of one kind about files are told as one, naming the first `NAMES_SHOWN` paths."""
@@ -57,7 +57,6 @@ STARTED = {
 }
 
 Ancestry = Literal["forward", "back", "rewritten", "unknown"]
-Area = Literal["head", "index", "folder"]
 FileNews = tuple[str, str, str]
 """What happened to one file: the event kind, the path and the sentence."""
 
@@ -807,30 +806,6 @@ def _absent(path: str) -> FileEntry:
     }
 
 
-def _version(file: FileEntry, area: Area) -> tuple[str | None, str | None]:
-    """
-    Give a file's id and mode in one area: two areas agree when both agree.
-
-    Parameters
-    ----------
-    file : FileEntry
-        The file.
-    area : Area
-        HEAD, the staging area or the working folder.
-
-    Returns
-    -------
-    tuple[str | None, str | None]
-        The id and the mode, None where the file is absent.
-    """
-    versions = {
-        "head": (file["head"], file["head_mode"]),
-        "index": (file["index"], file["index_mode"]),
-        "folder": (file["folder"], file["folder_mode"]),
-    }
-    return versions[area]
-
-
 def _clean(file: FileEntry) -> bool:
     """
     Tell whether a file is the same in HEAD, the staging area and the working folder.
@@ -845,7 +820,7 @@ def _clean(file: FileEntry) -> bool:
     bool
         True if all three areas agree (a file in none of them counts).
     """
-    return _version(file, "head") == _version(file, "index") == _version(file, "folder")
+    return version(file, "head") == version(file, "index") == version(file, "folder")
 
 
 def _tracked(file: FileEntry) -> bool:
@@ -913,10 +888,10 @@ def _staging_news(old: FileEntry, new: FileEntry, committed: bool) -> list[FileN
         Zero or one piece of news.
     """
     path = new["path"]
-    if _version(old, "index") == _version(new, "index"):
+    if version(old, "index") == version(new, "index"):
         return []
     news: list[FileNews] = []
-    if _version(new, "index") == _version(new, "head") and not committed:
+    if version(new, "index") == version(new, "head") and not committed:
         again = "it is untracked again" if new["index"] is None else "the staging area has the last commit's version again"
         news.append(("file-unstaged", path, f"`{path}` was unstaged: {again}."))
     elif new["index"] is None:
@@ -945,7 +920,7 @@ def _folder_news(old: FileEntry, new: FileEntry) -> list[FileNews]:
         Zero or one piece of news.
     """
     path, note = new["path"], _folder_note(new)
-    if _version(old, "folder") == _version(new, "folder"):
+    if version(old, "folder") == version(new, "folder"):
         return []
     news: list[FileNews] = []
     if old["folder"] is None:
@@ -984,7 +959,7 @@ def _folder_note(file: FileEntry) -> str:
         note = " Git ignores it."
     elif file["index"] is None:
         note = " It is untracked: Git does not track it yet."
-    elif _version(file, "folder") == _version(file, "index"):
+    elif version(file, "folder") == version(file, "index"):
         note = " It matches the staging area."
     else:
         note = " The change is not staged yet."
@@ -1008,7 +983,7 @@ def _ignore_news(old: FileEntry, new: FileEntry) -> list[FileNews]:
         Zero or one piece of news.
     """
     path = new["path"]
-    if old["folder"] is None or _version(old, "folder") != _version(new, "folder") or old["ignored"] == new["ignored"]:
+    if old["folder"] is None or version(old, "folder") != version(new, "folder") or old["ignored"] == new["ignored"]:
         return []
     news: list[FileNews] = []
     if new["ignored"]:

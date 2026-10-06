@@ -187,6 +187,7 @@ for people.
 | `kit.git(cwd, *args, author=, when=, stdin=)` | run git; returns stdout; raises if git fails (setup, solve) |
 | `kit.git_run(cwd, *args, ...)` | run git; returns the result whatever the exit status, even when `cwd` was deleted (checks) |
 | `kit.snapshot(path)` | the repository in a folder, as the map shows it (`kit.Snapshot`, `kit.FileEntry`, `kit.Commit`, `kit.Ref`) |
+| `kit.version(entry, area)` | a file's id and mode in `"head"`, `"index"` or `"folder"`; two areas agree only when their versions are equal (`chmod +x` is a change) |
 | `kit.Person`, `kit.GAME` | commit identities |
 | `kit.parse_int(text)` | a typed number, or None (never `isdigit()` + `int()`) |
 | `kit.is_hash_of(text, full)` | the player typed this object id, whole or abbreviated |

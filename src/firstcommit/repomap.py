@@ -29,6 +29,7 @@ MAX_FILES = 300
 RefKind = Literal["branch", "remote", "tag"]
 Operation = Literal["merge", "rebase", "cherry-pick", "revert", "bisect"]
 ObjectType = Literal["blob", "tree", "commit", "tag"]
+Area = Literal["head", "index", "folder"]
 
 BRANCH_PREFIX = "refs/heads/"
 REF_KINDS: tuple[tuple[str, RefKind], ...] = ((BRANCH_PREFIX, "branch"), ("refs/remotes/", "remote"), ("refs/tags/", "tag"))
@@ -139,6 +140,33 @@ class ObjectInfo(TypedDict):
     type: ObjectType
     size: int
 
+
+
+def version(file: FileEntry, area: Area) -> tuple[str | None, str | None]:
+    """
+    Give a file's id and mode in one area.
+
+    Two areas, or one area in two snapshots, agree only when their versions are equal, as
+    ``git status`` compares them: ``chmod +x`` changes the version but not the id.
+
+    Parameters
+    ----------
+    file : FileEntry
+        The file.
+    area : Area
+        ``"head"``, ``"index"`` (the staging area) or ``"folder"`` (the working folder).
+
+    Returns
+    -------
+    tuple[str | None, str | None]
+        The id and the mode; both None where the file is absent.
+    """
+    versions = {
+        "head": (file["head"], file["head_mode"]),
+        "index": (file["index"], file["index_mode"]),
+        "folder": (file["folder"], file["folder_mode"]),
+    }
+    return versions[area]
 
 
 @dataclass(frozen=True)
