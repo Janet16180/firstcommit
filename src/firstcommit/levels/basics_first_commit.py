@@ -565,7 +565,9 @@ def check_branch(lab: kit.Lab, state: kit.State, answer: str) -> kit.Verdict:
     elif typed == branch:
         message = "Right: you are on the branch `main`."
     elif typed.casefold() == branch.casefold():
-        message = "Almost: branch names are case-sensitive. Type it exactly as `git status` shows it."
+        message = "Almost: type the name exactly as `git status` shows it, with the same capital and small letters."
+    elif typed.split()[-1] == branch:
+        message = "Type only the name of the branch, without the words before it."
     else:
         message = "That is not the branch you are on. Read the top of what `git status` prints: it names the branch."
     return kit.Verdict(on_main(snap) and typed == branch, message)
@@ -704,13 +706,21 @@ def check_hash(lab: kit.Lab, state: kit.State, answer: str) -> kit.Verdict:
     """
     snap = kit.snapshot(lab.project)
     commits = snap["commits"]
+    typed = answer.strip()
+    words = typed.split()
     right = any(kit.is_hash_of(answer, commit["hash"]) for commit in commits)
     if not commits:
         message = next_move(lab, snap)
+    elif not typed:
+        message = "Type the short hash that starts your commit's line in `git log --oneline`."
     elif right:
         message = "Right: that is the start of your commit's hash. Git names every commit this way."
-    elif any(answer.strip() == commit["subject"] for commit in commits):
+    elif any(typed == commit["subject"] for commit in commits):
         message = "That is your commit's message. Its short hash is at the start of the same line."
+    elif len(words) > 1 and any(kit.is_hash_of(words[0], commit["hash"]) for commit in commits):
+        message = "Type only the short hash: the first word of the line, without the message."
+    elif any(commit["hash"].startswith(typed.lower()) for commit in commits):
+        message = f"Git needs at least {kit.MIN_HASH_PREFIX} characters of a hash. Type the whole short hash that `git log --oneline` shows."
     else:
         message = "That is not the start of a commit hash in this repository. Run `git log --oneline`: each line starts with a short hash."
     return kit.Verdict(right, message)

@@ -235,7 +235,16 @@ def test_a_branch_name_in_the_wrong_case_gets_a_hint_about_case(lab: kit.Lab) ->
     play_until(lab, "status")
     verdict = answer(lab, "status", "Main")
     assert not verdict.solved
-    assert "case" in verdict.message
+    assert "capital" in verdict.message
+    assert "case-sensitive" not in verdict.message
+
+
+def test_the_whole_status_line_gets_a_nudge_to_type_only_the_branch(lab: kit.Lab) -> None:
+    play_until(lab, "status")
+    verdict = answer(lab, "status", "On branch main")
+    assert not verdict.solved
+    assert "only" in verdict.message
+    assert "not the branch" not in verdict.message
 
 
 def test_the_hash_question_has_no_answer_before_the_commit(lab: kit.Lab) -> None:
@@ -264,6 +273,24 @@ def test_typing_the_commit_message_instead_of_the_hash_gets_a_nudge_without_the_
     assert not verdict.solved
     assert "message" in verdict.message
     assert git(played, "rev-parse", "--short=4", "HEAD").strip() not in verdict.message
+
+
+def test_the_whole_log_line_gets_a_nudge_to_type_only_the_hash(played: kit.Lab) -> None:
+    short = git(played, "rev-parse", "--short", "HEAD").strip()
+    for line in [f"{short} Add the README", f"{short} (HEAD -> main) Add the README"]:
+        verdict = answer(played, "hash", line)
+        assert not verdict.solved
+        assert "only" in verdict.message
+        assert short not in verdict.message
+
+
+def test_a_hash_start_shorter_than_git_accepts_is_not_called_wrong(played: kit.Lab) -> None:
+    full = git(played, "rev-parse", "HEAD").strip()
+    assert kit.git_run(played.project, "rev-parse", "--verify", "-q", full[:3]).returncode != 0
+    verdict = answer(played, "hash", full[:3])
+    assert not verdict.solved
+    assert "4 characters" in verdict.message
+    assert "not the start" not in verdict.message
 
 
 IDENTITY = [
