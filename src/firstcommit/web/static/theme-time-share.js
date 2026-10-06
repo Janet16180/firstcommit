@@ -119,10 +119,9 @@ const TimeShare = (function () {
      `person`'s computer, a slot for each person's buttons, and `shown`'s slot chosen for a narrow
      screen. */
   function render(state, { person = null, commands = [], shown = "you" } = {}) {
-    return el("figure", { class: "ts-share is-live", "data-shown": shown, "aria-label": "You, GitHub and Alex" },
-      grid(state, person, commands, true),
-      switcher(shown),
-    );
+    const drawn = grid(state, person, commands, true);
+    drawn.append(switcher(shown));
+    return el("figure", { class: "ts-share is-live", "data-shown": shown, "aria-label": "You, GitHub and Alex" }, drawn);
   }
 
   /* Plays the change from `before` to `after` on the figure render(after) drew, inside `person`'s

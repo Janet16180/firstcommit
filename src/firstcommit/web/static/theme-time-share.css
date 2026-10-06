@@ -178,6 +178,18 @@
   clip-path: polygon(0 0, 100% 50%, 0 100%);
 }
 
+/* The playground's slots, where the page puts each person's buttons: under each computer. The
+   person switch is for narrow screens only. */
+.ts-computer > .ts-slot {
+  grid-row: 7;
+  min-width: 0;
+  margin-top: 0.6rem;
+}
+
+.ts-switch {
+  display: none;
+}
+
 /* Narrow: one column, you above GitHub above Alex. Alex's computer is upside down, its repository
    nearest GitHub, so every arrow still joins the two places it moves work between and a shared
    file travels down the page, from your working folder to Alex's. Every arrow is upright: yours
@@ -287,6 +299,45 @@
     top: -7px;
     bottom: auto;
     clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+
+  /* Under the figure, the person switch, then only the chosen person's slot. */
+  .ts-switch {
+    display: flex;
+    grid-row: 17;
+    justify-self: center;
+    margin-top: 0.8rem;
+    border: 1px solid var(--line-strong);
+    border-radius: var(--radius-small);
+    overflow: hidden;
+  }
+
+  .ts-switch-button {
+    min-width: 5.5rem;
+    padding: 0.35rem 0.9rem;
+    border: none;
+    background: var(--surface);
+    color: var(--ink);
+    font: 600 0.9rem var(--sans);
+    cursor: pointer;
+  }
+
+  .ts-switch-button + .ts-switch-button {
+    border-left: 1px solid var(--line-strong);
+  }
+
+  .ts-switch-button[aria-pressed="true"] {
+    background: color-mix(in srgb, var(--map-head) 14%, var(--surface));
+    font-weight: 750;
+  }
+
+  .ts-computer > .ts-slot {
+    grid-row: 18;
+  }
+
+  .ts-share[data-shown="you"] .ts-slot[data-slot="alex"],
+  .ts-share[data-shown="alex"] .ts-slot[data-slot="you"] {
+    display: none;
   }
 
   /* Alex's arrows towards GitHub point up, and the ones back point down. */
