@@ -186,7 +186,7 @@ def _working_events(change: _Change) -> list[Event]:
         *([] if head_explained else _head_events(change)),
         *_branch_events(change, commit, renamed),
         *_tag_events(change),
-        *_remote_events(change),
+        *_remote_events(change, made={commit[1]["hash"]} if commit is not None else set()),
         *_stash_events(change),
         *_file_events(change, tidied=tidied, committed=commit is not None),
     ]
@@ -397,7 +397,9 @@ def _new_head_commit(change: _Change) -> tuple[str, Commit] | None:
     Find the commit just made at HEAD, if HEAD moved to one.
 
     A commit counts as made here when it is new, HEAD stayed on the same branch (or stayed
-    detached), and no remote-tracking branch leads to it (else it came with a fetch or pull).
+    detached), and either no remote-tracking branch leads to it or it holds what the staging
+    area or working folder held before (`_made_from_what_was_here`: it was made here and pushed
+    in the same batch). Otherwise it came with a fetch or a pull.
 
     Parameters
     ----------
@@ -414,7 +416,9 @@ def _new_head_commit(change: _Change) -> tuple[str, Commit] | None:
     commit = change.commits.get(after["head"]) if after["head"] is not None else None
     known = {known["hash"] for known in before["commits"]}
     remote = set().union(*(_reachable(change, target) for target in _targets(after, "remote").values()))
-    if commit is None or commit["hash"] in known or commit["hash"] in remote or before["branch"] != after["branch"]:
+    if commit is None or commit["hash"] in known or before["branch"] != after["branch"]:
+        return None
+    if commit["hash"] in remote and not _made_from_what_was_here(change):
         return None
     old = change.commits.get(before["head"]) if before["head"] is not None else None
     found: tuple[str, Commit] | None = None
@@ -423,6 +427,33 @@ def _new_head_commit(change: _Change) -> tuple[str, Commit] | None:
     elif old is not None and commit["parents"] == old["parents"]:
         found = ("commit-replaced", commit)
     return found
+
+
+def _made_from_what_was_here(change: _Change) -> bool:
+    """
+    Tell whether HEAD's new commit holds what was already in the staging area or the working folder.
+
+    A commit made here is built from the staging area (or, with ``git commit -a``, from the
+    working folder), so every file it changed was there before, with the same id and mode. A
+    pulled commit brings content the folder did not have yet. A commit that changes no file
+    gives no evidence either way.
+
+    Parameters
+    ----------
+    change : _Change
+        The two snapshots; HEAD moved to a new commit on top of the old HEAD.
+
+    Returns
+    -------
+    bool
+        True if the commit changed at least one file, and each was already staged or in the
+        working folder as the commit holds it.
+    """
+    was = {file["path"]: file for file in change.before["files"]}
+    now = {file["path"]: file for file in change.after["files"]}
+    pairs = [(was.get(path, _absent(path)), now.get(path, _absent(path))) for path in was.keys() | now.keys()]
+    changed = [(old, new) for old, new in pairs if version(new, "head") != version(old, "head")]
+    return bool(changed) and all(version(new, "head") in (version(old, "index"), version(old, "folder")) for old, new in changed)
 
 
 def _renamed_branch(change: _Change) -> tuple[str, str] | None:
@@ -653,7 +684,7 @@ def _tag_events(change: _Change) -> list[Event]:
     return events
 
 
-def _remote_events(change: _Change) -> list[Event]:
+def _remote_events(change: _Change, made: set[str]) -> list[Event]:
     """
     Tell which remote-tracking branches were created, moved or deleted (by a fetch, pull or push).
 
@@ -661,6 +692,9 @@ def _remote_events(change: _Change) -> list[Event]:
     ----------
     change : _Change
         The two snapshots.
+    made : set[str]
+        The commit made here in this batch, if any; a push may have sent it already, but it did
+        not come from the remote.
 
     Returns
     -------
@@ -668,9 +702,9 @@ def _remote_events(change: _Change) -> list[Event]:
         One ``remote-updated`` event per remote-tracking branch: created, moved, then deleted, each by name.
     """
     created, moved, deleted = _ref_changes(change, "remote")
-    texts = [f"Remote-tracking branch {code(name)} was created at {_at(change, now)}{_arrived(change, set(), now)}." for name, now in created]
+    texts = [f"Remote-tracking branch {code(name)} was created at {_at(change, now)}{_arrived(change, made, now)}." for name, now in created]
     texts += [
-        f"Remote-tracking branch {code(name)} moved from {_short(change, was)} to {_at(change, now)}{_arrived(change, _reachable(change, was), now)}."
+        f"Remote-tracking branch {code(name)} moved from {_short(change, was)} to {_at(change, now)}{_arrived(change, _reachable(change, was) | made, now)}."
         for name, was, now in moved
     ]
     texts += [f"Remote-tracking branch {code(name)} was deleted." for name, _ in deleted]
@@ -686,7 +720,8 @@ def _arrived(change: _Change, had: set[str], now: str) -> str:
     change : _Change
         The two snapshots.
     had : set[str]
-        Commits the remote-tracking branch already led to.
+        Commits that did not come from the remote: those the remote-tracking branch already led
+        to, and the one made here in this batch.
     now : str
         The commit it points at now.
 

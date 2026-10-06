@@ -367,6 +367,34 @@ def test_a_pull_moves_the_branch_forward_without_claiming_a_local_commit(tmp_pat
     assert kinds(happens(tmp_path / "clone", "git pull -q --ff-only")) == ["branch-moved", "remote-updated"]
 
 
+def test_a_pull_of_a_commit_that_changes_a_file_is_not_told_as_made_here(tmp_path: Path) -> None:
+    project(tmp_path)
+    shell(tmp_path, "git clone -q --bare project github.git && git clone -q github.git clone")
+    shell(tmp_path / "project", "echo theirs > a.txt && git commit -q -am 'Their change' && git push -q ../github.git main")
+    events = happens(tmp_path / "clone", "git pull -q --ff-only")
+    assert kinds(events) == ["branch-moved", "remote-updated"]
+    assert "1 new commit came from the remote" in events[1]["text"]
+
+
+def test_a_commit_pushed_in_the_same_batch_is_told_as_made_here(tmp_path: Path) -> None:
+    project(tmp_path)
+    shell(tmp_path, "git clone -q --bare project github.git && git clone -q github.git clone")
+    clone = tmp_path / "clone"
+    shell(clone, "echo two > a.txt")
+    events = happens(clone, "git commit -q -am 'Change a' && git push -q")
+    assert kinds(events) == ["commit-created", "remote-updated", "file-staged"]
+    assert "came from the remote" not in events[1]["text"]
+    assert events[2]["text"] == "`a.txt` was staged."
+
+
+def test_a_staged_commit_pushed_in_the_same_batch_is_told_as_made_here(tmp_path: Path) -> None:
+    project(tmp_path)
+    shell(tmp_path, "git clone -q --bare project github.git && git clone -q github.git clone")
+    clone = tmp_path / "clone"
+    shell(clone, "echo new > b.txt && git add b.txt")
+    assert kinds(happens(clone, "git commit -q -m 'Add b' && git push -q")) == ["commit-created", "remote-updated"]
+
+
 def test_a_push_is_seen_on_the_bare_repository(tmp_path: Path) -> None:
     project(tmp_path)
     shell(tmp_path, "git clone -q --bare project github.git && git clone -q github.git clone")

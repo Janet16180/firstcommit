@@ -9,6 +9,30 @@
 
 const SVG_NS = "http://www.w3.org/2000/svg";
 
+/* What querySelectorAll returns in a browser, a static NodeList: length, index access, item(),
+   forEach and iteration, and no array methods, so code that calls .map or .filter on it fails
+   here as it would in the browser. */
+class FakeNodeList {
+  constructor(nodes) {
+    nodes.forEach((node, index) => {
+      this[index] = node;
+    });
+    Object.defineProperty(this, "length", { value: nodes.length });
+  }
+
+  item(index) {
+    return index >= 0 && index < this.length ? this[index] : null;
+  }
+
+  forEach(callback, thisArg) {
+    for (let index = 0; index < this.length; index += 1) callback.call(thisArg, this[index], index, this);
+  }
+
+  *[Symbol.iterator]() {
+    for (let index = 0; index < this.length; index += 1) yield this[index];
+  }
+}
+
 class FakeNode {
   constructor(document) {
     this.ownerDocument = document;
@@ -308,7 +332,7 @@ class FakeElement extends FakeNode {
       }
     };
     walk(this);
-    return found;
+    return new FakeNodeList(found);
   }
 
   querySelector(selector) {

@@ -238,7 +238,7 @@ test("every change the server sends reads as words a beginner knows, in the colu
     const said = row.querySelectorAll("[role=\"cell\"]")[column].querySelector("em");
     return said ? said.textContent : "";
   };
-  const rows = strip.querySelectorAll(".areas-row").filter((row) => row.querySelector(".areas-name"));
+  const rows = [...strip.querySelectorAll(".areas-row")].filter((row) => row.querySelector(".areas-name"));
   const shown = Object.fromEntries(rows.map((row) => [row.querySelector(".areas-name").textContent, [words(row, 0), words(row, 1)]]));
   assert.deepEqual(shown, {
     "added.txt": ["", "new file, staged"],

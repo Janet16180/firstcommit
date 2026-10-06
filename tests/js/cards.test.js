@@ -16,7 +16,7 @@ function cards({ list = record("cards"), result = record("card_result"), chapter
   const ctx = { game: createGameApi(server.api), status: () => record("status"), refresh: async () => (seen.refreshed += 1), sound: { play() {} } };
   const view = CardsView.create(ctx, chapter);
   document.body.replaceChildren(view.element);
-  return { view, server, seen, q: (selector) => view.element.querySelector(selector), all: (selector) => view.element.querySelectorAll(selector) };
+  return { view, server, seen, q: (selector) => view.element.querySelector(selector), all: (selector) => [...view.element.querySelectorAll(selector)] };
 }
 
 const press = (run, key) => run.view.keydown(makeEvent("keydown", { key, target: document.body }));
