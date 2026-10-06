@@ -21,6 +21,7 @@ NOTHING: repomap.Snapshot = {
     "branch": None,
     "commits": [],
     "refs": [],
+    "pushed": [],
     "files": [],
     "operation": None,
     "stash": 0,
@@ -242,6 +243,50 @@ def test_refs_list_branches_remote_tracking_branches_and_tags_peeled_to_their_co
         {"name": "v1", "kind": "tag", "target": commit},
         {"name": "v2", "kind": "tag", "target": commit},
     ]
+
+
+
+def remote_names(snap: repomap.Snapshot) -> list[str]:
+    """
+    List a snapshot's remote-tracking branches.
+
+    Parameters
+    ----------
+    snap : repomap.Snapshot
+        The snapshot.
+
+    Returns
+    -------
+    list[str]
+        Their names, sorted.
+    """
+    return sorted(ref["name"] for ref in snap["refs"] if ref["kind"] == "remote")
+
+
+def test_a_snapshot_names_the_remote_tracking_branches_a_push_from_here_moved_last(tmp_path: Path) -> None:
+    new_repo(tmp_path, "git commit -q --allow-empty -m one")
+    shell(tmp_path, "git clone -q --bare project github.git && git clone -q github.git clone && git clone -q github.git other")
+    clone = tmp_path / "clone"
+    assert repomap.snapshot(clone)["pushed"] == []
+    shell(clone, "git commit -q --allow-empty -m two && git push -q && git push -q origin HEAD:refs/heads/topic")
+    assert repomap.snapshot(clone)["pushed"] == ["origin/main", "origin/topic"]
+    shell(tmp_path / "other", "git pull -q && git commit -q --allow-empty -m three && git push -q")
+    shell(clone, "git fetch -q")
+    snap = repomap.snapshot(clone)
+    assert snap["pushed"] == ["origin/topic"]
+    assert set(snap["pushed"]) <= set(remote_names(snap))
+
+
+def test_no_remote_tracking_branch_counts_as_pushed_without_reflogs_or_without_remotes(tmp_path: Path) -> None:
+    new_repo(tmp_path, "git commit -q --allow-empty -m one")
+    shell(tmp_path, "git clone -q --bare project github.git && git clone -q github.git clone")
+    clone = tmp_path / "clone"
+    shell(clone, "git config core.logAllRefUpdates false && git commit -q --allow-empty -m two && git push -q origin HEAD:refs/heads/main HEAD:refs/heads/b HEAD:refs/heads/a")
+    snap = repomap.snapshot(clone)
+    assert remote_names(snap) == ["origin/a", "origin/b", "origin/main"]
+    assert snap["pushed"] == []
+    assert repomap.snapshot(tmp_path / "github.git")["pushed"] == []
+    assert repomap.snapshot(tmp_path / "project")["pushed"] == []
 
 
 def test_a_merge_conflict_flags_the_path_and_shows_the_merge_in_progress(tmp_path: Path) -> None:

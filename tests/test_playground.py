@@ -329,6 +329,9 @@ def test_any_sequence_of_presses_keeps_the_facts_the_figure_draws(steps: list[St
             context = (steps, press, events)
             assert now[other] == seen[other], context
             assert str(save.home()) not in press["output"], context
+            for snap in now.values():
+                remote = {ref["name"] for ref in snap["refs"] if ref["kind"] == "remote"}
+                assert snap["pushed"] == sorted(set(snap["pushed"]) & remote), context
             if button != "push" or press["status"] != 0:
                 assert now["github"] == seen["github"], context
             if button == "status" or (button in ("add", "commit", "push") and press["status"] != 0):
