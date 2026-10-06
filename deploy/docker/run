@@ -11,6 +11,13 @@ name=${FIRSTCOMMIT_DOCKER_NAME:-firstcommit}
 volume=$name-home
 game_home=/home/player/.firstcommit
 label=firstcommit.inputs
+# Nothing in the game needs a capability or setuid, so it runs without them.
+hardening=(--cap-drop ALL --security-opt no-new-privileges)
+# With a terminal, Docker stops forwarding signals and Ctrl-C reaches the container as a key.
+interactive=()
+if [ -t 0 ] && [ -t 1 ]; then
+    interactive=(--interactive --tty)
+fi
 
 usage() {
     cat <<EOF
@@ -93,11 +100,8 @@ play() {
     ensure_image
     # The server listens on 127.0.0.1 only, which a container's own network would hide from
     # the browser; the host's network shows it as localhost, exactly as without Docker.
-    local options=(--rm --init --name "$name" --network host --volume "$volume:$game_home")
-    # With a terminal, Docker stops forwarding signals and Ctrl-C reaches the game as a key.
-    if [ -t 0 ] && [ -t 1 ]; then
-        options+=(--interactive --tty)
-    fi
+    local options=(--rm --init "${hardening[@]}" "${interactive[@]}" --name "$name"
+        --network host --volume "$volume:$game_home")
     # Dates in the game and in git follow the player's clock, not UTC.
     if [ -f /etc/localtime ]; then
         options+=(--volume /etc/localtime:/etc/localtime:ro)

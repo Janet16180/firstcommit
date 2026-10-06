@@ -3,9 +3,12 @@ The Docker runtime: ``deploy/docker/run`` and the image it builds.
 
 Tests marked ``docker`` build or run containers; they skip when Docker or its daemon is not
 available. Every image tag, container and volume they create carries a random test name and is
-removed afterwards. The other tests check the script's messages with a fake ``docker``.
+removed afterwards. Some build the image around a stand-in game
+(``tests/fixtures/docker_game_cli.py``), so playing is checked even before the game's own server
+exists. The other tests check the script's messages with a fake ``docker``.
 """
 
+import base64
 import http.client
 import os
 import pty
@@ -14,6 +17,7 @@ import secrets
 import select
 import shutil
 import socket
+import struct
 import subprocess
 import time
 from collections.abc import Iterator
@@ -24,6 +28,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[1]
 RUN = ROOT / "deploy" / "docker" / "run"
 TERMLAB_SRC = ROOT.parent / "termlab" / "src"
+STAND_IN_CLI = ROOT / "tests" / "fixtures" / "docker_game_cli.py"
 GAME_HOME = "/home/player/.firstcommit"
 INPUTS_LABEL = "firstcommit.inputs"
 TOKEN_HEADER = "X-FirstCommit-Token"
@@ -302,6 +307,102 @@ def get(port: int, path: str, headers: dict[str, str]) -> int:
     return status
 
 
+def open_page_terminal(port: int, token: str) -> socket.socket:
+    """
+    Open the page's terminal as the browser does: a WebSocket that carries the key as a subprotocol.
+
+    Parameters
+    ----------
+    port : int
+        The server's port.
+    token : str
+        The key from the printed link.
+
+    Returns
+    -------
+    socket.socket
+        The open connection, past the handshake.
+    """
+    page = socket.create_connection(("127.0.0.1", port), timeout=10)
+    key = base64.b64encode(os.urandom(16)).decode()
+    page.sendall(
+        (
+            "GET /api/terminal HTTP/1.1\r\n"
+            f"Host: localhost:{port}\r\nOrigin: http://localhost:{port}\r\n"
+            f"Sec-WebSocket-Protocol: firstcommit, t.{token}\r\n"
+            "Upgrade: websocket\r\nConnection: Upgrade\r\n"
+            f"Sec-WebSocket-Key: {key}\r\nSec-WebSocket-Version: 13\r\n\r\n"
+        ).encode()
+    )
+    reply = b""
+    while not reply.endswith(b"\r\n\r\n"):
+        reply += page.recv(1)
+    assert reply.startswith(b"HTTP/1.1 101"), reply
+    return page
+
+
+def type_and_expect(page: socket.socket, keys: str, expected: str, timeout: float = 15) -> None:
+    """
+    Type keys into the page's terminal and wait until its output shows what they should cause.
+
+    Parameters
+    ----------
+    page : socket.socket
+        The terminal's open WebSocket.
+    keys : str
+        What to type, control characters included.
+    expected : str
+        A regular expression the output that follows must match.
+    timeout : float
+        Seconds before the test fails.
+
+    Raises
+    ------
+    AssertionError
+        If the output does not match in time; the message holds the output.
+    """
+    payload = keys.encode()
+    mask = os.urandom(4)
+    size = bytes([0x80 | len(payload)]) if len(payload) < 126 else bytes([0x80 | 126]) + struct.pack("!H", len(payload))
+    page.sendall(bytes([0x82]) + size + mask + bytes(byte ^ mask[i % 4] for i, byte in enumerate(payload)))
+    deadline = time.monotonic() + timeout
+    pending = b""
+    output = ""
+    while re.search(expected, output) is None and time.monotonic() < deadline:
+        if select.select([page], [], [], 0.2)[0]:
+            pending += page.recv(65536)
+        shown, pending = terminal_output(pending)
+        output += shown
+    assert re.search(expected, output), f"no {expected!r} in the page terminal's output:\n{output}"
+
+
+def terminal_output(frames: bytes) -> tuple[str, bytes]:
+    """
+    Take the terminal output out of the complete WebSocket frames a server sent.
+
+    Parameters
+    ----------
+    frames : bytes
+        Bytes received so far; a frame may be cut at the end.
+
+    Returns
+    -------
+    tuple[str, bytes]
+        The text of the complete binary frames, and the bytes of the cut frame, if any.
+    """
+    output = b""
+    while len(frames) >= 2:
+        size, start = frames[1] & 0x7F, 2
+        if size == 126:
+            size, start = struct.unpack("!H", frames[2:4])[0], 4
+        if len(frames) < start + size:
+            break
+        if frames[0] & 0x0F == 0x2:
+            output += frames[start : start + size]
+        frames = frames[start + size :]
+    return output.decode(errors="replace"), frames
+
+
 def fake_docker(folder: Path, message: str) -> str:
     """
     Make a ``docker`` command that fails as Docker does when it cannot reach its daemon.
@@ -371,6 +472,31 @@ def unused_name(docker_ready: None) -> Iterator[str]:
     name = f"firstcommit-test-{secrets.token_hex(4)}"
     yield name
     remove_docker_objects(name)
+
+
+@pytest.fixture
+def stand_in_image(copied_checkout: Path, unused_name: str) -> str:
+    """
+    Build, under an unused name, an image whose game is a termlab server that does not need the game's routes.
+
+    Parameters
+    ----------
+    copied_checkout : Path
+        A copy of the game's folder, whose command line is replaced.
+    unused_name : str
+        The name to build under; removed afterwards.
+
+    Returns
+    -------
+    str
+        The name.
+    """
+    package = copied_checkout / "src" / "firstcommit"
+    shutil.copy2(STAND_IN_CLI, package / "cli.py")
+    (package / "web" / "static").mkdir(parents=True, exist_ok=True)
+    built = run_script("build", name=unused_name, script=copied_checkout / "deploy" / "docker" / "run", timeout=600)
+    assert built.returncode == 0, built.stdout + built.stderr
+    return unused_name
 
 
 @pytest.fixture
@@ -564,6 +690,42 @@ def test_reset_deletes_the_saved_game_after_yes(unused_name: str) -> None:
 
     assert result.returncode == 0
     assert docker("volume", "inspect", volume_of(unused_name)).returncode != 0
+
+
+@pytest.mark.docker
+@pytest.mark.slow
+def test_play_runs_the_game_without_privileges_and_its_terminal_still_works(
+    stand_in_image: str, copied_checkout: Path
+) -> None:
+    port = free_port()
+    env = {**os.environ, "FIRSTCOMMIT_DOCKER_NAME": stand_in_image, "FIRSTCOMMIT_PORT": str(port), "PORT": "1"}
+    process, terminal = spawn_in_terminal([str(copied_checkout / "deploy" / "docker" / "run")], env)
+    try:
+        link = read_until(terminal, LINK, timeout=60)
+        assert link["port"] == str(port)
+        page = open_page_terminal(port, link["token"])
+        type_and_expect(page, "awk '/CapBnd|NoNewPrivs/' /proc/self/status\r", r"CapBnd:\s+0{16}\s+NoNewPrivs:\s+1")
+        type_and_expect(page, "git help commit | head -n 1\r", r"GIT-COMMIT\(1\)")
+        type_and_expect(page, "git chec\t", "git checkout")
+        type_and_expect(
+            page,
+            "\x15cd /tmp && git init -q demo && cd demo && git -c user.name=Player -c user.email=player@example.com commit --allow-empty\r",
+            "GNU nano",
+        )
+        type_and_expect(page, "My first commit\x18", "Save modified buffer")
+        type_and_expect(page, "y", "File Name to Write")
+        type_and_expect(page, "\r", r"\$ $")
+        type_and_expect(page, "git log -1 --format=subject:%s\r", "subject:My first commit")
+        page.close()
+
+        os.write(terminal, b"\x03")
+
+        assert process.wait(timeout=30) == 0
+        assert docker("container", "inspect", stand_in_image).returncode != 0
+    finally:
+        process.kill()
+        os.close(terminal)
+        docker("container", "rm", "--force", stand_in_image)
 
 
 @pytest.mark.docker

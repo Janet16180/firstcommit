@@ -56,8 +56,9 @@ installed in your WSL besides Docker.
 - Being allowed to use Docker gives root-level power over your WSL: Docker's documentation says
   so about the `docker` group.
 
-The game runs as an ordinary user, `player`, without sudo. For real isolation, a virtual machine
-with its own kernel, offline by default, is planned (see [docs/DESIGN.md](docs/DESIGN.md),
+The game runs as an ordinary user, `player`, without sudo, without Linux capabilities and without
+any way to gain privileges (`--cap-drop ALL`, `no-new-privileges`). For real isolation, a virtual
+machine with its own kernel, offline by default, is planned (see [docs/DESIGN.md](docs/DESIGN.md),
 section 3).
 
 ## Develop
