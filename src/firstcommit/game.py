@@ -16,7 +16,10 @@ cards only ever see a wrong answer. Errors the interfaces handle:
   only by the one lookup of each kind of id, at the top of a function, so a ``KeyError`` from a
   level's setup, the scoring or a lesson stays what it is: a bug;
 - `NotPlayingError`: an action on the level in progress when there is none (409);
-- `firstcommit.save.SaveError`: a damaged save file (``firstcommit reset --yes`` starts over).
+- `SaveError`: a damaged save file (``firstcommit reset --yes`` starts over).
+
+The interfaces import nothing else from the game's lower layers: `SaveError` and `home` are
+handed on from `firstcommit.save`, and `shell_environment` builds the player's shell.
 
 Anything else is a bug.
 """
@@ -39,6 +42,8 @@ from firstcommit.demos import Line
 from firstcommit.markup import Block
 from firstcommit.repomap import ObjectInfo, Snapshot
 from firstcommit.save import Payout
+from firstcommit.save import SaveError as SaveError
+from firstcommit.save import home as home
 from firstcommit.score import Rank
 
 PLACEHOLDER = re.compile(r"\{\{\s*(\w+)\s*\}\}")
@@ -71,7 +76,12 @@ class ChapterSummary(TypedDict):
 
 
 class ActiveView(TypedDict):
-    """The level being played: how far the quest is, and the hints and attempts used."""
+    """
+    The level being played: how far the quest is, and the hints and attempts used.
+
+    ``auto_check`` says whether the page may check the level by itself: only once the quest is
+    done (`check` refuses an automatic check before that anyway).
+    """
 
     level: str
     step: int
@@ -80,6 +90,7 @@ class ActiveView(TypedDict):
     hints_total: int
     attempts: int
     started: str
+    auto_check: bool
 
 
 class Status(TypedDict):
@@ -429,14 +440,14 @@ def quest_step(answer: str | None) -> StepResult:
         active, entry = _playing()
         correct = False
         message: list[Block] = []
-        if active["step"] < len(entry.quest):
+        if not _quest_done(active, entry):
             verdict = _check_step(entry.quest[active["step"]], runner.lab_of(entry.id), active["state"], _typed(answer))
             correct = verdict.solved
             message = _blocks(verdict.message, active["state"])
         if correct:
             active["step"] += 1
             save.write_active(active)
-    return {"correct": correct, "message": message, "step": active["step"], "quest_done": active["step"] >= len(entry.quest)}
+    return {"correct": correct, "message": message, "step": active["step"], "quest_done": _quest_done(active, entry)}
 
 
 def check(answer: str | None, auto: bool) -> CheckResult:
@@ -471,7 +482,7 @@ def check(answer: str | None, auto: bool) -> CheckResult:
     typed = _typed(answer)
     with save.lock():
         active, entry = _playing()
-        if auto and active["step"] < len(entry.quest):
+        if auto and not _quest_done(active, entry):
             verdict = kit.Verdict(False, QUEST_FIRST.format(step=active["step"] + 1, steps=len(entry.quest)))
         else:
             verdict = entry.check(runner.lab_of(entry.id), active["state"], typed)
@@ -675,18 +686,37 @@ def notes(chapter: str) -> Notes:
     return {"chapter": chapter, "title": _chapter(chapter), "notes": markup.parse(cards.deck(chapter).notes)}
 
 
+def shell_environment(base: Mapping[str, str]) -> dict[str, str]:
+    """
+    Build the environment of a shell the game opens for the player, ready to use.
+
+    Git there is kept to the game (`firstcommit.gitcmd.shell_environment`), and the game's git
+    configuration that it names is created first if it is missing (never overwritten), so the
+    player's first ``git init`` is on ``main``.
+
+    Parameters
+    ----------
+    base : Mapping[str, str]
+        The environment to start from (the web terminal's or the command line's); not changed.
+
+    Returns
+    -------
+    dict[str, str]
+        ``base`` without its git variables, plus the game's isolation.
+    """
+    save.ensure_gitconfig(gitcmd.BASE_CONFIG)
+    return gitcmd.shell_environment(base, save.home())
+
+
 def terminal_folder() -> str:
     """
     Give the folder a new terminal opens in: the lab's project, else the lab, else the player's home.
-
-    The game's git configuration is created first if it is missing, so the shell starts from it.
 
     Returns
     -------
     str
         The folder.
     """
-    save.ensure_gitconfig(gitcmd.BASE_CONFIG)
     active = save.load_active()
     lab = runner.lab_of(active["level"]) if active is not None else None
     folder = Path.home()
@@ -798,12 +828,20 @@ def _playing() -> tuple[save.Active, runner.Level]:
     ------
     NotPlayingError
         If no level is in progress, or the one in progress is no longer in the game.
+    SaveError
+        If the record counts more hints or quest steps than its level has (a damaged save).
     """
     active = save.load_active()
     levels = runner.catalogue()
     if active is None or active["level"] not in levels:
         raise NotPlayingError("no level is in progress")
-    return active, levels[active["level"]]
+    entry = levels[active["level"]]
+    if active["hints"] > len(entry.hints) or active["step"] > len(entry.quest):
+        raise SaveError(
+            f"{save.home() / save.ACTIVE_FILE} is damaged: `hints` is {active['hints']} and `step` is {active['step']}, "
+            f"but level {entry.id} has {len(entry.hints)} hints and {len(entry.quest)} quest steps"
+        )
+    return active, entry
 
 
 def _pay(entry: runner.Level, hints: int, state: kit.State) -> Payout:
@@ -938,7 +976,27 @@ def _active_view(active: save.Active, entry: runner.Level) -> ActiveView:
         "hints_total": len(entry.hints),
         "attempts": active["attempts"],
         "started": active["started"],
+        "auto_check": _quest_done(active, entry),
     }
+
+
+def _quest_done(active: save.Active, entry: runner.Level) -> bool:
+    """
+    Tell whether the guided quest of the level in progress is done; a level without one is.
+
+    Parameters
+    ----------
+    active : save.Active
+        The saved record of the level in progress.
+    entry : runner.Level
+        The level.
+
+    Returns
+    -------
+    bool
+        True once every step has passed.
+    """
+    return active["step"] >= len(entry.quest)
 
 
 def _step_view(step: kit.Step, state: kit.State) -> StepView:

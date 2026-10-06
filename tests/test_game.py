@@ -206,7 +206,31 @@ def test_the_dashboard_shows_the_level_in_progress(sample_level: runner.Level) -
     game.hint()
     active = game.status()["active"]
     assert active is not None
-    assert {key: value for key, value in active.items() if key != "started"} == {"level": "basics-sample", "step": 0, "steps": 3, "hints": 1, "hints_total": 3, "attempts": 0}
+    assert {key: value for key, value in active.items() if key != "started"} == {
+        "level": "basics-sample",
+        "step": 0,
+        "steps": 3,
+        "hints": 1,
+        "hints_total": 3,
+        "attempts": 0,
+        "auto_check": False,
+    }
+
+
+def test_the_page_may_check_automatically_once_the_quest_is_done(sample_level: runner.Level, game_home: Path) -> None:
+    assert game.start(sample_level.id)["auto_check"] is False
+    game.quest_step(None)
+    kit.git(lab_project(game_home), "add", "hello.txt")
+    game.quest_step(None)
+    assert game.quest_step("trunk")["quest_done"] is True
+    active = game.status()["active"]
+    assert active is not None and active["auto_check"] is True
+
+
+def test_the_page_may_check_a_level_without_a_quest_automatically_from_the_start(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    level = dataclasses.replace(sample_level, quest=())
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    assert game.start(level.id)["auto_check"] is True
 
 
 def test_an_unknown_level_id_raises_unknown_id_error(sample_level: runner.Level) -> None:
@@ -355,6 +379,21 @@ def test_a_level_whose_setup_fails_leaves_nothing_in_progress(sample_level: runn
 def test_actions_on_a_level_need_a_level_in_progress(sample_level: runner.Level, action: Callable[[], object]) -> None:
     with pytest.raises(game.NotPlayingError):
         action()
+
+
+@pytest.mark.parametrize(("field", "value", "action"), [("hints", 4, game.hint), ("step", 4, lambda: game.quest_step(None)), ("hints", 9, lambda: game.check(None, auto=False))])
+def test_an_active_record_beyond_its_level_is_a_damaged_save(sample_level: runner.Level, game_home: Path, field: str, value: int, action: Callable[[], object]) -> None:
+    game.start(sample_level.id)
+    (game_home / "active.json").write_text(json.dumps({**active_record(), field: value}))
+    with pytest.raises(save.SaveError, match=rf"active\.json.*`{field}`"):
+        action()
+
+
+def test_an_active_record_at_its_levels_limits_is_fine(sample_level: runner.Level) -> None:
+    game.start(sample_level.id)
+    save.write_active({**active_record(), "hints": 3, "step": 3})
+    assert game.hint()["used"] == 3
+    assert game.quest_step(None)["quest_done"] is True
 
 
 def test_a_level_in_progress_that_no_longer_exists_counts_as_none(sample_level: runner.Level) -> None:
@@ -690,6 +729,15 @@ def test_observing_a_real_lab_tells_of_the_staging_and_the_commit(sample_level: 
 
 
 @pytest.mark.usefixtures("fake_insight")
+def test_a_stale_or_damaged_observation_is_dropped_without_events_or_error(sample_level: runner.Level, game_home: Path) -> None:
+    game.start(sample_level.id)
+    (game_home / "observed.json").write_text(json.dumps({"level": "basics-sample", "project": {"files": "an older shape"}}))
+    assert game.observe()["events"] == []
+    observed = save.load_observed()
+    assert observed is not None and observed["project"]["exists"] is True
+
+
+@pytest.mark.usefixtures("fake_insight")
 def test_observing_an_unchanged_lab_does_not_rewrite_the_observation(sample_level: runner.Level, game_home: Path) -> None:
     game.start(sample_level.id)
     game.observe()
@@ -883,9 +931,28 @@ def test_the_terminal_opens_in_the_lab_project_else_the_lab_else_the_players_hom
     assert game.terminal_folder() == str(game_home / "labs" / "basics-sample")
 
 
-def test_opening_a_terminal_gives_the_game_its_base_git_config(sample_level: runner.Level, game_home: Path) -> None:
+def test_asking_where_a_terminal_opens_changes_nothing(sample_level: runner.Level, game_home: Path) -> None:
     game.terminal_folder()
-    assert (game_home / "gitconfig").read_text() == gitcmd.BASE_CONFIG
+    assert list(game_home.iterdir()) == []
+
+
+def test_a_shell_environment_keeps_git_to_the_game_and_everything_else_as_given(sample_level: runner.Level, game_home: Path) -> None:
+    base = {"PATH": "/usr/bin", "EDITOR": "nano", "GIT_DIR": "/elsewhere/.git", "GIT_INDEX_FILE": "/elsewhere/index"}
+    assert game.shell_environment(base) == {"PATH": "/usr/bin", "EDITOR": "nano", **gitcmd.isolation(game_home)}
+    assert base["GIT_DIR"] == "/elsewhere/.git"
+
+
+def test_a_shell_environment_comes_with_the_game_git_config_it_names(sample_level: runner.Level, game_home: Path) -> None:
+    env = game.shell_environment({})
+    assert Path(env["GIT_CONFIG_GLOBAL"]).read_text() == gitcmd.BASE_CONFIG
+    Path(env["GIT_CONFIG_GLOBAL"]).write_text("[user]\n\tname = Ada\n")
+    game.shell_environment({})
+    assert Path(env["GIT_CONFIG_GLOBAL"]).read_text() == "[user]\n\tname = Ada\n"
+
+
+def test_the_game_hands_the_interfaces_the_save_error_and_the_home() -> None:
+    assert game.SaveError is save.SaveError
+    assert game.home is save.home
 
 
 def fake_git(folder: Path, version: str) -> str:

@@ -21,8 +21,9 @@ import contextlib
 import types
 import typing
 from collections.abc import Iterable
+from datetime import date, datetime
 from pathlib import Path
-from typing import Any, TypedDict, cast
+from typing import Annotated, Any, Literal, TypedDict, cast
 
 from termlab import store
 
@@ -34,6 +35,12 @@ OBSERVED_FILE = "observed.json"
 GITCONFIG_FILE = "gitconfig"
 LABS_FOLDER = "labs"
 LESSONS_FOLDER = "lessons"
+
+
+IsoDate = Annotated[str, date]
+"""A day written as ISO 8601, such as ``2026-10-06``; the save checks it reads as a `datetime.date`."""
+IsoTime = Annotated[str, datetime]
+"""A moment written as ISO 8601, such as ``2026-10-06T10:00:00+02:00``; the save checks it reads as a `datetime.datetime`."""
 
 
 class SaveError(ValueError):
@@ -48,7 +55,7 @@ class LevelRecord(TypedDict):
     be filled in after the level in progress is gone.
     """
 
-    finished: str
+    finished: IsoTime
     xp: int
     state: dict[str, Any]
 
@@ -57,7 +64,7 @@ class CardEntry(TypedDict):
     """A flashcard's place in the Leitner schedule: its box and the day it is due again."""
 
     box: int
-    due: str
+    due: IsoDate
 
 
 class Payout(TypedDict):
@@ -90,7 +97,7 @@ class Active(TypedDict):
     """
 
     level: str
-    started: str
+    started: IsoTime
     step: int
     hints: int
     attempts: int
@@ -223,17 +230,21 @@ def load_observed() -> Observed | None:
     """
     Read the lab as it was last observed.
 
+    The observation is only a cache of what the page saw last. A file that is damaged, or that
+    another version of the game wrote in another shape, counts as nothing observed yet: the next
+    observation then tells no changes and writes a fresh one. This is the one save file whose
+    mismatch is not a `SaveError`.
+
     Returns
     -------
     Observed | None
-        The record, or None if nothing was observed since the level started.
-
-    Raises
-    ------
-    SaveError
-        If ``observed.json`` does not hold a valid `Observed` record.
+        The record, or None if nothing valid was observed since the level started.
     """
-    return cast(Observed | None, _read(OBSERVED_FILE, Observed))
+    try:
+        observed = _read(OBSERVED_FILE, Observed)
+    except SaveError:
+        observed = None
+    return cast(Observed | None, observed)
 
 
 def write_observed(observed: Observed) -> None:
@@ -325,7 +336,8 @@ def _mismatch(value: Any, expected: Any, where: str) -> str | None:
     value : Any
         Value read from JSON.
     expected : Any
-        A `TypedDict`, ``dict[str, X]``, ``X | None``, ``int``, ``str``, ``bool`` or ``Any``.
+        A `TypedDict`, ``dict[str, X]``, ``list[X]``, ``Literal[...]``, ``X | None``, `IsoDate`,
+        `IsoTime`, ``int``, ``str``, ``bool`` or ``Any``.
     where : str
         Dotted path of the value in its file, for the message; empty for the whole record.
 
@@ -333,20 +345,85 @@ def _mismatch(value: Any, expected: Any, where: str) -> str | None:
     -------
     str | None
         What is wrong with the first field that does not match, or None if the value matches.
+
+    Raises
+    ------
+    TypeError
+        If `expected` is none of the types above (a record this checker was not taught).
     """
+    origin = typing.get_origin(expected)
     problem = None
     if typing.is_typeddict(expected):
         problem = _record_mismatch(value, expected, where)
-    elif typing.get_origin(expected) is dict:
+    elif origin is dict:
         problem = _mapping_mismatch(value, typing.get_args(expected)[1], where)
-    elif typing.get_origin(expected) is types.UnionType:
+    elif origin is list:
+        problem = _list_mismatch(value, typing.get_args(expected)[0], where)
+    elif origin is Annotated:
+        problem = _iso_mismatch(value, typing.get_args(expected)[1], where)
+    elif origin is Literal:
+        allowed = typing.get_args(expected)
+        problem = None if value in allowed and isinstance(value, str) else f"`{where}` must be one of {', '.join(allowed)}, not {value!r}"
+    elif origin in (types.UnionType, typing.Union):
         (present,) = [option for option in typing.get_args(expected) if option is not type(None)]
         problem = None if value is None else _mismatch(value, present, where)
-    elif expected is int and (not isinstance(value, int) or isinstance(value, bool) or value < 0):
-        problem = f"`{where}` must be a whole number, zero or more, not {value!r}"
-    elif expected in (str, bool) and not isinstance(value, expected):
-        problem = f"`{where}` must be a {expected.__name__}, not {value!r}"
+    elif expected is int:
+        problem = None if isinstance(value, int) and not isinstance(value, bool) and value >= 0 else f"`{where}` must be a whole number, zero or more, not {value!r}"
+    elif expected in (str, bool):
+        problem = None if isinstance(value, expected) else f"`{where}` must be a {expected.__name__}, not {value!r}"
+    elif expected is not Any:
+        raise TypeError(f"the save cannot check values of type {expected!r}")
     return problem
+
+
+def _iso_mismatch(value: Any, kind: type[date], where: str) -> str | None:
+    """
+    Compare a JSON value with an ISO 8601 day or moment.
+
+    Parameters
+    ----------
+    value : Any
+        Value read from JSON.
+    kind : type[date]
+        `datetime.date` for `IsoDate`, `datetime.datetime` for `IsoTime`.
+    where : str
+        Dotted path of the value.
+
+    Returns
+    -------
+    str | None
+        What is wrong, or None if the value is text that `kind` reads.
+    """
+    readable = isinstance(value, str)
+    if readable:
+        try:
+            kind.fromisoformat(value)
+        except ValueError:
+            readable = False
+    return None if readable else f"`{where}` must be a {kind.__name__} written as ISO 8601, not {value!r}"
+
+
+def _list_mismatch(value: Any, item: Any, where: str) -> str | None:
+    """
+    Compare a JSON value with ``list[item]``.
+
+    Parameters
+    ----------
+    value : Any
+        Value read from JSON.
+    item : Any
+        The type of every item.
+    where : str
+        Dotted path of the value; an item's path ends with its position.
+
+    Returns
+    -------
+    str | None
+        What is wrong, or None if the value matches.
+    """
+    if not isinstance(value, list):
+        return f"`{where}` must be a list, not {value!r}"
+    return _first(_mismatch(entry, item, f"{where}.{position}") for position, entry in enumerate(value))
 
 
 def _record_mismatch(value: Any, record: Any, where: str) -> str | None:
@@ -369,7 +446,7 @@ def _record_mismatch(value: Any, record: Any, where: str) -> str | None:
     """
     if not isinstance(value, dict):
         return f"`{where}` must be an object, not {value!r}"
-    fields = typing.get_type_hints(record)
+    fields = typing.get_type_hints(record, include_extras=True)
     prefix = f"{where}." if where else ""
     missing = [name for name in fields if name not in value]
     unknown = [name for name in value if name not in fields]

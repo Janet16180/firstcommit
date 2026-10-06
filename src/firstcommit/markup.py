@@ -3,6 +3,10 @@ The one parser for the game's text: lessons, quest steps, briefings, hints, debr
 
 Text is written as described in AUTHORING.md section 6 and parsed here into blocks; the command
 line and the page only render blocks, so the layout rules live in one place.
+
+A code span is a run of backticks, its text, and a run of as many backticks (as in CommonMark),
+so `code` can write any name or subject a player chose as one code span that can never forge
+paragraphs, bullets or other code in the game's voice.
 """
 
 import re
@@ -10,7 +14,13 @@ import textwrap
 from typing import Literal, TypedDict
 
 PARAGRAPH_BREAK = re.compile(r"\n(?:[ \t]*\n)+")
-CODE_SPAN = re.compile(r"`([^`]+)`")
+# An opening run of backticks, the shortest text, then a closing run of exactly as many.
+CODE_SPAN = re.compile(r"(?<!`)(`+)(?!`)(.+?)(?<!`)\1(?!`)")
+BACKTICK_RUN = re.compile(r"`+")
+WHITESPACE = re.compile(r"\s+")
+CONTROL = re.compile("[\x00-\x1f\x7f-\x9f]")
+GIT_ESCAPES = {"\a": "\\a", "\b": "\\b", "\t": "\\t", "\n": "\\n", "\v": "\\v", "\f": "\\f", "\r": "\\r"}
+"""The letter escapes git uses when it quotes a name; other control characters become octal bytes."""
 VERBATIM_STARTS = (" ", "\t", "$ ")
 BULLET = "- "
 
@@ -142,7 +152,109 @@ def _spans(text: str) -> list[Span]:
         Non-empty spans, in order.
     """
     spans: list[Span] = []
-    for position, piece in enumerate(CODE_SPAN.split(" ".join(text.split()))):
-        if piece:
-            spans.append({"text": piece, "code": position % 2 == 1})
-    return spans
+    position = 0
+    for match in CODE_SPAN.finditer(text):
+        spans += _prose_span(text[position : match.start()])
+        spans.append({"text": _code_text(match[2]), "code": True})
+        position = match.end()
+    return spans + _prose_span(text[position:])
+
+
+def _prose_span(text: str) -> list[Span]:
+    """
+    Make the plain text between code spans into a span.
+
+    Parameters
+    ----------
+    text : str
+        The text; runs of whitespace become one space.
+
+    Returns
+    -------
+    list[Span]
+        One span, or none for empty text.
+    """
+    collapsed = WHITESPACE.sub(" ", text)
+    return [{"text": collapsed, "code": False}] if collapsed else []
+
+
+def _code_text(content: str) -> str:
+    """
+    Give the text a code span shows; its spaces are kept.
+
+    Parameters
+    ----------
+    content : str
+        What stands between the opening and the closing backticks.
+
+    Returns
+    -------
+    str
+        The content without one space at each end when it has one at both and is not only
+        spaces, so a code span can start or end with a backtick (as in CommonMark).
+    """
+    padded = content.startswith(" ") and content.endswith(" ") and content.strip(" ") != ""
+    return content[1:-1] if padded else content
+
+
+def visible(text: str) -> str:
+    r"""
+    Show the control characters of a text as git does when it quotes a name.
+
+    Parameters
+    ----------
+    text : str
+        Any text, such as a file name or a commit subject a player chose.
+
+    Returns
+    -------
+    str
+        The text with each C0 control character, DEL and C1 control character replaced by its
+        escape: ``\n``, ``\t`` and git's other letter escapes, else the octal UTF-8 bytes
+        (``\033`` for ESC). Everything else is kept, backslashes included.
+    """
+    return CONTROL.sub(_escape, text)
+
+
+def _escape(match: re.Match[str]) -> str:
+    """
+    Give git's escape for one control character.
+
+    Parameters
+    ----------
+    match : re.Match[str]
+        A match of `CONTROL`.
+
+    Returns
+    -------
+    str
+        Its letter escape, or its UTF-8 bytes in octal.
+    """
+    char = match[0]
+    return GIT_ESCAPES.get(char) or "".join(f"\\{byte:03o}" for byte in char.encode())
+
+
+def code(text: str) -> str:
+    """
+    Write any text as markup for one code span that shows it, and nothing else.
+
+    The fence is one backtick longer than the longest run of backticks inside, and the text is
+    padded with a space at each end when it starts or ends with a backtick or a space, so
+    `parse` reads back exactly `visible(text)`. Control characters are shown escaped, so the
+    text can never start a new paragraph, a bullet or another code span.
+
+    Parameters
+    ----------
+    text : str
+        Any text, such as a file name, a branch or a commit subject.
+
+    Returns
+    -------
+    str
+        The markup. An empty text gives a code span of one space, since a code span cannot
+        be empty.
+    """
+    shown = visible(text) or " "
+    fence = "`" * (1 + max((len(run) for run in BACKTICK_RUN.findall(shown)), default=0))
+    padded = f" {shown} " if shown.strip(" ") and (shown[0] in "` " or shown[-1] in "` ") else shown
+    return f"{fence}{padded}{fence}"
