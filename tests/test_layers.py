@@ -19,6 +19,15 @@ LAYERS = {"data": 0, "core": 1, "orchestration": 2, "interface": 3}
 INTERFACE_MAY_USE = {"firstcommit.game", "firstcommit.markup", "firstcommit.chapters"}
 """The package modules an interface may import besides the other interfaces (DESIGN.md section 7)."""
 RUNTIME_WORDS = re.compile(r"docker|qemu|wsl", re.IGNORECASE)
+LEVEL_MAY_NOT_IMPORT = {
+    # Processes: a level runs git only through kit, in the game's isolation.
+    "subprocess", "os", "pty", "multiprocessing",
+    # Network: "GitHub" is the bare repository in the lab.
+    "socket", "ssl", "urllib", "http", "ftplib", "smtplib",
+    # Deleting outside termlab.sandbox, native code, and importing around this list.
+    "shutil", "ctypes", "importlib",
+}  # fmt: skip
+"""Standard-library modules a level never imports (AUTHORING.md section 3.2); pathlib and kit cover what a level needs."""
 
 
 def module_name(path: Path) -> str:
@@ -202,6 +211,12 @@ def test_a_level_imports_only_kit_its_chapter_helpers_and_the_standard_library(m
     for imported, _ in imports(module):
         helper = imported.startswith(f"firstcommit.levels._{chapter}")
         assert imported == "firstcommit.kit" or helper or imported.split(".")[0] in sys.stdlib_module_names, f"{module} imports {imported}"
+
+
+@pytest.mark.parametrize("module", LEVELS)
+def test_a_level_never_imports_a_way_around_the_games_safety_rules(module: str) -> None:
+    denied = sorted({imported.split(".")[0] for imported, _ in imports(module)} & LEVEL_MAY_NOT_IMPORT)
+    assert not denied, f"{module} imports {denied}"
 
 
 @pytest.mark.parametrize("module", SOURCES)
