@@ -558,6 +558,7 @@ def test_deleting_the_git_folder_unsolves_the_level(played: kit.Lab) -> None:
     assert "git init" in verdict.message
 
 
+@pytest.mark.slow
 def test_checks_never_change_the_repository(played: kit.Lab) -> None:
     append(played, "notes.txt", "notes")
     append(played, "README.md", "More.")
@@ -572,6 +573,7 @@ def test_checks_never_change_the_repository(played: kit.Lab) -> None:
     assert (index.read_bytes(), index.stat().st_mtime_ns, kit.snapshot(played.project)) == before
 
 
+@pytest.mark.slow
 def test_hostile_answers_never_pass_a_question_once_the_quest_is_done(played: kit.Lab) -> None:
     for text in HOSTILE:
         assert not answer(played, "status", text).solved
