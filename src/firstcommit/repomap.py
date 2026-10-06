@@ -80,6 +80,10 @@ REF_KINDS: tuple[tuple[str, RefKind], ...] = ((BRANCH_PREFIX, "branch"), ("refs/
 STASH = "refs/stash"
 REF_FORMAT = "%(refname)%00%(objectname)%00%(*objectname)%00%(symref)"
 COMMIT_FORMAT = "%H%x00%h%x00%P%x00%an%x00%at%x00%s"
+PUSHED = "update by push"
+"""Git's fixed reflog message for a remote-tracking branch that a push from this repository moved (transport.c)."""
+MAX_REFLOG_ENTRIES = 1000
+"""How many reflog entries of the remote-tracking branches a snapshot reads at most, all branches together."""
 COMMIT_FIELDS = 6
 OBJECT_FORMAT = "%(objectname) %(objecttype) %(objectsize)"
 NOWHERE: tuple[None, None] = (None, None)
@@ -287,6 +291,7 @@ def snapshot(path: Path) -> Snapshot:
         "branch": _branch(path),
         "commits": commits,
         "refs": refs,
+        "pushed": _pushed(path, refs),
         "files": files,
         "operation": next((operation for marker, operation in OPERATION_MARKERS if os.path.exists(repo.git_dir / marker)), None),
         "stash": _stash_count(path) if stashed else 0,
@@ -338,6 +343,7 @@ def _no_repository() -> Snapshot:
         "branch": None,
         "commits": [],
         "refs": [],
+        "pushed": [],
         "files": [],
         "operation": None,
         "stash": 0,
@@ -457,6 +463,36 @@ def _refs(cwd: Path) -> tuple[list[Ref], bool]:
             if refname.startswith(prefix) and not symref:
                 refs.append({"name": refname.removeprefix(prefix), "kind": kind, "target": peeled or target})
     return refs, stashed
+
+
+def _pushed(cwd: Path, refs: list[Ref]) -> list[str]:
+    """
+    Name the remote-tracking branches that a push from this repository moved last.
+
+    The newest entry of each one's reflog says what moved it: `PUSHED` for a push, the
+    command's own words for a fetch or a pull (``fetch: fast-forward``). One git command reads
+    the reflogs of all of them, each newest first, up to `MAX_REFLOG_ENTRIES` in all; a branch
+    whose newest entry is past that, or that has no reflog, counts as not pushed.
+
+    Parameters
+    ----------
+    cwd : Path
+        A folder of the repository.
+    refs : list[Ref]
+        The repository's refs.
+
+    Returns
+    -------
+    list[str]
+        Names of remote-tracking branches, sorted; empty when there are none.
+    """
+    remote = [f"refs/remotes/{ref['name']}" for ref in refs if ref["kind"] == "remote"]
+    if not remote:
+        return []
+    result = gitcmd.run(cwd, "log", "--walk-reflogs", "-z", f"--max-count={MAX_REFLOG_ENTRIES}", "--format=%gD%x00%gs", *remote, "--")
+    fields = result.stdout.split("\0") if result.returncode == 0 else []
+    messages = dict(zip(fields[0::2], fields[1::2], strict=False))
+    return sorted(name.removeprefix("refs/remotes/") for name in remote if messages.get(f"{name}@{{0}}") == PUSHED)
 
 
 def _stash_count(cwd: Path) -> int:
