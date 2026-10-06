@@ -7,7 +7,7 @@ const { fakeServer, httpError, installBrowser, load, record, settle } = require(
 
 installBrowser();
 const { Dom, TimeTheme } = load(
-  ["dom.js", "markup.js", "map.js", "theme-time.js", "theme-time-motion.js", "theme-time-guide.js", "api.js", "progress.js", "route.js", "poll.js", "sound.js", "dialog.js", "celebrate.js", "live.js", "lesson.js", "quest.js", "challenge.js", "practice.js", "level.js", "cards.js", "notes.js", "home.js"],
+  ["dom.js", "markup.js", "map.js", "theme-time.js", "theme-time-motion.js", "theme-time-places.js", "theme-time-guide.js", "api.js", "progress.js", "route.js", "poll.js", "sound.js", "dialog.js", "celebrate.js", "live.js", "lesson.js", "quest.js", "challenge.js", "practice.js", "level.js", "cards.js", "notes.js", "home.js"],
   ["Dom", "TimeTheme"],
 );
 
@@ -89,6 +89,25 @@ test("the live map's key opens the map guide, which asks the server for its figu
     page.main.querySelector(".live-project .tt-key .tt-guide-button").dispatchEvent(makeEvent("click"));
     await settle();
     assert.equal(page.server.calls.filter((call) => call.path === "/api/guide").length, 1);
+  } finally {
+    global.location.hash = "#/";
+    page.fire("hashchange", {});
+    await settle();
+  }
+});
+
+test("the live panel draws the player's places: pages, the open box and closed boxes, with GitHub when the level has it", async () => {
+  const active = record("active");
+  const page = await boot({
+    hash: `#/level/${active.level}`,
+    replies: { "/api/status": { ...record("status"), active }, "/api/level": record("level"), "/api/observe": record("observation"), "/api/step": record("step"), "/api/check": record("check_unsolved") },
+  });
+  try {
+    await settle();
+    const places = page.main.querySelector(".live-three .tt-places");
+    assert.ok(places, "the places replace the three areas strip");
+    assert.deepEqual([...places.querySelectorAll("[data-area]")].map((place) => place.getAttribute("data-area")), ["folder", "index", "repository", "remote"]);
+    assert.ok(places.querySelector(".tt-open-box") && places.querySelector(".tt-box"));
   } finally {
     global.location.hash = "#/";
     page.fire("hashchange", {});

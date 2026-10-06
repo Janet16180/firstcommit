@@ -95,6 +95,48 @@ test("git reset --hard origin/main, which drops your own commits, is not drawn a
   assert.deepEqual(TimePlaces.commands(kinds("branch-moved"), BOTH, PULLED), []);
 });
 
+test("git reset --hard origin/main that throws away uncommitted work is not drawn as a pull, though no commit of yours is lost", () => {
+  const files = (readme, notes) => [file("README.md", { head: readme, index: readme, folder: readme }), file("notes.txt", { head: "5", index: "5", folder: notes })];
+  const before = { ...FETCHED, files: files("1", "6") };
+  assert.deepEqual(TimePlaces.commands(kinds("branch-moved"), before, { ...PULLED, files: files("2", "5") }), [], "notes.txt lost its unsaved line");
+  assert.deepEqual(TimePlaces.commands(kinds("branch-moved"), before, { ...PULLED, files: files("2", "6") }), ["pull"], "a pull keeps it");
+});
+
+/* One commit behind; the incoming commit changes rules.md from "1" to "2" (or adds a file).
+   Each case is a batch from mapcheck's table of real git 2.43 labs: before, after, and whether a
+   real git pull would end there. */
+test("pull lights only where every tracked file ends as git pull's checkout would leave it", () => {
+  const entries = (files) => files.map(([path, head, index, folder]) => file(path, { head, index, folder }));
+  const behind = (files) => ({ ...FETCHED, files: entries(files) });
+  const pulled = (files) => ({ ...PULLED, files: entries(files) });
+  const cases = [
+    ["a clean pull", [["rules.md", "1", "1", "1"]], [["rules.md", "2", "2", "2"]], ["pull"]],
+    ["reset, unsaved line in the file the commit changes (pull refuses)", [["rules.md", "1", "1", "u"]], [["rules.md", "2", "2", "2"]], []],
+    ["reset, the incoming text already there, unstaged (pull refuses)", [["rules.md", "1", "1", "2"]], [["rules.md", "2", "2", "2"]], []],
+    ["reset, incoming text staged plus an unstaged line, lost", [["rules.md", "1", "2", "3"]], [["rules.md", "2", "2", "2"]], []],
+    ["pull, incoming text already staged", [["rules.md", "1", "2", "2"]], [["rules.md", "2", "2", "2"]], ["pull"]],
+    ["pull, incoming text staged plus an unstaged line, kept", [["rules.md", "1", "2", "3"]], [["rules.md", "2", "2", "3"]], ["pull"]],
+    ["reset, an untracked file in the way overwritten (pull refuses)", [["new1.txt", null, null, "m"]], [["new1.txt", "t", "t", "t"]], []],
+    ["reset, an untracked file in the way, identical (pull refuses)", [["new2.txt", null, null, "t"]], [["new2.txt", "t", "t", "t"]], []],
+    ["reset, an untracked file doc deleted for doc/x.txt (pull refuses)", [["doc", null, null, "d"]], [["doc/x.txt", "x", "x", "x"]], []],
+    ["reset, an untracked dir/a.txt deleted for a file dir (pull refuses)", [["dir/a.txt", null, null, "a"]], [["dir", "x", "x", "x"]], []],
+    ["reset and git clean, behind only", [["rules.md", "1", "1", "1"], ["scratch.txt", null, null, "s"]], [["rules.md", "2", "2", "2"]], []],
+    ["pull, plus a new untracked file", [["rules.md", "1", "1", "1"]], [["rules.md", "2", "2", "2"], ["scratch.txt", null, null, "s"]], ["pull"]],
+    ["pull, plus an untracked file edited", [["rules.md", "1", "1", "1"], ["scratch.txt", null, null, "s"]], [["rules.md", "2", "2", "2"], ["scratch.txt", null, null, "t"]], ["pull"]],
+    ["pull, an untracked file left alone", [["rules.md", "1", "1", "1"], ["scratch.txt", null, null, "s"]], [["rules.md", "2", "2", "2"], ["scratch.txt", null, null, "s"]], ["pull"]],
+  ];
+  for (const [what, before, after, lit] of cases) assert.deepEqual(TimePlaces.commands(kinds("branch-moved"), behind(before), pulled(after)), lit, what);
+});
+
+test("an add flight carries only what git add copied from the working folder, not a file a pull brought", () => {
+  const before = { project: { ...FETCHED, files: [file("README.md", { head: "1", index: "1", folder: "2" }), file("notes.txt", { head: "5", index: "5", folder: "5" })] }, github: hub([C, ...TWO]) };
+  const after = { project: { ...PULLED, files: [file("README.md", { head: "1", index: "2", folder: "2" }), file("notes.txt", { head: "6", index: "6", folder: "6" })] }, github: hub([C, ...TWO]) };
+  assert.deepEqual(TimePlaces.flights(before, after, ["add"]).map((flight) => flight.id), ["README.md"]);
+  const edited = { project: { ...START, files: [file("README.md", { head: "1", index: "1", folder: "2" })] }, github: null };
+  const committed = { project: { ...MINE, files: [file("README.md", { head: "2", index: "2", folder: "2" })] }, github: null };
+  assert.deepEqual(TimePlaces.flights(edited, committed, ["add", "commit"]).map((flight) => flight.id), ["README.md", full("d")], "git commit -a still adds, then commits");
+});
+
 test("a pull into a branch with no commits yet takes in its upstream", () => {
   const unborn = { ...repo({ commits: [C, ...TWO], refs: [["origin/main", "remote", "c"]] }), head: null };
   assert.deepEqual(TimePlaces.commands(kinds("branch-created"), unborn, PULLED), ["pull"]);
@@ -234,11 +276,6 @@ test("each place shows the player's real files and commits, origin/main included
   assert.ok(repository.querySelector('[data-label="remote:origin/main"]'));
   assert.ok(figure.querySelector('[data-area="remote"]').querySelector(`[data-hash="${full("a")}"]`));
   assert.equal(figure.querySelector(".tt-places-caption"), null);
-});
-
-test("without a remote, GitHub's place says so instead of drawing an empty graph", () => {
-  const figure = TimePlaces.render({ project: repo({ commits: ONE }), github: null }, {});
-  assert.match(figure.querySelector('[data-area="remote"]').textContent, /No remote yet/);
 });
 
 test("each arrow says where the work goes: pull's merge half runs from your repository through the staging area", () => {
@@ -381,6 +418,44 @@ test("a flight takes 520 ms from place to place, slow enough to follow", () => {
 test("a single command's motion is over within a second and a quarter, and a whole pull within 1.75 seconds", () => {
   for (const call of played(PUSH.before, PUSH.after, ["push"]).calls) assert.ok(end(call) <= 1250, JSON.stringify(call.timing));
   for (const call of played(PULL.before, PULL.after, ["fetch", "pull"]).calls) assert.ok(end(call) <= 1750, JSON.stringify(call.timing));
+});
+
+test("without a GitHub the figure shows your computer's three places only, joined by add and commit", () => {
+  const observation = { project: repo({ commits: ONE, files: [file("README.md", { head: "1", index: "2", folder: "2" })] }), github: null };
+  const figure = TimePlaces.render(observation, { commands: ["commit"] });
+  assert.deepEqual([...figure.querySelectorAll(".tt-place h4")].map((title) => title.textContent), ["Working folder", "Staging area", "Your repository"]);
+  assert.deepEqual([...figure.querySelectorAll(".tt-arrow")].map((arrow) => arrow.getAttribute("data-command")), ["add", "commit"]);
+  assert.equal(figure.querySelector(".tt-frame.is-github"), null);
+  assert.ok(figure.classList.contains("is-local"));
+  assert.match(figure.getAttribute("aria-label"), /^Your computer: Working folder, Staging area, Your repository$/);
+  assert.match(figure.querySelector(".tt-places-caption").textContent, /commit saves the staging area/);
+});
+
+test("without a GitHub a commit still flies from the staging area into your repository, and the graph moves", () => {
+  const before = { project: { ...repo({ commits: ONE }), files: [README("1")] }, github: null };
+  const after = { project: { ...repo({ commits: TWO }), files: [README("2")] }, github: null };
+  const { calls } = played(before, after, ["commit"]);
+  assert.ok(calls.some(isFlyer), "the commit flies");
+  assert.ok(calls.some((call) => call.node.closest('[data-area="repository"] .repo-map')), "your repository's graph moves");
+});
+
+test("a caption names no remote the figure does not show: without a GitHub, or before your repository has an origin/ branch", () => {
+  const everything = Object.keys(TimePlaces.ARROWS);
+  const local = TimePlaces.render({ project: repo({ commits: ONE }), github: null }, { commands: everything });
+  assert.doesNotMatch(local.querySelector(".tt-places-caption").textContent, /origin|GitHub/);
+  assert.deepEqual([...local.querySelectorAll(".tt-places-caption p")].length, 2, "only the arrows drawn, add and commit, are told");
+  const unlinked = TimePlaces.render({ project: repo({ commits: ONE }), github: hub(ONE) }, { commands: ["commit"] });
+  assert.doesNotMatch(unlinked.querySelector(".tt-places-caption").textContent, /origin/);
+  const linked = TimePlaces.render({ project: at(ONE, "a", "a"), github: hub(ONE) }, { commands: ["commit"] });
+  assert.match(linked.querySelector(".tt-places-caption").textContent, /origin\/main does not move/);
+});
+
+test("a timeline wider than its place is drawn smaller, down to four fifths of its size, then its place scrolls", () => {
+  const figure = TimePlaces.render({ project: at(TWO, "b", "b"), github: hub(TWO) }, {});
+  for (const graph of figure.querySelectorAll(".tt-place-graph svg.map-graph")) {
+    assert.equal(graph.style.minWidth, `${Math.round(0.8 * Number(graph.getAttribute("width")))}px`);
+  }
+  assert.equal(figure.querySelectorAll(".tt-place-graph svg.map-graph").length, 2);
 });
 
 const shortOf = (name) => blob(name).slice(0, 7);
