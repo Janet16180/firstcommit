@@ -8,6 +8,7 @@ from datetime import date, datetime, timedelta
 from pathlib import Path
 
 import pytest
+from termlab import sandbox
 
 from firstcommit import changes, demos, game, gitcmd, kit, markup, repomap, runner, save, score
 from firstcommit.chapters import CHAPTERS
@@ -786,3 +787,15 @@ def test_every_record_is_json(sample_level: runner.Level) -> None:
     game.start(sample_level.id)
     for record in (game.status(), game.level(sample_level.id), game.lesson(sample_level.id), game.observe(), game.due_cards("basics", 3)):
         json.dumps(record)
+
+
+def test_a_game_home_inside_a_repository_never_shows_that_repository(sample_level: runner.Level, tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    outer = tmp_path / "dotfiles"
+    kit.git(tmp_path, "init", "-q", str(outer))
+    monkeypatch.setenv("FIRSTCOMMIT_HOME", str(outer / "game-home"))
+    without_repository = dataclasses.replace(sample_level, lesson=(kit.Slide(id="empty", title="Nothing yet", text="x", run="mkdir notes"),))
+    monkeypatch.setattr(runner, "catalogue", lambda: {without_repository.id: without_repository})
+    assert game.lesson(without_repository.id)["slides"][0]["map"]["exists"] is False
+    game.start(without_repository.id)
+    sandbox.remove_tree(runner.lab_of(without_repository.id).project / ".git", outer / "game-home")
+    assert game.observe()["project"]["exists"] is False
