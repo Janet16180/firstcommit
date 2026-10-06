@@ -16,7 +16,7 @@ from typing import Any, Literal
 from firstcommit.gitcmd import GAME, Person
 from firstcommit.gitcmd import output as git
 from firstcommit.gitcmd import run as git_run
-from firstcommit.repomap import Commit, FileEntry, Ref, Snapshot, snapshot
+from firstcommit.repomap import Commit, FileEntry, Ref, Snapshot, snapshot, version
 
 __all__ = [
     "GAME",
@@ -39,6 +39,7 @@ __all__ = [
     "is_hash_of",
     "parse_int",
     "snapshot",
+    "version",
 ]
 
 INTEGER = re.compile(r"[0-9]{1,10}")
