@@ -72,7 +72,7 @@ test("the terminal wears the time-travel colours, light and dark", async () => {
   await settle();
 });
 
-test("the live map's key opens the map guide, which asks the server for its figures once", async () => {
+test("the key under the live places opens the map guide, which asks the server for its figures once", async () => {
   const active = record("active");
   const page = await boot({
     hash: `#/level/${active.level}`,
@@ -80,13 +80,13 @@ test("the live map's key opens the map guide, which asks the server for its figu
   });
   try {
     await settle();
-    const button = page.main.querySelector(".live-project .tt-key .tt-guide-button");
+    const button = page.main.querySelector(".live-three .tt-key .tt-guide-button");
     assert.ok(button, "the guide's button is in the key");
     button.dispatchEvent(makeEvent("click"));
     await settle();
     assert.ok(page.document.querySelector("dialog.tt-guide[open]"));
     page.document.querySelector("dialog.tt-guide").close();
-    page.main.querySelector(".live-project .tt-key .tt-guide-button").dispatchEvent(makeEvent("click"));
+    page.main.querySelector(".live-three .tt-key .tt-guide-button").dispatchEvent(makeEvent("click"));
     await settle();
     assert.equal(page.server.calls.filter((call) => call.path === "/api/guide").length, 1);
   } finally {
