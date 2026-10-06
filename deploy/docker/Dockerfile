@@ -30,7 +30,8 @@ COPY --chmod=755 <<'EOF' /usr/local/bin/firstcommit
 PYTHONPATH=/opt/firstcommit/lib exec python3 -P -u -m firstcommit "$@"
 EOF
 
-ENV LANG=C.UTF-8 HOME=/home/player
+# firstcommit shell and the page's terminal start $SHELL; docker exec would leave it unset.
+ENV LANG=C.UTF-8 HOME=/home/player SHELL=/bin/bash
 USER player
 WORKDIR /home/player
 CMD ["firstcommit", "serve"]

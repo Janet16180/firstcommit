@@ -464,6 +464,12 @@ def test_the_game_runs_as_the_player_user_in_its_home(image: str) -> None:
 
 @pytest.mark.docker
 @pytest.mark.slow
+def test_the_game_shell_is_bash_even_when_started_through_docker_exec(image: str) -> None:
+    assert in_image(image, 'echo "$SHELL"') == "/bin/bash"
+
+
+@pytest.mark.docker
+@pytest.mark.slow
 def test_tab_completes_git_commands_in_an_interactive_shell(image: str) -> None:
     container = f"{image}-tab"
     process, terminal = spawn_in_terminal(
