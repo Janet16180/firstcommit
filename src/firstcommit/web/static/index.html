@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>First Commit</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Cpath d='M16 2v28' stroke='%231f7a5a' stroke-width='4'/%3E%3Ccircle cx='16' cy='16' r='8' fill='%23fff' stroke='%231f7a5a' stroke-width='4'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="/static/xterm.css">
+  <link rel="stylesheet" href="/static/app.css">
+</head>
+<body>
+  <a class="skip-link" href="#app">Skip to the content</a>
+  <header class="topbar">
+    <a class="brand" href="#/">
+      <svg class="brand-mark" viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+        <path d="M16 1v30"/>
+        <circle cx="16" cy="16" r="7.5"/>
+      </svg>
+      <span>First Commit</span>
+    </a>
+    <nav class="nav" aria-label="Main">
+      <a href="#/" data-view="home">Map</a>
+      <a href="#/cards" data-view="cards">Cards <span class="badge" hidden></span></a>
+      <a href="#/notes" data-view="notes">Notes</a>
+    </nav>
+    <div class="player" hidden>
+      <span class="player-rank"></span>
+      <span class="meter small" aria-hidden="true"><i></i></span>
+      <span class="player-xp"></span>
+    </div>
+    <div class="prefs">
+      <button type="button" class="pref pref-theme" title="Light, dark, or as your system is set"></button>
+      <button type="button" class="pref pref-sound" title="Soft sound effects, made in your browser"></button>
+    </div>
+  </header>
+
+  <main id="app" tabindex="-1"></main>
+  <div class="toasts" aria-live="polite"></div>
+
+  <script src="/static/xterm.js"></script>
+  <script src="/static/xterm-addon-fit.js"></script>
+  <script src="/static/terminal.js"></script>
+  <script src="/static/client.js"></script>
+  <script src="/static/dom.js"></script>
+  <script src="/static/markup.js"></script>
+  <script src="/static/map.js"></script>
+  <script src="/static/api.js"></script>
+  <script src="/static/progress.js"></script>
+  <script src="/static/route.js"></script>
+  <script src="/static/poll.js"></script>
+  <script src="/static/sound.js"></script>
+  <script src="/static/dialog.js"></script>
+  <script src="/static/celebrate.js"></script>
+  <script src="/static/live.js"></script>
+  <script src="/static/lesson.js"></script>
+  <script src="/static/quest.js"></script>
+  <script src="/static/challenge.js"></script>
+  <script src="/static/practice.js"></script>
+  <script src="/static/level.js"></script>
+  <script src="/static/cards.js"></script>
+  <script src="/static/notes.js"></script>
+  <script src="/static/home.js"></script>
+  <script src="/static/app.js"></script>
+</body>
+</html>
