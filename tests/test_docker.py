@@ -458,6 +458,15 @@ def test_git_opens_nano_to_edit_a_commit_message(image: str) -> None:
 
 @pytest.mark.docker
 @pytest.mark.slow
+def test_git_help_shows_the_manual(image: str) -> None:
+    manual = in_image(image, "git help commit 2>&1")
+
+    assert "GIT-COMMIT(1)" in manual
+    assert "minimized" not in manual
+
+
+@pytest.mark.docker
+@pytest.mark.slow
 def test_the_game_runs_as_the_player_user_in_its_home(image: str) -> None:
     assert in_image(image, 'echo "$(id -un) $HOME $PWD"') == "player /home/player /home/player"
 

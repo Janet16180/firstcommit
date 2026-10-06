@@ -3,12 +3,18 @@
 # which passes termlab's src folder as the named build context "termlab".
 FROM ubuntu:24.04@sha256:534baea6a22c03a63003dbc8dbe78fe34bc0d7e595d9a9dc9834884ff530eb55
 
+# The base image is minimized: it leaves out manuals and replaces man with a notice. Beginners
+# use git help, so manuals come back for the packages installed here (as unminimize does).
+#
 # Ubuntu's archive keeps only the newest build of each package, so exact pins would break the
 # build at the next security update. The upstream versions are checked instead. Built
 # 2026-10-06 with git 1:2.43.0-1ubuntu7.3, python3.12 3.12.3-1ubuntu0.17, nano 7.2-2ubuntu0.2,
-# less 590-2ubuntu2.1 and bash-completion 1:2.11-8 on Ubuntu 24.04.5.
-RUN apt-get update \
- && DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends git python3 nano less bash-completion \
+# less 590-2ubuntu2.1, bash-completion 1:2.11-8 and man-db 2.12.0-4build2 on Ubuntu 24.04.5.
+RUN rm /etc/dpkg/dpkg.cfg.d/excludes /usr/bin/man \
+ && dpkg-divert --quiet --remove --rename /usr/bin/man \
+ && apt-get update \
+ && DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends \
+    git python3 nano less bash-completion man-db \
  && rm -rf /var/lib/apt/lists/* \
  && git --version | grep '^git version 2\.43\.' \
  && python3 --version | grep '^Python 3\.12\.'
