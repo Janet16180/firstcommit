@@ -107,6 +107,12 @@ boxes, one picture of a commit everywhere), and security L3.
   nothing from an environment variable you also build (keep one named constant), and test the
   isolation with the game home inside a repository.
 
+- With eight agents, parallel full suites (each building the Docker image) and Playwright
+  browsers overloaded the machine; the user noticed. Rule since 2026-10-06: every browser run
+  under `flock .scratch/locks/browser.lock`, the Docker suite only before reporting and under
+  `flock .scratch/locks/docker.lock`, `pytest -m "not docker"` while iterating. Give this rule in
+  the first brief.
+
 ## Backlog (decided later, not now)
 
 - repomap `outer` field (path to an enclosing repository, e.g. ".."), proposed by insight, for a
