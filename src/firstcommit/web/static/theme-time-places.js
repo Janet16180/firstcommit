@@ -38,6 +38,7 @@ const TimePlaces = (function () {
   const COMPUTER = "Your computer";
   const GITHUB = "GitHub (the practice copy)";
   const NO_FILES = "No files.";
+  const NO_INDEX = "No staging area yet: git init makes one.";
 
   /* Each command's arrow: the places its work passes, first to last, and the checked sentence
      shown when it lights (A1 to A6), with `alone` in its place while your repository has no
@@ -45,7 +46,7 @@ const TimePlaces = (function () {
      arrow (`after`), which lights with it and which its spoken route names first. */
   const ARROWS = {
     add: { path: ["folder", "index"], text: "`add` copies a file's current content from the working folder into the staging area; the working folder keeps it." },
-    commit: { path: ["index", "repository"], text: "`commit` saves the staging area as a new commit in your repository; the staging area keeps its files. Your branch moves onto the new commit, and `origin/main` does not move.", alone: "`commit` saves the staging area as a new commit in your repository; the staging area keeps its files. Your branch moves onto the new commit." },
+    commit: { path: ["index", "repository"], text: "`commit` saves the staging area as a new commit in your repository; the staging area keeps its files. Your branch moves onto the new commit, and `origin/main` does not move.", alone: "`commit` saves the staging area as a new commit in your repository; the staging area keeps its files. Your branch moves onto the new commit (your first commit starts it)." },
     push: { path: ["repository", "remote"], text: "`push` sends the commits GitHub is missing and moves GitHub's branch to your commit; your `origin/main` moves to match. Git refuses a push that is not a fast-forward unless you force it, and a refused push changes nothing on either side." },
     fetch: { path: ["remote", "repository"], text: "`fetch` downloads the commits you do not have and moves `origin/main` (and the other `origin/` names). It changes no branch of yours, no working file and nothing in the staging area." },
     pull: { path: ["repository", "index", "folder"], label: "pull = fetch + merge", after: "fetch", text: "`pull` is a fetch, then a merge of `origin/main` into your branch (or a rebase, if you ask for one). When your branch has no commits of its own, the merge is a fast-forward: your branch slides forward, and the staging area and working folder update to match. When both sides have new commits, git fetches, then stops with an error that asks you to choose: `git pull --no-rebase` merges, `git pull --rebase` rebases." },
@@ -106,30 +107,34 @@ const TimePlaces = (function () {
   /* Whether your branch took in work from GitHub: it is the same branch, its new tip reaches the
      tip of its upstream, origin/<branch> (as clone and push -u set it), which its old tip did not,
      it kept its own commits (a fast-forward or a merge) or replayed them on top (a rebase), and
-     its files ended where a pull leaves them (followsTips). A branch that now sits exactly on its
-     upstream without its old tip was reset there, as by git reset --hard origin/main, and so was
-     one whose files a pull would not have left that way. A reset of a branch with no commits of
-     its own and nothing uncommitted looks the same as a fast-forward, and lights pull. */
+     a branch that ends exactly on its upstream (where a reset --hard origin/main lands) has its
+     files where a pull leaves them (followsTips). A branch that now sits exactly on its upstream
+     without its old tip was reset there, and so was one whose files a pull would not have left
+     that way. A reset of a branch with no commits of its own and nothing uncommitted looks the
+     same as a fast-forward, and lights pull. A branch past its upstream (a merge commit, or a
+     commit made in the same batch) cannot be a reset there, so its files are not checked: a
+     commit in the batch moves the tip the files would be compared with. */
   function merged(before, after) {
     const upstream = after.refs.find((ref) => ref.kind === "remote" && ref.name === `origin/${after.branch}`);
     if (!after.branch || after.branch !== before.branch || !upstream) return false;
     const now = history(after, after.head);
     const reached = now.has(upstream.target) && !history(before, before.head).has(upstream.target);
     const kept = !before.head || now.has(before.head) || after.head !== upstream.target;
-    return reached && kept && followsTips(before, after);
+    return reached && kept && (after.head !== upstream.target || followsTips(before, after));
   }
 
   /* The commands that match a batch of feed events, in the order they run; [] when none does.
      `before` and `after` are your repository's snapshots around the batch. A pull lights the
      fetch arrow (when it fetched) and the pull arrow, its merge half, which also takes in the
-     staging area's update and a merge commit, so neither lights add or commit. */
+     staging area's update and a merge commit, so neither lights add or commit. Add lights only
+     when a file's version went into the staging area: staging a deletion copies nothing. */
   function commands(events, before, after) {
     const has = (kind) => events.some((event) => event.kind === kind);
     const pushed = has("push-received");
     const pulled = !pushed && merged(before, after);
     const lit = [];
     if (has("repository-created") && after.refs.some((ref) => ref.kind === "remote")) lit.push("clone");
-    if (has("file-staged") && !pulled) lit.push("add");
+    if (has("file-staged") && !pulled && changedFiles(before, after, "index").length > 0) lit.push("add");
     if (COMMITS.some(has) && !pulled) lit.push("commit");
     if (pushed) lit.push("push");
     else if (has("remote-updated")) lit.push("fetch");
@@ -158,12 +163,17 @@ const TimePlaces = (function () {
     const fetched = lit.includes("fetch") || lit.includes("clone") ? fresh.filter((hash) => onGithub.has(hash)) : [];
     const made = fresh.filter((hash) => !fetched.includes(hash));
     const pushed = after.github ? newCommits(before.github, after.github) : [];
-    /* git add copies a file's version from the folder into the staging area; a pull's checkout
-       brings one the folder did not have, which is pull's to carry, not add's. */
-    const folderBefore = new Map(before.project.files.map((entry) => [entry.path, entry.folder]));
-    const indexAfter = new Map(after.project.files.map((entry) => [entry.path, entry.index]));
-    const staged = changedFiles(before.project, after.project, "index").filter((path) => indexAfter.get(path) === folderBefore.get(path));
-    const checkedOut = changedFiles(before.project, after.project, "folder");
+    const version = (snapshot, path, area) => (snapshot.files.find((entry) => entry.path === path) || {})[area] || null;
+    const [was, now] = [before.project, after.project];
+    /* git add copies a file's version from the folder into the staging area: the folder's before
+       the batch, or, for a file the tip did not change, its version after it (made or edited in
+       the same refresh). A version a pull's checkout brought is pull's to carry, not add's. */
+    const copied = (path) => version(now, path, "index") === version(was, path, "folder")
+      || (version(was, path, "head") === version(now, path, "head") && version(now, path, "index") === version(now, path, "folder"));
+    const staged = changedFiles(was, now, "index").filter(copied);
+    /* A checkout writes the new tip's version; other folder changes (untracked or ignored files)
+       are the player's, and change where they lie. */
+    const checkedOut = changedFiles(was, now, "folder").filter((path) => version(now, path, "folder") === version(now, path, "head"));
     const commit = (by, path) => (hash) => ({ what: "commit", id: hash, by, path });
     const file = (by, path) => (name) => ({ what: "file", id: name, by, path });
     const clone = ARROWS.clone.path;
@@ -205,10 +215,10 @@ const TimePlaces = (function () {
   }
 
   /* The working folder's pages, or the staging area's: an open box holding the next commit. */
-  function filePlace(area, files, owner = null) {
+  function filePlace(area, files, owner = null, empty = NO_FILES) {
     const rows = RepoMap.areaRows(files).filter((row) => row[area]);
     const said = boxes.words.states[area];
-    const pages = rows.length ? el("ul", { class: "tt-pages" }, rows.map((row) => page(row.path, row[area], said))) : el("p", { class: "tt-place-empty" }, NO_FILES);
+    const pages = rows.length ? el("ul", { class: "tt-pages" }, rows.map((row) => page(row.path, row[area], said))) : el("p", { class: "tt-place-empty" }, empty);
     const held = area === "index"
       ? el("div", { class: "tt-open-box" }, el("span", { class: "tt-flap is-left", "aria-hidden": "true" }), el("span", { class: "tt-flap is-right", "aria-hidden": "true" }), pages)
       : pages;
@@ -281,15 +291,16 @@ const TimePlaces = (function () {
     return names.map((name) => (!linked && ARROWS[name].alone) || ARROWS[name].text);
   }
 
-  /* The arrows of a figure without a GitHub. */
+  /* The lit arrows a figure draws: every one, or without a GitHub only add and commit. */
   const LOCAL = ["add", "commit"];
+  const drawn = (github, matched) => (github ? matched : matched.filter((name) => LOCAL.includes(name)));
 
   /* The four places as a figure, lighting `options.commands`' arrows and showing their sentences;
      without a GitHub (`observation.github` null), your computer's three places, joined by add and
      commit only ("is-local"). */
   function render(observation, { commands: matched = [] } = {}) {
     const { project, github } = observation;
-    const lit = github ? matched : matched.filter((name) => LOCAL.includes(name));
+    const lit = drawn(github, matched);
     const merge = ARROWS.pull.path;
     const back = (part) => github && arrow("pull", lit, part);
     const label = github ? `The four places: ${Object.values(PLACES).join(", ")}` : `${COMPUTER}: ${[PLACES.folder, PLACES.index, PLACES.repository].join(", ")}`;
@@ -298,7 +309,7 @@ const TimePlaces = (function () {
       github && el("div", { class: "tt-frame is-github", "aria-hidden": "true" }, el("span", {}, GITHUB)),
       filePlace("folder", project.files),
       pair(1, arrow("add", lit), back(merge.slice(1))),
-      filePlace("index", project.files),
+      filePlace("index", project.files, null, project.exists ? NO_FILES : NO_INDEX),
       pair(2, arrow("commit", lit), back(merge.slice(0, 2))),
       repositoryPlace("repository", project, true),
       github && [pair(3, arrow("push", lit), arrow("fetch", lit)), repositoryPlace("remote", github, false), arrow("clone", lit)],
@@ -388,8 +399,9 @@ const TimePlaces = (function () {
 
   /* Plays a transition {before, after, commands} on the figure render(after) drew; returns the
      animations started. `lookup` finds the places and arrows (see `within`). */
-  function play(figure, { before, after, commands: lit }, reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches, lookup = within(figure)) {
+  function play(figure, { before, after, commands: matched }, reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches, lookup = within(figure)) {
     if (reduced || !before || typeof figure.animate !== "function") return [];
+    const lit = drawn(after.github, matched);
     const started = [];
     const animate = (node, frames, timing) => {
       const animation = node.animate(frames, { easing: EASE, fill: "backwards", ...timing });
