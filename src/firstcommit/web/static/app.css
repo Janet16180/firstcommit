@@ -1205,6 +1205,7 @@ input[type="text"]::placeholder {
 }
 
 .feed li[data-kind^="commit-"],
+.feed li[data-kind="merge-commit-created"],
 .feed li[data-kind="file-staged"] {
   border-left-color: var(--accent);
 }
