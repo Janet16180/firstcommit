@@ -32,6 +32,8 @@ PROGRESS_FILE = "progress.json"
 ACTIVE_FILE = "active.json"
 OBSERVED_FILE = "observed.json"
 GITCONFIG_FILE = "gitconfig"
+LABS_FOLDER = "labs"
+LESSONS_FOLDER = "lessons"
 
 
 class SaveError(ValueError):

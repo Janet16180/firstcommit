@@ -338,7 +338,7 @@ def labs_folder() -> Path:
     Path
         ``<home>/labs``.
     """
-    return save.home() / "labs"
+    return save.home() / save.LABS_FOLDER
 
 
 def lab_of(level_id: str) -> kit.Lab:

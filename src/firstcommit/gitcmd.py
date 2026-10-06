@@ -51,7 +51,7 @@ def isolation(home: Path) -> dict[str, str]:
     return {
         "GIT_CONFIG_GLOBAL": str(home / "gitconfig"),
         "GIT_CONFIG_NOSYSTEM": "1",
-        "GIT_CEILING_DIRECTORIES": f"{home / 'labs'}:{home / 'lessons'}",
+        "GIT_CEILING_DIRECTORIES": f"{home / save.LABS_FOLDER}:{home / save.LESSONS_FOLDER}",
     }
 
 
