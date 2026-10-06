@@ -18,26 +18,30 @@ Read this first when resuming, then `docs/DESIGN.md` and `AUTHORING.md`.
 See `docs/DESIGN.md` section 2. Also, 2026-10-06: Docker is the front door for new hires, WSL
 direct for development, termlab's VM later (the lead's call, delegated by the user).
 
-## Phase 2 (in progress, branch `phase-2-engine`)
+## Phase 2 (integrated 2026-10-06, branch `phase-2-engine`, not yet on `main`)
 
-Lead, done: skeleton, tooling, contracts (`gitcmd`, `kit`, `save` records, `repomap`, `changes`,
-`markup`, `demos`, `game` API, `cards.CardKind`, `chapters`), `AUTHORING.md`, tests for `gitcmd`
-and `kit`. Found and fixed: the page's polling could take `index.lock` through `git status`;
-every game git command now runs with `GIT_OPTIONAL_LOCKS=0` (git(1)), tested red then green.
+All five agents' work is merged into `phase-2-engine` (aab46d5): the game layer (core), the
+repository snapshot, change feed and lesson figures (insight), the routes and page (web), the
+Docker adapter (docker) and the template level "Your first commit" (author, then a second,
+independent fact-check by checker: 13 more fixes, 2 of them false teaching).
 
-IN FLIGHT (launched 2026-10-06; each brief is in the lead's session; relaunch from these specs
-after checking the branch's log):
+Gates on `phase-2-engine`: ruff, mypy strict (43 files), ESLint clean; pytest 705 passed, nothing
+skipped or xfailed, including the Docker smoke tests (`--help` and serving the real game through
+localhost from the container) and the page's node tests run from pytest.
 
-| Agent | Branch | Owns | Spec in short |
-|---|---|---|---|
-| insight | `p2/insight` | `repomap.py`, `changes.py`, `demos.py` + tests | snapshot via plumbing (three areas as blob ids), objects, "what just happened" events, lesson frames with `demos.environment` |
-| core | `p2/core` | `save`, `score`, `cards`, `markup`, `runner`, `game`, `cli` + tests, `tests/test_levels.py`, `tests/test_decks.py`, `tests/test_layers.py`, `tests/fixtures/markup.json` | the game layer per DESIGN section 7; exception for "no level in progress" -> 409 |
-| web | `p2/web` | `web/routes.py`, `web/static/*`, `tests/test_routes.py`, `tests/js/*`, `.eslintrc.json` | termlab routes and terminal; level-agnostic page; neutral `map.js` with a theme hook |
-| docker | `p2/docker` | `deploy/docker/*`, `.dockerignore`, `tests/test_docker.py`, README "Play with Docker" | ubuntu:24.04 by digest, git 2.43, `--network host`, named volume, `run` script |
-| author | `p2/level` | `levels/basics_first_commit.py`, `content/cards/basics.toml`, `docs/verification/basics.md`, `tests/levels/` | the template level "Your first commit" |
+The lead played the template level end to end over HTTP on a fresh home (lesson, 8 quest steps
+with wrong answers, the automatic check refusing mid-quest, payout of 100 XP, the player's name
+only in the game's gitconfig). The web agent played it in Chrome by typing real git commands:
+screenshots in `.scratch/wt/web/.scratch/real-t96H/engine-shots/`.
 
-Integration order: insight -> core -> web -> author -> docker smoke. Merge insight into core,
-web and level as soon as it lands.
+Worktrees of the finished agents stay under `.scratch/wt/` (branches `p2/*`); ask the user before
+deleting branches.
+
+NEXT for phase 2, before merging to `main`:
+1. An independent code review of `phase-2-engine` against `~/.claude/CLAUDE.md` and DESIGN
+   section 7 (report only).
+2. A security review of the game's routes, terminal environment and container (report only).
+3. Theme prototypes on the template level: metro map and time travel, for the user to pick.
 
 ## Lessons for the method (to fold into GAME_METHODOLOGY.md)
 
