@@ -15,7 +15,8 @@ Read this first when resuming, then `docs/DESIGN.md` and `AUTHORING.md`.
 - termlab: First Commit uses termlab's `firstcommit` branch, checked out as the worktree
   `~/learning/termlab-firstcommit`; termlab's `main` (`~/learning/termlab`) stays as Ring Zero
   uses it. The user allowed changes on that branch (2026-10-06). Changes so far: `d98edf1`, an
-  error reply's whole JSON reaches the game as `error.data`.
+  error reply's whole JSON reaches the game as `error.data`; `aee1388`, a reply body that never
+  arrives in time counts as no answer (status 0), like a fetch that fails.
 
 ## Decisions
 
