@@ -22,9 +22,10 @@ import socket
 import struct
 import subprocess
 import time
+import tomllib
 from collections.abc import Iterator
 from datetime import date, timedelta
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 from typing import Any
 
 import pytest
@@ -34,7 +35,11 @@ from firstcommit.web import routes
 
 ROOT = Path(__file__).resolve().parents[1]
 RUN = ROOT / "deploy" / "docker" / "run"
-TERMLAB_SRC = ROOT.parent / "termlab" / "src"
+DOCKERFILE = ROOT / "deploy" / "docker" / "Dockerfile"
+TERMLAB_SOURCE = PurePosixPath(
+    tomllib.loads((ROOT / "pyproject.toml").read_text())["tool"]["uv"]["sources"]["termlab"]["path"]
+)
+TERMLAB = ROOT / TERMLAB_SOURCE
 GAME_HOME = "/home/player/.firstcommit"
 INPUTS_LABEL = "firstcommit.inputs"
 BUILT_LABEL = "firstcommit.built"
@@ -663,7 +668,7 @@ def copied_checkout(tmp_path: Path) -> Path:
     shutil.copytree(ROOT / "deploy" / "docker", game / "deploy" / "docker")
     shutil.copytree(ROOT / "src" / "firstcommit", game / "src" / "firstcommit", ignore=skip_caches)
     shutil.copy2(ROOT / ".dockerignore", game / ".dockerignore")
-    shutil.copytree(TERMLAB_SRC / "termlab", tmp_path / "termlab" / "src" / "termlab", ignore=skip_caches)
+    shutil.copytree(TERMLAB / "src" / "termlab", tmp_path / TERMLAB.name / "src" / "termlab", ignore=skip_caches)
     return game
 
 
@@ -694,6 +699,19 @@ def test_run_says_how_to_join_the_docker_group_when_access_is_denied(tmp_path: P
 
     assert result.returncode == 1
     assert "usermod -aG docker" in result.stderr
+
+
+def test_pyproject_the_run_script_and_the_test_image_name_the_same_termlab_folder() -> None:
+    run_script_folder = re.search(r"^termlab=\$root/(\S+)$", RUN.read_text(), re.MULTILINE)
+    test_image_folders = re.findall(
+        r"^COPY .*--from=termlab .* /home/player/([^/\s]+)/", DOCKERFILE.read_text(), re.MULTILINE
+    )
+    game_folder = re.search(r"^COPY .* \. /home/player/([^/\s]+)$", DOCKERFILE.read_text(), re.MULTILINE)
+
+    assert TERMLAB_SOURCE.parent == PurePosixPath("..")
+    assert run_script_folder is not None and run_script_folder[1] == str(TERMLAB_SOURCE)
+    assert test_image_folders and set(test_image_folders) == {TERMLAB_SOURCE.name}
+    assert game_folder is not None and game_folder[1] != TERMLAB_SOURCE.name
 
 
 def test_run_shows_its_commands_and_refuses_an_unknown_one() -> None:
@@ -804,7 +822,7 @@ def test_build_reuses_the_image_of_a_checkout_with_the_same_sources(image: str, 
 @pytest.mark.slow
 def test_build_rebuilds_the_image_when_termlab_changes(image: str, copied_checkout: Path, unused_name: str) -> None:
     script = copied_checkout / "deploy" / "docker" / "run"
-    store = copied_checkout.parent / "termlab" / "src" / "termlab" / "store.py"
+    store = copied_checkout.parent / TERMLAB.name / "src" / "termlab" / "store.py"
     store.write_text(store.read_text() + "\n# changed by a test\n")
 
     result = run_script("build", name=unused_name, script=script, timeout=600)
