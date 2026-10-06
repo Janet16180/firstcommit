@@ -1,16 +1,17 @@
 /*
  * The time-travel look; theme-time.js draws the map's shapes. Warm paper and ink: the first
- * timeline (main) is drawn in ink, the other timelines in colour, and HEAD's "now" dial in
- * amber. Loads after app.css and changes only its custom properties, the headings' type and the
- * theme's own classes. Light and dark (data-theme on <html>). System fonts only. Icons are
- * inline SVG masks (data: URLs, which the page's Content-Security-Policy allows for images), so
- * they take the colour of the text around them.
+ * timeline (main) is drawn in ink, the other timelines in colour, and HEAD's "now" dial in amber.
+ * Loads after app.css and changes only its custom properties, the headings' type, the terminal
+ * frame's background and the theme's own classes. Light and dark (data-theme on <html>). System
+ * fonts only. Icons are inline SVG masks (data: URLs, which the page's Content-Security-Policy
+ * allows for images), so they take the colour of the text around them.
  */
 
 :root {
   --serif: "Iowan Old Style", "Palatino Linotype", Palatino, P052, "URW Palladio L", "Book Antiqua", Georgia, serif;
 
   --bg: #f5efe4;
+  --tt-term-bg: #fdf9f1;
   --surface: #fffdf8;
   --surface-2: #f3ece0;
   --ink: #2b2620;
@@ -52,6 +53,7 @@
 
 :root[data-theme="dark"] {
   --bg: #141310;
+  --tt-term-bg: #1a1713;
   --surface: #1e1c18;
   --surface-2: #27241f;
   --ink: #ece5d8;
@@ -220,6 +222,13 @@ h2,
 }
 
 /* In the live panel the graph scrolls and the key stays in sight below it. */
+/* The terminal's frame takes the background of its xterm colours (TimeTheme.terminal), so no band
+   of another colour shows around the text. */
+.term-host,
+:root[data-theme="dark"] .term-host {
+  background: var(--tt-term-bg);
+}
+
 .live-project .live-map {
   max-height: max(300px, calc(100vh - 400px));
 }

@@ -6,9 +6,9 @@ const { makeEvent } = require("./fakedom");
 const { fakeServer, httpError, installBrowser, load, record, settle } = require("./load");
 
 installBrowser();
-const { Dom } = load(
+const { Dom, TimeTheme } = load(
   ["dom.js", "markup.js", "map.js", "theme-time.js", "api.js", "progress.js", "route.js", "poll.js", "sound.js", "dialog.js", "celebrate.js", "live.js", "lesson.js", "quest.js", "challenge.js", "practice.js", "level.js", "cards.js", "notes.js", "home.js"],
-  ["Dom"],
+  ["Dom", "TimeTheme"],
 );
 
 /* A fresh page with index.html's header, the given address, key and server; then app.js boots. */
@@ -38,8 +38,9 @@ async function boot({ hash = "#/", token = "KEY", replies = {}, stored = {}, wra
       if (global.location.hash.includes("token=")) global.location.hash = "";
       return { token: () => token, api: wrap(server.api), options };
     },
-    createTerminal: () => {
+    createTerminal: (options) => {
       seen.terminals += 1;
+      seen.looks = options.looks;
       return { element: el("div", { class: "term-dock" }), start() {}, setLook() {}, type() {}, dispose() {} };
     },
   });
@@ -54,6 +55,21 @@ test("without an access key the page asks for the link and calls no route", asyn
   const page = await boot({ token: null });
   assert.match(page.main.textContent, /link that firstcommit printed/);
   assert.equal(page.server.calls.length, 0);
+});
+
+test("the terminal wears the time-travel colours, light and dark", async () => {
+  const active = record("active");
+  const page = await boot({
+    hash: `#/level/${active.level}`,
+    replies: { "/api/status": { ...record("status"), active }, "/api/level": record("level"), "/api/observe": record("observation"), "/api/step": record("step"), "/api/check": record("check_unsolved") },
+  });
+  await settle();
+  assert.equal(page.seen.terminals, 1);
+  assert.deepEqual(page.seen.looks.light.theme, TimeTheme.terminal.light);
+  assert.deepEqual(page.seen.looks.dark.theme, TimeTheme.terminal.dark);
+  global.location.hash = "#/";
+  page.fire("hashchange", {});
+  await settle();
 });
 
 test("with a key the map shows, and the header shows the rank, the XP and the cards due", async () => {
