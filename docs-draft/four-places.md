@@ -3,7 +3,7 @@
 **Revision 4** applies the revision 3 re-check. New for the checker, marked **(r4)**: pull lights
 only for the branch's own upstream, and not for a reset that drops your commits (Part 1, "What
 lights up"); pull's spoken route names the fetch arrow first and the repository's note reads
-"closed boxes: commits" (Part 2); the motion's time bound is restated after the motions were
+"closed boxes: the commits" (Part 2); the motion's time bound is restated after the motions were
 slowed by about a quarter (Part 1, motion). `git commit -a` and `git push` in one batch now light
 add, commit and push, since the feed tells that commit as made here. Register rows L1-L4 were
 run on real git 2.43 labs, snapshots and feed (`upstream_check.py` in my job folder).
@@ -54,7 +54,7 @@ files and commits:
   staged", "modified, staged", ...). Its note: "open box: the next commit".
 - **(r3)** *Your repository*: the commit graph, drawn by the real map renderer at a small size,
   with each commit as a closed box on its timeline, its short hash beside it as its label, the
-  branch tabs, HEAD's dial and the dashed `origin/main` tab. Its note: "closed boxes: commits".
+  branch tabs, HEAD's dial and the dashed `origin/main` tab. Its note: "closed boxes: the commits".
   A commit holds every tracked file, and an unchanged file keeps its id, stored once (B2, B3).
 - *GitHub (the practice copy)*: its commit graph, drawn the same way. **(r3)** An empty GitHub
   says "No commits yet." (it has no HEAD you are on, so the map's "You are on main..." would be
@@ -136,7 +136,7 @@ map key's "How to read the map" guide links to it from the "Shared archive" entr
 ## Part 2: the words the figure shows
 
 **(r3)** Notes under the titles: "open box: the next commit" (staging area), "closed boxes:
-commits" (your repository). Empty places: "No files.", "No commits yet." (GitHub), "No remote
+the commits" (your repository). Empty places: "No files.", "No commits yet." (GitHub), "No remote
 yet." Pull's two parts each read "pull". Each arrow's spoken route (`aria-label`), exactly:
 
 - `add: from the working folder to the staging area`
@@ -147,7 +147,7 @@ yet." Pull's two parts each read "pull". Each arrow's spoken route (`aria-label`
 - `clone (once): from the remote repository, through your repository and the staging area, to the working folder`
 
 **(r4)** Changed here: pull's route names the fetch arrow first, and your repository's note reads
-"closed boxes: commits" (it was "closed boxes: your commits").
+"closed boxes: the commits" (it was "closed boxes: your commits").
 
 Titles: **Your computer** (with *Working folder*, *Staging area*, *Your repository*) and
 **GitHub (the practice copy)** (with *Remote repository*).

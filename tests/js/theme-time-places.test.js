@@ -498,11 +498,22 @@ test("pull's two parts each show the short word, and say the whole name aloud on
   assert.equal(parts.filter((part) => part.getAttribute("aria-label")).length, 1);
 });
 
+test("a place on someone else's computer names its owner in the repository's title only", () => {
+  const { filePlace, repositoryPlace } = TimePlaces.parts;
+  const heading = (place) => place.querySelector("h4").textContent;
+  const files = [README("1")];
+  assert.equal(heading(repositoryPlace("repository", at(TWO, "b", "b"), true, "Alex")), "Alex's repository");
+  assert.equal(heading(filePlace("folder", files, "Alex")), "Working folder");
+  assert.equal(heading(filePlace("index", files, "Alex")), "Staging area");
+  assert.equal(heading(repositoryPlace("repository", at(TWO, "b", "b"), true)), "Your repository");
+  assert.equal(heading(repositoryPlace("remote", hub(TWO), false)), "Remote repository");
+});
+
 test("the staging area and your repository each say what their boxes are", () => {
   const figure = TimePlaces.render({ project: at(TWO, "b", "b"), github: hub(TWO) }, {});
   const note = (area) => figure.querySelector(`[data-area="${area}"] .tt-place-note`).textContent;
   assert.equal(note("index"), "open box: the next commit");
-  assert.equal(note("repository"), "closed boxes: commits");
+  assert.equal(note("repository"), "closed boxes: the commits");
   assert.equal(figure.querySelector('[data-area="folder"] .tt-place-note'), null);
 });
 
