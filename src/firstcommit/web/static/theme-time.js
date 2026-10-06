@@ -9,9 +9,10 @@
  * short hash and subject, every chip its real name, HEAD's chip reads HEAD, and the key under the
  * graph puts each metaphor next to its Git word. Needs dom.js and map.js. Defines one global,
  * TimeTheme: `map` (a RepoMap theme), `small` (the same map, smaller and with no key, for
- * figures), `panel` (LivePanel's titles), `terminal` (xterm colours, light and dark),
- * `legend(layout)`, `mark(name)` (the small picture the key and the guide put beside a word) and
- * `tabKey(label)`, the name theme-time-motion.js follows a tab by.
+ * figures), `boxes` (`small` with each commit drawn as a closed box), `panel` (LivePanel's
+ * titles), `terminal` (xterm colours, light and dark), `legend(layout)`, `mark(name)` (the small
+ * picture the key and the guide put beside a word) and `tabKey(label)`, the name
+ * theme-time-motion.js follows a tab by.
  */
 
 /* global Dom, RepoMap */
@@ -45,20 +46,38 @@ const TimeTheme = (function () {
     return Object.keys(LEGEND).filter((entry) => shown[entry]);
   }
 
+  /* The now mark around HEAD's commit: a dial of twelve ticks. */
+  function nowDial(x, y, theme) {
+    const dial = theme.sizes.radius + 8;
+    const tick = (2 * Math.PI * dial) / DIAL_TICKS;
+    return svg("g", { class: "tt-now", style: `--color: ${theme.colors.head}` },
+      svg("circle", { class: "tt-now-glow", cx: x, cy: y, r: dial + 3 }),
+      svg("circle", { class: "tt-now-dial", cx: x, cy: y, r: dial, "stroke-dasharray": `${tick * 0.28} ${tick * 0.72}`, "stroke-dashoffset": tick * 0.14 }),
+    );
+  }
+
   /* A save point is a ring around a solid core; a merge commit adds an outer ring, and HEAD's
-     commit sits inside the now mark, a dial of twelve ticks. */
+     commit sits inside the now mark. */
   function savePoint({ x, y, color, theme, isHead, isMerge }) {
     const { radius } = theme.sizes;
-    const dial = radius + 8;
-    const tick = (2 * Math.PI * dial) / DIAL_TICKS;
     return svg("g", { class: "tt-point", style: `--color: ${color}` },
-      isHead && svg("g", { class: "tt-now", style: `--color: ${theme.colors.head}` },
-        svg("circle", { class: "tt-now-glow", cx: x, cy: y, r: dial + 3 }),
-        svg("circle", { class: "tt-now-dial", cx: x, cy: y, r: dial, "stroke-dasharray": `${tick * 0.28} ${tick * 0.72}`, "stroke-dashoffset": tick * 0.14 }),
-      ),
+      isHead && nowDial(x, y, theme),
       isMerge && svg("circle", { class: "tt-join", cx: x, cy: y, r: radius + 3.5 }),
       svg("circle", { class: "tt-save", cx: x, cy: y, r: radius }),
       svg("circle", { class: "tt-core", cx: x, cy: y, r: radius - 3.25 }),
+    );
+  }
+
+  /* The same commit as a closed box, for the first chapters' pictures: a box under its lid, an
+     outer frame for a merge commit, and the now mark around HEAD's. Its parts keep a save point's
+     class names, so the motions grow it in the same way. */
+  function closedBox({ x, y, color, theme, isHead, isMerge }) {
+    const half = theme.sizes.radius + 2;
+    return svg("g", { class: "tt-point tt-box", style: `--color: ${color}` },
+      isHead && nowDial(x, y, theme),
+      isMerge && svg("rect", { class: "tt-join", x: x - half - 3, y: y - half - 3, width: 2 * half + 6, height: 2 * half + 6, rx: 3 }),
+      svg("rect", { class: "tt-save", x: x - half, y: y - half + 2, width: 2 * half, height: 2 * half - 2, rx: 1.5 }),
+      svg("rect", { class: "tt-core", x: x - half - 1, y: y - half, width: 2 * half + 2, height: 3.5, rx: 1 }),
     );
   }
 
@@ -155,6 +174,9 @@ const TimeTheme = (function () {
     shapes: { ...map.shapes, key: () => null },
   });
 
+  /* The small map with each commit drawn as a closed box. */
+  const boxes = RepoMap.theme({ ...small, shapes: { ...small.shapes, commit: closedBox } });
+
   const panel = {
     project: "Your repository · its timelines",
     github: "GitHub (the practice copy) · shared archive",
@@ -176,5 +198,5 @@ const TimeTheme = (function () {
     },
   };
 
-  return { map, small, panel, legend, tabKey, terminal, mark: (name) => mark(name, map) };
+  return { map, small, boxes, panel, legend, tabKey, terminal, mark: (name) => mark(name, map) };
 })();

@@ -114,6 +114,22 @@ test("figures use a small map: the same save points, tabs and places at a smalle
   assert.deepEqual(place(RepoMap.layout(MERGED, { theme: small })), place(RepoMap.layout(MERGED, { theme })));
 });
 
+test("figures can draw each commit as a closed box on its timeline, in the same places, growing in as a save point does", () => {
+  const { boxes } = TimeTheme;
+  const figure = RepoMap.render(MERGED, { theme: boxes });
+  const commits = figure.querySelectorAll(".map-commit");
+  assert.equal(commits.length, 4);
+  for (const commit of commits) {
+    const box = commit.querySelector(".tt-box");
+    assert.ok(box && box.querySelector(".tt-save") && box.querySelector(".tt-core"), "a box with its lid, named as a save point's parts");
+  }
+  assert.ok(figure.querySelector(`[data-hash="${full("m")}"] .tt-box .tt-join`), "a merge commit's box has an outer frame");
+  assert.ok(figure.querySelector(".map-commit.is-head .tt-now"), "HEAD's box sits in the now dial");
+  assert.equal(figure.querySelector(".tt-key"), null);
+  const place = (map) => map.commits.map((commit) => [commit.hash, commit.row, commit.lane]);
+  assert.deepEqual(place(RepoMap.layout(MERGED, { theme: boxes })), place(RepoMap.layout(MERGED, { theme })));
+});
+
 test("the theme changes the look, never where a commit goes", () => {
   const project = record("observation").project;
   const place = (map) => map.commits.map((commit) => [commit.hash, commit.row, commit.lane]);
