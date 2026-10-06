@@ -9,7 +9,7 @@ from firstcommit import save
 PAYOUT: save.Payout = {"level": "basics-first-commit", "xp": 85, "first_time": True, "rank_before": "Untracked", "rank_after": "Untracked"}
 PROGRESS: save.Progress = {
     "xp": 95,
-    "levels": {"basics-first-commit": {"finished": "2026-10-06T10:00:00+02:00", "xp": 85}},
+    "levels": {"basics-first-commit": {"finished": "2026-10-06T10:00:00+02:00", "xp": 85, "state": {"branch": "main"}}},
     "cards": {"basics-staging-area": {"box": 2, "due": "2026-10-09"}},
     "streak": 1,
     "best_streak": 3,
@@ -98,6 +98,8 @@ PROGRESS_DAMAGE = [
     ("levels.basics-first-commit.finished", None),
     ("levels.basics-first-commit.xp", "85"),
     ("levels.basics-first-commit.bonus", 1),
+    ("levels.basics-first-commit.state", ["main"]),
+    ("levels.basics-first-commit.state", ...),
     ("cards.basics-staging-area.box", ...),
     ("cards.basics-staging-area.due", 20261009),
     ("streak", None),

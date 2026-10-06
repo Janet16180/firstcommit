@@ -38,10 +38,16 @@ class SaveError(ValueError):
 
 
 class LevelRecord(TypedDict):
-    """A level the player has finished: when, and the XP paid the first time."""
+    """
+    A level the player has finished: when and the XP paid, both the first time, and the state of the last play.
+
+    ``state`` is the level state of the most recent solve (replays included), so its debrief can
+    be filled in after the level in progress is gone.
+    """
 
     finished: str
     xp: int
+    state: dict[str, Any]
 
 
 class CardEntry(TypedDict):

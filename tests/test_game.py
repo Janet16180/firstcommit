@@ -197,6 +197,15 @@ def test_a_level_page_shows_its_briefing_steps_and_hint_count(sample_level: runn
     assert view["steps"][1]["command"] == "git add hello.txt"
     assert view["steps"][2]["placeholder"] == "a branch name"
     assert view["briefing"] == markup.parse(sample_level.briefing)
+    assert (view["question"], view["placeholder"], view["debrief"]) == ("", "", None)
+
+
+def test_a_level_solved_by_a_typed_answer_shows_its_question_filled_from_its_state(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    level = dataclasses.replace(sample_level, question="Which branch is `{{branch}}` on?", placeholder="like {{branch}}")
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    game.start(level.id)
+    view = game.level(level.id)
+    assert (view["question"], view["placeholder"]) == ("Which branch is `trunk` on?", "like trunk")
 
 
 def test_text_of_the_level_in_progress_is_filled_from_its_state(sample_level: runner.Level) -> None:
@@ -354,9 +363,48 @@ def test_solving_a_level_pays_once_and_records_it(sample_level: runner.Level, ga
     assert (result["solved"], result["payout"]) == (True, payout)
     assert result["debrief"] == markup.parse("`hello.txt` is now in a commit on `trunk`.")
     progress = save.load_progress()
-    assert (progress["xp"], progress["last_payout"], progress["levels"]["basics-sample"]["xp"]) == (100, payout, 100)
+    assert (progress["xp"], progress["last_payout"]) == (100, payout)
+    assert {key: value for key, value in progress["levels"]["basics-sample"].items() if key != "finished"} == {"xp": 100, "state": {"branch": "trunk"}}
     assert save.load_active() is None
     assert lab_project(game_home).is_dir()
+
+
+def setup_on(branch: str) -> runner.Setup:
+    """
+    Make a setup of the sample level that starts on a given branch.
+
+    Parameters
+    ----------
+    branch : str
+        The branch name, which goes into the state.
+
+    Returns
+    -------
+    runner.Setup
+        The setup.
+    """
+
+    def setup(lab: kit.Lab) -> kit.State:
+        kit.git(lab.root, "init", "-q", "-b", branch, str(lab.project))
+        (lab.project / "hello.txt").write_text("hello\n")
+        return {"branch": branch}
+
+    return setup
+
+
+def test_a_finished_levels_page_shows_the_debrief_of_its_last_play(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    game.start(sample_level.id)
+    solve(sample_level)
+    game.check(None, auto=False)
+    assert game.level(sample_level.id)["debrief"] == markup.parse("`hello.txt` is now in a commit on `trunk`.")
+    replay = dataclasses.replace(sample_level, setup=setup_on("main"))
+    monkeypatch.setattr(runner, "catalogue", lambda: {replay.id: replay})
+    game.start(replay.id)
+    solve(replay)
+    game.check(None, auto=False)
+    assert game.level(replay.id)["debrief"] == markup.parse("`hello.txt` is now in a commit on `main`.")
+    game.reset()
+    assert game.level(replay.id)["debrief"] is None
 
 
 def test_a_level_is_solved_even_before_its_quest_is_finished(sample_level: runner.Level) -> None:
@@ -373,16 +421,18 @@ def test_hints_lower_what_a_level_pays(sample_level: runner.Level) -> None:
     assert payout is not None and payout["xp"] == score.level_reward(100, 1, first_time=True) == 85
 
 
-def test_a_replay_pays_nothing_and_keeps_the_first_record(sample_level: runner.Level) -> None:
+def test_a_replay_pays_nothing_and_keeps_the_first_finish_and_payment(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
     game.start(sample_level.id)
     solve(sample_level)
     game.check(None, auto=False)
     first = save.load_progress()["levels"]["basics-sample"]
-    game.start(sample_level.id)
-    solve(sample_level)
+    replay = dataclasses.replace(sample_level, setup=setup_on("main"))
+    monkeypatch.setattr(runner, "catalogue", lambda: {replay.id: replay})
+    game.start(replay.id)
+    solve(replay)
     payout = game.check(None, auto=False)["payout"]
     assert payout == {"level": "basics-sample", "xp": 0, "first_time": False, "rank_before": "Untracked", "rank_after": "Untracked"}
-    assert save.load_progress()["levels"]["basics-sample"] == first
+    assert save.load_progress()["levels"]["basics-sample"] == {**first, "state": {"branch": "main"}}
     assert save.load_progress()["xp"] == 100
 
 

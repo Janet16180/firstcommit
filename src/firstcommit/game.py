@@ -102,8 +102,11 @@ class LevelView(TypedDict):
     """
     A level's page: what to do, the quest steps and how many hints exist.
 
+    ``question`` and ``placeholder`` are empty for a level checked against the repository only.
     ``hints`` are the hints already revealed while this level is in progress (empty otherwise),
-    so a reloaded page can show what the player paid for.
+    so a reloaded page can show what the player paid for. ``debrief`` is set once the player has
+    finished the level, filled from its last play, so it shows even when the level was solved
+    from the terminal.
     """
 
     id: str
@@ -113,10 +116,13 @@ class LevelView(TypedDict):
     difficulty: int
     xp: int
     briefing: list[Block]
+    question: str
+    placeholder: str
     steps: list[StepView]
     hints_total: int
     has_lesson: bool
     hints: list[list[Block]]
+    debrief: list[Block] | None
 
 
 class SlideView(TypedDict):
@@ -269,7 +275,8 @@ def level(level_id: str) -> LevelView:
     Returns
     -------
     LevelView
-        Its briefing and quest steps, filled from its state while it is in progress.
+        Its briefing, question and quest steps, filled from its state while it is in progress,
+        and its debrief once finished.
 
     Raises
     ------
@@ -277,6 +284,7 @@ def level(level_id: str) -> LevelView:
         If no level has this id.
     """
     entry = runner.catalogue()[level_id]
+    finished = save.load_progress()["levels"].get(level_id)
     active = save.load_active()
     playing = active if active is not None and active["level"] == level_id else None
     state = playing["state"] if playing is not None else {}
@@ -289,10 +297,13 @@ def level(level_id: str) -> LevelView:
         "difficulty": entry.difficulty,
         "xp": entry.xp,
         "briefing": _blocks(entry.briefing, state),
+        "question": _fill(entry.question, state),
+        "placeholder": _fill(entry.placeholder, state),
         "steps": [_step_view(step, state) for step in entry.quest],
         "hints_total": len(entry.hints),
         "has_lesson": bool(entry.lesson),
         "hints": [_blocks(hint_text, state) for hint_text in revealed],
+        "debrief": _blocks(entry.debrief, finished["state"]) if finished is not None else None,
     }
 
 
@@ -431,7 +442,7 @@ def check(answer: str | None, auto: bool) -> CheckResult:
         verdict = entry.check(runner.lab_of(entry.id), active["state"], typed)
         payout = None
         if verdict.solved:
-            payout = _pay(entry, active["hints"])
+            payout = _pay(entry, active["hints"], active["state"])
         elif not auto:
             active["attempts"] += 1
             save.write_active(active)
@@ -673,9 +684,9 @@ def _playing() -> tuple[save.Active, runner.Level]:
     return active, levels[active["level"]]
 
 
-def _pay(entry: runner.Level, hints: int) -> Payout:
+def _pay(entry: runner.Level, hints: int, state: kit.State) -> Payout:
     """
-    Record a solved level: pay it, keep the payout, and end the level (its lab stays).
+    Record a solved level: pay it, keep the payout and the play's state, and end the level (its lab stays).
 
     Parameters
     ----------
@@ -683,6 +694,8 @@ def _pay(entry: runner.Level, hints: int) -> Payout:
         The level solved.
     hints : int
         Hints revealed while playing it.
+    state : kit.State
+        The state of this play, for its debrief.
 
     Returns
     -------
@@ -695,7 +708,8 @@ def _pay(entry: runner.Level, hints: int) -> Payout:
     rank_before = score.rank(progress["xp"])["title"]
     progress["xp"] += xp
     if first_time:
-        progress["levels"][entry.id] = {"finished": _now(), "xp": xp}
+        progress["levels"][entry.id] = {"finished": _now(), "xp": xp, "state": state}
+    progress["levels"][entry.id]["state"] = state
     payout: Payout = {"level": entry.id, "xp": xp, "first_time": first_time, "rank_before": rank_before, "rank_after": score.rank(progress["xp"])["title"]}
     progress["last_payout"] = payout
     save.write_progress(progress)
