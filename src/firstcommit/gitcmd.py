@@ -29,8 +29,13 @@ class Person:
 
 GAME = Person("First Commit", "game@example.com")
 
-BASE_CONFIG = "[init]\n\tdefaultBranch = main\n"
-"""The game's global git configuration when it starts: the player's shell and the lessons share it."""
+BASE_CONFIG = "[init]\n\tdefaultBranch = main\n[core]\n\tpager = less -FRX\n"
+"""
+The game's global git configuration when it starts: the player's shell and the lessons share it.
+
+``core.pager`` is what git uses when ``LESS`` is unset (git-config(1), core.pager): short output
+is printed without stopping in the pager, whatever ``LESS`` the player's shell sets.
+"""
 
 
 def isolation(home: Path) -> dict[str, str]:
