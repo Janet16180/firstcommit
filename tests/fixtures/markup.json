@@ -1,0 +1,190 @@
+[
+  {
+    "name": "empty text has no blocks",
+    "text": "",
+    "blocks": []
+  },
+  {
+    "name": "blank lines only have no blocks",
+    "text": "\n   \n\t\n",
+    "blocks": []
+  },
+  {
+    "name": "a paragraph is re-wrapped into one line",
+    "text": "Git keeps\nthe history of\nyour project.",
+    "blocks": [
+      {"kind": "para", "spans": [{"text": "Git keeps the history of your project.", "code": false}]}
+    ]
+  },
+  {
+    "name": "runs of spaces inside a paragraph become one",
+    "text": "Two   spaces\t and a tab.",
+    "blocks": [
+      {"kind": "para", "spans": [{"text": "Two spaces and a tab.", "code": false}]}
+    ]
+  },
+  {
+    "name": "blank lines separate paragraphs",
+    "text": "First.\n\nSecond.",
+    "blocks": [
+      {"kind": "para", "spans": [{"text": "First.", "code": false}]},
+      {"kind": "para", "spans": [{"text": "Second.", "code": false}]}
+    ]
+  },
+  {
+    "name": "several blank lines, or lines of spaces, separate paragraphs once",
+    "text": "First.\n\n  \n\nSecond.",
+    "blocks": [
+      {"kind": "para", "spans": [{"text": "First.", "code": false}]},
+      {"kind": "para", "spans": [{"text": "Second.", "code": false}]}
+    ]
+  },
+  {
+    "name": "backticks mark code inside a paragraph",
+    "text": "Run `git status` to look.",
+    "blocks": [
+      {"kind": "para", "spans": [
+        {"text": "Run ", "code": false},
+        {"text": "git status", "code": true},
+        {"text": " to look.", "code": false}
+      ]}
+    ]
+  },
+  {
+    "name": "code can open and close a paragraph",
+    "text": "`main` is a branch, like `topic`",
+    "blocks": [
+      {"kind": "para", "spans": [
+        {"text": "main", "code": true},
+        {"text": " is a branch, like ", "code": false},
+        {"text": "topic", "code": true}
+      ]}
+    ]
+  },
+  {
+    "name": "code in backticks may run over a line break",
+    "text": "Type `git commit\n-m` then a message.",
+    "blocks": [
+      {"kind": "para", "spans": [
+        {"text": "Type ", "code": false},
+        {"text": "git commit -m", "code": true},
+        {"text": " then a message.", "code": false}
+      ]}
+    ]
+  },
+  {
+    "name": "an unmatched backtick stays as written",
+    "text": "A lone ` stays.",
+    "blocks": [
+      {"kind": "para", "spans": [{"text": "A lone ` stays.", "code": false}]}
+    ]
+  },
+  {
+    "name": "an empty pair of backticks stays as written",
+    "text": "An empty pair `` stays.",
+    "blocks": [
+      {"kind": "para", "spans": [{"text": "An empty pair `` stays.", "code": false}]}
+    ]
+  },
+  {
+    "name": "an indented paragraph is verbatim, without its common indentation",
+    "text": "Look:\n\n    $ git log --oneline\n    9fceb02 Add a README\n\nThat is the history.",
+    "blocks": [
+      {"kind": "para", "spans": [{"text": "Look:", "code": false}]},
+      {"kind": "code", "text": "$ git log --oneline\n9fceb02 Add a README"},
+      {"kind": "para", "spans": [{"text": "That is the history.", "code": false}]}
+    ]
+  },
+  {
+    "name": "a verbatim block keeps the indentation inside it",
+    "text": "The file:\n\n    [user]\n        name = Ada\n",
+    "blocks": [
+      {"kind": "para", "spans": [{"text": "The file:", "code": false}]},
+      {"kind": "code", "text": "[user]\n    name = Ada"}
+    ]
+  },
+  {
+    "name": "command lines starting with a dollar sign are verbatim without indentation",
+    "text": "$ git init -q demo\n  (no output)",
+    "blocks": [
+      {"kind": "code", "text": "$ git init -q demo\n  (no output)"}
+    ]
+  },
+  {
+    "name": "a dollar line followed by an unindented line is prose",
+    "text": "$ git init\nmakes a repository.",
+    "blocks": [
+      {"kind": "para", "spans": [{"text": "$ git init makes a repository.", "code": false}]}
+    ]
+  },
+  {
+    "name": "backticks inside a verbatim block stay as written",
+    "text": "Print the date:\n\n    echo `date`",
+    "blocks": [
+      {"kind": "para", "spans": [{"text": "Print the date:", "code": false}]},
+      {"kind": "code", "text": "echo `date`"}
+    ]
+  },
+  {
+    "name": "lines starting with a dash and a space are bullets",
+    "text": "- the working folder\n- the staging area\n- the commits",
+    "blocks": [
+      {"kind": "bullets", "items": [
+        [{"text": "the working folder", "code": false}],
+        [{"text": "the staging area", "code": false}],
+        [{"text": "the commits", "code": false}]
+      ]}
+    ]
+  },
+  {
+    "name": "a bullet continues on the lines after it",
+    "text": "- a commit records\n  every file\n- a branch names a commit",
+    "blocks": [
+      {"kind": "bullets", "items": [
+        [{"text": "a commit records every file", "code": false}],
+        [{"text": "a branch names a commit", "code": false}]
+      ]}
+    ]
+  },
+  {
+    "name": "lines before the first bullet are a paragraph",
+    "text": "Commands to keep:\n- `git status` shows the three areas\n- `git add` stages a file",
+    "blocks": [
+      {"kind": "para", "spans": [{"text": "Commands to keep:", "code": false}]},
+      {"kind": "bullets", "items": [
+        [{"text": "git status", "code": true}, {"text": " shows the three areas", "code": false}],
+        [{"text": "git add", "code": true}, {"text": " stages a file", "code": false}]
+      ]}
+    ]
+  },
+  {
+    "name": "a dash without a space is not a bullet",
+    "text": "-q keeps git quiet.",
+    "blocks": [
+      {"kind": "para", "spans": [{"text": "-q keeps git quiet.", "code": false}]}
+    ]
+  },
+  {
+    "name": "an indented triple-quoted text is dedented as a whole first",
+    "text": "\n        A lesson written inside code.\n        It wraps.\n\n            $ git status\n        ",
+    "blocks": [
+      {"kind": "para", "spans": [{"text": "A lesson written inside code. It wraps.", "code": false}]},
+      {"kind": "code", "text": "$ git status"}
+    ]
+  },
+  {
+    "name": "a text that is only indented output reads as prose, since the whole text is dedented first",
+    "text": "    On branch main\n    nothing to commit",
+    "blocks": [
+      {"kind": "para", "spans": [{"text": "On branch main nothing to commit", "code": false}]}
+    ]
+  },
+  {
+    "name": "trailing spaces in a verbatim block are dropped",
+    "text": "Run:\n\n    $ git add .   \n    $ git commit\t",
+    "blocks": [
+      {"kind": "para", "spans": [{"text": "Run:", "code": false}]},
+      {"kind": "code", "text": "$ git add .\n$ git commit"}
+    ]
+  }
+]

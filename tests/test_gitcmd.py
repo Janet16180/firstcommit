@@ -71,7 +71,7 @@ def test_isolation_names_the_games_config_and_labs(tmp_path: Path) -> None:
     assert gitcmd.isolation(tmp_path) == {
         "GIT_CONFIG_GLOBAL": str(tmp_path / "gitconfig"),
         "GIT_CONFIG_NOSYSTEM": "1",
-        "GIT_CEILING_DIRECTORIES": str(tmp_path / "labs"),
+        "GIT_CEILING_DIRECTORIES": f"{tmp_path / 'labs'}:{tmp_path / 'lessons'}",
     }
 
 
@@ -109,3 +109,10 @@ def test_a_missing_folder_gives_gits_own_failure_instead_of_crashing(tmp_path: P
 def test_relative_paths_in_arguments_resolve_in_the_folder_given(tmp_path: Path) -> None:
     gitcmd.output(tmp_path, "init", "-q", "-b", "main", "inner")
     assert (tmp_path / "inner" / ".git").is_dir()
+
+
+def test_game_git_never_finds_a_repository_above_a_lesson(game_home: Path) -> None:
+    gitcmd.output(game_home, "init", "-q")
+    lesson = game_home / "lessons" / "some-lesson"
+    lesson.mkdir(parents=True)
+    assert gitcmd.run(lesson, "rev-parse", "--git-dir").returncode != 0

@@ -188,8 +188,22 @@ configuration, and shows each of the slide's commands with its real output, plus
 (`view`): the repository map, the three areas, the object database, the commands only, or
 nothing. So every hash and line of output a lesson shows is what git really prints.
 
+- Each non-blank line of `run` is one command. The whole lesson runs in one bash shell, so
+  `cd`, variables and `$?` carry over to the next line and the next slide. Keep a command on
+  one line (no here-documents, no `if` or `for` spread over lines); join steps with `&&`.
 - A line that starts with `! ` is expected to fail (`! git commit -m "x"` before anything is
-  staged); any other failing line is a bug in the lesson and fails the tests.
+  staged); any other failing line is a bug in the lesson and fails the tests. So is a `! `
+  line that succeeds, a line that ends the shell (`exit`), and a slide that ends outside the
+  lesson's home folder.
+- The lesson starts in the empty folder `/home/you/project`, with `HOME` at `/home/you` (that
+  is how the output shows the real temporary folder), the author and committer
+  `Sam Lee <sam@example.com>`, the date 2026-01-15 09:00 UTC, `LC_ALL=C`, `TERM=dumb`, umask
+  022, and a global git configuration that only sets the default branch to `main`.
+  `firstcommit.demos.environment` defines it; predict cards and verify snippets use the same.
+- A command's output is its standard output and error together, in order. A slide's figure
+  shows the repository of the shell's current folder after the slide's last line.
+- Output must be the same on every run and must be text: no `date`, no `ls -l` (it shows
+  times), no `$RANDOM`, no binary files printed to the terminal.
 - Write files with plain shell (`echo "hello" > hello.txt`), so the reader can follow along.
 - 4-8 slides; one idea each; text of 2-5 short sentences.
 
@@ -200,6 +214,42 @@ and with wrong answers (both must fail), every quest step's checks against the s
 passes through, `solve`, a check that passes, the hostile-input list, and the lab cleanup. Put a
 level's own tests, such as its wrong-approach feedback, in `tests/levels/test_<chapter>_<slug>.py`.
 Then play the level for real in the page, like a player.
+
+What the harness checks, so you know what it will refuse:
+
+- `setup` returns a JSON-serialisable state that has a key for every `{{key}}` in the briefing,
+  hints, debrief and steps.
+- `check` with no answer and with every answer of the hostile-input list (empty, blank, `"\x00"`,
+  `"²"`, `"-1"`, `"9"*5000`, `"word " + "9"*5000`, `--help`, shell syntax, other scripts, 60 000
+  characters...) returns a `kit.Verdict` that is not solved, and leaves every file of the lab as
+  it was.
+- Every answer step refuses the empty answer and the hostile list.
+- With `.git` deleted, or the whole project folder deleted, `check` and every step still return a
+  `kit.Verdict` instead of raising.
+- `solve` then `check` passes, and the lab can be removed.
+
+The quest is walked step by step, as a player would play it. A level with a quest declares the
+player's part of each step in `QUEST_ACTIONS`, a module-level name the game itself never reads:
+
+```python
+def stage_hello(lab: kit.Lab, state: kit.State) -> str | None:
+    kit.git(lab.project, "add", "hello.txt")      # what the player types for this step
+    return None                                   # a watch step needs no answer
+
+
+def read_branch(lab: kit.Lab, state: kit.State) -> str | None:
+    return kit.git(lab.project, "branch", "--show-current").strip()  # what the player reads and types
+
+
+QUEST_ACTIONS = {"stage": stage_hello, "branch": read_branch}
+```
+
+Keys are step ids; every watch step and every answer step needs one (a read step may have one
+when the next step depends on it). Each action does what the player would do, with ordinary
+commands, and returns the answer to type for an answer step (None otherwise). For each step in
+order, the harness asserts that a watch step fails before its action and passes after it, and
+that an answer step refuses the empty answer and accepts the action's answer. So each watch must
+notice the very thing its step asks for, and not pass early because of an earlier step.
 
 ## 4. Cards
 
