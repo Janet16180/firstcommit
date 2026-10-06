@@ -67,6 +67,9 @@ web and level as soon as it lands.
   (`less`); teach `q`, Space and `/` there. Short output no longer stops in the pager
   (`core.pager = less -FRX` in the game's config, git's own default when LESS is unset).
 
+- repomap does not see uncommitted changes inside a submodule (`git status` reports them). No
+  chapter teaches submodules yet; revisit if one does.
+
 ## Level polish for "Your first commit" (from the checker's blind playtest)
 
 - A beginner who commits before setting a name sees git's identity error, which the lesson never
