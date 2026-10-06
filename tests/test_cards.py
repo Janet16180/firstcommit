@@ -342,6 +342,12 @@ def test_the_answer_shown_is_the_right_option_or_the_first_accepted_spelling() -
     assert cards.answer(card(kind="text")) == "Main Branch"
 
 
+def test_every_card_level_has_one_name() -> None:
+    assert set(cards.LEVEL_NAMES) == set(cards.LEVELS)
+    assert len(set(cards.LEVEL_NAMES.values())) == len(cards.LEVEL_NAMES)
+    assert all(name.strip() for name in cards.LEVEL_NAMES.values())
+
+
 def test_every_card_level_pays_xp() -> None:
     assert set(cards.LEVELS) == set(score.CARD_XP)
     assert all(score.card_score(level, correct=True, pays=True, streak=0).xp > 0 for level in cards.LEVELS)
