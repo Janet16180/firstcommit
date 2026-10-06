@@ -112,6 +112,13 @@ boxes, one picture of a commit everywhere), and security L3.
   under `flock .scratch/locks/browser.lock`, the Docker suite only before reporting and under
   `flock .scratch/locks/docker.lock`, `pytest -m "not docker"` while iterating. Give this rule in
   the first brief.
+- Merge the hash an agent reports, never its branch name: a branch moves while its agent keeps
+  working. The lead once merged `p2/core` mid-step and pulled in an unfinished records change
+  (4 red tests); the merge was redone from the reported hash. When one change needs edits in
+  several owners' files, land it as a chain (each owner merges the previous link's hash and
+  fixes their own tests), and merge only the last link.
+- Screenshots of the game page: reset the prompt after every reload and refuse to save if the
+  visible terminal shows "@" (a reload once brought back the user's prompt with their email).
 
 ## Backlog (decided later, not now)
 
