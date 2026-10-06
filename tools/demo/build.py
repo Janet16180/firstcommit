@@ -5,10 +5,11 @@ Run it from the repository::
 
     uv run python tools/demo/build.py demo/places-demo.html
 
-It records every scenario on real git first (recordings.py, a few seconds), then writes one HTML
-file holding the game's own scripts and stylesheets (from src/firstcommit/web/static), the
-recordings as embedded JSON, and the demo's buttons: your first commits step by step, and one
-command at a time. The page fetches nothing and stores nothing, so it runs as a file, or in a sandboxed iframe on another origin. Its light or dark look
+It records every scenario on real git first (recordings.py, and share.py for sharing a file with
+Alex; a few seconds), then writes one HTML file holding the game's own scripts and stylesheets
+(from src/firstcommit/web/static), the recordings as embedded JSON, and the demo's buttons: your
+first commits step by step, sharing a file with Alex step by step, and one command at a time. The page fetches nothing and stores
+nothing, so it runs as a file, or in a sandboxed iframe on another origin. Its light or dark look
 follows the system until switched; under reduced motion it shows each result without moving.
 """
 
@@ -17,6 +18,7 @@ import sys
 from pathlib import Path
 
 from recordings import record_commands, record_first_commits
+from share import LABELS, record_sharing
 
 STATIC = Path(__file__).resolve().parents[2] / "src" / "firstcommit" / "web" / "static"
 SCRIPTS = ["dom.js", "map.js", "theme-time.js", "theme-time-motion.js", "theme-time-places.js", "theme-time-share.js"]
@@ -69,6 +71,11 @@ body {{ margin: 0; background: var(--bg); }}
     <div class="demo-bar" id="steps" role="group" aria-label="Steps"></div>
     <button type="button" class="btn btn-primary btn-small" data-next="step">Next step</button>
   </div>
+  <p class="demo-group">Share a file with Alex, step by step:</p>
+  <div class="demo-bar">
+    <div class="demo-bar" id="share" role="group" aria-label="Sharing steps"></div>
+    <button type="button" class="btn btn-primary btn-small" data-next="share">Next step</button>
+  </div>
   <p class="demo-group">One command at a time:</p>
   <div class="demo-bar">
     <div class="demo-bar" id="scenarios" role="group" aria-label="Commands"></div>
@@ -83,6 +90,7 @@ body {{ margin: 0; background: var(--bg); }}
 </main>
 <script type="application/json" id="data">{data}</script>
 <script type="application/json" id="steps-data">{steps}</script>
+<script type="application/json" id="share-data">{share}</script>
 <script>
 {scripts}
 </script>
@@ -91,6 +99,8 @@ body {{ margin: 0; background: var(--bg); }}
 (function () {{
   const DATA = JSON.parse(document.getElementById("data").textContent);
   const STEPS = JSON.parse(document.getElementById("steps-data").textContent);
+  const SHARE = JSON.parse(document.getElementById("share-data").textContent);
+  const SHARE_LABELS = {share_labels};
   const SCENARIOS = {scenarios};
   const root = document.documentElement;
   const dark = window.matchMedia("(prefers-color-scheme: dark)");
@@ -123,11 +133,29 @@ body {{ margin: 0; background: var(--bg); }}
     }}
   }}
 
+  /* A sharing step: Alex's figure, which says its own command and caption. */
+  function showShare(chosenEntry) {{
+    const step = SHARE[chosenEntry.key];
+    document.getElementById("setup").textContent = `Step ${{chosenEntry.key + 1}} of ${{SHARE.length}}.`;
+    document.getElementById("command").replaceChildren();
+    document.getElementById("still").hidden = !reduced.matches;
+    box.replaceChildren(TimeShare.render(step, {{ at: "before" }}));
+    timer = setTimeout(() => {{
+      const figure = TimeShare.render(step);
+      box.replaceChildren(figure);
+      TimeShare.play(figure, step);
+    }}, reduced.matches ? 0 : 500);
+  }}
+
   /* Shows the state before the command, then the state after it with the command's motion. */
   function show(chosenEntry) {{
     current = chosenEntry;
     clearTimeout(timer);
     mark(chosenEntry);
+    if (chosenEntry.kind === "share") {{
+      showShare(chosenEntry);
+      return;
+    }}
     const {{ before, after, events, lines, setup }} = entry(chosenEntry);
     const commands = TimePlaces.commands(events, before.project, after.project);
     document.getElementById("setup").textContent = setup;
@@ -152,10 +180,12 @@ body {{ margin: 0; background: var(--bg); }}
     bar.append(node);
   }}
   STEPS.forEach((step, index) => button(document.getElementById("steps"), "step", index, `${{index + 1}}. ${{step.name}}`));
+  SHARE.forEach((step, index) => button(document.getElementById("share"), "share", index, `${{index + 1}}. ${{SHARE_LABELS[index]}}`));
   for (const [name, label] of SCENARIOS) button(document.getElementById("scenarios"), "scenario", name, label);
   for (const next of document.querySelectorAll("[data-next]")) {{
     const kind = next.dataset.next;
-    next.addEventListener("click", () => show({{ kind, key: current.kind === kind ? (current.key + 1) % STEPS.length : 0 }}));
+    const count = kind === "step" ? STEPS.length : SHARE.length;
+    next.addEventListener("click", () => show({{ kind, key: current.kind === kind ? (current.key + 1) % count : 0 }}));
   }}
   document.getElementById("replay").addEventListener("click", () => show(current));
   themeButton.addEventListener("click", () => {{
@@ -211,6 +241,7 @@ def build(static: Path) -> str:
         If a script holds ``</script``, which would end its element early.
     """
     commands = record_commands()
+    sharing = record_sharing()
     scripts = "\n".join(f"/* {name} */\n{(static / name).read_text()}" for name in SCRIPTS)
     if "</script" in scripts:
         raise ValueError("a script holds </script")
@@ -218,8 +249,10 @@ def build(static: Path) -> str:
         styles="\n".join((static / name).read_text() for name in STYLES),
         data=embedded({name: commands[name] for name, _, _ in SCENARIOS}),
         steps=embedded(record_first_commits()),
+        share=embedded(sharing),
         scripts=scripts,
         scenarios=json.dumps([list(scenario) for scenario in SCENARIOS]),
+        share_labels=json.dumps([LABELS[step["id"]] for step in sharing]),
     )
 
 
