@@ -312,8 +312,27 @@ def test_a_reset_moves_the_branch_back(tmp_path: Path) -> None:
     assert "moved back" in events[0]["text"]
 
 
+
+DIVERGED = "git switch -q -c feature && echo theirs > a.txt && git commit -q -am theirs && git switch -q main && echo ours > a.txt && git commit -q -am ours"
+"""Make ``main`` and ``feature`` change ``a.txt`` each its own way, so merging them conflicts."""
+
+
+@pytest.mark.parametrize(
+    ("command", "event"),
+    [
+        ("git restore --ours a.txt", ("file-changed", "`a.txt` changed in the working folder.")),
+        ("git restore --theirs a.txt", ("file-changed", "`a.txt` changed in the working folder.")),
+        ("rm a.txt", ("file-deleted", "`a.txt` was deleted from the working folder.")),
+    ],
+)
+def test_a_conflicted_file_whose_working_copy_changes_is_told_and_stays_in_conflict(tmp_path: Path, command: str, event: tuple[str, str]) -> None:
+    repo = project(tmp_path, DIVERGED + " && (git merge -q feature >/dev/null || true)")
+    kind, text = event
+    assert happens(repo, command) == [{"kind": kind, "text": f"{text} It is still in conflict until it is staged."}]
+
+
 def test_a_merge_with_a_conflict_starts_flags_resolves_and_finishes(tmp_path: Path) -> None:
-    repo = project(tmp_path, "git switch -q -c feature && echo theirs > a.txt && git commit -q -am theirs && git switch -q main && echo ours > a.txt && git commit -q -am ours")
+    repo = project(tmp_path, DIVERGED)
     started = happens(repo, "git merge -q feature >/dev/null || true")
     assert started == [
         {"kind": "merge-started", "text": "A merge is in progress on branch `main`."},
@@ -326,7 +345,7 @@ def test_a_merge_with_a_conflict_starts_flags_resolves_and_finishes(tmp_path: Pa
 
 
 def test_an_abandoned_merge_says_the_branch_did_not_move(tmp_path: Path) -> None:
-    repo = project(tmp_path, "git switch -q -c feature && echo theirs > a.txt && git commit -q -am theirs && git switch -q main && echo ours > a.txt && git commit -q -am ours")
+    repo = project(tmp_path, DIVERGED)
     shell(repo, "git merge -q feature >/dev/null || true")
     events = happens(repo, "git merge --abort")
     assert events == [{"kind": "merge-aborted", "text": f'The merge was aborted: branch `main` points at `{short(repo, "HEAD")}` (`ours`), as before it started.'}]

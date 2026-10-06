@@ -70,6 +70,7 @@ FOLDER_NOTES: dict[FolderChange | None, str] = {
 }
 """How a file in the working folder stands against the staging area, by its `folder_change`."""
 NO_REPOSITORY_NOTE = " There is no repository here, so Git does not track it."
+CONFLICT_NOTE = " It is still in conflict until it is staged."
 STARTED = {
     "merge": "A merge is in progress{on}.",
     "rebase": "A rebase is in progress: Git replays commits one at a time, with HEAD detached until the rebase ends.",
@@ -771,7 +772,9 @@ def _file_events(change: _Change, tidied: bool, committed: bool) -> list[Event]:
     """
     Tell what changed in the staging area and the working folder, file by file.
 
-    A file that matched HEAD before and after only followed HEAD, and is not told.
+    A file that matched HEAD before and after only followed HEAD, and is not told. A file in
+    conflict before and after is told only when its working copy changed (`git restore --ours`,
+    an edit); a conflict that starts or ends has its own events.
 
     Parameters
     ----------
@@ -799,6 +802,8 @@ def _file_events(change: _Change, tidied: bool, committed: bool) -> list[Event]:
         nested = (old["repository"] or new["repository"]) and not _tracked(old) and not _tracked(new)
         if nested:
             folder += _nested_news(old, new)
+        elif old["conflicted"] and new["conflicted"]:
+            folder += _folder_news(old, new, CONFLICT_NOTE)
         elif not (old["conflicted"] or new["conflicted"] or followed_head or put_back):
             staging += _staging_news(old, new, committed)
             folder += _folder_news(old, new, _folder_note(new))
