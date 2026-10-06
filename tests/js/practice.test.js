@@ -14,7 +14,7 @@ const { Practice, createGameApi } = load(
 const correct = (step, questDone = false) => ({ correct: true, message: [{ kind: "para", spans: [{ text: "Right.", code: false }] }], step, quest_done: questDone });
 
 /* A practice view on step `step`; `done` is a finished quest (step 3 of 3), which the server lets the page check by itself. */
-function practice({ step = 1, done = false, replies = {}, level = record("level") } = {}) {
+function practice({ step = 1, done = false, replies = {}, level = record("level"), playMap } = {}) {
   const clock = createClock();
   const server = fakeServer({ "/api/observe": record("observation"), "/api/step": record("step"), "/api/check": record("check_unsolved"), "/api/hint": record("hint"), "/api/abort": { level: "x" }, ...replies });
   const seen = { solved: [], ended: 0, left: 0, sounds: [], attached: 0, detached: 0, typed: [] };
@@ -24,6 +24,7 @@ function practice({ step = 1, done = false, replies = {}, level = record("level"
     timers: clock,
     page: document,
     terminal: { attach: () => (seen.attached += 1), detach: () => (seen.detached += 1), type: (text) => seen.typed.push(text) },
+    playMap,
   };
   const view = Practice.create(ctx, {
     level,
@@ -220,5 +221,27 @@ test("a new commit on the map plays a sound", async () => {
   });
   await run.clock.advance(1500);
   assert.deepEqual(run.seen.sounds, ["commit"]);
+  run.view.dispose();
+});
+
+test("the live map moves from its drawing before when a commit appears, through the page's playMap", async () => {
+  const observation = record("observation");
+  const older = { ...observation, project: { ...observation.project, commits: observation.project.commits.slice(1) } };
+  const plays = [];
+  let first = true;
+  const run = practice({
+    playMap: (figure, before, after, options) => plays.push({ figure, before, after, options }),
+    replies: {
+      "/api/observe": () => {
+        const reply = first ? older : observation;
+        first = false;
+        return reply;
+      },
+    },
+  });
+  await run.clock.advance(1500);
+  assert.equal(plays.length, 1);
+  assert.equal(plays[0].figure, run.q(".live-project .repo-map"));
+  assert.deepEqual([plays[0].before.commits.length, plays[0].after.commits.length, plays[0].options.showHead], [older.project.commits.length, observation.project.commits.length, true]);
   run.view.dispose();
 });

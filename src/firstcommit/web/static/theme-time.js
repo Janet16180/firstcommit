@@ -9,7 +9,8 @@
  * short hash and subject, every chip its real name, HEAD's chip reads HEAD, and the key under the
  * graph puts each metaphor next to its Git word. Needs dom.js and map.js. Defines one global,
  * TimeTheme: `map` (a RepoMap theme), `small` (the same map, smaller and with no key, for
- * figures), `boxes` (`small` with each commit drawn as a closed box), `panel` (LivePanel's
+ * figures), `boxes` (`small` with each commit drawn as a closed box), `withGuide(guide)` (`map`
+ * with the button of TimeGuide's `guide` in its key), `panel` (LivePanel's
  * titles), `terminal` (xterm colours, light and dark), `legend(layout)`, `mark(name)` (the small
  * picture the key and the guide put beside a word) and `tabKey(label)`, the name
  * theme-time-motion.js follows a tab by.
@@ -142,10 +143,11 @@ const TimeTheme = (function () {
     return svg("svg", { class: `tt-mark is-${entry}`, width: 22, height: 22, viewBox, "aria-hidden": "true", focusable: "false" }, picture);
   }
 
-  function key({ snapshot, map, theme }) {
+  /* The key under the map; `guide` (TimeGuide's) adds its button at the end of HEAD's line. */
+  function key({ snapshot, map, theme }, guide = null) {
     const { words } = theme;
     return el("div", { class: "map-key tt-key" },
-      el("p", { class: "tt-key-now" }, mark("now", theme), el("span", {}, el("b", {}, words.now), ": ", snapshot.branch ? words.here : words.hereDetached)),
+      el("p", { class: "tt-key-now" }, mark("now", theme), el("span", {}, el("b", {}, words.now), ": ", snapshot.branch ? words.here : words.hereDetached), guide && guide.button()),
       el("ul", { class: "tt-legend", "aria-label": words.legend },
         legend(map).map((entry) => {
           const [metaphor, git, meaning] = LEGEND[entry];
@@ -201,5 +203,8 @@ const TimeTheme = (function () {
     },
   };
 
-  return { map, small, boxes, panel, legend, tabKey, terminal, mark: (name) => mark(name, map) };
+  /* The map with the guide's button in its key. */
+  const withGuide = (guide) => RepoMap.theme({ ...map, shapes: { ...map.shapes, key: (ctx) => key(ctx, guide) } });
+
+  return { map, small, boxes, withGuide, panel, legend, tabKey, terminal, mark: (name) => mark(name, map) };
 })();

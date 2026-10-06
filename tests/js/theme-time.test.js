@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const { installBrowser, load, record } = require("./load");
 
-installBrowser();
+const document = installBrowser();
 const { RepoMap, TimeTheme, TimeGuide } = load(["dom.js", "map.js", "theme-time.js", "theme-time-guide.js"], ["RepoMap", "TimeTheme", "TimeGuide"]);
 const theme = TimeTheme.map;
 
@@ -128,6 +128,15 @@ test("figures can draw each commit as a closed box on its timeline, in the same 
   assert.equal(figure.querySelector(".tt-key"), null);
   const place = (map) => map.commits.map((commit) => [commit.hash, commit.row, commit.lane]);
   assert.deepEqual(place(RepoMap.layout(MERGED, { theme: boxes })), place(RepoMap.layout(MERGED, { theme })));
+});
+
+test("a map theme with the guide puts the guide's button at the end of HEAD's line in the key; the plain map has none", () => {
+  const button = () => Object.assign(document.createElement("button"), { className: "tt-guide-button" });
+  const key = RepoMap.render(MERGED, { theme: TimeTheme.withGuide({ button }) }).querySelector(".tt-key");
+  assert.equal([...key.querySelector(".tt-key-now").childNodes].at(-1).getAttribute("class"), "tt-guide-button");
+  assert.equal(RepoMap.render(MERGED, { theme }).querySelector(".tt-guide-button"), null);
+  const place = (map) => map.commits.map((commit) => [commit.hash, commit.row, commit.lane]);
+  assert.deepEqual(place(RepoMap.layout(MERGED, { theme: TimeTheme.withGuide({ button }) })), place(RepoMap.layout(MERGED, { theme })));
 });
 
 test("the key draws each commit with the map's own shape", () => {
