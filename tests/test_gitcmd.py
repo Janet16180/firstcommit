@@ -86,3 +86,15 @@ def test_game_git_never_rewrites_the_index_behind_the_players_back(tmp_path: Pat
     (repo / "a.txt").touch()
     gitcmd.output(repo, "status", "--porcelain=v2")
     assert index.stat().st_mtime_ns == long_ago
+
+
+def test_the_players_shell_keeps_its_own_settings_but_loses_inherited_git_variables(tmp_path: Path) -> None:
+    base = {"PATH": "/usr/bin", "EDITOR": "vim", "GIT_DIR": "/elsewhere/.git", "GIT_INDEX_FILE": "/x"}
+    env = gitcmd.shell_environment(base, tmp_path)
+    assert env == {"PATH": "/usr/bin", "EDITOR": "vim", **gitcmd.isolation(tmp_path)}
+
+
+def test_game_commands_start_from_the_players_shell_environment(tmp_path: Path) -> None:
+    base = {"PATH": "/usr/bin", "GIT_WORK_TREE": "/x"}
+    env = gitcmd.environment(base, tmp_path, gitcmd.GAME, None)
+    assert gitcmd.shell_environment(base, tmp_path).items() <= env.items()

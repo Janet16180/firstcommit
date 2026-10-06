@@ -115,6 +115,8 @@ XP: int                       # guide: 100 for 1, 150-200 for 2, 250-300 for 3
 LESSON: list[kit.Slide] = []  # optional; the first level of a chapter has one
 QUEST: list[kit.Step] = []    # optional; the first level of a chapter has one
 BRIEFING: str                 # the situation and what counts as success
+QUESTION: str = ""            # optional; set it when the level is solved by a typed answer
+PLACEHOLDER: str = ""         # optional; example shape of that answer ("a short hash")
 HINTS: list[str]              # 2-4, from a nudge to almost the answer; each costs XP
 DEBRIEF: str                  # shown once solved
 
@@ -133,6 +135,9 @@ def solve(lab: kit.Lab, state: kit.State) -> str | None: ...
   through `kit.git_run`. It is called every couple of seconds while the player works, with
   `answer=None`, and must stay fast and survive any state the player can create: a missing
   folder, a deleted `.git`, a detached HEAD, a merge in progress, garbage answers.
+- **`QUESTION`** is for levels whose goal is something the player finds out ("which commit
+  introduced the bug?"). Without it, the page offers no answer box and the level is checked
+  against the repository only, with `answer=None`.
 - **`solve(lab, state)`** is the reference solution the tests use. It plays like a player:
   ordinary git commands through `kit.git` in `lab.project`, never a stored answer. It returns
   the answer to submit, or None for levels checked against the repository.
