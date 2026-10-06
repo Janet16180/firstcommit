@@ -44,6 +44,7 @@ MIN_GIT = (2, 32)
 TARGET_GIT = (2, 43)
 MIN_PYTHON = (3, 12)
 GIT_VERSION = re.compile(r"git version (\d+)\.(\d+)")
+QUEST_FIRST = "The guided quest is not finished yet: step {step} of {steps} is next."
 
 
 class LevelSummary(TypedDict):
@@ -436,10 +437,13 @@ def check(answer: str | None, auto: bool) -> CheckResult:
     """
     Check the level in progress, and pay for it once solved.
 
-    The level may be solved before its quest is finished. A blank answer counts as no answer.
-    A check the player asks for that fails counts as an attempt; an automatic one (the page
-    polling) never does. Solving ends the level: the payout is kept in the progress (so any view
-    can celebrate it) and the lab stays until another level starts.
+    While the guided quest is unfinished, an automatic check (the page polling) does not run the
+    level's check: it is not solved, and its message points to the next step, so the player
+    sees the end of the lesson. A check the player asks for runs the level's check at any time,
+    so the level may be solved before its quest is finished. A blank answer counts as no
+    answer. A check the player asks for that fails counts as an attempt; an automatic one never
+    does. Solving ends the level: the payout is kept in the progress (so any view can celebrate
+    it) and the lab stays until another level starts.
 
     Parameters
     ----------
@@ -461,7 +465,10 @@ def check(answer: str | None, auto: bool) -> CheckResult:
     typed = _typed(answer)
     with save.lock():
         active, entry = _playing()
-        verdict = entry.check(runner.lab_of(entry.id), active["state"], typed)
+        if auto and active["step"] < len(entry.quest):
+            verdict = kit.Verdict(False, QUEST_FIRST.format(step=active["step"] + 1, steps=len(entry.quest)))
+        else:
+            verdict = entry.check(runner.lab_of(entry.id), active["state"], typed)
         payout = None
         if verdict.solved:
             payout = _pay(entry, active["hints"], active["state"])

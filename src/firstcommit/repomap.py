@@ -6,10 +6,10 @@ The map, the "what just happened" feed (`firstcommit.changes`), the lesson figur
 and what a check decides can never disagree. Everything comes from git plumbing, never from
 the wording of git's human-readable output.
 
-The three areas of a file are given as blob ids, the way git itself compares them: a file is
-untracked when it is in the folder but not in the staging area, staged when its staging-area
-blob differs from HEAD's, and changed but not staged when its folder blob differs from the
-staging area's.
+The three areas of a file are given as blob ids and modes, the way git itself compares them: a
+file is untracked when it is in the folder but not in the staging area, staged when its
+staging-area blob or mode differs from HEAD's, and changed but not staged when its folder blob
+or mode differs from the staging area's.
 """
 
 import hashlib
@@ -29,6 +29,7 @@ MAX_FILES = 300
 RefKind = Literal["branch", "remote", "tag"]
 Operation = Literal["merge", "rebase", "cherry-pick", "revert", "bisect"]
 ObjectType = Literal["blob", "tree", "commit", "tag"]
+Area = Literal["head", "index", "folder"]
 
 BRANCH_PREFIX = "refs/heads/"
 REF_KINDS: tuple[tuple[str, RefKind], ...] = ((BRANCH_PREFIX, "branch"), ("refs/remotes/", "remote"), ("refs/tags/", "tag"))
@@ -37,7 +38,11 @@ REF_FORMAT = "%(refname)%00%(objectname)%00%(*objectname)%00%(symref)"
 COMMIT_FORMAT = "%H%x00%h%x00%P%x00%an%x00%at%x00%s"
 COMMIT_FIELDS = 6
 OBJECT_FORMAT = "%(objectname) %(objecttype) %(objectsize)"
+FILE_MODE = "100644"
+EXECUTABLE_MODE = "100755"
+LINK_MODE = "120000"
 GITLINK_MODE = "160000"
+NOWHERE: tuple[None, None] = (None, None)
 OPERATION_MARKERS: tuple[tuple[str, Operation], ...] = (
     ("rebase-merge", "rebase"),
     ("rebase-apply", "rebase"),
@@ -75,19 +80,33 @@ class Ref(TypedDict):
 
 class FileEntry(TypedDict):
     """
-    One path and its blob id in each of the three areas.
+    One path and its blob id and mode in each of the three areas.
 
     ``head``, ``index`` and ``folder`` are None where the file is absent. ``folder`` is the id
     the working copy would get if it were added (as ``git hash-object`` computes it).
     ``conflicted`` paths have no single staging-area blob, so their ``index`` is None.
+
+    ``head_mode``, ``index_mode`` and ``folder_mode`` are git's modes: `FILE_MODE` for a file,
+    `EXECUTABLE_MODE` for an executable one, `LINK_MODE` for a symbolic link and `GITLINK_MODE`
+    for a repository; None exactly where the id is None. Two areas agree when both the id and
+    the mode agree, so ``chmod +x`` alone is a change, as ``git status`` shows it.
+
+    ``repository`` marks a folder holding a repository of its own: one nested in the working
+    folder (``git status`` lists it as an untracked folder; its ``folder`` is its HEAD commit, or
+    None before its first commit) or one recorded as a submodule (its ids are commits). Git
+    never looks at the files inside it.
     """
 
     path: str
     head: str | None
     index: str | None
     folder: str | None
+    head_mode: str | None
+    index_mode: str | None
+    folder_mode: str | None
     ignored: bool
     conflicted: bool
+    repository: bool
 
 
 class Snapshot(TypedDict):
@@ -123,6 +142,33 @@ class ObjectInfo(TypedDict):
 
 
 
+def version(file: FileEntry, area: Area) -> tuple[str | None, str | None]:
+    """
+    Give a file's id and mode in one area.
+
+    Two areas, or one area in two snapshots, agree only when their versions are equal, as
+    ``git status`` compares them: ``chmod +x`` changes the version but not the id.
+
+    Parameters
+    ----------
+    file : FileEntry
+        The file.
+    area : Area
+        ``"head"``, ``"index"`` (the staging area) or ``"folder"`` (the working folder).
+
+    Returns
+    -------
+    tuple[str | None, str | None]
+        The id and the mode; both None where the file is absent.
+    """
+    versions = {
+        "head": (file["head"], file["head_mode"]),
+        "index": (file["index"], file["index_mode"]),
+        "folder": (file["folder"], file["folder_mode"]),
+    }
+    return versions[area]
+
+
 @dataclass(frozen=True)
 class _Repository:
     """The repository of a folder: its git folder, whether it is bare, and its hash function."""
@@ -151,8 +197,9 @@ def snapshot(path: Path) -> Snapshot:
     - a bare repository has no working folder, so ``files`` is empty;
     - a file that cannot be read (no permission, or deleted while it is read) has no ``folder``
       id; a symbolic link's ``folder`` id is that of the link itself, as ``git add`` stores it;
-    - nested repositories and submodules are left out of ``files``, and ignored files are the
-      first to go when there are more than `MAX_FILES` paths;
+    - a nested repository or submodule is one entry, never the files inside it; its folder id
+      ignores changes inside it that are not committed there. Ignored files are the first to go
+      when there are more than `MAX_FILES` paths;
     - stash commits are left out of ``commits`` and ``refs``; ``stash`` counts them.
 
     Parameters
@@ -400,7 +447,7 @@ def _commits(cwd: Path, head: str | None) -> tuple[list[Commit], bool]:
 
 def _files(top: Path, head: str | None, object_format: str) -> tuple[list[FileEntry], bool]:
     """
-    List every path in HEAD, the staging area and the working folder, with its blob ids.
+    List every path in HEAD, the staging area and the working folder, with its blob ids and modes.
 
     Parameters
     ----------
@@ -418,25 +465,35 @@ def _files(top: Path, head: str | None, object_format: str) -> tuple[list[FileEn
     """
     in_head = _tree(top, head) if head is not None else {}
     in_index, conflicted = _index(top)
-    ignored = set(_others(top, "--ignored"))
-    shown = set(in_head) | set(in_index) | conflicted | set(_others(top))
-    kept = (sorted(shown, key=_display) + sorted(ignored, key=_display))[:MAX_FILES]
-    folder = _folder_ids(top, kept, object_format)
-    files: list[FileEntry] = [
-        {
-            "path": _display(key),
-            "head": in_head.get(key),
-            "index": in_index.get(key),
-            "folder": folder.get(key),
-            "ignored": key in ignored,
-            "conflicted": key in conflicted,
-        }
-        for key in kept
-    ]
+    untracked, nested = _others(top)
+    ignored, nested_ignored = _others(top, "--ignored")
+    nested |= nested_ignored | {key for key, (_, mode) in [*in_head.items(), *in_index.items()] if mode == GITLINK_MODE}
+    shown = set(in_head) | set(in_index) | conflicted | set(untracked)
+    kept = (sorted(shown, key=_display) + sorted(set(ignored), key=_display))[:MAX_FILES]
+    in_folder = _folder_versions(top, kept, in_index, object_format)
+    files: list[FileEntry] = []
+    for key in kept:
+        head_id, head_mode = in_head.get(key, NOWHERE)
+        index_id, index_mode = in_index.get(key, NOWHERE)
+        folder_id, folder_mode = in_folder.get(key, NOWHERE)
+        files.append(
+            {
+                "path": _display(key),
+                "head": head_id,
+                "index": index_id,
+                "folder": folder_id,
+                "head_mode": head_mode,
+                "index_mode": index_mode,
+                "folder_mode": folder_mode,
+                "ignored": key in ignored,
+                "conflicted": key in conflicted,
+                "repository": key in nested,
+            }
+        )
     return sorted(files, key=lambda file: file["path"]), len(shown) + len(ignored) > MAX_FILES
 
 
-def _tree(top: Path, commit: str) -> dict[str, str]:
+def _tree(top: Path, commit: str) -> dict[str, tuple[str, str]]:
     """
     List the files of a commit.
 
@@ -449,20 +506,19 @@ def _tree(top: Path, commit: str) -> dict[str, str]:
 
     Returns
     -------
-    dict[str, str]
-        Blob id by quoted path; submodules are left out.
+    dict[str, tuple[str, str]]
+        Id and mode by quoted path; a submodule's id is the commit it records.
     """
     result = gitcmd.run(top, *QUOTED_PATHS, "ls-tree", "-r", commit)
-    blobs: dict[str, str] = {}
+    versions: dict[str, tuple[str, str]] = {}
     for line in _lines(result):
         meta, key = line.split("\t", 1)
-        _mode, kind, blob = meta.split(" ")
-        if kind == "blob":
-            blobs[key] = blob
-    return blobs
+        mode, _kind, name = meta.split(" ")
+        versions[key] = (name, mode)
+    return versions
 
 
-def _index(top: Path) -> tuple[dict[str, str], set[str]]:
+def _index(top: Path) -> tuple[dict[str, tuple[str, str]], set[str]]:
     """
     List the files of the staging area.
 
@@ -473,25 +529,23 @@ def _index(top: Path) -> tuple[dict[str, str], set[str]]:
 
     Returns
     -------
-    tuple[dict[str, str], set[str]]
-        Blob id by quoted path, and the quoted paths in conflict; submodules are left out.
+    tuple[dict[str, tuple[str, str]], set[str]]
+        Id and mode by quoted path, and the quoted paths in conflict.
     """
     result = gitcmd.run(top, *QUOTED_PATHS, "ls-files", "--stage")
-    staged: dict[str, str] = {}
+    staged: dict[str, tuple[str, str]] = {}
     conflicted: set[str] = set()
     for line in _lines(result):
         meta, key = line.split("\t", 1)
-        mode, blob, stage = meta.split(" ")
-        if mode == GITLINK_MODE:
-            continue
+        mode, name, stage = meta.split(" ")
         if stage == "0":
-            staged[key] = blob
+            staged[key] = (name, mode)
         else:
             conflicted.add(key)
     return staged, conflicted
 
 
-def _others(top: Path, *options: str) -> list[str]:
+def _others(top: Path, *options: str) -> tuple[list[str], set[str]]:
     """
     List the files of the working folder that are not in the staging area.
 
@@ -504,16 +558,24 @@ def _others(top: Path, *options: str) -> list[str]:
 
     Returns
     -------
-    list[str]
-        Quoted paths; nested repositories (listed as folders) are left out.
+    tuple[list[str], set[str]]
+        Quoted paths, and those of them that are nested repositories (which git lists as
+        folders, with a final ``/`` that is dropped here).
     """
     result = gitcmd.run(top, *QUOTED_PATHS, "ls-files", "--others", "--exclude-standard", *options)
-    return [key for key in _lines(result) if not _unquote(key).endswith(b"/")]
+    keys: list[str] = []
+    nested: set[str] = set()
+    for listed in _lines(result):
+        key = listed.removesuffix("/") if not listed.endswith('/"') else listed.removesuffix('/"') + '"'
+        keys.append(key)
+        if key != listed:
+            nested.add(key)
+    return keys, nested
 
 
-def _folder_ids(top: Path, keys: list[str], object_format: str) -> dict[str, str]:
+def _folder_versions(top: Path, keys: list[str], in_index: dict[str, tuple[str, str]], object_format: str) -> dict[str, tuple[str, str]]:
     """
-    Compute the blob id each path in the working folder would get if it were added.
+    Compute the id and mode each path in the working folder would get if it were added.
 
     Parameters
     ----------
@@ -521,26 +583,124 @@ def _folder_ids(top: Path, keys: list[str], object_format: str) -> dict[str, str
         The top of the working folder.
     keys : list[str]
         Quoted paths.
+    in_index : dict[str, tuple[str, str]]
+        The staging area's id and mode by quoted path.
     object_format : str
         The repository's hash function, ``sha1`` or ``sha256``.
 
     Returns
     -------
-    dict[str, str]
-        Blob id by quoted path, for the paths that are readable files or symbolic links.
+    dict[str, tuple[str, str]]
+        Id and mode by quoted path, for the readable files, the symbolic links and the
+        repositories with a commit.
     """
-    files: list[str] = []
-    ids: dict[str, str] = {}
+    trusted = _trusts_executable_bit(top)
+    files: dict[str, int] = {}
+    versions: dict[str, tuple[str, str]] = {}
     for key in keys:
         full = os.fsencode(top) + b"/" + _unquote(key)
         mode = _mode(full)
-        link_id = _link_id(full, object_format) if mode is not None and stat.S_ISLNK(mode) else None
         if mode is not None and stat.S_ISREG(mode):
-            files.append(key)
-        elif link_id is not None:
-            ids[key] = link_id
-    ids.update(_hash_files(top, files))
-    return ids
+            files[key] = mode
+        elif mode is not None:
+            versions.update(_special_version(key, full, mode, object_format))
+    for key, blob in _hash_files(top, list(files)).items():
+        versions[key] = (blob, _file_mode(files[key], in_index.get(key, NOWHERE)[1], trusted))
+    return versions
+
+
+def _special_version(key: str, full: bytes, mode: int, object_format: str) -> dict[str, tuple[str, str]]:
+    """
+    Give the id and mode of a symbolic link, or of a folder that holds a repository.
+
+    Parameters
+    ----------
+    key : str
+        The quoted path.
+    full : bytes
+        Its full path.
+    mode : int
+        Its type and permissions, from ``lstat``.
+    object_format : str
+        The repository's hash function, ``sha1`` or ``sha256``.
+
+    Returns
+    -------
+    dict[str, tuple[str, str]]
+        The path's id and mode, or nothing for a link that vanished, an ordinary folder, a
+        repository with no commit yet or anything else.
+    """
+    found: str | None = None
+    kind = LINK_MODE
+    if stat.S_ISLNK(mode):
+        found = _link_id(full, object_format)
+    elif stat.S_ISDIR(mode):
+        found, kind = _nested_head(Path(os.fsdecode(full))), GITLINK_MODE
+    return {key: (found, kind)} if found is not None else {}
+
+
+def _nested_head(folder: Path) -> str | None:
+    """
+    Give the commit a repository nested in the working folder points at.
+
+    Parameters
+    ----------
+    folder : Path
+        The folder.
+
+    Returns
+    -------
+    str | None
+        Its HEAD commit, or None if the folder is not the top of a repository of its own or it
+        has no commit yet.
+    """
+    repo = _find(folder)
+    return _head(folder) if repo is not None and not repo.bare else None
+
+
+def _trusts_executable_bit(top: Path) -> bool:
+    """
+    Tell whether git reads the executable bit of the files in the working folder.
+
+    Parameters
+    ----------
+    top : Path
+        The top of the working folder.
+
+    Returns
+    -------
+    bool
+        The repository's ``core.fileMode``, true unless it is set to false.
+    """
+    result = gitcmd.run(top, "config", "--type=bool", "--get", "core.fileMode")
+    return result.stdout.strip() != "false"
+
+
+def _file_mode(mode: int, index_mode: str | None, trusted: bool) -> str:
+    """
+    Give the mode git would record for a regular file.
+
+    Parameters
+    ----------
+    mode : int
+        The file's type and permissions, from ``lstat``.
+    index_mode : str | None
+        Its mode in the staging area, if it is there.
+    trusted : bool
+        Whether git reads the executable bit (``core.fileMode``).
+
+    Returns
+    -------
+    str
+        `EXECUTABLE_MODE` if the owner may run it, else `FILE_MODE`; when git does not read the
+        bit, the staging area's mode of a file, else `FILE_MODE`.
+    """
+    recorded = FILE_MODE
+    if trusted and mode & stat.S_IXUSR:
+        recorded = EXECUTABLE_MODE
+    elif not trusted and index_mode in (FILE_MODE, EXECUTABLE_MODE):
+        recorded = index_mode
+    return recorded
 
 
 def _mode(path: bytes) -> int | None:

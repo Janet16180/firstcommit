@@ -33,7 +33,21 @@ def fake_snapshot(path: Path) -> repomap.Snapshot:
         A snapshot whose ``files`` are the folder's top-level names besides ``.git``.
     """
     names = sorted(entry.name for entry in path.iterdir() if entry.name != ".git") if path.is_dir() else []
-    files: list[repomap.FileEntry] = [{"path": name, "head": None, "index": None, "folder": "0" * 40, "ignored": False, "conflicted": False} for name in names]
+    files: list[repomap.FileEntry] = [
+        {
+            "path": name,
+            "head": None,
+            "index": None,
+            "folder": "0" * 40,
+            "head_mode": None,
+            "index_mode": None,
+            "folder_mode": "100644",
+            "ignored": False,
+            "conflicted": False,
+            "repository": False,
+        }
+        for name in names
+    ]
     return {"exists": path.is_dir(), "bare": False, "head": None, "branch": None, "commits": [], "refs": [], "files": files, "operation": None, "stash": 0, "truncated": False}
 
 
@@ -362,13 +376,71 @@ def test_quest_steps_never_count_as_attempts(sample_level: runner.Level) -> None
 
 def test_a_check_the_player_asks_for_counts_as_an_attempt_and_an_automatic_one_does_not(sample_level: runner.Level) -> None:
     game.start(sample_level.id)
-    result = game.check(None, auto=True)
+    result = game.check(None, auto=False)
     assert (result["solved"], result["payout"], result["debrief"]) == (False, None, None)
     assert result["message"] == markup.parse("`hello.txt` is not in a commit yet.")
     game.check("x", auto=False)
-    game.check(None, auto=False)
     game.check(None, auto=True)
     assert active_record()["attempts"] == 2
+
+
+def counting(level: runner.Level, calls: list[str | None]) -> runner.Level:
+    """
+    Wrap a level's check so a test can count the times it runs.
+
+    Parameters
+    ----------
+    level : runner.Level
+        The level.
+    calls : list[str | None]
+        Gets the answer of every call.
+
+    Returns
+    -------
+    runner.Level
+        The level with the counting check.
+    """
+
+    def check(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict:
+        calls.append(answer)
+        return level.check(lab, state, answer)
+
+    return dataclasses.replace(level, check=check)
+
+
+def test_an_automatic_check_never_ends_a_level_before_its_quest_is_done(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[str | None] = []
+    level = counting(sample_level, calls)
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    game.start(level.id)
+    solve(level)
+    game.quest_step(None)
+    result = game.check(None, auto=True)
+    assert (result["solved"], result["payout"], result["debrief"]) == (False, None, None)
+    assert "step 2 of 3" in text_of(result["message"])
+    assert (calls, active_record()["attempts"], save.load_progress()["xp"]) == ([], 0, 0)
+
+
+def test_once_the_quest_is_done_the_automatic_check_ends_the_level(sample_level: runner.Level, game_home: Path) -> None:
+    game.start(sample_level.id)
+    game.quest_step(None)
+    kit.git(lab_project(game_home), "add", "hello.txt")
+    game.quest_step(None)
+    assert game.quest_step("trunk")["quest_done"] is True
+    assert game.check(None, auto=True)["solved"] is False
+    kit.git(lab_project(game_home), "commit", "-q", "-m", "Say hello")
+    assert game.check(None, auto=True)["solved"] is True
+
+
+def test_an_automatic_check_of_a_level_without_a_quest_checks_the_level(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    calls: list[str | None] = []
+    level = counting(dataclasses.replace(sample_level, quest=()), calls)
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    game.start(level.id)
+    assert game.check(None, auto=True)["message"] == markup.parse("`hello.txt` is not in a commit yet.")
+    solve(level)
+    assert game.check(None, auto=True)["solved"] is True
+    assert calls == [None, None]
 
 
 def test_a_blank_answer_counts_as_no_answer(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -440,7 +512,7 @@ def test_text_the_player_sends_reaches_a_check_with_only_encodable_characters(sa
 def test_solving_a_level_pays_once_and_records_it(sample_level: runner.Level, game_home: Path) -> None:
     game.start(sample_level.id)
     solve(sample_level)
-    result = game.check(None, auto=True)
+    result = game.check(None, auto=False)
     payout: save.Payout = {"level": "basics-sample", "xp": 100, "first_time": True, "rank_before": "Untracked", "rank_after": "Untracked"}
     assert (result["solved"], result["payout"]) == (True, payout)
     assert result["debrief"] == markup.parse("`hello.txt` is now in a commit on `trunk`.")
@@ -489,7 +561,7 @@ def test_a_finished_levels_page_shows_the_debrief_of_its_last_play(sample_level:
     assert game.level(replay.id)["debrief"] is None
 
 
-def test_a_level_is_solved_even_before_its_quest_is_finished(sample_level: runner.Level) -> None:
+def test_a_check_the_player_asks_for_may_solve_the_level_before_its_quest_is_done(sample_level: runner.Level) -> None:
     game.start(sample_level.id)
     solve(sample_level)
     assert game.check(None, auto=False)["solved"] is True

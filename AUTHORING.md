@@ -158,7 +158,10 @@ def solve(lab: kit.Lab, state: kit.State) -> str | None: ...
   ordinary git commands through `kit.git` in `lab.project`, never a stored answer. It returns
   the answer to submit, or None for levels checked against the repository.
 - **`QUEST`** steps happen in the same lab, in order, and lead to the level's goal, so finishing
-  the quest usually solves the level. The server enforces the order. Step kinds (`kit.Step`):
+  the quest usually solves the level. The server enforces the order. While the quest is
+  unfinished, the page's automatic check never ends the level, even when `check` would pass, so
+  the player always reaches the last step; a check the player asks for may still solve it
+  early. Step kinds (`kit.Step`):
   - an *answer* step has a `question` and `check(lab, state, answer) -> Verdict`;
   - a *watch* step has `watch(lab, state) -> Verdict`, which passes once the lab shows the step
     was done (polled like `check`; same rules);
@@ -184,6 +187,7 @@ for people.
 | `kit.git(cwd, *args, author=, when=, stdin=)` | run git; returns stdout; raises if git fails (setup, solve) |
 | `kit.git_run(cwd, *args, ...)` | run git; returns the result whatever the exit status, even when `cwd` was deleted (checks) |
 | `kit.snapshot(path)` | the repository in a folder, as the map shows it (`kit.Snapshot`, `kit.FileEntry`, `kit.Commit`, `kit.Ref`) |
+| `kit.version(entry, area)` | a file's id and mode in `"head"`, `"index"` or `"folder"`; two areas agree only when their versions are equal (`chmod +x` is a change) |
 | `kit.Person`, `kit.GAME` | commit identities |
 | `kit.parse_int(text)` | a typed number, or None (never `isdigit()` + `int()`) |
 | `kit.is_hash_of(text, full)` | the player typed this object id, whole or abbreviated |

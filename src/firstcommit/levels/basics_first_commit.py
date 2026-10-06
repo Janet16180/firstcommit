@@ -16,8 +16,6 @@ EXAMPLE_EMAIL = "you@example.com"
 NAME_COMMAND = f'git config --global user.name "{EXAMPLE_NAME}"'
 EMAIL_COMMAND = f"git config --global user.email {EXAMPLE_EMAIL}"
 PLAYER = kit.Person("Robin Park", "robin@example.com")
-STATUS_FIELDS = {"1": 9, "u": 11, "?": 2}
-"""How many space-separated fields each kind of `git status --porcelain=v2` entry has, its path last."""
 
 Area = Literal["folder", "index", "head"]
 
@@ -233,13 +231,17 @@ def untracked(snap: kit.Snapshot) -> list[str]:
     return [
         entry["path"]
         for entry in snap["files"]
-        if entry["folder"] is not None and entry["index"] is None and not entry["ignored"] and not entry["conflicted"]
+        if entry["folder"] is not None
+        and entry["index"] is None
+        and not entry["ignored"]
+        and not entry["conflicted"]
+        and not entry["repository"]
     ]
 
 
 def staged(snap: kit.Snapshot) -> list[str]:
     """
-    List the files whose staging-area content differs from the last commit's.
+    List the files whose staging-area content or mode differs from the last commit's.
 
     Parameters
     ----------
@@ -251,7 +253,11 @@ def staged(snap: kit.Snapshot) -> list[str]:
     list[str]
         Their paths.
     """
-    return [entry["path"] for entry in snap["files"] if not entry["conflicted"] and entry["index"] != entry["head"]]
+    return [
+        entry["path"]
+        for entry in snap["files"]
+        if not entry["conflicted"] and kit.version(entry, "index") != kit.version(entry, "head")
+    ]
 
 
 def unstaged(snap: kit.Snapshot) -> list[str]:
@@ -275,26 +281,46 @@ def unstaged(snap: kit.Snapshot) -> list[str]:
     ]
 
 
-def status_paths(lab: kit.Lab) -> list[str]:
+def mode_changed(snap: kit.Snapshot) -> list[str]:
     """
-    List the paths `git status` names in the project folder.
-
-    The snapshot compares contents and leaves nested repositories out, so a changed file mode or
-    a repository inside the project folder shows up only here.
+    List the tracked files whose content matches the staging area but whose mode does not (``chmod +x``).
 
     Parameters
     ----------
-    lab : kit.Lab
-        The level's lab; the project folder may be missing.
+    snap : kit.Snapshot
+        The project's repository.
 
     Returns
     -------
     list[str]
-        The paths that are untracked, staged, or changed but not staged; none if git fails.
+        Their paths.
     """
-    result = kit.git_run(lab.project, "status", "--porcelain=v2", "-z", "--no-renames")
-    entries = result.stdout.split("\0") if result.returncode == 0 else []
-    return [entry.split(" ", STATUS_FIELDS[entry[0]] - 1)[-1] for entry in entries if entry[:1] in STATUS_FIELDS]
+    return [
+        entry["path"]
+        for entry in snap["files"]
+        if entry["index"] is not None and entry["folder"] == entry["index"] and entry["folder_mode"] != entry["index_mode"]
+    ]
+
+
+def nested(snap: kit.Snapshot) -> list[str]:
+    """
+    List the folders in the working folder that hold a repository of their own, as `git status` lists them.
+
+    Parameters
+    ----------
+    snap : kit.Snapshot
+        The project's repository.
+
+    Returns
+    -------
+    list[str]
+        Their paths, each ending with ``/``.
+    """
+    return [
+        f"{entry['path']}/"
+        for entry in snap["files"]
+        if entry["repository"] and entry["index"] is None and entry["head"] is None and not entry["ignored"]
+    ]
 
 
 def file_names(paths: list[str]) -> str:
@@ -381,14 +407,12 @@ def commit_move(snap: kit.Snapshot) -> str:
     return move
 
 
-def tidy_move(lab: kit.Lab, snap: kit.Snapshot) -> str:
+def tidy_move(snap: kit.Snapshot) -> str:
     """
     Tell the player what keeps the repository from being clean.
 
     Parameters
     ----------
-    lab : kit.Lab
-        The level's lab.
     snap : kit.Snapshot
         The project's repository.
 
@@ -397,9 +421,7 @@ def tidy_move(lab: kit.Lab, snap: kit.Snapshot) -> str:
     str
         What to do next, or an empty string when `git status` lists nothing.
     """
-    loose, waiting, edited = untracked(snap), staged(snap), unstaged(snap)
-    listed = [] if loose or waiting or edited else status_paths(lab)
-    nested = [path for path in listed if path.endswith("/")]
+    loose, waiting, edited, chmodded, repositories = untracked(snap), staged(snap), unstaged(snap), mode_changed(snap), nested(snap)
     if loose:
         verb = "is" if len(loose) == 1 else "are"
         move = f"{file_names(loose)} {verb} in the working folder but not in the staging area (untracked). Stage and commit what you need, and delete the rest."
@@ -408,15 +430,16 @@ def tidy_move(lab: kit.Lab, snap: kit.Snapshot) -> str:
         move = f"{file_names(waiting)} {verb} staged but not committed yet. Commit, so that your last commit holds what is staged."
     elif edited:
         move = f"{file_names(edited)} changed after the last `git add`. Stage and commit what changed."
-    elif nested:
+    elif chmodded:
+        whose = "its" if len(chmodded) == 1 else "their"
+        move = f"`git status` still lists {file_names(chmodded)}: only {whose} executable permission changed. Stage and commit the change."
+    elif repositories:
         kind, them = (
             ("is a folder with its own repository", "it")
-            if len(nested) == 1
+            if len(repositories) == 1
             else ("are folders with their own repositories", "them")
         )
-        move = f"{file_names(nested)} {kind}, so `git status` lists {them} as untracked. Delete {them}: this level uses one repository, in `project`."
-    elif listed:
-        move = f"`git status` still lists {file_names(listed)}. Run `git status` to see what changed, then stage and commit the change."
+        move = f"{file_names(repositories)} {kind}, so `git status` lists {them} as untracked. Delete {them}: this level uses one repository, in `project`."
     else:
         move = ""
     return move
@@ -443,7 +466,7 @@ def next_move(lab: kit.Lab, snap: kit.Snapshot) -> str:
     elif not has_file(snap, "head"):
         move = commit_move(snap)
     else:
-        move = tidy_move(lab, snap)
+        move = tidy_move(snap)
     return move
 
 

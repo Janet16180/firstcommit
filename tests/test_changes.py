@@ -192,6 +192,26 @@ def test_restoring_a_file_says_it_matches_the_staging_area_again(tmp_path: Path)
     assert happens(repo, "git restore a.txt") == [{"kind": "file-changed", "text": "`a.txt` changed in the working folder. It matches the staging area."}]
 
 
+def test_making_a_file_executable_is_a_change_in_the_working_folder(tmp_path: Path) -> None:
+    repo = project(tmp_path)
+    assert happens(repo, "chmod +x a.txt") == [{"kind": "file-changed", "text": "`a.txt` became executable in the working folder. The change is not staged yet."}]
+    assert happens(repo, "git add a.txt") == [{"kind": "file-staged", "text": "`a.txt` was staged."}]
+    shell(repo, "git commit -q -m 'Make a executable'")
+    assert happens(repo, "chmod -x a.txt") == [{"kind": "file-changed", "text": "`a.txt` is no longer executable in the working folder. The change is not staged yet."}]
+
+
+def test_a_repository_appearing_inside_the_project_and_going_away(tmp_path: Path) -> None:
+    repo = project(tmp_path)
+    events = happens(repo, "git init -q inner && echo b > inner/b.txt && git -C inner add b.txt && git -C inner commit -q -m inner")
+    assert events == [
+        {
+            "kind": "nested-repository-created",
+            "text": "`inner` is a separate repository inside this one: Git lists it as an untracked folder and does not track the files in it.",
+        }
+    ]
+    assert happens(repo, "rm -rf inner") == [{"kind": "nested-repository-deleted", "text": "The separate repository `inner` is gone from the working folder."}]
+
+
 def test_ignored_files(tmp_path: Path) -> None:
     repo = project(tmp_path, "echo x > debug.log")
     events = happens(repo, "echo '*.log' > .gitignore && echo y > trace.log")
@@ -369,8 +389,19 @@ def snapshots(names: st.SearchStrategy[str]) -> st.SearchStrategy[repomap.Snapsh
         time=st.integers(0, 2**31),
     )
     refs = st.builds(repomap.Ref, name=names, kind=st.sampled_from(["branch", "remote", "tag"]), target=hashes)
+    maybe_mode = st.sampled_from([None, "100644", "100755", "120000", "160000"])
     files = st.builds(
-        repomap.FileEntry, path=names, head=maybe_hash, index=maybe_hash, folder=maybe_hash, ignored=st.booleans(), conflicted=st.booleans()
+        repomap.FileEntry,
+        path=names,
+        head=maybe_hash,
+        index=maybe_hash,
+        folder=maybe_hash,
+        head_mode=maybe_mode,
+        index_mode=maybe_mode,
+        folder_mode=maybe_mode,
+        ignored=st.booleans(),
+        conflicted=st.booleans(),
+        repository=st.booleans(),
     )
     return st.builds(
         repomap.Snapshot,
