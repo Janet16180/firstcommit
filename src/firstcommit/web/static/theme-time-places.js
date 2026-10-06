@@ -136,14 +136,7 @@ const TimePlaces = (function () {
     return lit.flatMap((name) => plans[name]());
   }
 
-  /* The map's own shapes and colours, small enough for a place, with no key. */
-  const compact = RepoMap.theme({
-    trunk: TimeTheme.map.trunk,
-    sizes: { pad: 10, row: 28, lane: 18, radius: 5, gap: 10, chipPad: 6, chipHeight: 18, char: 6.6, subject: 24 },
-    colors: TimeTheme.map.colors,
-    words: TimeTheme.map.words,
-    shapes: { ...TimeTheme.map.shapes, key: () => null },
-  });
+  const { small } = TimeTheme;
 
   /* Text with `code` spans, as nodes. */
   const inline = (text) => text.split("`").map((part, index) => (index % 2 ? el("code", {}, part) : part));
@@ -169,7 +162,7 @@ const TimePlaces = (function () {
   function repositoryPlace(area, snapshot, showHead) {
     return el("section", { class: `tt-place is-${area}`, "data-area": area },
       el("h4", {}, PLACES[area]),
-      snapshot ? el("div", { class: "tt-place-graph" }, RepoMap.render(snapshot, { theme: compact, showHead })) : el("p", { class: "tt-place-empty" }, NO_REMOTE),
+      snapshot ? el("div", { class: "tt-place-graph" }, RepoMap.render(snapshot, { theme: small, showHead })) : el("p", { class: "tt-place-empty" }, NO_REMOTE),
     );
   }
 
@@ -261,9 +254,9 @@ const TimePlaces = (function () {
   function settle(figure, area, before, after, showHead, offset, reduced) {
     const graph = find(figure, "data-area", area).querySelector(".repo-map");
     if (!graph || !before || !after) return [];
-    const options = { theme: compact, showHead };
-    const motion = TimeMotion.motions(RepoMap.layout(before, options), RepoMap.layout(after, options), compact.sizes);
-    return TimeMotion.play(graph, motion, compact, reduced, offset);
+    const options = { theme: small, showHead };
+    const motion = TimeMotion.motions(RepoMap.layout(before, options), RepoMap.layout(after, options), small.sizes);
+    return TimeMotion.play(graph, motion, small, reduced, offset);
   }
 
   /* When each flight leaves: one after another within a group (same arrow, same kind of thing),

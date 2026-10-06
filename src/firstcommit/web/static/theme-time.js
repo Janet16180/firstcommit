@@ -8,9 +8,10 @@
  * archive (the remote). The metaphor never replaces Git's words: every save point keeps its real
  * short hash and subject, every chip its real name, HEAD's chip reads HEAD, and the key under the
  * graph puts each metaphor next to its Git word. Needs dom.js and map.js. Defines one global,
- * TimeTheme: `map` (a RepoMap theme), `panel` (LivePanel's titles), `terminal` (xterm colours,
- * light and dark), `legend(layout)`, `mark(name)` (the small picture the key and the guide put
- * beside a word) and `tabKey(label)`, the name theme-time-motion.js follows a tab by.
+ * TimeTheme: `map` (a RepoMap theme), `small` (the same map, smaller and with no key, for
+ * figures), `panel` (LivePanel's titles), `terminal` (xterm colours, light and dark),
+ * `legend(layout)`, `mark(name)` (the small picture the key and the guide put beside a word) and
+ * `tabKey(label)`, the name theme-time-motion.js follows a tab by.
  */
 
 /* global Dom, RepoMap */
@@ -145,6 +146,15 @@ const TimeTheme = (function () {
     shapes: { commit: savePoint, edge: timeline, label: chip, key },
   });
 
+  /* The same map, smaller and with no key, for figures: the four places and the guide's pictures. */
+  const small = RepoMap.theme({
+    trunk: map.trunk,
+    sizes: { pad: 10, row: 28, lane: 18, radius: 5, gap: 10, chipPad: 6, chipHeight: 18, char: 6.6, subject: 24 },
+    colors: map.colors,
+    words: map.words,
+    shapes: { ...map.shapes, key: () => null },
+  });
+
   const panel = {
     project: "Your repository · its timelines",
     github: "GitHub (the practice copy) · shared archive",
@@ -166,5 +176,5 @@ const TimeTheme = (function () {
     },
   };
 
-  return { map, panel, legend, tabKey, terminal, mark: (name) => mark(name, map) };
+  return { map, small, panel, legend, tabKey, terminal, mark: (name) => mark(name, map) };
 })();

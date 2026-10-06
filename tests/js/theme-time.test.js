@@ -103,6 +103,17 @@ test("the stand-in GitHub shows no now mark and no key", () => {
   assert.equal(figure.querySelector(".tt-key"), null);
 });
 
+test("figures use a small map: the same save points, tabs and places at a smaller size, with no key", () => {
+  const { small } = TimeTheme;
+  const figure = RepoMap.render(MERGED, { theme: small });
+  assert.equal(figure.querySelector(".tt-key"), null);
+  assert.ok(figure.querySelector(".tt-now"));
+  assert.ok(figure.querySelector('[data-label="branch:main"]'));
+  assert.ok(small.sizes.row < theme.sizes.row);
+  const place = (map) => map.commits.map((commit) => [commit.hash, commit.row, commit.lane]);
+  assert.deepEqual(place(RepoMap.layout(MERGED, { theme: small })), place(RepoMap.layout(MERGED, { theme })));
+});
+
 test("the theme changes the look, never where a commit goes", () => {
   const project = record("observation").project;
   const place = (map) => map.commits.map((commit) => [commit.hash, commit.row, commit.lane]);
