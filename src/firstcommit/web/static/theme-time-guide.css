@@ -95,6 +95,15 @@
   background: var(--surface-2);
 }
 
+/* A figure's place while the figures are on their way: the first time, the server runs git. */
+.tt-guide-slot {
+  min-height: 9rem;
+  margin: 0.5rem 0 0;
+  border: 1px dashed var(--line-strong);
+  border-radius: var(--radius-small);
+  background: var(--surface-2);
+}
+
 .tt-guide-place {
   display: block;
   margin-bottom: 0.3rem;

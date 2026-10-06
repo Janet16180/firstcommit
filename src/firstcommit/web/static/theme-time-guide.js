@@ -7,16 +7,18 @@
  * Git's word in bold; the checked text folds under "More". All of it rests on one truth: the
  * past never changes.
  *
- * The figures come from tiny real repositories: create's `figures` gives, per section id, {before,
- * after, transcript}, the two snapshots and the commands of a two-slide lesson run by demos.frames.
- * A figure plays its change, from the drawing before, the first time most of it is in view above
- * the bottom of the screen, and again on "Play again"; under reduced motion it stays still. Its
- * motions take TimeMotion's timings. The text is word for word Part 2 of docs/drafts/map-guide.md,
- * checked claim by claim against git 2.43, with `code` and **bold** marked as in the draft;
- * tools/guide_text.py writes it here. The button carries a "new" mark until the guide has been
- * opened once in this browser; if storage is blocked the mark shows again next time. Its look is in
- * theme-time-guide.css. Needs dom.js, map.js, theme-time.js and theme-time-motion.js. Defines one
- * global, TimeGuide.
+ * The figures come from tiny real repositories: create's `figures` (game.guide, GET /api/guide)
+ * fetches, per section id, {before, after, transcript}, the two snapshots and the commands of a
+ * two-slide lesson run by demos.frames. The guide opens at once, fetches them the first time it
+ * opens, keeping each figure's place until they arrive, and keeps them for the session. A figure
+ * plays its change, from the drawing before, the first time most of it is in view above the bottom
+ * of the screen, and again on "Play again"; under reduced motion it stays still. Its motions take
+ * TimeMotion's timings. The text is word for word Part 2 of docs/drafts/map-guide.md, checked claim
+ * by claim against git 2.43, with `code` and **bold** marked as in the draft; tools/guide_text.py
+ * writes it here. The button carries a "new" mark until the guide has been opened once in this
+ * browser; if storage is blocked the mark shows again next time. Its look is in theme-time-
+ * guide.css. Needs dom.js, map.js, theme-time.js and theme-time-motion.js. Defines one global,
+ * TimeGuide.
  */
 
 /* global Dom, RepoMap, TimeTheme, TimeMotion */
@@ -222,10 +224,22 @@ const TimeGuide = (function () {
     return { node, start };
   }
 
-  function sectionOf(part, figure) {
+  /* Puts a section's figure in its place, or gives the place back when the section has none. */
+  function place(slot, pair, reduced) {
+    if (!pair) {
+      slot.remove();
+      return;
+    }
+    const picture = figureOf(pair, reduced);
+    slot.replaceWith(picture.node);
+    picture.start();
+  }
+
+  /* A section's words, with `slot` where its figure goes once the figures have arrived. */
+  function sectionOf(part, slot) {
     return el("section", { class: "tt-guide-part", "data-section": part.id },
       el("h3", {}, part.mark && TimeTheme.mark(part.mark), part.title),
-      figure && figure.node,
+      slot,
       el("p", { class: "tt-guide-caption" }, inline(part.caption)),
       el("details", { class: "tt-guide-more" },
         el("summary", {}, "More"),
@@ -236,9 +250,12 @@ const TimeGuide = (function () {
   }
 
   /* options: storage (like localStorage; blocked or absent is fine), page (the document), figures
-     ({section id: {before, after, transcript}}; a section without one shows its words only). */
-  function create({ storage = browserStorage(), page = document, figures = {} } = {}) {
+     (a function, such as game.guide, that fetches {section id: {before, after, transcript}}; a
+     section without one shows its words only). The figures are fetched the first time the guide
+     opens and kept for the session. */
+  function create({ storage = browserStorage(), page = document, figures = async () => ({}) } = {}) {
     let seen = false;
+    let fetched = null;
     try {
       seen = storage.getItem(SEEN) === "yes";
     } catch (error) {
@@ -255,21 +272,30 @@ const TimeGuide = (function () {
       }
     }
 
-    function open() {
+    /* Opens the guide at once, then draws each figure in its place once the figures have
+       arrived; resolves to the dialog. If they cannot be fetched, the words stay, the error goes
+       on to the page, and the next opening asks again. */
+    async function open() {
       remember();
       const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const pictures = new Map(SECTIONS.filter((part) => figures[part.id]).map((part) => [part.id, figureOf(figures[part.id], reduced)]));
+      const slots = new Map(SECTIONS.map((part) => [part.id, el("div", { class: "tt-guide-slot", "aria-hidden": "true" })]));
       const close = el("button", { type: "button", class: "btn btn-ghost btn-small tt-guide-close", onclick: () => dialog.close() }, "Close");
       const dialog = el("dialog", { class: "dialog tt-guide", "aria-labelledby": "tt-guide-title" },
         el("header", { class: "tt-guide-head" }, el("h2", { id: "tt-guide-title" }, TITLE), close),
         el("p", { class: "tt-guide-intro" }, inline(INTRO)),
-        SECTIONS.map((part) => sectionOf(part, pictures.get(part.id))),
+        SECTIONS.map((part) => sectionOf(part, slots.get(part.id))),
       );
       dialog.addEventListener("close", () => dialog.remove());
       page.body.append(dialog);
       dialog.showModal();
       close.focus();
-      for (const picture of pictures.values()) picture.start();
+      if (!fetched) fetched = figures();
+      const pairs = await fetched.catch((error) => {
+        fetched = null;
+        for (const slot of slots.values()) slot.remove();
+        throw error;
+      });
+      for (const [id, slot] of slots) place(slot, pairs[id], reduced);
       return dialog;
     }
 

@@ -2,7 +2,7 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { installBrowser, load, record } = require("./load");
+const { installBrowser, load, record, settle } = require("./load");
 
 const document = installBrowser();
 const { RepoMap, TimeTheme, TimeGuide } = load(["dom.js", "map.js", "theme-time.js", "theme-time-motion.js", "theme-time-guide.js"], ["RepoMap", "TimeTheme", "TimeGuide"]);
@@ -51,16 +51,28 @@ const FIGURES = {
 const section = (id) => [...document.querySelectorAll("dialog.tt-guide section")].find((node) => node.getAttribute("data-section") === id);
 const plain = (text) => text.replaceAll("`", "").replaceAll("**", "");
 
-function opened({ figures = FIGURES, reducedMotion = true } = {}) {
+/* A stand-in for game.guide(): answers with `figures` (or an Error, rejected), and counts its calls. */
+function server(...answers) {
+  const ask = () => {
+    const answer = answers[Math.min(ask.calls, answers.length - 1)];
+    ask.calls += 1;
+    return answer instanceof Error ? Promise.reject(answer) : Promise.resolve(answer);
+  };
+  ask.calls = 0;
+  return ask;
+}
+
+async function opened({ figures = FIGURES, reducedMotion = true } = {}) {
   document.body.replaceChildren();
   global.matchMedia = (query) => ({ matches: query.includes("reduce") ? reducedMotion : false, addEventListener() {} });
-  const guide = TimeGuide.create({ storage: storage(), figures });
+  const guide = TimeGuide.create({ storage: storage(), figures: server(figures) });
   guide.button().click();
+  await settle();
   return document.querySelector("dialog.tt-guide");
 }
 
 /* Records every animate() call while `run(calls)` runs; each animation can be paused and played. */
-function animating(run) {
+async function animating(run) {
   const calls = [];
   const proto = Object.getPrototypeOf(document.createElement("div"));
   proto.animate = function (frames, timing) {
@@ -70,7 +82,7 @@ function animating(run) {
   };
   proto.getTotalLength = () => 100;
   try {
-    return { result: run(calls), calls };
+    return { result: await run(calls), calls };
   } finally {
     delete proto.animate;
     delete proto.getTotalLength;
@@ -122,30 +134,71 @@ test("every section with a picture has a caption with its Git word in bold", () 
   for (const part of TimeGuide.SECTIONS.filter((entry) => entry.mark)) assert.match(part.caption, /\*\*[^*]+\*\*/, part.title);
 });
 
-test("the button opens the guide in a dialog that starts on its close button", () => {
-  const dialog = opened();
+test("the button opens the guide in a dialog that starts on its close button", async () => {
+  const dialog = await opened();
   assert.ok(dialog.open);
   assert.equal(document.activeElement, dialog.querySelector(".tt-guide-close"));
   assert.match(dialog.textContent, /How to read the map/);
   assert.equal(dialog.querySelectorAll("h3").length, TimeGuide.SECTIONS.length);
 });
 
-test("closing the guide removes it from the page", () => {
-  opened();
+test("closing the guide removes it from the page", async () => {
+  await opened();
   document.querySelector(".tt-guide-close").click();
   assert.equal(document.querySelector("dialog.tt-guide"), null);
 });
 
-test("Git's words and commands are shown as code and Git's words in captions in bold, with no markup left over", () => {
-  const dialog = opened();
+test("the guide opens at once, keeping a place for each figure, and draws the figures when they arrive", async () => {
+  document.body.replaceChildren();
+  let answer;
+  const guide = TimeGuide.create({ storage: storage(), figures: () => new Promise((resolve) => { answer = resolve; }) });
+  const opening = guide.open();
+  const dialog = document.querySelector("dialog.tt-guide");
+  assert.ok(dialog.open);
+  assert.equal(dialog.querySelectorAll(".tt-guide-slot").length, TimeGuide.SECTIONS.length);
+  assert.equal(dialog.querySelector(".tt-guide-figure"), null);
+  answer(FIGURES);
+  assert.equal(await opening, dialog);
+  assert.equal(dialog.querySelector(".tt-guide-slot"), null, "a section with no figure gives its place back");
+  assert.ok(section("branch").querySelector(".tt-guide-figure .repo-map") && section("archive").querySelector(".tt-guide-figure .repo-map"));
+});
+
+test("the guide asks for its figures once, the first time it opens, and keeps them for the session", async () => {
+  document.body.replaceChildren();
+  const ask = server(FIGURES);
+  const guide = TimeGuide.create({ storage: storage(), figures: ask });
+  guide.button();
+  assert.equal(ask.calls, 0, "not before the player opens it");
+  (await guide.open()).close();
+  await guide.open();
+  assert.equal(ask.calls, 1);
+  assert.ok(section("branch").querySelector(".tt-guide-figure"));
+});
+
+test("when the figures cannot be fetched, the guide keeps its words, the error reaches the page, and the next opening asks again", async () => {
+  document.body.replaceChildren();
+  const ask = server(new Error("The game server did not answer"), FIGURES);
+  const guide = TimeGuide.create({ storage: storage(), figures: ask });
+  await assert.rejects(guide.open(), /did not answer/);
+  const dialog = document.querySelector("dialog.tt-guide");
+  assert.ok(dialog.open && section("branch").querySelector(".tt-guide-caption"));
+  assert.equal(dialog.querySelector(".tt-guide-slot"), null);
+  dialog.close();
+  await guide.open();
+  assert.equal(ask.calls, 2);
+  assert.ok(section("branch").querySelector(".tt-guide-figure"));
+});
+
+test("Git's words and commands are shown as code and Git's words in captions in bold, with no markup left over", async () => {
+  const dialog = await opened();
   const code = [...dialog.querySelectorAll("code")].map((node) => node.textContent);
   for (const word of ["git switch other", "origin/main", "git rebase"]) assert.ok(code.some((text) => text.includes(word)), word);
   assert.deepEqual(dialog.querySelector(".tt-guide-intro strong").textContent, "the past never changes.");
   assert.ok(!dialog.textContent.includes("`") && !dialog.textContent.includes("**"));
 });
 
-test("a section shows the repository after the change, without a key, with the git command that made it", () => {
-  opened();
+test("a section shows the repository after the change, without a key, with the git command that made it", async () => {
+  await opened();
   const branch = section("branch");
   const map = branch.querySelector(".tt-guide-figure .repo-map");
   assert.ok(map.querySelector('[data-label="branch:idea"]'));
@@ -153,16 +206,16 @@ test("a section shows the repository after the change, without a key, with the g
   assert.deepEqual([...branch.querySelectorAll(".tt-guide-figure figcaption code")].map((node) => node.textContent), ["$ git commit -m 'Sketch an idea'"]);
 });
 
-test("the archive's figure is the practice copy: named as GitHub, with no now mark, showing only the git command", () => {
-  opened();
+test("the archive's figure is the practice copy: named as GitHub, with no now mark, showing only the git command", async () => {
+  await opened();
   const archive = section("archive");
   assert.match(archive.querySelector(".tt-guide-place").textContent, /GitHub \(the practice copy\)/);
   assert.equal(archive.querySelector(".tt-now"), null);
   assert.deepEqual([...archive.querySelectorAll(".tt-guide-figure figcaption code")].map((node) => node.textContent), ["$ git push"]);
 });
 
-test("a section's caption names the Git word in bold, and its checked text folds under More, word for word", () => {
-  opened();
+test("a section's caption names the Git word in bold, and its checked text folds under More, word for word", async () => {
+  await opened();
   const branch = section("branch");
   const part = TimeGuide.SECTIONS.find((entry) => entry.id === "branch");
   assert.equal(branch.querySelector(".tt-guide-caption strong").textContent, "branch");
@@ -173,25 +226,25 @@ test("a section's caption names the Git word in bold, and its checked text folds
   assert.deepEqual([...more.querySelectorAll("li")].map((item) => item.textContent), part.points.map(plain));
 });
 
-test("a section with no figure, the preview or one not given, shows its caption and text only", () => {
-  opened();
+test("a section with no figure, the preview or one not given, shows its caption and text only", async () => {
+  await opened();
   for (const id of ["later", "tag"]) {
     assert.equal(section(id).querySelector(".tt-guide-figure"), null, id);
     assert.ok(section(id).querySelector(".tt-guide-caption"), id);
   }
 });
 
-test("a figure is drawn with roomier rows and lanes than the small map, so the change is easy to see", () => {
-  opened();
+test("a figure is drawn with roomier rows and lanes than the small map, so the change is easy to see", async () => {
+  await opened();
   const graph = section("branch").querySelector(".map-graph");
   const small = RepoMap.render(FIGURES.branch.after, { theme: TimeTheme.small }).querySelector(".map-graph");
   assert.ok(Number(graph.getAttribute("height")) > Number(small.getAttribute("height")));
   assert.ok(Number(graph.getAttribute("width")) > Number(small.getAttribute("width")));
 });
 
-test("a figure waits until most of it is in view, clear of the bottom of the screen", () => {
+test("a figure waits until most of it is in view, clear of the bottom of the screen", async () => {
   const observers = observing();
-  animating(() => opened({ reducedMotion: false }));
+  await animating(() => opened({ reducedMotion: false }));
   const watcher = observers.find((observer) => observer.nodes.includes(section("branch").querySelector(".tt-guide-figure")));
   const [, , bottom] = watcher.options.rootMargin.split(" ");
   assert.ok(parseFloat(bottom) < 0, "the bottom of the screen does not count");
@@ -199,9 +252,9 @@ test("a figure waits until most of it is in view, clear of the bottom of the scr
   delete global.IntersectionObserver;
 });
 
-test("a figure plays its change the first time it comes into view, from the drawing before", () => {
+test("a figure plays its change the first time it comes into view, from the drawing before", async () => {
   const observers = observing();
-  const { calls } = animating(() => opened({ reducedMotion: false }));
+  const { calls } = await animating(() => opened({ reducedMotion: false }));
   const inBranch = (call) => section("branch").contains(call.node);
   assert.ok(calls.some(inBranch) && calls.every((call) => call.paused), "drawn as before, waiting");
   const watcher = observers.find((observer) => observer.nodes.includes(section("branch").querySelector(".tt-guide-figure")));
@@ -212,14 +265,14 @@ test("a figure plays its change the first time it comes into view, from the draw
   delete global.IntersectionObserver;
 });
 
-test("without IntersectionObserver, the figures play as the guide opens", () => {
-  const { calls } = animating(() => opened({ reducedMotion: false }));
+test("without IntersectionObserver, the figures play as the guide opens", async () => {
+  const { calls } = await animating(() => opened({ reducedMotion: false }));
   assert.ok(calls.length > 0 && calls.every((call) => !call.paused));
 });
 
-test("Play again draws the figure anew and plays its change again", () => {
-  animating((calls) => {
-    opened({ reducedMotion: false });
+test("Play again draws the figure anew and plays its change again", async () => {
+  await animating(async (calls) => {
+    await opened({ reducedMotion: false });
     const before = section("branch").querySelector(".repo-map");
     const played = calls.length;
     section("branch").querySelector(".tt-guide-replay").click();
@@ -228,8 +281,8 @@ test("Play again draws the figure anew and plays its change again", () => {
   });
 });
 
-test("under reduced motion the figures are still and offer no Play again", () => {
-  const { calls } = animating(() => opened({ reducedMotion: true }));
+test("under reduced motion the figures are still and offer no Play again", async () => {
+  const { calls } = await animating(() => opened({ reducedMotion: true }));
   assert.deepEqual(calls, []);
   assert.equal(document.querySelector(".tt-guide-replay"), null);
   assert.ok(section("branch").querySelector(".repo-map"));
