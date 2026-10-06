@@ -13,7 +13,8 @@ const { Practice, createGameApi } = load(
 
 const correct = (step, questDone = false) => ({ correct: true, message: [{ kind: "para", spans: [{ text: "Right.", code: false }] }], step, quest_done: questDone });
 
-function practice({ step = 1, replies = {}, level = record("level") } = {}) {
+/* A practice view on step `step`; `done` is a finished quest (step 3 of 3), which the server lets the page check by itself. */
+function practice({ step = 1, done = false, replies = {}, level = record("level") } = {}) {
   const clock = createClock();
   const server = fakeServer({ "/api/observe": record("observation"), "/api/step": record("step"), "/api/check": record("check_unsolved"), "/api/hint": record("hint"), "/api/abort": { level: "x" }, ...replies });
   const seen = { solved: [], ended: 0, left: 0, sounds: [], attached: 0, detached: 0, typed: [] };
@@ -26,7 +27,7 @@ function practice({ step = 1, replies = {}, level = record("level") } = {}) {
   };
   const view = Practice.create(ctx, {
     level,
-    active: { ...record("active"), step },
+    active: done ? { ...record("active"), step: 3, auto_check: true } : { ...record("active"), step },
     onSolved: (result) => seen.solved.push(result),
     onEnded: () => (seen.ended += 1),
     onLeft: () => (seen.left += 1),
@@ -90,7 +91,7 @@ test("while a watch step is current the page asks about it on every tick, shows 
 });
 
 test("once the quest is done the level is checked automatically, and a win stops the polling", async () => {
-  const run = practice({ step: 3, replies: { "/api/check": record("check_solved") } });
+  const run = practice({ done: true, replies: { "/api/check": record("check_solved") } });
   await settle();
   assert.deepEqual(run.server.calls.map((call) => [call.path, call.body]), [["/api/observe", undefined], ["/api/check", { answer: null, auto: true }]]);
   assert.equal(run.seen.solved.length, 1);
@@ -101,15 +102,22 @@ test("once the quest is done the level is checked automatically, and a win stops
 });
 
 test("a solve reported by two checks at once is handled once", async () => {
-  const run = practice({ step: 3, replies: { "/api/check": record("check_solved") } });
+  const run = practice({ done: true, replies: { "/api/check": record("check_solved") } });
   run.q(".challenge form").dispatchEvent(makeEvent("submit"));
   await settle();
   assert.equal(run.server.calls.filter((call) => call.path === "/api/check").length, 2);
   assert.equal(run.seen.solved.length, 1);
 });
 
+test("once the last step passes, the page checks the level by itself", async () => {
+  const run = practice({ step: 2, replies: { "/api/step": correct(3, true), "/api/check": record("check_solved") } });
+  await run.clock.advance(Practice.ADVANCE_MS + 1500);
+  assert.deepEqual(run.server.calls.find((call) => call.path === "/api/check").body, { answer: null, auto: true });
+  assert.equal(run.seen.solved.length, 1);
+});
+
 test("an automatic check that does not solve stays silent; it is not a failure of the player's", async () => {
-  const run = practice({ step: 3 });
+  const run = practice({ done: true });
   await run.clock.advance(3000);
   assert.ok(run.server.calls.filter((call) => call.path === "/api/check").length >= 2);
   assert.equal(run.q(".check-feedback").textContent, "");
@@ -118,7 +126,7 @@ test("an automatic check that does not solve stays silent; it is not a failure o
 });
 
 test("checking by hand sends the answer and shows why it is not solved yet", async () => {
-  const run = practice({ step: 3, level: { ...record("level"), question: [{ kind: "para", spans: [{ text: "Which commit?", code: false }] }], placeholder: "" } });
+  const run = practice({ done: true, level: { ...record("level"), question: [{ kind: "para", spans: [{ text: "Which commit?", code: false }] }], placeholder: "" } });
   await settle();
   run.q(".challenge input").value = "42";
   run.q(".challenge form").dispatchEvent(makeEvent("submit"));
@@ -152,7 +160,7 @@ test("a check by hand during the quest may solve the level early, which stops th
 });
 
 test("a hint is revealed in the challenge", async () => {
-  const run = practice({ step: 3 });
+  const run = practice({ done: true });
   await settle();
   run.q(".hint-button").click();
   await settle();

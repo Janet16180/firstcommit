@@ -43,8 +43,8 @@ const Practice = (function () {
   }
 
   /* Everything below works on one `run`: ctx, level, ui, live, state (the ActiveView as the server
-     last told it, plus `finished`), the quest or challenge on screen, the poller and the owner's
-     callbacks. */
+     last told it, kept current from step results, plus `finished`), the quest or challenge on
+     screen, the poller and the owner's callbacks. */
 
   function finish(run, callback) {
     if (run.state.finished) return;
@@ -107,6 +107,7 @@ const Practice = (function () {
     }
     if (!result.correct) return;
     state.step = result.step;
+    state.auto_check = result.quest_done;
     quest.feedback(result.message, true);
     ctx.sound.play(watched ? "step" : "correct");
     ctx.timers.setTimeout(() => {

@@ -20,9 +20,11 @@ test("answer and read steps wait for the player", () => {
   assert.deepEqual(Polling.plan(steps, active(1)), { observe: true, watchStep: false, autoCheck: false });
 });
 
-test("once the quest is done, or when there is none, the level is checked automatically", () => {
-  assert.deepEqual(Polling.plan(steps, active(3)), { observe: true, watchStep: false, autoCheck: true });
-  assert.deepEqual(Polling.plan([], active(0, 0)), { observe: true, watchStep: false, autoCheck: true });
+test("the level is checked automatically when, and only when, the server says it may be", () => {
+  assert.deepEqual(Polling.plan(steps, { ...active(3), auto_check: true }), { observe: true, watchStep: false, autoCheck: true });
+  assert.deepEqual(Polling.plan([], { ...active(0, 0), auto_check: true }), { observe: true, watchStep: false, autoCheck: true });
+  assert.equal(Polling.plan(steps, { ...active(3), auto_check: false }).autoCheck, false);
+  assert.equal(Polling.plan(steps, { ...active(1), auto_check: true }).autoCheck, true);
 });
 
 function counting(ms = 0, clock) {
