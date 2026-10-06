@@ -355,6 +355,56 @@ def test_a_blank_answer_counts_as_no_answer(sample_level: runner.Level, monkeypa
     assert seen == [None, None, " main "]
 
 
+def secret_is_main(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict:
+    """
+    Check an answer the way levels compare secret answers, with `kit.answer_is` (which encodes it).
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The lab.
+    state : kit.State
+        The level state.
+    answer : str | None
+        The answer.
+
+    Returns
+    -------
+    kit.Verdict
+        Whether the answer is ``main``.
+    """
+    right = kit.answer_is(answer, kit.digest("main"))
+    return kit.Verdict(right, "Right." if right else "No.")
+
+
+def test_text_the_player_sends_that_utf8_cannot_encode_is_only_a_wrong_answer(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    secret_step = kit.Step(id="secret", text="Which branch?", question="Which?", check=secret_is_main)
+    level = dataclasses.replace(sample_level, check=secret_is_main, quest=(secret_step,))
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    game.start(level.id)
+    for garbage in ["\ud800", "main\udfff", "\udcff" * 3]:
+        assert game.check(garbage, auto=False)["solved"] is False
+        assert game.quest_step(garbage)["correct"] is False
+        assert game.answer_card("basics-text", garbage)["correct"] is False
+        assert game.answer_card("basics-c01", garbage)["correct"] is False
+    assert game.quest_step("main")["correct"] is True
+
+
+def test_text_the_player_sends_reaches_a_check_with_only_encodable_characters(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    seen: list[str | None] = []
+
+    def recording_check(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict:
+        seen.append(answer)
+        return kit.Verdict(False, "no")
+
+    level = dataclasses.replace(sample_level, check=recording_check)
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    game.start(level.id)
+    game.check("ma\ud800in", auto=False)
+    game.check("\ud800", auto=False)
+    assert seen == ["ma?in", "?"]
+
+
 def test_solving_a_level_pays_once_and_records_it(sample_level: runner.Level, game_home: Path) -> None:
     game.start(sample_level.id)
     solve(sample_level)

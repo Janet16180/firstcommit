@@ -7,7 +7,9 @@ filled from the level's state (``{{key}}``) and parsed into blocks (`firstcommit
 interfaces only render. Game rules never live in the interfaces (Ring Zero audit ARCH-1).
 
 Records returned here are the API contract of the web routes: changing a field is a change to
-the page too. Errors the interfaces handle:
+the page too. Text the player sends (answers, card replies) may hold anything; characters that
+UTF-8 cannot encode, such as the lone surrogates JSON can carry, are replaced here, so levels and
+cards only ever see a wrong answer. Errors the interfaces handle:
 
 - ``KeyError``: an unknown level, chapter or card id (the routes answer 404);
 - `NotPlayingError`: an action on the level in progress when there is none (409);
@@ -376,7 +378,7 @@ def quest_step(answer: str | None) -> StepResult:
     Check the current step of the guided quest, and move on if it passed.
 
     Only the current step is ever checked, so the quest is played in order. An answer step is
-    checked with ``answer`` (None counts as an empty answer), a watch step against the lab (the
+    checked with ``answer`` (a missing or blank one counts as empty), a watch step against the lab (the
     page polls it with None), and a read step always passes. Once the quest is done, nothing is
     checked and the result says so.
 
@@ -400,7 +402,7 @@ def quest_step(answer: str | None) -> StepResult:
         correct = False
         message: list[Block] = []
         if active["step"] < len(entry.quest):
-            verdict = _check_step(entry.quest[active["step"]], runner.lab_of(entry.id), active["state"], answer)
+            verdict = _check_step(entry.quest[active["step"]], runner.lab_of(entry.id), active["state"], _typed(answer))
             correct = verdict.solved
             message = _blocks(verdict.message, active["state"])
         if correct:
@@ -435,7 +437,7 @@ def check(answer: str | None, auto: bool) -> CheckResult:
     NotPlayingError
         If no level is in progress.
     """
-    typed = answer if answer is not None and answer.strip() else None
+    typed = _typed(answer)
     with save.lock():
         active, entry = _playing()
         verdict = entry.check(runner.lab_of(entry.id), active["state"], typed)
@@ -592,7 +594,7 @@ def answer_card(card_id: str, reply: str) -> CardResult:
     """
     card = cards.find(card_id)
     today = date.today()
-    correct = cards.judge(card, reply)
+    correct = cards.judge(card, _encodable(reply))
     with save.lock():
         progress = save.load_progress()
         entry = progress["cards"].get(card_id)
@@ -880,6 +882,40 @@ def _card_view(card: cards.Card, pays: bool, rng: random.Random) -> CardView:
         "placeholder": card.placeholder,
         "pays": pays,
     }
+
+
+def _typed(answer: str | None) -> str | None:
+    """
+    Make an answer the player typed safe for a level: blank counts as no answer.
+
+    Parameters
+    ----------
+    answer : str | None
+        What the player sent.
+
+    Returns
+    -------
+    str | None
+        The answer as `_encodable` makes it, or None if it is missing or blank.
+    """
+    return _encodable(answer) if answer is not None and answer.strip() else None
+
+
+def _encodable(text: str) -> str:
+    """
+    Replace the characters UTF-8 cannot encode, such as lone surrogates, with ``?``.
+
+    Parameters
+    ----------
+    text : str
+        Text from the player.
+
+    Returns
+    -------
+    str
+        The same text where it can be encoded.
+    """
+    return text.encode("utf-8", "replace").decode("utf-8")
 
 
 def _fill(text: str, state: Mapping[str, Any]) -> str:
