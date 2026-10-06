@@ -59,16 +59,17 @@ test("HEAD's commit wears the now mark, and no other commit does", () => {
   assert.ok(figure.querySelector(".map-commit.is-head .tt-now"));
 });
 
-test("the key says HEAD is now, the commit the next commit goes on top of", () => {
+test("the key says HEAD is now, the commit you are on, and the guide says the next commit attaches there", () => {
   const key = RepoMap.render(record("observation").project, { theme }).querySelector(".tt-key");
-  assert.match(key.textContent, /HEAD = now/);
-  assert.match(key.textContent, /commit you are on/);
-  assert.match(key.textContent, /next commit/);
+  assert.match(key.textContent, /HEAD = now: the commit you are on\./);
+  assert.doesNotMatch(key.textContent, /next commit/, "the key stays one short line; the guide says the rest");
+  const now = TimeGuide.SECTIONS.find((section) => section.title === "Now = HEAD");
+  assert.ok(now.points.some((point) => point.startsWith("Your next commit attaches here")));
 });
 
 test("a detached HEAD is called detached in the key, with no branch", () => {
   const detached = { ...record("snapshots").one, branch: null };
-  assert.match(RepoMap.render(detached, { theme }).querySelector(".tt-key").textContent, /no branch \(detached HEAD\)/);
+  assert.match(RepoMap.render(detached, { theme }).querySelector(".tt-key").textContent, /HEAD = now: the commit you are on, with no branch \(detached HEAD\)\./);
 });
 
 test("the legend puts each metaphor next to its Git word", () => {
@@ -77,7 +78,7 @@ test("the legend puts each metaphor next to its Git word", () => {
     "save point = commit: a snapshot of every tracked file",
     "timeline = branch",
     "milestone = tag",
-    "last seen in the shared archive = remote-tracking branch",
+    "last seen in the archive = remote-tracking branch",
   ]);
 });
 

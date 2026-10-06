@@ -28,7 +28,7 @@ const TimeTheme = (function () {
     branch: ["timeline", "branch", null],
     merge: ["timelines joining", "merge commit", null],
     tag: ["milestone", "tag", null],
-    remote: ["last seen in the shared archive", "remote-tracking branch", null],
+    remote: ["last seen in the archive", "remote-tracking branch", null],
   };
 
   /* The legend entries a layout needs, in the legend's order: only what the map shows. */
@@ -136,8 +136,8 @@ const TimeTheme = (function () {
     sizes: { pad: 16, row: 34, lane: 24, radius: 6, gap: 14, chipPad: 8, chipHeight: 21, char: 7.8, subject: 48 },
     words: {
       now: "HEAD = now",
-      here: "the commit you are on. Your next commit goes on top of it.",
-      hereDetached: "the commit you are on, with no branch (detached HEAD). Your next commit goes on top of it.",
+      here: "the commit you are on.",
+      hereDetached: "the commit you are on, with no branch (detached HEAD).",
       legend: "What the drawing means",
       unborn: (branch) => `You are on ${branch}, which has no commits yet. Your first commit starts its timeline.`,
       summary: ({ count, head, branch }) => `Commit graph drawn as timelines, ${count} ${count === 1 ? "commit" : "commits"}.${head ? ` HEAD, now, is at ${head}${branch ? ` on ${branch}` : ", detached"}.` : ""}`,
