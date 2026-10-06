@@ -451,6 +451,21 @@ def test_a_changed_file_mode_keeps_the_level_unsolved(played: kit.Lab) -> None:
     assert check(played).solved
 
 
+@pytest.mark.parametrize("name", ["a`b.txt", "line\nbreak.txt", "- bullet.txt"])
+def test_a_file_name_the_player_chose_is_shown_exactly(played: kit.Lab, name: str) -> None:
+    append(played, name, "x")
+    verdict = check(played)
+    assert not verdict.solved
+    assert kit.code(name) in verdict.message
+
+
+def test_a_branch_name_the_player_chose_is_shown_exactly(played: kit.Lab) -> None:
+    git(played, "switch", "-c", "draft`1")
+    verdict = check(played)
+    assert not verdict.solved
+    assert kit.code("draft`1") in verdict.message
+
+
 def test_committing_the_extra_file_too_solves_the_level(played: kit.Lab) -> None:
     append(played, "notes.txt", "notes")
     git(played, "add", "notes.txt")

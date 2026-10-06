@@ -226,9 +226,9 @@ def file_names(paths: list[str]) -> str:
     Returns
     -------
     str
-        The first three paths in backticks, and how many more there are.
+        The first three paths as code, shown exactly, and how many more there are.
     """
-    shown = ", ".join(f"`{path}`" for path in paths[:3])
+    shown = ", ".join(kit.code(path) for path in paths[:3])
     more = len(paths) - 3
     return shown if more <= 0 else f"{shown} and {more} more"
 
@@ -269,9 +269,9 @@ def repository_move(lab: kit.Lab, snap: kit.Snapshot) -> str:
     elif snap["branch"] is None:
         move = "You are not on a branch (HEAD is detached). Create the branch `main` here with `git switch -c main`."
     elif has_main:
-        move = f"You are on the branch `{snap['branch']}`, and this level uses `main`. Switch to it with `git switch main`."
+        move = f"You are on the branch {kit.code(snap['branch'])}, and this level uses `main`. Switch to it with `git switch main`."
     else:
-        move = f"You are on the branch `{snap['branch']}`, and this level uses `main`. Rename it with `git branch -m main`."
+        move = f"You are on the branch {kit.code(snap['branch'])}, and this level uses `main`. Rename it with `git branch -m main`."
     return move
 
 
