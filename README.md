@@ -17,7 +17,7 @@ Work in progress: see [docs/DESIGN.md](docs/DESIGN.md).
 The Docker image holds Ubuntu 24.04 with git 2.43 and Python 3.12, the versions every lesson is
 checked against, plus the game and termlab. You need Docker Engine installed inside your WSL
 Ubuntu ([install guide](https://docs.docker.com/engine/install/ubuntu/)); Docker Desktop has not
-been tested. termlab must sit next to this folder, as for development.
+been tested. termlab's `firstcommit` branch must sit next to this folder, as for development.
 
 ```
 deploy/docker/run
@@ -66,8 +66,13 @@ section 3).
 
 ## Develop
 
-First Commit depends on [termlab](../termlab), which must sit next to this folder
-(`~/learning/termlab`).
+First Commit depends on termlab, on its `firstcommit` branch, checked out next to this folder
+as `../termlab-firstcommit`. termlab's `main` stays as Ring Zero uses it. From a termlab clone at
+`~/learning/termlab`:
+
+```
+git -C ~/learning/termlab worktree add ../termlab-firstcommit firstcommit
+```
 
 ```
 uv sync
