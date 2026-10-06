@@ -1611,7 +1611,7 @@ input[type="text"]::placeholder {
 /* Dialogs and the celebration */
 
 .dialog {
-  max-width: 460px;
+  max-width: 560px;
   padding: 1.6rem 1.75rem;
   border: 1px solid var(--line);
   border-radius: var(--radius);

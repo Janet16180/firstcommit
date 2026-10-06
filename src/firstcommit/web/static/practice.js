@@ -108,8 +108,12 @@ const Practice = (function () {
     ctx.sound.play(watched ? "step" : "correct");
     ctx.timers.setTimeout(() => {
       if (state.finished) return;
-      if (state.step < state.steps && run.quest) run.quest.setStep(state.step);
-      else showPhase(run);
+      if (state.step < state.steps && run.quest) {
+        run.quest.setStep(state.step);
+        return;
+      }
+      showPhase(run);
+      run.challenge.element.querySelector(".kicker").focus();
     }, ADVANCE_MS);
   }
 

@@ -80,6 +80,7 @@ test("while a watch step is current the page asks about it on every tick, and mo
   passes = true;
   await run.clock.advance(1500 + Practice.ADVANCE_MS);
   assert.ok(run.q(".challenge"));
+  assert.equal(document.activeElement, run.q(".challenge .kicker"));
   assert.deepEqual(run.seen.sounds, ["step"]);
   run.view.dispose();
 });

@@ -24,7 +24,7 @@ const Challenge = (function () {
     const usedLine = el("p", { class: "hints-used muted" });
     const hintList = el("ol", { class: "hints" });
     const element = el("section", { class: "challenge", "aria-label": "Challenge" },
-      el("p", { class: "kicker" }, "The challenge"),
+      el("p", { class: "kicker", tabindex: "-1" }, "The challenge"),
       el("div", { class: "briefing prose" }, Markup.render(level.briefing)),
       el("p", { class: "auto-check muted" }, el("i", { class: "pulse", "aria-hidden": "true" }), "The game checks your repository as you work."),
       el("form", {
