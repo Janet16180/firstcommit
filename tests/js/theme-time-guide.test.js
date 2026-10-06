@@ -5,7 +5,7 @@ const test = require("node:test");
 const { installBrowser, load, record } = require("./load");
 
 const document = installBrowser();
-const { TimeGuide } = load(["dom.js", "map.js", "theme-time.js", "theme-time-motion.js", "theme-time-guide.js"], ["TimeGuide"]);
+const { RepoMap, TimeTheme, TimeGuide } = load(["dom.js", "map.js", "theme-time.js", "theme-time-motion.js", "theme-time-guide.js"], ["RepoMap", "TimeTheme", "TimeGuide"]);
 
 /* A storage like localStorage, or one that throws like a blocked one. */
 function storage({ blocked = false, items = {} } = {}) {
@@ -81,8 +81,9 @@ function animating(run) {
 function observing() {
   const observers = [];
   global.IntersectionObserver = class {
-    constructor(callback) {
+    constructor(callback, options) {
       this.callback = callback;
+      this.options = options;
       this.nodes = [];
       this.disconnected = false;
       observers.push(this);
@@ -143,7 +144,7 @@ test("Git's words and commands are shown as code and Git's words in captions in 
   assert.ok(!dialog.textContent.includes("`") && !dialog.textContent.includes("**"));
 });
 
-test("a section shows the repository after the change, drawn small, with the git command that made it", () => {
+test("a section shows the repository after the change, without a key, with the git command that made it", () => {
   opened();
   const branch = section("branch");
   const map = branch.querySelector(".tt-guide-figure .repo-map");
@@ -178,6 +179,24 @@ test("a section with no figure, the preview or one not given, shows its caption 
     assert.equal(section(id).querySelector(".tt-guide-figure"), null, id);
     assert.ok(section(id).querySelector(".tt-guide-caption"), id);
   }
+});
+
+test("a figure is drawn with roomier rows and lanes than the small map, so the change is easy to see", () => {
+  opened();
+  const graph = section("branch").querySelector(".map-graph");
+  const small = RepoMap.render(FIGURES.branch.after, { theme: TimeTheme.small }).querySelector(".map-graph");
+  assert.ok(Number(graph.getAttribute("height")) > Number(small.getAttribute("height")));
+  assert.ok(Number(graph.getAttribute("width")) > Number(small.getAttribute("width")));
+});
+
+test("a figure waits until most of it is in view, clear of the bottom of the screen", () => {
+  const observers = observing();
+  animating(() => opened({ reducedMotion: false }));
+  const watcher = observers.find((observer) => observer.nodes.includes(section("branch").querySelector(".tt-guide-figure")));
+  const [, , bottom] = watcher.options.rootMargin.split(" ");
+  assert.ok(parseFloat(bottom) < 0, "the bottom of the screen does not count");
+  assert.ok(watcher.options.threshold >= 0.5);
+  delete global.IntersectionObserver;
 });
 
 test("a figure plays its change the first time it comes into view, from the drawing before", () => {

@@ -83,10 +83,13 @@
   font-size: 1.12rem;
 }
 
-/* Picture first: each section's figure, the command under it, one caption, then "More". */
+/* Picture first: each section's figure, the largest thing in it and centred, the command under
+   it, one caption, then "More". The drawing is the figure theme (theme-time-guide.js) zoomed, so
+   its lines, chips and text keep their proportions, and its motions scale with it. */
 .tt-guide-figure {
-  margin: 0.4rem 0 0;
-  padding: 0.5rem 0.7rem 0.4rem;
+  position: relative;
+  margin: 0.5rem 0 0;
+  padding: 1.1rem 1rem 0.8rem;
   border: 1px solid var(--line);
   border-radius: var(--radius-small);
   background: var(--surface-2);
@@ -94,14 +97,26 @@
 
 .tt-guide-place {
   display: block;
+  margin-bottom: 0.3rem;
   color: var(--muted);
-  font: 650 0.72rem var(--sans);
+  font: 650 0.78rem var(--sans);
   letter-spacing: 0.06em;
+  text-align: center;
   text-transform: uppercase;
 }
 
 .tt-guide-map {
   overflow-x: auto;
+}
+
+/* Centred while it fits; when it does not, it starts at the left and scrolls. */
+.tt-guide-map .repo-map {
+  width: fit-content;
+  margin: 0 auto;
+}
+
+.tt-guide-map .map-graph {
+  zoom: 1.6;
 }
 
 .tt-guide-figure .map-label text,
@@ -116,14 +131,20 @@
 .tt-guide-figure figcaption {
   display: flex;
   flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.3rem 0.8rem;
-  margin-top: 0.15rem;
+  justify-content: center;
+  gap: 0.3rem 1rem;
+  margin-top: 0.6rem;
 }
 
 .tt-guide-figure figcaption code {
+  font-size: 0.95rem;
   font-weight: 650;
+}
+
+.tt-guide-replay {
+  position: absolute;
+  top: 0.5rem;
+  right: 0.5rem;
 }
 
 .tt-guide-caption {
