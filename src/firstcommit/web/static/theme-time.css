@@ -1,0 +1,371 @@
+/*
+ * The time-travel look; theme-time.js draws the map's shapes. Warm paper and ink: the first
+ * timeline (main) is drawn in ink, the other timelines in colour, and HEAD's "now" dial in
+ * amber. Loads after app.css and changes only its custom properties, the headings' type and the
+ * theme's own classes. Light and dark (data-theme on <html>). System fonts only. Icons are
+ * inline SVG masks (data: URLs, which the page's Content-Security-Policy allows for images), so
+ * they take the colour of the text around them.
+ */
+
+:root {
+  --serif: "Iowan Old Style", "Palatino Linotype", Palatino, P052, "URW Palladio L", "Book Antiqua", Georgia, serif;
+
+  --bg: #f5efe4;
+  --surface: #fffdf8;
+  --surface-2: #f3ece0;
+  --ink: #2b2620;
+  --muted: #675c4f;
+  --line: #e4dacb;
+  --line-strong: #cdbfaa;
+  --accent: #1b6e68;
+  --accent-strong: #145650;
+  --accent-ink: #ffffff;
+  --accent-soft: #dfeee9;
+  --link: #2b5f9e;
+  --focus: #2b5f9e;
+
+  --map-lane-0: #3e3831;
+  --map-lane-1: #12706b;
+  --map-lane-2: #7d4a8c;
+  --map-lane-3: #2f62a3;
+  --map-lane-4: #8a5f00;
+  --map-lane-5: #a8405e;
+  --map-head: #ad440a;
+  --map-branch: #285e96;
+  --map-remote: #6550a8;
+  --map-tag: #80590a;
+
+  --tt-icon-clock: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='9'/%3E%3Cpath d='M12 7v5l3.5 2'/%3E%3C/svg%3E");
+  --tt-icon-save: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='7.5' stroke-width='2.5'/%3E%3Ccircle cx='12' cy='12' r='3.2' fill='black' stroke='none'/%3E%3C/svg%3E");
+  --tt-icon-timeline: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 2v20'/%3E%3Cpath d='M7 16c0-6 10-5 10-11V2'/%3E%3Ccircle cx='7' cy='16' r='2.6' fill='black'/%3E%3Ccircle cx='17' cy='8' r='2.6' fill='black'/%3E%3C/svg%3E");
+  --tt-icon-pennant: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 22V3h13l-3.5 4.5L19 12H6'/%3E%3C/svg%3E");
+  --tt-icon-archive: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='5' rx='1'/%3E%3Cpath d='M5 9v11h14V9'/%3E%3Cpath d='M10 13h4'/%3E%3C/svg%3E");
+  --tt-icon-file: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 2.5h8l4.5 4.5v14.5H6z'/%3E%3Cpath d='M14 2.5V7h4.5'/%3E%3C/svg%3E");
+  --tt-icon-warning: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3.5 22 20.5H2z'/%3E%3Cpath d='M12 10v5'/%3E%3Cpath d='M12 18h.01'/%3E%3C/svg%3E");
+  --tt-icon-hourglass: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 3h12M6 21h12'/%3E%3Cpath d='M7.5 3c0 5 9 5.5 9 9s-9 4-9 9'/%3E%3Cpath d='M16.5 3c0 5-9 5.5-9 9s9 4 9 9'/%3E%3C/svg%3E");
+  --tt-icon-tray: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 13h5l1.5 3h5l1.5-3h5'/%3E%3Cpath d='M3 13v7h18v-7l-3-8H6z'/%3E%3C/svg%3E");
+  --tt-icon-folder: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 5.5h6l2 2.5h10v11.5H3z'/%3E%3C/svg%3E");
+  --tt-icon-layers: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3 21 8l-9 5-9-5z'/%3E%3Cpath d='m3 12.5 9 5 9-5'/%3E%3Cpath d='m3 17 9 5 9-5'/%3E%3C/svg%3E");
+  --tt-icon-dot: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='4' fill='black'/%3E%3C/svg%3E");
+}
+
+:root[data-theme="dark"] {
+  --bg: #141310;
+  --surface: #1e1c18;
+  --surface-2: #27241f;
+  --ink: #ece5d8;
+  --muted: #b3a796;
+  --line: #36312a;
+  --line-strong: #4a4339;
+  --accent: #5ec8bd;
+  --accent-strong: #82d8ce;
+  --accent-ink: #0c1b19;
+  --accent-soft: #1b322e;
+  --link: #93bff0;
+  --focus: #93bff0;
+
+  --map-lane-0: #e6dccb;
+  --map-lane-1: #5ec8bd;
+  --map-lane-2: #d39ce3;
+  --map-lane-3: #8ab4f0;
+  --map-lane-4: #e3b74f;
+  --map-lane-5: #f08aa6;
+  --map-head: #ff9b57;
+  --map-branch: #93bff0;
+  --map-remote: #b8a7f4;
+  --map-tag: #e7c35a;
+}
+
+h1,
+h2,
+.brand span {
+  font-family: var(--serif);
+  font-weight: 700;
+  letter-spacing: 0.005em;
+}
+
+/* Timelines and save points */
+
+.tt-edge {
+  stroke-width: 2.75;
+}
+
+.tt-edge.is-first {
+  stroke-width: 4;
+}
+
+.tt-edge.is-cut {
+  stroke-dasharray: 2 5;
+}
+
+.tt-save {
+  fill: var(--map-surface);
+  stroke: var(--color);
+  stroke-width: 2.5;
+}
+
+.tt-core {
+  fill: var(--color);
+}
+
+.tt-join {
+  fill: var(--map-surface);
+  stroke: var(--color);
+  stroke-width: 1.75;
+}
+
+.tt-now-glow {
+  fill: color-mix(in srgb, var(--color) 16%, transparent);
+}
+
+.tt-now-dial {
+  fill: none;
+  stroke: var(--color);
+  stroke-width: 3.5;
+}
+
+.map-commit.is-new .tt-point,
+.map-commit.is-new .tt-now-dial {
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.map-commit.is-new .tt-point {
+  animation: tt-arrive 0.7s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+
+.map-commit.is-new .tt-now-dial {
+  animation: tt-tick 1s ease-out both;
+}
+
+@keyframes tt-arrive {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+}
+
+@keyframes tt-tick {
+  from {
+    transform: rotate(-30deg);
+  }
+}
+
+/* Chips: HEAD points at its commit, a tag is a pennant, a remote-tracking branch is dashed */
+
+.map-label .tt-chip {
+  fill: color-mix(in srgb, var(--color) 12%, var(--map-surface));
+  stroke: var(--color);
+  stroke-width: 1.25;
+}
+
+.map-label.is-current .tt-chip,
+.map-label.is-head .tt-chip {
+  fill: var(--color);
+}
+
+.map-label.is-remote .tt-chip {
+  fill: color-mix(in srgb, var(--color) 6%, var(--map-surface));
+  stroke-dasharray: 3 2.5;
+}
+
+.map-label.is-head text {
+  font-weight: 700;
+}
+
+/* The key: HEAD is now, then each metaphor next to its Git word */
+
+.tt-key {
+  display: block;
+  margin-top: 0.55rem;
+  padding-top: 0.55rem;
+  border-top: 1px dashed var(--line-strong);
+  font-size: 0.82rem;
+}
+
+.tt-key-now {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.2rem;
+  color: var(--ink);
+  line-height: 1.4;
+}
+
+.tt-key-now b {
+  color: var(--map-head);
+}
+
+.tt-legend {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  line-height: 1.6;
+}
+
+.tt-legend li {
+  display: inline-block;
+  max-width: 100%;
+  margin-right: 0.9rem;
+}
+
+.tt-legend .tt-mark {
+  margin-right: 0.3rem;
+  vertical-align: -0.38em;
+}
+
+/* In the live panel the graph scrolls and the key stays in sight below it. */
+.live-project .live-map {
+  max-height: max(280px, calc(100vh - 480px));
+}
+
+.live-map .tt-key {
+  position: sticky;
+  bottom: 0;
+  padding-bottom: 0.1rem;
+  background: var(--surface);
+}
+
+.tt-legend b {
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.tt-mark {
+  flex: none;
+  overflow: visible;
+}
+
+.tt-mark .tt-edge.is-first {
+  stroke-width: 4;
+}
+
+/* Small icons: panel titles, the three areas' columns and the feed */
+
+.live-part h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.live-part h3::before,
+.areas-head [role="columnheader"]:not(:first-child)::before,
+.feed li::before {
+  content: "";
+  flex: none;
+  background: currentColor;
+  -webkit-mask: var(--tt-icon) center / contain no-repeat;
+  mask: var(--tt-icon) center / contain no-repeat;
+}
+
+.live-part h3::before {
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.live-project h3 {
+  --tt-icon: var(--tt-icon-timeline);
+}
+
+.live-github h3 {
+  --tt-icon: var(--tt-icon-archive);
+}
+
+.live-feed h3 {
+  --tt-icon: var(--tt-icon-clock);
+}
+
+.live-three h3 {
+  --tt-icon: var(--tt-icon-layers);
+}
+
+.areas-head [role="columnheader"]:not(:first-child)::before {
+  display: inline-block;
+  width: 1.05em;
+  height: 1.05em;
+  margin-right: 0.3rem;
+  vertical-align: -0.2em;
+}
+
+.areas-head [role="columnheader"]:nth-child(2) {
+  --tt-icon: var(--tt-icon-folder);
+}
+
+.areas-head [role="columnheader"]:nth-child(4) {
+  --tt-icon: var(--tt-icon-tray);
+}
+
+.areas-head [role="columnheader"]:nth-child(6) {
+  --tt-icon: var(--tt-icon-save);
+}
+
+.feed li {
+  --tt-icon: var(--tt-icon-dot);
+  --tt-kind: var(--muted);
+  position: relative;
+  padding-left: 2.05rem;
+}
+
+.feed li[data-kind] {
+  border-left-color: var(--tt-kind);
+}
+
+.feed li::before {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.6rem;
+  width: 1rem;
+  height: 1rem;
+  background: var(--tt-kind);
+}
+
+.feed li[data-kind^="commit-"] {
+  --tt-icon: var(--tt-icon-save);
+  --tt-kind: var(--accent);
+}
+
+.feed li[data-kind^="file-"] {
+  --tt-icon: var(--tt-icon-file);
+  --tt-kind: var(--muted);
+}
+
+.feed li[data-kind="file-staged"] {
+  --tt-kind: var(--accent);
+}
+
+.feed li[data-kind^="branch-"] {
+  --tt-icon: var(--tt-icon-timeline);
+  --tt-kind: var(--map-branch);
+}
+
+.feed li[data-kind="branch-switched"],
+.feed li[data-kind^="head-"] {
+  --tt-icon: var(--tt-icon-clock);
+  --tt-kind: var(--map-head);
+}
+
+.feed li[data-kind^="tag-"] {
+  --tt-icon: var(--tt-icon-pennant);
+  --tt-kind: var(--map-tag);
+}
+
+.feed li[data-kind="push-received"],
+.feed li[data-kind="remote-updated"] {
+  --tt-icon: var(--tt-icon-archive);
+  --tt-kind: var(--map-remote);
+}
+
+.feed li[data-kind^="stash-"] {
+  --tt-icon: var(--tt-icon-tray);
+}
+
+.feed li[data-kind$="-started"],
+.feed li[data-kind$="-finished"] {
+  --tt-icon: var(--tt-icon-hourglass);
+}
+
+.feed li[data-kind^="conflict"],
+.feed li[data-kind$="-aborted"] {
+  --tt-icon: var(--tt-icon-warning);
+  --tt-kind: var(--danger);
+}
