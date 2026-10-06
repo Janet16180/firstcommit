@@ -5,11 +5,13 @@ Run it from the repository::
 
     uv run python tools/demo/share.py share.json
 
-It builds one lab in the fixed folder `LAB`: a bare practice copy that stands in for GitHub
-(``github/project.git``) and two clones of it, ``you`` and ``alex``. You commit the README and
-push it, Alex clones, then every step of `WALK` runs as the person it belongs to, Robin Park or
-Alex Kim, in the lessons' own fixed environment (`firstcommit.demos.environment`: fixed dates,
-the C locale, the game's starting configuration and nothing else from the shell that runs it).
+It builds one lab in a temporary folder, laid out as a level's (`firstcommit.lab.Lab`): a bare
+practice copy that stands in for GitHub, your clone of it (the lab's project) and Alex's (the
+lab's teammate), each reaching GitHub by a relative path as AUTHORING section 3.2 asks. You
+commit the README and push it, Alex clones, then every step of `WALK` runs as the person it
+belongs to, Robin Park or Alex Kim, in the lessons' own fixed environment
+(`firstcommit.demos.environment`: fixed dates, the C locale, the game's starting configuration
+and nothing else from the shell that runs it).
 A command written with a leading ``! `` must fail, as in a lesson; any other must succeed.
 After each step it snapshots all three repositories with `firstcommit.repomap` and lists what
 changed in each with `firstcommit.changes`, the same events the game's feed shows. It writes the
@@ -25,25 +27,26 @@ Three steps check themselves:
 - Your plain ``git pull`` on diverged branches must fail and end exactly where a ``git fetch``
   in a copy of your clone ends: it fetched, and changed nothing else.
 
-The lab is always the same folder because git writes the practice copy's path into the merge
-message of ``git pull``, so the merge commit's hash depends on it. Every hash and every line of
-output is therefore the same on every run with the same git, and nothing is rewritten after
-recording. The lab is removed at the end; the recorder refuses to start if the folder exists.
+Git prints the practice copy's URL in push and pull output and writes it into the merge commit's
+message, so with a relative URL nothing recorded names the temporary folder: every hash and every
+line of output is the same on every run with the same git, and nothing is rewritten after
+recording. The folder is removed at the end.
 """
 
 import json
+import shlex
 import shutil
 import subprocess
 import sys
+import tempfile
 from pathlib import Path
 from typing import Literal, NamedTuple, TypedDict
 
 from firstcommit import changes, demos, gitcmd, repomap
 from firstcommit.changes import Event
+from firstcommit.lab import Lab
 from firstcommit.repomap import Snapshot
 
-LAB = Path("/tmp/firstcommit-share")
-"""The lab's folder, also its home: git prints this path, and writes it into the merge commit."""
 PEOPLE = {"you": gitcmd.Person("Robin Park", "robin@example.com"), "alex": gitcmd.Person("Alex Kim", "alex@example.com")}
 
 Check = Literal["", "halves", "unchanged", "fetch-only"]
@@ -171,12 +174,33 @@ def run(cwd: Path, environment: dict[str, str], person: str, command: str) -> Li
     return {"command": shown, "output": done.stdout, "status": done.returncode}
 
 
-def observe(stand_in: dict[str, Path] | None = None) -> Observation:
+def clone(lab: Lab, person: str) -> Path:
+    """
+    Give a person's clone in the lab.
+
+    Parameters
+    ----------
+    lab : Lab
+        The lab.
+    person : str
+        ``"you"`` (the lab's project) or ``"alex"`` (the lab's teammate).
+
+    Returns
+    -------
+    Path
+        The clone's top folder.
+    """
+    return {"you": lab.project, "alex": lab.teammate}[person]
+
+
+def observe(lab: Lab, stand_in: dict[str, Path] | None = None) -> Observation:
     """
     Snapshot your clone, GitHub and Alex's clone.
 
     Parameters
     ----------
+    lab : Lab
+        The lab.
     stand_in : dict[str, Path] | None
         Folders to snapshot instead of a person's clone: a copy, for a pull's halfway state.
 
@@ -185,7 +209,7 @@ def observe(stand_in: dict[str, Path] | None = None) -> Observation:
     Observation
         The three snapshots.
     """
-    folders = {"you": LAB / "you", "github": LAB / "github" / "project.git", "alex": LAB / "alex", **(stand_in or {})}
+    folders = {"you": lab.project, "github": lab.github, "alex": lab.teammate, **(stand_in or {})}
     return {who: repomap.snapshot(folder) for who, folder in folders.items()}
 
 
@@ -235,12 +259,32 @@ def same(one: object, other: object) -> bool:
     return json.dumps(one, sort_keys=True) == json.dumps(other, sort_keys=True)
 
 
-def fetched_copy(environment: dict[str, str], person: str) -> tuple[Path, Line]:
+def make_clone(lab: Lab, environment: dict[str, str], person: str) -> None:
     """
-    Copy a person's clone next to it and run ``git fetch`` in the copy.
+    Clone GitHub as a person's clone, and make the clone reach GitHub by its relative path.
 
     Parameters
     ----------
+    lab : Lab
+        The lab; GitHub exists, and the clone's parent folder.
+    environment : dict[str, str]
+        The lab's whole environment.
+    person : str
+        Whose clone to make.
+    """
+    place = clone(lab, person)
+    command = f"git clone -q {shlex.quote(str(lab.github))} {place.name} 2>/dev/null && git -C {place.name} remote set-url origin {shlex.quote(lab.github_url(place))}"
+    run(place.parent, environment, person, command)
+
+
+def fetched_copy(lab: Lab, environment: dict[str, str], person: str) -> tuple[Path, Line]:
+    """
+    Copy a person's clone next to it, where GitHub's relative URL still leads, and run ``git fetch`` in the copy.
+
+    Parameters
+    ----------
+    lab : Lab
+        The lab.
     environment : dict[str, str]
         The lab's whole environment.
     person : str
@@ -251,17 +295,20 @@ def fetched_copy(environment: dict[str, str], person: str) -> tuple[Path, Line]:
     tuple[Path, Line]
         The copy, which the caller removes, and what ``git fetch`` printed there.
     """
-    copy = LAB / f"{person}-fetched"
-    shutil.copytree(LAB / person, copy, symlinks=True)
+    original = clone(lab, person)
+    copy = original.with_name(f"{original.name}-fetched")
+    shutil.copytree(original, copy, symlinks=True)
     return copy, run(copy, environment, person, "git fetch")
 
 
-def in_halves(walk: Walk, environment: dict[str, str], before: Observation) -> list[Step]:
+def in_halves(lab: Lab, walk: Walk, environment: dict[str, str], before: Observation) -> list[Step]:
     """
     Run a person's ``git pull`` and record it as its fetch half, then its merge half.
 
     Parameters
     ----------
+    lab : Lab
+        The lab.
     walk : Walk
         The pull.
     environment : dict[str, str]
@@ -279,10 +326,10 @@ def in_halves(walk: Walk, environment: dict[str, str], before: Observation) -> l
     RuntimeError
         If ``git fetch`` then ``git merge --ff-only origin/main`` does not end where the pull did.
     """
-    copy, fetched = fetched_copy(environment, walk.actor)
-    halfway = observe({walk.actor: copy})
-    transcript = [run(LAB / walk.actor, environment, walk.actor, command) for command in walk.commands]
-    after = observe()
+    copy, fetched = fetched_copy(lab, environment, walk.actor)
+    halfway = observe(lab, {walk.actor: copy})
+    transcript = [run(clone(lab, walk.actor), environment, walk.actor, command) for command in walk.commands]
+    after = observe(lab)
     run(copy, environment, walk.actor, "git merge -q --ff-only origin/main")
     if not same(repomap.snapshot(copy), after[walk.actor]):
         raise RuntimeError(f"{walk.id}: git fetch, then git merge, did not end where git pull did")
@@ -290,12 +337,14 @@ def in_halves(walk: Walk, environment: dict[str, str], before: Observation) -> l
     return [record(HALVES[0], walk, before, halfway, [fetched]), record(HALVES[1], walk, halfway, after, transcript)]
 
 
-def in_one(walk: Walk, environment: dict[str, str], before: Observation) -> Step:
+def in_one(lab: Lab, walk: Walk, environment: dict[str, str], before: Observation) -> Step:
     """
     Run one step of the walk and record it, checking what its `Walk.check` asks.
 
     Parameters
     ----------
+    lab : Lab
+        The lab.
     walk : Walk
         The step.
     environment : dict[str, str]
@@ -313,9 +362,9 @@ def in_one(walk: Walk, environment: dict[str, str], before: Observation) -> Step
     RuntimeError
         If a refused step changed anything, or a fetch-only step did more than ``git fetch``.
     """
-    copy = fetched_copy(environment, walk.actor)[0] if walk.check == "fetch-only" else None
-    transcript = [run(LAB / walk.actor, environment, walk.actor, command) for command in walk.commands]
-    after = observe()
+    copy = fetched_copy(lab, environment, walk.actor)[0] if walk.check == "fetch-only" else None
+    transcript = [run(clone(lab, walk.actor), environment, walk.actor, command) for command in walk.commands]
+    after = observe(lab)
     if walk.check == "unchanged" and not same(after, before):
         raise RuntimeError(f"{walk.id}: a refused command changed something")
     if copy and not same(repomap.snapshot(copy), after[walk.actor]):
@@ -337,24 +386,25 @@ def record_sharing() -> list[Step]:
 
     Raises
     ------
-    FileExistsError
-        If `LAB` exists already.
     RuntimeError
         If a command does not end as expected, or a step fails its own check.
     """
-    environment = demos.environment(LAB)
+    folder = Path(tempfile.mkdtemp(prefix="fc-share-"))
     steps: list[Step] = []
     try:
-        run(LAB, environment, "you", "git init -q --bare github/project.git")
-        run(LAB, environment, "you", "git clone -q github/project.git you 2>/dev/null")
-        run(LAB / "you", environment, "you", "echo '# Team handbook' > README.md && git add README.md && git commit -qm 'Add the README' && git push -q")
-        run(LAB, environment, "alex", "git clone -q github/project.git alex")
-        before = observe()
+        environment = demos.environment(folder / "home")
+        lab = Lab(folder / "lab")
+        lab.teammate.parent.mkdir(parents=True)
+        run(lab.root, environment, "you", f"git init -q --bare {shlex.quote(str(lab.github))}")
+        make_clone(lab, environment, "you")
+        run(lab.project, environment, "you", "echo '# Team handbook' > README.md && git add README.md && git commit -qm 'Add the README' && git push -q")
+        make_clone(lab, environment, "alex")
+        before = observe(lab)
         for walk in WALK:
-            steps.extend(in_halves(walk, environment, before) if walk.check == "halves" else [in_one(walk, environment, before)])
+            steps.extend(in_halves(lab, walk, environment, before) if walk.check == "halves" else [in_one(lab, walk, environment, before)])
             before = steps[-1]["after"]
     finally:
-        shutil.rmtree(LAB)
+        shutil.rmtree(folder)
     return steps
 
 
