@@ -16,13 +16,16 @@ from typing import Any, Literal
 from firstcommit.gitcmd import GAME, Person
 from firstcommit.gitcmd import output as git
 from firstcommit.gitcmd import run as git_run
-from firstcommit.repomap import Snapshot, snapshot
+from firstcommit.repomap import Commit, FileEntry, Ref, Snapshot, snapshot
 
 __all__ = [
     "GAME",
     "AnswerCheck",
+    "Commit",
+    "FileEntry",
     "Lab",
     "Person",
+    "Ref",
     "Slide",
     "Snapshot",
     "State",

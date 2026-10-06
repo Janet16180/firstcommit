@@ -115,6 +115,8 @@ XP: int                       # guide: 100 for 1, 150-200 for 2, 250-300 for 3
 LESSON: list[kit.Slide] = []  # optional; the first level of a chapter has one
 QUEST: list[kit.Step] = []    # optional; the first level of a chapter has one
 BRIEFING: str                 # the situation and what counts as success
+QUESTION: str = ""            # optional; set it when the level is solved by a typed answer
+PLACEHOLDER: str = ""         # optional; example shape of that answer ("a short hash")
 HINTS: list[str]              # 2-4, from a nudge to almost the answer; each costs XP
 DEBRIEF: str                  # shown once solved
 
@@ -133,6 +135,9 @@ def solve(lab: kit.Lab, state: kit.State) -> str | None: ...
   through `kit.git_run`. It is called every couple of seconds while the player works, with
   `answer=None`, and must stay fast and survive any state the player can create: a missing
   folder, a deleted `.git`, a detached HEAD, a merge in progress, garbage answers.
+- **`QUESTION`** is for levels whose goal is something the player finds out ("which commit
+  introduced the bug?"). Without it, the page offers no answer box and the level is checked
+  against the repository only, with `answer=None`.
 - **`solve(lab, state)`** is the reference solution the tests use. It plays like a player:
   ordinary git commands through `kit.git` in `lab.project`, never a stored answer. It returns
   the answer to submit, or None for levels checked against the repository.
@@ -157,8 +162,8 @@ for people.
 | Helper | Use |
 |---|---|
 | `kit.git(cwd, *args, author=, when=, stdin=)` | run git; returns stdout; raises if git fails (setup, solve) |
-| `kit.git_run(cwd, *args, ...)` | run git; returns the result whatever the exit status (checks) |
-| `kit.snapshot(path)` | the repository in a folder, as the map shows it |
+| `kit.git_run(cwd, *args, ...)` | run git; returns the result whatever the exit status, even when `cwd` was deleted (checks) |
+| `kit.snapshot(path)` | the repository in a folder, as the map shows it (`kit.Snapshot`, `kit.FileEntry`, `kit.Commit`, `kit.Ref`) |
 | `kit.Person`, `kit.GAME` | commit identities |
 | `kit.parse_int(text)` | a typed number, or None (never `isdigit()` + `int()`) |
 | `kit.is_hash_of(text, full)` | the player typed this object id, whole or abbreviated |
@@ -227,7 +232,8 @@ source = "git-hash-object(1)"
   than the longest distractor, and the longest option in at most half of a deck's choice cards
   (the tests enforce both). No "all of the above".
 - **predict** and **verify**: the tests run `code` with bash in an empty folder, with the same
-  fixed environment as the lessons (identity, date, `LC_ALL=C`, no global configuration), and
+  fixed environment as the lessons (`demos.environment`: identity, date, `LC_ALL=C`, and the
+  game's starting configuration `gitcmd.BASE_CONFIG` as the only global configuration), and
   compare standard output (trailing newlines stripped) with `correct`. They must be
   deterministic and must not depend on git's message wording.
 - **text**: short, unambiguous answers; list every reasonable spelling in `accept`.
