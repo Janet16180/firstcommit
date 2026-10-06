@@ -118,12 +118,13 @@ const Practice = (function () {
   }
 
   /* A check's result. A solve also replaces any "not yet" on screen, which the player sees
-     again after the celebration. */
-  function checked(run, result) {
+     again after the celebration. An automatic check that does not solve says nothing: the
+     player did not ask, and the quest or the challenge already says what is next. */
+  function checked(run, result, auto = false) {
     if (result.solved && run.challenge) run.challenge.feedback(result.message, true);
     if (result.solved) {
       finish(run, () => run.on.solved(result));
-    } else if (run.challenge) {
+    } else if (run.challenge && !auto) {
       run.challenge.feedback(result.message, false);
       run.ctx.sound.play("wrong");
     }
@@ -142,7 +143,7 @@ const Practice = (function () {
       run.live.update(await game.observe());
       run.ui.offline.hidden = true;
       if (plan.watchStep) stepped(run, await game.step(null), true);
-      if (plan.autoCheck && !run.state.finished) checked(run, await game.check(null, true));
+      if (plan.autoCheck && !run.state.finished) checked(run, await game.check(null, true), true);
     } catch (error) {
       if (!expected(run, error)) throw error;
     }

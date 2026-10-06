@@ -96,6 +96,15 @@ test("once the quest is done the level is checked automatically, and a win stops
   assert.equal(run.server.calls.length, 2);
 });
 
+test("an automatic check that does not solve stays silent; it is not a failure of the player's", async () => {
+  const run = practice({ step: 3 });
+  await run.clock.advance(3000);
+  assert.ok(run.server.calls.filter((call) => call.path === "/api/check").length >= 2);
+  assert.equal(run.q(".check-feedback").textContent, "");
+  assert.deepEqual(run.seen.sounds, []);
+  run.view.dispose();
+});
+
 test("checking by hand sends the answer and shows why it is not solved yet", async () => {
   const run = practice({ step: 3, level: { ...record("level"), question: [{ kind: "para", spans: [{ text: "Which commit?", code: false }] }], placeholder: "" } });
   await settle();
