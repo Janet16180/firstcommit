@@ -1,4 +1,12 @@
-# The four places (revision 3: pages and boxes, for fact-check)
+# The four places (revision 4: the revision 3 re-check applied, for fact-check)
+
+**Revision 4** applies the revision 3 re-check. New for the checker, marked **(r4)**: pull lights
+only for the branch's own upstream, and not for a reset that drops your commits (Part 1, "What
+lights up"); pull's spoken route names the fetch arrow first and the repository's note reads
+"closed boxes: commits" (Part 2); the motion's time bound is restated after the motions were
+slowed by about a quarter (Part 1, motion). `git commit -a` and `git push` in one batch now light
+add, commit and push, since the feed tells that commit as made here. Register rows L1-L4 were
+run on real git 2.43 labs, snapshots and feed (`upstream_check.py` in my job folder).
 
 **Revision 3** draws the figure in the boxes language the user asked for: files are pages,
 the staging area is an open box, commits are closed boxes on their timeline. It also draws
@@ -46,9 +54,8 @@ files and commits:
   staged", "modified, staged", ...). Its note: "open box: the next commit".
 - **(r3)** *Your repository*: the commit graph, drawn by the real map renderer at a small size,
   with each commit as a closed box on its timeline, its short hash beside it as its label, the
-  branch tabs, HEAD's dial and the dashed `origin/main` tab. Its note: "closed boxes: your
-  commits". A commit holds every tracked file, and an unchanged file keeps its id, stored once
-  (B2, B3).
+  branch tabs, HEAD's dial and the dashed `origin/main` tab. Its note: "closed boxes: commits".
+  A commit holds every tracked file, and an unchanged file keeps its id, stored once (B2, B3).
 - *GitHub (the practice copy)*: its commit graph, drawn the same way. **(r3)** An empty GitHub
   says "No commits yet." (it has no HEAD you are on, so the map's "You are on main..." would be
   wrong there).
@@ -73,8 +80,10 @@ staging area to the working folder, with a stop under each. Narrow, the figure s
 computer above, GitHub below, the arrows between the rows pointing up and down, clone up the
 right side.
 
-**What lights up.** Every arrow that matches what just happened, in the order the commands run,
-from the same change the feed reports plus your repository's two snapshots, never guessed:
+**What lights up.** Every arrow that matches what just happened, from the same change the feed
+reports plus your repository's two snapshots, never guessed. **(r4)** They light in a fixed order
+(clone, add, commit, push or fetch, pull), which is only the figure's: no caption says which
+command ran first.
 
 | What happened (one batch) | Arrows |
 |---|---|
@@ -82,7 +91,7 @@ from the same change the feed reports plus your repository's two snapshots, neve
 | `commit-created`, `merge-commit-created`, `commit-replaced` | commit |
 | `push-received` (the practice copy's side) | push |
 | `remote-updated` without `push-received` | fetch |
-| your branch's new tip reaches an `origin/` tip its old tip did not, on the same branch, without a push | pull (its merge half): fast-forward, merge or rebase, whether or not the fetch was in the same batch |
+| **(r4)** on the same branch and without a push, your branch's new tip reaches the tip of its upstream, `origin/<branch>`, which its old tip did not, and it kept its own commits or replayed them on top | pull (its merge half): fast-forward, merge or rebase, whether or not the fetch was in the same batch |
 | the repository appeared with an `origin/` branch (a clone) | clone |
 
 So `git pull` lights fetch and pull; `git pull` or `git merge origin/main` after an earlier
@@ -90,6 +99,14 @@ So `git pull` lights fetch and pull; `git pull` or `git merge origin/main` after
 `git fetch` together light commit and fetch, not pull. A merge commit or staging change made by
 a pull belongs to pull, so it does not also light commit or add. A refused push and a diverged
 `git pull` that stops after its fetch are shown as they are: nothing, and fetch alone (D4, D5).
+**(r4)** `git commit -a` and `git push` in one batch light add, commit and push. Only the
+branch's own upstream counts: `git merge feature` on `main`, after `git push -u origin feature`,
+lights nothing, and `git pull` on `feature` takes in `origin/feature`. `git reset --hard
+origin/main` lights nothing when it drops commits of yours. When your branch had no commits of
+its own, the reset ends exactly where a fast-forward would, with the same files, and the two
+snapshots cannot tell them apart, so it lights pull. The upstream is taken to be
+`origin/<branch>`, as `git clone` and `git push -u origin <branch>` set it; the snapshots do not
+record a branch's upstream setting.
 
 **(r3) Motion** (off under reduced motion), from the two snapshots like the map's motions. Each
 lit arrow draws itself, then its work flies along it: a copy of a page, by name and content
@@ -105,7 +122,7 @@ name and new tag moves or appears; your branch and pages stay still, which is th
 picture (D3). A pull plays the fetch, then your branch moves and the changed pages leave your
 repository, pass the open box (which updates as they pass) and reach the working folder. Only
 commits that are on GitHub fly from GitHub: a merge or rebase commit appears in your repository.
-A page the player edits or makes changes where it lies. A command's motion stays within about
+A page the player edits or makes changes where it lies. **(r4)** A command's motion stays within about
 two seconds however many files move, because the flights of one group spread over at most
 300 ms: about 1.1 s for a push, 1.6 s for a pull, 1.8 s for a pull of many files and 2 s for a
 big clone, the longest.
@@ -118,7 +135,7 @@ map key's "How to read the map" guide links to it from the "Shared archive" entr
 
 ## Part 2: the words the figure shows
 
-**(r3)** Notes under the titles: "open box: the next commit" (staging area), "closed boxes: your
+**(r3)** Notes under the titles: "open box: the next commit" (staging area), "closed boxes:
 commits" (your repository). Empty places: "No files.", "No commits yet." (GitHub), "No remote
 yet." Pull's two parts each read "pull". Each arrow's spoken route (`aria-label`), exactly:
 
@@ -126,8 +143,11 @@ yet." Pull's two parts each read "pull". Each arrow's spoken route (`aria-label`
 - `commit: from the staging area to your repository`
 - `push: from your repository to the remote repository`
 - `fetch: from the remote repository to your repository`
-- `pull = fetch + merge: from your repository, through the staging area, to the working folder`
+- `pull = fetch + merge: the fetch arrow, then from your repository, through the staging area, to the working folder`
 - `clone (once): from the remote repository, through your repository and the staging area, to the working folder`
+
+**(r4)** Changed here: pull's route names the fetch arrow first, and your repository's note reads
+"closed boxes: commits" (it was "closed boxes: your commits").
 
 Titles: **Your computer** (with *Working folder*, *Staging area*, *Your repository*) and
 **GitHub (the practice copy)** (with *Remote repository*).
@@ -175,4 +195,8 @@ Titles: **Your computer** (with *Working folder*, *Staging area*, *Your reposito
 | B2 (r3) | A commit holds every tracked file; an unchanged file keeps its id | `git ls-tree HEAD~1`; `git ls-tree HEAD` after changing only README | `rules.md` `6b1b585c99...` in both commits; README `f386038` then `83d38e8` |
 | B3 (r3) | Identical content is stored once | `git cat-file --batch-all-objects --batch-check` after those two commits | 2 commits, 2 trees, 3 blobs: `rules.md`'s blob once though both commits hold it |
 | B4 (r3) | After a commit the staging area keeps its files and matches the new commit | `git ls-files -s` before and after `git commit`; `git diff --cached` | Unchanged; `diff --cached` empty (as the checker found for A2) |
+| L1 (r4) | Merging a branch of yours into `main` lights nothing, even when that branch is on GitHub | Lab (clone of a practice copy): `git switch -c feature`, commit, `git push -u origin feature`, `git switch main`; then `git merge feature`; the feed's events and `TimePlaces.commands` on the two snapshots | events `[branch-moved]`, lit `[]` |
+| L2 (r4) | `git reset --hard origin/main` lights nothing when it drops a commit of yours; with no commit of yours it ends as a fast-forward does and lights pull | Teammate pushes; commit locally, `git fetch`, then `git reset --hard origin/main`; again with no local commit | dropped a commit: `[branch-moved]`, lit `[]`; only behind: `[branch-moved]`, lit `[pull]` |
+| L3 (r4) | A pull lights for the branch's own upstream: `--rebase` on diverged branches, and `git pull` on `feature` tracking `origin/feature` | Diverge, `git pull --rebase`; `git push -u origin feature`, another clone pushes to `feature`, `git pull` | both `[branch-moved, remote-updated]`, lit `[fetch, pull]` |
+| L4 (r4) | `git commit -a` and `git push` in one batch light add, commit and push | Edit README, then `git commit -qam 'More' && git push -q` as one batch | events `[commit-created, remote-updated, file-staged, push-received]`, lit `[add, commit, push]` |
 | A8 | The practice copy is bare: no working folder | `git --git-dir=hub.git rev-parse --is-bare-repository`; `ls hub.git`; `kit.Lab.github` (`<lab>/github/project.git`) | `true`; `HEAD branches config description hooks info objects refs` |
