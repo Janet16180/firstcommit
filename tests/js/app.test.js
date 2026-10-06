@@ -132,7 +132,7 @@ test("an error no view handled is shown, and a server that does not answer is na
   const page = await boot();
   page.fire("unhandledrejection", { reason: new Error("bad reply") });
   page.fire("unhandledrejection", { reason: httpError(0, "no answer") });
-  const toasts = page.document.querySelectorAll(".toast").map((toast) => toast.textContent);
+  const toasts = [...page.document.querySelectorAll(".toast")].map((toast) => toast.textContent);
   assert.match(toasts[0], /bad reply/);
   assert.match(toasts[1], /did not answer/);
 });

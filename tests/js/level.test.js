@@ -43,7 +43,7 @@ function page({ active = null, replies = {}, refreshed = null, dashboard = {} } 
   return { view, server, seen, ctx, q: (selector) => view.element.querySelector(selector), text: () => view.element.textContent };
 }
 
-const button = (run, label) => run.view.element.querySelectorAll("button").find((item) => label.test(item.textContent));
+const button = (run, label) => [...run.view.element.querySelectorAll("button")].find((item) => label.test(item.textContent));
 
 test("an unknown level says so and links back to the map", async () => {
   const run = page({ replies: { "/api/level": httpError(404, "unknown id") } });

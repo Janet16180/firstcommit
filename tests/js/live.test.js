@@ -60,7 +60,7 @@ test("what just happened lists the events newest first, with the time they were 
   panel.update({ ...record("observation"), events: [said("file-created", "You created ", ["a.txt"], ".")] });
   now = "10:00:05";
   panel.update({ ...record("observation"), events: [said("file-staged", ["a.txt"], " is staged.")] });
-  const items = panel.element.querySelectorAll(".feed li");
+  const items = [...panel.element.querySelectorAll(".feed li")];
   assert.deepEqual(items.map((item) => item.getAttribute("data-kind")), ["file-staged", "file-created"]);
   assert.match(items[0].textContent, /a\.txt is staged\./);
   assert.equal(items[0].querySelector("code").textContent, "a.txt");
