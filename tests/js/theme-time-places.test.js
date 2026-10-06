@@ -600,3 +600,14 @@ test("a page changed in the working folder, with no command moving it, changes w
   assert.equal(rowIn(figure, "folder", "README.md").querySelector(".tt-page-was code").textContent, shortOf("1"));
   assert.ok(calls.some((call) => call.node === rowIn(figure, "folder", "notes.txt") && call.frames[0].opacity === 0));
 });
+
+test("a folder with no repository shows its files as pages, with no git status word, since git status has none outside a repository", () => {
+  const folder = record("snapshots").folder;
+  const figure = TimePlaces.render({ project: folder, github: null }, {});
+  const notes = rowIn(figure, "folder", "notes.txt");
+  assert.equal(notes.querySelector("code").textContent, folder.files[0].folder.slice(0, 7));
+  assert.equal(wordsOf(notes), "", "no word such as untracked: git status fails in a folder with no repository");
+  assert.equal(rowIn(figure, "index", "notes.txt"), undefined, "no box holds it");
+  assert.match(figure.querySelector('[data-area="repository"]').textContent, /No repository in this folder yet\./);
+  assert.equal(figure.querySelectorAll(".tt-arrow.is-active").length, 0);
+});
