@@ -3,7 +3,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from firstcommit import kit, lab, markup, repomap
+from firstcommit import kit, lab, markup, playground, repomap
 
 FULL = "ce013625030ba8dba906f756967f9e9ca394464a"
 
@@ -84,3 +84,9 @@ def test_kit_hands_out_the_status_lists_every_level_asks_for() -> None:
     for name in ["untracked", "nested", "staged", "unstaged", "mode_changed", "conflicted"]:
         assert name in kit.__all__
         assert getattr(kit, name) is getattr(repomap, name)
+
+
+def test_a_level_sets_up_the_playground_and_presses_its_buttons_through_the_toolkit() -> None:
+    assert kit.setup_playground is playground.setup
+    assert kit.press is playground.press
+    assert {"setup_playground", "press"} <= set(kit.__all__)
