@@ -3,18 +3,21 @@
 /*
  * The four places: your computer (working folder, staging area, your repository) next to
  * GitHub (the remote repository), with an arrow for each command that moves work between them:
- * add, commit, push, fetch, pull and clone. Everything drawn is the player's own: the files of
- * the three areas (RepoMap.areaRows, the rule the three areas strip uses) and the two commit
- * graphs, drawn by the map renderer at a small size, origin/main included.
+ * add, commit, push, fetch, pull and clone. Files are pages, each with its name and the short id
+ * of its content (its blob id), so a changed copy shows a different id. The staging area is an
+ * open box: the next commit, holding every tracked file. A commit is a closed box on its
+ * timeline, labelled with its short hash. Everything drawn is the player's own: the pages of the
+ * three areas with git status's words (RepoMap.areaRows, the rule the three areas strip uses)
+ * and the two commit graphs, drawn by the map renderer with closed boxes, origin/main included.
  *
  * commands(events, before, after) says which arrows match what just happened, from the feed's
  * own event kinds and your repository's two snapshots; flights(before, after, commands) says
  * what travels along them: the files and commits that really changed place between the two
  * observations. Both are pure. render(...) draws the figure, lights those arrows and shows their
- * sentences; play(...) runs the flights and the commit graphs' own motions
- * (theme-time-motion.js). Every sentence is checked against git 2.43
- * (docs-draft/four-places.md). Needs dom.js, map.js, theme-time.js and theme-time-motion.js.
- * Defines one global, TimePlaces.
+ * sentences; play(...) runs the flights (a page's copy, or a box that closes as it leaves the
+ * staging area) and the commit graphs' own motions (theme-time-motion.js). Every sentence is
+ * checked against git 2.43 (docs-draft/four-places.md). Needs dom.js, map.js, theme-time.js and
+ * theme-time-motion.js. Defines one global, TimePlaces.
  */
 
 /* global Dom, RepoMap, TimeTheme, TimeMotion */
@@ -30,9 +33,12 @@ const TimePlaces = (function () {
     repository: "Your repository",
     remote: "Remote repository",
   };
+  /* What the boxes are, under the titles of the places that hold them. */
+  const NOTES = { index: "open box: the next commit", repository: "closed boxes: your commits" };
   const COMPUTER = "Your computer";
   const GITHUB = "GitHub (the practice copy)";
   const NO_REMOTE = "No remote yet.";
+  const NO_FILES = "No files.";
 
   /* Each command's arrow: the places its work passes, first to last, and the checked sentence
      shown when it lights (A1 to A6). The pull arrow is pull's merge half: its fetch half is the
@@ -54,7 +60,7 @@ const TimePlaces = (function () {
      new state (their own motions) as the first commit lands. A flight passes its middle place
      halfway and arrives at AT.arrive of its run. */
   const EASE = "cubic-bezier(0.3, 0.7, 0.3, 1)";
-  const TIMING = { arrow: 240, flight: { delay: 120, duration: 420 }, stagger: 80, land: 300, reveal: 160, pulse: 360 };
+  const TIMING = { arrow: 240, flight: { delay: 120, duration: 420 }, stagger: 80, spread: 240, land: 300, reveal: 160, pulse: 360 };
   const AT = { middle: 0.5, arrive: 0.88 };
 
   /* Commits reachable from `hash` in a snapshot: the commit and every ancestor it records. */
@@ -136,33 +142,46 @@ const TimePlaces = (function () {
     return lit.flatMap((name) => plans[name]());
   }
 
-  const { small } = TimeTheme;
+  const { boxes } = TimeTheme;
 
   /* Text with `code` spans, as nodes. */
   const inline = (text) => text.split("`").map((part, index) => (index % 2 ? el("code", {}, part) : part));
 
-  function fileRow(path, cell, states) {
-    return el("li", { class: `tt-file state-${cell.state}`, "data-path": path },
-      el("i", { class: "blob-dot", style: `--hue: ${RepoMap.blobHue(cell.blob || "000000")}`, "aria-hidden": "true" }),
-      el("span", { class: "tt-file-name" }, path),
-      cell.blob && el("code", { title: cell.blob }, cell.blob.slice(0, 7)),
-      states[cell.state] && el("em", {}, states[cell.state]),
+  /* A page's picture, coloured by its content (the same content always looks the same). */
+  const pageIcon = (blob) => el("span", { class: "tt-page-icon", style: blob ? `--hue: ${RepoMap.blobHue(blob)}` : null, "aria-hidden": "true" });
+
+  /* A file as a page: its content's colour, its name, the short id of its content (the blob id)
+     and the change git status lists for it in this place. A file git says is deleted here is the
+     gap its page left. */
+  function page(path, cell, said) {
+    return el("li", { class: `tt-page${cell.blob ? "" : " is-missing"}`, "data-path": path, "data-change": cell.change },
+      pageIcon(cell.blob),
+      el("span", { class: "tt-page-name" }, path),
+      cell.blob && el("code", { class: "tt-page-id", title: cell.blob }, cell.blob.slice(0, 7)),
+      cell.change && el("em", {}, said[cell.change]),
     );
   }
 
+  const title = (area) => [el("h4", {}, PLACES[area]), NOTES[area] && el("p", { class: "tt-place-note" }, NOTES[area])];
+
+  /* The working folder's pages, or the staging area's: an open box holding the next commit. */
   function filePlace(area, files) {
     const rows = RepoMap.areaRows(files).filter((row) => row[area]);
-    const { states } = RepoMap.DEFAULT_THEME.words;
-    return el("section", { class: `tt-place is-${area}`, "data-area": area },
-      el("h4", {}, PLACES[area]),
-      rows.length ? el("ul", { class: "tt-files" }, rows.map((row) => fileRow(row.path, row[area], states))) : el("p", { class: "tt-place-empty" }, "No files."),
-    );
+    const said = boxes.words.states[area];
+    const pages = rows.length ? el("ul", { class: "tt-pages" }, rows.map((row) => page(row.path, row[area], said))) : el("p", { class: "tt-place-empty" }, NO_FILES);
+    const held = area === "index"
+      ? el("div", { class: "tt-open-box" }, el("span", { class: "tt-flap is-left", "aria-hidden": "true" }), el("span", { class: "tt-flap is-right", "aria-hidden": "true" }), pages)
+      : pages;
+    return el("section", { class: `tt-place is-${area}`, "data-area": area }, title(area), held);
   }
 
+  /* A repository's commits: closed boxes on its timeline. GitHub has no HEAD you are on, so an
+     empty GitHub only says it has no commits. */
   function repositoryPlace(area, snapshot, showHead) {
+    const empty = !snapshot ? NO_REMOTE : !showHead && !snapshot.commits.length ? boxes.words.noCommits : null;
     return el("section", { class: `tt-place is-${area}`, "data-area": area },
-      el("h4", {}, PLACES[area]),
-      snapshot ? el("div", { class: "tt-place-graph" }, RepoMap.render(snapshot, { theme: small, showHead })) : el("p", { class: "tt-place-empty" }, NO_REMOTE),
+      title(area),
+      empty ? el("p", { class: "tt-place-empty" }, empty) : el("div", { class: "tt-place-graph" }, RepoMap.render(snapshot, { theme: boxes, showHead })),
     );
   }
 
@@ -176,19 +195,27 @@ const TimePlaces = (function () {
     return `from ${where(from)}${through} to ${where(to)}`;
   }
 
-  /* An arrow with its Git word and a stop at each place it passes; `is-back` for the commands
-     that bring work back from GitHub. */
-  function arrow(name, lit) {
+  /* An arrow with its Git word, from the first place of `part` to its last: the whole route, or
+     one leg of it for an arrow drawn in parts (pull's merge half runs beside commit, then add),
+     which shows only the command's name. Only the first part says the route aloud. A whole arrow
+     has a stop at each place it passes; `is-back` marks the legs that bring work back from
+     GitHub. */
+  function arrow(name, lit, part = ARROWS[name].path) {
     const { path, label } = ARROWS[name];
     const order = Object.keys(PLACES);
-    const backwards = order.indexOf(path.at(-1)) < order.indexOf(path[0]);
+    const backwards = order.indexOf(part.at(-1)) < order.indexOf(part[0]);
     const word = label || name;
-    return el("div", { class: `tt-arrow is-${name}${backwards ? " is-back" : ""}${lit.includes(name) ? " is-active" : ""}`, "data-command": name, "aria-label": `${word}: ${route(path)}` },
-      el("span", { class: "tt-arrow-label", "aria-hidden": "true" }, word),
+    const whole = part === path;
+    const spoken = part[0] === path[0] ? { "aria-label": `${word}: ${route(path)}` } : { "aria-hidden": "true" };
+    return el("div", { class: `tt-arrow is-${name}${backwards ? " is-back" : ""}${lit.includes(name) ? " is-active" : ""}`, "data-command": name, ...spoken },
+      el("span", { class: "tt-arrow-label", "aria-hidden": "true" }, whole ? word : name),
       el("span", { class: "tt-arrow-shaft", "aria-hidden": "true" }),
-      path.slice(1, -1).map((area) => el("span", { class: `tt-arrow-stop is-${area}`, "aria-hidden": "true" })),
+      whole && path.slice(1, -1).map((area) => el("span", { class: `tt-arrow-stop is-${area}`, "aria-hidden": "true" })),
     );
   }
+
+  /* Two arrows across one gap between places: the one towards GitHub above, the one back below. */
+  const pair = (gap, ...arrows) => el("div", { class: `tt-arrows-pair is-gap-${gap}` }, arrows);
 
   /* The sentences of the lit arrows; pull's tells its own fetch half. */
   const told = (lit) => (lit.includes("pull") ? lit.filter((name) => name !== "fetch") : lit);
@@ -196,31 +223,33 @@ const TimePlaces = (function () {
   /* The four places as a figure, lighting `options.commands`' arrows and showing their sentences. */
   function render(observation, { commands: lit = [] } = {}) {
     const { project, github } = observation;
+    const merge = ARROWS.pull.path;
     return el("figure", { class: "tt-places", "aria-label": `The four places: ${Object.values(PLACES).join(", ")}` }, el("div", { class: "tt-places-grid" },
       el("div", { class: "tt-frame is-computer", "aria-hidden": "true" }, el("span", {}, COMPUTER)),
       el("div", { class: "tt-frame is-github", "aria-hidden": "true" }, el("span", {}, GITHUB)),
       filePlace("folder", project.files),
-      arrow("add", lit),
+      pair(1, arrow("add", lit), arrow("pull", lit, merge.slice(1))),
       filePlace("index", project.files),
-      arrow("commit", lit),
+      pair(2, arrow("commit", lit), arrow("pull", lit, merge.slice(0, 2))),
       repositoryPlace("repository", project, true),
-      el("div", { class: "tt-arrows-pair" }, arrow("push", lit), arrow("fetch", lit)),
+      pair(3, arrow("push", lit), arrow("fetch", lit)),
       repositoryPlace("remote", github, false),
-      arrow("pull", lit),
       arrow("clone", lit),
     ), lit.length > 0 && el("figcaption", { class: "tt-places-caption" }, told(lit).map((name) => el("p", {}, inline(ARROWS[name].text)))));
   }
 
   const find = (scope, attribute, value) => [...scope.querySelectorAll(`[${attribute}]`)].find((node) => node.getAttribute(attribute) === value) || null;
 
-  /* Where a flight starts or ends: the file's row or the commit's save point in that place; for
-     files leaving your repository, the commit HEAD is on; else the place itself. */
+  /* Where a flight starts or ends: the file's page or the commit's box in that place; for files
+     leaving your repository, the box HEAD is on; for a commit leaving the staging area, its open
+     box; else the place itself. */
   function spot(figure, area, flight) {
     const place = find(figure, "data-area", area);
     const exact = flight.what === "file" ? find(place, "data-path", flight.id) : find(place, "data-hash", flight.id);
     const point = exact && flight.what === "commit" ? exact.querySelector(".tt-save") : exact;
     const head = !point && area === "repository" ? place.querySelector(".map-commit.is-head .tt-save") : null;
-    return point || head || place;
+    const open = !point && flight.what === "commit" ? place.querySelector(".tt-open-box") : null;
+    return point || head || open || place;
   }
 
   function centre(node, origin) {
@@ -238,36 +267,48 @@ const TimePlaces = (function () {
     };
   }
 
-  /* What flies: a file by name with its content's colour, or a save point with its short hash. */
+  /* What flies: a copy of a file's page, by name and content's colour; or a closed box with its
+     short hash on the label. A commit made now leaves the staging area as a copy of the open box,
+     still open, holding a page for every tracked file, and closes on the way. */
   function flyer(flight, after) {
     if (flight.what === "file") {
       const file = after.project.files.find((entry) => entry.path === flight.id);
-      return el("div", { class: "tt-flyer is-file", "aria-hidden": "true" },
-        el("i", { class: "blob-dot", style: `--hue: ${RepoMap.blobHue(file.folder || file.index || "000000")}` }), flight.id);
+      return el("div", { class: "tt-flyer is-file", "aria-hidden": "true" }, pageIcon(file.folder || file.index), flight.id);
     }
     const commits = [...after.project.commits, ...(after.github ? after.github.commits : [])];
     const commit = commits.find((entry) => entry.hash === flight.id);
-    return el("div", { class: "tt-flyer is-commit", "aria-hidden": "true" }, TimeTheme.mark("commit"), commit.short);
+    const made = flight.by === "commit";
+    const packed = made ? after.project.files.filter((file) => file.head !== null) : [];
+    return el("div", { class: `tt-flyer is-commit${made ? " is-closing" : ""}`, "aria-hidden": "true" },
+      el("span", { class: "tt-box-icon" },
+        made && [el("span", { class: "tt-flap is-left" }), el("span", { class: "tt-flap is-right" })],
+        packed.length > 0 && el("span", { class: "tt-flyer-pages" }, packed.map((file) => pageIcon(file.head))),
+      ),
+      commit.short,
+    );
   }
 
   /* The commit graph of one place moves from its old drawing to its new one, `offset` ms late. */
   function settle(figure, area, before, after, showHead, offset, reduced) {
     const graph = find(figure, "data-area", area).querySelector(".repo-map");
     if (!graph || !before || !after) return [];
-    const options = { theme: small, showHead };
-    const motion = TimeMotion.motions(RepoMap.layout(before, options), RepoMap.layout(after, options), small.sizes);
-    return TimeMotion.play(graph, motion, small, reduced, offset);
+    const options = { theme: boxes, showHead };
+    const motion = TimeMotion.motions(RepoMap.layout(before, options), RepoMap.layout(after, options), boxes.sizes);
+    return TimeMotion.play(graph, motion, boxes, reduced, offset);
   }
 
   /* When each flight leaves: one after another within a group (same arrow, same kind of thing),
-     and each group once the last flight of the one before has arrived. */
+     spread over at most TIMING.spread however many there are, and each group once the last flight
+     of the one before has arrived. */
   function departures(trips) {
     const arrive = TIMING.flight.duration * AT.arrive;
+    const alike = (one, other) => one.by === other.by && one.what === other.what;
     const delays = [];
     trips.forEach((flight, index) => {
       const previous = trips[index - 1];
-      const together = previous && previous.by === flight.by && previous.what === flight.what;
-      delays.push(index === 0 ? TIMING.flight.delay : delays[index - 1] + (together ? TIMING.stagger : arrive));
+      const group = trips.filter((other) => alike(other, flight)).length;
+      const stagger = Math.min(TIMING.stagger, TIMING.spread / Math.max(group - 1, 1));
+      delays.push(index === 0 ? TIMING.flight.delay : delays[index - 1] + (alike(previous, flight) ? stagger : arrive));
     });
     return delays;
   }
@@ -282,7 +323,7 @@ const TimePlaces = (function () {
       started.push(animation);
       return animation;
     };
-    const shaft = (name) => find(figure, "data-command", name).querySelector(".tt-arrow-shaft");
+    const shafts = (name) => [...figure.querySelectorAll(".tt-arrow")].filter((node) => node.getAttribute("data-command") === name).map((node) => node.querySelector(".tt-arrow-shaft"));
     const layer = el("div", { class: "tt-flights", "aria-hidden": "true" });
     figure.append(layer);
     const origin = figure.getBoundingClientRect();
@@ -290,16 +331,23 @@ const TimePlaces = (function () {
     const delays = departures(trips);
     for (const name of lit) {
       const first = trips.findIndex((flight) => flight.by === name);
-      animate(shaft(name), [{ transform: "scale(0)" }, { transform: "scale(1)" }], { duration: TIMING.arrow, delay: first > 0 ? delays[first] - TIMING.flight.delay : 0 });
+      for (const shaft of shafts(name)) animate(shaft, [{ transform: "scale(0)" }, { transform: "scale(1)" }], { duration: TIMING.arrow, delay: first > 0 ? delays[first] - TIMING.flight.delay : 0 });
     }
     const glow = "color-mix(in srgb, var(--map-head) 24%, transparent)";
-    /* A file's row in `area` takes what the flight brings at `at` ms: a new row appears, a known
-       row's content (its id and colour) changes, and the row glows once. */
+    /* A file's page in `area` takes what the flight brings at `at` ms: a new page appears; a known
+       page's old id and colour fade out as the new ones, and git's words for them, fade in; and the
+       page glows once. */
     const reveal = (area, path, at) => {
       const row = find(find(figure, "data-area", area), "data-path", path);
       if (!row) return;
-      const known = before.project.files.some((entry) => entry.path === path && entry[area] !== null);
-      const parts = known ? [row.querySelector("code"), row.querySelector(".blob-dot")].filter(Boolean) : [row];
+      const was = before.project.files.find((entry) => entry.path === path);
+      const old = was ? was[area] : null;
+      if (old) {
+        const gone = el("span", { class: "tt-page-was", "aria-hidden": "true" }, pageIcon(old), el("code", { class: "tt-page-id" }, old.slice(0, 7)));
+        row.append(gone);
+        animate(gone, [{ opacity: 1 }, { opacity: 0 }], { delay: at, duration: TIMING.reveal, fill: "both" }).onfinish = () => gone.remove();
+      }
+      const parts = old ? [row.querySelector("code.tt-page-id"), row.querySelector(".tt-page-icon"), row.querySelector("em")].filter(Boolean) : [row];
       for (const part of parts) animate(part, [{ opacity: 0, offset: 0 }], { delay: at, duration: TIMING.reveal });
       animate(row, [{ backgroundColor: "transparent" }, { backgroundColor: glow, offset: 0.2 }, { backgroundColor: "transparent" }], { delay: at, duration: TIMING.pulse, fill: "none" });
     };
@@ -307,7 +355,7 @@ const TimePlaces = (function () {
       const delay = delays[index];
       const points = flight.path.map((area) => centre(spot(figure, area, flight), origin));
       const [from, to] = [points[0], points[points.length - 1]];
-      const middle = points.length > 2 ? points[1] : via(shaft(flight.by), from, to, origin);
+      const middle = points.length > 2 ? points[1] : via(shafts(flight.by)[0], from, to, origin);
       const node = flyer(flight, after);
       node.style.left = `${from.x}px`;
       node.style.top = `${from.y}px`;
@@ -322,6 +370,9 @@ const TimePlaces = (function () {
         { transform: at(to), opacity: 1, offset: AT.arrive, easing: "linear" },
         { transform: at(to), opacity: 0 },
       ], { ...TIMING.flight, delay, easing: "linear", fill: "both" }).onfinish = () => node.remove();
+      node.querySelectorAll(".tt-flap").forEach((flap, side) => {
+        animate(flap, [{ transform: `rotate(${side ? 125 : -125}deg)` }, { transform: "rotate(0deg)" }], { delay: delay + TIMING.flight.duration * 0.12, duration: TIMING.flight.duration * 0.3, fill: "both" });
+      });
       const stops = flight.what === "file" ? flight.path.slice(1) : [];
       stops.forEach((area, step) => reveal(area, flight.id, delay + TIMING.flight.duration * (step === stops.length - 1 ? AT.arrive : AT.middle)));
     });
