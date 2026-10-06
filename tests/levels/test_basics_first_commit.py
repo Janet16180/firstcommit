@@ -193,7 +193,9 @@ def test_the_level_starts_unsolved_and_says_to_create_a_repository(lab: kit.Lab)
 
 
 def test_the_quest_alternates_watch_steps_and_two_questions() -> None:
-    kinds = {quest_step.id: "watch" if isinstance(quest_step, kit.WatchStep) else "question" for quest_step in level.QUEST}
+    kinds = {
+        quest_step.id: "watch" if isinstance(quest_step, kit.WatchStep) else "question" for quest_step in level.QUEST
+    }
     assert kinds == {
         "init": "watch",
         "status": "question",
@@ -206,10 +208,23 @@ def test_the_quest_alternates_watch_steps_and_two_questions() -> None:
     }
 
 
+def test_the_quest_sets_the_identity_before_there_is_anything_to_commit() -> None:
+    ids = [quest_step.id for quest_step in level.QUEST]
+    assert ids.index("name") < ids.index("file")
+    assert ids.index("email") < ids.index("file")
+
+
 def test_the_quest_leads_to_a_solved_level(played: kit.Lab) -> None:
     verdict = check(played)
     assert verdict.solved
     assert verdict.message == level.SOLVED
+
+
+def test_the_reference_solution_plays_every_quest_step_identity_included(lab: kit.Lab) -> None:
+    assert level.solve(lab, {}) is None
+    assert git(lab, "config", "--global", "user.name").strip() == level.PLAYER.name
+    assert git(lab, "config", "--global", "user.email").strip() == level.PLAYER.email
+    assert check(lab).solved
 
 
 def test_plain_git_init_starts_on_main_with_the_games_starting_settings(lab: kit.Lab) -> None:
@@ -328,6 +343,25 @@ def test_an_identity_set_without_global_also_counts(lab: kit.Lab) -> None:
     assert watch(lab, "email").solved
 
 
+def test_a_readme_in_the_wrong_letter_case_gets_the_command_that_renames_it(lab: kit.Lab) -> None:
+    level.init_repository(lab, {})
+    append(lab, "readme.md", "# My project")
+    verdict = watch(lab, "file")
+    assert not verdict.solved
+    assert "`mv readme.md README.md`" in verdict.message
+    git(lab, "add", "readme.md")
+    assert "`git mv readme.md README.md`" in watch(lab, "file").message
+    git(lab, "mv", "readme.md", "README.md")
+    assert watch(lab, "file").solved
+    assert watch(lab, "stage").solved
+
+
+def test_a_readme_in_the_wrong_letter_case_is_named_as_the_player_wrote_it(lab: kit.Lab) -> None:
+    level.init_repository(lab, {})
+    append(lab, "Readme.MD", "# My project")
+    assert "`mv Readme.MD README.md`" in check(lab).message
+
+
 def test_committing_before_staging_leaves_the_level_unsolved(lab: kit.Lab) -> None:
     play_until(lab, "stage")
     assert kit.git_run(lab.project, "commit", "-m", "Add the README", author=level.PLAYER).returncode != 0
@@ -384,6 +418,53 @@ def test_an_edit_after_the_commit_keeps_the_level_unsolved(played: kit.Lab) -> N
     assert "changed" in verdict.message
 
 
+def test_a_change_unstaged_with_restore_is_not_said_to_follow_the_last_add(played: kit.Lab) -> None:
+    append(played, "README.md", "More.")
+    git(played, "add", "README.md")
+    git(played, "restore", "--staged", "README.md")
+    verdict = check(played)
+    assert not verdict.solved
+    assert "not staged" in verdict.message
+    assert "git add`." not in verdict.message
+
+
+def test_a_readme_deleted_from_the_folder_gets_the_command_that_brings_it_back(played: kit.Lab) -> None:
+    (played.project / "README.md").unlink()
+    assert kit.unstaged(kit.snapshot(played.project)) == ["README.md"]
+    verdict = check(played)
+    assert not verdict.solved
+    assert "`git restore README.md`" in verdict.message
+    git(played, "restore", "README.md")
+    assert check(played).solved
+
+
+def test_another_file_deleted_from_the_folder_is_named_as_a_deletion(played: kit.Lab) -> None:
+    append(played, "notes.txt", "notes")
+    git(played, "add", "notes.txt")
+    git(played, "commit", "-m", "Add notes")
+    (played.project / "notes.txt").unlink()
+    verdict = check(played)
+    assert not verdict.solved
+    assert "`notes.txt` is deleted from the working folder" in verdict.message
+    git(played, "add", "notes.txt")
+    git(played, "commit", "-m", "Remove the notes")
+    assert check(played).solved
+
+
+def test_a_conflicted_file_keeps_the_level_unsolved(played: kit.Lab) -> None:
+    git(played, "switch", "-c", "other")
+    append(played, "README.md", "Theirs.")
+    git(played, "commit", "-a", "-m", "Theirs")
+    git(played, "switch", "main")
+    append(played, "README.md", "Ours.")
+    git(played, "commit", "-a", "-m", "Ours")
+    assert kit.git_run(played.project, "merge", "other").returncode != 0
+    assert kit.conflicted(kit.snapshot(played.project)) == ["README.md"]
+    verdict = check(played)
+    assert not verdict.solved
+    assert "`README.md` is in conflict" in verdict.message
+
+
 def test_a_repository_inside_the_project_folder_keeps_the_level_unsolved(played: kit.Lab) -> None:
     git(played, "init", "project")
     assert git(played, "status", "--porcelain").strip() == "?? project/"
@@ -402,6 +483,21 @@ def test_a_changed_file_mode_keeps_the_level_unsolved(played: kit.Lab) -> None:
     assert not check(played).solved
     git(played, "commit", "-m", "Make the README executable")
     assert check(played).solved
+
+
+@pytest.mark.parametrize("name", ["a`b.txt", "line\nbreak.txt", "- bullet.txt"])
+def test_a_file_name_the_player_chose_is_shown_exactly(played: kit.Lab, name: str) -> None:
+    append(played, name, "x")
+    verdict = check(played)
+    assert not verdict.solved
+    assert kit.code(name) in verdict.message
+
+
+def test_a_branch_name_the_player_chose_is_shown_exactly(played: kit.Lab) -> None:
+    git(played, "switch", "-c", "draft`1")
+    verdict = check(played)
+    assert not verdict.solved
+    assert kit.code("draft`1") in verdict.message
 
 
 def test_committing_the_extra_file_too_solves_the_level(played: kit.Lab) -> None:
@@ -489,6 +585,7 @@ def test_deleting_the_git_folder_unsolves_the_level(played: kit.Lab) -> None:
     assert "git init" in verdict.message
 
 
+@pytest.mark.slow
 def test_checks_never_change_the_repository(played: kit.Lab) -> None:
     append(played, "notes.txt", "notes")
     append(played, "README.md", "More.")
@@ -503,6 +600,7 @@ def test_checks_never_change_the_repository(played: kit.Lab) -> None:
     assert (index.read_bytes(), index.stat().st_mtime_ns, kit.snapshot(played.project)) == before
 
 
+@pytest.mark.slow
 def test_hostile_answers_never_pass_a_question_once_the_quest_is_done(played: kit.Lab) -> None:
     for text in HOSTILE:
         assert not answer(played, "status", text).solved

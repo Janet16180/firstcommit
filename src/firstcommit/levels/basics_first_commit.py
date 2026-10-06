@@ -1,5 +1,6 @@
 """Your first commit: the three areas, and the first commit of a new repository."""
 
+import shlex
 from collections.abc import Callable
 from typing import Literal
 
@@ -118,9 +119,9 @@ message. On a terminal, the newest line also shows `(HEAD -> main)` between them
 ]
 
 BRIEFING = """
-You are starting a new project, and its history starts today. Turn the empty `project` folder
-into a Git repository on the branch `main`, create a `README.md` file and save it in your first
-commit.
+You are starting a new project, and its history starts today. Your terminal opens in the empty
+`project` folder: make that folder a Git repository on the branch `main`, then create a
+`README.md` file in it and save it in your first commit.
 
 The level is solved when the last commit on `main` contains `README.md`, and `git status` lists
 no untracked, changed or staged files.
@@ -214,115 +215,6 @@ def on_main(snap: kit.Snapshot) -> bool:
     return snap["exists"] and not snap["bare"] and snap["branch"] == BRANCH
 
 
-def untracked(snap: kit.Snapshot) -> list[str]:
-    """
-    List the files that are in the working folder but not in the staging area, ignored ones aside.
-
-    Parameters
-    ----------
-    snap : kit.Snapshot
-        The project's repository.
-
-    Returns
-    -------
-    list[str]
-        Their paths.
-    """
-    return [
-        entry["path"]
-        for entry in snap["files"]
-        if entry["folder"] is not None
-        and entry["index"] is None
-        and not entry["ignored"]
-        and not entry["conflicted"]
-        and not entry["repository"]
-    ]
-
-
-def staged(snap: kit.Snapshot) -> list[str]:
-    """
-    List the files whose staging-area content or mode differs from the last commit's.
-
-    Parameters
-    ----------
-    snap : kit.Snapshot
-        The project's repository.
-
-    Returns
-    -------
-    list[str]
-        Their paths.
-    """
-    return [
-        entry["path"]
-        for entry in snap["files"]
-        if not entry["conflicted"] and kit.version(entry, "index") != kit.version(entry, "head")
-    ]
-
-
-def unstaged(snap: kit.Snapshot) -> list[str]:
-    """
-    List the tracked files whose working-folder content differs from the staging area's.
-
-    Parameters
-    ----------
-    snap : kit.Snapshot
-        The project's repository.
-
-    Returns
-    -------
-    list[str]
-        Their paths, conflicted files included.
-    """
-    return [
-        entry["path"]
-        for entry in snap["files"]
-        if entry["conflicted"] or (entry["index"] is not None and entry["folder"] != entry["index"])
-    ]
-
-
-def mode_changed(snap: kit.Snapshot) -> list[str]:
-    """
-    List the tracked files whose content matches the staging area but whose mode does not (``chmod +x``).
-
-    Parameters
-    ----------
-    snap : kit.Snapshot
-        The project's repository.
-
-    Returns
-    -------
-    list[str]
-        Their paths.
-    """
-    return [
-        entry["path"]
-        for entry in snap["files"]
-        if entry["index"] is not None and entry["folder"] == entry["index"] and entry["folder_mode"] != entry["index_mode"]
-    ]
-
-
-def nested(snap: kit.Snapshot) -> list[str]:
-    """
-    List the folders in the working folder that hold a repository of their own, as `git status` lists them.
-
-    Parameters
-    ----------
-    snap : kit.Snapshot
-        The project's repository.
-
-    Returns
-    -------
-    list[str]
-        Their paths, each ending with ``/``.
-    """
-    return [
-        f"{entry['path']}/"
-        for entry in snap["files"]
-        if entry["repository"] and entry["index"] is None and entry["head"] is None and not entry["ignored"]
-    ]
-
-
 def file_names(paths: list[str]) -> str:
     """
     Name a few files for a message.
@@ -335,9 +227,9 @@ def file_names(paths: list[str]) -> str:
     Returns
     -------
     str
-        The first three paths in backticks, and how many more there are.
+        The first three paths as code, shown exactly, and how many more there are.
     """
-    shown = ", ".join(f"`{path}`" for path in paths[:3])
+    shown = ", ".join(kit.code(path) for path in paths[:3])
     more = len(paths) - 3
     return shown if more <= 0 else f"{shown} and {more} more"
 
@@ -378,9 +270,9 @@ def repository_move(lab: kit.Lab, snap: kit.Snapshot) -> str:
     elif snap["branch"] is None:
         move = "You are not on a branch (HEAD is detached). Create the branch `main` here with `git switch -c main`."
     elif has_main:
-        move = f"You are on the branch `{snap['branch']}`, and this level uses `main`. Switch to it with `git switch main`."
+        move = f"You are on the branch {kit.code(snap['branch'])}, and this level uses `main`. Switch to it with `git switch main`."
     else:
-        move = f"You are on the branch `{snap['branch']}`, and this level uses `main`. Rename it with `git branch -m main`."
+        move = f"You are on the branch {kit.code(snap['branch'])}, and this level uses `main`. Rename it with `git branch -m main`."
     return move
 
 
@@ -398,10 +290,22 @@ def commit_move(snap: kit.Snapshot) -> str:
     str
         What to do next.
     """
+    misnamed = [
+        entry
+        for entry in snap["files"]
+        if entry["path"] != FILE and entry["path"].casefold() == FILE.casefold() and entry["folder"] is not None
+    ]
     if has_file(snap, "index"):
         move = '`README.md` is in the staging area. Save the staging area as a commit with `git commit -m "Add the README"`.'
     elif has_file(snap, "folder"):
         move = "Git sees `README.md` in the working folder, but it is not in the staging area yet, and a new file gets into a commit only once it is staged."
+    elif misnamed:
+        name = misnamed[0]["path"]
+        rename = "git mv" if misnamed[0]["index"] is not None else "mv"
+        move = (
+            f"There is no `README.md` yet, but there is {kit.code(name)}: the level needs the name `README.md`, "
+            f"with the same capital and small letters. Rename it with {kit.code(f'{rename} {shlex.quote(name)} {FILE}')}."
+        )
     else:
         move = "There is no `README.md` in the `project` folder yet. Create it there."
     return move
@@ -421,15 +325,30 @@ def tidy_move(snap: kit.Snapshot) -> str:
     str
         What to do next, or an empty string when `git status` lists nothing.
     """
-    loose, waiting, edited, chmodded, repositories = untracked(snap), staged(snap), unstaged(snap), mode_changed(snap), nested(snap)
-    if loose:
+    clashing = kit.conflicted(snap)
+    loose = kit.untracked(snap)
+    waiting = kit.staged(snap)
+    chmodded = kit.mode_changed(snap)
+    deleted = [entry["path"] for entry in snap["files"] if entry["folder_change"] == "deleted"]
+    edited = [path for path in kit.unstaged(snap) if path not in chmodded and path not in deleted]
+    repositories = [f"{path}/" for path in kit.nested(snap)]
+    if clashing:
+        verb, them = ("is", "it") if len(clashing) == 1 else ("are", "them")
+        move = f"{file_names(clashing)} {verb} in conflict: edit {them} to keep the content you want, then stage and commit {them}."
+    elif loose:
         verb = "is" if len(loose) == 1 else "are"
         move = f"{file_names(loose)} {verb} in the working folder but not in the staging area (untracked). Stage and commit what you need, and delete the rest."
     elif waiting:
         verb = "is" if len(waiting) == 1 else "are"
         move = f"{file_names(waiting)} {verb} staged but not committed yet. Commit, so that your last commit holds what is staged."
+    elif FILE in deleted:
+        move = "`README.md` is deleted from the working folder, and the level needs it. Bring it back with `git restore README.md`."
+    elif deleted:
+        verb, them = ("is", "it") if len(deleted) == 1 else ("are", "them")
+        move = f"{file_names(deleted)} {verb} deleted from the working folder, and the deletion is not staged. Stage and commit {them}, as any other change."
     elif edited:
-        move = f"{file_names(edited)} changed after the last `git add`. Stage and commit what changed."
+        verb = "is" if len(edited) == 1 else "are"
+        move = f"{file_names(edited)} {verb} changed in the working folder, and the change is not staged. Stage and commit what changed."
     elif chmodded:
         whose = "its" if len(chmodded) == 1 else "their"
         move = f"`git status` still lists {file_names(chmodded)}: only {whose} executable permission changed. Stage and commit the change."
@@ -782,34 +701,6 @@ files and no commits yet, so it has little to report.
         check=check_branch,
     ),
     kit.WatchStep(
-        id="file",
-        text="""
-Give the project its first file, a `README.md`, the file that tells people what a project is
-about:
-
-    $ echo "# My project" > README.md
-
-`echo` prints a line of text, and `>` writes it into the file: it creates the file, or replaces
-everything in it if the file already exists. Run `git status` again: Git sees the new file, but
-does not track it yet.
-""",
-        command='echo "# My project" > README.md',
-        watch=watch_file,
-    ),
-    kit.WatchStep(
-        id="stage",
-        text="""
-A new file gets into a commit only through the staging area, so copy it there:
-
-    $ git add README.md
-
-`git add` usually prints nothing. Run `git status` once more: `README.md` is now staged, ready
-for the next commit. It is still in your working folder too: `git add` copies, it does not move.
-""",
-        command="git add README.md",
-        watch=watch_stage,
-    ),
-    kit.WatchStep(
         id="name",
         text="""
 Every commit records who made it, with a name and an email. Tell Git your name, keeping the
@@ -839,14 +730,42 @@ Replace `you@example.com` with your own address.
         watch=watch_email,
     ),
     kit.WatchStep(
+        id="file",
+        text="""
+Give the project its first file, a `README.md`, the file that tells people what a project is
+about:
+
+    $ echo "# My project" > README.md
+
+`echo` prints a line of text, and `>` writes it into the file: it creates the file, or replaces
+everything in it if the file already exists. Run `git status` again: Git sees the new file, but
+does not track it yet.
+""",
+        command='echo "# My project" > README.md',
+        watch=watch_file,
+    ),
+    kit.WatchStep(
+        id="stage",
+        text="""
+A new file gets into a commit only through the staging area, so copy it there:
+
+    $ git add README.md
+
+`git add` usually prints nothing. Run `git status` once more: `README.md` is now staged, ready
+for the next commit. It is still in your working folder too: `git add` copies, it does not move.
+""",
+        command="git add README.md",
+        watch=watch_stage,
+    ),
+    kit.WatchStep(
         id="commit",
         text="""
 Save the staging area as your first commit, with a message that says what it does:
 
     $ git commit -m "Add the README"
 
-`-m` gives the message. Git answers with a short summary of the new commit, and the map shows
-your first commit on `main`.
+`-m` gives the message; without it, Git opens a text editor for you to write one. Git answers
+with a short summary of the new commit, and the map shows your first commit on `main`.
 """,
         command='git commit -m "Add the README"',
         watch=watch_commit,
@@ -915,7 +834,7 @@ def check(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict:
 
 def solve(lab: kit.Lab, state: kit.State) -> str | None:
     """
-    Play the level like a player: create the repository, the file, and the first commit.
+    Play the level like a player: every quest step's action, in order (AUTHORING section 3.6).
 
     Parameters
     ----------
@@ -929,8 +848,8 @@ def solve(lab: kit.Lab, state: kit.State) -> str | None:
     str | None
         None: the level is checked against the repository.
     """
-    for action in (init_repository, write_readme, stage_readme, commit_readme):
-        action(lab, state)
+    for quest_step in QUEST:
+        QUEST_ACTIONS[quest_step.id](lab, state)
     return None
 
 
@@ -1095,10 +1014,10 @@ def read_short_hash(lab: kit.Lab, state: kit.State) -> str | None:
 QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State], str | None]] = {
     "init": init_repository,
     "status": read_branch,
-    "file": write_readme,
-    "stage": stage_readme,
     "name": set_name,
     "email": set_email,
+    "file": write_readme,
+    "stage": stage_readme,
     "commit": commit_readme,
     "hash": read_short_hash,
 }
