@@ -16,6 +16,7 @@ from typing import Any, Literal
 from firstcommit.gitcmd import GAME, Person
 from firstcommit.gitcmd import output as git
 from firstcommit.gitcmd import run as git_run
+from firstcommit.markup import code
 from firstcommit.repomap import Commit, FileEntry, Ref, Snapshot, snapshot, version
 
 __all__ = [
@@ -36,6 +37,7 @@ __all__ = [
     "Watch",
     "WatchStep",
     "answer_is",
+    "code",
     "digest",
     "git",
     "git_run",

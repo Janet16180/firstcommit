@@ -375,7 +375,11 @@ All text is parsed by `firstcommit.markup` (the page and the command line only r
 - A paragraph whose lines **all** start with whitespace or `$ ` is shown verbatim. Put commands,
   output and file contents there, separated from prose by blank lines.
 - Lines starting with `- ` are bullets.
-- `backticks` mark commands, file names, branch names and hashes.
+- `backticks` mark commands, file names, branch names and hashes. A code span opened by two or
+  more backticks closes on as many, so it can hold a backtick: ``` `` a`b `` ```.
+- Anything the player chose (a file name, a branch, a commit subject, a typed answer) goes into a
+  message through `kit.code(text)`: it shows as one code span whatever it holds, with control
+  characters escaped as git does, so it can never forge a paragraph, a bullet or other code.
 - The whole text is dedented first, so a text made *only* of indented lines reads as prose. To
   show output on its own, put one line of prose before it.
 - Placeholders are plain text: no backticks.
