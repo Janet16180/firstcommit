@@ -70,7 +70,7 @@ message instead of hash, extra untracked file), and the level paid 100 XP once s
 | name | Inside the game, `--global` writes the game's own settings file, not your real one | git(1), GIT_CONFIG_GLOBAL ("if GIT_CONFIG_GLOBAL is set, neither $HOME/.gitconfig nor $XDG_CONFIG_HOME/git/config will be read"); RelNotes 2.32.0 lines 88-93; DESIGN.md section 6 and `gitcmd.isolation`; experiment: with `GIT_CONFIG_GLOBAL` set, `git config --global` wrote that file and created no `~/.gitconfig` |
 | name | If the name was set earlier in the game, the step passes at once | the game's settings file persists in the game home (`save.ensure_gitconfig` never overwrites it); *re-checked*: the watch reads `git config --get` |
 | name, email | The suggested commands are complete: `git config --global user.name "Your Name"`, `git config --global user.email you@example.com` | AUTHORING section 1, rule 9; experiment: without a value, `git config --global user.name` only reads (exit status 1 when unset); *re-checked*: `test_a_missing_identity_gets_a_complete_command_to_set_it`, and the steps' `command` and the watch messages share `NAME_COMMAND` and `EMAIL_COMMAND` |
-| commit | `-m` gives the message | git-commit(1), `-m` |
+| commit | `-m` gives the message; without it, Git opens a text editor for you to write one | git-commit(1), `-m` and ENVIRONMENT AND CONFIGURATION VARIABLES ("The editor used to edit the commit log message will be chosen from the GIT_EDITOR environment variable, the core.editor configuration variable, the VISUAL environment variable, or the EDITOR environment variable"); experiment: in the game shell's environment with none of them set, `git var GIT_EDITOR` gives `editor` (`/usr/bin/editor`, nano on Ubuntu 24.04; the Docker image installs nano), and with a stub `editor` first on `PATH` a bare `git commit` ran it on `.git/COMMIT_EDITMSG` and used what it wrote |
 | hash | Each line of `git log --oneline` is one commit, newest first: short hash, then message; on the terminal the newest line shows `(HEAD -> main)` | as the `log` slide |
 | hash | The full hash has 40 characters here | gitglossary(7), object name ("usually represented by a 40 character hexadecimal string"); experiment: `git rev-parse HEAD` is 40 characters |
 | hash | Commands such as `git show` accept the short form, as long as no other object's hash starts the same way | gitrevisions(7), `<sha1>`: "a leading substring that is unique within the repository"; experiment: `git show <short hash>` shows the commit, while `git fetch <repository> <short hash>` fails (exit 128) and needs the full hash, so the text gives `git show` as its example instead of saying "wherever" |
@@ -98,12 +98,19 @@ tests).
 | status question, wrong case | Type the name with the same capital and small letters | no claim about case-sensitivity: branches can be stored as files under `.git/refs` (gitrepository-layout(5), refs), and git-config(1), `core.ignoreCase`, names file systems that are not case sensitive (APFS, NTFS), so whether `Main` and `main` differ depends on the file system (not observable on this machine); *re-checked*: `test_a_branch_name_in_the_wrong_case_gets_a_hint_about_case` |
 | hash question, too short | Git needs at least 4 characters of a hash | git-rev-parse(1), `--short`: "The minimum length is 4"; experiment: `git show <3 characters>` fails (exit 128), 4 characters show the commit; `kit.MIN_HASH_PREFIX`; *re-checked*: `test_a_hash_start_shorter_than_git_accepts_is_not_called_wrong` |
 | hash question, whole line | The short hash is the first word of the line | as the `log` slide; *re-checked*: `test_the_whole_log_line_gets_a_nudge_to_type_only_the_hash` |
+| conflicted file | Edit it to keep the content you want, then stage and commit it | git-merge(1), HOW TO RESOLVE CONFLICTS: "Edit the files into shape and git add them to the index. Use git commit or git merge --continue to seal the deal"; experiment: after a conflicting `git merge`, `git status --porcelain` gives `UU README.md`; editing, `git add README.md` and `git commit -m` make a merge commit with two parents and a clean status; *re-checked*: `test_a_conflicted_file_keeps_the_level_unsolved` (fails when the conflict rule is removed) |
+| `README.md` deleted from the folder | `git restore README.md` brings it back | git-restore(1), DESCRIPTION: "otherwise from the index"; RelNotes 2.23.0 line 61; experiment: after `rm README.md`, `git restore README.md` exits 0 and the status is clean; *re-checked*: `test_a_readme_deleted_from_the_folder_gets_the_command_that_brings_it_back` |
+| another file deleted from the folder | The deletion is not staged; stage and commit it | git-status(1), DESCRIPTION; RelNotes 2.0.0 line 106: "\"git add <path>\" is the same as \"git add -A <path>\" now"; experiment: `git add notes.txt` on the deleted file gives `D  notes.txt`, then a commit leaves the status clean; *re-checked*: `test_another_file_deleted_from_the_folder_is_named_as_a_deletion` |
+| changed, not staged | The file is changed in the working folder and the change is not staged | git-status(1), DESCRIPTION ("paths that have differences between the working tree and the index file"); the old "changed after the last `git add`" was false after `git add` then `git restore --staged` (experiment: ` M README.md` with no change since that `git add`); *re-checked*: `test_a_change_unstaged_with_restore_is_not_said_to_follow_the_last_add` |
+| `readme.md` instead of `README.md` | The level needs the name `README.md`; `mv readme.md README.md` renames an untracked file and `git mv readme.md README.md` a staged one | experiment: `mv readme.md README.md` leaves `?? README.md`; `git add Readme.MD` then `git mv Readme.MD README.md` gives `A  README.md`; the name is shell-quoted (`shlex.quote`) and shown with `kit.code`; *re-checked*: `test_a_readme_in_the_wrong_letter_case_gets_the_command_that_renames_it`, `test_a_readme_in_the_wrong_letter_case_is_named_as_the_player_wrote_it` |
+| any message naming a file or branch | Shows the player's name exactly | `kit.code`; *re-checked*: `test_a_file_name_the_player_chose_is_shown_exactly`, `test_a_branch_name_the_player_chose_is_shown_exactly` |
 
 ### Briefing, hints and debrief
 
 | Where | Claim | Evidence |
 |---|---|---|
-| briefing | Solved when the last commit on `main` contains `README.md` and `git status` lists nothing untracked, changed or staged | `check` reads the last commit (`head` in the snapshot), then `git status --porcelain=v2` for what the snapshot leaves out (a nested repository, a file mode change); git-status(1), DESCRIPTION and Porcelain Format Version 2; *re-checked*: the wrong-approach tests (no staging, staged only, extra untracked file, staged or unstaged edit, other branch, detached HEAD, bare repository, repository one folder too high, deleted `.git`, a repository inside `project`, a file mode change) |
+| briefing | Your terminal opens in the empty `project` folder | `game.terminal_folder` names the lab's `project` folder while a level is active; the page's terminal (`web/routes.py`) and `firstcommit shell` open there |
+| briefing | Solved when the last commit on `main` contains `README.md` and `git status` lists nothing untracked, changed or staged | `check` reads the last commit (`head` in the snapshot) and the snapshot's status lists (`kit.conflicted`, `kit.untracked`, `kit.staged`, `kit.unstaged`, `kit.mode_changed`, `kit.nested`), which classify each file as `git status` does; git-status(1), DESCRIPTION; *re-checked*: the wrong-approach tests (no staging, staged only, extra untracked file, staged or unstaged edit, a file deleted from the folder, a conflict, other branch, detached HEAD, bare repository, repository one folder too high, deleted `.git`, a repository inside `project`, a file mode change) |
 | hint 1 | `git status` names the branch and lists untracked, staged and changed files | git-status(1), DESCRIPTION; experiment |
 | hint 2 | A new file reaches a commit in two moves: `git add`, then `git commit` | git-add(1), git-commit(1), DESCRIPTION; as the `stage` step |
 | hint 3 | The listed commands, complete, solve the level | *re-checked*: `test_the_quest_leads_to_a_solved_level`; the harness's `solve` then `check` |
@@ -208,6 +215,18 @@ all my repositories on this computer" (Pro Git 1.6: "all of the repositories you
 system"); the `nothing-staged` slide (in the player's shell, a commit before the identity is set
 fails for the identity first, but the lessons set one); `git add -N`, `--assume-unchanged` and
 `--skip-worktree` states, where the check is stricter than `git status` (none of them is taught).
+
+## Fix round (code review M2, M7 R34, L7, L10; playtest polish; 2026-10-06)
+
+- The quest now asks for the name and email before the first file, so a commit tried before
+  staging fails for the empty staging area, as the `nothing-staged` slide shows, not for a
+  missing identity (git-commit(1), COMMIT INFORMATION: without `user.name` and `user.email`, git
+  falls back to `EMAIL` and the system user name; in the playtest that name was empty, and the
+  commit stopped with an error). No step text changed.
+- `solve` runs every quest step's action in the quest's order (AUTHORING section 3.6), the
+  identity steps included; `test_the_reference_solution_plays_every_quest_step_identity_included`.
+- Left for the second basics level ("A message that helps"): teaching the editor itself (write,
+  save, quit). This level only warns that a bare `git commit` opens one.
 
 ## Left out
 
