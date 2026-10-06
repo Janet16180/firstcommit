@@ -186,7 +186,7 @@ def shell(args: argparse.Namespace) -> int:
         The shell's exit status.
     """
     folder = game.terminal_folder()
-    env = {**terminal.player_env(os.environ), **gitcmd.isolation(save.home()), "PWD": folder}
+    env = {**gitcmd.shell_environment(terminal.player_env(os.environ), save.home()), "PWD": folder}
     print("This is the game's shell: git here uses the game's own settings, never yours. Type `exit` to leave.")
     return subprocess.run([terminal.shell_path(env)], cwd=folder, env=env, check=False).returncode
 

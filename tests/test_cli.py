@@ -98,13 +98,28 @@ def test_the_shell_starts_in_the_lab_with_the_games_git_settings(sample_level: r
     monkeypatch.setattr(subprocess, "run", fake_run)
     monkeypatch.setenv("SHELL", "/bin/sh")
     monkeypatch.setenv("TMUX", "/tmp/tmux-1/default")
+    monkeypatch.setenv("GIT_DIR", "/somewhere/else/.git")
+    monkeypatch.setenv("EDITOR", "nano")
     status, printed = run(capsys, "shell")
     lab = str(game_home / "labs" / "basics-sample" / "project")
     (call,) = calls
     assert (status, call["args"], call["cwd"]) == (3, ["/bin/sh"], lab)
     assert {key: call["env"][key] for key in gitcmd.isolation(game_home)} == gitcmd.isolation(game_home)
-    assert (call["env"]["PWD"], "TMUX" in call["env"]) == (lab, False)
+    assert (call["env"]["PWD"], call["env"]["EDITOR"], "TMUX" in call["env"], "GIT_DIR" in call["env"]) == (lab, "nano", False, False)
     assert "exit" in printed
+
+
+def test_the_shell_is_bash_when_no_shell_is_set(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    calls: list[list[str]] = []
+
+    def fake_run(args: list[str], **options: Any) -> subprocess.CompletedProcess[str]:
+        calls.append(args)
+        return subprocess.CompletedProcess(args, 0)
+
+    monkeypatch.setattr(subprocess, "run", fake_run)
+    monkeypatch.delenv("SHELL", raising=False)
+    run(capsys, "shell")
+    assert calls == [["/bin/bash"]]
 
 
 def test_status_shows_xp_rank_the_level_in_progress_and_cards_due(sample_level: runner.Level, sample_decks: Path, capsys: pytest.CaptureFixture[str]) -> None:

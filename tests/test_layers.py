@@ -20,7 +20,7 @@ INTERFACE_MAY_USE = {
     "firstcommit.game": None,
     "firstcommit.markup": None,
     "firstcommit.chapters": None,
-    "firstcommit.gitcmd": {"isolation"},
+    "firstcommit.gitcmd": {"isolation", "shell_environment"},
     "firstcommit.save": {"home", "SaveError"},
 }
 """Package modules an interface may import, with the names it may use from each (None: any)."""
