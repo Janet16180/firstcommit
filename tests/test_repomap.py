@@ -438,6 +438,13 @@ def test_a_mode_change_git_is_set_to_ignore_is_no_change(tmp_path: Path) -> None
     assert modes(repomap.snapshot(repo), "README.md") == ("100644", "100644", "100644")
 
 
+def test_with_the_executable_bit_ignored_the_folder_keeps_the_staging_areas_mode(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "echo a > tool && chmod +x tool && git add tool && git commit -q -m one && git config core.fileMode false && chmod -x tool")
+    snap = repomap.snapshot(repo)
+    assert modes(snap, "tool") == ("100755", "100755", "100755")
+    assert as_git_status(snap) == git_status(repo) == set()
+
+
 def test_a_file_missing_from_an_area_has_no_mode_there(tmp_path: Path) -> None:
     repo = new_repo(tmp_path, "echo a > a.txt")
     assert modes(repomap.snapshot(repo), "a.txt") == (None, None, "100644")
