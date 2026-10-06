@@ -25,17 +25,16 @@ from pathlib import Path
 
 import pytest
 
+from firstcommit.web import routes
+
 ROOT = Path(__file__).resolve().parents[1]
 RUN = ROOT / "deploy" / "docker" / "run"
 TERMLAB_SRC = ROOT.parent / "termlab" / "src"
 STAND_IN_CLI = ROOT / "tests" / "fixtures" / "docker_game_cli.py"
 GAME_HOME = "/home/player/.firstcommit"
 INPUTS_LABEL = "firstcommit.inputs"
-TOKEN_HEADER = "X-FirstCommit-Token"
+TOKEN_HEADER = routes.SETTINGS.token_header
 LINK = re.compile(r"http://localhost:(?P<port>\d+)/#token=(?P<token>[A-Za-z0-9_-]+)")
-WAITS_FOR_INTEGRATION = pytest.mark.xfail(
-    reason="waits for integration: the firstcommit command line and its serve command", strict=True
-)
 
 
 def volume_of(name: str) -> str:
@@ -744,7 +743,6 @@ def test_firstcommit_help_runs_as_the_player(image: str) -> None:
 
 @pytest.mark.docker
 @pytest.mark.slow
-@WAITS_FOR_INTEGRATION
 def test_play_serves_the_game_through_localhost_until_ctrl_c(image: str) -> None:
     port = free_port()
     env = {**os.environ, "FIRSTCOMMIT_DOCKER_NAME": image, "FIRSTCOMMIT_PORT": str(port)}

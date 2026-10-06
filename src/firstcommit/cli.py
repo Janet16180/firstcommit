@@ -165,7 +165,7 @@ def serve(args: argparse.Namespace) -> int:
     """
     # Imported here so the other commands never load the web server. The ignore is for the
     # branch where web/routes.py is not merged yet; it can go once it is.
-    from firstcommit.web import routes  # type: ignore[attr-defined, unused-ignore]
+    from firstcommit.web import routes
 
     exit_status: int = routes.serve(args.port)
     return exit_status
