@@ -10,6 +10,7 @@
 .ts-share {
   position: relative;
   margin: 0;
+  container: ts-share / inline-size;
 }
 
 .ts-share .map-empty {
@@ -177,6 +178,142 @@
   clip-path: polygon(0 0, 100% 50%, 0 100%);
 }
 
+/* Narrow: one column, you above GitHub above Alex. Alex's computer is upside down, its repository
+   nearest GitHub, so every arrow still joins the two places it moves work between and a shared
+   file travels down the page, from your working folder to Alex's. Every arrow is upright: yours
+   point down towards GitHub, Alex's up towards it. */
+@container ts-share (max-width: 800px) {
+  .ts-grid {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: none;
+  }
+
+  .ts-computer.is-you > *,
+  .ts-github > .ts-who,
+  .ts-github > .tt-place,
+  .ts-computer.is-alex > * {
+    grid-column: 1;
+  }
+
+  .ts-computer.is-you > .tt-arrows-pair.is-gap-3 {
+    grid-column: 1;
+    grid-row: 7;
+  }
+
+  .ts-github > .ts-who {
+    grid-row: 8;
+  }
+
+  .ts-github > .tt-place.is-remote {
+    grid-row: 9;
+  }
+
+  .ts-computer.is-alex > .tt-arrows-pair.is-gap-3 {
+    grid-column: 1;
+    grid-row: 10;
+  }
+
+  .ts-computer.is-alex > .ts-who {
+    grid-row: 11;
+  }
+
+  .ts-computer.is-alex > .tt-place.is-repository {
+    grid-row: 12;
+  }
+
+  .ts-computer.is-alex > .tt-arrows-pair.is-gap-2 {
+    grid-row: 13;
+  }
+
+  .ts-computer.is-alex > .tt-place.is-index {
+    grid-row: 14;
+  }
+
+  .ts-computer.is-alex > .tt-arrows-pair.is-gap-1 {
+    grid-row: 15;
+  }
+
+  .ts-computer.is-alex > .tt-place.is-folder {
+    grid-row: 16;
+  }
+
+  .ts-computer > .tt-arrows-pair {
+    min-height: 3.6rem;
+  }
+
+  .ts-computer > .tt-arrows-pair.is-gap-3 {
+    flex-direction: row;
+    justify-content: center;
+    gap: 2.5rem;
+    align-self: stretch;
+    padding: 0.3rem 0;
+  }
+
+  .ts-computer > .tt-arrows-pair.is-gap-3 .tt-arrow {
+    flex-direction: row;
+    align-self: stretch;
+    justify-content: center;
+    gap: 0.35rem;
+    padding: 0;
+  }
+
+  .ts-computer > .tt-arrows-pair.is-gap-3 .tt-arrow-shaft {
+    align-self: stretch;
+    width: 2px;
+    height: auto;
+    margin: 5px 0;
+    transform-origin: center top;
+  }
+
+  .ts-computer > .tt-arrows-pair.is-gap-3 .tt-arrow.is-active .tt-arrow-shaft {
+    width: 3px;
+  }
+
+  .ts-computer.is-you > .tt-arrows-pair.is-gap-3 .tt-arrow.is-back .tt-arrow-shaft {
+    transform-origin: center bottom;
+  }
+
+  .ts-computer > .tt-arrows-pair.is-gap-3 .tt-arrow-shaft::after {
+    top: auto;
+    right: auto;
+    bottom: -7px;
+    left: -5px;
+    width: 12px;
+    height: 9px;
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+  }
+
+  .ts-computer.is-you > .tt-arrows-pair.is-gap-3 .tt-arrow.is-back .tt-arrow-shaft::after {
+    top: -7px;
+    bottom: auto;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+
+  /* Alex's arrows towards GitHub point up, and the ones back point down. */
+  .ts-computer.is-alex > .tt-arrows-pair:is(.is-gap-1, .is-gap-2, .is-gap-3) .tt-arrow:not(.is-back) .tt-arrow-shaft {
+    transform-origin: center bottom;
+  }
+
+  .ts-computer.is-alex > .tt-arrows-pair:is(.is-gap-1, .is-gap-2, .is-gap-3) .tt-arrow:not(.is-back) .tt-arrow-shaft::after {
+    top: -7px;
+    bottom: auto;
+    left: -5px;
+    clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  }
+
+  .ts-computer.is-alex > .tt-arrows-pair:is(.is-gap-1, .is-gap-2, .is-gap-3) .tt-arrow.is-back .tt-arrow-shaft {
+    transform-origin: center top;
+  }
+
+  .ts-computer.is-alex > .tt-arrows-pair:is(.is-gap-1, .is-gap-2, .is-gap-3) .tt-arrow.is-back .tt-arrow-shaft::after {
+    top: auto;
+    right: auto;
+    bottom: -7px;
+    left: -5px;
+    clip-path: polygon(0 0, 100% 0, 50% 100%);
+  }
+}
+
 .ts-command {
   display: flex;
   flex-wrap: wrap;
@@ -189,8 +326,12 @@
   font-weight: 700;
 }
 
+/* A long command wraps on a narrow screen rather than widening the page. */
 .ts-command code {
+  min-width: 0;
   font-weight: 700;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .ts-output {
