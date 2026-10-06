@@ -43,6 +43,16 @@ For every sentence that states a fact, in a slide, step, briefing, hint, debrief
    check, the three merge methods), not where its buttons are or what colour they have.
 7. **Name no company, real person or internal URL.** Teammates in the story are fictional and
    use `@example.com` addresses.
+8. **Scope every absolute.** "Only", "never", "always", "every" and "after a commit" are almost
+   always false for some option (`git commit -a`, `git commit <file>`, `git revert`). Check the
+   options that change the claim, then scope it to the exact command you teach ("a plain
+   `git commit`").
+9. **Every command you write is complete and runnable as written.** `git config --global
+   user.name` without a value only reads the setting. Placeholders are obvious and safe to paste
+   (`"Your Name"`).
+10. **Describe output as the player's terminal shows it.** Some output differs on a terminal:
+    `git log --oneline` adds `(HEAD -> main)` there (`log.decorate`, git-config(1)). Lessons show
+    terminal output; check prose against a real terminal, not against memory or a pipe.
 
 ## 2. Code standards (all Python in this repo)
 
@@ -260,6 +270,8 @@ All text is parsed by `firstcommit.markup` (the page and the command line only r
   output and file contents there, separated from prose by blank lines.
 - Lines starting with `- ` are bullets.
 - `backticks` mark commands, file names, branch names and hashes.
+- The whole text is dedented first, so a text made *only* of indented lines reads as prose. To
+  show output on its own, put one line of prose before it.
 
 ## 7. Words and tone
 
