@@ -293,3 +293,12 @@ test("a repository inside the working folder is one row, marked as a repository,
   assert.equal(strip.querySelectorAll(".areas-row.is-repository").length, 2);
   assert.match(strip.textContent, /vendor.*repository/);
 });
+
+test("a long file name is shortened on its own, so the repository mark beside it stays readable", () => {
+  const path = "third_party/a-very-long-vendored-library-name";
+  const row = RepoMap.renderAreas([entry(path, { folder: "c1", folder_mode: "160000", repository: true })]).querySelector(".is-repository");
+  const name = row.querySelector(".areas-name");
+  assert.equal(name.textContent, path);
+  assert.equal(name.getAttribute("title"), path);
+  assert.equal(name.contains(row.querySelector(".areas-repo")), false);
+});

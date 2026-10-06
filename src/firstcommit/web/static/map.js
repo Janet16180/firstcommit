@@ -409,7 +409,10 @@ const RepoMap = (function () {
   function areaLine(row, words) {
     const classes = ["areas-row", row.changed && "is-changed", row.repository && "is-repository"].filter(Boolean).join(" ");
     return el("div", { class: classes, role: "row" },
-      el("span", { class: "areas-path", role: "rowheader", title: row.path }, row.path, row.repository && el("span", { class: "areas-repo" }, words.areas.repository)),
+      el("span", { class: "areas-path", role: "rowheader" },
+        el("span", { class: "areas-name", title: row.path }, row.path),
+        row.repository && el("span", { class: "areas-repo" }, words.areas.repository),
+      ),
       areaCell(row.folder, words),
       el("span", { class: "areas-gap", "aria-hidden": "true" }),
       areaCell(row.index, words),
