@@ -62,7 +62,7 @@ const Challenge = (function () {
     return {
       element,
 
-      feedback(blocks, solved) {
+      checkFeedback(blocks, solved) {
         feedbackLine.className = `check-feedback ${solved ? "is-correct" : "is-wrong"}`;
         feedbackLine.replaceChildren(...Markup.render(blocks));
       },

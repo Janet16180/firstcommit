@@ -1072,6 +1072,17 @@ input[type="text"]::placeholder {
   margin-bottom: 0;
 }
 
+.quest-check {
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--line);
+}
+
+.quest-check > p {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+}
+
 /* The challenge */
 
 .challenge .briefing {

@@ -71,12 +71,16 @@ test("a right answer is confirmed, then the next step opens", async () => {
   run.view.dispose();
 });
 
-test("while a watch step is current the page asks about it on every tick, and moves on once it passes", async () => {
+test("while a watch step is current the page asks about it on every tick, shows its nudge, and moves on once it passes", async () => {
   let passes = false;
   const run = practice({ step: 2, replies: { "/api/step": () => (passes ? correct(3, true) : { ...record("step"), step: 2 }) } });
+  await settle();
+  const nudge = run.q(".step-feedback p");
+  assert.match(run.q(".step-feedback").textContent, /Not quite: look for the line that says modified/);
+  assert.ok(run.q(".step-feedback").classList.contains("is-note"));
   await run.clock.advance(1500);
   assert.deepEqual(run.routes(), ["/api/observe", "/api/step", "/api/observe", "/api/step"]);
-  assert.equal(run.q(".step-feedback").textContent, "");
+  assert.equal(run.q(".step-feedback p"), nudge, "the same nudge is not announced again");
   passes = true;
   await run.clock.advance(1500 + Practice.ADVANCE_MS);
   assert.ok(run.q(".challenge"));
@@ -114,6 +118,29 @@ test("checking by hand sends the answer and shows why it is not solved yet", asy
   assert.deepEqual(run.server.calls.at(-1), { path: "/api/check", body: { answer: "42", auto: false } });
   assert.match(run.q(".check-feedback").textContent, /does not hold/);
   run.view.dispose();
+});
+
+test("during the quest the player can check the whole level by hand, and hears why it is not solved", async () => {
+  const run = practice({ step: 1 });
+  await settle();
+  run.q(".quest-check button").click();
+  await settle();
+  assert.deepEqual(run.server.calls.at(-1), { path: "/api/check", body: { answer: null, auto: false } });
+  assert.match(run.q(".quest-check .check-feedback").textContent, /does not hold/);
+  assert.deepEqual(run.seen.sounds, ["wrong"]);
+  run.view.dispose();
+});
+
+test("a check by hand during the quest may solve the level early, which stops the polling", async () => {
+  const run = practice({ step: 0, replies: { "/api/check": record("check_solved") } });
+  await settle();
+  run.q(".quest-check button").click();
+  await settle();
+  assert.equal(run.seen.solved.length, 1);
+  assert.match(run.q(".quest-check .check-feedback").textContent, /Solved\./);
+  const calls = run.server.calls.length;
+  await run.clock.advance(10000);
+  assert.equal(run.server.calls.length, calls);
 });
 
 test("a hint is revealed in the challenge", async () => {

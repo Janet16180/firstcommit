@@ -81,6 +81,7 @@ const Practice = (function () {
         onAnswer: (answer) => send(run, run.quest, () => game.step(answer), stepped),
         onContinue: () => send(run, run.quest, () => game.step(null), stepped),
         onType: ctx.terminal.type,
+        onCheck: () => send(run, run.quest, () => game.check(null, false), checked),
       });
       ui.body.replaceChildren(run.quest.element);
       return;
@@ -95,9 +96,11 @@ const Practice = (function () {
     ui.body.replaceChildren(run.challenge.element);
   }
 
-  /* A quest step's result; a watch step polled without the player is silent until it passes. */
+  /* A quest step's result. A watch step polled without the player shows its message as a quiet
+     note until it passes: it says what to do next, it is not the player's mistake. */
   function stepped(run, result, watched = false) {
     const { quest, state, ctx } = run;
+    if (!result.correct && watched) quest.note(result.message);
     if (!result.correct && !watched) {
       quest.feedback(result.message, false);
       ctx.sound.play("wrong");
@@ -117,15 +120,16 @@ const Practice = (function () {
     }, ADVANCE_MS);
   }
 
-  /* A check's result. A solve also replaces any "not yet" on screen, which the player sees
-     again after the celebration. An automatic check that does not solve says nothing: the
-     player did not ask, and the quest or the challenge already says what is next. */
+  /* A check's result, from the quest or the challenge. A solve also replaces any "not yet" on
+     screen, which the player sees again after the celebration. An automatic check that does not
+     solve says nothing: the player did not ask, and the challenge already says what is next. */
   function checked(run, result, auto = false) {
-    if (result.solved && run.challenge) run.challenge.feedback(result.message, true);
+    const part = run.challenge || run.quest;
     if (result.solved) {
+      part.checkFeedback(result.message, true);
       finish(run, () => run.on.solved(result));
-    } else if (run.challenge && !auto) {
-      run.challenge.feedback(result.message, false);
+    } else if (!auto) {
+      part.checkFeedback(result.message, false);
       run.ctx.sound.play("wrong");
     }
   }

@@ -9,13 +9,14 @@ const document = installBrowser();
 const { Quest } = load(["dom.js", "markup.js", "quest.js"], ["Quest"]);
 
 function quest(step) {
-  const seen = { answers: [], continued: 0, typed: [] };
+  const seen = { answers: [], continued: 0, typed: [], checks: 0 };
   const made = Quest.create({
     steps: record("level").steps,
     step,
     onAnswer: (answer) => seen.answers.push(answer),
     onContinue: () => (seen.continued += 1),
     onType: (command) => seen.typed.push(command),
+    onCheck: () => (seen.checks += 1),
   });
   return { ...made, seen, q: (selector) => made.element.querySelector(selector), all: (selector) => made.element.querySelectorAll(selector) };
 }
@@ -74,10 +75,36 @@ test("feedback shows the server's message, and a new step moves focus to it", ()
   assert.equal(document.activeElement, view.q(".step.is-current h3"));
 });
 
-test("while busy the current step cannot be sent again", () => {
+test("while busy the current step cannot be sent again, nor the level checked", () => {
   const view = quest(1);
   view.busy(true);
   assert.equal(view.q(".step.is-current button[type=\"submit\"]").disabled, true);
+  assert.equal(view.q(".quest-check button").disabled, true);
   view.busy(false);
   assert.equal(view.q(".step.is-current button[type=\"submit\"]").disabled, false);
+  assert.equal(view.q(".quest-check button").disabled, false);
+});
+
+const para = (text) => [{ kind: "para", spans: [{ text, code: false }] }];
+
+test("a watch step's note is shown quietly, and replaced only when its text changes", () => {
+  const view = quest(2);
+  view.note(para("Run git add notes.txt."));
+  const shown = view.q(".step-feedback p");
+  assert.ok(view.q(".step-feedback").classList.contains("is-note"));
+  view.note(para("Run git add notes.txt."));
+  assert.equal(view.q(".step-feedback p"), shown);
+  view.note(para("Now look at the staging area."));
+  assert.notEqual(view.q(".step-feedback p"), shown);
+  assert.match(view.q(".step-feedback").textContent, /Now look at the staging area/);
+});
+
+test("the whole level can be checked by hand during the quest, and the result is shown apart from the step's", () => {
+  const view = quest(1);
+  view.q(".quest-check button").click();
+  assert.equal(view.seen.checks, 1);
+  view.checkFeedback(record("check_unsolved").message, false);
+  assert.match(view.q(".quest-check .check-feedback").textContent, /does not hold the new notes\.txt/);
+  assert.ok(view.q(".quest-check .check-feedback").classList.contains("is-wrong"));
+  assert.equal(view.q(".step-feedback").textContent, "");
 });
