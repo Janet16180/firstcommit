@@ -12,10 +12,10 @@ const { sizes } = theme;
 const full = (name) => name.padEnd(40, "0");
 
 /* A snapshot from commits newest first as [name, [parent names]], refs as [name, kind, target]. */
-function snap({ commits, refs = [["main", "branch", commits[0][0]]], head = commits[0][0], branch = "main" }) {
+function snap({ commits, refs = commits.length ? [["main", "branch", commits[0][0]]] : [], head = commits.length ? commits[0][0] : null, branch = "main" }) {
   return {
     ...record("snapshots").one,
-    head: full(head),
+    head: head && full(head),
     branch,
     commits: commits.map(([name, parents], index) => ({
       hash: full(name), short: full(name).slice(0, 7), parents: parents.map(full), subject: `Commit ${name}`, author: "Alex Kim", time: 1000 - index,
@@ -248,4 +248,17 @@ test("when the drawing gains a line, tabs and texts start exactly where they wer
   const text = motion.texts.find((move) => move.hash === full("b"));
   const textX = (map, name) => at(map, name).labels.reduce((x, label) => x + label.width + sizes.chipPad, map.textStart);
   assert.equal(textX(after, "b") + text.dx, textX(before, "b"));
+});
+
+test("HEAD's dial fades in with HEAD's tab when HEAD had no commit before, as after a clone", () => {
+  const { calls } = played({ commits: [] }, ONE);
+  const dial = on(calls, ".tt-now");
+  assert.equal(dial.length, 1);
+  assert.equal(dial[0].frames[0].opacity, 0);
+  assert.equal(dial[0].timing.delay, TimeMotion.TIMING.appear.delay);
+});
+
+test("HEAD's dial stays put when its commit is amended in place", () => {
+  const { calls } = played(ONE, { commits: [["c", ["a"]], ["a", []]] });
+  assert.deepEqual(on(calls, ".tt-now"), []);
 });

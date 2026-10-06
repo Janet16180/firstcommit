@@ -15,7 +15,8 @@
  *   the tabs before it changed.
  * - texts: commits drawn both times whose hash and subject start elsewhere because the tabs
  *   before them changed, as {hash, dx}; they slide sideways with the tabs.
- * - dial: HEAD's dial, {dx, dy}, when HEAD is on another commit.
+ * - dial: HEAD's dial, {dx, dy}, when HEAD is on another commit. When HEAD's tab appears
+ *   instead (HEAD had no commit before, as after a clone), the dial fades in with it.
  * - ghosts: commits no longer drawn (a reset, an amend, a rebase, a deleted branch), placed
  *   where they were relative to their nearest first-parent ancestor still drawn, with their
  *   short hash and subject; they fade out. `replacedBy` names the new commit drawn in the very
@@ -202,7 +203,9 @@ const TimeMotion = (function () {
       const commit = graph.querySelector(`[data-hash="${hash}"]`);
       for (const text of [commit.querySelector(".map-hash"), commit.querySelector(".map-subject")]) slide(text, { dx, dy: 0 }, TIMING.slide);
     }
-    if (motion.dial) slide(graph.querySelector(".map-commit.is-head .tt-now"), motion.dial, TIMING.slide);
+    const dial = graph.querySelector(".map-commit.is-head .tt-now");
+    if (motion.dial) slide(dial, motion.dial, TIMING.slide);
+    else if (dial && motion.appear.includes("head")) animate(dial, [{ opacity: 0 }, { opacity: 1 }], TIMING.appear);
     motion.lines.forEach((line) => draw(graph, line, animate));
     if (motion.ghosts.length) haunt(graph, motion.ghosts, theme, animate);
     if (motion.lift) animate(graph, [{ marginTop: `${motion.lift}px` }, { marginTop: "0px" }], TIMING.lift);
