@@ -204,8 +204,7 @@ const TimeGuide = (function () {
     const play = () => {
       const map = RepoMap.render(pair.after, options);
       holder.replaceChildren(map);
-      const motion = TimeMotion.motions(RepoMap.layout(pair.before, options), RepoMap.layout(pair.after, options), FIGURE.sizes);
-      return TimeMotion.play(map, motion, FIGURE, reduced);
+      return TimeMotion.playMap(map, pair.before, pair.after, { ...options, reduced });
     };
     const commands = pair.transcript.map((line) => line.command).filter((command) => command.startsWith("git "));
     const node = el("figure", { class: "tt-guide-figure" },
