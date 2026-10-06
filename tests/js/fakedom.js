@@ -365,6 +365,7 @@ function createDocument() {
       for (const listener of [...(this.listeners.get(event.type) || [])]) listener(event);
       return !event.defaultPrevented;
     },
+    getElementById: (id) => document.body.querySelector(`#${id}`),
     querySelector: (selector) => document.body.querySelector(selector),
     querySelectorAll: (selector) => document.body.querySelectorAll(selector),
   };
