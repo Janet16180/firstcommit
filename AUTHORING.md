@@ -114,6 +114,10 @@ uv run firstcommit --help
   configuration can never change a level, and a lab never falls through to a repository above
   it). The player's real `~/.gitconfig` and repositories are never read or changed.
 - No hooks, no filters, no aliases that run programs. No root.
+- Build every repository with git commands (`init`, `commit`, `clone` from another lab
+  repository). Never copy, unpack or download a `.git` folder: its configuration could name
+  programs that git runs. The game's own git commands refuse the known ones (`gitcmd.NO_PROGRAMS`),
+  but the player's shell does not.
 - Under 50 MB of disk per lab (the binary-files level included).
 
 ### 3.3 Module contract

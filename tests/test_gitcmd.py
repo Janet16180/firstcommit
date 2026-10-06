@@ -123,3 +123,66 @@ def test_the_game_pages_like_git_does_when_less_is_unset(game_home: Path, tmp_pa
     env = {**gitcmd.shell_environment({"PATH": os.environ["PATH"], "LESS": "-R"}, game_home), "HOME": str(tmp_path)}
     result = subprocess.run(["git", "var", "GIT_PAGER"], env=env, capture_output=True, text=True, check=True)
     assert result.stdout == "less -FRX\n"
+
+
+def program_that_leaves_a_mark(folder: Path) -> tuple[Path, Path]:
+    """
+    Write a script that appends a line to a marker file each time it runs.
+
+    Parameters
+    ----------
+    folder : Path
+        Where to write the script; the marker goes next to it.
+
+    Returns
+    -------
+    tuple[Path, Path]
+        The script and its marker file.
+    """
+    marker = folder / "ran"
+    script = folder / "program.sh"
+    script.write_text(f"#!/bin/sh\necho ran >> {marker}\nexit 0\n")
+    script.chmod(0o755)
+    return script, marker
+
+
+def test_the_games_git_never_runs_a_file_system_monitor_named_by_the_repository(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    gitcmd.output(tmp_path, "init", "-q", "-b", "main", str(repo))
+    script, marker = program_that_leaves_a_mark(tmp_path)
+    gitcmd.output(repo, "config", "core.fsmonitor", str(script))
+    (repo / "a.txt").write_text("a\n")
+    gitcmd.output(repo, "status", "--porcelain=v2")
+    assert not marker.exists()
+
+
+def test_the_games_git_never_runs_the_repositorys_hooks(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    gitcmd.output(tmp_path, "init", "-q", "-b", "main", str(repo))
+    script, marker = program_that_leaves_a_mark(tmp_path)
+    (repo / ".git" / "hooks" / "pre-commit").write_text(script.read_text())
+    (repo / ".git" / "hooks" / "pre-commit").chmod(0o755)
+    gitcmd.output(repo, "commit", "-q", "--allow-empty", "-m", "x")
+    assert not marker.exists()
+
+
+def test_the_games_git_never_runs_a_signature_program_to_show_a_log(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    gitcmd.output(tmp_path, "init", "-q", "-b", "main", str(repo))
+    gitcmd.output(repo, "commit", "-q", "--allow-empty", "-m", "x")
+    tree = gitcmd.output(repo, "rev-parse", "HEAD^{tree}").strip()
+    signed = (
+        f"tree {tree}\nauthor A <a@example.com> 0 +0000\ncommitter A <a@example.com> 0 +0000\n"
+        "gpgsig -----BEGIN PGP SIGNATURE-----\n \n -----END PGP SIGNATURE-----\n\nsigned\n"
+    )
+    commit = gitcmd.output(repo, "hash-object", "-t", "commit", "-w", "--stdin", stdin=signed).strip()
+    gitcmd.output(repo, "update-ref", "refs/heads/main", commit)
+    script, marker = program_that_leaves_a_mark(tmp_path)
+    gitcmd.output(repo, "config", "log.showSignature", "true")
+    gitcmd.output(repo, "config", "gpg.program", str(script))
+    gitcmd.run(repo, "log", "-1")
+    assert not marker.exists()
+
+
+def test_the_players_shell_keeps_the_repositorys_own_settings(tmp_path: Path) -> None:
+    assert "GIT_CONFIG_COUNT" not in gitcmd.shell_environment({"PATH": "/usr/bin"}, tmp_path)

@@ -29,6 +29,15 @@ class Person:
 
 GAME = Person("First Commit", "game@example.com")
 
+NO_PROGRAMS = {"core.fsmonitor": "false", "core.hooksPath": "/dev/null", "log.showSignature": "false"}
+"""
+Settings that keep the game's own git commands from running programs a repository names.
+
+They go in as ``GIT_CONFIG_COUNT`` entries, which outrank every configuration file (git(1)), so
+the snapshot polled every 1.5 s never starts a file system monitor, a hook or a signature
+program from a lab's ``.git/config``. The player's shell keeps the repository's settings.
+"""
+
 BASE_CONFIG = "[init]\n\tdefaultBranch = main\n[core]\n\tpager = less -FRX\n"
 """
 The game's global git configuration when it starts: the player's shell and the lessons share it.
@@ -103,8 +112,8 @@ def environment(base: Mapping[str, str], home: Path, author: Person, when: str |
     Returns
     -------
     dict[str, str]
-        `shell_environment`, plus the identity, the C locale (so output can be parsed), no
-        optional locks (the page checks the lab while the player types, and a ``git status``
+        `shell_environment`, plus the identity, the C locale (so output can be parsed),
+        `NO_PROGRAMS`, no optional locks (the page checks the lab while the player types, and a ``git status``
         that refreshed the index would hold ``index.lock`` and make the player's own command
         fail), no prompts and no editor.
     """
@@ -121,6 +130,10 @@ def environment(base: Mapping[str, str], home: Path, author: Person, when: str |
             "GIT_COMMITTER_EMAIL": author.email,
         }
     )
+    env["GIT_CONFIG_COUNT"] = str(len(NO_PROGRAMS))
+    for index, (key, value) in enumerate(NO_PROGRAMS.items()):
+        env[f"GIT_CONFIG_KEY_{index}"] = key
+        env[f"GIT_CONFIG_VALUE_{index}"] = value
     if when is not None:
         env["GIT_AUTHOR_DATE"] = when
         env["GIT_COMMITTER_DATE"] = when
