@@ -64,6 +64,7 @@ def test_the_environment_is_complete_and_inherits_nothing(tmp_path: Path, monkey
         "GIT_CONFIG_GLOBAL": str(tmp_path / "home" / ".gitconfig"),
         "GIT_CONFIG_NOSYSTEM": "1",
         "GIT_CEILING_DIRECTORIES": str(tmp_path),
+        "GIT_MERGE_AUTOEDIT": "yes",
         "GIT_AUTHOR_NAME": demos.AUTHOR.name,
         "GIT_AUTHOR_EMAIL": demos.AUTHOR.email,
         "GIT_AUTHOR_DATE": demos.DATE,
@@ -71,7 +72,7 @@ def test_the_environment_is_complete_and_inherits_nothing(tmp_path: Path, monkey
         "GIT_COMMITTER_EMAIL": demos.AUTHOR.email,
         "GIT_COMMITTER_DATE": demos.DATE,
     }
-    assert (tmp_path / "home" / ".gitconfig").read_text().startswith(gitcmd.BASE_CONFIG)
+    assert (tmp_path / "home" / ".gitconfig").read_text() == gitcmd.BASE_CONFIG + "[log]\n\tdecorate = short\n"
     assert demos.AUTHOR.email.endswith("@example.com")
 
 
@@ -152,6 +153,37 @@ def test_the_map_follows_the_shells_current_folder() -> None:
     assert not outside["map"]["exists"]
 
 
+def test_from_a_subfolder_the_map_shows_the_repository_the_shell_is_in() -> None:
+    top, below = demos.frames(lesson("git init -q\ngit commit -q --allow-empty -m one", "mkdir docs\ncd docs"))
+    assert below["map"] == top["map"]
+    assert below["objects"] == top["objects"]
+
+
+def test_the_log_shows_where_head_and_branches_are_as_on_a_terminal() -> None:
+    [frame] = demos.frames(lesson("git init -q\ngit commit -q --allow-empty -m First\ngit log --oneline"))
+    short = frame["map"]["commits"][0]["short"]
+    assert frame["transcript"][-1]["output"] == f"{short} (HEAD -> main) First\n"
+
+
+def test_a_merge_that_opens_an_editor_on_a_terminal_must_say_how_to_skip_it() -> None:
+    setup = "git init -q\ngit commit -q --allow-empty -m one\ngit switch -q -c topic\ngit commit -q --allow-empty -m two\ngit switch -q main\ngit commit -q --allow-empty -m three"
+    with pytest.raises(RuntimeError, match="git merge topic"):
+        demos.frames(lesson(setup, "git merge topic"))
+    _, merged = demos.frames(lesson(setup, "git merge --no-edit topic"))
+    assert merged["map"]["commits"][0]["subject"] == "Merge branch 'topic'"
+
+
+def test_carriage_returns_show_what_stays_on_a_terminal() -> None:
+    [frame] = demos.frames(lesson("printf 'counting 1\\rcounting 2\\rdone\\n'\nprintf 'counting 3\\r          \\rdone\\n'\nprintf 'a  \\r\\nkept  \\n'"))
+    assert [line["output"] for line in frame["transcript"]] == ["doneting 2\n", "done\n", "a\nkept  \n"]
+
+
+def test_a_rebase_shows_its_last_line_only_as_on_a_terminal() -> None:
+    runs = "git init -q\ngit commit -q --allow-empty -m one\ngit switch -q -c topic\ngit commit -q --allow-empty -m two\ngit switch -q main\ngit commit -q --allow-empty -m three\ngit switch -q topic\ngit rebase main"
+    [frame] = demos.frames(lesson(runs))
+    assert frame["transcript"][-1]["output"] == "Successfully rebased and updated refs/heads/topic.\n"
+
+
 def test_objects_list_the_repository_of_the_frame() -> None:
     before, after = demos.frames(lesson("git init -q\nprintf 'hello\\n' > hello.txt", "git add hello.txt"))
     assert before["objects"] == []
@@ -195,7 +227,7 @@ def test_the_lesson_folder_is_removed_afterwards(game_home: Path) -> None:
     with pytest.raises(RuntimeError):
         demos.frames(lesson("echo cleaned up after a failure\nfalse"))
     leftovers = list(game_home.rglob("*"))
-    assert all(path.is_dir() for path in leftovers), leftovers
+    assert leftovers == [game_home / "lessons"]
 
 
 def test_asking_twice_for_a_lesson_runs_it_once(monkeypatch: pytest.MonkeyPatch) -> None:

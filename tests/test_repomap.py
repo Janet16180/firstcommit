@@ -359,18 +359,31 @@ def test_a_nested_repository_added_as_a_submodule_is_left_out_of_the_files(tmp_p
     assert [commit["subject"] for commit in snap["commits"]] == ["outer"]
 
 
-def test_a_subfolder_shows_the_whole_repository(tmp_path: Path) -> None:
-    repo = new_repo(tmp_path, "mkdir docs && echo a > docs/a.txt && echo b > b.txt && git add . && git commit -q -m two")
-    assert repomap.snapshot(repo / "docs") == repomap.snapshot(repo)
+def test_a_repository_one_folder_too_high_is_not_the_folders_own(tmp_path: Path) -> None:
+    shell(tmp_path, "git init -q -b main && mkdir project")
+    assert repomap.snapshot(tmp_path / "project") == NOTHING
+    assert repomap.objects(tmp_path / "project") == []
 
 
-def test_inside_the_git_folder_the_repository_shows_no_files(tmp_path: Path) -> None:
-    repo = new_repo(tmp_path, "echo a > a.txt && git add . && git commit -q -m one")
-    snap = repomap.snapshot(repo / ".git")
-    assert snap["exists"]
-    assert not snap["bare"]
-    assert snap["files"] == []
-    assert [commit["subject"] for commit in snap["commits"]] == ["one"]
+def test_a_subfolder_of_a_repository_holds_no_repository_of_its_own(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "mkdir docs && echo a > docs/a.txt && git add . && git commit -q -m one")
+    assert repomap.snapshot(repo / "docs") == NOTHING
+
+
+def test_the_git_folder_itself_holds_no_repository_of_its_own(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "git commit -q --allow-empty -m one")
+    assert repomap.snapshot(repo / ".git") == NOTHING
+
+
+def test_a_folder_inside_a_bare_repository_holds_no_repository_of_its_own(tmp_path: Path) -> None:
+    shell(tmp_path, "git init -q --bare github.git")
+    assert repomap.snapshot(tmp_path / "github.git" / "refs") == NOTHING
+
+
+def test_a_link_to_a_repository_shows_that_repository(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "git commit -q --allow-empty -m one")
+    (tmp_path / "link").symlink_to(repo)
+    assert repomap.snapshot(tmp_path / "link") == repomap.snapshot(repo)
 
 
 @pytest.mark.parametrize("part", ["HEAD", "objects", "refs"])
