@@ -71,3 +71,17 @@ test("it rests while the page is hidden and ticks again as soon as it is shown",
   await clock.advance(5000);
   assert.equal(ticks.length, 3);
 });
+
+test("a page shown again in the middle of a tick starts no second tick", async () => {
+  const clock = createClock();
+  const { tick, ticks } = counting(400, clock);
+  const poller = Polling.start({ tick, intervalMs: 1500, timers: clock, page });
+  await clock.advance(50);
+  page.hidden = true;
+  page.dispatchEvent(makeEvent("visibilitychange"));
+  page.hidden = false;
+  page.dispatchEvent(makeEvent("visibilitychange"));
+  await clock.advance(5000);
+  poller.stop();
+  assert.deepEqual(ticks, [0, 1900, 3800]);
+});

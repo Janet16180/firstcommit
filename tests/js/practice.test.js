@@ -100,6 +100,14 @@ test("once the quest is done the level is checked automatically, and a win stops
   assert.equal(run.server.calls.length, 2);
 });
 
+test("a solve reported by two checks at once is handled once", async () => {
+  const run = practice({ step: 3, replies: { "/api/check": record("check_solved") } });
+  run.q(".challenge form").dispatchEvent(makeEvent("submit"));
+  await settle();
+  assert.equal(run.server.calls.filter((call) => call.path === "/api/check").length, 2);
+  assert.equal(run.seen.solved.length, 1);
+});
+
 test("an automatic check that does not solve stays silent; it is not a failure of the player's", async () => {
   const run = practice({ step: 3 });
   await run.clock.advance(3000);

@@ -12,7 +12,7 @@ const { Dom } = load(
 );
 
 /* A fresh page with index.html's header, the given address, key and server; then app.js boots. */
-async function boot({ hash = "#/", token = "KEY", replies = {}, stored = {} } = {}) {
+async function boot({ hash = "#/", token = "KEY", replies = {}, stored = {}, wrap = (api) => api } = {}) {
   const document = installBrowser();
   const { el } = Dom;
   document.body.append(
@@ -36,7 +36,7 @@ async function boot({ hash = "#/", token = "KEY", replies = {}, stored = {} } = 
     scrollTo: () => {},
     createClient: (options) => {
       if (global.location.hash.includes("token=")) global.location.hash = "";
-      return { token: () => token, api: server.api, options };
+      return { token: () => token, api: wrap(server.api), options };
     },
     createTerminal: () => {
       seen.terminals += 1;
@@ -80,6 +80,27 @@ test("changing the address shows its view and marks it in the menu", async () =>
   await settle();
   assert.ok(page.main.querySelector(".cards"));
   assert.ok(page.document.querySelector(".nav a[data-view=\"cards\"]").hasAttribute("aria-current"));
+});
+
+test("a newer navigation wins over a slower one that started before it", async () => {
+  const held = [];
+  let hold = false;
+  const wrap = (api) => (target, body) => (hold && target === "/api/status" ? new Promise((resolve) => held.push(() => resolve(api(target, body)))) : api(target, body));
+  const page = await boot({ wrap });
+  hold = true;
+  global.location.hash = "#/cards";
+  page.fire("hashchange", makeEvent("hashchange"));
+  hold = false;
+  global.location.hash = "#/notes";
+  page.fire("hashchange", makeEvent("hashchange"));
+  await settle();
+  await settle();
+  assert.ok(page.main.querySelector(".notes-page"));
+  held.forEach((release) => release());
+  await settle();
+  await settle();
+  assert.ok(page.main.querySelector(".notes-page"));
+  assert.equal(page.main.querySelector(".cards"), null);
 });
 
 test("the look follows the system until the player picks light or dark, and the choice is kept", async () => {
