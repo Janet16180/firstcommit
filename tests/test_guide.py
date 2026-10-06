@@ -1,7 +1,15 @@
+import json
+import shutil
+import subprocess
+from pathlib import Path
+
 import pytest
 
 from firstcommit import demos, guide
 from firstcommit.repomap import Snapshot
+
+NODE = shutil.which("node")
+LOAD = Path(__file__).parent / "js" / "load.js"
 
 
 def drawn(section: str) -> tuple[Snapshot, Snapshot, list[str]]:
@@ -80,9 +88,35 @@ def parents(snapshot: Snapshot, hash_: str) -> list[str]:
     return next(commit["parents"] for commit in snapshot["commits"] if commit["hash"] == hash_)
 
 
+def page_sections() -> list[str]:
+    """
+    Read the ids of the sections the page's guide shows, from ``theme-time-guide.js`` itself.
+
+    Returns
+    -------
+    list[str]
+        ``TimeGuide.SECTIONS``' ids, in order.
+    """
+    assert NODE is not None
+    script = (
+        f"const {{ installBrowser, load }} = require({json.dumps(str(LOAD))});\n"
+        "installBrowser();\n"
+        'const page = load(["dom.js", "map.js", "theme-time.js", "theme-time-motion.js", "theme-time-guide.js"], ["TimeGuide"]);\n'
+        "console.log(JSON.stringify(page.TimeGuide.SECTIONS.map((part) => part.id)));\n"
+    )
+    result = subprocess.run([NODE, "-e", script], capture_output=True, text=True, check=True, timeout=30)
+    ids: list[str] = json.loads(result.stdout)
+    return ids
+
+
 def test_there_is_one_figure_for_each_picture_the_guide_draws() -> None:
     sections = [figure.section for figure in guide.FIGURES]
     assert sections == ["commit", "parents", "branch", "now", "detached", "merge", "tag", "archive", "seen"]
+
+
+@pytest.mark.skipif(NODE is None, reason="node is not installed")
+def test_every_section_of_the_page_but_the_preview_has_a_figure_here_in_the_same_order() -> None:
+    assert [section for section in page_sections() if section != "later"] == [figure.section for figure in guide.FIGURES]
 
 
 @pytest.mark.parametrize("section", [figure.section for figure in guide.FIGURES])
