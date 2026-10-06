@@ -714,6 +714,15 @@ def test_observing_a_real_lab_tells_of_the_staging_and_the_commit(sample_level: 
 
 
 @pytest.mark.usefixtures("fake_insight")
+def test_a_stale_or_damaged_observation_is_dropped_without_events_or_error(sample_level: runner.Level, game_home: Path) -> None:
+    game.start(sample_level.id)
+    (game_home / "observed.json").write_text(json.dumps({"level": "basics-sample", "project": {"files": "an older shape"}}))
+    assert game.observe()["events"] == []
+    observed = save.load_observed()
+    assert observed is not None and observed["project"]["exists"] is True
+
+
+@pytest.mark.usefixtures("fake_insight")
 def test_observing_an_unchanged_lab_does_not_rewrite_the_observation(sample_level: runner.Level, game_home: Path) -> None:
     game.start(sample_level.id)
     game.observe()
