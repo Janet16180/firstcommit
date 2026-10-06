@@ -365,7 +365,6 @@ def start(level_id: str) -> ActiveView:
     with save.lock():
         save.clear_active()
         save.clear_observed()
-        save.ensure_gitconfig(gitcmd.BASE_CONFIG)
         state = runner.start_lab(entry)
         active: save.Active = {"level": entry.id, "started": _now(), "step": 0, "hints": 0, "attempts": 0, "state": state}
         save.write_active(active)

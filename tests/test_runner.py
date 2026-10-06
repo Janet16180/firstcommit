@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 
-from firstcommit import kit, runner
+from firstcommit import gitcmd, kit, runner
 from sample_levels import basics_sample
 
 CONTRACT = ["TITLE", "DIFFICULTY", "XP", "LESSON", "QUEST", "BRIEFING", "HINTS", "DEBRIEF", "setup", "check", "solve"]
@@ -184,6 +184,36 @@ def test_starting_a_lab_removes_every_other_lab(game_home: Path) -> None:
     (game_home / "labs" / "stray.txt").write_text("x")
     runner.start_lab(runner.load(basics_sample))
     assert [path.name for path in (game_home / "labs").iterdir()] == ["basics-sample"]
+
+
+def plain_init(lab: kit.Lab) -> kit.State:
+    """
+    Set up a level the way a player starts: a plain ``git init``, with no branch named.
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The empty lab.
+
+    Returns
+    -------
+    kit.State
+        No state.
+    """
+    kit.git(lab.root, "init", "-q", str(lab.project))
+    return {}
+
+
+def test_a_lab_starts_from_the_games_git_config_so_a_plain_init_is_on_main(game_home: Path) -> None:
+    runner.start_lab(dataclasses.replace(runner.load(basics_sample), setup=plain_init))
+    assert (game_home / "gitconfig").read_text() == gitcmd.BASE_CONFIG
+    assert kit.git(runner.lab_of("basics-sample").project, "symbolic-ref", "--short", "HEAD") == "main\n"
+
+
+def test_starting_a_lab_keeps_the_game_git_config_the_player_changed(game_home: Path) -> None:
+    (game_home / "gitconfig").write_text("[user]\n\tname = Ada\n")
+    runner.start_lab(runner.load(basics_sample))
+    assert (game_home / "gitconfig").read_text() == "[user]\n\tname = Ada\n"
 
 
 def test_a_failed_setup_leaves_no_lab_and_raises(game_home: Path) -> None:

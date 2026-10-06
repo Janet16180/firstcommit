@@ -6,7 +6,8 @@ in the content, so reading it raises with the module's name and what is wrong.
 
 There is one lab at a time, ``<home>/labs/<level id>/``. Starting a level removes every lab first
 (through `termlab.sandbox`, which never deletes outside the home), so nothing a player did in an
-earlier level can leak into the next one.
+earlier level can leak into the next one. Every lab starts with the game's git configuration in
+place, whoever starts it (the game or the tests).
 """
 
 import functools
@@ -21,7 +22,7 @@ from typing import Any
 
 from termlab import sandbox
 
-from firstcommit import kit, levels, save
+from firstcommit import gitcmd, kit, levels, save
 from firstcommit.chapters import CHAPTERS
 
 MODULE_NAME = re.compile(r"([a-z]+)_[a-z0-9_]+")
@@ -361,7 +362,9 @@ def start_lab(level: Level) -> kit.State:
     """
     Build a fresh lab for a level: remove every lab, make an empty one, and run the level's setup.
 
-    If setup fails, its lab is removed and the error raised again.
+    The game's git configuration is created first if it is missing (never overwritten), so
+    setup and the player's ``git init`` start from `firstcommit.gitcmd.BASE_CONFIG`. If setup
+    fails, its lab is removed and the error raised again.
 
     Parameters
     ----------
@@ -380,6 +383,7 @@ def start_lab(level: Level) -> kit.State:
     """
     lab = lab_of(level.id)
     remove_labs()
+    save.ensure_gitconfig(gitcmd.BASE_CONFIG)
     lab.root.mkdir(parents=True)
     try:
         state = level.setup(lab)
