@@ -149,7 +149,7 @@ const TimeMotion = (function () {
     const { colors, sizes } = theme;
     return svg("g", { class: "tt-ghosts", "aria-hidden": "true" }, ghosts.map((ghost) => svg("g", { class: "tt-ghost", style: `--color: ${colors.lanes[ghost.lane % colors.lanes.length]}` },
       ghost.parent && svg("path", { class: "tt-ghost-line", d: `M${ghost.x},${ghost.y} L${ghost.parent.x},${ghost.parent.y}` }),
-      svg("circle", { class: "tt-save", cx: ghost.x, cy: ghost.y, r: sizes.radius }),
+      theme.shapes.commit({ x: ghost.x, y: ghost.y, color: colors.lanes[ghost.lane % colors.lanes.length], theme, isHead: false, isMerge: false }),
       svg("text", { class: "map-hash", x: ghost.textX, y: ghost.y, "dominant-baseline": "central" }, ghost.short),
       svg("text", { class: "map-subject", x: ghost.textX + (ghost.short.length + 1) * sizes.char, y: ghost.y, "dominant-baseline": "central" }, ` ${ghost.subject}`.slice(1)),
     )));

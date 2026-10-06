@@ -184,6 +184,18 @@ test("a new commit's save point grows in while the tabs and HEAD's dial start fr
   assert.equal(dial[0].frames[1].transform, "translate(0px, 0px)");
 });
 
+test("a ghost is drawn in the map's own commit shape, so a dropped box fades out as a box", () => {
+  const boxed = TimeTheme.boxes;
+  const figure = RepoMap.render(snap(ONE), { theme: boxed });
+  const proto = Object.getPrototypeOf(figure);
+  proto.animate = () => ({ onfinish: null });
+  const layout = (spec) => RepoMap.layout(snap(spec), { theme: boxed });
+  TimeMotion.play(figure, TimeMotion.motions(layout(TWO), layout(ONE), boxed.sizes), boxed, false);
+  delete proto.animate;
+  assert.ok(figure.querySelector(".tt-ghost .tt-box .tt-save"));
+  assert.ok(played(TWO, ONE).figure.querySelector(".tt-ghost circle.tt-save"));
+});
+
 test("a reset draws a ghost of the dropped commit that fades and is removed when done, with the map lifted meanwhile", () => {
   const { figure, calls } = played(TWO, ONE);
   const ghosts = figure.querySelector(".tt-ghosts");
