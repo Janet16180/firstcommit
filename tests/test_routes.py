@@ -407,10 +407,9 @@ def test_notes_of_an_unknown_chapter_are_not_found(site: Site, monkeypatch: pyte
     assert api(site, "/api/notes?chapter=nope")[0] == 404
 
 
-def test_a_key_error_outside_a_lookup_is_not_taken_for_an_unknown_id(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_a_key_error_outside_a_lookup_is_a_bug_not_an_unknown_id(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
     record(monkeypatch, "status", error=KeyError("bug"))
-    with pytest.raises(KeyError):
-        routes.ROUTES[("GET", "/api/status")]({})
+    assert api(site, "/api/status") == (500, {"error": "KeyError: 'bug'", "kind": "bug"})
 
 
 def test_the_terminal_keeps_git_to_the_games_configuration_and_labs(
@@ -448,11 +447,25 @@ def test_serving_on_a_busy_port_fails_with_a_hint(site: Site, capsys: pytest.Cap
         ("/api/reset", {"confirm": True}, "reset"),
     ],
 )
-def test_a_damaged_save_is_a_server_error_that_names_the_file(
+def test_a_damaged_save_is_a_server_error_of_kind_save_that_names_the_file(
     site: Site, monkeypatch: pytest.MonkeyPatch, route: str, body: Any, name: str
 ) -> None:
     record(monkeypatch, name, error=save.SaveError("progress.json: xp should be a number"))
-    assert api(site, route, body) == (500, {"error": "progress.json: xp should be a number"})
+    assert api(site, route, body) == (500, {"error": "progress.json: xp should be a number", "kind": "save"})
+
+
+@pytest.mark.parametrize(
+    ("route", "body", "name"),
+    [("/api/status", None, "status"), ("/api/check", {"answer": None, "auto": False}, "check")],
+)
+def test_a_bug_in_the_game_is_a_server_error_of_kind_bug_and_its_traceback_goes_to_the_server_terminal(
+    site: Site, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], route: str, body: Any, name: str
+) -> None:
+    record(monkeypatch, name, error=IndexError("tuple index out of range"))
+    assert api(site, route, body) == (500, {"error": "IndexError: tuple index out of range", "kind": "bug"})
+    logged = capsys.readouterr().err
+    assert "Traceback (most recent call last)" in logged
+    assert "IndexError: tuple index out of range" in logged
 
 
 def test_a_fresh_game_lists_its_chapters_and_has_no_level_in_progress(site: Site, sample_level: runner.Level) -> None:
