@@ -1,6 +1,6 @@
 """The content of every deck file: its format, the answer-length tells, and every claim its snippets make."""
 
-from collections.abc import Mapping
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -54,25 +54,26 @@ def ids(entries: list[cards.Card]) -> list[str]:
     return [card.id for card in entries]
 
 
-def snippet_environment(folder: Path) -> Mapping[str, str]:
+def run_snippet(code: str, folder: Path) -> subprocess.CompletedProcess[str]:
     """
-    Give the fixed environment lessons and cards run in, or skip the test until it exists.
+    Run a card's snippet with bash in an empty folder, in the fixed environment of the lessons.
 
     Parameters
     ----------
+    code : str
+        The snippet.
     folder : Path
-        The empty folder the snippet runs in.
+        An empty folder for the snippet's home and its working folder.
 
     Returns
     -------
-    Mapping[str, str]
-        The environment from `firstcommit.demos.environment`.
+    subprocess.CompletedProcess[str]
+        Its exit status and output.
     """
-    environment = getattr(demos, "environment", None)
-    if environment is None:
-        pytest.skip("demos.environment is not there yet")
-    result: Mapping[str, str] = environment(folder)
-    return result
+    env = demos.environment(folder / "home")
+    work = folder / "work"
+    work.mkdir()
+    return snippets.run(code, work, env)
 
 
 @pytest.mark.parametrize("path", DECK_FILES, ids=[path.name for path in DECK_FILES])
@@ -94,7 +95,7 @@ def test_the_right_option_is_the_longest_in_at_most_half_of_a_decks_choice_cards
 
 @pytest.mark.parametrize("card", PREDICT_CARDS, ids=ids(PREDICT_CARDS))
 def test_a_predict_card_prints_its_right_option(card: cards.Card, tmp_path: Path) -> None:
-    result = snippets.run(card.code, tmp_path, snippet_environment(tmp_path))
+    result = run_snippet(card.code, tmp_path)
     if result.returncode == snippets.SKIP_STATUS:
         pytest.skip(f"{card.id} cannot be checked on this machine")
     assert result.stdout.rstrip("\n") == card.correct, result.stderr
@@ -102,7 +103,7 @@ def test_a_predict_card_prints_its_right_option(card: cards.Card, tmp_path: Path
 
 @pytest.mark.parametrize("card", VERIFIED_CARDS, ids=ids(VERIFIED_CARDS))
 def test_a_verify_snippet_holds(card: cards.Card, tmp_path: Path) -> None:
-    result = snippets.run(card.verify, tmp_path, snippet_environment(tmp_path))
+    result = run_snippet(card.verify, tmp_path)
     if result.returncode == snippets.SKIP_STATUS:
         pytest.skip(f"{card.id} cannot be checked on this machine")
     assert result.returncode == 0, result.stdout + result.stderr
