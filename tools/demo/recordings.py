@@ -2,12 +2,13 @@
 Real-git recordings for the four places demo (build.py).
 
 Every drawing in the demo is a snapshot of a real repository, never hand-made: each recorder runs
-git in a fresh lab under a temporary folder (a bare practice copy that stands in for GitHub, and
-clones of it), snapshots the repositories with `firstcommit.repomap` after each command and lists
-what changed with `firstcommit.changes`, the same events the game's feed shows. Git runs with no
-global or system configuration, ``init.defaultBranch=main`` and fixed names and dates, so the
-hashes are the same on every run, except for merge commits: their message names the lab's real
-path (shown as /home/you/lab), which changes from run to run.
+git in a fresh lab under a temporary folder, laid out as a level's (`firstcommit.lab.Lab`: a bare
+practice copy that stands in for GitHub, and clones of it), snapshots the repositories with
+`firstcommit.repomap` after each command and lists what changed with `firstcommit.changes`, the
+same events the game's feed shows. Each clone reaches GitHub by the relative URL every level sets
+(`Lab.github_url`), so nothing recorded names the temporary folder. Git runs with no global or
+system configuration, ``init.defaultBranch=main`` and fixed names and dates, so the hashes are
+the same on every run, merge commits included.
 
 - `record_commands`: one command at a time (add, commit, push, fetch, pull, pull after a fetch,
   pull on diverged branches, clone), each in its own lab.
@@ -15,7 +16,6 @@ path (shown as /home/you/lab), which changes from run to run.
   lab, one step after another.
 """
 
-import json
 import os
 import shutil
 import subprocess
@@ -26,11 +26,10 @@ from pathlib import Path
 from typing import Any
 
 from firstcommit import changes, repomap
+from firstcommit.lab import Lab
 
 DATE = "2026-01-15T09:00:00+00:00"
 """Every commit's author and committer date."""
-SHOWN_LAB = "/home/you/lab"
-"""How a lab's temporary folder appears in git's output."""
 
 _BASE = {
     "PATH": os.environ.get("PATH", "/usr/bin:/bin"),
@@ -89,25 +88,6 @@ def _run(folder: Path, command: str) -> None:
         raise RuntimeError(f"{command!r} in {folder.name}: exit {done.returncode}\n{done.stdout}{done.stderr}")
 
 
-def _shown(value: Any, lab: Path) -> Any:
-    """
-    Replace the lab's temporary path with `SHOWN_LAB` everywhere in a recording.
-
-    Parameters
-    ----------
-    value : Any
-        JSON-shaped data.
-    lab : Path
-        The lab folder.
-
-    Returns
-    -------
-    Any
-        The same data, with the path replaced.
-    """
-    return json.loads(json.dumps(value).replace(str(lab), SHOWN_LAB))
-
-
 def _places(lab: Path) -> dict[str, Any]:
     """
     Observe one computer and GitHub, as the game does.
@@ -144,13 +124,17 @@ def _feed(before: dict[str, Any], after: dict[str, Any]) -> list[Any]:
     return [event for key in before for event in changes.describe(before[key], after[key])]
 
 
+_LAYOUT = Lab(Path("/lab"))
+"""Where a level's clones are, relative to its lab: the set-ups below run from the lab folder."""
+
 _HANDBOOK = (
-    "git clone -q github/project.git teammate 2>/dev/null; cd teammate; "
+    "git clone -q github/project.git teammate/project 2>/dev/null; cd teammate/project; "
+    f"git remote set-url origin {_LAYOUT.github_url(_LAYOUT.teammate)}; "
     "echo '# Team handbook' > README.md; git add README.md; git commit -qm 'Add the README'; "
-    "echo 'Be kind.' > rules.md; git add rules.md; git commit -qm 'Add the rules'; git push -q origin main; cd ..; "
+    "echo 'Be kind.' > rules.md; git add rules.md; git commit -qm 'Add the rules'; git push -q origin main; cd ../..; "
 )
-_CLONED = _HANDBOOK + "git clone -q github/project.git project; "
-_TEAMMATE_PUSHES = "cd teammate; echo 'Ask early.' >> rules.md; git commit -qam 'Add a rule'; git push -q; cd ..; "
+_CLONED = _HANDBOOK + f"git clone -q github/project.git project; git -C project remote set-url origin {_LAYOUT.github_url(_LAYOUT.project)}; "
+_TEAMMATE_PUSHES = "cd teammate/project; echo 'Ask early.' >> rules.md; git commit -qam 'Add a rule'; git push -q; cd ../..; "
 _COMMANDS = {
     "add": (_CLONED + "cd project; echo 'Start here.' >> README.md; echo 'draft' > notes.txt", "git add README.md"),
     "commit": (_CLONED + "cd project; echo 'Start here.' >> README.md; git add README.md", "git commit -m 'Say where to start'"),
@@ -180,7 +164,7 @@ def record_commands() -> dict[str, Step]:
             before = _places(lab)
             _run(lab / "project", command)
             after = _places(lab)
-            recorded[name] = _shown({"before": before, "after": after, "events": _feed(before, after), "command": command}, lab)
+            recorded[name] = {"before": before, "after": after, "events": _feed(before, after), "command": command}
     return recorded
 
 
@@ -217,5 +201,5 @@ def record_first_commits() -> list[Step]:
             after = _places(lab)
             steps.append({"name": name, "commands": commands, "before": before, "after": after, "events": _feed(before, after)})
             before = after
-        return [_shown(step, lab) for step in steps]
+        return steps
 
