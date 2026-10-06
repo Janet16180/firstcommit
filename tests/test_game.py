@@ -3,6 +3,7 @@ import fcntl
 import json
 import os
 import stat
+import subprocess
 import threading
 import time
 from collections.abc import Callable, Sequence
@@ -925,7 +926,7 @@ def test_a_press_gives_the_command_as_the_player_could_type_it_and_what_git_prin
     press = pressed["press"]
     assert (press["person"], press["button"], press["command"], press["status"]) == ("alex", "commit", playground.BUTTONS["commit"]["alex"], 1)
     assert "nothing to commit" in press["output"]
-    assert pressed["explanation"] is None
+    assert (pressed["explanation"], pressed["fix"], pressed["fix_line"]) == (None, None, "")
 
 
 def test_what_a_press_changed_is_told_once_and_observing_then_sees_the_same_lab(playground_level: runner.Level) -> None:
@@ -935,6 +936,33 @@ def test_what_a_press_changed_is_told_once_and_observing_then_sees_the_same_lab(
     again = game.observe()
     assert (again["project"], again["github"], again["teammate"]) == (pressed["project"], pressed["github"], pressed["teammate"])
     assert (again["events"], again["teammate_events"]) == ([], [])
+
+
+
+def test_a_press_tells_what_the_terminal_changed_before_it_apart_from_its_own_changes(playground_level: runner.Level, game_home: Path) -> None:
+    game.start(playground_level.id)
+    game.observe()
+    (game_home / "labs" / playground_level.id / "teammate" / "project" / "notes.txt").write_text("x")
+    pressed = game.press("you", "edit")
+    before, after = pressed["before"], pressed["observation"]
+    assert (before["events"], [event["kind"] for event in before["teammate_events"]]) == ([], ["file-created"])
+    assert ([event["kind"] for event in after["events"]], after["teammate_events"]) == (["file-created"], [])
+    assert before["teammate"] == after["teammate"]
+    assert "you.txt" not in [entry["path"] for entry in before["project"]["files"]]
+
+
+def test_a_press_that_does_not_finish_saves_nothing_so_the_next_observation_tells_the_typed_changes(playground_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    game.start(playground_level.id)
+    game.observe()
+    (game_home / "labs" / playground_level.id / "teammate" / "project" / "notes.txt").write_text("x")
+
+    def hanging(lab: kit.Lab, person: records.Who, button: records.Button) -> records.Press:
+        raise subprocess.TimeoutExpired(["git", "push"], gitcmd.TIMEOUT)
+
+    monkeypatch.setattr(playground, "press", hanging)
+    with pytest.raises(subprocess.TimeoutExpired):
+        game.press("alex", "push")
+    assert [event["kind"] for event in game.observe()["teammate_events"]] == ["file-created"]
 
 
 def test_a_push_from_alex_is_told_among_the_events_of_github(playground_level: runner.Level) -> None:
@@ -962,7 +990,7 @@ def test_a_press_runs_and_snapshots_the_lab_while_holding_the_save_lock(playgrou
     monkeypatch.setattr(playground, "press", pressing)
     monkeypatch.setattr(repomap, "snapshot", snapshotting)
     game.press("you", "status")
-    assert held == [("press", True)] + [("snapshot", True)] * 3
+    assert held == [("snapshot", True)] * 3 + [("press", True)] + [("snapshot", True)] * 3
 
 
 def test_pressing_needs_a_level_with_a_playground(sample_level: runner.Level, game_home: Path) -> None:
