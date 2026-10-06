@@ -124,31 +124,30 @@ h2,
   stroke-width: 3.5;
 }
 
-.map-commit.is-new .tt-point,
-.map-commit.is-new .tt-now-dial {
+/* Motions (theme-time-motion.js): a new save point grows from its centre, and a commit that no
+   label reaches any more fades out as a dashed ghost. play() shows the new hash and subject itself. */
+
+.tt-join,
+.tt-save,
+.tt-core {
   transform-box: fill-box;
   transform-origin: center;
 }
 
-.map-commit.is-new .tt-point {
-  animation: tt-arrive 0.7s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+.map-commit.is-new .map-subject,
+.map-commit.is-new .map-hash {
+  animation: none;
 }
 
-.map-commit.is-new .tt-now-dial {
-  animation: tt-tick 1s ease-out both;
+.tt-ghost .tt-save {
+  stroke-dasharray: 2.5 2.5;
 }
 
-@keyframes tt-arrive {
-  from {
-    opacity: 0;
-    transform: scale(0.4);
-  }
-}
-
-@keyframes tt-tick {
-  from {
-    transform: rotate(-30deg);
-  }
+.tt-ghost-line {
+  fill: none;
+  stroke: var(--color);
+  stroke-width: 2;
+  stroke-dasharray: 3 4;
 }
 
 /* Chips: HEAD points at its commit, a tag is a pennant, a remote-tracking branch is dashed */
