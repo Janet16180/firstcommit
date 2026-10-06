@@ -23,12 +23,15 @@ Event kinds, most important first:
   executable bit), ``file-deleted``, ``nested-repository-created``, ``nested-repository-deleted``
   (a separate repository inside the working folder), ``file-ignored``, ``file-unignored``.
 
-Names and short hashes in the text are in backticks, commit subjects in double quotes.
+Every name, short hash and commit subject in the text is one code span written by
+`firstcommit.markup.code`, so a name a player chose can never forge paragraphs, bullets or
+other code in the game's voice. A commit's subject follows its short hash, in parentheses.
 """
 
 from dataclasses import dataclass
 from typing import Literal, TypedDict
 
+from firstcommit.markup import code
 from firstcommit.repomap import EXECUTABLE_MODE, Commit, FileEntry, FolderChange, RefKind, Snapshot, version
 
 MAX_FILE_EVENTS = 4
@@ -201,15 +204,15 @@ def _at(change: _Change, target: str) -> str:
     Returns
     -------
     str
-        The short hash in backticks, then the subject in double quotes.
+        Its short hash, then its subject in parentheses, each one code span.
     """
     commit = change.commits.get(target)
-    return f'`{commit["short"]}` "{commit["subject"]}"' if commit is not None else f"`{target[:7]}`"
+    return f"{code(commit['short'])} ({code(commit['subject'])})" if commit is not None else code(target[:7])
 
 
 def _short(change: _Change, target: str) -> str:
     """
-    Give a commit's short hash in backticks.
+    Give a commit's short hash as one code span.
 
     Parameters
     ----------
@@ -224,7 +227,7 @@ def _short(change: _Change, target: str) -> str:
         Its short hash when known, else the start of its hash.
     """
     commit = change.commits.get(target)
-    return f"`{commit['short'] if commit is not None else target[:7]}`"
+    return code(commit["short"] if commit is not None else target[:7])
 
 
 def _place(snap: Snapshot) -> str:
@@ -241,7 +244,7 @@ def _place(snap: Snapshot) -> str:
     str
         ``branch `main``` or ``a detached HEAD``.
     """
-    return f"branch `{snap['branch']}`" if snap["branch"] is not None else "a detached HEAD"
+    return f"branch {code(snap['branch'])}" if snap["branch"] is not None else "a detached HEAD"
 
 
 def _count(number: int, one: str, many: str) -> str:
@@ -494,11 +497,11 @@ def _conflict_events(change: _Change, aborted: bool) -> list[Event]:
     now = {file["path"]: file for file in change.after["files"] if file["conflicted"]}
     after = {file["path"]: file for file in change.after["files"]}
     news: list[FileNews] = [
-        ("conflict", path, f"`{path}` has a conflict: Git could not combine the two versions by itself.") for path in sorted(now.keys() - was)
+        ("conflict", path, f"{code(path)} has a conflict: Git could not combine the two versions by itself.") for path in sorted(now.keys() - was)
     ]
     for path in [] if aborted else sorted(was - now.keys()):
         staged = path in after and after[path]["index"] is not None
-        news.append(("conflict-resolved", path, f"`{path}` is resolved: " + ("the staging area holds its new version." if staged else "it was removed.")))
+        news.append(("conflict-resolved", path, f"{code(path)} is resolved: " + ("the staging area holds its new version." if staged else "it was removed.")))
     return _told(news)
 
 
@@ -555,9 +558,9 @@ def _head_events(change: _Change) -> list[Event]:
     where = f", at {_at(change, head)}" if head is not None else ", which has no commits yet"
     events: list[Event] = []
     if was != now and was is not None and now is not None:
-        events.append({"kind": "branch-switched", "text": f"HEAD switched from branch `{was}` to branch `{now}`{where}."})
+        events.append({"kind": "branch-switched", "text": f"HEAD switched from branch {code(was)} to branch {code(now)}{where}."})
     elif was != now and now is not None:
-        events.append({"kind": "branch-switched", "text": f"HEAD is now on branch `{now}`{where}."})
+        events.append({"kind": "branch-switched", "text": f"HEAD is now on branch {code(now)}{where}."})
     elif was is not None and now is None and head is not None and after["operation"] not in ("rebase", "bisect"):
         events.append({"kind": "head-detached", "text": f"HEAD is detached: it points at commit {_at(change, head)} directly, not at a branch."})
     elif was is None and now is None and head is not None and before["head"] != head:
@@ -586,12 +589,12 @@ def _branch_events(change: _Change, found: tuple[str, Commit] | None, renamed: t
     explained = {change.after["branch"]} if found is not None else set()
     events: list[Event] = []
     if renamed is not None:
-        events.append({"kind": "branch-renamed", "text": f"Branch `{renamed[0]}` was renamed to `{renamed[1]}`."})
+        events.append({"kind": "branch-renamed", "text": f"Branch {code(renamed[0])} was renamed to {code(renamed[1])}."})
         explained |= set(renamed)
     created, moved, deleted = _ref_changes(change, "branch")
-    events += [{"kind": "branch-created", "text": f"Branch `{name}` was created at {_at(change, now)}."} for name, now in created if name not in explained]
+    events += [{"kind": "branch-created", "text": f"Branch {code(name)} was created at {_at(change, now)}."} for name, now in created if name not in explained]
     events += [{"kind": "branch-moved", "text": _branch_moved_text(change, name, was, now)} for name, was, now in moved if name not in explained]
-    events += [{"kind": "branch-deleted", "text": f"Branch `{name}` was deleted; it pointed at {_at(change, was)}."} for name, was in deleted if name not in explained]
+    events += [{"kind": "branch-deleted", "text": f"Branch {code(name)} was deleted; it pointed at {_at(change, was)}."} for name, was in deleted if name not in explained]
     return events
 
 
@@ -616,14 +619,14 @@ def _branch_moved_text(change: _Change, name: str, was: str, now: str) -> str:
         The sentence.
     """
     ancestry = _ancestry(change, was, now)
-    text = f"Branch `{name}` moved from {_short(change, was)} to {_at(change, now)}."
+    text = f"Branch {code(name)} moved from {_short(change, was)} to {_at(change, now)}."
     if ancestry == "forward":
         ahead = _count(len(_reachable(change, now) - _reachable(change, was)), "commit", "commits")
-        text = f"Branch `{name}` moved forward by {ahead}, from {_short(change, was)} to {_at(change, now)}."
+        text = f"Branch {code(name)} moved forward by {ahead}, from {_short(change, was)} to {_at(change, now)}."
     elif ancestry == "back":
-        text = f"Branch `{name}` moved back from {_short(change, was)} to {_at(change, now)}."
+        text = f"Branch {code(name)} moved back from {_short(change, was)} to {_at(change, now)}."
     elif ancestry == "rewritten":
-        text = f"Branch `{name}` now points at {_at(change, now)} instead of {_short(change, was)}: its history was rewritten."
+        text = f"Branch {code(name)} now points at {_at(change, now)} instead of {_short(change, was)}: its history was rewritten."
     return text
 
 
@@ -642,9 +645,9 @@ def _tag_events(change: _Change) -> list[Event]:
         The tags created, moved and deleted, each by name.
     """
     created, moved, deleted = _ref_changes(change, "tag")
-    events: list[Event] = [{"kind": "tag-created", "text": f"Tag `{name}` was created at {_at(change, now)}."} for name, now in created]
-    events += [{"kind": "tag-moved", "text": f"Tag `{name}` now points at {_at(change, now)} instead of {_short(change, was)}."} for name, was, now in moved]
-    events += [{"kind": "tag-deleted", "text": f"Tag `{name}` was deleted."} for name, _ in deleted]
+    events: list[Event] = [{"kind": "tag-created", "text": f"Tag {code(name)} was created at {_at(change, now)}."} for name, now in created]
+    events += [{"kind": "tag-moved", "text": f"Tag {code(name)} now points at {_at(change, now)} instead of {_short(change, was)}."} for name, was, now in moved]
+    events += [{"kind": "tag-deleted", "text": f"Tag {code(name)} was deleted."} for name, _ in deleted]
     return events
 
 
@@ -663,12 +666,12 @@ def _remote_events(change: _Change) -> list[Event]:
         One ``remote-updated`` event per remote-tracking branch: created, moved, then deleted, each by name.
     """
     created, moved, deleted = _ref_changes(change, "remote")
-    texts = [f"Remote-tracking branch `{name}` was created at {_at(change, now)}{_arrived(change, set(), now)}." for name, now in created]
+    texts = [f"Remote-tracking branch {code(name)} was created at {_at(change, now)}{_arrived(change, set(), now)}." for name, now in created]
     texts += [
-        f"Remote-tracking branch `{name}` moved from {_short(change, was)} to {_at(change, now)}{_arrived(change, _reachable(change, was), now)}."
+        f"Remote-tracking branch {code(name)} moved from {_short(change, was)} to {_at(change, now)}{_arrived(change, _reachable(change, was), now)}."
         for name, was, now in moved
     ]
-    texts += [f"Remote-tracking branch `{name}` was deleted." for name, _ in deleted]
+    texts += [f"Remote-tracking branch {code(name)} was deleted." for name, _ in deleted]
     return [{"kind": "remote-updated", "text": text} for text in texts]
 
 
@@ -712,12 +715,12 @@ def _push_events(change: _Change) -> list[Event]:
     events: list[Event] = []
     for kind in ("branch", "tag"):
         created, moved, deleted = _ref_changes(change, kind)
-        events += [{"kind": "push-received", "text": f"A push created {kind} `{name}` at {_at(change, now)}."} for name, now in created]
+        events += [{"kind": "push-received", "text": f"A push created {kind} {code(name)} at {_at(change, now)}."} for name, now in created]
         for name, was, now in moved:
             forced = _ancestry(change, was, now) in ("back", "rewritten")
             news = f" It was a force push: {_short(change, was)} is no longer in its history." if forced else ""
-            events.append({"kind": "push-received", "text": f"A push moved {kind} `{name}` from {_short(change, was)} to {_at(change, now)}.{news}"})
-        events += [{"kind": "push-received", "text": f"A push deleted {kind} `{name}`."} for name, _ in deleted]
+            events.append({"kind": "push-received", "text": f"A push moved {kind} {code(name)} from {_short(change, was)} to {_at(change, now)}.{news}"})
+        events += [{"kind": "push-received", "text": f"A push deleted {kind} {code(name)}."} for name, _ in deleted]
     return events
 
 
@@ -873,10 +876,10 @@ def _nested_news(old: FileEntry, new: FileEntry) -> list[FileNews]:
     path = new["path"]
     news: list[FileNews] = []
     if new["repository"] and not old["repository"] and not new["ignored"]:
-        text = f"`{path}` is a separate repository inside this one: Git lists it as an untracked folder and does not track the files in it."
+        text = f"{code(path)} is a separate repository inside this one: Git lists it as an untracked folder and does not track the files in it."
         news.append(("nested-repository-created", path, text))
     elif old["repository"] and not new["repository"] and not old["ignored"]:
-        news.append(("nested-repository-deleted", path, f"The separate repository `{path}` is gone from the working folder."))
+        news.append(("nested-repository-deleted", path, f"The separate repository {code(path)} is gone from the working folder."))
     return news
 
 
@@ -904,13 +907,13 @@ def _staging_news(old: FileEntry, new: FileEntry, committed: bool) -> list[FileN
     news: list[FileNews] = []
     if new["index_change"] is None and not committed:
         again = "it is untracked again" if new["index"] is None else "the staging area has the last commit's version again"
-        news.append(("file-unstaged", path, f"`{path}` was unstaged: {again}."))
+        news.append(("file-unstaged", path, f"{code(path)} was unstaged: {again}."))
     elif new["index"] is None:
-        news.append(("file-staged", path, f"`{path}` was staged for deletion."))
+        news.append(("file-staged", path, f"{code(path)} was staged for deletion."))
     elif old["index"] is None:
-        news.append(("file-staged", path, f"`{path}` was staged as a new file."))
+        news.append(("file-staged", path, f"{code(path)} was staged as a new file."))
     else:
-        news.append(("file-staged", path, f"`{path}` was staged."))
+        news.append(("file-staged", path, f"{code(path)} was staged."))
     return news
 
 
@@ -935,15 +938,15 @@ def _folder_news(old: FileEntry, new: FileEntry) -> list[FileNews]:
         return []
     news: list[FileNews] = []
     if old["folder"] is None:
-        news.append(("file-created", path, f"`{path}` was created in the working folder.{note}"))
+        news.append(("file-created", path, f"{code(path)} was created in the working folder.{note}"))
     elif new["folder"] is None:
-        news.append(("file-deleted", path, f"`{path}` was deleted from the working folder.{note}"))
+        news.append(("file-deleted", path, f"{code(path)} was deleted from the working folder.{note}"))
     elif old["folder"] == new["folder"] and new["folder_mode"] == EXECUTABLE_MODE:
-        news.append(("file-changed", path, f"`{path}` became executable in the working folder.{note}"))
+        news.append(("file-changed", path, f"{code(path)} became executable in the working folder.{note}"))
     elif old["folder"] == new["folder"] and old["folder_mode"] == EXECUTABLE_MODE:
-        news.append(("file-changed", path, f"`{path}` is no longer executable in the working folder.{note}"))
+        news.append(("file-changed", path, f"{code(path)} is no longer executable in the working folder.{note}"))
     else:
-        news.append(("file-changed", path, f"`{path}` changed in the working folder.{note}"))
+        news.append(("file-changed", path, f"{code(path)} changed in the working folder.{note}"))
     return news
 
 
@@ -988,9 +991,9 @@ def _ignore_news(old: FileEntry, new: FileEntry) -> list[FileNews]:
         return []
     news: list[FileNews] = []
     if new["ignored"]:
-        news.append(("file-ignored", path, f"`{path}` is now ignored by Git."))
+        news.append(("file-ignored", path, f"{code(path)} is now ignored by Git."))
     else:
-        news.append(("file-unignored", path, f"`{path}` is no longer ignored: it is untracked."))
+        news.append(("file-unignored", path, f"{code(path)} is no longer ignored: it is untracked."))
     return news
 
 
@@ -1015,7 +1018,7 @@ def _told(news: list[FileNews]) -> list[Event]:
     events: list[Event] = []
     for kind, items in by_kind.items():
         if len(items) > MAX_FILE_EVENTS:
-            names = ", ".join(f"`{path}`" for path, _ in items[:NAMES_SHOWN]) + f" and {len(items) - NAMES_SHOWN} more"
+            names = ", ".join(f"{code(path)}" for path, _ in items[:NAMES_SHOWN]) + f" and {len(items) - NAMES_SHOWN} more"
             events.append({"kind": kind, "text": SUMMARIES[kind].format(count=len(items), names=names)})
         else:
             events.extend({"kind": kind, "text": text} for _, text in items)
