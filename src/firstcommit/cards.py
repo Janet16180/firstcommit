@@ -70,16 +70,14 @@ class Deck:
     cards: tuple[Card, ...]
 
 
-def deck(chapter: str, folder: Path = DECKS) -> Deck:
+def deck(chapter: str) -> Deck:
     """
-    Load a chapter's deck.
+    Load a chapter's deck from `DECKS`.
 
     Parameters
     ----------
     chapter : str
         A chapter id.
-    folder : Path
-        Folder of the deck files.
 
     Returns
     -------
@@ -95,8 +93,34 @@ def deck(chapter: str, folder: Path = DECKS) -> Deck:
     """
     if chapter not in CHAPTERS:
         raise KeyError(chapter)
-    path = folder / f"{chapter}.toml"
+    path = DECKS / f"{chapter}.toml"
     return load_deck(path) if path.exists() else Deck(chapter, "", ())
+
+
+def find(card_id: str) -> Card:
+    """
+    Look a card up by its id.
+
+    Parameters
+    ----------
+    card_id : str
+        ``<chapter>-<slug>``.
+
+    Returns
+    -------
+    Card
+        The card.
+
+    Raises
+    ------
+    KeyError
+        If no deck holds a card with this id.
+    """
+    chapter = card_id.split("-", 1)[0]
+    matches = [card for card in deck(chapter).cards if card.id == card_id] if chapter in CHAPTERS else []
+    if not matches:
+        raise KeyError(card_id)
+    return matches[0]
 
 
 def load_deck(path: Path) -> Deck:

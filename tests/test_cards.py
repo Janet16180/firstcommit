@@ -114,13 +114,34 @@ def test_a_deck_file_loads_into_cards_of_its_chapter(tmp_path: Path) -> None:
     assert text.placeholder == "a branch name"
 
 
-def test_a_chapter_without_a_deck_file_has_an_empty_deck(tmp_path: Path) -> None:
-    assert cards.deck("toolbox", tmp_path) == cards.Deck("toolbox", "", ())
+def test_a_chapters_deck_is_read_from_the_deck_folder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(cards, "DECKS", tmp_path)
+    write_deck(tmp_path, DECK)
+    assert cards.deck("basics") == cards.load_deck(tmp_path / "basics.toml")
 
 
-def test_an_unknown_chapter_has_no_deck(tmp_path: Path) -> None:
+def test_a_chapter_without_a_deck_file_has_an_empty_deck(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(cards, "DECKS", tmp_path)
+    assert cards.deck("toolbox") == cards.Deck("toolbox", "", ())
+
+
+def test_an_unknown_chapter_has_no_deck() -> None:
     with pytest.raises(KeyError):
-        cards.deck("nonsense", tmp_path)
+        cards.deck("nonsense")
+
+
+def test_a_card_is_found_by_its_id(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(cards, "DECKS", tmp_path)
+    write_deck(tmp_path, DECK)
+    assert cards.find("basics-hello-blob").kind == "predict"
+
+
+@pytest.mark.parametrize("card_id", ["basics-nothing", "nowhere-card", "basics", ""])
+def test_an_unknown_card_id_is_not_found(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, card_id: str) -> None:
+    monkeypatch.setattr(cards, "DECKS", tmp_path)
+    write_deck(tmp_path, DECK)
+    with pytest.raises(KeyError):
+        cards.find(card_id)
 
 
 def test_a_deck_file_must_be_named_after_a_chapter(tmp_path: Path) -> None:
