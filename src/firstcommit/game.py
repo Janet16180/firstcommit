@@ -828,12 +828,20 @@ def _playing() -> tuple[save.Active, runner.Level]:
     ------
     NotPlayingError
         If no level is in progress, or the one in progress is no longer in the game.
+    SaveError
+        If the record counts more hints or quest steps than its level has (a damaged save).
     """
     active = save.load_active()
     levels = runner.catalogue()
     if active is None or active["level"] not in levels:
         raise NotPlayingError("no level is in progress")
-    return active, levels[active["level"]]
+    entry = levels[active["level"]]
+    if active["hints"] > len(entry.hints) or active["step"] > len(entry.quest):
+        raise SaveError(
+            f"{save.home() / save.ACTIVE_FILE} is damaged: `hints` is {active['hints']} and `step` is {active['step']}, "
+            f"but level {entry.id} has {len(entry.hints)} hints and {len(entry.quest)} quest steps"
+        )
+    return active, entry
 
 
 def _pay(entry: runner.Level, hints: int, state: kit.State) -> Payout:

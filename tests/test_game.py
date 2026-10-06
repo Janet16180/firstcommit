@@ -381,6 +381,21 @@ def test_actions_on_a_level_need_a_level_in_progress(sample_level: runner.Level,
         action()
 
 
+@pytest.mark.parametrize(("field", "value", "action"), [("hints", 4, game.hint), ("step", 4, lambda: game.quest_step(None)), ("hints", 9, lambda: game.check(None, auto=False))])
+def test_an_active_record_beyond_its_level_is_a_damaged_save(sample_level: runner.Level, game_home: Path, field: str, value: int, action: Callable[[], object]) -> None:
+    game.start(sample_level.id)
+    (game_home / "active.json").write_text(json.dumps({**active_record(), field: value}))
+    with pytest.raises(save.SaveError, match=rf"active\.json.*`{field}`"):
+        action()
+
+
+def test_an_active_record_at_its_levels_limits_is_fine(sample_level: runner.Level) -> None:
+    game.start(sample_level.id)
+    save.write_active({**active_record(), "hints": 3, "step": 3})
+    assert game.hint()["used"] == 3
+    assert game.quest_step(None)["quest_done"] is True
+
+
 def test_a_level_in_progress_that_no_longer_exists_counts_as_none(sample_level: runner.Level) -> None:
     save.write_active({"level": "basics-gone", "started": "2026-10-06T10:00:00+00:00", "step": 0, "hints": 0, "attempts": 0, "state": {}})
     assert game.status()["active"] is None

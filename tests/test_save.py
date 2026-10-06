@@ -103,6 +103,9 @@ PROGRESS_DAMAGE = [
     ("levels.basics-first-commit.state", ...),
     ("cards.basics-staging-area.box", ...),
     ("cards.basics-staging-area.due", 20261009),
+    ("cards.basics-staging-area.due", "tomorrow"),
+    ("cards.basics-staging-area.due", "2026-02-30"),
+    ("levels.basics-first-commit.finished", "yesterday"),
     ("streak", None),
     ("best_streak", -3),
     ("last_payout.first_time", "yes"),
@@ -123,6 +126,7 @@ def test_a_damaged_progress_file_names_the_file_and_the_field(game_home: Path, f
 ACTIVE_DAMAGE = [
     ("level", 3),
     ("started", ...),
+    ("started", "this morning"),
     ("step", "1"),
     ("hints", False),
     ("attempts", -2),

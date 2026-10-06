@@ -21,8 +21,9 @@ import contextlib
 import types
 import typing
 from collections.abc import Iterable
+from datetime import date, datetime
 from pathlib import Path
-from typing import Any, Literal, TypedDict, cast
+from typing import Annotated, Any, Literal, TypedDict, cast
 
 from termlab import store
 
@@ -34,6 +35,12 @@ OBSERVED_FILE = "observed.json"
 GITCONFIG_FILE = "gitconfig"
 LABS_FOLDER = "labs"
 LESSONS_FOLDER = "lessons"
+
+
+IsoDate = Annotated[str, date]
+"""A day written as ISO 8601, such as ``2026-10-06``; the save checks it reads as a `datetime.date`."""
+IsoTime = Annotated[str, datetime]
+"""A moment written as ISO 8601, such as ``2026-10-06T10:00:00+02:00``; the save checks it reads as a `datetime.datetime`."""
 
 
 class SaveError(ValueError):
@@ -48,7 +55,7 @@ class LevelRecord(TypedDict):
     be filled in after the level in progress is gone.
     """
 
-    finished: str
+    finished: IsoTime
     xp: int
     state: dict[str, Any]
 
@@ -57,7 +64,7 @@ class CardEntry(TypedDict):
     """A flashcard's place in the Leitner schedule: its box and the day it is due again."""
 
     box: int
-    due: str
+    due: IsoDate
 
 
 class Payout(TypedDict):
@@ -90,7 +97,7 @@ class Active(TypedDict):
     """
 
     level: str
-    started: str
+    started: IsoTime
     step: int
     hints: int
     attempts: int
@@ -329,8 +336,8 @@ def _mismatch(value: Any, expected: Any, where: str) -> str | None:
     value : Any
         Value read from JSON.
     expected : Any
-        A `TypedDict`, ``dict[str, X]``, ``list[X]``, ``Literal[...]``, ``X | None``, ``int``,
-        ``str``, ``bool`` or ``Any``.
+        A `TypedDict`, ``dict[str, X]``, ``list[X]``, ``Literal[...]``, ``X | None``, `IsoDate`,
+        `IsoTime`, ``int``, ``str``, ``bool`` or ``Any``.
     where : str
         Dotted path of the value in its file, for the message; empty for the whole record.
 
@@ -352,6 +359,8 @@ def _mismatch(value: Any, expected: Any, where: str) -> str | None:
         problem = _mapping_mismatch(value, typing.get_args(expected)[1], where)
     elif origin is list:
         problem = _list_mismatch(value, typing.get_args(expected)[0], where)
+    elif origin is Annotated:
+        problem = _iso_mismatch(value, typing.get_args(expected)[1], where)
     elif origin is Literal:
         allowed = typing.get_args(expected)
         problem = None if value in allowed and isinstance(value, str) else f"`{where}` must be one of {', '.join(allowed)}, not {value!r}"
@@ -365,6 +374,33 @@ def _mismatch(value: Any, expected: Any, where: str) -> str | None:
     elif expected is not Any:
         raise TypeError(f"the save cannot check values of type {expected!r}")
     return problem
+
+
+def _iso_mismatch(value: Any, kind: type[date], where: str) -> str | None:
+    """
+    Compare a JSON value with an ISO 8601 day or moment.
+
+    Parameters
+    ----------
+    value : Any
+        Value read from JSON.
+    kind : type[date]
+        `datetime.date` for `IsoDate`, `datetime.datetime` for `IsoTime`.
+    where : str
+        Dotted path of the value.
+
+    Returns
+    -------
+    str | None
+        What is wrong, or None if the value is text that `kind` reads.
+    """
+    readable = isinstance(value, str)
+    if readable:
+        try:
+            kind.fromisoformat(value)
+        except ValueError:
+            readable = False
+    return None if readable else f"`{where}` must be a {kind.__name__} written as ISO 8601, not {value!r}"
 
 
 def _list_mismatch(value: Any, item: Any, where: str) -> str | None:
@@ -410,7 +446,7 @@ def _record_mismatch(value: Any, record: Any, where: str) -> str | None:
     """
     if not isinstance(value, dict):
         return f"`{where}` must be an object, not {value!r}"
-    fields = typing.get_type_hints(record)
+    fields = typing.get_type_hints(record, include_extras=True)
     prefix = f"{where}." if where else ""
     missing = [name for name in fields if name not in value]
     unknown = [name for name in value if name not in fields]
