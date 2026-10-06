@@ -1,5 +1,6 @@
 """Your first commit: the three areas, and the first commit of a new repository."""
 
+from collections.abc import Callable
 from typing import Literal
 
 from firstcommit import kit
@@ -36,11 +37,11 @@ Git is a version control system. Each version you save is called a commit.
 `git init` turns the current folder into a repository: it creates a hidden `.git` folder, where
 Git keeps the history of the project.
 
-`-b main` names the first branch `main`. A branch is a line of development; this chapter uses
-only one. Without `-b`, Git 2.43 takes the name from the `init.defaultBranch` setting, or uses
-`master` when that is not set.
+A new repository starts with one branch and no commits. A branch is a line of development; this
+chapter uses only one. The game sets Git's `init.defaultBranch` setting to `main`, so here the
+first branch is always called `main`.
 """,
-        run="git init -b main\nls -A",
+        run="git init\nls -A",
         view="terminal",
     ),
     kit.Slide(
@@ -130,7 +131,7 @@ A file reaches a commit in two moves: `git add` copies it into the staging area,
 `git commit` saves the staging area as a commit.
 """,
     """
-In the `project` folder: run `git init -b main`, create `README.md`, run `git add README.md`,
+In the `project` folder: run `git init`, create `README.md`, run `git add README.md`,
 then `git commit -m "Add the README"`. Before the commit, make sure Git knows your name and
 email (`git config --global user.name` and `user.email`).
 """,
@@ -157,7 +158,7 @@ on your own computer (the chapter "Your real setup" walks you through it).
 
 Commands to keep:
 
-    $ git init -b main          # make the current folder a repository
+    $ git init                  # make the current folder a repository
     $ git status                # where each file stands
     $ git add README.md         # copy a file into the staging area
     $ git commit -m "Message"   # save the staging area as a commit
@@ -284,12 +285,14 @@ def file_names(paths: list[str]) -> str:
     return shown if more <= 0 else f"{shown} and {more} more"
 
 
-def repository_move(snap: kit.Snapshot) -> str:
+def repository_move(lab: kit.Lab, snap: kit.Snapshot) -> str:
     """
     Tell the player how to get a repository on `BRANCH` in the project folder.
 
     Parameters
     ----------
+    lab : kit.Lab
+        The level's lab.
     snap : kit.Snapshot
         The project's repository; `on_main` is False for it.
 
@@ -298,8 +301,13 @@ def repository_move(snap: kit.Snapshot) -> str:
     str
         What to do next.
     """
-    if not snap["exists"]:
-        move = "There is no repository in the `project` folder yet. Create one with `git init -b main`."
+    if not snap["exists"] and kit.snapshot(lab.root)["exists"]:
+        move = (
+            "You created the repository one folder too high, in the lab folder above `project`. "
+            "Restart the level, then run `git init` inside `project`."
+        )
+    elif not snap["exists"]:
+        move = "There is no repository in the `project` folder yet. Create one with `git init`."
     elif snap["bare"]:
         move = "This is a bare repository: it has no working folder to edit files in. Restart the level to get an empty folder back."
     elif snap["branch"] is None:
@@ -360,12 +368,14 @@ def tidy_move(snap: kit.Snapshot) -> str:
     return move
 
 
-def next_move(snap: kit.Snapshot) -> str:
+def next_move(lab: kit.Lab, snap: kit.Snapshot) -> str:
     """
     Tell the player what to do next to solve the level.
 
     Parameters
     ----------
+    lab : kit.Lab
+        The level's lab.
     snap : kit.Snapshot
         The project's repository.
 
@@ -375,7 +385,7 @@ def next_move(snap: kit.Snapshot) -> str:
         What to do next, or an empty string when the level is solved.
     """
     if not on_main(snap):
-        move = repository_move(snap)
+        move = repository_move(lab, snap)
     elif not has_file(snap, "head"):
         move = commit_move(snap)
     else:
@@ -383,12 +393,14 @@ def next_move(snap: kit.Snapshot) -> str:
     return move
 
 
-def progress(snap: kit.Snapshot, done: bool, success: str) -> kit.Verdict:
+def progress(lab: kit.Lab, snap: kit.Snapshot, done: bool, success: str) -> kit.Verdict:
     """
     Judge a watch step on the repository.
 
     Parameters
     ----------
+    lab : kit.Lab
+        The level's lab.
     snap : kit.Snapshot
         The project's repository.
     done : bool
@@ -401,7 +413,7 @@ def progress(snap: kit.Snapshot, done: bool, success: str) -> kit.Verdict:
     kit.Verdict
         The success message, or what to do next.
     """
-    return kit.Verdict(done, success if done else next_move(snap))
+    return kit.Verdict(done, success if done else next_move(lab, snap))
 
 
 def configured(lab: kit.Lab, key: str) -> str:
@@ -420,7 +432,7 @@ def configured(lab: kit.Lab, key: str) -> str:
     str
         Its value, or an empty string when it is not set.
     """
-    result = kit.git_run(lab.root, "-C", str(lab.project), "config", "--get", key)
+    result = kit.git_run(lab.project, "config", "--get", key)
     return result.stdout.strip() if result.returncode == 0 else ""
 
 
@@ -471,7 +483,7 @@ def watch_init(lab: kit.Lab, state: kit.State) -> kit.Verdict:
         The step's verdict.
     """
     snap = kit.snapshot(lab.project)
-    return progress(snap, on_main(snap), "The `project` folder is now a repository, on the branch `main`.")
+    return progress(lab, snap, on_main(snap), "The `project` folder is now a repository, on the branch `main`.")
 
 
 def check_branch(lab: kit.Lab, state: kit.State, answer: str) -> kit.Verdict:
@@ -496,7 +508,7 @@ def check_branch(lab: kit.Lab, state: kit.State, answer: str) -> kit.Verdict:
     typed = answer.strip()
     branch = snap["branch"] or ""
     if not on_main(snap):
-        message = repository_move(snap)
+        message = repository_move(lab, snap)
     elif not typed:
         message = "Type the name of the branch that `git status` says you are on."
     elif typed == branch:
@@ -526,6 +538,7 @@ def watch_file(lab: kit.Lab, state: kit.State) -> kit.Verdict:
     """
     snap = kit.snapshot(lab.project)
     return progress(
+        lab,
         snap,
         on_main(snap) and has_file(snap, "folder"),
         "`README.md` is in the working folder. A new file stays untracked until you stage it.",
@@ -550,6 +563,7 @@ def watch_stage(lab: kit.Lab, state: kit.State) -> kit.Verdict:
     """
     snap = kit.snapshot(lab.project)
     return progress(
+        lab,
         snap,
         on_main(snap) and has_file(snap, "index"),
         "`README.md` is in the staging area: the next commit takes it from there.",
@@ -612,6 +626,7 @@ def watch_commit(lab: kit.Lab, state: kit.State) -> kit.Verdict:
     """
     snap = kit.snapshot(lab.project)
     return progress(
+        lab,
         snap,
         on_main(snap) and has_file(snap, "head"),
         "Your first commit is in the repository, on `main`.",
@@ -640,7 +655,7 @@ def check_hash(lab: kit.Lab, state: kit.State, answer: str) -> kit.Verdict:
     commits = snap["commits"]
     right = any(kit.is_hash_of(answer, commit["hash"]) for commit in commits)
     if not commits:
-        message = next_move(snap)
+        message = next_move(lab, snap)
     elif right:
         message = "Right: that is the start of your commit's hash. Git names every commit this way."
     elif any(answer.strip() == commit["subject"] for commit in commits):
@@ -657,12 +672,12 @@ QUEST = [
 Your terminal is open in an empty folder called `project`. To give it a history, make it a Git
 repository:
 
-    $ git init -b main
+    $ git init
 
 `git init` creates a hidden `.git` folder: that is where Git keeps every commit of the project.
-`-b main` names the first branch `main`.
+Its first branch is called `main`, the name the game sets as the default.
 """,
-        command="git init -b main",
+        command="git init",
         watch=watch_init,
     ),
     kit.Step(
@@ -801,7 +816,7 @@ def check(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict:
     kit.Verdict
         Whether the level is solved, and what to do next if not.
     """
-    move = next_move(kit.snapshot(lab.project))
+    move = next_move(lab, kit.snapshot(lab.project))
     return kit.Verdict(not move, move or SOLVED)
 
 
@@ -821,11 +836,177 @@ def solve(lab: kit.Lab, state: kit.State) -> str | None:
     str | None
         None: the level is checked against the repository.
     """
-    kit.git(lab.project, "init", "-b", BRANCH)
+    for action in (init_repository, write_readme, stage_readme, commit_readme):
+        action(lab, state)
+    return None
+
+
+def init_repository(lab: kit.Lab, state: kit.State) -> str | None:
+    """
+    Run ``git init`` in the project folder.
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The level's lab.
+    state : kit.State
+        The level's state (unused).
+
+    Returns
+    -------
+    str | None
+        None: a watch step takes no answer.
+    """
+    kit.git(lab.project, "init")
+    return None
+
+
+def read_branch(lab: kit.Lab, state: kit.State) -> str | None:
+    """
+    Read the branch HEAD is on, as `git status` names it.
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The level's lab.
+    state : kit.State
+        The level's state (unused).
+
+    Returns
+    -------
+    str | None
+        The branch name to type.
+    """
+    return kit.git(lab.project, "branch", "--show-current").strip()
+
+
+def write_readme(lab: kit.Lab, state: kit.State) -> str | None:
+    """
+    Create the quest's file.
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The level's lab.
+    state : kit.State
+        The level's state (unused).
+
+    Returns
+    -------
+    str | None
+        None: a watch step takes no answer.
+    """
     (lab.project / FILE).write_text("# My project\n")
+    return None
+
+
+def stage_readme(lab: kit.Lab, state: kit.State) -> str | None:
+    """
+    Stage the quest's file.
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The level's lab.
+    state : kit.State
+        The level's state (unused).
+
+    Returns
+    -------
+    str | None
+        None: a watch step takes no answer.
+    """
     kit.git(lab.project, "add", FILE)
-    # A local identity: the reference solution must not change the game's global settings.
-    kit.git(lab.project, "config", "user.name", PLAYER.name)
-    kit.git(lab.project, "config", "user.email", PLAYER.email)
+    return None
+
+
+def set_name(lab: kit.Lab, state: kit.State) -> str | None:
+    """
+    Set the player's name in the game's global settings.
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The level's lab.
+    state : kit.State
+        The level's state (unused).
+
+    Returns
+    -------
+    str | None
+        None: a watch step takes no answer.
+    """
+    kit.git(lab.project, "config", "--global", "user.name", PLAYER.name)
+    return None
+
+
+def set_email(lab: kit.Lab, state: kit.State) -> str | None:
+    """
+    Set the player's email in the game's global settings.
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The level's lab.
+    state : kit.State
+        The level's state (unused).
+
+    Returns
+    -------
+    str | None
+        None: a watch step takes no answer.
+    """
+    kit.git(lab.project, "config", "--global", "user.email", PLAYER.email)
+    return None
+
+
+def commit_readme(lab: kit.Lab, state: kit.State) -> str | None:
+    """
+    Commit what is staged.
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The level's lab.
+    state : kit.State
+        The level's state (unused).
+
+    Returns
+    -------
+    str | None
+        None: a watch step takes no answer.
+    """
     kit.git(lab.project, "commit", "-m", "Add the README", author=PLAYER)
     return None
+
+
+def read_short_hash(lab: kit.Lab, state: kit.State) -> str | None:
+    """
+    Read the last commit's short hash from the first column of ``git log --oneline``.
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The level's lab.
+    state : kit.State
+        The level's state (unused).
+
+    Returns
+    -------
+    str | None
+        The short hash to type.
+    """
+    return kit.git(lab.project, "log", "--oneline", "-1").split()[0]
+
+
+QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State], str | None]] = {
+    "init": init_repository,
+    "status": read_branch,
+    "file": write_readme,
+    "stage": stage_readme,
+    "name": set_name,
+    "email": set_email,
+    "commit": commit_readme,
+    "hash": read_short_hash,
+}
+"""The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game never reads it."""

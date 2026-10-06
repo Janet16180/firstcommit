@@ -1,6 +1,7 @@
 notes = """
 Git keeps a project's history in a repository: the hidden `.git` folder that `git init` creates
-in the project folder. A version you save is a commit.
+in the project folder. A version you save is a commit. In the game, a new repository's first
+branch is called `main`.
 
 Git works with three areas:
 
@@ -16,7 +17,7 @@ where every file stands, so run it often.
 Git writes your name and email into every commit. Set them once with `git config --global`; in
 a single repository, the same command without `--global` overrides them.
 
-    $ git init -b main                   # make the current folder a repository, on branch main
+    $ git init                           # make the current folder a repository
     $ git status                         # the branch, and where each file stands
     $ git add README.md                  # copy a file's current content into the staging area
     $ git commit -m "Add the README"     # save the staging area as a new commit
@@ -45,7 +46,7 @@ changes your files to store history in them; the history lives in `.git`.
 """
 source = "git-init(1), DESCRIPTION; Pro Git 2nd ed., 1.3 (the Git directory)"
 verify = """
-git init -q -b main demo
+git init -q demo
 test -d demo/.git/objects && test -d demo/.git/refs && test "$(ls demo)" = ""
 """
 
@@ -68,7 +69,7 @@ files on its own, and it does not record a commit without files here either.
 """
 source = "git-commit(1), DESCRIPTION; git-add(1), DESCRIPTION"
 verify = """
-git init -q -b main
+git init -q
 echo "my notes" > notes.txt
 if git commit -q -m "Add notes" >/dev/null 2>&1; then exit 1; fi
 ! git rev-parse -q --verify HEAD >/dev/null
@@ -93,7 +94,7 @@ another edit, you run `git add` again to stage the new content.
 """
 source = "git-add(1), DESCRIPTION"
 verify = """
-git init -q -b main
+git init -q
 echo one > README.md
 git add README.md
 echo two > README.md
@@ -120,7 +121,7 @@ computer; inside one repository, the same command without `--global` overrides t
 """
 source = "git-commit(1), COMMIT INFORMATION; git-config(1), FILES; Pro Git 2nd ed., 1.6 (Your Identity)"
 verify = """
-git init -q -b main
+git init -q
 git config user.name "Robin Park"
 git config user.email robin@example.com
 echo hi > a.txt
@@ -136,15 +137,17 @@ level = 1
 prompt = "Which command turns the current folder into a new, empty Git repository?"
 accept = ["git init", "git init .", "git init -b main", "git init --initial-branch=main"]
 explain = """
-`git init` creates the `.git` folder that holds the repository. Add `-b main` to name the first
-branch `main`; without it, Git 2.43 uses the `init.defaultBranch` setting, or `master` when that
-is not set.
+`git init` creates the `.git` folder that holds the repository, with one branch and no commits
+yet. In the game that branch is called `main`, because the game sets Git's `init.defaultBranch`
+setting. `git init -b main` names it `main` whatever the settings say.
 """
 source = "git-init(1), DESCRIPTION and --initial-branch"
 verify = """
-git init -q -b main one
-GIT_CONFIG_NOSYSTEM=1 GIT_CONFIG_GLOBAL=/dev/null git init -q two 2>/dev/null
-test "$(git -C one symbolic-ref HEAD)" = refs/heads/main && test "$(git -C two symbolic-ref HEAD)" = refs/heads/master
+git init -q one
+GIT_CONFIG_GLOBAL=/dev/null git init -q -b main two
+test "$(git config --global init.defaultBranch)" = main &&
+  test "$(git -C one symbolic-ref HEAD)" = refs/heads/main &&
+  test "$(git -C two symbolic-ref HEAD)" = refs/heads/main
 """
 
 [[card]]
@@ -160,7 +163,7 @@ message. Commits are listed newest first.
 """
 source = "git-log(1), --oneline, --abbrev-commit and Commit Ordering"
 verify = """
-git init -q -b main
+git init -q
 echo one > a.txt && git add a.txt && git commit -q -m "First"
 echo two > a.txt && git add a.txt && git commit -q -m "Second"
 test "$(git log --oneline)" = "$(git log --pretty=oneline --abbrev-commit)" &&
@@ -173,7 +176,7 @@ kind = "predict"
 level = 1
 prompt = "What does the last command print? (`wc -l` counts the lines it receives.)"
 code = """
-git init -q -b main
+git init -q
 echo one > a.txt
 git add a.txt
 git commit -q -m "First"
@@ -210,7 +213,7 @@ goes in.
 """
 source = "git-commit(1), DESCRIPTION; git-show(1), DESCRIPTION; Pro Git 2nd ed., 1.3 (Snapshots, Not Differences)"
 verify = """
-git init -q -b main
+git init -q
 echo a > a.txt && echo b > b.txt
 git add a.txt b.txt && git commit -q -m "One"
 echo more >> a.txt && echo c > c.txt
@@ -238,7 +241,7 @@ already made, and has nothing to do with staging.
 """
 source = "git-add(1), DESCRIPTION; Pro Git 2nd ed., 1.3 (The basic Git workflow)"
 verify = """
-git init -q -b main
+git init -q
 echo a > a.txt && echo b > b.txt
 git add a.txt && git commit -q -m "Add a"
 git add b.txt && git commit -q -m "Add b"
@@ -264,7 +267,7 @@ and an edit after `git add` does not make the commit fail.
 """
 source = "git-add(1), DESCRIPTION; Pro Git 2nd ed., 2.2 (Staging Modified Files)"
 verify = """
-git init -q -b main
+git init -q
 echo one > note.txt
 git add note.txt
 echo two > note.txt
@@ -292,7 +295,7 @@ working folder, not in the staging area.
 """
 source = "gitglossary(7), index; git-add(1), DESCRIPTION; git-ls-files(1)"
 verify = """
-git init -q -b main
+git init -q
 echo a > a.txt && echo b > b.txt
 git add a.txt b.txt && git commit -q -m "One"
 echo more >> a.txt && git add a.txt && git commit -q -m "Two"
@@ -305,7 +308,7 @@ kind = "predict"
 level = 3
 prompt = "What does the last command print? (`git ls-files` lists the staging area, and `wc -l` counts lines.)"
 code = """
-git init -q -b main
+git init -q
 echo one > a.txt
 git add a.txt
 git commit -q -m "First"

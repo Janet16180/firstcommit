@@ -22,9 +22,9 @@ What is Git?, 1.6 First-Time Git Setup, 2.2 Recording Changes to the Repository)
 | history | A version control system records changes over time; you can see what changed, who and when, and get an earlier version back | Pro Git 1.1: "records changes to a file or set of files over time so that you can recall specific versions later"; "revert ... compare changes over time, see who last modified something" |
 | history | Each version you save is called a commit | gitglossary(7), commit: "used ... in the same places other revision control systems use the words 'revision' or 'version'" |
 | init | `git init` creates a hidden `.git` folder where Git keeps the history | git-init(1), DESCRIPTION: "basically a .git directory with subdirectories for objects, refs/heads, refs/tags"; *re-checked*: the slide runs `ls -A` and shows `.git` |
-| init | `-b main` names the first branch `main` | git-init(1), `-b`; experiment: `git symbolic-ref HEAD` gives `refs/heads/main`; *re-checked*: card `basics-init-command` |
+| init | A new repository starts with one branch and no commits | git-init(1), DESCRIPTION: "An initial branch without any commits will be created"; experiment: `git rev-parse --verify HEAD` fails, `git symbolic-ref HEAD` names the branch |
 | init | A branch is a line of development | gitglossary(7), branch: "A 'branch' is a line of development" |
-| init | Without `-b`, git 2.43 uses `init.defaultBranch`, or `master` when it is not set | git-init(1), `--initial-branch`: "fall back to the default name (currently master ...; the name can be customized via the init.defaultBranch configuration variable)"; RelNotes 2.28.0 lines 107-110 (the name became configurable); experiment: no setting gives `refs/heads/master` (plus a hint on standard error), `init.defaultBranch = main` gives `refs/heads/main`; *re-checked*: card `basics-init-command` |
+| init | The game sets `init.defaultBranch` to `main`, so the first branch is `main` | `gitcmd.BASE_CONFIG` (the game's starting global configuration, written by `game.start` and used by lessons, cards and the player's shell); git-init(1), `--initial-branch` ("the name can be customized via the init.defaultBranch configuration variable"); RelNotes 2.28.0 lines 107-110; experiment: with that file as the global configuration, `git init` gives `refs/heads/main`; *re-checked*: the lesson runs plain `git init`, card `basics-init-command`, test `test_plain_git_init_starts_on_main_with_the_games_starting_settings` |
 | areas | Three areas: working folder (working tree), staging area (index), repository | Pro Git 1.3, "the three main sections of a Git project: the working tree, the staging area, and the Git directory"; gitglossary(7), working tree, index |
 | areas | A new file is untracked: in no commit and not in the staging area | Pro Git 2.2: "Untracked files are everything else ... not in your last snapshot and are not in your staging area"; git-status(1), DESCRIPTION; *re-checked*: the slide shows `git status` |
 | areas | `git status` shows where each file stands | git-status(1), DESCRIPTION (index vs HEAD, working tree vs index, untracked paths) |
@@ -46,7 +46,7 @@ demonstration folder's absolute path.
 
 | Step | Claim | Evidence |
 |---|---|---|
-| init | `git init` creates a hidden `.git` folder where Git keeps every commit; `-b main` names the first branch | git-init(1); gitglossary(7), object database ("The objects usually live in $GIT_DIR/objects/"); *re-checked*: test `test_a_watch_step_passes_only_once_the_player_has_done_it[init]` |
+| init | `git init` creates a hidden `.git` folder where Git keeps every commit; its first branch is `main`, the game's default | git-init(1); gitglossary(7), object database ("The objects usually live in $GIT_DIR/objects/"); as the `init` slide; *re-checked*: the harness's quest walk (`QUEST_ACTIONS["init"]` runs plain `git init`) |
 | status | `git status` names the branch you are on and where each file stands | git-status(1), DESCRIPTION; experiment: output starts with the branch; the check compares with the snapshot's `branch`, never with git's text |
 | file | `README.md` is the file that tells people what a project is about | docs.github.com, About READMEs: READMEs "communicate important information about your project" and typically say "What the project does" |
 | file | `echo` prints a line, `>` writes it into the file, creating it | bash(1), Redirecting Output: "If the file does not exist it is created; if it does exist it is truncated to zero size" |
@@ -65,16 +65,16 @@ demonstration folder's absolute path.
 
 Watch and answer checks read `kit.snapshot(lab.project)` and `git config --get` (meant for
 scripts) only. Each step's check fails before the player's action and passes after it
-(*re-checked* by the parametrised test and the two question tests).
+(*re-checked* by the harness's quest walk over `QUEST_ACTIONS`, and by the level's own question tests).
 
 ### Briefing, hints and debrief
 
 | Where | Claim | Evidence |
 |---|---|---|
-| briefing | Solved when a commit on `main` contains `README.md` and nothing is untracked, changed or staged | `check`; *re-checked*: the wrong-approach tests (no staging, staged only, extra untracked file, staged or unstaged edit, other branch, detached HEAD, bare repository, deleted `.git`) |
+| briefing | Solved when a commit on `main` contains `README.md` and nothing is untracked, changed or staged | `check`; *re-checked*: the wrong-approach tests (no staging, staged only, extra untracked file, staged or unstaged edit, other branch, detached HEAD, bare repository, repository one folder too high, deleted `.git`) |
 | hint 1 | `git status` names the branch and lists untracked, staged and changed files | git-status(1), DESCRIPTION; experiment |
 | hint 2 | `git add` copies into the staging area, `git commit` saves the staging area | git-add(1), git-commit(1), DESCRIPTION |
-| hint 3 | The four commands solve the level | *re-checked*: `test_the_quest_leads_to_a_solved_level`, `test_solve_solves_the_level_and_passes_every_step` |
+| hint 3 | The four commands solve the level | *re-checked*: `test_the_quest_leads_to_a_solved_level`; the harness's `solve` then `check` |
 | debrief | A commit records a snapshot of every staged file, not only the changed lines | git-commit(1), DESCRIPTION; Pro Git 1.3, Snapshots, Not Differences; experiment: the second commit's tree lists the unchanged `b.txt`; *re-checked*: card `basics-commit-records` |
 | debrief | A commit stores author name and email, date, message and parent; the first commit has none | `git cat-file -p` on a second commit (tree, parent, author, committer, message) and on the root commit (no `parent` line); gitglossary(7), parent |
 | debrief | The commit's hash is computed from all of that | gitglossary(7), object: "uniquely identified by the SHA-1 of its contents"; experiment: same files and message, committer date one second apart, different hashes |
@@ -97,7 +97,7 @@ environment with `bash -c` (no `-e`), and each fails when its claim is inverted 
 | basics-commit-needs-staging | Committing with nothing staged makes no commit; a new file reaches a commit only after `git add` | git-commit(1), DESCRIPTION (paths given to `git commit` "must already be known to Git") and `-a` ("new files you have not told Git about are not affected"); experiment: `git commit -m x new.txt` on an untracked file fails and makes no commit; *verify* (commit fails, `HEAD` does not resolve) |
 | basics-add-copies | `git add` copies the current content; nothing is committed; a later edit needs another add | git-add(1), DESCRIPTION; *verify* |
 | basics-identity | Every commit records `user.name` and `user.email` as its author; they are not a login; most commands work without them; local overrides global | git-commit(1), COMMIT INFORMATION ("This name has no effect on authentication"); experiment: `git init`, `git add` and `git status` succeed with no identity set; git-config(1), FILES ("last value found taking precedence"); experiment: global and local name set, `git config --get` returns the local one; *verify* (commit author comes from the settings) |
-| basics-init-command | `git init` creates a repository; `-b main` vs `init.defaultBranch` vs `master` | git-init(1); *verify* (with `-b main` and with no settings) |
+| basics-init-command | `git init` creates a repository with one branch and no commits; the game's `init.defaultBranch` makes it `main`; `-b main` names it whatever the settings | git-init(1), DESCRIPTION and `--initial-branch`; *verify* (plain `git init` under the game's settings, and `-b main` with no settings at all) |
 | basics-log-oneline | `--oneline` is `--pretty=oneline --abbrev-commit`, newest first | git-log(1); *verify* |
 | basics-staged-not-committed | A staged change is not in `git log` until committed | git-log(1), git-commit(1); *predict* output `1` |
 | basics-commit-records | A commit records the staged files' snapshot; `git show` computes changes against the parent; untracked files stay out | git-commit(1), git-show(1) DESCRIPTION ("the log message and textual diff"); Pro Git 1.3; *verify* (second commit lists the unchanged file, not the untracked one) |
@@ -108,13 +108,15 @@ environment with `bash -c` (no `-e`), and each fails when its claim is inverted 
 
 ## Notes (cheat sheet in `basics.toml`)
 
-Every statement in the notes repeats a claim above: the `.git` folder (init slide), the three
+Every statement in the notes repeats a claim above: the `.git` folder and the `main` branch (init slide), the three
 areas and their git names (areas slide), untracked files, `git add` and re-adding (add slide),
 the staging area after a commit (debrief), the identity and the local override (card
 `basics-identity`), and each command's one-line summary (lesson and quest).
 
 ## Left out
 
+- Git's own default branch name without the game's settings (`master` in 2.43, with a hint on
+  standard error; verified, git-init(1)): left to the `setup` chapter, as the lead decided.
 - Whether `git commit` fails without a configured identity: it depends on the machine (git falls
   back to `EMAIL`, then the system user name and host name; git-commit(1), COMMIT INFORMATION).
   It failed here, but the text only says to set the identity before committing.
