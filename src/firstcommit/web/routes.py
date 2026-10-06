@@ -87,7 +87,9 @@ def bad(message: str) -> Reply:
 
 def found(lookup: Callable[[], Mapping[str, Any]]) -> Reply:
     """
-    Run a lookup by id, where a KeyError means the id is unknown.
+    Run a lookup by id, where `firstcommit.game.UnknownIdError` means the id is unknown.
+
+    Any other error, a KeyError from a level's setup included, is a bug and is left to `guarded`.
 
     Parameters
     ----------
@@ -97,13 +99,13 @@ def found(lookup: Callable[[], Mapping[str, Any]]) -> Reply:
     Returns
     -------
     Reply
-        200 and the reply, or 404 for an unknown id.
+        200 and the reply, or 404 and the game's message for an unknown id.
     """
     status, payload = HTTPStatus.OK, {}
     try:
         payload = dict(lookup())
-    except KeyError as error:
-        status, payload = HTTPStatus.NOT_FOUND, {"error": f"unknown id: {error.args[0] if error.args else ''}"}
+    except game.UnknownIdError as error:
+        status, payload = HTTPStatus.NOT_FOUND, {"error": str(error)}
     return status, payload
 
 

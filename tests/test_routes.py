@@ -4,13 +4,13 @@ import threading
 import urllib.error
 import urllib.request
 from collections.abc import Iterator
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Any
 
 import pytest
 
-from firstcommit import game, gitcmd, runner, save
+from firstcommit import game, gitcmd, kit, runner, save
 from firstcommit.web import routes
 
 STATIC = Path(routes.__file__).parent / "static"
@@ -204,7 +204,7 @@ def test_a_level_or_lesson_without_a_sensible_id_is_refused(
 
 @pytest.mark.parametrize("route", ["/api/level", "/api/lesson"])
 def test_an_unknown_level_is_not_found(site: Site, monkeypatch: pytest.MonkeyPatch, route: str) -> None:
-    record(monkeypatch, route.removeprefix("/api/"), error=KeyError("nope"))
+    record(monkeypatch, route.removeprefix("/api/"), error=game.UnknownIdError("nope"))
     status, reply = api(site, route + "?id=nope")
     assert status == 404
     assert "nope" in reply["error"]
@@ -234,7 +234,7 @@ def test_starting_needs_a_level_id(site: Site, monkeypatch: pytest.MonkeyPatch, 
 
 
 def test_starting_an_unknown_level_is_not_found(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
-    record(monkeypatch, "start", error=KeyError("nope"))
+    record(monkeypatch, "start", error=game.UnknownIdError("nope"))
     assert api(site, "/api/start", {"level": "nope"})[0] == 404
 
 
@@ -358,7 +358,7 @@ def test_cards_need_a_limit_between_one_and_a_hundred(site: Site, monkeypatch: p
 
 
 def test_cards_of_an_unknown_chapter_are_not_found(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
-    record(monkeypatch, "due_cards", error=KeyError("nope"))
+    record(monkeypatch, "due_cards", error=game.UnknownIdError("nope"))
     assert api(site, "/api/cards?chapter=nope")[0] == 404
 
 
@@ -390,7 +390,7 @@ def test_a_card_reply_needs_an_id_and_a_text_reply(
 
 
 def test_a_reply_to_an_unknown_card_is_not_found(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
-    record(monkeypatch, "answer_card", error=KeyError("nope"))
+    record(monkeypatch, "answer_card", error=game.UnknownIdError("nope"))
     assert api(site, "/api/card", {"id": "nope", "reply": "a"})[0] == 404
 
 
@@ -403,8 +403,19 @@ def test_notes_are_looked_up_by_chapter(site: Site, monkeypatch: pytest.MonkeyPa
 
 
 def test_notes_of_an_unknown_chapter_are_not_found(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
-    record(monkeypatch, "notes", error=KeyError("nope"))
+    record(monkeypatch, "notes", error=game.UnknownIdError("nope"))
     assert api(site, "/api/notes?chapter=nope")[0] == 404
+
+
+def test_a_key_error_in_a_levels_setup_is_a_bug_not_an_unknown_level(
+    site: Site, sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    def setup(lab: kit.Lab) -> kit.State:
+        raise KeyError("players_name")
+
+    broken = replace(sample_level, setup=setup)
+    monkeypatch.setattr(runner, "catalogue", lambda: {broken.id: broken})
+    assert api(site, "/api/start", {"level": broken.id}) == (500, {"error": "KeyError: 'players_name'", "kind": "bug"})
 
 
 def test_a_key_error_outside_a_lookup_is_a_bug_not_an_unknown_id(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
