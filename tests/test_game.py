@@ -907,9 +907,28 @@ def test_the_terminal_opens_in_the_lab_project_else_the_lab_else_the_players_hom
     assert game.terminal_folder() == str(game_home / "labs" / "basics-sample")
 
 
-def test_opening_a_terminal_gives_the_game_its_base_git_config(sample_level: runner.Level, game_home: Path) -> None:
+def test_asking_where_a_terminal_opens_changes_nothing(sample_level: runner.Level, game_home: Path) -> None:
     game.terminal_folder()
-    assert (game_home / "gitconfig").read_text() == gitcmd.BASE_CONFIG
+    assert list(game_home.iterdir()) == []
+
+
+def test_a_shell_environment_keeps_git_to_the_game_and_everything_else_as_given(sample_level: runner.Level, game_home: Path) -> None:
+    base = {"PATH": "/usr/bin", "EDITOR": "nano", "GIT_DIR": "/elsewhere/.git", "GIT_INDEX_FILE": "/elsewhere/index"}
+    assert game.shell_environment(base) == {"PATH": "/usr/bin", "EDITOR": "nano", **gitcmd.isolation(game_home)}
+    assert base["GIT_DIR"] == "/elsewhere/.git"
+
+
+def test_a_shell_environment_comes_with_the_game_git_config_it_names(sample_level: runner.Level, game_home: Path) -> None:
+    env = game.shell_environment({})
+    assert Path(env["GIT_CONFIG_GLOBAL"]).read_text() == gitcmd.BASE_CONFIG
+    Path(env["GIT_CONFIG_GLOBAL"]).write_text("[user]\n\tname = Ada\n")
+    game.shell_environment({})
+    assert Path(env["GIT_CONFIG_GLOBAL"]).read_text() == "[user]\n\tname = Ada\n"
+
+
+def test_the_game_hands_the_interfaces_the_save_error_and_the_home() -> None:
+    assert game.SaveError is save.SaveError
+    assert game.home is save.home
 
 
 def fake_git(folder: Path, version: str) -> str:

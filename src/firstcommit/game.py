@@ -16,7 +16,10 @@ cards only ever see a wrong answer. Errors the interfaces handle:
   only by the one lookup of each kind of id, at the top of a function, so a ``KeyError`` from a
   level's setup, the scoring or a lesson stays what it is: a bug;
 - `NotPlayingError`: an action on the level in progress when there is none (409);
-- `firstcommit.save.SaveError`: a damaged save file (``firstcommit reset --yes`` starts over).
+- `SaveError`: a damaged save file (``firstcommit reset --yes`` starts over).
+
+The interfaces import nothing else from the game's lower layers: `SaveError` and `home` are
+handed on from `firstcommit.save`, and `shell_environment` builds the player's shell.
 
 Anything else is a bug.
 """
@@ -39,6 +42,8 @@ from firstcommit.demos import Line
 from firstcommit.markup import Block
 from firstcommit.repomap import ObjectInfo, Snapshot
 from firstcommit.save import Payout
+from firstcommit.save import SaveError as SaveError
+from firstcommit.save import home as home
 from firstcommit.score import Rank
 
 PLACEHOLDER = re.compile(r"\{\{\s*(\w+)\s*\}\}")
@@ -681,18 +686,37 @@ def notes(chapter: str) -> Notes:
     return {"chapter": chapter, "title": _chapter(chapter), "notes": markup.parse(cards.deck(chapter).notes)}
 
 
+def shell_environment(base: Mapping[str, str]) -> dict[str, str]:
+    """
+    Build the environment of a shell the game opens for the player, ready to use.
+
+    Git there is kept to the game (`firstcommit.gitcmd.shell_environment`), and the game's git
+    configuration that it names is created first if it is missing (never overwritten), so the
+    player's first ``git init`` is on ``main``.
+
+    Parameters
+    ----------
+    base : Mapping[str, str]
+        The environment to start from (the web terminal's or the command line's); not changed.
+
+    Returns
+    -------
+    dict[str, str]
+        ``base`` without its git variables, plus the game's isolation.
+    """
+    save.ensure_gitconfig(gitcmd.BASE_CONFIG)
+    return gitcmd.shell_environment(base, save.home())
+
+
 def terminal_folder() -> str:
     """
     Give the folder a new terminal opens in: the lab's project, else the lab, else the player's home.
-
-    The game's git configuration is created first if it is missing, so the shell starts from it.
 
     Returns
     -------
     str
         The folder.
     """
-    save.ensure_gitconfig(gitcmd.BASE_CONFIG)
     active = save.load_active()
     lab = runner.lab_of(active["level"]) if active is not None else None
     folder = Path.home()

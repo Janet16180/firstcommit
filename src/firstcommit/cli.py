@@ -15,7 +15,7 @@ from collections.abc import Callable
 
 from termlab.web import terminal
 
-from firstcommit import game, gitcmd, save
+from firstcommit import game
 from firstcommit.markup import Block, Span
 
 DEFAULT_PORT = 8820
@@ -64,7 +64,7 @@ def _home_problem() -> str | None:
     """
     problem = None
     try:
-        save.home()
+        game.home()
     except ValueError as error:
         problem = str(error)
     return problem
@@ -91,7 +91,7 @@ def _run(run: Callable[[argparse.Namespace], int], args: argparse.Namespace) -> 
     except game.NotPlayingError:
         print(NO_LEVEL)
         status = 1
-    except save.SaveError as error:
+    except game.SaveError as error:
         print(f"{error}\n{DAMAGED}", file=sys.stderr)
         status = 1
     return status
@@ -186,7 +186,7 @@ def shell(args: argparse.Namespace) -> int:
         The shell's exit status.
     """
     folder = game.terminal_folder()
-    env = {**gitcmd.shell_environment(terminal.player_env(os.environ), save.home()), "PWD": folder}
+    env = {**game.shell_environment(terminal.player_env(os.environ)), "PWD": folder}
     print("This is the game's shell: git here uses the game's own settings, never yours. Type `exit` to leave.", flush=True)
     return subprocess.run([terminal.shell_path(env)], cwd=folder, env=env, check=False).returncode
 
