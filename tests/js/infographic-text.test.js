@@ -46,8 +46,8 @@ test("the places carry the zone panel's words, in both languages", () => {
   Strings.use("en");
 });
 
-/* Ids, unlocks and the Git names of things are said once; any other word is said in both languages. */
-const PLAIN = ["id", "from", "to", "chapter", "name"];
+/* Ids and unlocks are said once; any other word is said in both languages. */
+const PLAIN = ["id", "from", "to", "chapter"];
 const COMMAND = /^(?:git|ls)\b[\w\-<>".,\s]*$/;
 
 function words(value, key, found) {
@@ -71,7 +71,7 @@ test("every word is given in English and in Spanish", () => {
 });
 
 test("the states are a file's four, by their Git names", () => {
-  assert.deepEqual(InfographicText.states.states.map((state) => state.name), ["untracked", "staged", "committed", "modified"]);
+  assert.deepEqual(InfographicText.states.states.map((state) => state.name.en), ["untracked", "staged", "committed", "modified"]);
 });
 
 test("every move joins two places or two states that exist", () => {

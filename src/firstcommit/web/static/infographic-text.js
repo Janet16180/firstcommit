@@ -4,8 +4,8 @@
  * Every word of the infographics, in one place so it can be fact-checked and translated: the
  * commands the game teaches, grouped by what they do; Git's four places and the commands that
  * move work between them; a file's states and what moves a file from one to the next. Each
- * space word sits next to the real Git term. Every word is given as {en, es}; ids, unlocks,
- * the states' Git names and commands that are only a command are said once. Each item says
+ * space word sits next to the real Git term. Every word is given as {en, es}; ids, unlocks and
+ * commands that are only a command are said once. Each item says
  * what unlocks it: a number of its chapter's levels finished ({chapter: id, levels: n}, in any
  * order) or the whole chapter ({chapter: id}); never a level's id, which the page does not
  * know. Data only. Defines one global, InfographicText.
@@ -34,7 +34,7 @@ const InfographicText = Object.freeze({
           },
           {
             command: "git status",
-            what: { en: "Says which files are untracked, modified or staged, and which branch you are on.", es: "Dice qué archivos están untracked, modified o staged, y en qué branch estás." },
+            what: { en: "Says which files are untracked, modified or staged, and which branch you are on.", es: "Dice qué archivos están sin seguimiento, modificados o en el staging area, y en qué branch estás." },
             unlock: { chapter: "liftoff", levels: 1 },
           },
           {
@@ -59,17 +59,17 @@ const InfographicText = Object.freeze({
           },
           {
             command: "git clone <url>",
-            what: { en: "Copies a remote repository, its whole history included, into a new folder.", es: "Copia un repositorio remoto, con todo su historial, en una carpeta nueva." },
+            what: { en: "Copies a remote repository, its whole history included, into a new folder.", es: "Copia un repositorio remoto, con toda su historia, en una carpeta nueva." },
             unlock: { chapter: "branch" },
           },
         ],
       },
       {
-        title: { en: "Stage and commit", es: "Staging y commit" },
+        title: { en: "Stage and commit", es: "Agregar al staging area y hacer commit" },
         commands: [
           {
             command: "git add <file>",
-            what: { en: "Copies a file, as it is now, from the working folder into the staging area.", es: "Copia un archivo, tal como está ahora, del directorio de trabajo al staging area." },
+            what: { en: "Copies a file, as it is now, from the working folder into the staging area.", es: "Copia un archivo, tal como está ahora, de la carpeta de trabajo al staging area." },
             unlock: { chapter: "cargo", levels: 1 },
           },
           {
@@ -130,12 +130,12 @@ const InfographicText = Object.freeze({
           },
           {
             command: "git switch <branch>",
-            what: { en: "Moves HEAD to another branch; the working folder takes that branch's files.", es: "Mueve HEAD a otro branch; el directorio de trabajo pasa a tener los archivos de ese branch." },
+            what: { en: "Moves HEAD to another branch; the working folder takes that branch's files.", es: "Mueve HEAD a otro branch; la carpeta de trabajo pasa a tener los archivos de ese branch." },
             unlock: { chapter: "branch" },
           },
           {
             command: "git merge <branch>",
-            what: { en: "Joins another branch's history into yours, with a merge commit when both moved on.", es: "Une el historial de otro branch al tuyo, con un commit de merge si los dos avanzaron." },
+            what: { en: "Joins another branch's history into yours, with a merge commit when both moved on.", es: "Une la historia de otro branch a la tuya, con un commit de merge si los dos avanzaron." },
             unlock: { chapter: "conflict" },
           },
           {
@@ -155,7 +155,7 @@ const InfographicText = Object.freeze({
           },
           {
             command: "git revert <commit>",
-            what: { en: "Adds a new commit that undoes an earlier one, safe for history others already have.", es: "Agrega un commit nuevo que deshace uno anterior; es seguro con un historial que otros ya tienen." },
+            what: { en: "Adds a new commit that undoes an earlier one, safe for history others already have.", es: "Agrega un commit nuevo que deshace uno anterior; es seguro con una historia que otros ya tienen." },
             unlock: { chapter: "undo" },
           },
           {
@@ -179,7 +179,7 @@ const InfographicText = Object.freeze({
       {
         id: "workshop",
         space: { en: "Workshop", es: "Taller" },
-        git: { en: "working folder", es: "directorio de trabajo" },
+        git: { en: "working folder", es: "carpeta de trabajo" },
         what: { en: "Your files as you edit them. Git saves nothing here until you add and commit.", es: "Tus archivos mientras los editas. Git no guarda nada aquí hasta que los agregas al staging area y haces un commit." },
         unlock: { chapter: "liftoff", levels: 1 },
       },
@@ -221,30 +221,30 @@ const InfographicText = Object.freeze({
     states: [
       {
         id: "untracked",
-        name: "untracked",
+        name: { en: "untracked", es: "sin seguimiento" },
         space: { en: "new in the workshop", es: "nuevo en el taller" },
-        what: { en: "In the working folder, in no commit and not staged. Git does not follow it yet.", es: "Está en el directorio de trabajo, en ningún commit y fuera del staging area. Git todavía no lo sigue." },
+        what: { en: "In the working folder, in no commit and not staged. Git does not follow it yet.", es: "Está en la carpeta de trabajo, en ningún commit y fuera del staging area. Git todavía no lo sigue." },
         unlock: { chapter: "cargo", levels: 1 },
       },
       {
         id: "staged",
-        name: "staged",
+        name: { en: "staged", es: "en el staging area" },
         space: { en: "on the dock", es: "en el muelle" },
         what: { en: "Its current version is in the staging area, ready for the next commit.", es: "Su versión actual está en el staging area, lista para el próximo commit." },
         unlock: { chapter: "cargo", levels: 1 },
       },
       {
         id: "committed",
-        name: "committed",
+        name: { en: "committed", es: "en un commit" },
         space: { en: "sealed in the vault", es: "sellado en la bóveda" },
         what: { en: "Saved in a commit, and the working copy matches it: nothing to do.", es: "Guardado en un commit, y la copia de trabajo coincide con él: no hay nada que hacer." },
         unlock: { chapter: "vault" },
       },
       {
         id: "modified",
-        name: "modified",
+        name: { en: "modified", es: "modificado" },
         space: { en: "edited in the workshop", es: "editado en el taller" },
-        what: { en: "Changed in the working folder since its last commit, and not staged.", es: "Cambió en el directorio de trabajo desde su último commit y no está en el staging area." },
+        what: { en: "Changed in the working folder since its last commit, and not staged.", es: "Cambió en la carpeta de trabajo desde su último commit y no está en el staging area." },
         unlock: { chapter: "vault" },
       },
     ],
