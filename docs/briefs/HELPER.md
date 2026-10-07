@@ -92,6 +92,8 @@ Done when `levels/_start.py` no longer defines it and the fast checks pass.
 
 ## Job C: the page's terminal runs the game's own shell
 
+Done on `p2/typed-commands` (2026-10-07); do not start it.
+
 Start commit: `d053403` (branch `p2/core`). Job name: `terminal-shell`.
 
 The game now has its own bash (`game.shell_command()`: prompt `project $ `, and a log of every
