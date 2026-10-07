@@ -61,8 +61,10 @@ Commands to keep:
 
 LISTED = "These are the folder's files: `map.txt` and `journal.txt`, plain files that no repository keeps yet."
 NOT_LISTED = "Type `ls` and press Enter to list the files in the folder."
-REFUSED = "Git refused: this folder is not a repository yet. The next mission makes it one."
-ANSWERED = "Git answered: this folder is a repository, so `git status` can tell how things stand."
+REFUSED = "You asked Git: this folder is not a repository yet, so it refused. The next mission makes it one."
+ANSWERED = "You asked Git, and it answered: this folder is a repository, so `git status` can tell how things stand."
+REFUSED_EARLIER = "You asked Git earlier, before listing the folder: this folder is not a repository yet, so it refused. The next mission makes it one."
+ANSWERED_EARLIER = "You asked Git earlier, before listing the folder, and it answered: this folder is a repository."
 NOT_ASKED = "Now ask Git how things stand: type `git status`."
 NO_REPOSITORY_YET = (
     "Git found no repository here, so it has nothing to report. That is the lesson: `git status` works only inside a repository. "
@@ -110,14 +112,16 @@ def watch_status(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdic
     Returns
     -------
     kit.Verdict
-        The step's verdict; its message says what the last ``git status`` met.
+        The step's verdict. Its message says what the last ``git status`` met, and whether it
+        came before the ``ls`` of the first goal, so it reads right when this goal's turn comes.
     """
     asked = [line for line in typed if kit.typed([line], STATUS)]
+    earlier = not kit.typed(kit.after(typed, LIST), STATUS)
     message = NOT_ASKED
     if asked and asked[-1]["status"] == 0:
-        message = ANSWERED
+        message = ANSWERED_EARLIER if earlier else ANSWERED
     elif asked:
-        message = REFUSED
+        message = REFUSED_EARLIER if earlier else REFUSED
     return kit.Verdict(bool(asked), message)
 
 

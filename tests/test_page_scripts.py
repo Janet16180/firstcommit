@@ -132,6 +132,11 @@ def test_the_page_accepts_exactly_the_playgrounds_people_and_button_ids() -> Non
     assert choices_in_api_js("BUTTON") == sorted(playground.BUTTON_IDS)
 
 
+def test_the_page_accepts_exactly_the_scene_pictures_and_the_moods_of_rama() -> None:
+    assert choices_in_api_js("ART") == list(get_args(records.Art))
+    assert choices_in_api_js("MOOD") == list(get_args(records.Mood))
+
+
 def test_a_record_with_a_missing_or_extra_field_is_caught() -> None:
     hint = {"hint": [], "used": 1, "total": 3, "cost": 10}
     assert mismatches(hint, game.HintView, "hint") == []

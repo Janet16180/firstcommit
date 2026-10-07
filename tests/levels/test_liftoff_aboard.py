@@ -103,3 +103,14 @@ def test_the_level_plays_through_the_game_from_the_typed_log_to_three_stars(game
     assert [reaction["text"] for reaction in observed["reactions"]] == [markup.parse(reactions.LS_NO_REPOSITORY), markup.parse(level.NO_REPOSITORY_YET)]
     result = game.check(None, auto=True)
     assert (result["solved"], result["stars"], result["new_card"] is not None) == (True, 3, True)
+
+
+def test_a_git_status_typed_before_ls_is_told_as_the_goal_already_met_when_its_turn_comes() -> None:
+    lab, state = started()
+    typed = typed_in(lab, "git status", "ls")
+    first, second = level.QUEST
+    assert isinstance(first, kit.WatchStep) and isinstance(second, kit.WatchStep)
+    assert first.watch(lab, state, typed).solved
+    verdict = second.watch(lab, state, typed)
+    assert verdict.solved and verdict.message.startswith("You asked Git earlier")
+    assert second.watch(lab, state, typed_in(lab, "ls", "git status")).message.startswith("You asked Git:")

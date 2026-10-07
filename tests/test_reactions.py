@@ -1,4 +1,5 @@
 import re
+import subprocess
 from collections.abc import Collection
 
 import pytest
@@ -142,3 +143,30 @@ def test_a_typed_line_matches_a_pattern_from_its_start_and_an_outcome() -> None:
     assert reactions.matches(failed, r"git status\b", "failed")
     assert not reactions.matches(failed, r"git status\b", "ok")
     assert not reactions.matches(failed, r"status\b", "any")
+
+
+@pytest.mark.parametrize("line", ["git ad map.txt", "git stauts", "git comit -m 'Add the map'", "git int"])
+def test_a_misspelled_git_command_points_at_its_spelling_and_the_list_of_commands(line: str) -> None:
+    assert said(line, 1) == f"err: {reactions.NOT_A_GIT_COMMAND}"
+    assert said(line, 1, repository=False) == f"err: {reactions.NOT_A_GIT_COMMAND}"
+
+
+@pytest.mark.parametrize("name", reactions.GIT_COMMANDS + reactions.OPTIONAL_COMMANDS)
+def test_a_real_git_command_that_fails_is_never_called_misspelled(name: str) -> None:
+    for status in (1, 128, 129):
+        assert said(f"git {name} --oops", status) != f"err: {reactions.NOT_A_GIT_COMMAND}"
+        assert said(f"git {name}", status, repository=False) != f"err: {reactions.NOT_A_GIT_COMMAND}"
+
+
+def test_git_alone_or_with_an_option_first_is_not_a_misspelled_command() -> None:
+    for line in ("git", "git --versoin", "git -C .. status"):
+        assert said(line, 1) != f"err: {reactions.NOT_A_GIT_COMMAND}"
+
+
+def test_the_known_git_commands_include_the_ones_beginners_type() -> None:
+    assert {"add", "commit", "status", "log", "init", "restore", "switch", "push", "pull", "help", "rm", "diff"} <= set(reactions.GIT_COMMANDS)
+
+
+def test_every_command_this_machines_git_knows_is_in_the_known_list() -> None:
+    listed = subprocess.run(["git", "--list-cmds=main"], capture_output=True, text=True, check=True).stdout.split()
+    assert set(listed) <= {*reactions.GIT_COMMANDS, *reactions.OPTIONAL_COMMANDS}

@@ -121,7 +121,8 @@ exit statuses, the level tests below.
 | scene `timeline` | Git saves a snapshot of the project each time you ask, and you can go back to any you saved | git-commit(1) (a commit records the index's contents); Pro Git 1.3 ("a series of snapshots") |
 | scene `terminal` | Mistakes are safe: this is a practice folder | the level runs in its own lab under the game home (AUTHORING 3.2) |
 | briefing, `LISTED` | The terminal opens in `project`, holding `map.txt` and `journal.txt`, which no repository keeps | `kit.Lab.project`; the level's `setup`; E1, E3 |
-| `NO_REPOSITORY_YET`, `REFUSED` (`git status`, failed, no repository) | Git found no repository; `git status` works only inside one; the next mission makes this folder one | E2; the next level is `liftoff-flag`. **Fixed** like `NO_REPOSITORY`: "Git works only inside a repository" became "`git status` works only inside a repository" |
+| `NO_REPOSITORY_YET`, `REFUSED`, `REFUSED_EARLIER` (`git status`, failed, no repository) | Git found no repository; `git status` works only inside one; the next mission makes this folder one | E2; the next level is `liftoff-flag`. **Fixed** like `NO_REPOSITORY`: "Git works only inside a repository" became "`git status` works only inside a repository" |
+| `ANSWERED`, `ANSWERED_EARLIER` | In a repository, `git status` answers | E6. The `_EARLIER` messages (2026-10-08) say the same thing when `git status` came before the `ls`, so the goal reads right when its turn comes |
 | debrief | `git status`, like most Git commands, works only inside a repository; here it stopped with an error and changed nothing | E2, E3. **Fixed**: it said "Git works only inside a repository", unscoped |
 
 ## Level `liftoff-flag` (Plant the flag, design 1-2)
@@ -191,3 +192,28 @@ experiments E1-E33 above back the explanations.
 | `cargo-status-short` | `git status --short` prints `A  map.txt` then `?? journal.txt`; the first column is the staging area, the second the working folder | git-status(1), Short Format ("X shows the status of the index, and Y shows the status of the work tree"); E13; the `predict` code |
 | `cargo-add-misspelled` | A name that matches no file stops `git add`, nothing is staged, other names on the line included, and no file is created | E10, E11; `verify` |
 | `cargo-unstage-before-commit` | Before the first commit, `git rm --cached` unstages and keeps the file; `git restore --staged` fails then; `git status` suggests `git rm --cached` | git-rm(1), git-restore(1); E15, E17, E18; `verify`. **Fixed** before it shipped: the explanation said a plain `git rm` would delete the file. On WSL's git 2.43.0, `git rm journal.txt` on a newly staged file refuses (status 1, the file and the staging area unchanged), and only `-f` deletes it |
+
+## A misspelled git command (added 2026-10-08)
+
+Rule `NOT_A_GIT_COMMAND`: a failed `git <word>` whose first word is not a command git knows. Run in
+the image (`firstcommit:latest`, git 2.43.0) with the game's configuration:
+
+| What ran | Result |
+|---|---|
+| `git ad map.txt` in a repository | status 1; git says `ad` is not a git command and suggests similar ones |
+| `git stauts` | status 1; the same, with one suggestion |
+| `git ad map.txt` outside a repository | status 1: the misspelling is found before any repository is looked for |
+| `git help -a` | status 0; git-help(1), `-a`: "Print all the available commands on the standard output." |
+| `git --list-cmds=main` | 163 names, the rule's `GIT_COMMANDS`, compared as a set with the constant |
+
+| Text | Claim | Evidence |
+|---|---|---|
+| `NOT_A_GIT_COMMAND` | Git knows no command by that name; `git help -a` lists every command Git has | the experiments above; git-help(1). The text does not quote git's message or its suggestions (AUTHORING 1, rule 4) |
+
+The rule can only fit a word git does not know: its pattern excludes `GIT_COMMANDS` (git 2.43's
+own list in the image) and `OPTIONAL_COMMANDS`. Those are git's commands that git(1) lists but
+Ubuntu ships in other packages (on WSL, `git-gui` adds `gui`, `gui--askpass` and `citool`), plus
+git-lfs. *Re-checked*: `tests/test_reactions.py` fails every known command with statuses 1, 128
+and 129 and expects another reaction or none. It also checks that every command this machine's
+`git --list-cmds=main` lists is known, which caught `gui` on WSL. An alias the player defines
+would count as unknown when it fails. The game's configuration defines none.
