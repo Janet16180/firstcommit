@@ -11,8 +11,6 @@
  *   takes `one` when params.count is 1.
  * parts(key, params) gives the same string cut at its backticks, as [text, {code}, text, ...], for
  *   a sentence with a command in it.
- * guess(preferred) picks a language from the browser's (navigator.language): Spanish for "es...",
- *   else English.
  */
 
 /* exported Strings */
@@ -437,7 +435,5 @@ const Strings = (function () {
   /* The string cut at its backticks: the odd pieces are commands. */
   const parts = (key, params) => t(key, params).split("`").map((piece, index) => (index % 2 ? { code: piece } : piece)).filter((piece) => piece !== "");
 
-  const guess = (preferred) => (String(preferred || "").toLowerCase().startsWith("es") ? "es" : "en");
-
-  return { TABLES, use, t, parts, guess, language: () => current };
+  return { TABLES, use, t, parts, language: () => current };
 })();

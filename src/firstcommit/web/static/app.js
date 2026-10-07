@@ -109,8 +109,8 @@
     renderSound();
   }
 
-  /* The page's own words, in the game's language (Status.language); the browser's until the
-     game first answers. */
+  /* The page's own words, in the game's language (Status.language); English until the game
+     first answers. */
   function applyLanguage(language) {
     Strings.use(language);
     document.documentElement.lang = Strings.language();
@@ -307,7 +307,7 @@
 
   function boot() {
     document.body.prepend(ArtSky.dust("first-commit"));
-    applyLanguage(Strings.guess(navigator.language));
+    applyLanguage("en");
     darkScheme.addEventListener("change", applyTheme);
     document.querySelector(".pref-theme").addEventListener("click", cycleTheme);
     document.querySelector(".pref-sound").addEventListener("click", toggleSound);

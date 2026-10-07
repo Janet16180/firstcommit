@@ -50,10 +50,3 @@ test("an unknown language falls back to English, and an unknown key is a bug", (
   assert.equal(Strings.language(), "en");
   assert.throws(() => Strings.t("no.such.key"), /no string/);
 });
-
-test("the browser's language picks Spanish for any Spanish, else English", () => {
-  assert.equal(Strings.guess("es-MX"), "es");
-  assert.equal(Strings.guess("ES"), "es");
-  assert.equal(Strings.guess("en-GB"), "en");
-  assert.equal(Strings.guess(undefined), "en");
-});

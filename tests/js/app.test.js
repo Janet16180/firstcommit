@@ -258,10 +258,10 @@ test("the field guide's address shows the guide under its own head", async () =>
   assert.equal(page.document.querySelector(".topbar").hidden, true);
 });
 
-test("before the game answers, the page speaks the browser's language", async () => {
+test("before the game answers, the page speaks English, whatever the browser's language", async () => {
   const page = await boot({ token: null, browserLanguage: "es-MX" });
-  assert.equal(page.document.documentElement.lang, "es");
-  assert.match(page.main.querySelector("h1").textContent, /enlace/);
+  assert.equal(page.document.documentElement.lang, "en");
+  assert.match(page.main.querySelector("h1").textContent, /link/);
 });
 
 test("once the game answers, the page speaks the game's language, whatever the browser's", async () => {
