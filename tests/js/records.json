@@ -267,7 +267,31 @@
      "stash": 0,
      "truncated": false
     },
-    "objects": []
+    "objects": [],
+    "events": [
+     {
+      "kind": "repository-created",
+      "text": [
+       {
+        "kind": "para",
+        "spans": [
+         {
+          "text": "A new repository was created in this folder, on branch ",
+          "code": false
+         },
+         {
+          "text": "main",
+          "code": true
+         },
+         {
+          "text": " with no commits yet.",
+          "code": false
+         }
+        ]
+       }
+      ]
+     }
+    ]
    },
    {
     "id": "areas",
@@ -347,7 +371,8 @@
       "type": "blob",
       "size": 6
      }
-    ]
+    ],
+    "events": []
    },
    {
     "id": "commit",
@@ -433,6 +458,46 @@
       "type": "commit",
       "size": 172
      }
+    ],
+    "events": [
+     {
+      "kind": "commit-created",
+      "text": [
+       {
+        "kind": "para",
+        "spans": [
+         {
+          "text": "Commit ",
+          "code": false
+         },
+         {
+          "text": "ae23b94",
+          "code": true
+         },
+         {
+          "text": " (",
+          "code": false
+         },
+         {
+          "text": "First commit",
+          "code": true
+         },
+         {
+          "text": ") was made on branch ",
+          "code": false
+         },
+         {
+          "text": "main",
+          "code": true
+         },
+         {
+          "text": "; it has no parent, so it starts the history.",
+          "code": false
+         }
+        ]
+       }
+      ]
+     }
     ]
    },
    {
@@ -510,7 +575,8 @@
       "type": "commit",
       "size": 172
      }
-    ]
+    ],
+    "events": []
    },
    {
     "id": "recap",
@@ -587,7 +653,8 @@
       "type": "commit",
       "size": 172
      }
-    ]
+    ],
+    "events": []
    }
   ]
  },

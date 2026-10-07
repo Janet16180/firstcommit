@@ -957,3 +957,7 @@ def test_the_classification_matches_git_status_on_any_history(steps: list[str]) 
         repo = new_repo(Path(folder), "mkdir sub && echo a > a.txt && echo b > b.txt && echo c > sub/c.txt && git add -A && git commit -q -m base")
         shell(repo, "".join(f"{{ {step}; }} >/dev/null 2>&1 || true\n" for step in steps))
         assert as_git_status(repomap.snapshot(repo)) == git_status(repo), steps
+
+
+def test_the_empty_snapshot_is_what_an_empty_folder_with_no_repository_gives(tmp_path: Path) -> None:
+    assert repomap.empty() == repomap.snapshot(tmp_path)

@@ -104,6 +104,7 @@ const createGameApi = (function () {
     debrief: nullable(BLOCKS),
   });
   const TRANSCRIPT = list(record({ command: text, output: text }));
+  const EVENTS = list(record({ kind: text, text: BLOCKS }));
   const LESSON = record({
     level: text,
     title: text,
@@ -115,13 +116,13 @@ const createGameApi = (function () {
       transcript: TRANSCRIPT,
       map: SNAPSHOT,
       objects: OBJECTS,
+      events: EVENTS,
     })),
   });
   const GUIDE = mapping(record({ before: SNAPSHOT, after: SNAPSHOT, transcript: TRANSCRIPT }));
   const STEP = record({ correct: flag, message: BLOCKS, step: number, quest_done: flag });
   const CHECK = record({ solved: flag, message: BLOCKS, payout: nullable(PAYOUT), debrief: nullable(BLOCKS) });
   const HINT = record({ hint: BLOCKS, used: number, total: number, cost: number });
-  const EVENTS = list(record({ kind: text, text: BLOCKS }));
   const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), teammate: nullable(SNAPSHOT), events: EVENTS, teammate_events: EVENTS });
   /* The playground's people and buttons (records.Who and records.Button; a Python test keeps them equal). */
   const WHO = oneOf("you", "alex");

@@ -334,6 +334,30 @@ def objects(path: Path) -> list[ObjectInfo]:
     return sorted(found, key=lambda info: info["hash"])
 
 
+def empty() -> Snapshot:
+    """
+    Give the snapshot of an empty folder that holds no repository, such as a lesson's start.
+
+    Returns
+    -------
+    Snapshot
+        ``exists`` False and everything else empty.
+    """
+    return {
+        "exists": False,
+        "bare": False,
+        "head": None,
+        "branch": None,
+        "commits": [],
+        "refs": [],
+        "pushed": [],
+        "files": [],
+        "operation": None,
+        "stash": 0,
+        "truncated": False,
+    }
+
+
 def _no_repository(path: Path) -> Snapshot:
     """
     Give the snapshot of a folder that holds no repository.
@@ -350,19 +374,7 @@ def _no_repository(path: Path) -> Snapshot:
         repository holds.
     """
     files, cut = _loose_files(path) if _outside_any_repository(path) else ([], False)
-    return {
-        "exists": False,
-        "bare": False,
-        "head": None,
-        "branch": None,
-        "commits": [],
-        "refs": [],
-        "pushed": [],
-        "files": files,
-        "operation": None,
-        "stash": 0,
-        "truncated": cut,
-    }
+    return {**empty(), "files": files, "truncated": cut}
 
 
 def _find(path: Path) -> _Repository | None:

@@ -403,6 +403,19 @@ def test_a_slide_may_show_the_places_of_its_repository(sample_level: runner.Leve
     assert game.lesson(level.id)["slides"][0]["view"] == "places"
 
 
+def test_each_slide_tells_the_change_its_commands_made_as_the_live_feed_would(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    slides = (
+        kit.Slide(id="init", title="Init", text="x", run="git init -q", view="places"),
+        kit.Slide(id="add", title="Add", text="x", run="echo hi > a.txt\ngit add a.txt", view="places"),
+        kit.Slide(id="commit", title="Commit", text="x", run="git commit -q -m First", view="places"),
+    )
+    level = dataclasses.replace(sample_level, lesson=slides)
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    shown = game.lesson(level.id)["slides"]
+    assert [[event["kind"] for event in slide["events"]] for slide in shown] == [["repository-created"], ["file-staged", "file-created"], ["commit-created"]]
+    assert shown[1]["events"][0]["text"] == markup.parse("`a.txt` was staged as a new file.")
+
+
 def test_a_lesson_shows_the_real_commands_their_output_and_the_repository_they_leave(sample_level: runner.Level) -> None:
     first, second = game.lesson(sample_level.id)["slides"]
     assert first["transcript"] == [{"command": "git init -q demo", "output": ""}]
