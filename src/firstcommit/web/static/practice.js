@@ -6,30 +6,62 @@
  * solved come from the server's replies, and the page polls the lab while the player works
  * (poll.js). Expected failures are handled here, by HTTP status: 409 means the level is no
  * longer in progress (solved or ended from the command line or another tab), 0 means the server
- * did not answer. Anything else is a bug and is left to surface. On a playground level the live
+ * did not answer. Anything else is a bug and is left to surface. The player can fold the
+ * instructions away to give the map and the terminal the whole width: a small card over the map
+ * then names the current step (and flashes when it changes), and the choice is remembered in
+ * storage for the next level. On a playground level the live
  * panel holds the playground (playground.js), whose presses go to the server from here. Needs
  * dom.js, markup.js, map.js, poll.js, dialog.js, live.js, playground.js, quest.js and
  * challenge.js. Defines one global, Practice.
  */
 
-/* global Dom, Dialog, LivePanel, PlaygroundPanel, Polling, Quest, Challenge */
+/* global Dom, Dialog, Markup, LivePanel, PlaygroundPanel, Polling, Quest, Challenge */
 /* exported Practice */
 
 const Practice = (function () {
   const { el } = Dom;
   const ADVANCE_MS = 1100;
+  const FLASH_MS = 2400;
+  const FOLD_KEY = "firstcommit.instructions";
 
-  function layout(level, live, onLeave) {
+  function browserStorage() {
+    try {
+      return window.localStorage;
+    } catch {
+      return null;
+    }
+  }
+
+  /* Whether the player last folded the instructions; blocked storage means open. */
+  function readFolded(storage) {
+    try {
+      return Boolean(storage) && storage.getItem(FOLD_KEY) === "folded";
+    } catch {
+      return false;
+    }
+  }
+
+  function saveFolded(storage, folded) {
+    try {
+      if (storage) storage.setItem(FOLD_KEY, folded ? "folded" : "open");
+    } catch {
+      /* Blocked storage: the choice lasts until the page closes. */
+    }
+  }
+
+  function layout(level, live, onLeave, onFold) {
     const parts = {
       body: el("div", { class: "practice-body" }),
+      toggle: el("button", { type: "button", class: "btn btn-quiet btn-small side-toggle", "aria-expanded": "true", "aria-controls": "practice-side", title: "Hide the instructions; a small card keeps the current step in view", onclick: onFold }, el("span", { "aria-hidden": "true" }, "«"), " Hide"),
+      card: el("aside", { class: "task-card", role: "status", "aria-label": "Current task", hidden: true }),
       offline: el("p", { class: "banner is-warning offline", role: "status", hidden: true }, "The game server is not answering. Is it still running in your terminal?"),
     };
     /* The terminal docks at the bottom of this column: termlab sizes it against its parent. */
-    parts.terminalHost = el("section", { class: "practice-main", "aria-label": "Your repository and terminal" }, el("div", { class: "practice-live" }, live.element));
+    parts.terminalHost = el("section", { class: "practice-main", "aria-label": "Your repository and terminal" }, parts.card, el("div", { class: "practice-live" }, live.element));
     parts.element = el("div", { class: "practice" },
-      el("aside", { class: "practice-side", "aria-label": "Level" },
+      el("aside", { class: "practice-side", id: "practice-side", "aria-label": "Level" },
         el("header", { class: "practice-head" },
-          el("p", { class: "kicker" }, level.chapter_title),
+          el("div", { class: "practice-head-row" }, el("p", { class: "kicker" }, level.chapter_title), parts.toggle),
           el("h1", {}, level.title),
         ),
         parts.offline,
@@ -73,6 +105,59 @@ const Practice = (function () {
     }
   }
 
+  /* The current task as the folded card shows it: a kicker, the first paragraph, its kind. */
+  function currentTask(level, state) {
+    if (state.step < state.steps) {
+      const item = level.steps[state.step];
+      return { kicker: `Step ${state.step + 1} of ${state.steps}`, blocks: item.text, kind: item.kind };
+    }
+    return { kicker: "The challenge", blocks: level.briefing, kind: "challenge" };
+  }
+
+  const OPEN_LABEL = { answer: "Answer", challenge: "Show the challenge" };
+
+  /* Draws the card for the current task. A change of task while folded flashes the card. */
+  function drawCard(run) {
+    const { ui, level, state } = run;
+    const task = currentTask(level, state);
+    const changed = run.cardKicker !== null && run.cardKicker !== task.kicker;
+    run.cardKicker = task.kicker;
+    const continueButton = task.kind === "read" && el("button", {
+      type: "button",
+      class: "btn btn-primary btn-small task-continue",
+      onclick: () => {
+        continueButton.disabled = true;
+        send(run, run.quest, () => run.ctx.game.step(null), stepped).finally(() => (continueButton.disabled = false));
+      },
+    }, "Continue");
+    ui.card.replaceChildren(
+      el("p", { class: "kicker task-kicker" }, task.kicker),
+      el("div", { class: "prose task-text" }, Markup.render(task.blocks.slice(0, 1))),
+      el("div", { class: "task-actions" },
+        continueButton,
+        el("button", { type: "button", class: "btn btn-ghost btn-small task-open", onclick: () => fold(run, false) }, el("span", { "aria-hidden": "true" }, "» "), OPEN_LABEL[task.kind] || "Show the steps"),
+      ),
+    );
+    if (changed && run.folded) {
+      ui.card.classList.add("is-new");
+      run.ctx.timers.setTimeout(() => ui.card.classList.remove("is-new"), FLASH_MS);
+    }
+  }
+
+  /* Folds or opens the instructions; focus follows to what the player will use next. */
+  function fold(run, folded, { save = true, focus = true } = {}) {
+    const { ui } = run;
+    run.folded = folded;
+    ui.element.classList.toggle("is-folded", folded);
+    ui.toggle.setAttribute("aria-expanded", folded ? "false" : "true");
+    ui.card.hidden = !folded;
+    if (save) saveFolded(run.storage, folded);
+    if (!focus) return;
+    const input = ui.body.querySelector(".step.is-current input");
+    const target = folded ? ui.card.querySelector(".task-open") : input || ui.toggle;
+    target.focus();
+  }
+
   function showPhase(run) {
     const { ctx, level, state, ui } = run;
     const { game } = ctx;
@@ -86,6 +171,7 @@ const Practice = (function () {
         onCheck: () => send(run, run.quest, () => game.check(null, false), checked),
       });
       ui.body.replaceChildren(run.quest.element);
+      drawCard(run);
       return;
     }
     run.quest = null;
@@ -96,6 +182,7 @@ const Practice = (function () {
       onHint: () => send(run, run.challenge, () => game.hint(), hinted),
     });
     ui.body.replaceChildren(run.challenge.element);
+    drawCard(run);
   }
 
   /* A quest step's result. A watch step polled without the player shows its message as a quiet
@@ -116,10 +203,11 @@ const Practice = (function () {
       if (state.finished) return;
       if (state.step < state.steps && run.quest) {
         run.quest.setStep(state.step);
+        drawCard(run);
         return;
       }
       showPhase(run);
-      run.challenge.element.querySelector(".kicker").focus();
+      if (!run.folded) run.challenge.element.querySelector(".kicker").focus();
     }, ADVANCE_MS);
   }
 
@@ -199,15 +287,18 @@ const Practice = (function () {
 
   /* ctx: game (api.js), sound, timers, page, terminal ({attach(host), detach(), type(text)}),
      theme (RepoMap's), panelWords (LivePanel's titles), playMap and places (LivePanel's play and
-     places), share (TimeShare, for a playground level's figure). options: level (LevelView),
+     places), share (TimeShare, for a playground level's figure), storage (like localStorage,
+     where the folded choice is kept; blocked or absent is fine). options: level (LevelView),
      active (ActiveView), onSolved(CheckResult), onEnded() when the level stopped being in
      progress elsewhere, onLeft() after the player left. */
   function create(ctx, { level, active, onSolved, onEnded, onLeft }) {
     const playground = ctx.share ? PlaygroundPanel.create({ share: ctx.share, onPress: (person, id) => pressButton(run, person, id), onType: ctx.terminal.type }) : null;
     const live = LivePanel.create({ theme: ctx.theme, words: ctx.panelWords, play: ctx.playMap, places: ctx.places, playground, onChange: ({ newCommits }) => newCommits > 0 && ctx.sound.play("commit") });
-    const run = { ctx, level, live, playground, presses: 0, pressing: false, state: { ...active, finished: false }, quest: null, challenge: null, poller: null, on: { solved: onSolved, ended: onEnded, left: onLeft } };
-    run.ui = layout(level, live, () => leave(run));
+    const storage = "storage" in ctx ? ctx.storage : browserStorage();
+    const run = { ctx, level, live, playground, storage, folded: false, cardKicker: null, presses: 0, pressing: false, state: { ...active, finished: false }, quest: null, challenge: null, poller: null, on: { solved: onSolved, ended: onEnded, left: onLeft } };
+    run.ui = layout(level, live, () => leave(run), () => fold(run, true));
     showPhase(run);
+    if (readFolded(storage)) fold(run, true, { save: false, focus: false });
     ctx.terminal.attach(run.ui.terminalHost);
     run.poller = Polling.start({ tick: () => tick(run), timers: ctx.timers, page: ctx.page });
 
@@ -222,5 +313,5 @@ const Practice = (function () {
     };
   }
 
-  return { create, ADVANCE_MS };
+  return { create, ADVANCE_MS, FLASH_MS, FOLD_KEY };
 })();

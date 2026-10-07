@@ -945,6 +945,28 @@ input[type="text"]::placeholder {
   margin-bottom: 1rem;
 }
 
+.practice-head-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.side-toggle {
+  flex: none;
+}
+
+/* Folded: the instructions give their width to the map and the terminal; a card over the map's
+   top-left corner keeps the current step in view. */
+
+.practice.is-folded {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.practice.is-folded .practice-side {
+  display: none;
+}
+
 .practice-body {
   flex: 1;
 }
@@ -967,12 +989,67 @@ input[type="text"]::placeholder {
 }
 
 .practice-main {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
   padding: 0.9rem 1rem 0.75rem;
   gap: 0.25rem;
+}
+
+.task-card {
+  position: absolute;
+  top: 0.5rem;
+  left: 0.6rem;
+  z-index: 5;
+  width: min(320px, 40%);
+  padding: 0.65rem 0.85rem 0.7rem;
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.task-card[hidden] {
+  display: none;
+}
+
+.task-card .task-kicker {
+  margin: 0 0 0.25rem;
+}
+
+.task-card .task-text {
+  font-size: 0.92rem;
+  line-height: 1.45;
+}
+
+.task-card .task-text p {
+  margin: 0;
+}
+
+.task-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.55rem;
+}
+
+.task-card.is-new {
+  background: var(--accent-soft);
+  animation: task-flash 0.8s ease-out 3;
+}
+
+@keyframes task-flash {
+  0% {
+    background: var(--accent-soft);
+    box-shadow: 0 0 0 0 var(--accent), var(--shadow);
+  }
+
+  100% {
+    background: var(--surface);
+    box-shadow: 0 0 0 10px transparent, var(--shadow);
+  }
 }
 
 .practice-live {
