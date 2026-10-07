@@ -25,11 +25,25 @@ test("the page loads every script another script needs, before it", () => {
   }
 });
 
-test("the page loads the time-travel theme's motions, places and map guide, and their stylesheets", () => {
-  for (const name of ["theme-time.js", "theme-time-motion.js", "theme-time-places.js", "theme-time-guide.js"]) assert.ok(scripts.includes(name), name);
-  for (const name of ["theme-time.css", "theme-time-share.css", "theme-time-guide.css"]) assert.match(page, new RegExp(`href="/static/${name}"`));
+const styles = [...page.matchAll(/<link rel="stylesheet" href="\/static\/([^"]+)">/g)].map((match) => match[1]);
+
+test("the page wears the Orbit look: the shipped fonts, the art's styles and the design's stylesheet last, over app.css", () => {
+  assert.deepEqual(styles.slice(styles.indexOf("app.css")), ["app.css", "fonts.css", "art-style.css", "orbit.css"]);
 });
 
-test("the page loads the share figure and the playground panel for a playground level", () => {
-  for (const name of ["theme-time-share.js", "playground.js"]) assert.ok(scripts.includes(name), name);
+test("the page loads nothing from the network", () => {
+  assert.doesNotMatch(page, /(src|href)="(https?:)?\/\//);
+});
+
+test("the time-travel theme and the old level page are no longer loaded, but stay in the tree until the new page plays every level", () => {
+  const old = ["map.js", "theme-time.js", "theme-time-motion.js", "theme-time-places.js", "theme-time-share.js", "theme-time-guide.js", "celebrate.js", "live.js", "playground.js", "lesson.js", "quest.js", "challenge.js", "practice.js", "level.js", "home.js"];
+  for (const name of old) {
+    assert.ok(!scripts.includes(name), name);
+    assert.ok(fs.existsSync(path.join(STATIC, name)), name);
+  }
+  for (const name of ["theme-time.css", "theme-time-share.css", "theme-time-guide.css"]) assert.ok(!styles.includes(name), name);
+});
+
+test("the page loads the map screen, the level screen and their parts", () => {
+  for (const name of ["art-pixels.js", "art-sprites.js", "art-sky.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "level-screen.js", "starmap.js"]) assert.ok(scripts.includes(name), name);
 });

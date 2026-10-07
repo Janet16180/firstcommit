@@ -16,6 +16,8 @@ from firstcommit.web import routes
 
 STATIC = Path(routes.__file__).parent / "static"
 LEVELS = Path(game.__file__).parent / "levels"
+# The page's own text, which the scans below read; the rest of static/ is fonts and their licences.
+PAGE_TEXT = {".html", ".js", ".css"}
 HEADER = "X-FirstCommit-Token"
 
 
@@ -159,9 +161,14 @@ def test_the_page_loads_nothing_from_outside_the_server(site: Site) -> None:
     status, headers, _ = call(site, "/")
     assert status == 200
     assert "https:" not in headers["Content-Security-Policy"]
-    for path in sorted(STATIC.iterdir()):
+    for path in sorted(entry for entry in STATIC.iterdir() if entry.suffix in PAGE_TEXT):
         text = path.read_text()
         assert not re.search(r"https?://(?!www\.w3\.org/2000/svg|localhost)", text), path.name
+
+
+def test_every_static_file_is_page_text_a_font_or_a_font_licence() -> None:
+    for path in STATIC.iterdir():
+        assert path.suffix in PAGE_TEXT or path.suffix == ".woff2" or path.name.endswith("-OFL.txt"), path.name
 
 
 def test_every_file_the_page_references_is_served(site: Site) -> None:
@@ -174,7 +181,7 @@ def test_every_file_the_page_references_is_served(site: Site) -> None:
 
 def test_the_page_contains_no_level_ids() -> None:
     level_ids = [path.stem.replace("_", "-") for path in LEVELS.glob("*.py") if path.stem != "__init__"]
-    for path in sorted(STATIC.iterdir()):
+    for path in sorted(entry for entry in STATIC.iterdir() if entry.suffix in PAGE_TEXT):
         text = path.read_text()
         assert not [level_id for level_id in level_ids if level_id in text], path.name
 

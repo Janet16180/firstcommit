@@ -6,9 +6,9 @@ const { makeEvent } = require("./fakedom");
 const { fakeServer, httpError, installBrowser, load, record, settle } = require("./load");
 
 installBrowser();
-const { Dom, TimeTheme } = load(
-  ["dom.js", "markup.js", "map.js", "theme-time.js", "theme-time-motion.js", "theme-time-places.js", "theme-time-share.js", "theme-time-guide.js", "api.js", "progress.js", "route.js", "poll.js", "sound.js", "dialog.js", "celebrate.js", "live.js", "playground.js", "lesson.js", "quest.js", "challenge.js", "practice.js", "level.js", "cards.js", "notes.js", "home.js"],
-  ["Dom", "TimeTheme"],
+const { Dom } = load(
+  ["dom.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "api.js", "progress.js", "route.js", "poll.js", "sound.js", "dialog.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "level-screen.js", "starmap.js", "cards.js", "notes.js"],
+  ["Dom"],
 );
 
 /* A fresh page with index.html's header, the given address, key and server; then app.js boots. */
@@ -57,67 +57,66 @@ test("without an access key the page asks for the link and calls no route", asyn
   assert.equal(page.server.calls.length, 0);
 });
 
-test("the terminal wears the time-travel colours, light and dark", async () => {
+/* Opens the sample level, in progress, runs `check(page)`, then leaves for the map so its polling stops. */
+async function onLevel(check) {
   const active = record("active");
   const page = await boot({
     hash: `#/level/${active.level}`,
     replies: { "/api/status": { ...record("status"), active }, "/api/level": record("level"), "/api/observe": record("observation"), "/api/step": record("step"), "/api/check": record("check_unsolved") },
   });
-  await settle();
+  try {
+    await settle();
+    await check(page);
+  } finally {
+    global.location.hash = "#/";
+    page.fire("hashchange", {});
+    await settle();
+  }
+}
+
+test("a level's address opens the level screen, with its zones and the terminal under Rama's line", () => onLevel((page) => {
+  assert.ok(page.main.querySelector(".level-screen .viz"));
   assert.equal(page.seen.terminals, 1);
-  assert.deepEqual(page.seen.looks.light.theme, TimeTheme.terminal.light);
-  assert.deepEqual(page.seen.looks.dark.theme, TimeTheme.terminal.dark);
-  global.location.hash = "#/";
-  page.fire("hashchange", {});
-  await settle();
-});
+  assert.ok(page.main.querySelector(".termcol .term-dock"));
+}));
 
-test("the key under the live places opens the map guide, which asks the server for its figures once", async () => {
-  const active = record("active");
-  const page = await boot({
-    hash: `#/level/${active.level}`,
-    replies: { "/api/status": { ...record("status"), active }, "/api/level": record("level"), "/api/observe": record("observation"), "/api/step": record("step"), "/api/check": record("check_unsolved"), "/api/guide": record("guide") },
-  });
-  try {
-    await settle();
-    const button = page.main.querySelector(".live-three .tt-key .tt-guide-button");
-    assert.ok(button, "the guide's button is in the key");
-    button.dispatchEvent(makeEvent("click"));
-    await settle();
-    assert.ok(page.document.querySelector("dialog.tt-guide[open]"));
-    page.document.querySelector("dialog.tt-guide").close();
-    page.main.querySelector(".live-three .tt-key .tt-guide-button").dispatchEvent(makeEvent("click"));
-    await settle();
-    assert.equal(page.server.calls.filter((call) => call.path === "/api/guide").length, 1);
-  } finally {
-    global.location.hash = "#/";
-    page.fire("hashchange", {});
-    await settle();
-  }
-});
+test("the terminal wears the design's night colours in both looks", () => onLevel((page) => {
+  assert.equal(page.seen.looks.light.theme.background, "#120F2C");
+  assert.deepEqual(page.seen.looks.dark.theme, page.seen.looks.light.theme);
+}));
 
-test("the live panel draws the player's places: pages, the open box and closed boxes, with GitHub when the level has it", async () => {
-  const active = record("active");
-  const page = await boot({
-    hash: `#/level/${active.level}`,
-    replies: { "/api/status": { ...record("status"), active }, "/api/level": record("level"), "/api/observe": record("observation"), "/api/step": record("step"), "/api/check": record("check_unsolved") },
-  });
-  try {
-    await settle();
-    const places = page.main.querySelector(".live-three .tt-places");
-    assert.ok(places, "the places replace the three areas strip");
-    assert.deepEqual([...places.querySelectorAll("[data-area]")].map((place) => place.getAttribute("data-area")), ["folder", "index", "repository", "remote"]);
-    assert.ok(places.querySelector(".tt-open-box") && places.querySelector(".tt-box"));
-  } finally {
-    global.location.hash = "#/";
-    page.fire("hashchange", {});
-    await settle();
-  }
-});
-
-test("with a key the map shows, and the header shows the rank, the XP and the cards due", async () => {
+test("the map and the level screen have their own heads; the header bar shows over the cards and the notes", async () => {
   const page = await boot();
-  assert.ok(page.main.querySelector(".home"));
+  assert.equal(page.document.querySelector(".topbar").hidden, true);
+  global.location.hash = "#/cards";
+  page.fire("hashchange", makeEvent("hashchange"));
+  await settle();
+  await settle();
+  assert.equal(page.document.querySelector(".topbar").hidden, false);
+});
+
+test("the space dust lies behind every view", async () => {
+  const page = await boot();
+  assert.ok(page.document.body.querySelector("svg.art-dust"));
+});
+
+test("the map's bar has its own look and sound buttons, which change the look like the header's", async () => {
+  const page = await boot({ stored: { "firstcommit.theme": "light" } });
+  const button = page.main.querySelector(".map-bar .pref-theme");
+  assert.equal(button.textContent, "Look: light");
+  button.click();
+  assert.equal(page.document.documentElement.dataset.theme, "dark");
+  assert.equal(page.main.querySelector(".map-bar .pref-theme").textContent, "Look: dark");
+  assert.equal(page.document.querySelector(".topbar .pref-theme").textContent, "Look: dark");
+  const sound = page.main.querySelector(".map-bar .pref-sound");
+  const before = sound.textContent;
+  sound.click();
+  assert.notEqual(sound.textContent, before);
+});
+
+test("with a key the map shows, and the header keeps the rank, the XP and the cards due", async () => {
+  const page = await boot();
+  assert.ok(page.main.querySelector(".starmap"));
   assert.equal(page.document.querySelector(".player").hidden, false);
   assert.equal(page.document.querySelector(".player-rank").textContent, "Committer");
   assert.equal(page.document.querySelector(".player-xp").textContent, "260 XP");
@@ -215,7 +214,7 @@ test("a damaged save is named, and starting over resets it after asking", async 
   await settle();
   await settle();
   assert.equal(page.server.calls.filter((call) => call.path === "/api/reset").length, 1);
-  assert.ok(page.main.querySelector(".home"));
+  assert.ok(page.main.querySelector(".starmap"));
 });
 
 test("a damaged save met during play is named in a message", async () => {
