@@ -312,6 +312,10 @@ E33:
 | E45 | `git log -1` | a `commit` line with the full hash, then `Author:` and `Date:` lines, then the message |
 | E46 | `git log -p -1 oxygen.cfg` | the change itself: `-O2=21`, `+O2=17` |
 | E47 | `git log nosuch.txt` | status 128: git cannot tell it from a revision and suggests `--` |
+| E48 | a repository with two commits next to an empty bare `../github/project.git`; `git remote add origin ../github/project.git`, then `git remote -v` | both exit 0; `-v` lists `origin` twice, `(fetch)` and `(push)`; the bare repository still has no ref |
+| E49 | `git remote add origin ...` again | status 3: the remote already exists |
+| E50 | `git remote set-url origin https://...`, then back to `../github/project.git` | both exit 0; `-v` shows each address in turn |
+| E51 | `git remote add mothership ...`, then `git remote remove mothership` | both exit 0; `git remote` lists the names |
 | E43 | `git restore --staged .` | status 0; nothing staged; the two files keep their changes in the folder, `keys.txt` untracked |
 
 ### Level `cargo-selective` (Selective cargo, 2-2)
@@ -365,3 +369,18 @@ no hash and a hash of no commit each get their own message; the author by full o
 | `NOT_A_HASH` | at least the first 4 characters of the hash | `kit.MIN_HASH_PREFIX`; git-rev-parse(1) accepts a unique prefix of 4 or more |
 | debrief | a message can say little or mislead; the changes never do | the decoy commit; E46 shows the change itself |
 | scene | someone changed the setting some days ago; every commit records who changed what and when | setup's dates; E31 (author, committer) |
+
+### Level `mothership-contact` (Make contact, 4-1)
+
+*Re-checked* by `tests/levels/test_mothership_contact.py`: adding and listing, the mothership still
+empty afterwards, a list before the add, an `https://` address fixed with `set-url`, a second add
+refused with status 3, another name.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card | `git remote add` gives another repository's address a short name in yours; nothing is sent | E48; git-remote(1) `add` ("Add a remote named <name> for the repository at <URL>") |
+| prediction reveal, debrief | naming a remote only writes its address in your repository's configuration; nothing travels | E48 (no ref on the bare repository); git-remote(1) |
+| hint 2, `LISTED` | `git remote -v` lists each remote's name with its address, once for fetching and once for pushing | E48 |
+| `REMOTE_EXISTS` | `origin` already exists; `git remote set-url` changes its address | E49, E50 |
+| `WRONG_URL`, `HTTPS_URL` | `set-url` points `origin` at the mothership | E50 |
+| debrief | at work the address is the one GitHub shows for the project, such as `https://github.com/<you>/<project>.git`; `origin` is the usual name | GitHub's docs, "About remote repositories" (HTTPS URLs); git-clone(1) names the remote `origin` by default |
