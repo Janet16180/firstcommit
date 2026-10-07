@@ -28,16 +28,25 @@ const FieldGuide = (function () {
   /* The items with their `unlock` replaced by `locked`, as the art takes them. */
   const lock = (status, list) => list.map(({ unlock, ...item }) => ({ ...item, locked: !unlocked(status, unlock) }));
 
+  /* Boxes and the moves between them: a move stays locked while either of its boxes is. */
+  function diagram(status, boxes, moves) {
+    const shown = lock(status, boxes);
+    const closed = new Set(shown.filter((box) => box.locked).map((box) => box.id));
+    return { boxes: shown, moves: lock(status, moves).map((move) => ({ ...move, locked: move.locked || closed.has(move.from) || closed.has(move.to) })) };
+  }
+
   function create(ctx) {
     const status = ctx.status();
     const { places, states, commands, locked } = InfographicText;
+    const placeDiagram = diagram(status, places.places, places.moves);
+    const stateDiagram = diagram(status, states.states, states.moves);
     const element = el("div", { class: "field-guide" },
       el("header", { class: "guide-head" },
         el("a", { class: "btn", href: "#/" }, ArtSprites.icon("back"), "Map"),
         el("div", {}, el("h1", {}, InfographicText.title), el("p", {}, InfographicText.lede)),
       ),
-      ArtInfographics.places({ title: places.title, places: lock(status, places.places), moves: lock(status, places.moves), lockedLabel: locked }),
-      ArtInfographics.states({ title: states.title, states: lock(status, states.states), moves: lock(status, states.moves), lockedLabel: locked }),
+      ArtInfographics.places({ title: places.title, places: placeDiagram.boxes, moves: placeDiagram.moves, lockedLabel: locked }),
+      ArtInfographics.states({ title: states.title, states: stateDiagram.boxes, moves: stateDiagram.moves, lockedLabel: locked }),
       ArtInfographics.commands({ title: commands.title, groups: commands.groups.map((group) => ({ title: group.title, commands: lock(status, group.commands) })), lockedLabel: locked }),
     );
     return { element };
