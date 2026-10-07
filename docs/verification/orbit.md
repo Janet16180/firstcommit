@@ -316,6 +316,9 @@ E33:
 | E49 | `git remote add origin ...` again | status 3: the remote already exists |
 | E50 | `git remote set-url origin https://...`, then back to `../github/project.git` | both exit 0; `-v` shows each address in turn |
 | E51 | `git remote add mothership ...`, then `git remote remove mothership` | both exit 0; `git remote` lists the names |
+| E52 | GitHub with one commit, two clones; Alex (in one clone) commits a line to `notes.txt` and pushes; in the other, `git status` | `Your branch is up to date with 'origin/main'` |
+| E53 | then `git fetch`, `git status` | fetch 0, `origin/main` moves to Alex's commit; status says behind `origin/main` by 1 commit and can be fast-forwarded, and suggests `git pull` |
+| E54 | then `git pull`, with no name or email set | status 0, a fast-forward: `main` at Alex's commit, Alex's line in `notes.txt`; up to date again. A fast-forward makes no commit, so it needs no identity |
 | E43 | `git restore --staged .` | status 0; nothing staged; the two files keep their changes in the folder, `keys.txt` untracked |
 
 ### Level `cargo-selective` (Selective cargo, 2-2)
@@ -384,3 +387,17 @@ refused with status 3, another name.
 | `REMOTE_EXISTS` | `origin` already exists; `git remote set-url` changes its address | E49, E50 |
 | `WRONG_URL`, `HTTPS_URL` | `set-url` points `origin` at the mothership | E50 |
 | debrief | at work the address is the one GitHub shows for the project, such as `https://github.com/<you>/<project>.git`; `origin` is the usual name | GitHub's docs, "About remote repositories" (HTTPS URLs); git-clone(1) names the remote `origin` by default |
+
+### Level `mothership-incoming` (Incoming transmission, 4-3)
+
+*Re-checked* by `tests/levels/test_mothership_incoming.py`: Alex's push as a level event, your
+`origin/main` left behind, nothing counting before the push, status, fetch, status, pull, the
+second look before the fetch not counting, and a pull first.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card | `git fetch` updates `origin/main`; your `main` and files stay as they are | E53; git-fetch(1) ("Fetch branches and/or tags ... from one or more other repositories"; remote-tracking branches are updated) |
+| prediction reveal, `LOOKED`, hint 1 | `git status` compares your `main` with `origin/main`, which changes only when you fetch (or pull) | E52, E53; git-status(1) `--ahead-behind` (compares with the upstream branch) |
+| `FETCHED`, `BEHIND`, debrief | after the fetch, `git status` says behind by one | E53 |
+| hint 2, `PULLED`, debrief | `git pull` fetches again and brings Alex's commit into `main`, and Alex's line into `notes.txt` | E54; git-pull(1) ("Incorporates changes from a remote repository into the current branch ... runs git fetch") |
+| scene | your repository knows only what it heard the last time it asked | E52, E53 |
