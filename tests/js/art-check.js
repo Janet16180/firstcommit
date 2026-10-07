@@ -2,7 +2,8 @@
 
 /*
  * Checks the art-* tests share: the colour tokens a picture may use (the design's :root tokens
- * and art-style.css's --art-* ones), the classes art-style.css defines, and walks over a picture.
+ * and art-style.css's --art-* ones), the classes art-style.css and art-infographics.css define, and
+ * walks over a picture.
  */
 
 const assert = require("node:assert/strict");
@@ -16,7 +17,8 @@ const STYLE = fs.readFileSync(path.join(STATIC, "art-style.css"), "utf8").replac
 const declared = (css) => [...css.matchAll(/(--[\w-]+)\s*:/g)].map((match) => match[1]);
 const designRoot = DESIGN.slice(DESIGN.indexOf(":root{"), DESIGN.indexOf("*,*::before"));
 const TOKENS = new Set([...declared(designRoot), ...declared(STYLE.slice(0, STYLE.indexOf("}")))]);
-const STYLE_CLASSES = new Set([...STYLE.matchAll(/\.(art-[\w-]+)/g)].map((match) => match[1]));
+const INFOGRAPHICS_STYLE = fs.readFileSync(path.join(STATIC, "art-infographics.css"), "utf8").replace(/\/\*[\s\S]*?\*\//g, "");
+const STYLE_CLASSES = new Set([...(STYLE + INFOGRAPHICS_STYLE).matchAll(/\.(art-[\w-]+)/g)].map((match) => match[1]));
 
 function* walk(node) {
   yield node;
@@ -46,7 +48,7 @@ function assertPalette(node) {
   }
 }
 
-/* Every art-* class the picture uses is styled in art-style.css; modifiers (art-icon--lock) are
+/* Every art-* class the picture uses is styled in art-style.css or art-infographics.css; modifiers (art-icon--lock) are
    hooks for the page and need no rule of their own. */
 function assertStyled(node) {
   for (const element of walk(node)) {
@@ -57,4 +59,4 @@ function assertStyled(node) {
 const isHidden = (node) => node.getAttribute("aria-hidden") === "true" && !node.hasAttribute("aria-label");
 const labelOf = (node) => (node.getAttribute("role") === "img" ? node.getAttribute("aria-label") : null);
 
-module.exports = { STYLE, TOKENS, walk, colours, assertPalette, assertStyled, isHidden, labelOf };
+module.exports = { STYLE, INFOGRAPHICS_STYLE, TOKENS, walk, colours, assertPalette, assertStyled, isHidden, labelOf };
