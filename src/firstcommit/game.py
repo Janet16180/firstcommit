@@ -77,11 +77,18 @@ MIN_GIT = (2, 32)
 TARGET_GIT = (2, 43)
 MIN_PYTHON = (3, 12)
 GIT_VERSION = re.compile(r"git version (\d+)\.(\d+)")
+CHALLENGE_MOODS = ("warn", "err")
+"""What Rama still says in a challenge: danger and errors, never guidance."""
 QUEST_FIRST = "The guided quest is not finished yet: step {step} of {steps} is next."
 
 
 class LevelSummary(TypedDict):
-    """A level as the map of chapters lists it; ``stars`` is its best result, 0 while it is not done, else 1 to 3."""
+    """
+    A level as the map of chapters lists it.
+
+    ``stars`` is its best result, 0 while it is not done, else 1 to 3; ``challenge`` marks a
+    level the map shows as a boss node.
+    """
 
     id: str
     title: str
@@ -89,6 +96,7 @@ class LevelSummary(TypedDict):
     xp: int
     command: str
     stars: int
+    challenge: bool
     done: bool
     has_lesson: bool
     has_quest: bool
@@ -134,7 +142,8 @@ class ActiveView(TypedDict):
     ``auto_check`` says whether the page may check the level by itself: only once the quest is
     done (`check` refuses an automatic check before that anyway). ``commands`` counts the lines
     typed in the game's terminal since the level started, and ``stars`` the stars still in play
-    (`firstcommit.score.stars`).
+    (`firstcommit.score.stars`). ``done`` holds the ids of the quest's goals met so far, in quest
+    order: the first ``step`` ones in a guided quest, any of them in a challenge.
     """
 
     level: str
@@ -147,6 +156,7 @@ class ActiveView(TypedDict):
     auto_check: bool
     commands: int
     stars: int
+    done: list[str]
 
 
 class Status(TypedDict):
@@ -201,7 +211,9 @@ class LevelView(TypedDict):
     so a reloaded page can show what the player paid for. ``debrief`` is set once the player has
     finished the level, filled from its last play, so it shows even when the level was solved
     from the terminal. ``scene`` is empty for a level without one; ``scene_seen`` says whether
-    the player has seen it (`see_scene`).
+    the player has seen it (`see_scene`). ``challenge`` marks a level whose goals are met in any
+    order, with no guidance; its ``card`` is None until the player has solved it once, since the
+    card names the command.
     """
 
     id: str
@@ -214,7 +226,8 @@ class LevelView(TypedDict):
     par: int
     scene: list[SceneFrameView]
     scene_seen: bool
-    card: CommandCard
+    card: CommandCard | None
+    challenge: bool
     briefing: list[Block]
     question: list[Block]
     placeholder: str
@@ -267,12 +280,13 @@ GuideView = dict[str, FigureView]
 
 
 class StepResult(TypedDict):
-    """The result of a quest step: right or not, feedback, and where the quest stands now."""
+    """The result of a quest step: whether a goal was met, feedback, and where the quest stands now (``done``, as in `ActiveView`)."""
 
     correct: bool
     message: list[Block]
     step: int
     quest_done: bool
+    done: list[str]
 
 
 class CheckResult(TypedDict):
@@ -484,7 +498,8 @@ def level(level_id: str) -> LevelView:
         "par": entry.par,
         "scene": [{"art": frame.art, "text": markup.parse(frame.text)} for frame in entry.scene],
         "scene_seen": entry.id in progress["scenes"],
-        "card": _command_card(entry),
+        "card": _command_card(entry) if finished is not None or not entry.challenge else None,
+        "challenge": entry.challenge,
         "briefing": _blocks(entry.briefing, state),
         "question": _blocks(entry.question, state),
         "placeholder": _fill(entry.placeholder, state),
@@ -613,6 +628,7 @@ def start(level_id: str) -> ActiveView:
             "log_offset": commands.end(save.home() / save.COMMANDS_FILE),
             "typed": [],
             "events": [],
+            "done": [],
         }
         save.write_active(active)
     return _active_view(active, entry)
@@ -622,7 +638,8 @@ def quest_step(answer: str | None) -> StepResult:
     """
     Check the current step of the guided quest, and move on if it passed.
 
-    Only the current step is ever checked, so the quest is played in order. An answer step is
+    Only the current step is ever checked, so a guided quest is played in order; a challenge's
+    goals are all checked, and any of them may be met first. An answer step is
     checked with ``answer`` (a missing or blank one counts as empty), a watch step against the lab
     and every line typed since the level started (the page polls it with None; the log is read
     first), and a read step always passes. Once the quest is done, nothing is checked and the
@@ -646,18 +663,21 @@ def quest_step(answer: str | None) -> StepResult:
     with save.lock():
         active, entry = _playing()
         active = _catch_up(active)
-        correct = False
+        lab = runner.lab_of(entry.id)
+        reached: list[str] = []
         message: list[Block] = []
         if not _quest_done(active, entry):
-            verdict = _check_step(entry.quest[active["step"]], runner.lab_of(entry.id), active, _typed(answer))
-            correct = verdict.solved
-            message = markup.parse(verdict.message)
-        if correct:
-            reached = entry.quest[active["step"]].id
-            active["step"] += 1
+            verdicts = [(step.id, _check_step(step, lab, active, _typed(answer))) for step in _pending(active, entry)]
+            reached = [step_id for step_id, verdict in verdicts if verdict.solved]
+            unmet = [verdict for _, verdict in verdicts if not verdict.solved]
+            message = markup.parse((unmet[0] if unmet else verdicts[-1][1]).message)
+        if reached:
+            active["done"] = [step.id for step in entry.quest if step.id in {*active["done"], *reached}]
+            active["step"] = len(active["done"])
             save.write_active(active)
-            active = _fire(entry, active, reached)
-    return {"correct": correct, "message": message, "step": active["step"], "quest_done": _quest_done(active, entry)}
+        for goal in reached:
+            active = _fire(entry, active, goal)
+    return {"correct": bool(reached), "message": message, "step": active["step"], "quest_done": _quest_done(active, entry), "done": active["done"]}
 
 
 def check(answer: str | None, auto: bool) -> CheckResult:
@@ -1262,9 +1282,11 @@ def _rules(entry: runner.Level) -> tuple[ReactionRule, ...]:
     Returns
     -------
     tuple[ReactionRule, ...]
-        The level's own rules, then the shared `firstcommit.reactions.RULES`.
+        The level's own rules, then the shared `firstcommit.reactions.RULES`; in a challenge only
+        those about danger and errors (`CHALLENGE_MOODS`).
     """
-    return (*entry.reactions, *reactions.RULES)
+    rules = (*entry.reactions, *reactions.RULES)
+    return tuple(rule for rule in rules if rule.mood in CHALLENGE_MOODS) if entry.challenge else rules
 
 
 def _buttons(lab: Lab, now: save.Observed) -> dict[Who, list[ButtonView]]:
@@ -1404,7 +1426,8 @@ def _playing() -> tuple[save.Active, runner.Level]:
     NotPlayingError
         If no level is in progress, or the one in progress is no longer in the game.
     SaveError
-        If the record counts more hints or quest steps than its level has (a damaged save).
+        If the record counts more hints or quest steps than its level has, or its goals met do not
+        match its step (a damaged save).
     """
     active = save.load_active()
     levels = runner.catalogue()
@@ -1416,6 +1439,8 @@ def _playing() -> tuple[save.Active, runner.Level]:
             save.home() / save.ACTIVE_FILE,
             f"`hints` is {active['hints']} and `step` is {active['step']}, but level {entry.id} has {len(entry.hints)} hints and {len(entry.quest)} quest steps",
         )
+    if active["step"] != len(active["done"]) or not set(active["done"]) <= {step.id for step in entry.quest}:
+        raise save.damaged(save.home() / save.ACTIVE_FILE, f"`done` must list `step` ({active['step']}) goals of level {entry.id}, not {active['done']!r}")
     return active, entry
 
 
@@ -1535,6 +1560,7 @@ def _level_summary(entry: runner.Level, finished: save.LevelRecord | None) -> Le
         "xp": entry.xp,
         "command": entry.command,
         "stars": finished["stars"] if finished is not None else 0,
+        "challenge": entry.challenge,
         "done": finished is not None,
         "has_lesson": bool(entry.lesson),
         "has_quest": bool(entry.quest),
@@ -1604,7 +1630,30 @@ def _active_view(active: save.Active, entry: runner.Level) -> ActiveView:
         "auto_check": _quest_done(active, entry),
         "commands": len(active["typed"]),
         "stars": _stars(active, entry),
+        "done": active["done"],
     }
+
+
+def _pending(active: save.Active, entry: runner.Level) -> list[kit.Step]:
+    """
+    Give the quest steps to check now: the current one of a guided quest, every goal not met yet of a challenge.
+
+    Parameters
+    ----------
+    active : save.Active
+        The record of the level in progress, its quest not done.
+    entry : runner.Level
+        The level.
+
+    Returns
+    -------
+    list[kit.Step]
+        The steps, in quest order.
+    """
+    pending = [entry.quest[active["step"]]]
+    if entry.challenge:
+        pending = [step for step in entry.quest if step.id not in active["done"]]
+    return pending
 
 
 def _quest_done(active: save.Active, entry: runner.Level) -> bool:

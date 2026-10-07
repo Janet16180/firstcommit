@@ -265,7 +265,7 @@ def test_a_new_player_sees_every_chapter_no_xp_and_nothing_in_progress(sample_le
     chapters = {chapter["id"]: chapter for chapter in status["chapters"]}
     basics = chapters["basics"]
     assert basics["levels"] == [
-        {"id": "basics-sample", "title": "Say hello", "difficulty": 1, "xp": 100, "command": "git add", "stars": 0, "done": False, "has_lesson": True, "has_quest": True}
+        {"id": "basics-sample", "title": "Say hello", "difficulty": 1, "xp": 100, "command": "git add", "stars": 0, "challenge": False, "done": False, "has_lesson": True, "has_quest": True}
     ]
     assert basics["cards"] == 12
     assert chapters["start"]["levels"] == []
@@ -313,6 +313,7 @@ def test_the_dashboard_shows_the_level_in_progress(sample_level: runner.Level) -
         "auto_check": False,
         "commands": 0,
         "stars": 2,
+        "done": [],
     }
 
 
@@ -530,7 +531,7 @@ def test_starting_a_level_builds_its_lab_and_records_it(sample_level: runner.Lev
     assert (view["level"], view["step"], view["steps"], view["hints"], view["hints_total"], view["attempts"]) == ("basics-sample", 0, 3, 0, 3, 0)
     assert datetime.fromisoformat(view["started"]).tzinfo is not None
     assert (lab_project(game_home) / "hello.txt").exists()
-    assert save.load_active() == {"level": "basics-sample", "started": view["started"], "step": 0, "hints": 0, "attempts": 0, "state": {"branch": "trunk"}, "log_offset": 0, "typed": [], "events": []}
+    assert save.load_active() == {"level": "basics-sample", "started": view["started"], "step": 0, "hints": 0, "attempts": 0, "state": {"branch": "trunk"}, "log_offset": 0, "typed": [], "events": [], "done": []}
 
 
 def test_starting_again_ends_the_level_in_progress_with_a_fresh_lab(sample_level: runner.Level, game_home: Path) -> None:
@@ -578,13 +579,13 @@ def test_an_active_record_beyond_its_level_is_a_damaged_save(sample_level: runne
 
 def test_an_active_record_at_its_levels_limits_is_fine(sample_level: runner.Level) -> None:
     game.start(sample_level.id)
-    save.write_active({**active_record(), "hints": 3, "step": 3})
+    save.write_active({**active_record(), "hints": 3, "step": 3, "done": ["look", "stage", "branch"]})
     assert game.hint()["used"] == 3
     assert game.quest_step(None)["quest_done"] is True
 
 
 def test_a_level_in_progress_that_no_longer_exists_counts_as_none(sample_level: runner.Level) -> None:
-    save.write_active({"level": "basics-gone", "started": "2026-10-06T10:00:00+00:00", "step": 0, "hints": 0, "attempts": 0, "state": {}, "log_offset": 0, "typed": [], "events": []})
+    save.write_active({"level": "basics-gone", "started": "2026-10-06T10:00:00+00:00", "step": 0, "hints": 0, "attempts": 0, "state": {}, "log_offset": 0, "typed": [], "events": [], "done": []})
     assert game.status()["active"] is None
     with pytest.raises(game.NotPlayingError):
         game.check(None, auto=False)
@@ -592,7 +593,7 @@ def test_a_level_in_progress_that_no_longer_exists_counts_as_none(sample_level: 
 
 def test_a_read_step_passes_whatever_is_typed(sample_level: runner.Level) -> None:
     game.start(sample_level.id)
-    assert game.quest_step("anything") == {"correct": True, "message": [], "step": 1, "quest_done": False}
+    assert game.quest_step("anything") == {"correct": True, "message": [], "step": 1, "quest_done": False, "done": ["look"]}
 
 
 def test_a_watch_step_passes_once_the_lab_shows_it_was_done(sample_level: runner.Level, game_home: Path) -> None:
@@ -619,7 +620,7 @@ def test_an_answer_step_needs_the_right_answer(sample_level: runner.Level, game_
     assert (wrong["correct"], wrong["step"], wrong["quest_done"]) == (False, 2, False)
     assert wrong["message"] == markup.parse("Look at the first line of `git status`.")
     assert game.quest_step(None)["correct"] is False
-    assert game.quest_step(" trunk ") == {"correct": True, "message": markup.parse("Right."), "step": 3, "quest_done": True}
+    assert game.quest_step(" trunk ") == {"correct": True, "message": markup.parse("Right."), "step": 3, "quest_done": True, "done": ["look", "stage", "branch"]}
 
 
 def with_prediction(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> runner.Level:
@@ -661,10 +662,114 @@ def test_steps_other_than_a_prediction_offer_no_choices(sample_level: runner.Lev
     assert [step["choices"] for step in game.level(sample_level.id)["steps"]] == [[], [], []]
 
 
+def committed(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
+    """
+    Pass once the branch has a commit, as a challenge goal reads an end state.
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The lab.
+    state : kit.State
+        The level state.
+    typed : kit.Typed
+        Unused.
+
+    Returns
+    -------
+    kit.Verdict
+        Whether a commit exists.
+    """
+    done = kit.git_run(lab.project, "rev-parse", "-q", "--verify", "HEAD").returncode == 0
+    return kit.Verdict(done, "A commit exists." if done else "No commit yet.")
+
+
+def as_challenge(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> runner.Level:
+    """
+    Make the catalogue hold the sample level as a challenge with two goals: something staged, and a commit.
+
+    Parameters
+    ----------
+    sample_level : runner.Level
+        The sample level.
+    monkeypatch : pytest.MonkeyPatch
+        Pytest's patcher.
+
+    Returns
+    -------
+    runner.Level
+        The challenge.
+    """
+    stage = next(step for step in sample_level.quest if step.id == "stage")
+    goals = (kit.WatchStep(id="commit", text="A commit exists.", watch=committed), stage)
+    level = dataclasses.replace(sample_level, challenge=True, quest=goals)
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    return level
+
+
+def test_a_challenges_goals_tick_in_any_order(sample_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    level = as_challenge(sample_level, monkeypatch)
+    game.start(level.id)
+    kit.git(lab_project(game_home), "add", "hello.txt")
+    first = game.quest_step(None)
+    assert (first["correct"], first["done"], first["step"], first["quest_done"]) == (True, ["stage"], 1, False)
+    assert first["message"] == markup.parse("No commit yet.")
+    kit.git(lab_project(game_home), "commit", "-q", "-m", "Say hello")
+    second = game.quest_step(None)
+    assert (second["correct"], second["done"], second["quest_done"]) == (True, ["commit", "stage"], True)
+    active = game.status()["active"]
+    assert active is not None and (active["done"], active["auto_check"]) == (["commit", "stage"], True)
+
+
+def test_a_challenges_goal_stays_ticked_and_nothing_new_is_not_a_pass(sample_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    level = as_challenge(sample_level, monkeypatch)
+    game.start(level.id)
+    kit.git(lab_project(game_home), "add", "hello.txt")
+    game.quest_step(None)
+    kit.git(lab_project(game_home), "rm", "-q", "--cached", "hello.txt")
+    again = game.quest_step(None)
+    assert (again["correct"], again["done"]) == (False, ["stage"])
+
+
+def test_an_ordered_quest_reports_the_goals_met_so_far(sample_level: runner.Level) -> None:
+    game.start(sample_level.id)
+    assert game.quest_step(None)["done"] == ["look"]
+    active = game.status()["active"]
+    assert active is not None and active["done"] == ["look"]
+
+
+def test_a_challenge_is_flagged_and_its_card_stays_hidden_until_solved(sample_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    level = as_challenge(sample_level, monkeypatch)
+    view = game.level(level.id)
+    assert (view["challenge"], view["card"]) == (True, None)
+    summary = next(chapter for chapter in game.status()["chapters"] if chapter["id"] == level.chapter)["levels"][0]
+    assert summary["challenge"] is True
+    game.start(level.id)
+    solve(level)
+    assert game.check(None, auto=False)["new_card"] is not None
+    assert game.level(level.id)["card"] == {"level": level.id, "command": "git add <file>", "text": markup.parse("Copies a file into the staging area.")}
+
+
+def test_a_level_that_is_not_a_challenge_shows_its_card_and_no_flag(sample_level: runner.Level) -> None:
+    view = game.level(sample_level.id)
+    assert view["challenge"] is False and view["card"] is not None
+
+
+def test_in_a_challenge_rama_speaks_only_of_danger_and_errors(sample_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    level = as_challenge(sample_level, monkeypatch)
+    game.start(level.id)
+    game.observe()
+    kit.git(lab_project(game_home), "add", "hello.txt")
+    type_lines(game_home, ("ls", 0), ("git add hello.txt", 0), ("gti status", 127))
+    reactions_seen = game.observe()["reactions"]
+    assert [(reaction["line"], reaction["mood"]) for reaction in reactions_seen] == [("gti status", "err")]
+    assert reactions_seen[0]["text"] == markup.parse(reactions.UNKNOWN_COMMAND)
+
+
 def test_a_finished_quest_checks_nothing_more(sample_level: runner.Level) -> None:
     game.start(sample_level.id)
-    save.write_active({**active_record(), "step": 3})
-    assert game.quest_step("trunk") == {"correct": False, "message": [], "step": 3, "quest_done": True}
+    save.write_active({**active_record(), "step": 3, "done": ["look", "stage", "branch"]})
+    assert game.quest_step("trunk") == {"correct": False, "message": [], "step": 3, "quest_done": True, "done": ["look", "stage", "branch"]}
 
 
 def test_quest_steps_never_count_as_attempts(sample_level: runner.Level) -> None:
@@ -1730,3 +1835,11 @@ def test_a_game_home_inside_a_repository_never_shows_that_repository(sample_leve
     game.start(without_repository.id)
     sandbox.remove_tree(runner.lab_of(without_repository.id).project / ".git", outer / "game-home")
     assert game.observe()["project"]["exists"] is False
+
+
+def test_goals_met_that_do_not_match_the_step_are_a_damaged_save(sample_level: runner.Level) -> None:
+    game.start(sample_level.id)
+    for done in (["look", "stage"], ["fly"]):
+        save.write_active({**active_record(), "step": 1, "done": done})
+        with pytest.raises(game.SaveError, match="done"):
+            game.quest_step(None)

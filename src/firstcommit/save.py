@@ -127,7 +127,9 @@ class Active(TypedDict):
     the quest is done (and is 0 for a level without a quest). ``typed`` holds every line typed
     in the game's terminal since the level started, oldest first, read from the log of typed
     commands (`COMMANDS_FILE`, `firstcommit.commands`) up to ``log_offset``. ``events`` lists the
-    ids of the level's events (`firstcommit.kit.LevelEvent`) that have run in this play.
+    ids of the level's events (`firstcommit.kit.LevelEvent`) that have run in this play, and
+    ``done`` the ids of the quest's goals met so far, in quest order; ``step`` always equals its
+    length (a challenge's goals are met in any order).
     """
 
     level: str
@@ -139,6 +141,7 @@ class Active(TypedDict):
     log_offset: int
     typed: list[Command]
     events: list[str]
+    done: list[str]
 
 
 class Observed(TypedDict):

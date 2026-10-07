@@ -141,6 +141,8 @@ BROKEN: dict[str, tuple[types.ModuleType, str]] = {
     "a choice step with an option twice": (level_module(QUEST=[kit.ChoiceStep(id="g", text="Guess.", question="Q?", options=("a", "a"), reveal="R.")]), "options"),
     "a choice step with a blank option": (level_module(QUEST=[kit.ChoiceStep(id="g", text="Guess.", question="Q?", options=("a", " "), reveal="R.")]), "options"),
     "a choice step without a reveal": (level_module(QUEST=[kit.ChoiceStep(id="g", text="Guess.", question="Q?", options=("a", "b"), reveal="")]), "reveal"),
+    "a challenge flag that is not a boolean": (level_module(CHALLENGE="yes"), "CHALLENGE"),
+    "a challenge with a step that is not a goal to watch": (level_module(CHALLENGE=True), "CHALLENGE"),
     "events that are not level events": (level_module(EVENTS=["push"]), "EVENTS"),
     "two events with one id": (level_module(EVENTS=[kit.LevelEvent(id="a", run=nothing)] * 2), "EVENTS"),
     "an event on a goal the quest does not have": (level_module(EVENTS=[kit.LevelEvent(id="a", run=nothing, goal="fly")]), "EVENTS"),
@@ -291,3 +293,9 @@ def test_removing_the_labs_deletes_them_all_and_tolerates_none(game_home: Path) 
     runner.remove_labs()
     runner.remove_labs()
     assert not (game_home / "labs").exists()
+
+
+def test_a_level_is_a_challenge_only_when_it_says_so() -> None:
+    goals = [step for step in basics_sample.QUEST if isinstance(step, kit.WatchStep)]
+    assert runner.load(level_module(CHALLENGE=True, QUEST=goals)).challenge is True
+    assert runner.load(level_module()).challenge is False

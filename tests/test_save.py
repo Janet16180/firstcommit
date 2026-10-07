@@ -26,6 +26,7 @@ ACTIVE: save.Active = {
     "log_offset": 40,
     "typed": [{"line": "git status", "status": 128}, {"line": "ls", "status": 0}],
     "events": ["alex-pushes"],
+    "done": ["init"],
 }
 
 
@@ -178,6 +179,8 @@ ACTIVE_DAMAGE = [
     ("typed.0.status", "128"),
     ("events", ...),
     ("events.0", 3),
+    ("done", ...),
+    ("done", "init"),
     ("extra", "x"),
 ]
 

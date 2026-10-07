@@ -152,6 +152,7 @@ CARD: kit.CommandCard         # the command card the player collects: command an
 SCENE: list[kit.SceneFrame] = []        # optional; Rama's scene the first time the level opens
 REACTIONS: list[kit.ReactionRule] = []  # optional; tried before the shared ones
 EVENTS: list[kit.LevelEvent] = []       # optional; changes the level makes during the play
+CHALLENGE: bool = False                 # optional; True for a challenge (any order, no guidance)
 LESSON: list[kit.Slide] = []  # optional; the first level of a chapter has one
 QUEST: list[kit.Step] = []    # optional; the first level of a chapter has one
 BRIEFING: str                 # the situation and what counts as success
@@ -200,6 +201,11 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
   runs right after the page's first look at the lab; with a quest step's id, right after the
   player reaches that goal. The page then animates the change like any other. Each runs once per
   play, and `check` must hold whatever moment the player reaches.
+- **`CHALLENGE = True`** makes the level a challenge: its `QUEST` holds only watch steps, the
+  goals, written as end states and met in any order; the map shows it as a boss node; its card
+  stays hidden until it is solved; and Rama says only what has mood `warn` or `err`. Hint 1
+  names the chapters to recall, hint 2 the ideas. A challenge combines at least two earlier
+  chapters and teaches nothing new.
 - **`QUESTION`** is for levels whose goal is something the player finds out ("which commit
   introduced the bug?"). Without it, the page offers no answer box and the level is checked
   against the repository only, with `answer=None`.

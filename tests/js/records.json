@@ -27,6 +27,7 @@
       "xp": 100,
       "command": "git init",
       "stars": 2,
+      "challenge": false,
       "done": true,
       "has_lesson": true,
       "has_quest": true
@@ -38,6 +39,7 @@
       "xp": 150,
       "command": "git commit -m",
       "stars": 0,
+      "challenge": false,
       "done": false,
       "has_lesson": false,
       "has_quest": false
@@ -63,7 +65,10 @@
    "started": "2026-10-06T10:00:00+00:00",
    "auto_check": false,
    "commands": 3,
-   "stars": 3
+   "stars": 3,
+   "done": [
+    "look"
+   ]
   },
   "last_payout": {
    "level": "sample-first",
@@ -151,6 +156,7 @@
     }
    ]
   },
+  "challenge": false,
   "briefing": [
    {
     "kind": "para",
@@ -757,7 +763,10 @@
   "started": "2026-10-06T10:00:00+00:00",
   "auto_check": false,
   "commands": 3,
-  "stars": 3
+  "stars": 3,
+  "done": [
+   "look"
+  ]
  },
  "step": {
   "correct": false,
@@ -781,7 +790,10 @@
    }
   ],
   "step": 1,
-  "quest_done": false
+  "quest_done": false,
+  "done": [
+   "look"
+  ]
  },
  "check_unsolved": {
   "solved": false,

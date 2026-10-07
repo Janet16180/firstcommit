@@ -47,7 +47,8 @@ class Level:
     ``id`` is the module name with ``_`` turned into ``-``; ``chapter`` is the part before the
     first ``_``. The other fields are the module's names of AUTHORING.md section 3.3;
     ``question`` and ``placeholder`` are empty for a level checked against the repository only;
-    ``scene``, ``reactions`` and ``events`` are empty for a level without them.
+    ``scene``, ``reactions`` and ``events`` are empty for a level without them. ``challenge``
+    marks a level whose quest is goals met in any order, with no guidance.
     """
 
     id: str
@@ -61,6 +62,7 @@ class Level:
     scene: tuple[kit.SceneFrame, ...]
     reactions: tuple[kit.ReactionRule, ...]
     events: tuple[kit.LevelEvent, ...]
+    challenge: bool
     lesson: tuple[kit.Slide, ...]
     quest: tuple[kit.Step, ...]
     briefing: str
@@ -100,6 +102,7 @@ def load(module: ModuleType) -> Level:
     scene = getattr(module, "SCENE", [])
     level_reactions = getattr(module, "REACTIONS", [])
     events = getattr(module, "EVENTS", [])
+    challenge = getattr(module, "CHALLENGE", False)
     lesson = getattr(module, "LESSON", [])
     quest = getattr(module, "QUEST", [])
     question = getattr(module, "QUESTION", "")
@@ -118,6 +121,7 @@ def load(module: ModuleType) -> Level:
             or _lesson_problem(lesson)
             or _quest_problem(quest)
             or _events_problem(events, quest)
+            or _challenge_problem(challenge, quest)
         )
     if problem is not None:
         raise ValueError(f"level module {module.__name__}: {problem}")
@@ -133,6 +137,7 @@ def load(module: ModuleType) -> Level:
         scene=tuple(scene),
         reactions=tuple(level_reactions),
         events=tuple(events),
+        challenge=challenge,
         lesson=tuple(lesson),
         quest=tuple(quest),
         briefing=values["BRIEFING"],
@@ -387,6 +392,30 @@ def _quest_problem(quest: Any) -> str | None:
         problem = f"step {marked[0]!r}: its placeholder is plain text: no backticks"
     if problem is None:
         problem = next((found for step in choices if (found := _choice_problem(step)) is not None), None)
+    return problem
+
+
+def _challenge_problem(challenge: Any, quest: list[kit.Step]) -> str | None:
+    """
+    Check a level's challenge flag: a boolean, and for a challenge a quest of goals to watch only.
+
+    Parameters
+    ----------
+    challenge : Any
+        The module's ``CHALLENGE``.
+    quest : list[kit.Step]
+        The module's quest, already checked.
+
+    Returns
+    -------
+    str | None
+        What is wrong, or None.
+    """
+    problem = None
+    if not isinstance(challenge, bool):
+        problem = "CHALLENGE must be True or False"
+    elif challenge and not all(isinstance(step, kit.WatchStep) for step in quest):
+        problem = "CHALLENGE: a challenge's quest holds only goals to watch (kit.WatchStep), met in any order"
     return problem
 
 
