@@ -44,6 +44,7 @@ __all__ = [
     "LIST_HIDDEN",
     "AnswerCheck",
     "AnswerStep",
+    "ChoiceStep",
     "Art",
     "Command",
     "CommandCard",
@@ -66,6 +67,7 @@ __all__ = [
     "WatchStep",
     "after",
     "answer_is",
+    "choose",
     "code",
     "conflicted",
     "digest",
@@ -203,6 +205,25 @@ class ReadStep:
 
 
 @dataclass(frozen=True)
+class ChoiceStep:
+    """
+    A quest step that asks the player to predict, from two or three options, before they see.
+
+    Any option passes and nothing is lost for a wrong guess: ``reveal`` then says what really
+    happens, whichever was chosen (`choose`). ``options`` are both the text the page shows and
+    the value it sends back. ``more`` is folded under "More", as on every step.
+    """
+
+    id: str
+    text: str
+    question: str
+    options: tuple[str, ...]
+    reveal: str
+    command: str = ""
+    more: str = ""
+
+
+@dataclass(frozen=True)
 class LevelEvent:
     """
     Something a level makes happen in its lab at a moment of the play: Alex pushing, a staged scenario.
@@ -218,7 +239,7 @@ class LevelEvent:
     goal: str = ""
 
 
-Step = AnswerStep | WatchStep | ReadStep
+Step = AnswerStep | WatchStep | ReadStep | ChoiceStep
 """One step of a guided quest: each kind carries exactly what it needs, so no other shape exists."""
 
 
@@ -263,6 +284,26 @@ def after(lines: Typed, pattern: str) -> list[Command]:
     """
     worked = [index for index, line in enumerate(lines) if matches(line, pattern, "ok")]
     return list(lines[worked[-1] + 1 :] if worked else lines)
+
+
+def choose(step: ChoiceStep, answer: str) -> Verdict:
+    """
+    Judge a prediction: any of the step's options passes, with its reveal.
+
+    Parameters
+    ----------
+    step : ChoiceStep
+        The step.
+    answer : str
+        What the page sent back.
+
+    Returns
+    -------
+    Verdict
+        Passed with ``step.reveal`` for an option, exactly as written; else not passed.
+    """
+    chosen = answer in step.options
+    return Verdict(chosen, step.reveal if chosen else "Pick one of the options.")
 
 
 def parse_int(text: str | None) -> int | None:

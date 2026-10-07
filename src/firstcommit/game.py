@@ -167,15 +167,28 @@ class Status(TypedDict):
     collection: list[CommandCard]
 
 
+class Choice(TypedDict):
+    """One option of a choice or predict card, or of a prediction step: the page shows ``text`` and sends ``value`` back as the reply."""
+
+    value: str
+    text: list[Block]
+
+
 class StepView(TypedDict):
-    """A guided-quest step as the page shows it (its checks stay on the server); ``question`` is empty unless it is an answer step."""
+    """
+    A guided-quest step as the page shows it (its checks stay on the server).
+
+    ``question`` is empty unless it is an answer or a choice step; ``placeholder`` is empty unless
+    it is an answer step; ``choices`` are a choice step's options, empty for every other kind.
+    """
 
     id: str
-    kind: Literal["answer", "watch", "read"]
+    kind: Literal["answer", "watch", "read", "choice"]
     text: list[Block]
     command: str
     question: list[Block]
     placeholder: str
+    choices: list[Choice]
     more: list[Block]
 
 
@@ -330,13 +343,6 @@ class PressView(TypedDict):
     explanation: list[Block] | None
     fix: str | None
     fix_line: str
-
-
-class Choice(TypedDict):
-    """One option of a choice or predict card: the page shows ``text`` and sends ``value`` back as the reply."""
-
-    value: str
-    text: list[Block]
 
 
 class CardView(TypedDict):
@@ -1474,6 +1480,8 @@ def _check_step(step: kit.Step, lab: kit.Lab, active: save.Active, answer: str |
         verdict = step.check(lab, active["state"], answer or "")
     elif isinstance(step, kit.WatchStep):
         verdict = step.watch(lab, active["state"], active["typed"])
+    elif isinstance(step, kit.ChoiceStep):
+        verdict = kit.choose(step, answer or "")
     return verdict
 
 
@@ -1634,12 +1642,15 @@ def _step_view(step: kit.Step, state: kit.State) -> StepView:
     StepView
         The view.
     """
-    kind: Literal["answer", "watch", "read"] = "read"
+    kind: Literal["answer", "watch", "read", "choice"] = "read"
     question, placeholder = "", ""
+    options: tuple[str, ...] = ()
     if isinstance(step, kit.AnswerStep):
         kind, question, placeholder = "answer", step.question, step.placeholder
     elif isinstance(step, kit.WatchStep):
         kind = "watch"
+    elif isinstance(step, kit.ChoiceStep):
+        kind, question, options = "choice", step.question, step.options
     return {
         "id": step.id,
         "kind": kind,
@@ -1647,6 +1658,7 @@ def _step_view(step: kit.Step, state: kit.State) -> StepView:
         "command": _fill(step.command, state, _shell_word),
         "question": _blocks(question, state),
         "placeholder": _fill(placeholder, state),
+        "choices": [{"value": option, "text": markup.parse(option)} for option in options],
         "more": _blocks(step.more, state),
     }
 

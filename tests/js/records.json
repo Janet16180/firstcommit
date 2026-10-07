@@ -207,6 +207,7 @@
     "command": "",
     "question": [],
     "placeholder": "",
+    "choices": [],
     "more": []
    },
    {
@@ -240,6 +241,7 @@
      }
     ],
     "placeholder": "a file name",
+    "choices": [],
     "more": []
    },
    {
@@ -267,6 +269,7 @@
     "command": "git add notes.txt",
     "question": [],
     "placeholder": "",
+    "choices": [],
     "more": []
    }
   ],

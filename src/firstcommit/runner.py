@@ -31,6 +31,8 @@ MODULE_NAME = re.compile(r"([a-z]+)_[a-z0-9_]+")
 DIFFICULTIES = (1, 2, 3)
 MIN_HINTS = 2
 MAX_HINTS = 4
+MIN_OPTIONS = 2
+MAX_OPTIONS = 3
 
 Setup = Callable[[kit.Lab], kit.State]
 Check = Callable[[kit.Lab, kit.State, str | None, kit.Typed], kit.Verdict]
@@ -364,7 +366,7 @@ def _lesson_problem(lesson: Any) -> str | None:
 
 def _quest_problem(quest: Any) -> str | None:
     """
-    Check a level's quest: a list of steps, each of one kind (answer, watch or read).
+    Check a level's quest: a list of steps, each of one kind (answer, watch, read or choice).
 
     Parameters
     ----------
@@ -377,11 +379,37 @@ def _quest_problem(quest: Any) -> str | None:
         What is wrong, or None.
     """
     if not isinstance(quest, list) or not all(isinstance(step, kit.Step) for step in quest):
-        return "QUEST must be a list of kit.AnswerStep, kit.WatchStep and kit.ReadStep"
+        return "QUEST must be a list of kit.AnswerStep, kit.WatchStep, kit.ReadStep and kit.ChoiceStep"
     marked = [step.id for step in quest if isinstance(step, kit.AnswerStep) and "`" in step.placeholder]
+    choices = [step for step in quest if isinstance(step, kit.ChoiceStep)]
     problem = _duplicate_problem("step", [step.id for step in quest])
     if problem is None and marked:
         problem = f"step {marked[0]!r}: its placeholder is plain text: no backticks"
+    if problem is None:
+        problem = next((found for step in choices if (found := _choice_problem(step)) is not None), None)
+    return problem
+
+
+def _choice_problem(step: kit.ChoiceStep) -> str | None:
+    """
+    Check a prediction: two or three different options that are not blank, and a reveal.
+
+    Parameters
+    ----------
+    step : kit.ChoiceStep
+        The step.
+
+    Returns
+    -------
+    str | None
+        What is wrong, naming the step, or None.
+    """
+    options = step.options
+    problem = None
+    if not MIN_OPTIONS <= len(options) <= MAX_OPTIONS or len(set(options)) != len(options) or not all(_is_text(option) for option in options):
+        problem = f"step {step.id!r}: a choice step needs {MIN_OPTIONS} to {MAX_OPTIONS} different options that are not blank"
+    elif not _is_text(step.reveal):
+        problem = f"step {step.id!r}: a choice step needs a reveal, said whichever option is chosen"
     return problem
 
 

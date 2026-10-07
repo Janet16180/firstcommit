@@ -622,6 +622,45 @@ def test_an_answer_step_needs_the_right_answer(sample_level: runner.Level, game_
     assert game.quest_step(" trunk ") == {"correct": True, "message": markup.parse("Right."), "step": 3, "quest_done": True}
 
 
+def with_prediction(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> runner.Level:
+    """
+    Make the catalogue hold the sample level with a prediction before its quest.
+
+    Parameters
+    ----------
+    sample_level : runner.Level
+        The sample level.
+    monkeypatch : pytest.MonkeyPatch
+        Pytest's patcher.
+
+    Returns
+    -------
+    runner.Level
+        The level.
+    """
+    guess = kit.ChoiceStep(id="guess", text="Guess first.", question="Does `git add` change the last commit?", options=("Yes", "No"), reveal="No: it only fills the staging area.")
+    level = dataclasses.replace(sample_level, quest=(guess, *sample_level.quest))
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    return level
+
+
+def test_a_prediction_shows_its_question_and_options_and_any_option_passes_with_its_reveal(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    level = with_prediction(sample_level, monkeypatch)
+    step = game.level(level.id)["steps"][0]
+    assert (step["kind"], step["question"], step["placeholder"]) == ("choice", markup.parse("Does `git add` change the last commit?"), "")
+    assert step["choices"] == [{"value": "Yes", "text": markup.parse("Yes")}, {"value": "No", "text": markup.parse("No")}]
+    game.start(level.id)
+    refused = game.quest_step("Perhaps")
+    assert (refused["correct"], refused["step"]) == (False, 0)
+    passed = game.quest_step("Yes")
+    assert (passed["correct"], passed["message"], passed["step"]) == (True, markup.parse("No: it only fills the staging area."), 1)
+    assert active_record()["attempts"] == 0
+
+
+def test_steps_other_than_a_prediction_offer_no_choices(sample_level: runner.Level) -> None:
+    assert [step["choices"] for step in game.level(sample_level.id)["steps"]] == [[], [], []]
+
+
 def test_a_finished_quest_checks_nothing_more(sample_level: runner.Level) -> None:
     game.start(sample_level.id)
     save.write_active({**active_record(), "step": 3})

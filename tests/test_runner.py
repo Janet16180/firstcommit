@@ -136,6 +136,11 @@ BROKEN: dict[str, tuple[types.ModuleType, str]] = {
     "a reaction with an unknown mood": (level_module(REACTIONS=[kit.ReactionRule(line="git", mood="happy", text="Hi.")]), "REACTIONS"),  # type: ignore[arg-type]
     "a reaction with an unknown outcome": (level_module(REACTIONS=[kit.ReactionRule(line="git", mood="ok", text="Hi.", outcome="won")]), "REACTIONS"),  # type: ignore[arg-type]
     "a reaction without text": (level_module(REACTIONS=[kit.ReactionRule(line="git", mood="ok", text="")]), "REACTIONS"),
+    "a choice step with one option": (level_module(QUEST=[kit.ChoiceStep(id="g", text="Guess.", question="Q?", options=("Yes",), reveal="R.")]), "options"),
+    "a choice step with four options": (level_module(QUEST=[kit.ChoiceStep(id="g", text="Guess.", question="Q?", options=("a", "b", "c", "d"), reveal="R.")]), "options"),
+    "a choice step with an option twice": (level_module(QUEST=[kit.ChoiceStep(id="g", text="Guess.", question="Q?", options=("a", "a"), reveal="R.")]), "options"),
+    "a choice step with a blank option": (level_module(QUEST=[kit.ChoiceStep(id="g", text="Guess.", question="Q?", options=("a", " "), reveal="R.")]), "options"),
+    "a choice step without a reveal": (level_module(QUEST=[kit.ChoiceStep(id="g", text="Guess.", question="Q?", options=("a", "b"), reveal="")]), "reveal"),
     "events that are not level events": (level_module(EVENTS=["push"]), "EVENTS"),
     "two events with one id": (level_module(EVENTS=[kit.LevelEvent(id="a", run=nothing)] * 2), "EVENTS"),
     "an event on a goal the quest does not have": (level_module(EVENTS=[kit.LevelEvent(id="a", run=nothing, goal="fly")]), "EVENTS"),

@@ -219,6 +219,10 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
   - `kit.WatchStep(id, text, watch, command="", more="")`: `watch(lab, state, typed) -> Verdict` passes
     once the lab shows the step was done (polled like `check`; same rules);
   - `kit.ReadStep(id, text, command="", more="")`: the player reads, then continues.
+  - `kit.ChoiceStep(id, text, question, options, reveal, command="", more="")`: a prediction,
+    two or three `options` the page shows as buttons; any option passes at no cost, and `reveal`
+    says what really happens. At most one per guided level, where a named myth breaks; a checked
+    answer (a hash, an author) is an answer step. Its `QUEST_ACTIONS` entry returns one option.
 
   Every step, and every lesson slide (`kit.Slide(..., more="")`), may carry `more`: text the page
   folds under a closed "More" below its text, for detail the step or the picture does not need.
