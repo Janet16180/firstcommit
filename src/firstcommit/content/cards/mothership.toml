@@ -1,0 +1,177 @@
+notes = """
+A remote is another repository your repository knows by a short name, usually `origin`: on
+GitHub at work, a folder next to your base in the game. `git remote add` only writes the name and
+the address down; nothing travels.
+
+`git push` sends your commits to the remote, and only commits: an edit you did not commit stays
+here. The first push of a branch with `-u` also makes `origin/main` its upstream, so a plain
+`git push` and `git pull` know where to go afterwards.
+
+`origin/main` is your repository's copy of the remote's `main`, as of the last time it asked.
+`git status` compares your `main` with it, so it cannot know about a push it has not fetched.
+`git fetch` asks the remote and moves `origin/main`; `git pull` fetches, then brings the news into
+your branch. A push is refused when the remote has commits your branch does not have; nothing is
+lost, and a pull joins the two histories first.
+
+    $ git remote add origin ../github/project.git   # name the remote's address
+    $ git remote -v                                 # list the remotes
+    $ git push -u origin main                       # first push of main, with its upstream
+    $ git fetch                                     # ask the remote for news
+    $ git pull                                      # fetch, then bring the news into your branch
+"""
+
+[[card]]
+id = "mothership-remote-add"
+kind = "choice"
+level = 1
+prompt = "You run `git remote add origin ../github/project.git`. What reaches the remote?"
+correct = "Nothing: it only names the address"
+wrong = [
+    "Every commit of your repository, at once",
+    "Your files, as they are in the working folder now",
+    "Only your last commit",
+]
+explain = """
+`git remote add` writes a name and an address into your repository's configuration, and that is
+all: nothing is sent, so the remote stays as it was. Commits reach it only when you push them, and
+files never travel on their own, only inside commits.
+"""
+source = "git-remote(1), `add`"
+verify = """
+git init -q --bare remote.git
+git init -q base && cd base
+echo "Route: Earth, Moon, Mars" > map.txt && git add map.txt && git commit -q -m "Add the map"
+git remote add origin ../remote.git
+test "$(git remote get-url origin)" = "../remote.git" && test -z "$(git -C ../remote.git for-each-ref)"
+"""
+
+[[card]]
+id = "mothership-push-commits"
+kind = "choice"
+level = 1
+prompt = "Your `main` is already pushed. You edit `route.txt` and run `git push` without committing. What does the remote receive?"
+correct = "Nothing new: only commits travel"
+wrong = [
+    "The edited `route.txt`, as it is in your working folder",
+    "A new commit that holds the edit",
+    "The edit, staged for its next commit",
+]
+explain = """
+`git push` sends commits. The edit is only in your working folder, in no commit, so there is
+nothing new to send and the remote's `main` stays where it was. Commit the edit first, then push.
+"""
+source = "git-push(1), DESCRIPTION"
+verify = """
+git init -q --bare remote.git
+git init -q base && cd base
+echo "Route: Earth, Moon" > route.txt && git add route.txt && git commit -q -m "Route"
+git remote add origin ../remote.git && git push -q -u origin main
+echo "Mars" >> route.txt
+git push -q
+test "$(git -C ../remote.git rev-parse main)" = "$(git rev-parse HEAD)" && test "$(git -C ../remote.git show main:route.txt)" = "Route: Earth, Moon"
+"""
+
+[[card]]
+id = "mothership-status-stale"
+kind = "choice"
+level = 2
+prompt = "Alex pushed a commit to `main` an hour ago, and you have not fetched since. What does `git status` say about your `main`?"
+correct = "Up to date with `origin/main`"
+wrong = [
+    "Behind `origin/main` by 1 commit",
+    "It asks the remote first, then says behind by 1 commit",
+    "It cannot tell, and asks you to fetch",
+]
+explain = """
+`git status` compares your `main` with `origin/main`, your repository's copy of the remote's
+`main` as of the last fetch. It does not ask the remote, so it has not heard of Alex's push and
+says up to date. After `git fetch`, the same command says behind by 1 commit.
+"""
+source = "git-status(1), `--ahead-behind`; git-fetch(1)"
+verify = """
+git init -q --bare remote.git
+git clone -q remote.git alex 2>/dev/null && cd alex
+echo "Notes" > notes.txt && git add notes.txt && git commit -q -m "Start" && git push -q origin main && cd ..
+git clone -q remote.git you
+cd alex && echo "Alex: report" >> notes.txt && git commit -q -am "Report" && git push -q && cd ../you
+test "$(git rev-list --count main..origin/main)" = 0 && git fetch -q && test "$(git rev-list --count main..origin/main)" = 1
+"""
+
+[[card]]
+id = "mothership-fetch-changes"
+kind = "choice"
+level = 2
+prompt = "The remote has a new commit on `main`. What does `git fetch` change in your repository?"
+correct = "`origin/main` moves; your `main` and files stay"
+wrong = [
+    "Your `main` moves, and your files get the change",
+    "Only your files get the change",
+    "Nothing until you run `git status`",
+]
+explain = """
+`git fetch` downloads the new commits and moves `origin/main`, your copy of the remote's `main`.
+Your own `main` and your working folder are left alone; `git pull` is the command that fetches
+and then brings the commits into your branch.
+"""
+source = "git-fetch(1), DESCRIPTION; git-pull(1), DESCRIPTION"
+verify = """
+git init -q --bare remote.git
+git clone -q remote.git alex 2>/dev/null && cd alex
+echo "Notes" > notes.txt && git add notes.txt && git commit -q -m "Start" && git push -q origin main && cd ..
+git clone -q remote.git you
+cd alex && echo "Alex: report" >> notes.txt && git commit -q -am "Report" && git push -q && cd ../you
+before=$(git rev-parse main)
+git fetch -q
+test "$(git rev-parse main)" = "$before" && test "$(cat notes.txt)" = "Notes" && test "$(git rev-parse origin/main)" = "$(git -C ../remote.git rev-parse main)"
+"""
+
+[[card]]
+id = "mothership-push-upstream"
+kind = "text"
+level = 2
+prompt = "Your `main` has never been pushed. Which command pushes it to `origin` and makes `origin/main` its upstream, so a plain `git push` works afterwards? Type the whole command."
+accept = ["git push -u origin main", "git push --set-upstream origin main", "git push origin -u main"]
+placeholder = "a git command"
+explain = """
+`git push -u origin main` sends `main` to `origin` and records `origin/main` as its upstream.
+From then on a plain `git push` or `git pull` on `main` knows where to go. `--set-upstream` is the
+long name of `-u`.
+"""
+source = "git-push(1), `-u, --set-upstream`"
+verify = """
+git init -q --bare remote.git
+git init -q base && cd base
+echo "Route" > route.txt && git add route.txt && git commit -q -m "Route"
+git remote add origin ../remote.git
+git push -q -u origin main
+test "$(git rev-parse --abbrev-ref main@{upstream})" = "origin/main"
+"""
+
+[[card]]
+id = "mothership-refused-push"
+kind = "choice"
+level = 3
+prompt = "Alex pushed to `main` after your last pull, and you made a commit too. Your `git push` is refused. What did the refused push change?"
+correct = "Nothing, here or on the remote"
+wrong = [
+    "Your commit was deleted, so you can pull",
+    "Alex's commit was replaced by yours",
+    "Your commit was joined with Alex's on the remote",
+]
+explain = """
+A push that would drop commits from the remote's `main` is refused, and a refused push changes
+nothing: your commit stays in your repository, and Alex's on the remote. Bring Alex's commit in
+first, with `git pull`, then push again.
+"""
+source = "git-push(1), DESCRIPTION and NOTE ABOUT FAST-FORWARDS"
+verify = """
+git init -q --bare remote.git
+git clone -q remote.git alex 2>/dev/null && cd alex
+echo "Notes" > notes.txt && git add notes.txt && git commit -q -m "Start" && git push -q origin main && cd ..
+git clone -q remote.git you
+cd alex && echo "crew" > crew.txt && git add crew.txt && git commit -q -m "Crew" && git push -q && cd ../you
+echo "route" > route.txt && git add route.txt && git commit -q -m "Route"
+mine=$(git rev-parse HEAD); theirs=$(git -C ../remote.git rev-parse main)
+git push -q 2>/dev/null
+test $? -ne 0 && test "$(git rev-parse HEAD)" = "$mine" && test "$(git -C ../remote.git rev-parse main)" = "$theirs"
+"""

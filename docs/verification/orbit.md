@@ -406,7 +406,7 @@ second look before the fetch not counting, and a pull first.
 
 Every choice and text card carries a `verify` snippet and the predict card its `code`;
 `tests/test_decks.py` runs them with bash in an empty folder with the lessons' environment, so
-each claim is *re-checked* on every slow run (the image's git 2.43.0 in the Docker tier).
+each claim is *re-checked* on every run of the deck tests (with this machine's git, 2.43.0 on WSL like the image's).
 
 | Card | Claim | Evidence |
 |---|---|---|
@@ -418,3 +418,17 @@ each claim is *re-checked* on every slow run (the image's git 2.43.0 in the Dock
 | `vault-log-file` | `git log <file>` lists only the commits that changed it; `--` marks a file; `-p` and `--oneline` | `verify`; E44, E46; git-log(1) |
 | `vault-short-hash` | a unique start of a hash names the commit; `--oneline` prints one long enough | `verify`; gitrevisions(7) `<sha1>` ("a leading substring that is unique within the repository") |
 | notes | as the cards above, plus `-m` gives the message on the line | git-commit(1) `-m` |
+
+### Deck `mothership`
+
+Checked the same way as the vault deck: each `verify` snippet runs in `tests/test_decks.py`.
+
+| Card | Claim | Evidence |
+|---|---|---|
+| `mothership-remote-add` | `git remote add` only names the address; nothing reaches the remote | `verify`; E48 |
+| `mothership-push-commits` | an edit in no commit is not sent; the remote's `main` stays | `verify`: the remote's `main` and its `route.txt` unchanged after the push |
+| `mothership-status-stale` | `git status` compares with `origin/main` as of the last fetch, so it says up to date until a fetch | `verify` (counted with `git rev-list`, not git's wording); E52, E53 |
+| `mothership-fetch-changes` | `git fetch` moves `origin/main`; `main` and the files stay; `git pull` brings the commits in | `verify`; E53, E54 |
+| `mothership-push-upstream` | `git push -u origin main` records `origin/main` as the upstream; `--set-upstream` is the long name | `verify`; git-push(1) `-u, --set-upstream` |
+| `mothership-refused-push` | a refused push changes nothing here or on the remote; pull first, then push | `verify`: both tips unchanged; git-push(1) NOTE ABOUT FAST-FORWARDS |
+| notes | as the cards above; a remote is GitHub at work and a folder in the game | `Lab.github_url`; the cards |
