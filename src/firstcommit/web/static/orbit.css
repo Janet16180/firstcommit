@@ -599,6 +599,37 @@ code {
   text-overflow: ellipsis;
 }
 
+.hud-title code {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--night-ink);
+}
+
+.hud-cmds {
+  font: 1.15rem var(--f-term);
+  color: var(--night-soft);
+  white-space: nowrap;
+}
+
+.hud-stars {
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* Off stars on the night bars take the night's muted colour, as in the design. */
+.hud .art-star--off rect,
+.band .art-star--off rect {
+  fill: var(--night-mute);
+}
+
+.hud-stars.is-lost {
+  animation: hud-shake 0.5s steps(4);
+}
+
+@keyframes hud-shake {
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
+}
+
 .stage {
   max-width: 1320px;
   margin: 0 auto;
@@ -1228,6 +1259,12 @@ code {
   text-shadow: 4px 4px 0 #7A52D1;
 }
 
+.band-stars {
+  margin-top: 10px;
+  font-size: clamp(2rem, 6vw, 3rem);
+  line-height: 1;
+}
+
 .band small {
   display: block;
   margin-top: 8px;
@@ -1281,6 +1318,134 @@ code {
   margin: 0 0 0.4em;
 }
 
+.dock-xp {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.dock-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.dock-card small {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.dock-card .cmdcard {
+  padding: 6px 10px;
+}
+
+.dock-card .cmdcard code {
+  font-size: 1.15rem;
+}
+
+/* A level's scene: a window onto space over Rama's dialogue box. */
+.cutscene {
+  width: min(700px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  overflow: auto;
+  padding: 0;
+  background: var(--crt);
+  color: var(--night-ink);
+  border: 4px solid var(--night-ink);
+  outline: 4px solid var(--night-edge);
+  box-shadow: 8px 8px 0 var(--night-edge);
+}
+
+.cutscene::backdrop {
+  background: rgba(4, 3, 15, 0.66);
+}
+
+.cs-art {
+  background: var(--void);
+  border-bottom: 4px solid var(--night-ink);
+  cursor: pointer;
+}
+
+.cs-art .art-scene {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.cs-dlg {
+  position: relative;
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 6px 14px;
+  padding: 22px 18px 14px;
+}
+
+.cs-who {
+  position: absolute;
+  top: -17px;
+  left: 16px;
+  font: 700 1rem/1.5 var(--f-px);
+  background: var(--gold);
+  color: #1F1A3D;
+  border: 3px solid var(--night-edge);
+  padding: 0 10px;
+}
+
+.cs-txt {
+  min-height: 4.4em;
+  font-size: 1.08rem;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.cs-txt p {
+  margin: 0;
+}
+
+.cs-txt code {
+  background: none;
+  color: var(--crt-cmd);
+  font-weight: 700;
+}
+
+.cs-ctl {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pips {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+}
+
+.pips i {
+  width: 8px;
+  height: 8px;
+  background: var(--night-line);
+}
+
+.pips i.on {
+  background: var(--night-ink);
+}
+
+.cutscene .btn {
+  background: transparent;
+  color: var(--night-ink);
+  border-color: var(--night-ink);
+  box-shadow: none;
+}
+
+.cutscene .btn-primary {
+  background: var(--gold);
+  color: #1F1A3D;
+  border-color: var(--night-edge);
+}
+
 .dock-actions {
   display: flex;
   gap: 8px;
@@ -1328,7 +1493,135 @@ code {
     font-size: 1.4rem;
   }
 
-  .dock-actions {
+  .dock-xp {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.dock-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.dock-card small {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.dock-card .cmdcard {
+  padding: 6px 10px;
+}
+
+.dock-card .cmdcard code {
+  font-size: 1.15rem;
+}
+
+/* A level's scene: a window onto space over Rama's dialogue box. */
+.cutscene {
+  width: min(700px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  overflow: auto;
+  padding: 0;
+  background: var(--crt);
+  color: var(--night-ink);
+  border: 4px solid var(--night-ink);
+  outline: 4px solid var(--night-edge);
+  box-shadow: 8px 8px 0 var(--night-edge);
+}
+
+.cutscene::backdrop {
+  background: rgba(4, 3, 15, 0.66);
+}
+
+.cs-art {
+  background: var(--void);
+  border-bottom: 4px solid var(--night-ink);
+  cursor: pointer;
+}
+
+.cs-art .art-scene {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.cs-dlg {
+  position: relative;
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 6px 14px;
+  padding: 22px 18px 14px;
+}
+
+.cs-who {
+  position: absolute;
+  top: -17px;
+  left: 16px;
+  font: 700 1rem/1.5 var(--f-px);
+  background: var(--gold);
+  color: #1F1A3D;
+  border: 3px solid var(--night-edge);
+  padding: 0 10px;
+}
+
+.cs-txt {
+  min-height: 4.4em;
+  font-size: 1.08rem;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.cs-txt p {
+  margin: 0;
+}
+
+.cs-txt code {
+  background: none;
+  color: var(--crt-cmd);
+  font-weight: 700;
+}
+
+.cs-ctl {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pips {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+}
+
+.pips i {
+  width: 8px;
+  height: 8px;
+  background: var(--night-line);
+}
+
+.pips i.on {
+  background: var(--night-ink);
+}
+
+.cutscene .btn {
+  background: transparent;
+  color: var(--night-ink);
+  border-color: var(--night-ink);
+  box-shadow: none;
+}
+
+.cutscene .btn-primary {
+  background: var(--gold);
+  color: #1F1A3D;
+  border-color: var(--night-edge);
+}
+
+.dock-actions {
     grid-column: 1 / -1;
     justify-content: stretch;
   }
@@ -1388,7 +1681,8 @@ code {
 @media (prefers-reduced-motion: reduce) {
   .band-veil,
   .band,
-  .dock {
+  .dock,
+  .hud-stars.is-lost {
     animation: none;
   }
 }
