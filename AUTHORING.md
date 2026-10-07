@@ -152,7 +152,7 @@ QUEST: list[kit.Step] = []    # optional; the first level of a chapter has one
 BRIEFING: str                 # the situation and what counts as success
 QUESTION: str = ""            # optional; set it when the level is solved by a typed answer
 PLACEHOLDER: str = ""         # optional; example shape of that answer ("a short hash")
-HINTS: list[str]              # 2-4, from a nudge to almost the answer; each costs XP
+HINTS: list[str]              # 2-4, from a nudge to almost the answer; any hint costs the play's XP and a star
 DEBRIEF: str                  # shown once solved
 
 def setup(lab: kit.Lab) -> kit.State: ...

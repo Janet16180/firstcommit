@@ -847,12 +847,12 @@ def test_two_checks_of_a_solved_lab_at_the_same_time_pay_once(sample_level: runn
     assert save.load_progress()["xp"] == 100
 
 
-def test_hints_lower_what_a_level_pays(sample_level: runner.Level) -> None:
+def test_a_level_solved_with_a_hint_pays_no_xp(sample_level: runner.Level) -> None:
     game.start(sample_level.id)
     game.hint()
     solve(sample_level)
     payout = game.check(None, auto=False)["payout"]
-    assert payout is not None and payout["xp"] == score.level_reward(100, 1, first_time=True) == 85
+    assert payout is not None and payout["xp"] == score.level_reward(100, 1, first_time=True) == 0
 
 
 def test_a_level_starts_with_no_lines_typed_and_every_star_in_play(sample_level: runner.Level, game_home: Path) -> None:
@@ -990,12 +990,12 @@ def test_a_payout_tells_the_rank_before_and_after(sample_level: runner.Level) ->
     assert game.status()["last_payout"] == payout
 
 
-def test_hints_are_revealed_in_order_and_each_costs_its_share(sample_level: runner.Level) -> None:
+def test_hints_are_revealed_in_order_and_only_the_first_costs_the_reward(sample_level: runner.Level) -> None:
     game.start(sample_level.id)
     first = game.hint()
     second = game.hint()
-    assert (first["hint"], first["used"], first["total"], first["cost"]) == (markup.parse(sample_level.hints[0]), 1, 3, 15)
-    assert (second["hint"], second["used"], second["cost"]) == (markup.parse(sample_level.hints[1]), 2, 15)
+    assert (first["hint"], first["used"], first["total"], first["cost"]) == (markup.parse(sample_level.hints[0]), 1, 3, 100)
+    assert (second["hint"], second["used"], second["cost"]) == (markup.parse(sample_level.hints[1]), 2, 0)
 
 
 def test_asking_for_a_hint_after_the_last_one_shows_it_again_for_free(sample_level: runner.Level) -> None:
