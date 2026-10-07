@@ -4,7 +4,7 @@
  * The mission panel beside the terminal: the level's brief, its goals in order (the quest's
  * steps, done ones checked, the current one marked), and the hints. A goal the game watches for
  * passes from the terminal; one to read has a Continue button; one with a question has its answer
- * box while it is current. A level that asks a question after its steps adds it as the last goal.
+ * box while it is current; a prediction offers its choices as buttons, and any of them passes. A level that asks a question after its steps adds it as the last goal.
  * Any command in the panel types itself in the terminal when clicked. It only shows the level and
  * hands the player's actions to its owner; the server judges everything. Needs dom.js, markup.js
  * and art-sprites.js. Defines one global, Mission.
@@ -36,6 +36,10 @@ const Mission = (function () {
     const actions = {
       read: () => el("div", { class: "goal-act" }, el("button", { type: "button", class: "btn btn-primary btn-small goal-continue", onclick: () => on.onContinue() }, "Continue")),
       answer: () => answerForm(step.question, step.placeholder, on.onAnswer, "Answer"),
+      choice: () => el("div", { class: "goal-choices" },
+        el("div", { class: "goal-question" }, Markup.render(step.question)),
+        el("div", { class: "goal-act" }, step.choices.map((choice) => el("button", { type: "button", class: "btn goal-choice", onclick: () => on.onChoose(choice.value) }, Markup.spans(choice.text.flatMap((block) => block.spans || []))))),
+      ),
       watch: () => null,
     };
     return actions[step.kind]();
@@ -60,8 +64,8 @@ const Mission = (function () {
   /* A command as typed at the prompt: an example's "$ " is not part of it. */
   const command = (text) => text.replace(/^\$\s+/, "");
 
-  /* options: level (LevelView), active (ActiveView), onAnswer(text), onContinue(), onCheck(answer),
-     onHint(), onType(command). */
+  /* options: level (LevelView), active (ActiveView), onAnswer(text), onContinue(), onChoose(value),
+     onCheck(answer), onHint(), onType(command). */
   function create({ level, active, ...on }) {
     let current = active.step;
     let used = active.hints;
@@ -81,7 +85,7 @@ const Mission = (function () {
     );
     element.addEventListener("click", (event) => {
       const code = event.target.closest && event.target.closest("code");
-      if (code) on.onType(command(code.textContent));
+      if (code && !event.target.closest("button")) on.onType(command(code.textContent));
     });
 
     function drawGoals() {

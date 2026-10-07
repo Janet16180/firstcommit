@@ -121,8 +121,9 @@ const LevelScreen = (function () {
   }
 
   /* A quest step's result. A watch step polled without the player shows its message quietly: it
-     says what to do next, it is not the player's mistake. */
-  function stepped(screen, result, watched = false) {
+     says what to do next, it is not the player's mistake. A passed step's message is said in
+     `mood`: pleased for a goal met, neutral for a prediction's reveal (any answer passes). */
+  function stepped(screen, result, watched = false, mood = "ok") {
     const { ui, state, ctx } = screen;
     if (!result.correct && watched) screen.mission.note(result.message);
     if (!result.correct && !watched) {
@@ -132,7 +133,7 @@ const LevelScreen = (function () {
     if (!result.correct) return;
     state.step = result.step;
     state.auto_check = result.quest_done;
-    ui.comms.say(result.message, "ok");
+    ui.comms.say(result.message, mood);
     ctx.sound.play("goal");
     screen.mission.setStep(state.step);
   }
@@ -267,6 +268,7 @@ const LevelScreen = (function () {
       active,
       onAnswer: (answer) => send(screen, () => game.step(answer), stepped),
       onContinue: () => send(screen, () => game.step(null), stepped),
+      onChoose: (value) => send(screen, () => game.step(value), (run, result) => stepped(run, result, false, "info")),
       onCheck: (answer) => send(screen, () => game.check(answer, false), checked),
       onHint: () => send(screen, () => game.hint(), hinted),
       onType: ctx.terminal.type,

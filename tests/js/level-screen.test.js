@@ -372,3 +372,19 @@ test("a typed line gets a blip, a failed one a buzz, a ticked goal and a lost st
   assert.ok(goal.seen.sounds.includes("goal"));
   goal.view.dispose();
 });
+
+test("a prediction sends the choice, shows the reveal on Rama's line in a neutral mood, and moves on", async () => {
+  const level = seenLevel();
+  level.steps[1] = { ...level.steps[1], kind: "choice", question: para("Where does it go?"), choices: [{ value: "dock", text: para("The dock") }, { value: "vault", text: para("The vault") }] };
+  const reveal = { ...correct(2), message: para("It waits on the dock until you commit.") };
+  const run = screen({ replies: { "/api/level": level, "/api/step": reveal } });
+  await settle();
+  run.all(".goal.is-current .goal-choice")[1].click();
+  await settle();
+  assert.deepEqual(run.server.calls.at(-1).body, { answer: "vault" });
+  assert.equal(run.q(".comms-text").textContent, "It waits on the dock until you commit.");
+  assert.equal(run.q(".comms").dataset.mood, "info");
+  assert.ok(run.all(".goal")[2].classList.contains("is-current"));
+  assert.equal(run.seen.sounds.includes("correct"), false);
+  run.view.dispose();
+});

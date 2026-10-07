@@ -11,12 +11,13 @@ const { Mission } = load(["dom.js", "markup.js", "art-pixels.js", "art-sprites.j
 const para = (text) => [{ kind: "para", spans: [{ text, code: false }] }];
 
 function mission({ level = record("level"), active = record("active") } = {}) {
-  const seen = { answers: [], continued: 0, checks: [], hints: 0, typed: [] };
+  const seen = { answers: [], continued: 0, chosen: [], checks: [], hints: 0, typed: [] };
   const view = Mission.create({
     level,
     active,
     onAnswer: (text) => seen.answers.push(text),
     onContinue: () => (seen.continued += 1),
+    onChoose: (value) => seen.chosen.push(value),
     onCheck: (answer) => seen.checks.push(answer),
     onHint: () => (seen.hints += 1),
     onType: (text) => seen.typed.push(text),
@@ -149,4 +150,19 @@ test("a note on the current goal shows under it, and the same note is not drawn 
   assert.equal(run.q(".goal.is-current .goal-note"), note);
   run.view.setStep(3);
   assert.equal(run.q(".goal-note"), null);
+});
+
+const predict = () => {
+  const level = record("level");
+  level.steps[1] = { ...level.steps[1], kind: "choice", question: para("Where does the file go?"), choices: [{ value: "dock", text: para("To the dock") }, { value: "vault", text: para("Straight to the vault") }] };
+  return level;
+};
+
+test("a prediction offers its choices as buttons under the goal, and sends the one clicked", () => {
+  const run = mission({ level: predict() });
+  const buttons = run.all(".goal.is-current .goal-choice");
+  assert.deepEqual(buttons.map((button) => button.textContent), ["To the dock", "Straight to the vault"]);
+  assert.match(run.q(".goal.is-current .goal-question").textContent, /Where does the file go/);
+  buttons[1].click();
+  assert.deepEqual(run.seen.chosen, ["vault"]);
 });
