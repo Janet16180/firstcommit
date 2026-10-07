@@ -5,7 +5,7 @@ const test = require("node:test");
 const { installBrowser, load, record } = require("./load");
 
 const document = installBrowser();
-const { FieldGuide } = load(["dom.js", "art-pixels.js", "art-sprites.js", "art-infographics.js", "infographic-text.js", "field-guide.js"], ["FieldGuide"]);
+const { FieldGuide, Strings } = load(["dom.js", "strings.js", "art-pixels.js", "art-sprites.js", "art-infographics.js", "infographic-text.js", "field-guide.js"], ["FieldGuide", "Strings"]);
 
 const level = (id, done) => ({ ...record("status").chapters[1].levels[0], id, title: id, done });
 const status = (chapters) => ({ ...record("status"), chapters });
@@ -46,4 +46,18 @@ test("a move stays locked while the place or state at either end is", () => {
   const states = view.element.querySelector(".art-ig--states").textContent;
   assert.match(states, /git rm --cached/);
   assert.doesNotMatch(states, /git restore --staged/);
+});
+
+test("the guide speaks the page's language", () => {
+  Strings.use("es");
+  try {
+    const view = FieldGuide.create({ status: () => two(true, false) });
+    assert.equal(view.element.querySelector("h1").textContent, "Guía de campo");
+    assert.match(view.element.querySelector('a[href="#/"]').textContent, /Mapa/);
+    assert.match(view.element.textContent, /Taller/);
+    assert.match(view.element.textContent, /Aún no lo has aprendido/);
+    assert.doesNotMatch(view.element.textContent, /Workshop/);
+  } finally {
+    Strings.use("en");
+  }
 });
