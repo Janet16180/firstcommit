@@ -1,0 +1,100 @@
+notes = """
+Git guarda la historia de un proyecto en un repositorio. Mientras una carpeta no lo sea, Git no
+guarda nada de ella, y `git status`, como la mayoría de los comandos de Git, solo funciona dentro
+de un repositorio: en una carpeta normal se detiene con un error y no cambia nada.
+
+`git init` convierte la carpeta actual en un repositorio: crea una carpeta oculta `.git`, y ahí
+vive toda la historia. Los nombres que empiezan por punto no aparecen con un `ls` a secas;
+`ls -a` también los lista. Volver a ejecutar `git init` en un repositorio no tiene riesgo: no
+sobrescribe nada.
+
+    $ ls            # lista los archivos de esta carpeta
+    $ ls -a         # lista todos los archivos, también los ocultos
+    $ git status    # pregunta a Git cómo están las cosas (solo dentro de un repositorio)
+    $ git init      # convierte esta carpeta en un repositorio
+"""
+
+[[card]]
+id = "liftoff-ls-lists"
+prompt = "¿Qué muestra un `ls` a secas?"
+correct = "Los nombres de los archivos de la carpeta actual"
+wrong = [
+    "Los commits que Git ha guardado de esta carpeta",
+    "Los archivos que Git ha preparado para el próximo commit",
+    "Todos los archivos de la computadora, también los ocultos",
+]
+explain = """
+`ls` lista lo que hay en la carpeta actual, y un `ls` a secas deja fuera lo oculto, cuyos nombres
+empiezan por punto. No sabe nada de Git: los commits y el área de preparación son cosa de Git, y
+los muestran `git log` y `git status`. Para ver también los nombres ocultos, como `.git`, usa
+`ls -a`.
+"""
+
+[[card]]
+id = "liftoff-status-outside"
+prompt = "En una carpeta que no es un repositorio, ejecutas `git status`. ¿Qué pasa?"
+correct = "Falla, y nada cambia en la carpeta"
+wrong = [
+    "Primero convierte la carpeta en un repositorio",
+    "Lista todos los archivos de la carpeta como sin seguimiento",
+    "No muestra nada y termina bien",
+]
+explain = """
+`git status` necesita un repositorio que describir. En una carpeta normal se detiene con un error
+y deja la carpeta como estaba: no crea `.git`. Solo `git init` convierte una carpeta en un
+repositorio. Los archivos aparecen como sin seguimiento solo dentro de un repositorio, donde Git
+puede compararlos con lo que guarda.
+"""
+
+[[card]]
+id = "liftoff-status-exit-code"
+prompt = "¿Qué imprime el último comando?"
+explain = """
+`$?` guarda el código de salida del último comando. `git status` falla en una carpeta que no es un
+repositorio, y git termina con el código 128 cuando se detiene por un error fatal. 0 significaría
+que todo fue bien. 127 es lo que da la terminal cuando no encuentra el comando, y `git` sí se
+encontró.
+"""
+
+[[card]]
+id = "liftoff-init-creates"
+prompt = "¿Qué crea `git init` en la carpeta actual?"
+correct = "Una carpeta oculta `.git`, que contiene el repositorio"
+wrong = [
+    "Un primer commit con los archivos de la carpeta",
+    "Una copia de cada archivo, a salvo en `.git`",
+    "Un `README.md` que describe el proyecto",
+]
+explain = """
+`git init` crea la carpeta `.git`: el repositorio, todavía sin commits. No hace ningún commit ni
+copia tus archivos: se quedan como están en la carpeta de trabajo hasta que los prepares y hagas
+un commit. Tampoco crea ningún `README.md`; un `ls` a secas muestra los mismos archivos que antes,
+y `ls -a` muestra `.git` entre ellos.
+"""
+
+[[card]]
+id = "liftoff-hidden-option"
+prompt = "¿Qué opción hace que `ls` liste también la carpeta oculta `.git`? Escribe solo la opción."
+accept = ["-a", "-A", "-la", "-al", "-lA", "-Al", "--all", "--almost-all"]
+placeholder = "una opción, como -l"
+explain = """
+Los nombres que empiezan por punto no aparecen con un `ls` a secas. `ls -a` también los lista,
+junto con `.` y `..` (la propia carpeta y la de arriba); `ls -A` los lista sin esos dos.
+Combinadas con `-l`, también muestran detalles, un nombre por línea.
+"""
+
+[[card]]
+id = "liftoff-init-again"
+prompt = "Ejecutas `git init` en una carpeta que ya es un repositorio con commits. ¿Qué pasa?"
+correct = "No se pierde nada: los commits y los archivos siguen como estaban"
+wrong = [
+    "Git borra la historia y empieza una nueva, vacía",
+    "Git se niega, y el comando falla con un error",
+    "Git crea una segunda carpeta `.git` junto a la primera, vacía",
+]
+explain = """
+Ejecutar `git init` en un repositorio que ya existe no tiene riesgo: no sobrescribe nada de lo que
+ya hay. Los commits, la rama y tus archivos siguen como estaban, y el comando termina bien. Una
+carpeta tiene una sola `.git`; `git init` la reutiliza en vez de crear otra. Para empezar una
+historia de cero tendrías que borrar `.git` tú, y con ella se borraría la historia anterior.
+"""

@@ -8,7 +8,7 @@ the shared `RULES`, so a level can say something more precise. A line no rule fi
 reaction. Lines read in one observation share that observation's changes.
 
 The texts follow AUTHORING.md: they never quote git's messages, and they scope what they claim
-to the command the rule matches.
+to the command the rule matches. Their Spanish is `firstcommit.reactions_es`, read into `SPANISH`.
 """
 
 import re
@@ -16,6 +16,7 @@ from collections.abc import Collection, Sequence
 from dataclasses import dataclass
 from typing import Literal
 
+from firstcommit import reactions_es
 from firstcommit.records import Command, Mood
 
 Outcome = Literal["any", "ok", "failed", "unknown-command"]
@@ -139,6 +140,9 @@ RULES: tuple[ReactionRule, ...] = (
     ReactionRule(line=r"(echo|printf|cat|sed)\b", mood="warn", text=CHANGED_FILE, event="file-changed", repository=True),
 )
 """The rules every level shares, in the order they are tried."""
+
+SPANISH: dict[str, str] = {globals()[name]: text for name, text in vars(reactions_es).items() if name.isupper()}
+"""Each shared text in Spanish, by its English text: the constant of `firstcommit.reactions_es` with the same name."""
 
 
 def react(command: Command, kinds: Collection[str], repository: bool, staged: bool, rules: Sequence[ReactionRule]) -> ReactionRule | None:

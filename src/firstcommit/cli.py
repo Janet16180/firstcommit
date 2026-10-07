@@ -71,7 +71,7 @@ def _home_problem() -> str | None:
 
 def _run(run: Callable[[argparse.Namespace], int], args: argparse.Namespace) -> int:
     """
-    Run one command, turning the game's expected refusals into a message.
+    Run one command, in the language ``--lang`` picked if any, turning the game's expected refusals into a message.
 
     Parameters
     ----------
@@ -86,6 +86,8 @@ def _run(run: Callable[[argparse.Namespace], int], args: argparse.Namespace) -> 
         The command's exit status, or 1 if no level is in progress or the save is damaged.
     """
     try:
+        if args.lang is not None:
+            game.set_language(args.lang)
         status = run(args)
     except game.NotPlayingError:
         print(NO_LEVEL)
@@ -106,6 +108,7 @@ def build_parser() -> argparse.ArgumentParser:
         The parser; each command sets ``run`` to its function, and no command means ``serve``.
     """
     parser = argparse.ArgumentParser(prog="firstcommit", description="First Commit: learn Git by playing, in your browser and your terminal.")
+    parser.add_argument("--lang", choices=game.LANGUAGES, help="the language the game speaks from now on")
     commands = parser.add_subparsers(title="commands", metavar="<command>")
     serve_parser = commands.add_parser("serve", help="play in your browser (the default)")
     serve_parser.add_argument("--port", type=port_number, default=DEFAULT_PORT, help=f"local port of the page (default {DEFAULT_PORT})")

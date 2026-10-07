@@ -1,22 +1,25 @@
 """
 Flashcards: loading and validating the decks, the Leitner schedule, and judging an answer. No printing.
 
-A chapter's deck is ``content/cards/<chapter>.toml`` (AUTHORING.md section 4). Decks are content
-written by people, so every card is checked when its deck is read: a broken card is a bug in the
-content and raises with the file, the card and the field.
+A chapter's deck is ``content/cards/<chapter>.toml`` (AUTHORING.md section 4), and its texts in
+Spanish are ``<chapter>.es.toml``. Decks are content written by people, so every card is checked
+when its deck is read: a broken card is a bug in the content and raises with the file, the card
+and the field.
 """
 
 import functools
 import random
 import tomllib
 from collections.abc import Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from datetime import date, timedelta
 from pathlib import Path
+from types import MappingProxyType
 from typing import Any, Literal, cast
 
 from firstcommit import score
 from firstcommit.chapters import CHAPTERS
+from firstcommit.records import Language
 from firstcommit.save import CardEntry
 
 CardKind = Literal["choice", "text", "predict"]
@@ -40,6 +43,13 @@ KIND_FIELDS: dict[CardKind, set[str]] = {
 }
 OPTIONAL_FIELDS: dict[CardKind, set[str]] = {"choice": {"verify"}, "predict": {"verify"}, "text": {"verify", "placeholder"}}
 DECK_KEYS = {"notes", "card"}
+SPANISH_SUFFIX = ".es"
+SPANISH_FIELDS: dict[CardKind, set[str]] = {
+    "choice": {"id", "prompt", "explain", "correct", "wrong"},
+    "predict": {"id", "prompt", "explain"},
+    "text": {"id", "prompt", "explain", "accept"},
+}
+"""The fields of a card in a Spanish deck, by kind, plus ``placeholder`` when the English card has one. A predict card's options are program output and stay as they are."""
 
 
 @dataclass(frozen=True)
@@ -48,7 +58,10 @@ class Card:
     One flashcard, as validated from its deck.
 
     Fields a kind does not use are empty: ``correct`` and ``wrong`` belong to choice and predict
-    cards, ``code`` to predict cards, ``accept`` and ``placeholder`` to text cards.
+    cards, ``code`` to predict cards, ``accept`` and ``placeholder`` to text cards. ``correct``
+    and ``wrong`` are the options as written in the English deck, which the page sends back and
+    `judge` compares in every language; ``shown`` maps each of them to the text shown in another
+    language, and is empty when the options show as written (English, and predict cards).
     """
 
     id: str
@@ -64,6 +77,7 @@ class Card:
     code: str = ""
     accept: tuple[str, ...] = ()
     placeholder: str = ""
+    shown: Mapping[str, str] = field(default_factory=lambda: MappingProxyType({}))
 
 
 @dataclass(frozen=True)
@@ -75,19 +89,22 @@ class Deck:
     cards: tuple[Card, ...]
 
 
-def deck(chapter: str) -> Deck:
+def deck(chapter: str, language: Language) -> Deck:
     """
-    Load a chapter's deck from `DECKS`.
+    Load a chapter's deck from `DECKS`, in a language.
 
     Parameters
     ----------
     chapter : str
         A chapter id.
+    language : Language
+        The language of its texts.
 
     Returns
     -------
     Deck
-        The deck; empty when the chapter has no deck file yet.
+        The deck; empty when the chapter has no deck file yet, and in English when it has no
+        Spanish one.
 
     Raises
     ------
@@ -99,10 +116,16 @@ def deck(chapter: str) -> Deck:
     if chapter not in CHAPTERS:
         raise KeyError(chapter)
     path = DECKS / f"{chapter}.toml"
-    return load_deck(path) if path.exists() else Deck(chapter, "", ())
+    spanish = DECKS / f"{chapter}{SPANISH_SUFFIX}.toml"
+    found = Deck(chapter, "", ())
+    if language == "es" and spanish.exists():
+        found = load_spanish_deck(spanish)
+    elif path.exists():
+        found = load_deck(path)
+    return found
 
 
-def find(card_id: str) -> Card:
+def find(card_id: str, language: Language) -> Card:
     """
     Look a card up by its id.
 
@@ -110,6 +133,8 @@ def find(card_id: str) -> Card:
     ----------
     card_id : str
         ``<chapter>-<slug>``.
+    language : Language
+        The language of its texts.
 
     Returns
     -------
@@ -122,7 +147,7 @@ def find(card_id: str) -> Card:
         If no deck holds a card with this id.
     """
     chapter = card_id.split("-", 1)[0]
-    matches = [card for card in deck(chapter).cards if card.id == card_id] if chapter in CHAPTERS else []
+    matches = [card for card in deck(chapter, language).cards if card.id == card_id] if chapter in CHAPTERS else []
     if not matches:
         raise KeyError(card_id)
     return matches[0]
@@ -174,6 +199,133 @@ def load_deck(path: Path) -> Deck:
             raise ValueError(f"{path}: card {number} ({entry.get('id', 'no id')}): {problem}")
         loaded.append(_card(entry, chapter))
     return Deck(chapter, notes, tuple(loaded))
+
+
+@functools.cache
+def load_spanish_deck(path: Path) -> Deck:
+    """
+    Read a deck's Spanish texts and apply them to its English deck, once per process.
+
+    Parameters
+    ----------
+    path : Path
+        ``<chapter>.es.toml``, next to ``<chapter>.toml``.
+
+    Returns
+    -------
+    Deck
+        The English deck's cards in its order, with the Spanish notes, prompts, explanations,
+        accepted answers and placeholders, and the Spanish options in ``shown``.
+
+    Raises
+    ------
+    ValueError
+        If the file is not valid TOML, has unknown keys or no notes, lacks a card of the English
+        deck, holds a card it does not have or one twice, or a card with missing, unknown or
+        broken fields; the message names the file (and the card and field).
+    """
+    english = load_deck(path.with_name(path.name.removesuffix(f"{SPANISH_SUFFIX}.toml") + ".toml"))
+    try:
+        data = tomllib.loads(path.read_text())
+    except tomllib.TOMLDecodeError as error:
+        raise ValueError(f"{path}: not valid TOML: {error}") from error
+    unknown = sorted(set(data) - DECK_KEYS)
+    entries = data.get("card", [])
+    problem = None
+    if unknown:
+        problem = f"`{unknown[0]}` is not a key of a deck (only `notes` and `[[card]]`)"
+    elif not isinstance(data.get("notes"), str) or bool(data["notes"].strip()) != bool(english.notes.strip()):
+        problem = "`notes` is missing, or is not text, or is not empty only when the English notes are not"
+    elif not isinstance(entries, list) or not all(isinstance(entry, dict) for entry in entries):
+        problem = "`card` must be a list of [[card]] tables"
+    if problem is not None:
+        raise ValueError(f"{path}: {problem}")
+    by_id = {card.id: card for card in english.cards}
+    seen: set[str] = set()
+    for number, entry in enumerate(entries, start=1):
+        card_id = entry.get("id")
+        problem = None
+        if card_id not in by_id:
+            problem = f"`{card_id}` is not a card of {english.chapter}.toml"
+        elif card_id in seen:
+            problem = "the card is translated twice"
+        else:
+            problem = _spanish_card_problem(entry, by_id[card_id])
+        if problem is not None:
+            raise ValueError(f"{path}: card {number} ({card_id}): {problem}")
+        seen.add(card_id)
+    missing = [card.id for card in english.cards if card.id not in seen]
+    if missing:
+        raise ValueError(f"{path}: the card {missing[0]} of {english.chapter}.toml has no Spanish card")
+    translated = {entry["id"]: entry for entry in entries}
+    return Deck(english.chapter, data["notes"], tuple(_spanish_card(card, translated[card.id]) for card in english.cards))
+
+
+def _spanish_card_problem(entry: dict[str, Any], card: Card) -> str | None:
+    """
+    Find what is wrong with one card table of a Spanish deck, if anything.
+
+    Parameters
+    ----------
+    entry : dict[str, Any]
+        The ``[[card]]`` table.
+    card : Card
+        The English card it translates.
+
+    Returns
+    -------
+    str | None
+        The first problem found, naming the field, or None for a valid card.
+    """
+    fields = SPANISH_FIELDS[card.kind] | ({"placeholder"} if card.placeholder else set())
+    unknown = sorted(set(entry) - fields)
+    missing = sorted(fields - set(entry))
+    texts = sorted(fields - {"id", "wrong", "accept"})
+    bad_texts = [name for name in texts if not isinstance(entry[name], str) or not entry[name].strip()] if not missing else []
+    problem = None
+    if unknown:
+        problem = f"`{unknown[0]}` is not a field of a {card.kind} card in a Spanish deck"
+    elif missing:
+        problem = f"`{missing[0]}` is missing"
+    elif bad_texts:
+        problem = f"`{bad_texts[0]}` must be text that is not empty"
+    elif "`" in entry.get("placeholder", ""):
+        problem = "`placeholder` is plain text: no backticks"
+    elif card.kind == "text":
+        problem = _list_problem(entry["accept"], "accept", 1, None)
+    elif card.kind == "choice":
+        problem = _list_problem(entry["wrong"], "wrong", len(card.wrong), len(card.wrong))
+        if problem is None and entry["correct"] in entry["wrong"]:
+            problem = "`wrong` holds the same text twice, `correct` among them"
+    return problem
+
+
+def _spanish_card(card: Card, entry: dict[str, Any]) -> Card:
+    """
+    Apply a valid Spanish card table to its English card.
+
+    Parameters
+    ----------
+    card : Card
+        The English card.
+    entry : dict[str, Any]
+        Its ``[[card]]`` table, which `_spanish_card_problem` accepted.
+
+    Returns
+    -------
+    Card
+        The card with its Spanish texts; the options it sends and judges stay the English ones.
+    """
+    options = [card.correct, *card.wrong] if card.kind == "choice" else []
+    shown = [entry["correct"], *entry["wrong"]] if card.kind == "choice" else []
+    return replace(
+        card,
+        prompt=entry["prompt"],
+        explain=entry["explain"],
+        accept=tuple(entry.get("accept", card.accept)),
+        placeholder=entry.get("placeholder", ""),
+        shown=MappingProxyType(dict(zip(options, shown, strict=True))),
+    )
 
 
 def _card_problem(entry: dict[str, Any], chapter: str) -> str | None:

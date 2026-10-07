@@ -433,6 +433,27 @@ def api_reset(body: dict[str, Any]) -> Reply:
     return HTTPStatus.OK, {}
 
 
+def api_language(body: dict[str, Any]) -> Reply:
+    """
+    POST /api/language {"language": "en" or "es"}: make the game speak a language.
+
+    Parameters
+    ----------
+    body : dict[str, Any]
+        The JSON body.
+
+    Returns
+    -------
+    Reply
+        200 and ``{}``; 400 unless ``language`` is one of `game.LANGUAGES`.
+    """
+    language = body.get("language")
+    if language not in game.LANGUAGES:
+        return bad(f"send {{\"language\": ...}} with one of {', '.join(game.LANGUAGES)}")
+    game.set_language(language)
+    return HTTPStatus.OK, {}
+
+
 def api_cards(query: dict[str, Any]) -> Reply:
     """
     GET /api/cards?chapter=&limit=: the cards to review.
@@ -554,6 +575,7 @@ ROUTES: dict[tuple[str, str], shell.Route] = {
         ("GET", "/api/observe"): api_observe,
         ("POST", "/api/abort"): api_abort,
         ("POST", "/api/reset"): api_reset,
+        ("POST", "/api/language"): api_language,
         ("GET", "/api/cards"): api_cards,
         ("POST", "/api/card"): api_card,
         ("GET", "/api/notes"): api_notes,

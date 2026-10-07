@@ -247,6 +247,44 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
 - The message of a `check` or a `watch` is shown as it is: it is never filled, because it may
   hold names the player chose (a file named `{{answer}}` must not reveal `state["answer"]`).
   Build it with the values it needs, and put each name the player chose through `kit.code`.
+- Every message a `check`, a `watch` or a reaction rule gives is a **module constant**
+  (`STAGED = "..."`), so its Spanish can be found by name (section 3.7).
+
+### 3.7 Spanish texts
+
+The game speaks English or Spanish, as the player picks. A level's Spanish lives next to it in
+`levels/<chapter>_<slug>_es.py`, which is never read as a level:
+
+```python
+from firstcommit import kit
+
+TITLE: str
+BRIEFING: str
+QUESTION: str                 # only when the English module has one; PLACEHOLDER likewise
+HINTS: list[str]              # as many as the English HINTS
+DEBRIEF: str
+CARD: str                     # the command card's text; its command stays as it is
+SCENE: list[str]              # one text per scene frame; the pictures stay
+STEPS: dict[str, kit.StepText]  # one per quest step, by step id
+STAGED = "..."                # one constant per English message, with the same name
+```
+
+`kit.StepText(text, more="", question="", placeholder="", options=(), reveal="")` holds a step's
+texts, with exactly the fields its English step has; a prediction's options keep their English
+values (the page sends them back), and only their shown text is translated. `runner.load`
+refuses a sibling that lacks a text or has one the English module does not, and names it.
+`tests/test_levels.py` checks that every message a check or a watch gives on the walk has its
+Spanish, and `tests/test_translations.py` that every Spanish text keeps the shape of its
+English: the same `{{placeholders}}`, code spans and commands, and as many paragraphs and
+bullets.
+
+The shared reactions' Spanish is `reactions_es.py`, a deck's `content/cards/<chapter>.es.toml`
+(section 4.1), the chapters' names and blurbs sit next to the English in `chapters.py`, and the
+game's own messages in `game.SPANISH`. Lessons, the changes the page animates and the
+playground's explanations stay English.
+
+Write the Spanish as a Spanish-speaking teacher would, not word for word (section 7). Commands,
+file names, branch names, commit messages and git's own output stay as they are.
 
 ### 3.4 Reading the lab
 
@@ -447,6 +485,13 @@ source = "git-hash-object(1)"
   `grep -q ...`, `git diff --cached --quiet`), and invert it once by hand to see the snippet fail.
 - **text**: short, unambiguous answers; list every reasonable spelling in `accept`.
 
+A deck's Spanish is `<chapter>.es.toml`, with Spanish `notes` and one `[[card]]` per English
+card, by `id`: `prompt` and `explain`; for a choice card `correct` and `wrong`, in the English
+order (the page still sends, and the game judges, the English option); for a text card
+`accept`, the spellings a Spanish speaker may type, and `placeholder` when the English card has
+one. A predict card's options are program output and are not translated. Kind, level, source,
+code and verify stay in the English deck.
+
 ### 4.2 What makes a good card
 
 - Tests understanding: "what happens when...", "why...", "what does this print...".
@@ -495,4 +540,18 @@ Beginners learn the words with the ideas, so use one word for one thing, everywh
 
 - Define a term the first time it appears in a level; link the idea to what the player just saw.
 - Short sentences, active voice. No "simply", "just", "obviously" or "easy".
-- English only. No emojis.
+- English, and Spanish beside it (section 3.7). No emojis.
+
+In Spanish, address the player as `tú`, and keep the same one word for one thing:
+
+| English | Spanish |
+|---|---|
+| working folder | carpeta de trabajo |
+| staging area | área de preparación |
+| stage, unstage | preparar, sacar del área de preparación |
+| repository | repositorio |
+| commit (noun); to commit | commit; hacer un commit |
+| branch | rama |
+| hash | hash |
+| untracked | sin seguimiento |
+| remote | remoto |

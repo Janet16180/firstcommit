@@ -45,6 +45,7 @@ from firstcommit.repomap import (
 __all__ = [
     "GAME",
     "LIST_HIDDEN",
+    "PICK_ONE",
     "AnswerCheck",
     "AnswerStep",
     "ChoiceStep",
@@ -60,6 +61,7 @@ __all__ = [
     "ReadStep",
     "Ref",
     "SceneFrame",
+    "StepText",
     "Slide",
     "Snapshot",
     "State",
@@ -240,6 +242,24 @@ class ChoiceStep:
 
 
 @dataclass(frozen=True)
+class StepText:
+    """
+    A quest step's texts in another language, by the step's id in the level's Spanish module (``STEPS``).
+
+    Each field matches the step's own: ``question`` for an answer or choice step, ``placeholder``
+    for an answer step, ``options`` (in the same order) and ``reveal`` for a choice step; empty
+    where the step has none.
+    """
+
+    text: str
+    more: str = ""
+    question: str = ""
+    placeholder: str = ""
+    options: tuple[str, ...] = ()
+    reveal: str = ""
+
+
+@dataclass(frozen=True)
 class LevelEvent:
     """
     Something a level makes happen in its lab at a moment of the play: Alex pushing, a staged scenario.
@@ -302,6 +322,10 @@ def after(lines: Typed, pattern: str) -> list[Command]:
     return list(lines[worked[-1] + 1 :] if worked else lines)
 
 
+PICK_ONE = "Pick one of the options."
+"""What `choose` says to an answer that is none of the options."""
+
+
 def choose(step: ChoiceStep, answer: str) -> Verdict:
     """
     Judge a prediction: any of the step's options passes, with its reveal.
@@ -319,7 +343,7 @@ def choose(step: ChoiceStep, answer: str) -> Verdict:
         Passed with ``step.reveal`` for an option, exactly as written; else not passed.
     """
     chosen = answer in step.options
-    return Verdict(chosen, step.reveal if chosen else "Pick one of the options.")
+    return Verdict(chosen, step.reveal if chosen else PICK_ONE)
 
 
 def parse_int(text: str | None) -> int | None:

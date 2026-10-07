@@ -9,8 +9,9 @@ from typing import Any
 import pytest
 
 from firstcommit import gitcmd, kit, runner
-from sample_levels import cargo_sample
+from sample_levels import cargo_sample, cargo_sample_es
 
+SPANISH = ["TITLE", "BRIEFING", "HINTS", "DEBRIEF", "CARD", "SCENE", "STEPS", "HELLO_STAGED", "STAGED", "NOT_STAGED", "RIGHT", "LOOK", "COMMITTED", "NOT_COMMITTED"]
 CONTRACT = ["TITLE", "DIFFICULTY", "XP", "COMMAND", "PAR", "CARD", "SCENE", "LESSON", "QUEST", "BRIEFING", "HINTS", "DEBRIEF", "REACTIONS", "setup", "check", "solve"]
 
 
@@ -41,15 +42,59 @@ def level_module(name: str = "cargo_sample", **changes: Any) -> types.ModuleType
     return module
 
 
+def spanish_module(**changes: Any) -> types.ModuleType:
+    """
+    Make the Spanish sibling of a level module from the sample's, with some names changed (or removed when given ``...``).
+
+    Parameters
+    ----------
+    **changes : Any
+        Names to set, or ``...`` to leave out.
+
+    Returns
+    -------
+    types.ModuleType
+        The module.
+    """
+    module = types.ModuleType("sample_levels.cargo_sample_es")
+    for key in SPANISH:
+        setattr(module, key, getattr(cargo_sample_es, key))
+    for key, value in changes.items():
+        if value is ...:
+            delattr(module, key)
+        else:
+            setattr(module, key, value)
+    return module
+
+
+def test_a_level_reads_its_texts_in_english_and_in_spanish_from_its_sibling() -> None:
+    level = runner.load(cargo_sample, cargo_sample_es)
+    english, spanish = level.texts["en"], level.texts["es"]
+    assert (english.title, english.card, english.hints) == ("Say hello", cargo_sample.CARD.text, tuple(cargo_sample.HINTS))
+    assert (spanish.title, spanish.briefing, spanish.card) == ("Di hola", cargo_sample_es.BRIEFING, cargo_sample_es.CARD)
+    assert spanish.scene == tuple(cargo_sample_es.SCENE)
+    assert spanish.steps["branch"] == kit.StepText(text="Encuentra la rama.", question="¿Qué rama es `{{branch}}`?", placeholder="un nombre de rama")
+    assert english.steps["branch"] == kit.StepText(text="Find the branch.", question="Which branch is `{{branch}}`?", placeholder="a branch name")
+    assert spanish.messages[cargo_sample.LOOK] == cargo_sample_es.LOOK
+    assert spanish.messages[cargo_sample.HELLO_STAGED] == cargo_sample_es.HELLO_STAGED
+    assert english.messages == {}
+
+
+def test_without_a_spanish_sibling_a_level_shows_its_english_texts() -> None:
+    level = runner.load(cargo_sample)
+    assert level.texts["es"] == dataclasses.replace(level.texts["en"])
+
+
 def test_a_level_module_is_read_into_a_typed_record() -> None:
     level = runner.load(cargo_sample)
-    assert (level.id, level.chapter, level.title, level.difficulty, level.xp) == ("cargo-sample", "cargo", "Say hello", 1, 100)
+    english = level.texts["en"]
+    assert (level.id, level.chapter, english.title, level.difficulty, level.xp) == ("cargo-sample", "cargo", "Say hello", 1, 100)
     assert level.lesson == tuple(cargo_sample.LESSON)
     assert level.quest == tuple(cargo_sample.QUEST)
-    assert level.hints == tuple(cargo_sample.HINTS)
-    assert (level.briefing, level.debrief) == (cargo_sample.BRIEFING, cargo_sample.DEBRIEF)
+    assert english.hints == tuple(cargo_sample.HINTS)
+    assert (english.briefing, english.debrief) == (cargo_sample.BRIEFING, cargo_sample.DEBRIEF)
     assert (level.setup, level.check, level.solve) == (cargo_sample.setup, cargo_sample.check, cargo_sample.solve)
-    assert (level.question, level.placeholder) == ("", "")
+    assert (english.question, english.placeholder) == ("", "")
     assert (level.command, level.par, level.card) == ("git add", 3, cargo_sample.CARD)
     assert (level.scene, level.reactions) == (tuple(cargo_sample.SCENE), tuple(cargo_sample.REACTIONS))
 
@@ -80,7 +125,7 @@ def test_a_level_reads_its_events_and_has_none_by_default() -> None:
 
 def test_a_level_solved_by_a_typed_answer_reads_its_question_and_placeholder() -> None:
     level = runner.load(level_module(QUESTION="Which commit broke it?", PLACEHOLDER="a short hash"))
-    assert (level.question, level.placeholder) == ("Which commit broke it?", "a short hash")
+    assert (level.texts["en"].question, level.texts["en"].placeholder) == ("Which commit broke it?", "a short hash")
 
 
 def test_a_level_record_cannot_be_changed() -> None:
@@ -169,6 +214,27 @@ BROKEN: dict[str, tuple[types.ModuleType, str]] = {
 }
 
 
+BROKEN_SPANISH: dict[str, tuple[types.ModuleType, str]] = {
+    "no title": (spanish_module(TITLE=...), "TITLE"),
+    "a blank briefing": (spanish_module(BRIEFING=" "), "BRIEFING"),
+    "one hint fewer": (spanish_module(HINTS=cargo_sample_es.HINTS[:2]), "HINTS"),
+    "no card text": (spanish_module(CARD=...), "CARD"),
+    "a scene frame fewer": (spanish_module(SCENE=cargo_sample_es.SCENE[:1]), "SCENE"),
+    "a step missing": (spanish_module(STEPS={key: value for key, value in cargo_sample_es.STEPS.items() if key != "stage"}), "STEPS"),
+    "a step the quest does not have": (spanish_module(STEPS={**cargo_sample_es.STEPS, "fly": kit.StepText(text="Vuela.")}), "STEPS"),
+    "a step without its question": (spanish_module(STEPS={**cargo_sample_es.STEPS, "branch": kit.StepText(text="Encuentra la rama.")}), "branch"),
+    "a message the level does not have": (spanish_module(EXTRA="Sobra."), "EXTRA"),
+    "a message that is not text": (spanish_module(RIGHT=3), "RIGHT"),
+}
+
+
+@pytest.mark.parametrize("case", BROKEN_SPANISH.values(), ids=list(BROKEN_SPANISH))
+def test_a_broken_spanish_sibling_is_a_bug_named_after_its_module(case: tuple[types.ModuleType, str]) -> None:
+    spanish, problem = case
+    with pytest.raises(ValueError, match=rf"cargo_sample_es.*{problem}"):
+        runner.load(cargo_sample, spanish)
+
+
 @pytest.mark.parametrize("case", BROKEN.values(), ids=list(BROKEN))
 def test_a_broken_level_module_is_a_bug_named_after_its_module(case: tuple[types.ModuleType, str]) -> None:
     module, problem = case
@@ -197,6 +263,7 @@ def level_package(tmp_path: Path) -> Iterator[types.ModuleType]:
     (package / "_shared.py").write_text("raise RuntimeError('a helper is not a level')\n")
     for name, difficulty in [("cargo_b", 2), ("cargo_a", 2), ("start_z", 3), ("cargo_c", 1)]:
         (package / f"{name}.py").write_text(f"from sample_levels.cargo_sample import *\nDIFFICULTY = {difficulty}\n")
+    (package / "cargo_a_es.py").write_text("from sample_levels.cargo_sample_es import *\n")
     sys.path.insert(0, str(tmp_path))
     yield importlib.import_module("fakelevels")
     sys.path.remove(str(tmp_path))
@@ -206,6 +273,11 @@ def level_package(tmp_path: Path) -> Iterator[types.ModuleType]:
 
 def test_levels_are_found_in_chapter_then_difficulty_then_id_order_without_helpers(level_package: types.ModuleType) -> None:
     assert list(runner.discover(level_package)) == ["cargo-c", "cargo-a", "cargo-b", "start-z"]
+
+
+def test_a_spanish_sibling_is_read_with_its_level_and_is_no_level_itself(level_package: types.ModuleType) -> None:
+    levels = runner.discover(level_package)
+    assert (levels["cargo-a"].texts["es"].title, levels["cargo-b"].texts["es"].title) == ("Di hola", "Say hello")
 
 
 def test_the_catalogue_is_read_once() -> None:
