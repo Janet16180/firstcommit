@@ -302,6 +302,13 @@ E33:
 | E34 | a new repository with `engine.cfg`, `route.txt` and `keys.txt`; `git add engine.cfg route.txt` | status 0; `A  engine.cfg`, `A  route.txt`, `?? keys.txt` |
 | E35 | `git add .` there, then `git rm --cached keys.txt` | both 0; all three staged, then `keys.txt` untracked again and still in the folder |
 | E36 | `git add engine.cfg nosuch.txt` | status 128; nothing new staged |
+| E37 | one commit of `engine.cfg` and `route.txt`, both changed since, `keys.txt` new; `git add .`; `git status` | all three staged; git's hint for unstaging names `git restore --staged <file>...` |
+| E38 | then `git restore --staged keys.txt` | status 0; `keys.txt` untracked and still in the folder; the other two still staged |
+| E39 | the same with `git rm --cached keys.txt` | status 0; the same result |
+| E40 | the same with `git rm keys.txt` | status 1; git refuses (the file has staged changes, use `--cached` to keep it); nothing changed |
+| E41 | `rm keys.txt` (the shell), then `git restore keys.txt` | after `rm`: `AD keys.txt`; the restore exits 0 and the file is back, as staged |
+| E42 | `rm keys.txt`, then `git restore --staged keys.txt`, then `git restore keys.txt` | the first restore exits 0, and the file is in no area; the second exits 1: git knows no such path |
+| E43 | `git restore --staged .` | status 0; nothing staged; the two files keep their changes in the folder, `keys.txt` untracked |
 
 ### Level `cargo-selective` (Selective cargo, 2-2)
 
@@ -318,3 +325,21 @@ first commit, and keys that reach a commit.
 | `NOTHING_TO_RESTORE` | as cargo-first's: `git restore --staged` fails before the first commit | E15 |
 | `KEYS_COMMITTED` (lost) | a committed `keys.txt` is in the history; taking a commit back is taught later | `kit.in_history` (every ref); chapters-3-7 puts revert and reset in chapter 7 |
 | `NO_REPOSITORY` | as cargo-first's | E32 |
+
+### Level `cargo-stowaway` (Stowaway, 2-3)
+
+*Re-checked* by `tests/levels/test_cargo_stowaway.py`: the night shift's add (a level event), both
+ways to unstage, `git rm` refused, the deleted file restored from the staging area, the deleted
+and unstaged file lost, `git restore --staged .`, and keys that reach a commit.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card | `git restore --staged <file>` takes the file out of the staging area, back to its version in the last commit; the working folder keeps the file | E38; git-restore(1) ("restored from HEAD", "Specifying --staged will only restore the index") |
+| briefing | `git add .` staged the keys with the engine and the route | E37 |
+| hint 1, `LOOKED` | `git status` names the command that unstages a file | E37 |
+| debrief | the last commit has no `keys.txt`, so restoring the staging area from it takes the keys out; the folder untouched, the file untracked; the other two still staged | E38; git-restore(1) |
+| `RM_REFUSED` (`git rm` without `--cached`, failed) | Git refused; without `--cached`, `git rm` deletes the file from the working folder too; `git restore --staged` unstages only | E40; git-rm(1) ("remove files from the working tree and from the index", `--cached`) |
+| `DELETED` | after `rm keys.txt` the file is still staged; `git restore keys.txt` copies it back from the staging area | E41; git-restore(1) ("otherwise from the index") |
+| `KEYS_LOST` (lost) | in neither area and in no commit, that copy is lost; unstaging never needs deleting | E42 (the blob may linger in the object database, but nothing names it; recovering it is not taught, so the scope is "that copy") |
+| `CARGO_UNSTAGED` | `git add engine.cfg route.txt` stages them again | E43, E34 |
+| `KEYS_COMMITTED`, `NO_REPOSITORY` | as cargo-selective's | `kit.in_history`; E32 |
