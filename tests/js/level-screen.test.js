@@ -12,7 +12,7 @@ const { LevelScreen, createGameApi } = load(
 );
 
 const para = (text) => [{ kind: "para", spans: [{ text, code: false }] }];
-const correct = (step, questDone = false) => ({ correct: true, message: para("Right."), step, quest_done: questDone });
+const correct = (step, questDone = false, done = []) => ({ correct: true, message: para("Right."), step, quest_done: questDone, done });
 
 /* The sample level, its scene already seen unless the test says otherwise. */
 const seenLevel = () => ({ ...record("level"), scene_seen: true });

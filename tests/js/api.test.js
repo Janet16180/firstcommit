@@ -318,3 +318,28 @@ test("an observation must carry Rama's reactions, each with its line, a known mo
   await refused("/api/observe", (observation) => (observation.reactions[0].mood = "happy"), (game) => game.observe());
   await refused("/api/observe", (observation) => delete observation.reactions[0].line, (game) => game.observe());
 });
+
+test("a quest step may be a choice, with its options as text to show and a value to send back", async () => {
+  const level = record("level");
+  level.steps[0] = { ...level.steps[0], kind: "choice", choices: [{ value: "a", text: [{ kind: "para", spans: [{ text: "A", code: false }] }] }] };
+  const { game } = gameApi({ ...REPLIES, "/api/level": level });
+  assert.equal((await game.level("x")).steps[0].choices[0].value, "a");
+  await refused("/api/level", (view) => delete view.steps[0].choices, (api) => api.level("x"));
+  await refused("/api/level", (view) => (view.steps[0].choices = [{ value: "a" }]), (api) => api.level("x"));
+});
+
+test("a challenge is marked on the map and on its level, whose card may be null until solved", async () => {
+  const { game } = gameApi({ ...REPLIES, "/api/level": { ...record("level"), challenge: true, card: null } });
+  assert.equal((await game.level("x")).card, null);
+  await refused("/api/level", (view) => delete view.challenge, (api) => api.level("x"));
+  await refused("/api/status", (status) => delete status.chapters[1].levels[0].challenge, (api) => api.status());
+});
+
+test("the level in progress and a step's result say which goals are done", async () => {
+  await refused("/api/start", (active) => delete active.done, (api) => api.start("x"));
+  await refused("/api/step", (step) => (step.done = "look"), (api) => api.step(null));
+});
+
+test("a check says whether the player's work is lost for good", async () => {
+  await refused("/api/check", (check) => delete check.lost, (api) => api.check(null, false));
+});
