@@ -960,6 +960,7 @@ input[type="text"]::placeholder {
    top-left corner keeps the current step in view. */
 
 .practice.is-folded {
+  --task-row: 2.3rem;
   grid-template-columns: minmax(0, 1fr);
 }
 
@@ -998,15 +999,21 @@ input[type="text"]::placeholder {
   gap: 0.25rem;
 }
 
+/* The card is one line on the right of the live panel's first heading row, which grows a little
+   while folded so the card covers no part of the map. */
 .task-card {
   position: absolute;
-  top: 0.5rem;
-  left: 0.6rem;
+  top: calc(0.9rem + 0.8rem + 1px);
+  right: calc(1rem + 0.95rem + 1px);
   z-index: 5;
-  width: min(320px, 40%);
-  padding: 0.65rem 0.85rem 0.7rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: calc(100% - 2rem - 2rem - 15rem);
+  height: var(--task-row);
+  padding: 0 0.3rem 0 0.85rem;
   border: 1px solid var(--accent);
-  border-radius: var(--radius-small);
+  border-radius: 999px;
   background: var(--surface);
   box-shadow: var(--shadow);
 }
@@ -1016,23 +1023,39 @@ input[type="text"]::placeholder {
 }
 
 .task-card .task-kicker {
-  margin: 0 0 0.25rem;
+  flex: none;
+  margin: 0;
+  color: var(--accent-strong);
 }
 
 .task-card .task-text {
-  font-size: 0.92rem;
-  line-height: 1.45;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .task-card .task-text p {
+  display: inline;
   margin: 0;
 }
 
 .task-actions {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-top: 0.55rem;
+  flex: none;
+  gap: 0.35rem;
+}
+
+.task-actions .btn {
+  padding-block: 0.2rem;
+}
+
+.practice.is-folded .live-three > h3,
+.practice.is-folded .live-project > h3 {
+  min-height: var(--task-row);
+  margin-bottom: 0.2rem;
 }
 
 .task-card.is-new {

@@ -132,7 +132,7 @@ const Practice = (function () {
     }, "Continue");
     ui.card.replaceChildren(
       el("p", { class: "kicker task-kicker" }, task.kicker),
-      el("div", { class: "prose task-text" }, Markup.render(task.blocks.slice(0, 1))),
+      el("div", { class: "prose task-text", title: Markup.plain(task.blocks.slice(0, 1)) }, Markup.render(task.blocks.slice(0, 1))),
       el("div", { class: "task-actions" },
         continueButton,
         el("button", { type: "button", class: "btn btn-ghost btn-small task-open", onclick: () => fold(run, false) }, el("span", { "aria-hidden": "true" }, "» "), OPEN_LABEL[task.kind] || "Show the steps"),
