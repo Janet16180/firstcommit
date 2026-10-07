@@ -28,6 +28,14 @@ const Progress = (function () {
   /* A level and its chapter, or null. */
   const findLevel = (chapters, id) => allLevels(chapters).find((level) => level.id === id) || null;
 
+  /* A mission's sector (its chapter's place on the map, from 1) and its number there ("2.1"), or null. */
+  function missionNumber(chapters, id) {
+    const sector = chapters.findIndex((chapter) => chapter.levels.some((level) => level.id === id));
+    if (sector < 0) return null;
+    const place = chapters[sector].levels.findIndex((level) => level.id === id);
+    return { sector: sector + 1, number: `${sector + 1}.${place + 1}` };
+  }
+
   /* How far the player is from this rank's floor to the next rank, and the XP still needed. */
   function rankProgress(status) {
     const { rank, xp } = status;
@@ -35,5 +43,5 @@ const Progress = (function () {
     return { fraction: (xp - rank.floor) / (rank.next_at - rank.floor), toNext: rank.next_at - xp };
   }
 
-  return { nextLevel, startLevel, findLevel, rankProgress };
+  return { nextLevel, startLevel, findLevel, missionNumber, rankProgress };
 })();

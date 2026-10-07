@@ -42,3 +42,12 @@ test("the rank bar shows how far the XP is between this rank and the next", () =
   const top = { ...record("status"), rank: { title: "Maintainer", floor: 5000, next_title: null, next_at: null } };
   assert.deepEqual(Progress.rankProgress(top), { fraction: 1, toNext: null });
 });
+
+test("a mission is numbered by its sector, counting every chapter, and its place in it", () => {
+  assert.deepEqual(Progress.missionNumber(chapters, "b"), { sector: 1, number: "1.2" });
+  assert.deepEqual(Progress.missionNumber(chapters, "c"), { sector: 3, number: "3.1" });
+});
+
+test("an unknown mission has no number", () => {
+  assert.equal(Progress.missionNumber(chapters, "nowhere"), null);
+});
