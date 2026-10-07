@@ -198,6 +198,15 @@ The user says the layout responds well, so no more screen-size work.
 
 ## Backlog (decided later, not now)
 
+Future ideas (the user, 2026-10-07):
+- A "What just happened?" button: the game explains the repository's current state in plain
+  words, from the facts it already reads, so a lost player has a way out without restarting.
+- Publishing and its cost (a one-click download, or a hosted site with one sandbox per player):
+  after the first playtests.
+- Accessibility pass (screen readers, keyboard only, colour-blind checks, sounds never the only
+  signal, text that survives browser zoom): after the content.
+- Playtests with first-time players before building past the next five chapters.
+
 - Playground re-record, paused 2026-10-07 at `p2/playground-design` 3378348 (WIP port of the
   recorder and mock onto `firstcommit.playground` and `firstcommit.explanations`). To resume:
   merge insight's final tip (0cc86dd or later, never 2a2e9b1 alone: older texts), run

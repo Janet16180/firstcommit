@@ -84,8 +84,8 @@ Guarantees the page relies on:
 
 ## The user's decisions of 2026-10-07 (after the first three levels)
 
-- XP stays, next to stars. A level solved with any hint pays no XP for that play (stars still
-  count as above); the hint's cost shown on the page says so.
+- XP stays, next to stars. Revised later the same day: a hint lowers the XP a play pays, it
+  does not remove it all (stars still count as above); the hint's cost shown on the page says so.
 - termlab may change as needed on its `firstcommit` branch (engine does it): a terminal font
   size option, so the page's terminal can use VT323 at the design's size, and `font/woff2`.
 - Each Orbit chapter gets a flashcard deck.
@@ -93,6 +93,19 @@ Guarantees the page relies on:
   modules. Git history keeps them.
 - The headings get another pixel font with a capital C that cannot be read as an O (artist
   proposes, frontend ships it).
+
+## The user's decisions of 2026-10-07 (evening)
+
+- Scope: the game teaches Git and GitHub only. No lessons on the terminal, Linux or editors;
+  shell commands appear only where a Git level needs them, and no editor ever traps a player.
+- Spanish: every player-facing text exists in English and Spanish, with a language choice.
+- Terminal: syntax highlighting as the player types, with ble.sh shipped with the game.
+- Sounds (8-bit, Web Audio), a more readable font for buttons, and infographics instead of the
+  command collection (all commands; Git's states and how files move between them).
+- Every few levels, a challenge without guidance: the end state only, never the steps, mixing
+  ideas from earlier chapters. The next five chapters come from a three-way debate (teacher,
+  incidents, gamer) decided by the lead.
+- Later, in this order: playtests with first-time players; accessibility; publishing.
 
 ## Who does what
 
