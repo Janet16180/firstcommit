@@ -55,7 +55,7 @@ Pictures: a file is a page, the staging area an open box, a commit a closed box;
 are the working folder, the staging area, your repository and GitHub. Every motion is drawn
 from the diff of two real snapshots.
 
-Merged into `phase-2-engine` (tip ff1bdb3; fast tier 1078 passed, slow tier run at the merge):
+Merged into `phase-2-engine` (tip ff1bdb3; all 1116 tests passed, slow and Docker included):
 - The live page: the four places are the map (option A): full-size timelines with closed boxes,
   the key "closed box = commit" under the figure, heading "The three areas" or "The four places"
   (with a GitHub), the feed below, the guide's button in the key. Lighting and captions were
@@ -81,8 +81,12 @@ Parked as WIP when the day ended (resume in this order, at most 3 teammates work
    a 5-slide lesson in the four places with a practice GitHub, then clone, cd, count files and
    commits, name the remote) and `start-first-clone` (challenge: who added the checklist, from
    `git log`). Needs insight's P1 (a lesson's practice GitHub, `p2/insight`), guide's P2 (the
-   places view with GitHub, `p2/lesson-places`) and `kit.cloned_from_github` (author). A typed
-   clone keeps git's absolute origin; fine while the chapter never pushes or pulls.
+   places view with GitHub: `p2/lesson-github` 49fee17, lights clone, commit, push, fetch and pull
+   right) and `kit.cloned_from_github` (author). A typed clone keeps git's absolute origin; fine
+   while the chapter never pushes or pulls. Open: a four-place lesson slide does not fit 1280x800
+   (GitHub stacks below); next, timetravel's wide four-place layout with GitHub beside your
+   computer, then guide's full-width four-place slides. P1's slide events must include
+   GitHub's changes (as observe does), and a teammate's push belongs on a non-places slide.
 3. The playground in a real level (author phase); then the paused re-record (Backlog).
 
 Team rules (the user's, 2026-10-07): named teammates, never one-shot subagents, at most 3
