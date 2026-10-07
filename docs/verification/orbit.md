@@ -247,3 +247,12 @@ lesson still has to write `--no-edit`.
 | Text | Claim | Evidence |
 |---|---|---|
 | `NO_MESSAGE` (bare `git commit`, failed, in a repository, something staged) | No commit was made; every commit needs a message; in the game no editor opens; `-m` gives it | the table above. The rule needs something staged afterwards, since a bare commit with nothing staged fails the same way (status 1) for another reason and keeps `NOT_COMMITTED`. Lines with `-m`, `-F`, `-C`, `-c`, `--no-edit`, `--amend` and the like never get it (*re-checked*) |
+
+## The stand-in GitHub keeps a reflog (added 2026-10-08)
+
+`kit.setup_github` (and `kit.setup_playground`, which uses it) sets `core.logAllRefUpdates = true`
+on the bare repository. git-config(1), `core.logAllRefUpdates`: "This value is true by default in
+a repository that has a working directory associated with it, and false by default in a bare
+repository." In the image, a fresh `git init --bare` repository has no such setting (`git config
+core.logAllRefUpdates` exits 1). *Re-checked* by `tests/test_playground.py`: after a push and a
+forced push back, `main@{1}` and `main@{2}` on the stand-in GitHub name the commits before.
