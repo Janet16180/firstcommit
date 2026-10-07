@@ -112,13 +112,6 @@ class CommandCard(TypedDict):
     text: list[Block]
 
 
-class ComingChapter(TypedDict):
-    """A chapter the map shows as coming soon, because it has no level yet."""
-
-    title: str
-    blurb: str
-
-
 class SceneFrameView(TypedDict):
     """One picture of a level's scene and what Rama says under it."""
 
@@ -160,7 +153,7 @@ class Status(TypedDict):
     """
     The dashboard; ``max_difficulty`` is the highest difficulty a level can have, so the page can show the scale.
 
-    ``chapters`` lists every chapter; ``coming`` names again those that have no level yet.
+    ``chapters`` lists every chapter; one with no level yet is still to come.
     ``collection`` holds the card of each finished level, in play order.
     """
 
@@ -171,7 +164,6 @@ class Status(TypedDict):
     last_payout: Payout | None
     cards_due: int
     max_difficulty: int
-    coming: list[ComingChapter]
     collection: list[CommandCard]
 
 
@@ -416,7 +408,7 @@ def status() -> Status:
     Status
         XP and rank, every chapter with its levels, the level in progress (its typed lines
         counted up to now), the last payout, how many cards wait for review (see `due_cards`),
-        the chapters still to come and the collected command cards.
+        and the collected command cards.
 
     Raises
     ------
@@ -444,7 +436,6 @@ def status() -> Status:
         "last_payout": progress["last_payout"],
         "cards_due": len(_cards_to_review(None, progress, sys.maxsize)),
         "max_difficulty": max(runner.DIFFICULTIES),
-        "coming": [{"title": chapter["title"], "blurb": chapter["blurb"]} for chapter in chapters if not chapter["levels"]],
         "collection": [_command_card(entry) for entry in levels.values() if entry.id in progress["levels"]],
     }
 
@@ -625,9 +616,10 @@ def quest_step(answer: str | None) -> StepResult:
     Check the current step of the guided quest, and move on if it passed.
 
     Only the current step is ever checked, so the quest is played in order. An answer step is
-    checked with ``answer`` (a missing or blank one counts as empty), a watch step against the lab (the
-    page polls it with None), and a read step always passes. Once the quest is done, nothing is
-    checked and the result says so.
+    checked with ``answer`` (a missing or blank one counts as empty), a watch step against the lab
+    and every line typed since the level started (the page polls it with None; the log is read
+    first), and a read step always passes. Once the quest is done, nothing is checked and the
+    result says so.
 
     Parameters
     ----------
@@ -646,10 +638,11 @@ def quest_step(answer: str | None) -> StepResult:
     """
     with save.lock():
         active, entry = _playing()
+        active = _catch_up(active)
         correct = False
         message: list[Block] = []
         if not _quest_done(active, entry):
-            verdict = _check_step(entry.quest[active["step"]], runner.lab_of(entry.id), active["state"], _typed(answer))
+            verdict = _check_step(entry.quest[active["step"]], runner.lab_of(entry.id), active, _typed(answer))
             correct = verdict.solved
             message = markup.parse(verdict.message)
         if correct:
@@ -696,7 +689,7 @@ def check(answer: str | None, auto: bool) -> CheckResult:
         if auto and not _quest_done(active, entry):
             verdict = kit.Verdict(False, QUEST_FIRST.format(step=active["step"] + 1, steps=len(entry.quest)))
         else:
-            verdict = entry.check(runner.lab_of(entry.id), active["state"], typed)
+            verdict = entry.check(runner.lab_of(entry.id), active["state"], typed, active["typed"])
         payout = None
         stars = 0
         if verdict.solved:
@@ -1377,9 +1370,9 @@ def _playing() -> tuple[save.Active, runner.Level]:
         raise NotPlayingError("no level is in progress")
     entry = levels[active["level"]]
     if active["hints"] > len(entry.hints) or active["step"] > len(entry.quest):
-        raise SaveError(
-            f"{save.home() / save.ACTIVE_FILE} is damaged: `hints` is {active['hints']} and `step` is {active['step']}, "
-            f"but level {entry.id} has {len(entry.hints)} hints and {len(entry.quest)} quest steps"
+        raise save.damaged(
+            save.home() / save.ACTIVE_FILE,
+            f"`hints` is {active['hints']} and `step` is {active['step']}, but level {entry.id} has {len(entry.hints)} hints and {len(entry.quest)} quest steps",
         )
     return active, entry
 
@@ -1420,7 +1413,7 @@ def _pay(entry: runner.Level, active: save.Active, stars: int) -> Payout:
     return payout
 
 
-def _check_step(step: kit.Step, lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict:
+def _check_step(step: kit.Step, lab: kit.Lab, active: save.Active, answer: str | None) -> kit.Verdict:
     """
     Check one quest step by its kind.
 
@@ -1430,10 +1423,10 @@ def _check_step(step: kit.Step, lab: kit.Lab, state: kit.State, answer: str | No
         The step.
     lab : kit.Lab
         The lab.
-    state : kit.State
-        The level's state.
+    active : save.Active
+        The level in progress: its state, and the lines typed since it started.
     answer : str | None
-        What the player typed, or None.
+        What the player answered, or None.
 
     Returns
     -------
@@ -1442,9 +1435,9 @@ def _check_step(step: kit.Step, lab: kit.Lab, state: kit.State, answer: str | No
     """
     verdict = kit.Verdict(True, "")
     if isinstance(step, kit.AnswerStep):
-        verdict = step.check(lab, state, answer or "")
+        verdict = step.check(lab, active["state"], answer or "")
     elif isinstance(step, kit.WatchStep):
-        verdict = step.watch(lab, state)
+        verdict = step.watch(lab, active["state"], active["typed"])
     return verdict
 
 

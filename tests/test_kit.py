@@ -65,7 +65,7 @@ def test_a_watch_step_cannot_be_built_without_its_watch() -> None:
 
 
 def test_every_step_kind_is_a_step_and_nothing_else_is() -> None:
-    def never(lab: kit.Lab, state: kit.State, answer: str = "") -> kit.Verdict:
+    def never(lab: kit.Lab, state: kit.State, answer_or_typed: object = "") -> kit.Verdict:
         return kit.Verdict(False, "")
 
     steps = [
@@ -99,3 +99,32 @@ def test_a_level_writes_its_scene_card_and_reactions_with_the_toolkit() -> None:
     rule = kit.ReactionRule(line=r"git init\b", mood="ok", text="Flag planted.")
     assert (frame.art, card.command, rule.mood) == ("flag", "git init", "ok")
     assert set(typing.get_args(kit.Art)) >= {"space", "timeline", "terminal", "planet", "flag", "zones", "conveyor"}
+
+
+TYPED: list[kit.Command] = [
+    {"line": "git status", "status": 128},
+    {"line": "git init", "status": 0},
+    {"line": "ls -a", "status": 0},
+    {"line": "git init again", "status": 129},
+    {"line": "git status", "status": 0},
+]
+
+
+def test_a_level_asks_whether_a_line_was_typed_and_how_it_ended() -> None:
+    assert kit.typed(TYPED, r"ls -a\b", "ok")
+    assert kit.typed(TYPED, r"git status\b")
+    assert not kit.typed(TYPED, r"git add\b")
+    assert not kit.typed(TYPED[:1], r"git status\b", "ok")
+
+
+def test_a_level_reads_the_lines_typed_after_the_last_one_that_worked() -> None:
+    assert kit.after(TYPED, r"git init\b") == TYPED[2:]
+    assert kit.after(TYPED, r"git add\b") == TYPED
+    assert kit.after(TYPED, r"git status\b") == []
+
+
+def test_a_level_knows_a_line_that_lists_hidden_files() -> None:
+    hidden: list[kit.Command] = [{"line": line, "status": 0} for line in ("ls -a", "ls -lA", "ls --all")]
+    shown: list[kit.Command] = [{"line": line, "status": 0} for line in ("ls", "ls -l", "lsa")]
+    assert all(kit.typed([line], kit.LIST_HIDDEN, "ok") for line in hidden)
+    assert not kit.typed(shown, kit.LIST_HIDDEN)

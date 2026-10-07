@@ -536,7 +536,7 @@ def identity(lab: kit.Lab, key: str, example: str, what: str, command: str) -> k
     return kit.Verdict(bool(value) and value != example, message)
 
 
-def watch_init(lab: kit.Lab, state: kit.State) -> kit.Verdict:
+def watch_init(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
     """
     Pass once the project folder is a repository on `BRANCH`.
 
@@ -546,6 +546,8 @@ def watch_init(lab: kit.Lab, state: kit.State) -> kit.Verdict:
         The level's lab.
     state : kit.State
         The level's state (unused).
+    typed : kit.Typed
+        The lines typed since the level started (unused).
 
     Returns
     -------
@@ -592,7 +594,7 @@ def check_branch(lab: kit.Lab, state: kit.State, answer: str) -> kit.Verdict:
     return kit.Verdict(on_main(snap) and typed == branch, message)
 
 
-def watch_file(lab: kit.Lab, state: kit.State) -> kit.Verdict:
+def watch_file(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
     """
     Pass once the quest's file is in the working folder.
 
@@ -602,6 +604,8 @@ def watch_file(lab: kit.Lab, state: kit.State) -> kit.Verdict:
         The level's lab.
     state : kit.State
         The level's state (unused).
+    typed : kit.Typed
+        The lines typed since the level started (unused).
 
     Returns
     -------
@@ -617,7 +621,7 @@ def watch_file(lab: kit.Lab, state: kit.State) -> kit.Verdict:
     )
 
 
-def watch_stage(lab: kit.Lab, state: kit.State) -> kit.Verdict:
+def watch_stage(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
     """
     Pass once the quest's file is in the staging area.
 
@@ -627,6 +631,8 @@ def watch_stage(lab: kit.Lab, state: kit.State) -> kit.Verdict:
         The level's lab.
     state : kit.State
         The level's state (unused).
+    typed : kit.Typed
+        The lines typed since the level started (unused).
 
     Returns
     -------
@@ -642,7 +648,7 @@ def watch_stage(lab: kit.Lab, state: kit.State) -> kit.Verdict:
     )
 
 
-def watch_name(lab: kit.Lab, state: kit.State) -> kit.Verdict:
+def watch_name(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
     """
     Pass once git knows the player's name.
 
@@ -652,6 +658,8 @@ def watch_name(lab: kit.Lab, state: kit.State) -> kit.Verdict:
         The level's lab.
     state : kit.State
         The level's state (unused).
+    typed : kit.Typed
+        The lines typed since the level started (unused).
 
     Returns
     -------
@@ -661,7 +669,7 @@ def watch_name(lab: kit.Lab, state: kit.State) -> kit.Verdict:
     return identity(lab, "user.name", EXAMPLE_NAME, "name", NAME_COMMAND)
 
 
-def watch_email(lab: kit.Lab, state: kit.State) -> kit.Verdict:
+def watch_email(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
     """
     Pass once git knows the player's email.
 
@@ -671,6 +679,8 @@ def watch_email(lab: kit.Lab, state: kit.State) -> kit.Verdict:
         The level's lab.
     state : kit.State
         The level's state (unused).
+    typed : kit.Typed
+        The lines typed since the level started (unused).
 
     Returns
     -------
@@ -680,7 +690,7 @@ def watch_email(lab: kit.Lab, state: kit.State) -> kit.Verdict:
     return identity(lab, "user.email", EXAMPLE_EMAIL, "email", EMAIL_COMMAND)
 
 
-def watch_commit(lab: kit.Lab, state: kit.State) -> kit.Verdict:
+def watch_commit(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
     """
     Pass once the last commit on `BRANCH` contains the quest's file.
 
@@ -690,6 +700,8 @@ def watch_commit(lab: kit.Lab, state: kit.State) -> kit.Verdict:
         The level's lab.
     state : kit.State
         The level's state (unused).
+    typed : kit.Typed
+        The lines typed since the level started (unused).
 
     Returns
     -------
@@ -875,7 +887,7 @@ def setup(lab: kit.Lab) -> kit.State:
     return {}
 
 
-def check(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict:
+def check(lab: kit.Lab, state: kit.State, answer: str | None, typed: kit.Typed) -> kit.Verdict:
     """
     Solved when `README.md` is committed on `main` and nothing is untracked, staged or changed.
 
@@ -887,6 +899,8 @@ def check(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict:
         The level's state (unused).
     answer : str | None
         Ignored: the level is checked against the repository.
+    typed : kit.Typed
+        The lines typed since the level started (unused).
 
     Returns
     -------
@@ -897,7 +911,7 @@ def check(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict:
     return kit.Verdict(not move, move or SOLVED)
 
 
-def solve(lab: kit.Lab, state: kit.State) -> str | None:
+def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
     """
     Play the level like a player: every quest step's action, in order (AUTHORING section 3.6).
 
@@ -907,6 +921,8 @@ def solve(lab: kit.Lab, state: kit.State) -> str | None:
         The level's lab, as `setup` left it.
     state : kit.State
         The level's state (unused).
+    typed : list[kit.Command]
+        The lines typed so far; this level's goals never read them, so none is added.
 
     Returns
     -------
@@ -914,11 +930,11 @@ def solve(lab: kit.Lab, state: kit.State) -> str | None:
         None: the level is checked against the repository.
     """
     for quest_step in QUEST:
-        QUEST_ACTIONS[quest_step.id](lab, state)
+        QUEST_ACTIONS[quest_step.id](lab, state, typed)
     return None
 
 
-def init_repository(lab: kit.Lab, state: kit.State) -> str | None:
+def init_repository(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
     """
     Run ``git init`` in the project folder.
 
@@ -928,6 +944,8 @@ def init_repository(lab: kit.Lab, state: kit.State) -> str | None:
         The level's lab.
     state : kit.State
         The level's state (unused).
+    typed : list[kit.Command]
+        The lines typed so far; this level's goals never read them, so none is added.
 
     Returns
     -------
@@ -938,7 +956,7 @@ def init_repository(lab: kit.Lab, state: kit.State) -> str | None:
     return None
 
 
-def read_branch(lab: kit.Lab, state: kit.State) -> str | None:
+def read_branch(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
     """
     Read the branch HEAD is on, as `git status` names it.
 
@@ -948,6 +966,8 @@ def read_branch(lab: kit.Lab, state: kit.State) -> str | None:
         The level's lab.
     state : kit.State
         The level's state (unused).
+    typed : list[kit.Command]
+        The lines typed so far; this level's goals never read them, so none is added.
 
     Returns
     -------
@@ -957,7 +977,7 @@ def read_branch(lab: kit.Lab, state: kit.State) -> str | None:
     return kit.git(lab.project, "branch", "--show-current").strip()
 
 
-def write_readme(lab: kit.Lab, state: kit.State) -> str | None:
+def write_readme(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
     """
     Create the quest's file.
 
@@ -967,6 +987,8 @@ def write_readme(lab: kit.Lab, state: kit.State) -> str | None:
         The level's lab.
     state : kit.State
         The level's state (unused).
+    typed : list[kit.Command]
+        The lines typed so far; this level's goals never read them, so none is added.
 
     Returns
     -------
@@ -977,7 +999,7 @@ def write_readme(lab: kit.Lab, state: kit.State) -> str | None:
     return None
 
 
-def stage_readme(lab: kit.Lab, state: kit.State) -> str | None:
+def stage_readme(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
     """
     Stage the quest's file.
 
@@ -987,6 +1009,8 @@ def stage_readme(lab: kit.Lab, state: kit.State) -> str | None:
         The level's lab.
     state : kit.State
         The level's state (unused).
+    typed : list[kit.Command]
+        The lines typed so far; this level's goals never read them, so none is added.
 
     Returns
     -------
@@ -997,7 +1021,7 @@ def stage_readme(lab: kit.Lab, state: kit.State) -> str | None:
     return None
 
 
-def set_name(lab: kit.Lab, state: kit.State) -> str | None:
+def set_name(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
     """
     Set the player's name in the game's global settings.
 
@@ -1007,6 +1031,8 @@ def set_name(lab: kit.Lab, state: kit.State) -> str | None:
         The level's lab.
     state : kit.State
         The level's state (unused).
+    typed : list[kit.Command]
+        The lines typed so far; this level's goals never read them, so none is added.
 
     Returns
     -------
@@ -1017,7 +1043,7 @@ def set_name(lab: kit.Lab, state: kit.State) -> str | None:
     return None
 
 
-def set_email(lab: kit.Lab, state: kit.State) -> str | None:
+def set_email(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
     """
     Set the player's email in the game's global settings.
 
@@ -1027,6 +1053,8 @@ def set_email(lab: kit.Lab, state: kit.State) -> str | None:
         The level's lab.
     state : kit.State
         The level's state (unused).
+    typed : list[kit.Command]
+        The lines typed so far; this level's goals never read them, so none is added.
 
     Returns
     -------
@@ -1037,7 +1065,7 @@ def set_email(lab: kit.Lab, state: kit.State) -> str | None:
     return None
 
 
-def commit_readme(lab: kit.Lab, state: kit.State) -> str | None:
+def commit_readme(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
     """
     Commit what is staged.
 
@@ -1047,6 +1075,8 @@ def commit_readme(lab: kit.Lab, state: kit.State) -> str | None:
         The level's lab.
     state : kit.State
         The level's state (unused).
+    typed : list[kit.Command]
+        The lines typed so far; this level's goals never read them, so none is added.
 
     Returns
     -------
@@ -1057,7 +1087,7 @@ def commit_readme(lab: kit.Lab, state: kit.State) -> str | None:
     return None
 
 
-def read_short_hash(lab: kit.Lab, state: kit.State) -> str | None:
+def read_short_hash(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
     """
     Read the last commit's short hash from the first column of ``git log --oneline``.
 
@@ -1067,6 +1097,8 @@ def read_short_hash(lab: kit.Lab, state: kit.State) -> str | None:
         The level's lab.
     state : kit.State
         The level's state (unused).
+    typed : list[kit.Command]
+        The lines typed so far; this level's goals never read them, so none is added.
 
     Returns
     -------
@@ -1076,7 +1108,7 @@ def read_short_hash(lab: kit.Lab, state: kit.State) -> str | None:
     return kit.git(lab.project, "log", "--oneline", "-1").split()[0]
 
 
-QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State], str | None]] = {
+QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]] = {
     "init": init_repository,
     "status": read_branch,
     "name": set_name,

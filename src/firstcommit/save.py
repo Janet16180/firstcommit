@@ -40,6 +40,10 @@ COMMANDS_FILE = "commands.log"
 HISTORY_FILE = "history"
 LABS_FOLDER = "labs"
 LESSONS_FOLDER = "lessons"
+START_OVER = (
+    "A save written by an older version of the game reads this way too. To start over, run "
+    "`firstcommit reset --yes`, or the `reset` command of the script that starts the game; either erases your progress."
+)
 
 
 IsoDate = Annotated[str, date]
@@ -49,7 +53,26 @@ IsoTime = Annotated[str, datetime]
 
 
 class SaveError(ValueError):
-    """A save file that does not hold the record it should: damaged, or edited by hand."""
+    """A save file that does not hold the record it should: damaged, edited by hand, or written by an older version of the game."""
+
+
+def damaged(path: Path, problem: str) -> SaveError:
+    """
+    Make the error for a save file that does not hold its record, saying how to start over.
+
+    Parameters
+    ----------
+    path : Path
+        The file.
+    problem : str
+        What is wrong with it.
+
+    Returns
+    -------
+    SaveError
+        The error, naming the file, the problem and `START_OVER`.
+    """
+    return SaveError(f"{path} is damaged: {problem}. {START_OVER}")
 
 
 class LevelRecord(TypedDict):
@@ -361,11 +384,11 @@ def _read(name: str, record: type) -> dict[str, Any] | None:
     try:
         data = store.read_json(path)
     except ValueError as error:
-        raise SaveError(f"{path} is damaged: {error}") from error
+        raise damaged(path, str(error)) from error
     if data is not None:
         problem = _mismatch(data, record, "")
         if problem is not None:
-            raise SaveError(f"{path} is damaged: {problem}")
+            raise damaged(path, problem)
     return data
 
 

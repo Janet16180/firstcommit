@@ -95,7 +95,7 @@ def play_until(lab: kit.Lab, stop: str | None) -> None:
     for quest_step in level.QUEST:
         if quest_step.id == stop:
             return
-        level.QUEST_ACTIONS[quest_step.id](lab, {})
+        level.QUEST_ACTIONS[quest_step.id](lab, {}, [])
 
 
 def sentences(text: str) -> int:
@@ -206,7 +206,7 @@ def watch(lab: kit.Lab, step_id: str) -> kit.Verdict:
     """
     step = next(quest_step for quest_step in level.QUEST if quest_step.id == step_id)
     assert isinstance(step, kit.WatchStep)
-    return step.watch(lab, {})
+    return step.watch(lab, {}, [])
 
 
 def answer(lab: kit.Lab, step_id: str, text: str) -> kit.Verdict:
@@ -246,7 +246,7 @@ def check(lab: kit.Lab) -> kit.Verdict:
     kit.Verdict
         The level's verdict.
     """
-    return level.check(lab, {}, None)
+    return level.check(lab, {}, None, [])
 
 
 def append(lab: kit.Lab, name: str, text: str) -> None:
@@ -306,14 +306,14 @@ def test_the_quest_leads_to_a_solved_level(played: kit.Lab) -> None:
 
 
 def test_the_reference_solution_plays_every_quest_step_identity_included(lab: kit.Lab) -> None:
-    assert level.solve(lab, {}) is None
+    assert level.solve(lab, {}, []) is None
     assert git(lab, "config", "--global", "user.name").strip() == level.PLAYER.name
     assert git(lab, "config", "--global", "user.email").strip() == level.PLAYER.email
     assert check(lab).solved
 
 
 def test_plain_git_init_starts_on_main_with_the_games_starting_settings(lab: kit.Lab) -> None:
-    level.init_repository(lab, {})
+    level.init_repository(lab, {}, [])
     assert kit.snapshot(lab.project)["branch"] == "main"
     assert watch(lab, "init").solved
 
@@ -421,7 +421,7 @@ def test_a_missing_identity_gets_a_complete_command_to_set_it(
 
 
 def test_an_identity_set_without_global_also_counts(lab: kit.Lab) -> None:
-    level.init_repository(lab, {})
+    level.init_repository(lab, {}, [])
     git(lab, "config", "user.name", "Sam Lee")
     git(lab, "config", "user.email", "sam@example.com")
     assert watch(lab, "name").solved
@@ -429,7 +429,7 @@ def test_an_identity_set_without_global_also_counts(lab: kit.Lab) -> None:
 
 
 def test_a_readme_in_the_wrong_letter_case_gets_the_command_that_renames_it(lab: kit.Lab) -> None:
-    level.init_repository(lab, {})
+    level.init_repository(lab, {}, [])
     append(lab, "readme.md", "# My project")
     verdict = watch(lab, "file")
     assert not verdict.solved
@@ -442,7 +442,7 @@ def test_a_readme_in_the_wrong_letter_case_gets_the_command_that_renames_it(lab:
 
 
 def test_a_readme_in_the_wrong_letter_case_is_named_as_the_player_wrote_it(lab: kit.Lab) -> None:
-    level.init_repository(lab, {})
+    level.init_repository(lab, {}, [])
     append(lab, "Readme.MD", "# My project")
     assert "`mv Readme.MD README.md`" in check(lab).message
 
@@ -463,7 +463,7 @@ def test_staging_without_committing_leaves_the_level_unsolved(lab: kit.Lab) -> N
 
 
 def test_a_commit_without_the_readme_does_not_solve_the_level(lab: kit.Lab) -> None:
-    level.init_repository(lab, {})
+    level.init_repository(lab, {}, [])
     append(lab, "notes.txt", "notes")
     git(lab, "add", "notes.txt")
     git(lab, "commit", "-m", "Add notes")
@@ -603,7 +603,7 @@ def test_an_ignored_file_does_not_keep_the_level_unsolved(played: kit.Lab) -> No
 def test_a_repository_on_another_branch_gets_the_rename_command(lab: kit.Lab) -> None:
     git(lab, "init", "-b", "master")
     for step_id in ["file", "stage", "commit"]:
-        level.QUEST_ACTIONS[step_id](lab, {})
+        level.QUEST_ACTIONS[step_id](lab, {}, [])
     verdict = check(lab)
     assert not verdict.solved
     assert "git branch -m main" in verdict.message
@@ -630,7 +630,7 @@ def test_a_detached_head_does_not_solve_the_level(played: kit.Lab) -> None:
 def test_a_detached_head_without_main_gets_the_command_that_creates_it(lab: kit.Lab) -> None:
     git(lab, "init", "-b", "master")
     for step_id in ["file", "stage", "commit"]:
-        level.QUEST_ACTIONS[step_id](lab, {})
+        level.QUEST_ACTIONS[step_id](lab, {}, [])
     git(lab, "switch", "--detach")
     verdict = check(lab)
     assert not verdict.solved
@@ -679,7 +679,7 @@ def test_checks_never_change_the_repository(played: kit.Lab) -> None:
     check(played)
     for quest_step in level.QUEST:
         if isinstance(quest_step, kit.WatchStep):
-            quest_step.watch(played, {})
+            quest_step.watch(played, {}, [])
         if isinstance(quest_step, kit.AnswerStep):
             quest_step.check(played, {}, "main")
     assert (index.read_bytes(), index.stat().st_mtime_ns, kit.snapshot(played.project)) == before
@@ -690,7 +690,7 @@ def test_hostile_answers_never_pass_a_question_once_the_quest_is_done(played: ki
     for text in HOSTILE:
         assert not answer(played, "status", text).solved
         assert not answer(played, "hash", text).solved
-        assert level.check(played, {}, text).solved
+        assert level.check(played, {}, text, []).solved
 
 
 @pytest.mark.slow

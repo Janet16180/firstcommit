@@ -229,7 +229,7 @@ def solve(level: runner.Level) -> None:
     level : runner.Level
         The level in progress.
     """
-    level.solve(runner.lab_of(level.id), active_record()["state"])
+    level.solve(runner.lab_of(level.id), active_record()["state"], [])
 
 
 def text_of(blocks: list[markup.Block]) -> str:
@@ -262,18 +262,17 @@ def test_a_new_player_sees_every_chapter_no_xp_and_nothing_in_progress(sample_le
     assert (status["xp"], status["rank"], status["active"], status["last_payout"], status["cards_due"]) == (0, score.rank(0), None, None, 0)
     assert [(chapter["id"], chapter["title"]) for chapter in status["chapters"]] == list(CHAPTERS.items())
     assert status["max_difficulty"] == max(runner.DIFFICULTIES) == 3
-    basics = status["chapters"][1]
+    chapters = {chapter["id"]: chapter for chapter in status["chapters"]}
+    basics = chapters["basics"]
     assert basics["levels"] == [
         {"id": "basics-sample", "title": "Say hello", "difficulty": 1, "xp": 100, "command": "git add", "stars": 0, "done": False, "has_lesson": True, "has_quest": True}
     ]
     assert basics["cards"] == 12
-    assert status["chapters"][0]["levels"] == []
+    assert chapters["start"]["levels"] == []
 
 
-def test_each_chapter_has_a_blurb_and_the_chapters_without_levels_are_coming(sample_level: runner.Level) -> None:
-    status = game.status()
-    assert [chapter["blurb"] for chapter in status["chapters"]] == [BLURBS[chapter] for chapter in CHAPTERS]
-    assert status["coming"] == [{"title": CHAPTERS[chapter], "blurb": BLURBS[chapter]} for chapter in CHAPTERS if chapter != "basics"]
+def test_each_chapter_has_its_blurb(sample_level: runner.Level) -> None:
+    assert [chapter["blurb"] for chapter in game.status()["chapters"]] == [BLURBS[chapter] for chapter in CHAPTERS]
 
 
 def test_the_collection_holds_the_card_of_each_finished_level_in_play_order(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -295,7 +294,7 @@ def test_a_finished_level_shows_its_best_stars_on_the_map(sample_level: runner.L
     game.hint()
     solve(sample_level)
     game.check(None, auto=False)
-    summary = game.status()["chapters"][1]["levels"][0]
+    summary = next(chapter for chapter in game.status()["chapters"] if chapter["id"] == "basics")["levels"][0]
     assert (summary["done"], summary["stars"]) == (True, 2)
 
 
@@ -441,7 +440,7 @@ def test_a_value_filled_into_a_step_command_is_one_shell_word(sample_level: runn
 
 
 def test_a_check_message_is_shown_as_written_never_filled_again(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
-    def tells_untracked(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict:
+    def tells_untracked(lab: kit.Lab, state: kit.State, answer: str | None, typed: kit.Typed = ()) -> kit.Verdict:
         return kit.Verdict(False, "These files are untracked: `{{expected}}`.")
 
     secret_step = kit.AnswerStep(id="secret", text="Which?", question="Which?", check=tells_untracked)
@@ -663,9 +662,9 @@ def counting(level: runner.Level, calls: list[str | None]) -> runner.Level:
         The level with the counting check.
     """
 
-    def check(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict:
+    def check(lab: kit.Lab, state: kit.State, answer: str | None, typed: kit.Typed) -> kit.Verdict:
         calls.append(answer)
-        return level.check(lab, state, answer)
+        return level.check(lab, state, answer, typed)
 
     return dataclasses.replace(level, check=check)
 
@@ -708,7 +707,7 @@ def test_an_automatic_check_of_a_level_without_a_quest_checks_the_level(sample_l
 def test_a_blank_answer_counts_as_no_answer(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
     seen: list[str | None] = []
 
-    def recording_check(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict:
+    def recording_check(lab: kit.Lab, state: kit.State, answer: str | None, typed: kit.Typed) -> kit.Verdict:
         seen.append(answer)
         return kit.Verdict(False, "no")
 
@@ -721,7 +720,7 @@ def test_a_blank_answer_counts_as_no_answer(sample_level: runner.Level, monkeypa
     assert seen == [None, None, " main "]
 
 
-def secret_is_main(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict:
+def secret_is_main(lab: kit.Lab, state: kit.State, answer: str | None, typed: kit.Typed = ()) -> kit.Verdict:
     """
     Check an answer the way levels compare secret answers, with `kit.answer_is` (which encodes it).
 
@@ -733,6 +732,8 @@ def secret_is_main(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Ve
         The level state.
     answer : str | None
         The answer.
+    typed : kit.Typed
+        The lines typed (unused), so it serves as the level's check too.
 
     Returns
     -------
@@ -759,7 +760,7 @@ def test_text_the_player_sends_that_utf8_cannot_encode_is_only_a_wrong_answer(sa
 def test_text_the_player_sends_reaches_a_check_with_only_encodable_characters(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
     seen: list[str | None] = []
 
-    def recording_check(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict:
+    def recording_check(lab: kit.Lab, state: kit.State, answer: str | None, typed: kit.Typed) -> kit.Verdict:
         seen.append(answer)
         return kit.Verdict(False, "no")
 
@@ -830,9 +831,9 @@ def test_a_check_the_player_asks_for_may_solve_the_level_before_its_quest_is_don
 
 
 def test_two_checks_of_a_solved_lab_at_the_same_time_pay_once(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
-    def slow_check(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict:
+    def slow_check(lab: kit.Lab, state: kit.State, answer: str | None, typed: kit.Typed) -> kit.Verdict:
         time.sleep(0.2)
-        return sample_level.check(lab, state, answer)
+        return sample_level.check(lab, state, answer, typed)
 
     level = dataclasses.replace(sample_level, check=slow_check)
     monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
@@ -889,6 +890,43 @@ def test_typing_more_than_par_and_three_lines_costs_a_star_while_playing(sample_
     type_lines(game_home, ("ls", 0))
     active = game.status()["active"]
     assert active is not None and (active["commands"], active["stars"]) == (sample_level.par + 4, 2)
+
+
+def listed(lab: kit.Lab, state: kit.State, answer: str | None = None, typed: kit.Typed = ()) -> kit.Verdict:
+    """
+    Pass once the player has typed an ``ls`` that worked, as a goal that reads typed lines does.
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The lab (unused).
+    state : kit.State
+        The level state (unused).
+    answer : str | None
+        Ignored.
+    typed : kit.Typed
+        The lines typed since the level started.
+
+    Returns
+    -------
+    kit.Verdict
+        Whether ``ls`` was typed and worked.
+    """
+    seen = kit.typed(typed, r"ls\b", "ok")
+    return kit.Verdict(seen, "Listed." if seen else "Type `ls`.")
+
+
+def test_a_goal_sees_every_line_typed_since_the_level_started_without_an_observation(sample_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    step = kit.WatchStep(id="look", text="Look.", watch=lambda lab, state, typed: listed(lab, state, None, typed))
+    level = dataclasses.replace(sample_level, quest=(step,), check=listed)
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    type_lines(game_home, ("ls", 0))
+    game.start(level.id)
+    assert game.quest_step(None)["correct"] is False
+    assert game.check(None, auto=False)["solved"] is False
+    type_lines(game_home, ("ls", 0))
+    assert game.quest_step(None)["correct"] is True
+    assert game.check(None, auto=True)["solved"] is True
 
 
 def test_an_unsolved_check_earns_no_stars_and_no_card(sample_level: runner.Level) -> None:

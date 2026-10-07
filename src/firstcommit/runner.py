@@ -33,8 +33,8 @@ MIN_HINTS = 2
 MAX_HINTS = 4
 
 Setup = Callable[[kit.Lab], kit.State]
-Check = Callable[[kit.Lab, kit.State, str | None], kit.Verdict]
-Solve = Callable[[kit.Lab, kit.State], str | None]
+Check = Callable[[kit.Lab, kit.State, str | None, kit.Typed], kit.Verdict]
+Solve = Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]
 
 
 @dataclass(frozen=True)

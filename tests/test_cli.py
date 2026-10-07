@@ -152,7 +152,7 @@ def test_a_solved_check_shows_the_payout_and_the_debrief(sample_level: runner.Le
     game.start(sample_level.id)
     active = save.load_active()
     assert active is not None
-    sample_level.solve(runner.lab_of(sample_level.id), active["state"])
+    sample_level.solve(runner.lab_of(sample_level.id), active["state"], [])
     status, printed = run(capsys, "check")
     assert status == 0
     for expected in ("Solved", "+100 XP", "`hello.txt` is now in a commit on `trunk`."):

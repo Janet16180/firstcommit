@@ -488,6 +488,15 @@ def test_serving_on_a_busy_port_fails_with_a_hint(site: Site, capsys: pytest.Cap
     assert f"firstcommit serve --port {port + 1}" in capsys.readouterr().out
 
 
+def test_a_save_from_an_older_game_reaches_the_page_with_how_to_start_over(site: Site, sample_level: runner.Level, game_home: Path) -> None:
+    progress = dict(save.new_progress())
+    del progress["scenes"]
+    (game_home / "progress.json").write_text(json.dumps(progress))
+    status, reply = api(site, "/api/status")
+    assert (status, reply["kind"]) == (500, "save")
+    assert "progress.json" in reply["error"] and "`scenes` is missing" in reply["error"] and "`firstcommit reset --yes`" in reply["error"]
+
+
 @pytest.mark.parametrize(
     ("route", "body", "name"),
     [

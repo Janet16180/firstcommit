@@ -109,11 +109,12 @@ def test_staging_and_committing_are_told_apart_from_lines_that_changed_nothing()
 
 def test_unstaging_is_told_apart_from_restoring_the_working_folder() -> None:
     assert said("git restore --staged notes.txt", kinds={"file-unstaged"}) == f"ok: {reactions.UNSTAGED}"
+    assert said("git rm --cached notes.txt", kinds={"file-unstaged"}) == f"ok: {reactions.UNSTAGED}"
     assert said("git restore notes.txt", kinds={"file-changed"}) == f"warn: {reactions.RESTORED}"
 
 
 def test_ls_explains_hidden_files_once_a_repository_is_there() -> None:
-    for line in ("ls -a", "ls -la", "ls -al", "ls --all", "ls -l -a ."):
+    for line in ("ls -a", "ls -la", "ls -al", "ls --all", "ls -l -a .", "ls -A", "ls --almost-all"):
         assert said(line) == f"info: {reactions.HIDDEN_GIT}", line
     assert said("ls") == f"info: {reactions.LS_IN_REPOSITORY}"
     assert said("ls", repository=False) == f"info: {reactions.LS_NO_REPOSITORY}"
@@ -133,3 +134,11 @@ def test_files_made_or_changed_by_the_shell_are_explained_in_a_repository() -> N
 def test_reading_the_status_or_the_history_is_explained() -> None:
     assert said("git status --short") == f"info: {reactions.STATUS}"
     assert said("git log --oneline") == f"info: {reactions.LOG}"
+
+
+def test_a_typed_line_matches_a_pattern_from_its_start_and_an_outcome() -> None:
+    failed: Command = {"line": "  git   status ", "status": 128}
+    assert reactions.matches(failed, r"git status\b", "any")
+    assert reactions.matches(failed, r"git status\b", "failed")
+    assert not reactions.matches(failed, r"git status\b", "ok")
+    assert not reactions.matches(failed, r"status\b", "any")

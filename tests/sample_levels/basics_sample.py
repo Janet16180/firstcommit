@@ -37,7 +37,7 @@ HINTS = [
 DEBRIEF = "`hello.txt` is now in a commit on `{{branch}}`."
 
 
-def is_staged(lab: kit.Lab, state: kit.State) -> kit.Verdict:
+def is_staged(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
     """
     Pass once ``hello.txt`` is in the staging area.
 
@@ -47,6 +47,8 @@ def is_staged(lab: kit.Lab, state: kit.State) -> kit.Verdict:
         The lab.
     state : kit.State
         The level state.
+    typed : kit.Typed
+        The lines typed since the level started (unused).
 
     Returns
     -------
@@ -105,7 +107,7 @@ def setup(lab: kit.Lab) -> kit.State:
     return {"branch": "trunk"}
 
 
-def check(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict:
+def check(lab: kit.Lab, state: kit.State, answer: str | None, typed: kit.Typed) -> kit.Verdict:
     """
     Pass once ``hello.txt`` is in the last commit of the branch.
 
@@ -117,6 +119,8 @@ def check(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict:
         The level state.
     answer : str | None
         Ignored: the repository is checked.
+    typed : kit.Typed
+        The lines typed since the level started (unused).
 
     Returns
     -------
@@ -127,7 +131,7 @@ def check(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict:
     return kit.Verdict(committed, "Committed." if committed else "`hello.txt` is not in a commit yet.")
 
 
-def solve(lab: kit.Lab, state: kit.State) -> str | None:
+def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
     """
     Stage and commit the file, as a player would.
 
@@ -137,6 +141,8 @@ def solve(lab: kit.Lab, state: kit.State) -> str | None:
         The lab after `setup`.
     state : kit.State
         The level state.
+    typed : list[kit.Command]
+        The lines typed so far; none is added.
 
     Returns
     -------
@@ -148,7 +154,7 @@ def solve(lab: kit.Lab, state: kit.State) -> str | None:
     return None
 
 
-def stage(lab: kit.Lab, state: kit.State) -> str | None:
+def stage(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
     """
     Do the player's part of the ``stage`` step.
 
@@ -158,6 +164,8 @@ def stage(lab: kit.Lab, state: kit.State) -> str | None:
         The lab.
     state : kit.State
         The level state.
+    typed : list[kit.Command]
+        The lines typed so far; none is added.
 
     Returns
     -------
@@ -168,7 +176,7 @@ def stage(lab: kit.Lab, state: kit.State) -> str | None:
     return None
 
 
-def read_branch(lab: kit.Lab, state: kit.State) -> str | None:
+def read_branch(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
     """
     Do the player's part of the ``branch`` step: read the branch name.
 
@@ -178,6 +186,8 @@ def read_branch(lab: kit.Lab, state: kit.State) -> str | None:
         The lab.
     state : kit.State
         The level state.
+    typed : list[kit.Command]
+        The lines typed so far; none is added.
 
     Returns
     -------

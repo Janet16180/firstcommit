@@ -24,7 +24,6 @@ MAX_PORT = 65535
 WIDTH = 88
 INDENT = "  "
 NO_LEVEL = "No level is in progress. Start one in the page: run `firstcommit` and open the link it prints."
-DAMAGED = "Run `firstcommit reset --yes` to start over (this erases your progress)."
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -92,7 +91,7 @@ def _run(run: Callable[[argparse.Namespace], int], args: argparse.Namespace) -> 
         print(NO_LEVEL)
         status = 1
     except game.SaveError as error:
-        print(f"{error}\n{DAMAGED}", file=sys.stderr)
+        print(error, file=sys.stderr)
         status = 1
     return status
 

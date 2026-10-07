@@ -298,3 +298,21 @@ def test_the_home_must_not_hold_a_colon(tmp_path: Path, monkeypatch: pytest.Monk
     monkeypatch.setenv("FIRSTCOMMIT_HOME", str(tmp_path / "a:b"))
     with pytest.raises(ValueError, match="FIRSTCOMMIT_HOME.*':'"):
         save.home()
+
+
+OLDER_SHAPES = [
+    ("progress.json", damaged(dict(PROGRESS), "scenes", ...), save.load_progress),
+    ("progress.json", damaged(dict(PROGRESS), "levels.basics-first-commit.stars", ...), save.load_progress),
+    ("active.json", damaged(dict(ACTIVE), "typed", ...), save.load_active),
+    ("active.json", damaged(damaged(dict(ACTIVE), "typed", ...), "log_offset", ...), save.load_active),
+]
+
+
+@pytest.mark.parametrize(("name", "record", "load"), OLDER_SHAPES, ids=[f"{name} without a field" for name, _, _ in OLDER_SHAPES])
+def test_a_save_written_by_an_older_game_names_the_file_and_how_to_start_over(game_home: Path, name: str, record: dict[str, Any], load: Any) -> None:
+    (game_home / name).write_text(json.dumps(record))
+    with pytest.raises(save.SaveError) as raised:
+        load()
+    message = str(raised.value)
+    assert name in message and "older version of the game" in message
+    assert "`firstcommit reset --yes`" in message and "`reset`" in message

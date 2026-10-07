@@ -24,6 +24,8 @@ Outcome = Literal["any", "ok", "failed", "unknown-command"]
 UNKNOWN_COMMAND_STATUS = 127
 NEEDS_REPOSITORY = r"git (status|add|commit|log|restore|branch|switch|push|pull|fetch|remote)\b"
 """The git commands a beginner meets that fail in a folder without a repository."""
+LIST_HIDDEN = r"ls( \S+)* (-[^-\s]*[aA]\S*|--all|--almost-all)( |$)"
+"""An ``ls`` that lists hidden names too (``-a``, ``-A``, ``-la``...), such as ``.git``."""
 
 
 @dataclass(frozen=True)
@@ -49,7 +51,7 @@ class ReactionRule:
 NEW_REPOSITORY = "A new repository: Git made the hidden `.git` folder, where it keeps this project's history. `ls -a` shows it."
 INIT_AGAIN = "This folder already was a repository. Running `git init` in it again is safe: it overwrites nothing."
 REPOSITORY_GONE = "The repository is gone, and its history with it: Git kept all of it in the `.git` folder."
-NO_REPOSITORY = "Git found no repository here. Git works only in a folder it knows, and `git init` makes this folder one."
+NO_REPOSITORY = "Git found no repository here. This command works only inside a repository, and `git init` makes this folder one."
 STATUS = "`git status` lists what is staged for your next commit, what changed in the working folder since, and the files Git does not track yet."
 UNSTAGED = "Out of the staging area: your next commit will not take that change."
 RESTORED = "`git restore` replaced the file in the working folder: the changes it had there that you had not staged are gone."
@@ -58,10 +60,10 @@ NOTHING_NEW = "Nothing new to stage: the staging area already matched."
 ADD_WHAT = "`git add` needs to know what to stage: a file name, or `.` for everything in this folder and the folders inside it."
 NOT_STAGED = "Nothing was staged. Read Git's message: a name it does not find is the usual cause. `ls` lists the folder, and Tab completes names."
 COMMITTED = "Committed: a new closed box in your repository, with its own hash and your message. `git log --oneline` lists it."
-NOT_COMMITTED = "No commit was made. Read Git's message: an empty staging area, or no name and email set yet, are the usual causes."
+NOT_COMMITTED = "No commit was made. Read Git's message: nothing new in the staging area, or no name and email set yet, are the usual causes."
 LOG = "Your history, newest commit first. Each commit records its author, its date and its message, and Git names it by its hash."
 HIDDEN_GIT = "See `.git`? That hidden folder is the repository: Git keeps the whole history in it. A plain `ls` hides names that start with a dot."
-LS_IN_REPOSITORY = "`ls` lists the working folder. To see which of these files Git tracks, and which changed, ask `git status`."
+LS_IN_REPOSITORY = "`ls` lists the working folder. To see which of these files changed, and which Git does not track yet, ask `git status`."
 LS_NO_REPOSITORY = "Plain files in a plain folder: Git keeps no history of them yet."
 DID_YOU_MEAN_GIT = "Did you mean `git`? It happens to every crew."
 UNKNOWN_COMMAND = "The shell knows no command by that name. Check its spelling: Tab completes command names too."
@@ -74,7 +76,7 @@ RULES: tuple[ReactionRule, ...] = (
     ReactionRule(line=r"git init( -\S+)*$", mood="info", text=INIT_AGAIN, outcome="ok", repository=True),
     ReactionRule(line=NEEDS_REPOSITORY, mood="err", text=NO_REPOSITORY, outcome="failed", repository=False),
     ReactionRule(line=r"git status\b", mood="info", text=STATUS, outcome="ok"),
-    ReactionRule(line=r"git restore\b.* --staged\b", mood="ok", text=UNSTAGED, event="file-unstaged"),
+    ReactionRule(line=r"git (restore\b.* --staged|rm\b.* --cached)\b", mood="ok", text=UNSTAGED, event="file-unstaged"),
     ReactionRule(line=r"git restore\b", mood="warn", text=RESTORED, event="file-changed"),
     ReactionRule(line=r"git add$", mood="info", text=ADD_WHAT),
     ReactionRule(line=r"git add\b", mood="ok", text=STAGED, event="file-staged"),
@@ -83,7 +85,7 @@ RULES: tuple[ReactionRule, ...] = (
     ReactionRule(line=r"git commit\b", mood="ok", text=COMMITTED, event="commit-created"),
     ReactionRule(line=r"git commit\b", mood="err", text=NOT_COMMITTED, outcome="failed", repository=True),
     ReactionRule(line=r"git log\b", mood="info", text=LOG, outcome="ok"),
-    ReactionRule(line=r"ls( \S+)* (-[^-\s]*a\S*|--all)( |$)", mood="info", text=HIDDEN_GIT, outcome="ok", repository=True),
+    ReactionRule(line=LIST_HIDDEN, mood="info", text=HIDDEN_GIT, outcome="ok", repository=True),
     ReactionRule(line=r"ls\b", mood="info", text=LS_IN_REPOSITORY, outcome="ok", repository=True),
     ReactionRule(line=r"ls\b", mood="info", text=LS_NO_REPOSITORY, outcome="ok", repository=False),
     ReactionRule(line=r"(gti|gi|gt|got|tig|igt)\b", mood="info", text=DID_YOU_MEAN_GIT, outcome="unknown-command"),
@@ -114,11 +116,38 @@ def react(command: Command, kinds: Collection[str], repository: bool, rules: Seq
     ReactionRule | None
         The first rule that fits, or None.
     """
-    line = " ".join(command["line"].split())
-    return next((rule for rule in rules if _fits(rule, line, command["status"], kinds, repository)), None)
+    return next((rule for rule in rules if _fits(rule, command, kinds, repository)), None)
 
 
-def _fits(rule: ReactionRule, line: str, status: int, kinds: Collection[str], repository: bool) -> bool:
+def matches(command: Command, pattern: str, outcome: Outcome) -> bool:
+    """
+    Tell whether a typed line starts as a pattern says and ended as asked.
+
+    Parameters
+    ----------
+    command : Command
+        The typed line and its exit status.
+    pattern : str
+        A regular expression matched at the start of the line, its runs of spaces made single.
+    outcome : Outcome
+        How the line must have ended.
+
+    Returns
+    -------
+    bool
+        True when both fit.
+    """
+    status = command["status"]
+    ended = {
+        "any": True,
+        "ok": status == 0,
+        "failed": status != 0,
+        "unknown-command": status == UNKNOWN_COMMAND_STATUS,
+    }
+    return re.match(pattern, " ".join(command["line"].split())) is not None and ended[outcome]
+
+
+def _fits(rule: ReactionRule, command: Command, kinds: Collection[str], repository: bool) -> bool:
     """
     Tell whether a rule fits a typed line.
 
@@ -126,10 +155,8 @@ def _fits(rule: ReactionRule, line: str, status: int, kinds: Collection[str], re
     ----------
     rule : ReactionRule
         The rule.
-    line : str
-        The typed line, its runs of spaces made single.
-    status : int
-        Its exit status.
+    command : Command
+        The typed line and its exit status.
     kinds : Collection[str]
         The event kinds of what changed.
     repository : bool
@@ -140,15 +167,8 @@ def _fits(rule: ReactionRule, line: str, status: int, kinds: Collection[str], re
     bool
         True when the line, its outcome, the change and the repository all fit.
     """
-    ended = {
-        "any": True,
-        "ok": status == 0,
-        "failed": status != 0,
-        "unknown-command": status == UNKNOWN_COMMAND_STATUS,
-    }
     return (
-        re.match(rule.line, line) is not None
-        and ended[rule.outcome]
+        matches(command, rule.line, rule.outcome)
         and (not rule.event or rule.event in kinds)
         and (rule.repository is None or rule.repository == repository)
     )
