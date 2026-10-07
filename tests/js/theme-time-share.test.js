@@ -63,10 +63,10 @@ const STEPS = {
   refused: { id: "refused", actor: "you", before: YOU_PUSHED, after: YOU_PUSHED, events: none, commands: ["git push"], transcript: [{ command: "git push", output: " ! [rejected]        main -> main (fetch first)\n", status: 1 }] },
 };
 
-/* Renders a step's after state, plays the step, and records every animate() call. */
-function played(step, reduced = false) {
+/* Draws a figure with `draw`, starts its motion with `start`, and records every animate() call. */
+function animating(draw, start) {
   const calls = [];
-  const figure = TimeShare.render(step);
+  const figure = draw();
   document.body.replaceChildren(figure);
   const proto = Object.getPrototypeOf(figure);
   proto.animate = function (frames, timing) {
@@ -75,18 +75,21 @@ function played(step, reduced = false) {
     return call;
   };
   proto.getTotalLength = () => 100;
-  TimeShare.play(figure, step, reduced);
+  start(figure);
   delete proto.animate;
   delete proto.getTotalLength;
   return { figure, calls };
 }
+
+/* Renders a step's after state, plays the step, and records every animate() call. */
+const played = (step, reduced = false) => animating(() => TimeShare.renderStep(step), (figure) => TimeShare.playStep(figure, step, reduced));
 
 const person = (figure, who) => [...figure.querySelectorAll("[data-person]")].find((node) => node.getAttribute("data-person") === who);
 const areas = (node) => [...node.querySelectorAll("[data-area]")].map((place) => place.getAttribute("data-area"));
 const insideOf = (figure, who) => (call) => person(figure, who).contains(call.node);
 
 test("the figure puts your computer, GitHub and Alex's computer side by side, each computer with its folder, open box and repository", () => {
-  const figure = TimeShare.render(STEPS.push);
+  const figure = TimeShare.renderStep(STEPS.push);
   assert.deepEqual(areas(person(figure, "you")), ["folder", "index", "repository"]);
   assert.deepEqual(areas(person(figure, "alex")), ["folder", "index", "repository"]);
   assert.deepEqual(areas(figure.querySelector(".ts-github")), ["remote"]);
@@ -96,7 +99,7 @@ test("the figure puts your computer, GitHub and Alex's computer side by side, ea
 });
 
 test("Alex's column is titled Alex's repository, and both repositories hold the commits, not only yours", () => {
-  const figure = TimeShare.render(STEPS.push);
+  const figure = TimeShare.renderStep(STEPS.push);
   const titles = (who) => [...person(figure, who).querySelectorAll("h4")].map((node) => node.textContent);
   assert.deepEqual(titles("you"), ["Working folder", "Staging area", "Your repository"]);
   assert.deepEqual(titles("alex"), ["Working folder", "Staging area", "Alex's repository"]);
@@ -148,7 +151,7 @@ test("a step lights the arrows of the person who ran it, from their own events a
 });
 
 test("only the arrows of the person who ran the step light up, with the step's caption under the figure", () => {
-  const figure = TimeShare.render(STEPS.fetch);
+  const figure = TimeShare.renderStep(STEPS.fetch);
   const active = (who) => [...person(figure, who).querySelectorAll(".tt-arrow.is-active")].map((arrow) => arrow.getAttribute("data-command"));
   assert.deepEqual(active("alex"), ["fetch"]);
   assert.deepEqual(active("you"), []);
@@ -157,7 +160,7 @@ test("only the arrows of the person who ran the step light up, with the step's c
 });
 
 test("each arrow says aloud whose places it joins", () => {
-  const figure = TimeShare.render(STEPS.push);
+  const figure = TimeShare.renderStep(STEPS.push);
   const said = (who, name) => [...person(figure, who).querySelectorAll(".tt-arrow")].find((arrow) => arrow.getAttribute("data-command") === name && arrow.getAttribute("aria-label")).getAttribute("aria-label");
   assert.equal(said("you", "push"), "push: from your repository to the remote repository");
   assert.equal(said("alex", "fetch"), "fetch: from the remote repository to Alex's repository");
@@ -216,4 +219,82 @@ test("under reduced motion nothing moves, and the caption still says what happen
   const { figure, calls } = played(STEPS.push, true);
   assert.deepEqual(calls, []);
   assert.ok(figure.querySelector(".ts-caption").textContent.length > 0);
+});
+
+/* The playground: the game's real record of Alex pressing "git push", and the observation just
+   before it, when GitHub and Alex's origin/main were still on the pushed commit's parent. */
+const PRESS = record("press");
+function beforePush(observation) {
+  const before = structuredClone(observation);
+  const [pushed, ...older] = before.github.commits;
+  const parent = pushed.parents[0];
+  before.github = { ...before.github, head: parent, commits: older, refs: before.github.refs.map((ref) => ({ ...ref, target: parent })) };
+  before.teammate.refs = before.teammate.refs.map((ref) => (ref.kind === "remote" ? { ...ref, target: parent } : ref));
+  return { ...before, events: [], teammate_events: [] };
+}
+const AFTER = PRESS.observation;
+const BEFORE = beforePush(AFTER);
+const hashes = (snapshot) => snapshot.commits.map((commit) => commit.hash);
+
+test("the live figure draws you, GitHub and Alex from the game's observation, with no caption and no step", () => {
+  const state = TimeShare.observed(AFTER);
+  assert.deepEqual([state.you, state.github, state.alex], [AFTER.project, AFTER.github, AFTER.teammate]);
+  const figure = TimeShare.render(state);
+  assert.deepEqual(areas(person(figure, "you")), ["folder", "index", "repository"]);
+  assert.deepEqual(areas(person(figure, "alex")), ["folder", "index", "repository"]);
+  assert.deepEqual(areas(figure.querySelector(".ts-github")), ["remote"]);
+  assert.equal(person(figure, "alex").querySelectorAll("h4")[2].textContent, "Alex's repository");
+  assert.equal(figure.querySelector(".ts-caption"), null);
+  assert.equal(figure.querySelector(".ts-command"), null);
+  assert.equal(figure.querySelectorAll(".tt-arrow.is-active").length, 0);
+});
+
+test("a press lights the arrows of the person who pressed, from their events and GitHub's", () => {
+  assert.equal(PRESS.press.person, "alex");
+  const commands = TimeShare.pressed(BEFORE, AFTER, "alex");
+  assert.deepEqual(commands, ["push"]);
+  const figure = TimeShare.render(TimeShare.observed(AFTER), { person: "alex", commands });
+  const active = (who) => [...person(figure, who).querySelectorAll(".tt-arrow.is-active")].map((arrow) => arrow.getAttribute("data-command"));
+  assert.deepEqual(active("alex"), ["push"]);
+  assert.deepEqual(active("you"), []);
+});
+
+test("Alex's pressed push flies Alex's box to GitHub, and nothing on your computer moves", () => {
+  const [before, after] = [TimeShare.observed(BEFORE), TimeShare.observed(AFTER)];
+  const commands = TimeShare.pressed(BEFORE, AFTER, "alex");
+  const { figure, calls } = animating(() => TimeShare.render(after, { person: "alex", commands }), (drawn) => TimeShare.play(drawn, before, after, "alex", commands, false));
+  const flyers = [...figure.querySelectorAll(".tt-flyer.is-commit")];
+  assert.equal(flyers.length, 1);
+  assert.match(flyers[0].textContent, new RegExp(hashes(AFTER.github)[0].slice(0, 7)));
+  assert.ok(calls.some((call) => figure.querySelector(".ts-github").contains(call.node)), "GitHub's main moves");
+  assert.deepEqual(calls.filter(insideOf(figure, "you")), []);
+});
+
+test("a press git refused moves nothing, since nothing changed", () => {
+  const still = TimeShare.observed(AFTER);
+  const { calls } = animating(() => TimeShare.render(still, { person: "you", commands: [] }), (drawn) => TimeShare.play(drawn, still, still, "you", [], false));
+  assert.deepEqual(calls, []);
+});
+
+test("each person's computer has an empty slot under it for that person's buttons, and GitHub has none", () => {
+  const figure = TimeShare.render(TimeShare.observed(AFTER));
+  for (const who of ["you", "alex"]) {
+    const slots = [...person(figure, who).querySelectorAll("[data-slot]")];
+    assert.deepEqual(slots.map((slot) => slot.getAttribute("data-slot")), [who]);
+    assert.equal(slots[0].children.length, 0);
+  }
+  assert.equal(figure.querySelector(".ts-github [data-slot]"), null);
+});
+
+test("the person switch only chooses whose slot a narrow screen shows", () => {
+  const figure = TimeShare.render(TimeShare.observed(AFTER), { shown: "you" });
+  const drawn = figure.querySelector(".ts-grid");
+  const choice = (who) => [...figure.querySelectorAll(".ts-switch button")].find((button) => button.getAttribute("data-show") === who);
+  assert.equal(figure.getAttribute("data-shown"), "you");
+  assert.deepEqual(["you", "alex"].map((who) => choice(who).getAttribute("aria-pressed")), ["true", "false"]);
+  choice("alex").click();
+  assert.equal(figure.getAttribute("data-shown"), "alex");
+  assert.deepEqual(["you", "alex"].map((who) => choice(who).getAttribute("aria-pressed")), ["false", "true"]);
+  assert.equal(figure.querySelector(".ts-grid"), drawn, "the figure is not drawn again");
+  assert.equal(TimeShare.render(TimeShare.observed(AFTER), { shown: "alex" }).getAttribute("data-shown"), "alex");
 });

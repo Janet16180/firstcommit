@@ -25,6 +25,13 @@ Event kinds, most important first:
   executable bit), ``file-deleted``, ``nested-repository-created``, ``nested-repository-deleted``
   (a separate repository inside the working folder), ``file-ignored``, ``file-unignored``.
 
+A commit counts as made here, not fetched, when HEAD moved to a new commit that no
+remote-tracking branch moved by a fetch leads to; a push from here in the same batch may have
+moved one already (`firstcommit.records.Snapshot` ``pushed``, read from the reflogs). Two cases
+are told as fetched although the commit was made here: a repository whose reflogs are off
+(``core.logAllRefUpdates=false``) before its first push, and a batch in which you push, a
+teammate pushes on top, and you fetch, so a fetch moved the branch last.
+
 Every name, short hash and commit subject in the text is one code span written by
 `firstcommit.markup.code`, so a name a player chose can never forge paragraphs, bullets or
 other code in the game's voice. A commit's subject follows its short hash, in parentheses.
@@ -62,6 +69,8 @@ FOLDER_NOTES: dict[FolderChange | None, str] = {
     None: " It matches the staging area.",
 }
 """How a file in the working folder stands against the staging area, by its `folder_change`."""
+NO_REPOSITORY_NOTE = " There is no repository here, so Git does not track it."
+CONFLICT_NOTE = " It is still in conflict until it is staged."
 STARTED = {
     "merge": "A merge is in progress{on}.",
     "rebase": "A rebase is in progress: Git replays commits one at a time, with HEAD detached until the rebase ends.",
@@ -123,7 +132,7 @@ def describe(before: Snapshot, after: Snapshot) -> list[Event]:
     if before["exists"] != after["exists"] or before["bare"] != after["bare"]:
         events = [_repository_event(change)]
     elif not after["exists"]:
-        events = []
+        events = _loose_file_events(change)
     elif after["bare"]:
         events = _push_events(change)
     else:
@@ -397,9 +406,9 @@ def _new_head_commit(change: _Change) -> tuple[str, Commit] | None:
     Find the commit just made at HEAD, if HEAD moved to one.
 
     A commit counts as made here when it is new, HEAD stayed on the same branch (or stayed
-    detached), and either no remote-tracking branch leads to it or it holds what the staging
-    area or working folder held before (`_made_from_what_was_here`: it was made here and pushed
-    in the same batch). Otherwise it came with a fetch or a pull.
+    detached), and no remote-tracking branch that a fetch moved leads to it. One that a push
+    from here moved may: the commit was made here and pushed in the same batch (the snapshot's
+    ``pushed``). Otherwise it came with a fetch or a pull.
 
     Parameters
     ----------
@@ -415,10 +424,8 @@ def _new_head_commit(change: _Change) -> tuple[str, Commit] | None:
     before, after = change.before, change.after
     commit = change.commits.get(after["head"]) if after["head"] is not None else None
     known = {known["hash"] for known in before["commits"]}
-    remote = set().union(*(_reachable(change, target) for target in _targets(after, "remote").values()))
-    if commit is None or commit["hash"] in known or before["branch"] != after["branch"]:
-        return None
-    if commit["hash"] in remote and not _made_from_what_was_here(change):
+    fetched = set().union(*(_reachable(change, target) for name, target in _targets(after, "remote").items() if name not in after["pushed"]))
+    if commit is None or commit["hash"] in known or commit["hash"] in fetched or before["branch"] != after["branch"]:
         return None
     old = change.commits.get(before["head"]) if before["head"] is not None else None
     found: tuple[str, Commit] | None = None
@@ -427,33 +434,6 @@ def _new_head_commit(change: _Change) -> tuple[str, Commit] | None:
     elif old is not None and commit["parents"] == old["parents"]:
         found = ("commit-replaced", commit)
     return found
-
-
-def _made_from_what_was_here(change: _Change) -> bool:
-    """
-    Tell whether HEAD's new commit holds what was already in the staging area or the working folder.
-
-    A commit made here is built from the staging area (or, with ``git commit -a``, from the
-    working folder), so every file it changed was there before, with the same id and mode. A
-    pulled commit brings content the folder did not have yet. A commit that changes no file
-    gives no evidence either way.
-
-    Parameters
-    ----------
-    change : _Change
-        The two snapshots; HEAD moved to a new commit on top of the old HEAD.
-
-    Returns
-    -------
-    bool
-        True if the commit changed at least one file, and each was already staged or in the
-        working folder as the commit holds it.
-    """
-    was = {file["path"]: file for file in change.before["files"]}
-    now = {file["path"]: file for file in change.after["files"]}
-    pairs = [(was.get(path, _absent(path)), now.get(path, _absent(path))) for path in was.keys() | now.keys()]
-    changed = [(old, new) for old, new in pairs if version(new, "head") != version(old, "head")]
-    return bool(changed) and all(version(new, "head") in (version(old, "index"), version(old, "folder")) for old, new in changed)
 
 
 def _renamed_branch(change: _Change) -> tuple[str, str] | None:
@@ -792,7 +772,9 @@ def _file_events(change: _Change, tidied: bool, committed: bool) -> list[Event]:
     """
     Tell what changed in the staging area and the working folder, file by file.
 
-    A file that matched HEAD before and after only followed HEAD, and is not told.
+    A file that matched HEAD before and after only followed HEAD, and is not told. A file in
+    conflict before and after is told only when its working copy changed (`git restore --ours`,
+    an edit); a conflict that starts or ends has its own events.
 
     Parameters
     ----------
@@ -820,11 +802,39 @@ def _file_events(change: _Change, tidied: bool, committed: bool) -> list[Event]:
         nested = (old["repository"] or new["repository"]) and not _tracked(old) and not _tracked(new)
         if nested:
             folder += _nested_news(old, new)
+        elif old["conflicted"] and new["conflicted"]:
+            folder += _folder_news(old, new, CONFLICT_NOTE)
         elif not (old["conflicted"] or new["conflicted"] or followed_head or put_back):
             staging += _staging_news(old, new, committed)
-            folder += _folder_news(old, new)
+            folder += _folder_news(old, new, _folder_note(new))
             ignoring += _ignore_news(old, new)
     return [*_told(staging), *_told(folder), *_told(ignoring)]
+
+
+def _loose_file_events(change: _Change) -> list[Event]:
+    """
+    Tell which files were created, changed or deleted in a folder that no repository holds.
+
+    A repository inside the folder is not told: it is not a file, and no repository here lists it.
+
+    Parameters
+    ----------
+    change : _Change
+        The two snapshots, both of a folder with no repository.
+
+    Returns
+    -------
+    list[Event]
+        The working-folder events.
+    """
+    was = {file["path"]: file for file in change.before["files"]}
+    now = {file["path"]: file for file in change.after["files"]}
+    news: list[FileNews] = []
+    for path in sorted(was.keys() | now.keys()):
+        old, new = was.get(path, _absent(path)), now.get(path, _absent(path))
+        if not (old["repository"] or new["repository"]):
+            news += _folder_news(old, new, NO_REPOSITORY_NOTE if new["folder"] is not None else "")
+    return _told(news)
 
 
 def _absent(path: str) -> FileEntry:
@@ -954,7 +964,7 @@ def _staging_news(old: FileEntry, new: FileEntry, committed: bool) -> list[FileN
     return news
 
 
-def _folder_news(old: FileEntry, new: FileEntry) -> list[FileNews]:
+def _folder_news(old: FileEntry, new: FileEntry, note: str) -> list[FileNews]:
     """
     Tell how a file changed in the working folder.
 
@@ -964,13 +974,15 @@ def _folder_news(old: FileEntry, new: FileEntry) -> list[FileNews]:
         The file before.
     new : FileEntry
         The file after.
+    note : str
+        What follows the sentence: how the file now stands for git, starting with a space, or nothing.
 
     Returns
     -------
     list[FileNews]
         Zero or one piece of news.
     """
-    path, note = new["path"], _folder_note(new)
+    path = new["path"]
     if version(old, "folder") == version(new, "folder"):
         return []
     news: list[FileNews] = []

@@ -21,6 +21,7 @@ NOTHING: repomap.Snapshot = {
     "branch": None,
     "commits": [],
     "refs": [],
+    "pushed": [],
     "files": [],
     "operation": None,
     "stash": 0,
@@ -118,6 +119,93 @@ def test_an_empty_folder_holds_no_repository(tmp_path: Path) -> None:
 def test_a_file_where_the_folder_should_be_holds_no_repository(tmp_path: Path) -> None:
     (tmp_path / "project").write_text("not a folder\n")
     assert repomap.snapshot(tmp_path / "project") == NOTHING
+
+
+
+def loose(path: str, folder: str | None, mode: str | None, repository: bool = False) -> repomap.FileEntry:
+    """
+    Give the entry of a path in a folder that no repository holds.
+
+    Parameters
+    ----------
+    path : str
+        The path.
+    folder : str | None
+        Its id in the folder.
+    mode : str | None
+        Its mode in the folder.
+    repository : bool
+        Whether it is a repository of its own.
+
+    Returns
+    -------
+    repomap.FileEntry
+        The entry: in the folder only, in no area of git.
+    """
+    return {
+        "path": path,
+        "head": None,
+        "index": None,
+        "folder": folder,
+        "head_mode": None,
+        "index_mode": None,
+        "folder_mode": mode,
+        "ignored": False,
+        "conflicted": False,
+        "repository": repository,
+        "index_change": None,
+        "folder_change": None,
+    }
+
+
+def test_a_folder_with_no_repository_lists_its_files_in_the_folder_only(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    project.mkdir()
+    shell(
+        project,
+        "echo notes > notes.txt && printf 'echo hi\\n' > run.sh && chmod +x run.sh && ln -s notes.txt link\n"
+        "mkdir -p docs/deep empty .git && echo deep > docs/deep/page.txt && echo hidden > .git/stray\n"
+        "git init -q -b main inner && git -C inner commit -q --allow-empty -m inner\n",
+    )
+    snap = repomap.snapshot(project)
+    assert snap == {
+        **NOTHING,
+        "files": [
+            loose("docs/deep/page.txt", blob_id(b"deep\n"), "100644"),
+            loose("inner", rev(project / "inner", "HEAD"), "160000", repository=True),
+            loose("link", blob_id(b"notes.txt"), "120000"),
+            loose("notes.txt", blob_id(b"notes\n"), "100644"),
+            loose("run.sh", blob_id(b"echo hi\n"), "100755"),
+        ],
+    }
+    assert repomap.untracked(snap) == []
+
+
+def test_git_init_turns_a_folders_files_into_untracked_ones_with_the_same_ids(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    project.mkdir()
+    shell(project, "echo notes > notes.txt && mkdir docs && echo page > docs/page.txt")
+    before = repomap.snapshot(project)
+    shell(project, "git init -q -b main")
+    after = repomap.snapshot(project)
+    assert [(file["path"], file["folder"], file["folder_mode"]) for file in after["files"]] == [
+        (file["path"], file["folder"], file["folder_mode"]) for file in before["files"]
+    ]
+    assert repomap.untracked(after) == ["docs/page.txt", "notes.txt"]
+
+
+def test_a_folder_inside_a_repository_that_starts_higher_lists_no_files(tmp_path: Path) -> None:
+    shell(tmp_path, "git init -q -b main && mkdir project && echo notes > project/notes.txt && git add . && git commit -q -m one")
+    assert repomap.snapshot(tmp_path / "project") == NOTHING
+
+
+def test_a_folder_with_no_repository_and_too_many_files_is_cut(tmp_path: Path) -> None:
+    project = tmp_path / "project"
+    project.mkdir()
+    shell(project, f"for n in $(seq 1 {repomap.MAX_FILES + 1}); do echo $n > f$n.txt; done")
+    snap = repomap.snapshot(project)
+    assert len(snap["files"]) == repomap.MAX_FILES
+    assert snap["truncated"]
 
 
 def test_a_new_repository_is_on_its_branch_before_its_first_commit(tmp_path: Path) -> None:
@@ -242,6 +330,50 @@ def test_refs_list_branches_remote_tracking_branches_and_tags_peeled_to_their_co
         {"name": "v1", "kind": "tag", "target": commit},
         {"name": "v2", "kind": "tag", "target": commit},
     ]
+
+
+
+def remote_names(snap: repomap.Snapshot) -> list[str]:
+    """
+    List a snapshot's remote-tracking branches.
+
+    Parameters
+    ----------
+    snap : repomap.Snapshot
+        The snapshot.
+
+    Returns
+    -------
+    list[str]
+        Their names, sorted.
+    """
+    return sorted(ref["name"] for ref in snap["refs"] if ref["kind"] == "remote")
+
+
+def test_a_snapshot_names_the_remote_tracking_branches_a_push_from_here_moved_last(tmp_path: Path) -> None:
+    new_repo(tmp_path, "git commit -q --allow-empty -m one")
+    shell(tmp_path, "git clone -q --bare project github.git && git clone -q github.git clone && git clone -q github.git other")
+    clone = tmp_path / "clone"
+    assert repomap.snapshot(clone)["pushed"] == []
+    shell(clone, "git commit -q --allow-empty -m two && git push -q && git push -q origin HEAD:refs/heads/topic")
+    assert repomap.snapshot(clone)["pushed"] == ["origin/main", "origin/topic"]
+    shell(tmp_path / "other", "git pull -q && git commit -q --allow-empty -m three && git push -q")
+    shell(clone, "git fetch -q")
+    snap = repomap.snapshot(clone)
+    assert snap["pushed"] == ["origin/topic"]
+    assert set(snap["pushed"]) <= set(remote_names(snap))
+
+
+def test_no_remote_tracking_branch_counts_as_pushed_without_reflogs_or_without_remotes(tmp_path: Path) -> None:
+    new_repo(tmp_path, "git commit -q --allow-empty -m one")
+    shell(tmp_path, "git clone -q --bare project github.git && git clone -q github.git clone")
+    clone = tmp_path / "clone"
+    shell(clone, "git config core.logAllRefUpdates false && git commit -q --allow-empty -m two && git push -q origin HEAD:refs/heads/main HEAD:refs/heads/b HEAD:refs/heads/a")
+    snap = repomap.snapshot(clone)
+    assert remote_names(snap) == ["origin/a", "origin/b", "origin/main"]
+    assert snap["pushed"] == []
+    assert repomap.snapshot(tmp_path / "github.git")["pushed"] == []
+    assert repomap.snapshot(tmp_path / "project")["pushed"] == []
 
 
 def test_a_merge_conflict_flags_the_path_and_shows_the_merge_in_progress(tmp_path: Path) -> None:
@@ -611,6 +743,22 @@ def test_any_file_name_shows_with_the_blob_id_git_would_store(name: bytes, conte
         (repo / os.fsdecode(name)).write_bytes(content)
         snap = repomap.snapshot(repo)
     assert entry(snap, name.decode("utf-8", errors="replace"))["folder"] == blob_id(content)
+
+
+
+@pytest.mark.slow
+@settings(max_examples=40, deadline=None)
+@given(name=file_names, content=st.binary(max_size=64))
+def test_any_file_shows_the_same_path_and_id_before_and_after_git_init(name: bytes, content: bytes) -> None:
+    with tempfile.TemporaryDirectory() as folder:
+        project = Path(folder) / "project"
+        project.mkdir()
+        (project / os.fsdecode(name)).write_bytes(content)
+        before = repomap.snapshot(project)
+        shell(project, "git init -q -b main")
+        after = repomap.snapshot(project)
+    assert [(file["path"], file["folder"]) for file in before["files"]] == [(file["path"], file["folder"]) for file in after["files"]]
+    assert [file["folder"] for file in before["files"]] == [blob_id(content)]
 
 
 def test_objects_lists_every_object_with_its_type_and_size_sorted_by_hash(tmp_path: Path) -> None:

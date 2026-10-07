@@ -80,6 +80,10 @@ REF_KINDS: tuple[tuple[str, RefKind], ...] = ((BRANCH_PREFIX, "branch"), ("refs/
 STASH = "refs/stash"
 REF_FORMAT = "%(refname)%00%(objectname)%00%(*objectname)%00%(symref)"
 COMMIT_FORMAT = "%H%x00%h%x00%P%x00%an%x00%at%x00%s"
+PUSHED = "update by push"
+"""Git's fixed reflog message for a remote-tracking branch that a push from this repository moved (transport.c)."""
+MAX_REFLOG_ENTRIES = 1000
+"""How many reflog entries of the remote-tracking branches a snapshot reads at most, all branches together."""
 COMMIT_FIELDS = 6
 OBJECT_FORMAT = "%(objectname) %(objecttype) %(objectsize)"
 NOWHERE: tuple[None, None] = (None, None)
@@ -99,6 +103,10 @@ OPERATION_MARKERS: tuple[tuple[str, Operation], ...] = (
 QUOTED_PATHS = ("-c", "core.quotepath=on")
 QUOTED_CHARACTER = re.compile(rb'\\([0-7]{3}|[abtnvfr"\\])')
 ESCAPES = {b"a": b"\a", b"b": b"\b", b"t": b"\t", b"n": b"\n", b"v": b"\v", b"f": b"\f", b"r": b"\r", b'"': b'"', b"\\": b"\\"}
+ESCAPE_LETTERS = {byte[0]: letter.decode() for letter, byte in ESCAPES.items()}
+"""The letter git writes after a backslash for each byte it escapes by name; it writes others in octal."""
+DEFAULT_OBJECT_FORMAT = "sha1"
+"""The hash function of ``git hash-object`` outside a repository, and of a new one."""
 
 
 def version(file: FileEntry, area: Area) -> tuple[str | None, str | None]:
@@ -253,6 +261,9 @@ def snapshot(path: Path) -> Snapshot:
 
     - a missing folder, an empty one, or a ``.git`` folder git does not recognise (an empty one,
       or one missing ``HEAD``, ``objects`` or ``refs``) holds no repository: ``exists`` is False;
+    - a folder that no repository holds lists its own files in the working folder only, as
+      ``git init`` would find them untracked; one inside a repository that starts higher up
+      lists none, since that repository may hold them;
     - in a damaged repository (missing objects, a deleted staging area), the parts git cannot
       read are left empty and the rest is read as usual;
     - a bare repository has no working folder, so ``files`` is empty;
@@ -275,7 +286,7 @@ def snapshot(path: Path) -> Snapshot:
     """
     repo = _find(path)
     if repo is None:
-        return _no_repository()
+        return _no_repository(path)
     head = _head(path)
     refs, stashed = _refs(path)
     commits, commits_cut = _commits(path, head)
@@ -287,6 +298,7 @@ def snapshot(path: Path) -> Snapshot:
         "branch": _branch(path),
         "commits": commits,
         "refs": refs,
+        "pushed": _pushed(path, refs),
         "files": files,
         "operation": next((operation for marker, operation in OPERATION_MARKERS if os.path.exists(repo.git_dir / marker)), None),
         "stash": _stash_count(path) if stashed else 0,
@@ -322,15 +334,22 @@ def objects(path: Path) -> list[ObjectInfo]:
     return sorted(found, key=lambda info: info["hash"])
 
 
-def _no_repository() -> Snapshot:
+def _no_repository(path: Path) -> Snapshot:
     """
     Give the snapshot of a folder that holds no repository.
+
+    Parameters
+    ----------
+    path : Path
+        The folder. It may not exist.
 
     Returns
     -------
     Snapshot
-        ``exists`` False and everything else empty.
+        ``exists`` False and everything else empty, except the files of a folder that no
+        repository holds.
     """
+    files, cut = _loose_files(path) if _outside_any_repository(path) else ([], False)
     return {
         "exists": False,
         "bare": False,
@@ -338,10 +357,11 @@ def _no_repository() -> Snapshot:
         "branch": None,
         "commits": [],
         "refs": [],
-        "files": [],
+        "pushed": [],
+        "files": files,
         "operation": None,
         "stash": 0,
-        "truncated": False,
+        "truncated": cut,
     }
 
 
@@ -371,6 +391,142 @@ def _find(path: Path) -> _Repository | None:
     if up != "" and not (bare == "true" and Path(git_dir) == path.resolve()):
         return None
     return _Repository(Path(git_dir), bare == "true", object_format)
+
+
+def _outside_any_repository(path: Path) -> bool:
+    """
+    Tell whether no repository holds a folder, neither its own nor one that starts higher up.
+
+    Parameters
+    ----------
+    path : Path
+        The folder.
+
+    Returns
+    -------
+    bool
+        True if git finds no repository there (also when the folder is missing).
+    """
+    return gitcmd.run(path, "rev-parse", "--git-dir").returncode != 0
+
+
+def _loose_files(top: Path) -> tuple[list[FileEntry], bool]:
+    """
+    List the files of a folder that no repository holds, with the id and mode each would get.
+
+    No area of git holds them, so only ``folder`` and ``folder_mode`` are set (and
+    ``repository`` for a repository inside the folder); ``git init`` makes them untracked
+    with the same paths, ids and modes.
+
+    Parameters
+    ----------
+    top : Path
+        The folder.
+
+    Returns
+    -------
+    tuple[list[FileEntry], bool]
+        At most `MAX_FILES` entries sorted by path, and whether there were more.
+    """
+    keys, nested = _loose_keys(top)
+    kept = sorted(keys, key=_display)[:MAX_FILES]
+    in_folder = _folder_versions(top, kept, {}, DEFAULT_OBJECT_FORMAT)
+    files: list[FileEntry] = []
+    for key in kept:
+        folder_id, folder_mode = in_folder.get(key, NOWHERE)
+        files.append(
+            {
+                "path": _display(key),
+                "head": None,
+                "index": None,
+                "folder": folder_id,
+                "head_mode": None,
+                "index_mode": None,
+                "folder_mode": folder_mode,
+                "ignored": False,
+                "conflicted": False,
+                "repository": key in nested,
+                "index_change": None,
+                "folder_change": None,
+            }
+        )
+    return sorted(files, key=lambda file: file["path"]), len(keys) > MAX_FILES
+
+
+def _loose_keys(top: Path) -> tuple[list[str], set[str]]:
+    """
+    Find the files of a folder that no repository holds, as ``git ls-files --others`` would once one did.
+
+    Regular files and symbolic links are listed; a folder that is a repository of its own is one
+    path, and nothing inside it is. A ``.git`` folder or file is never listed, nor is an empty
+    folder. A folder that cannot be read lists nothing.
+
+    Parameters
+    ----------
+    top : Path
+        The folder.
+
+    Returns
+    -------
+    tuple[list[str], set[str]]
+        Paths quoted as git quotes them, and those of them that are repositories.
+    """
+    keys: list[str] = []
+    nested: set[str] = set()
+    pending = [b""]
+    while pending:
+        prefix = pending.pop()
+        for entry in _entries(os.fsencode(top) + b"/" + prefix):
+            name = prefix + entry.name
+            is_folder = entry.is_dir(follow_symlinks=False)
+            if entry.name == b".git" or not (is_folder or entry.is_file(follow_symlinks=False) or entry.is_symlink()):
+                continue
+            if is_folder and not _is_repository(entry.path):
+                pending.append(name + b"/")
+                continue
+            keys.append(_quote(name))
+            if is_folder:
+                nested.add(keys[-1])
+    return keys, nested
+
+
+def _is_repository(folder: bytes) -> bool:
+    """
+    Tell whether a folder is the top of a repository of its own.
+
+    Parameters
+    ----------
+    folder : bytes
+        The folder's path.
+
+    Returns
+    -------
+    bool
+        True if it holds a ``.git`` that git recognises; git is asked only when one is there.
+    """
+    return os.path.lexists(folder + b"/.git") and _find(Path(os.fsdecode(folder))) is not None
+
+
+def _entries(folder: bytes) -> list[os.DirEntry[bytes]]:
+    """
+    List a folder's entries.
+
+    Parameters
+    ----------
+    folder : bytes
+        The folder's path.
+
+    Returns
+    -------
+    list[os.DirEntry[bytes]]
+        Its entries, or none if it is gone, is not a folder or cannot be read.
+    """
+    try:
+        with os.scandir(folder) as found:
+            entries = list(found)
+    except (FileNotFoundError, NotADirectoryError, PermissionError):  # the player may remove or lock it at any time
+        entries = []
+    return entries
 
 
 def _lines(result: subprocess.CompletedProcess[str]) -> list[str]:
@@ -457,6 +613,36 @@ def _refs(cwd: Path) -> tuple[list[Ref], bool]:
             if refname.startswith(prefix) and not symref:
                 refs.append({"name": refname.removeprefix(prefix), "kind": kind, "target": peeled or target})
     return refs, stashed
+
+
+def _pushed(cwd: Path, refs: list[Ref]) -> list[str]:
+    """
+    Name the remote-tracking branches that a push from this repository moved last.
+
+    The newest entry of each one's reflog says what moved it: `PUSHED` for a push, the
+    command's own words for a fetch or a pull (``fetch: fast-forward``). One git command reads
+    the reflogs of all of them, each newest first, up to `MAX_REFLOG_ENTRIES` in all; a branch
+    whose newest entry is past that, or that has no reflog, counts as not pushed.
+
+    Parameters
+    ----------
+    cwd : Path
+        A folder of the repository.
+    refs : list[Ref]
+        The repository's refs.
+
+    Returns
+    -------
+    list[str]
+        Names of remote-tracking branches, sorted; empty when there are none.
+    """
+    remote = [f"refs/remotes/{ref['name']}" for ref in refs if ref["kind"] == "remote"]
+    if not remote:
+        return []
+    result = gitcmd.run(cwd, "log", "--walk-reflogs", "-z", f"--max-count={MAX_REFLOG_ENTRIES}", "--format=%gD%x00%gs", *remote, "--")
+    fields = result.stdout.split("\0") if result.returncode == 0 else []
+    messages = dict(zip(fields[0::2], fields[1::2], strict=False))
+    return sorted(name.removeprefix("refs/remotes/") for name in remote if messages.get(f"{name}@{{0}}") == PUSHED)
 
 
 def _stash_count(cwd: Path) -> int:
@@ -940,6 +1126,25 @@ def _unquote(key: str) -> bytes:
     if len(key) >= 2 and key.startswith('"') and key.endswith('"'):
         raw = QUOTED_CHARACTER.sub(lambda match: ESCAPES.get(match[1]) or bytes([int(match[1], 8)]), raw[1:-1])
     return raw
+
+
+def _quote(raw: bytes) -> str:
+    """
+    Write a path as git prints it with ``core.quotepath``, the inverse of `_unquote`.
+
+    Parameters
+    ----------
+    raw : bytes
+        The path's bytes.
+
+    Returns
+    -------
+    str
+        The path, C-quoted if it holds a control, quote, backslash or non-ASCII byte.
+    """
+    plain = all(0x20 <= byte < 0x7F and byte not in b'"\\' for byte in raw)
+    escaped = "".join(f"\\{ESCAPE_LETTERS[byte]}" if byte in ESCAPE_LETTERS else chr(byte) if 0x20 <= byte < 0x7F else f"\\{byte:03o}" for byte in raw)
+    return raw.decode() if plain else f'"{escaped}"'
 
 
 def _display(key: str) -> str:

@@ -87,12 +87,19 @@ class Snapshot(TypedDict):
     """
     The state of one repository.
 
-    ``exists`` is False when the folder holds no repository (all else empty). ``branch`` names
+    ``exists`` is False when the folder holds no repository. All else is then empty, except that
+    a folder no repository holds lists its own files in ``files`` (cut as below), with only
+    ``folder``, ``folder_mode`` and ``repository`` set: no area of git holds them. ``branch`` names
     the branch HEAD is on, even before its first commit (when ``head`` is None); it is None when
     HEAD is detached. ``operation`` names a merge, rebase, cherry-pick, revert or bisect in
     progress. ``commits`` lists every commit reachable from HEAD and the refs, newest first, at
     most `firstcommit.repomap.MAX_COMMITS`; ``files`` lists at most `firstcommit.repomap.MAX_FILES` paths, sorted; ``truncated`` says
     whether either was cut.
+
+    ``pushed`` names the remote-tracking branches that a push from this repository moved last,
+    as their reflogs record it, so a commit that reached one by a push was here before the
+    remote had it. Invariant: a sorted subset of the names of ``refs`` of kind ``"remote"``;
+    empty when there are none, or when their reflogs are off.
     """
 
     exists: bool
@@ -101,6 +108,7 @@ class Snapshot(TypedDict):
     branch: str | None
     commits: list[Commit]
     refs: list[Ref]
+    pushed: list[str]
     files: list[FileEntry]
     operation: Operation | None
     stash: int

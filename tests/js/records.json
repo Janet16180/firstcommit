@@ -246,6 +246,7 @@
      "branch": "main",
      "commits": [],
      "refs": [],
+     "pushed": [],
      "files": [
       {
        "path": "hello.txt",
@@ -319,6 +320,7 @@
      "branch": "main",
      "commits": [],
      "refs": [],
+     "pushed": [],
      "files": [
       {
        "path": "hello.txt",
@@ -394,6 +396,7 @@
        "target": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df"
       }
      ],
+     "pushed": [],
      "files": [
       {
        "path": "hello.txt",
@@ -470,6 +473,7 @@
        "target": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df"
       }
      ],
+     "pushed": [],
      "files": [
       {
        "path": "hello.txt",
@@ -546,6 +550,7 @@
        "target": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df"
       }
      ],
+     "pushed": [],
      "files": [
       {
        "path": "hello.txt",
@@ -792,6 +797,7 @@
      "target": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df"
     }
    ],
+   "pushed": [],
    "files": [
     {
      "path": "README.md",
@@ -928,6 +934,7 @@
      "target": "32d332da761f44df7959e5887b6b94cb4667d781"
     }
    ],
+   "pushed": [],
    "files": [],
    "operation": null,
    "stash": 0,
@@ -1232,6 +1239,7 @@
    "branch": null,
    "commits": [],
    "refs": [],
+   "pushed": [],
    "files": [],
    "operation": null,
    "stash": 0,
@@ -1244,6 +1252,7 @@
    "branch": "main",
    "commits": [],
    "refs": [],
+   "pushed": [],
    "files": [
     {
      "path": "hello.txt",
@@ -1286,6 +1295,7 @@
      "target": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df"
     }
    ],
+   "pushed": [],
    "files": [
     {
      "path": "hello.txt",
@@ -1294,6 +1304,34 @@
      "folder": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
      "head_mode": "100644",
      "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    }
+   ],
+   "operation": null,
+   "stash": 0,
+   "truncated": false
+  },
+  "folder": {
+   "exists": false,
+   "bare": false,
+   "head": null,
+   "branch": null,
+   "commits": [],
+   "refs": [],
+   "pushed": [],
+   "files": [
+    {
+     "path": "notes.txt",
+     "head": null,
+     "index": null,
+     "folder": "5f0f9bb007c646838fe0aba05f3449fba6a85eef",
+     "head_mode": null,
+     "index_mode": null,
      "folder_mode": "100644",
      "ignored": false,
      "conflicted": false,
@@ -1458,6 +1496,7 @@
     "branch": "main",
     "commits": [],
     "refs": [],
+    "pushed": [],
     "files": [
      {
       "path": "README.md",
@@ -1500,6 +1539,7 @@
       "target": "5941dbe88c0a17b6310a603afeb5821f69082d70"
      }
     ],
+    "pushed": [],
     "files": [
      {
       "path": "README.md",
@@ -1550,6 +1590,7 @@
       "target": "5941dbe88c0a17b6310a603afeb5821f69082d70"
      }
     ],
+    "pushed": [],
     "files": [
      {
       "path": "README.md",
@@ -1616,6 +1657,7 @@
       "target": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782"
      }
     ],
+    "pushed": [],
     "files": [
      {
       "path": "README.md",
@@ -1695,6 +1737,7 @@
       "target": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782"
      }
     ],
+    "pushed": [],
     "files": [
      {
       "path": "README.md",
@@ -1790,6 +1833,7 @@
       "target": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782"
      }
     ],
+    "pushed": [],
     "files": [
      {
       "path": "README.md",
@@ -1893,6 +1937,7 @@
       "target": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782"
      }
     ],
+    "pushed": [],
     "files": [
      {
       "path": "README.md",
@@ -1974,6 +2019,7 @@
       "target": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782"
      }
     ],
+    "pushed": [],
     "files": [
      {
       "path": "README.md",
@@ -2048,6 +2094,7 @@
       "target": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782"
      }
     ],
+    "pushed": [],
     "files": [
      {
       "path": "README.md",
@@ -2124,6 +2171,7 @@
       "target": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782"
      }
     ],
+    "pushed": [],
     "files": [
      {
       "path": "README.md",
@@ -2213,6 +2261,7 @@
       "target": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782"
      }
     ],
+    "pushed": [],
     "files": [
      {
       "path": "README.md",
@@ -2305,6 +2354,7 @@
       "target": "950c6ca98ed8da51d750adf7b32be67c0418a695"
      }
     ],
+    "pushed": [],
     "files": [
      {
       "path": "README.md",
@@ -2388,6 +2438,7 @@
       "target": "5941dbe88c0a17b6310a603afeb5821f69082d70"
      }
     ],
+    "pushed": [],
     "files": [
      {
       "path": "README.md",
@@ -2459,6 +2510,7 @@
       "target": "5941dbe88c0a17b6310a603afeb5821f69082d70"
      }
     ],
+    "pushed": [],
     "files": [
      {
       "path": "README.md",
@@ -2523,6 +2575,7 @@
       "target": "5941dbe88c0a17b6310a603afeb5821f69082d70"
      }
     ],
+    "pushed": [],
     "files": [],
     "operation": null,
     "stash": 0,
@@ -2560,6 +2613,7 @@
       "target": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782"
      }
     ],
+    "pushed": [],
     "files": [],
     "operation": null,
     "stash": 0,
@@ -2608,6 +2662,7 @@
       "target": "5941dbe88c0a17b6310a603afeb5821f69082d70"
      }
     ],
+    "pushed": [],
     "files": [
      {
       "path": "README.md",
@@ -2665,6 +2720,7 @@
       "target": "a0c26f82f8b538ab73f2576ac9cae13cb49b8782"
      }
     ],
+    "pushed": [],
     "files": [
      {
       "path": "README.md",
@@ -2731,6 +2787,7 @@
       "target": "72be22ae33d512ce24d4b4f127d3c33f36d764c7"
      }
     ],
+    "pushed": [],
     "files": [
      {
       "path": "README.md",
@@ -2783,6 +2840,7 @@
       "target": "890d57934ac537c8d74da5d244f19ab8bacfaeef"
      }
     ],
+    "pushed": [],
     "files": [],
     "operation": null,
     "stash": 0,
@@ -2825,6 +2883,7 @@
       "target": "890d57934ac537c8d74da5d244f19ab8bacfaeef"
      }
     ],
+    "pushed": [],
     "files": [
      {
       "path": "README.md",
