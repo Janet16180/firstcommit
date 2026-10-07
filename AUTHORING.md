@@ -151,6 +151,7 @@ PAR: int                      # lines a good play types; more than PAR + 3 costs
 CARD: kit.CommandCard         # the command card the player collects: command and what it does
 SCENE: list[kit.SceneFrame] = []        # optional; Rama's scene the first time the level opens
 REACTIONS: list[kit.ReactionRule] = []  # optional; tried before the shared ones
+EVENTS: list[kit.LevelEvent] = []       # optional; changes the level makes during the play
 LESSON: list[kit.Slide] = []  # optional; the first level of a chapter has one
 QUEST: list[kit.Step] = []    # optional; the first level of a chapter has one
 BRIEFING: str                 # the situation and what counts as success
@@ -194,6 +195,11 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
   changed (`event`) and whether a repository is there afterwards (`repository`). The first rule
   that fits speaks; a level's rules come before the shared `reactions.RULES`, so add one only
   when the level can say something more precise.
+- **`EVENTS`**: `kit.LevelEvent(id, run, goal="")`. `run(lab, state)` makes a real change with
+  `kit.git` or `kit.press` (Alex pushes, a build folder floods the workshop). With no `goal` it
+  runs right after the page's first look at the lab; with a quest step's id, right after the
+  player reaches that goal. The page then animates the change like any other. Each runs once per
+  play, and `check` must hold whatever moment the player reaches.
 - **`QUESTION`** is for levels whose goal is something the player finds out ("which commit
   introduced the bug?"). Without it, the page offers no answer box and the level is checked
   against the repository only, with `answer=None`.

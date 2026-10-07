@@ -126,7 +126,8 @@ class Active(TypedDict):
     ``step`` is the index of the current guided-quest step; it equals the number of steps once
     the quest is done (and is 0 for a level without a quest). ``typed`` holds every line typed
     in the game's terminal since the level started, oldest first, read from the log of typed
-    commands (`COMMANDS_FILE`, `firstcommit.commands`) up to ``log_offset``.
+    commands (`COMMANDS_FILE`, `firstcommit.commands`) up to ``log_offset``. ``events`` lists the
+    ids of the level's events (`firstcommit.kit.LevelEvent`) that have run in this play.
     """
 
     level: str
@@ -137,6 +138,7 @@ class Active(TypedDict):
     state: dict[str, Any]
     log_offset: int
     typed: list[Command]
+    events: list[str]
 
 
 class Observed(TypedDict):

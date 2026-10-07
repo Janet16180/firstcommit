@@ -59,6 +59,25 @@ def test_a_level_without_a_scene_or_reactions_has_empty_ones() -> None:
     assert (level.scene, level.reactions) == ((), ())
 
 
+def nothing(lab: kit.Lab, state: kit.State) -> None:
+    """
+    Do nothing, as a level event's action.
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The lab.
+    state : kit.State
+        The level's state.
+    """
+
+
+def test_a_level_reads_its_events_and_has_none_by_default() -> None:
+    events = [kit.LevelEvent(id="arrive", run=nothing), kit.LevelEvent(id="push", run=nothing, goal="stage")]
+    assert runner.load(level_module(EVENTS=events)).events == tuple(events)
+    assert runner.load(level_module()).events == ()
+
+
 def test_a_level_solved_by_a_typed_answer_reads_its_question_and_placeholder() -> None:
     level = runner.load(level_module(QUESTION="Which commit broke it?", PLACEHOLDER="a short hash"))
     assert (level.question, level.placeholder) == ("Which commit broke it?", "a short hash")
@@ -117,6 +136,10 @@ BROKEN: dict[str, tuple[types.ModuleType, str]] = {
     "a reaction with an unknown mood": (level_module(REACTIONS=[kit.ReactionRule(line="git", mood="happy", text="Hi.")]), "REACTIONS"),  # type: ignore[arg-type]
     "a reaction with an unknown outcome": (level_module(REACTIONS=[kit.ReactionRule(line="git", mood="ok", text="Hi.", outcome="won")]), "REACTIONS"),  # type: ignore[arg-type]
     "a reaction without text": (level_module(REACTIONS=[kit.ReactionRule(line="git", mood="ok", text="")]), "REACTIONS"),
+    "events that are not level events": (level_module(EVENTS=["push"]), "EVENTS"),
+    "two events with one id": (level_module(EVENTS=[kit.LevelEvent(id="a", run=nothing)] * 2), "EVENTS"),
+    "an event on a goal the quest does not have": (level_module(EVENTS=[kit.LevelEvent(id="a", run=nothing, goal="fly")]), "EVENTS"),
+    "an event whose action is not a function": (level_module(EVENTS=[kit.LevelEvent(id="a", run="push")]), "EVENTS"),  # type: ignore[arg-type]
     "a debrief that is not text": (level_module(DEBRIEF=["x"]), "DEBRIEF"),
     "one hint": (level_module(HINTS=["only"]), "HINTS"),
     "five hints": (level_module(HINTS=["a", "b", "c", "d", "e"]), "HINTS"),

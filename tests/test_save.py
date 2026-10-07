@@ -25,6 +25,7 @@ ACTIVE: save.Active = {
     "state": {"answer": "abc", "nested": {"list": [1, 2]}},
     "log_offset": 40,
     "typed": [{"line": "git status", "status": 128}, {"line": "ls", "status": 0}],
+    "events": ["alex-pushes"],
 }
 
 
@@ -175,6 +176,8 @@ ACTIVE_DAMAGE = [
     ("typed", ...),
     ("typed.0.line", None),
     ("typed.0.status", "128"),
+    ("events", ...),
+    ("events.0", 3),
     ("extra", "x"),
 ]
 

@@ -530,7 +530,7 @@ def test_starting_a_level_builds_its_lab_and_records_it(sample_level: runner.Lev
     assert (view["level"], view["step"], view["steps"], view["hints"], view["hints_total"], view["attempts"]) == ("basics-sample", 0, 3, 0, 3, 0)
     assert datetime.fromisoformat(view["started"]).tzinfo is not None
     assert (lab_project(game_home) / "hello.txt").exists()
-    assert save.load_active() == {"level": "basics-sample", "started": view["started"], "step": 0, "hints": 0, "attempts": 0, "state": {"branch": "trunk"}, "log_offset": 0, "typed": []}
+    assert save.load_active() == {"level": "basics-sample", "started": view["started"], "step": 0, "hints": 0, "attempts": 0, "state": {"branch": "trunk"}, "log_offset": 0, "typed": [], "events": []}
 
 
 def test_starting_again_ends_the_level_in_progress_with_a_fresh_lab(sample_level: runner.Level, game_home: Path) -> None:
@@ -584,7 +584,7 @@ def test_an_active_record_at_its_levels_limits_is_fine(sample_level: runner.Leve
 
 
 def test_a_level_in_progress_that_no_longer_exists_counts_as_none(sample_level: runner.Level) -> None:
-    save.write_active({"level": "basics-gone", "started": "2026-10-06T10:00:00+00:00", "step": 0, "hints": 0, "attempts": 0, "state": {}, "log_offset": 0, "typed": []})
+    save.write_active({"level": "basics-gone", "started": "2026-10-06T10:00:00+00:00", "step": 0, "hints": 0, "attempts": 0, "state": {}, "log_offset": 0, "typed": [], "events": []})
     assert game.status()["active"] is None
     with pytest.raises(game.NotPlayingError):
         game.check(None, auto=False)
@@ -1137,6 +1137,82 @@ def test_the_first_observation_of_a_level_tells_no_lines_and_no_reactions(sample
     first = game.observe()
     assert (first["commands"], first["reactions"]) == ([], [])
     assert active_record()["typed"] == [{"line": "ls", "status": 0}]
+
+
+def write_note(lab: kit.Lab, state: kit.State) -> None:
+    """
+    Write a file in the project, as a staged scenario does.
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The lab.
+    state : kit.State
+        The level's state (unused).
+    """
+    with (lab.project / "note.txt").open("a") as handle:
+        handle.write("x")
+
+
+def with_events(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch, *events: kit.LevelEvent) -> runner.Level:
+    """
+    Make the catalogue hold the sample level with some level events.
+
+    Parameters
+    ----------
+    sample_level : runner.Level
+        The sample level.
+    monkeypatch : pytest.MonkeyPatch
+        Pytest's patcher.
+    *events : kit.LevelEvent
+        Its events.
+
+    Returns
+    -------
+    runner.Level
+        The level.
+    """
+    level = dataclasses.replace(sample_level, events=events)
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    return level
+
+
+def test_an_event_runs_once_right_after_the_first_observation_so_the_next_one_tells_its_change(sample_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    level = with_events(sample_level, monkeypatch, kit.LevelEvent(id="arrive", run=write_note))
+    game.start(level.id)
+    first = game.observe()
+    assert [entry["path"] for entry in first["project"]["files"]] == ["hello.txt"]
+    assert (lab_project(game_home) / "note.txt").read_text() == "x"
+    assert [event["kind"] for event in game.observe()["events"]] == ["file-created"]
+    (game_home / "observed.json").unlink()
+    game.observe()
+    game.observe()
+    assert (lab_project(game_home) / "note.txt").read_text() == "x"
+    assert active_record()["events"] == ["arrive"]
+
+
+def test_an_event_on_a_goal_runs_once_when_that_goal_is_reached(sample_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    level = with_events(sample_level, monkeypatch, kit.LevelEvent(id="after-stage", run=write_note, goal="stage"))
+    game.start(level.id)
+    game.observe()
+    game.quest_step(None)
+    assert not (lab_project(game_home) / "note.txt").exists()
+    kit.git(lab_project(game_home), "add", "hello.txt")
+    assert game.quest_step(None)["correct"] is True
+    assert (lab_project(game_home) / "note.txt").read_text() == "x"
+    assert "file-created" in [event["kind"] for event in game.observe()["events"]]
+    game.quest_step("trunk")
+    assert (lab_project(game_home) / "note.txt").read_text() == "x"
+
+
+def test_starting_again_runs_the_events_again(sample_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    level = with_events(sample_level, monkeypatch, kit.LevelEvent(id="arrive", run=write_note))
+    game.start(level.id)
+    game.observe()
+    game.start(level.id)
+    assert active_record()["events"] == []
+    game.observe()
+    assert (lab_project(game_home) / "note.txt").read_text() == "x"
 
 
 def test_observing_reads_the_typed_commands_before_the_snapshots_so_their_changes_are_in_them(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:

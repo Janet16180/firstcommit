@@ -45,7 +45,7 @@ class Level:
     ``id`` is the module name with ``_`` turned into ``-``; ``chapter`` is the part before the
     first ``_``. The other fields are the module's names of AUTHORING.md section 3.3;
     ``question`` and ``placeholder`` are empty for a level checked against the repository only;
-    ``scene`` and ``reactions`` are empty for a level without them.
+    ``scene``, ``reactions`` and ``events`` are empty for a level without them.
     """
 
     id: str
@@ -58,6 +58,7 @@ class Level:
     card: kit.CommandCard
     scene: tuple[kit.SceneFrame, ...]
     reactions: tuple[kit.ReactionRule, ...]
+    events: tuple[kit.LevelEvent, ...]
     lesson: tuple[kit.Slide, ...]
     quest: tuple[kit.Step, ...]
     briefing: str
@@ -96,6 +97,7 @@ def load(module: ModuleType) -> Level:
     }
     scene = getattr(module, "SCENE", [])
     level_reactions = getattr(module, "REACTIONS", [])
+    events = getattr(module, "EVENTS", [])
     lesson = getattr(module, "LESSON", [])
     quest = getattr(module, "QUEST", [])
     question = getattr(module, "QUESTION", "")
@@ -113,6 +115,7 @@ def load(module: ModuleType) -> Level:
             or _reactions_problem(level_reactions)
             or _lesson_problem(lesson)
             or _quest_problem(quest)
+            or _events_problem(events, quest)
         )
     if problem is not None:
         raise ValueError(f"level module {module.__name__}: {problem}")
@@ -127,6 +130,7 @@ def load(module: ModuleType) -> Level:
         card=values["CARD"],
         scene=tuple(scene),
         reactions=tuple(level_reactions),
+        events=tuple(events),
         lesson=tuple(lesson),
         quest=tuple(quest),
         briefing=values["BRIEFING"],
@@ -378,6 +382,35 @@ def _quest_problem(quest: Any) -> str | None:
     problem = _duplicate_problem("step", [step.id for step in quest])
     if problem is None and marked:
         problem = f"step {marked[0]!r}: its placeholder is plain text: no backticks"
+    return problem
+
+
+def _events_problem(events: Any, quest: list[kit.Step]) -> str | None:
+    """
+    Check a level's events: each with its own id, a function to run, and no goal or one of the quest's step ids.
+
+    Parameters
+    ----------
+    events : Any
+        The module's ``EVENTS``.
+    quest : list[kit.Step]
+        The module's quest, already checked.
+
+    Returns
+    -------
+    str | None
+        What is wrong, or None.
+    """
+    goals = {"", *(step.id for step in quest)}
+    problem = None
+    if not isinstance(events, list) or not all(isinstance(event, kit.LevelEvent) for event in events):
+        problem = "EVENTS must be a list of kit.LevelEvent"
+    elif not all(callable(event.run) for event in events):
+        problem = "EVENTS: each event's run must be a function"
+    elif any(event.goal not in goals for event in events):
+        problem = "EVENTS: an event's goal must be empty or the id of a quest step"
+    else:
+        problem = _duplicate_problem("EVENTS: event", [event.id for event in events])
     return problem
 
 

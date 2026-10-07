@@ -606,6 +606,7 @@ def start(level_id: str) -> ActiveView:
             "state": state,
             "log_offset": commands.end(save.home() / save.COMMANDS_FILE),
             "typed": [],
+            "events": [],
         }
         save.write_active(active)
     return _active_view(active, entry)
@@ -646,8 +647,10 @@ def quest_step(answer: str | None) -> StepResult:
             correct = verdict.solved
             message = markup.parse(verdict.message)
         if correct:
+            reached = entry.quest[active["step"]].id
             active["step"] += 1
             save.write_active(active)
+            active = _fire(entry, active, reached)
     return {"correct": correct, "message": message, "step": active["step"], "quest_done": _quest_done(active, entry)}
 
 
@@ -740,7 +743,9 @@ def observe() -> Observation:
     Snapshot the lab of the level in progress and tell what changed since the last observation.
 
     The snapshots are kept in the save (only when they changed), so the events are right
-    whichever process asks; the first observation of a level has no events. The lines typed
+    whichever process asks; the first observation of a level has no events, and right after it
+    the level's events with no goal run (`firstcommit.kit.LevelEvent`), so the next observation
+    tells their changes. The lines typed
     since the last look are read into the level's record first (`save.Active` ``typed``), so a
     goal still sees them after this observation has told them.
 
@@ -764,6 +769,8 @@ def observe() -> Observation:
         observation = _observation(last, now, _buttons(lab, now), typed, _rules(entry))
         if now != last:
             save.write_observed(now)
+        if last is None or last["level"] != entry.id:
+            _fire(entry, active, "")
     return observation
 
 
@@ -1207,6 +1214,34 @@ def _catch_up(active: save.Active) -> save.Active:
     if caught != active:
         save.write_active(caught)
     return caught
+
+
+def _fire(entry: runner.Level, active: save.Active, goal: str) -> save.Active:
+    """
+    Run the level's events for a moment of the play that have not run yet, and record them; the caller holds the save's lock.
+
+    Parameters
+    ----------
+    entry : runner.Level
+        The level in progress.
+    active : save.Active
+        Its record.
+    goal : str
+        The moment: empty for right after the first observation, else the id of the goal just reached.
+
+    Returns
+    -------
+    save.Active
+        The record, with the events that ran added to ``events`` (saved when any ran).
+    """
+    due = [event for event in entry.events if event.goal == goal and event.id not in active["events"]]
+    lab = runner.lab_of(entry.id)
+    for event in due:
+        event.run(lab, active["state"])
+    fired: save.Active = {**active, "events": [*active["events"], *(event.id for event in due)]}
+    if due:
+        save.write_active(fired)
+    return fired
 
 
 def _rules(entry: runner.Level) -> tuple[ReactionRule, ...]:

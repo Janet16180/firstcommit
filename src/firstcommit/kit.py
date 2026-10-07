@@ -50,6 +50,7 @@ __all__ = [
     "Commit",
     "FileEntry",
     "Lab",
+    "LevelEvent",
     "Person",
     "ReactionRule",
     "ReadStep",
@@ -199,6 +200,22 @@ class ReadStep:
     text: str
     command: str = ""
     more: str = ""
+
+
+@dataclass(frozen=True)
+class LevelEvent:
+    """
+    Something a level makes happen in its lab at a moment of the play: Alex pushing, a staged scenario.
+
+    ``run(lab, state)`` makes the change with real git (`git`, `press`), like `setup`. With no
+    ``goal`` it runs right after the level's first observation; with a quest step's id, right
+    after the player reaches that goal. Either way the page's next observation tells the change,
+    so it animates what really happened. Each event runs once per play.
+    """
+
+    id: str
+    run: Callable[[Lab, State], None]
+    goal: str = ""
 
 
 Step = AnswerStep | WatchStep | ReadStep
