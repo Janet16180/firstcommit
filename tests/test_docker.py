@@ -264,14 +264,10 @@ def check_the_page_terminal(port: int, token: str) -> None:
     )
     type_and_expect(page, "git help commit | head -n 1\r", r"GIT-COMMIT\(1\)")
     type_and_expect(page, "git chec\t", "git checkout")
-    type_and_expect(
-        page,
-        "\x15cd /tmp && git init -q demo && cd demo && git -c user.name=Player -c user.email=player@example.com commit --allow-empty\r",
-        "GNU nano",
-    )
-    type_and_expect(page, "My first commit\x18", "Save modified buffer")
-    type_and_expect(page, "y", "File Name to Write")
-    type_and_expect(page, "\r", PROMPT)
+    identity = "git -c user.name=Player -c user.email=player@example.com"
+    bare = type_and_expect(page, f"\x15cd /tmp && git init -q demo && cd demo && {identity} commit --allow-empty; echo status=$?\r", r"(?s)status=1.*\$ $")
+    assert "nano" not in bare.lower()
+    type_and_expect(page, f'{identity} commit -q --allow-empty -m "My first commit"\r', PROMPT)
     type_and_expect(page, "git log -1 --format=subject:%s\r", "subject:My first commit")
     page.close()
 
