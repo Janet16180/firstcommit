@@ -5,23 +5,23 @@ const test = require("node:test");
 const { installBrowser, load, record } = require("./load");
 
 const document = installBrowser();
-const { FieldGuide } = load(["dom.js", "art-pixels.js", "art-sprites.js", "art-infographics.js", "progress.js", "infographic-text.js", "field-guide.js"], ["FieldGuide"]);
+const { FieldGuide } = load(["dom.js", "art-pixels.js", "art-sprites.js", "art-infographics.js", "infographic-text.js", "field-guide.js"], ["FieldGuide"]);
 
 const level = (id, done) => ({ ...record("status").chapters[1].levels[0], id, title: id, done });
 const status = (chapters) => ({ ...record("status"), chapters });
 const two = (firstDone, secondDone) => status([{ id: "liftoff", title: "Lift-off", blurb: "", cards: 0, levels: [level("liftoff-aboard", firstDone), level("liftoff-flag", secondDone)] }, { id: "vault", title: "Vault", blurb: "", cards: 0, levels: [] }]);
 
-test("a level unlocks what it teaches once it is done", () => {
-  assert.equal(FieldGuide.unlocked(two(true, false), { level: "liftoff-aboard" }), true);
-  assert.equal(FieldGuide.unlocked(two(true, false), { level: "liftoff-flag" }), false);
+test("an item unlocks once enough of its chapter's levels are done, in any order", () => {
+  assert.equal(FieldGuide.unlocked(two(false, true), { chapter: "liftoff", levels: 1 }), true);
+  assert.equal(FieldGuide.unlocked(two(false, true), { chapter: "liftoff", levels: 2 }), false);
+  assert.equal(FieldGuide.unlocked(two(true, true), { chapter: "liftoff", levels: 2 }), true);
 });
 
-test("a chapter unlocks once every one of its levels is done, and a chapter with none yet stays locked", () => {
+test("a whole chapter unlocks once every one of its levels is done, and a chapter with none yet stays locked", () => {
   assert.equal(FieldGuide.unlocked(two(true, false), { chapter: "liftoff" }), false);
   assert.equal(FieldGuide.unlocked(two(true, true), { chapter: "liftoff" }), true);
   assert.equal(FieldGuide.unlocked(two(true, true), { chapter: "vault" }), false);
   assert.equal(FieldGuide.unlocked(two(true, true), { chapter: "nowhere" }), false);
-  assert.equal(FieldGuide.unlocked(two(true, true), { level: "nowhere" }), false);
 });
 
 test("the guide shows the four places, a file's states and every command, under a head with the way back to the map", () => {

@@ -4,9 +4,10 @@
  * Every word of the infographics, in one place so it can be fact-checked and translated: the
  * commands the game teaches, grouped by what they do; Git's four places and the commands that
  * move work between them; a file's states and what moves a file from one to the next. Each
- * space word sits next to the real Git term. Each item says what unlocks it: a level finished
- * ({level: id}) or a whole chapter finished ({chapter: id}). Data only. Defines one global,
- * InfographicText.
+ * space word sits next to the real Git term. Each item says what unlocks it: a number of its
+ * chapter's levels finished ({chapter: id, levels: n}, in any order) or the whole chapter
+ * ({chapter: id}); never a level's id, which the page does not know. Data only. Defines one
+ * global, InfographicText.
  */
 
 /* exported InfographicText */
@@ -22,8 +23,8 @@ const InfographicText = Object.freeze({
       {
         title: "Look around",
         commands: [
-          { command: "ls", what: "Lists the files in the current folder; ls -a lists the hidden ones too.", unlock: { level: "liftoff-aboard" } },
-          { command: "git status", what: "Says which files are untracked, modified or staged, and which branch you are on.", unlock: { level: "liftoff-aboard" } },
+          { command: "ls", what: "Lists the files in the current folder; ls -a lists the hidden ones too.", unlock: { chapter: "liftoff", levels: 1 } },
+          { command: "git status", what: "Says which files are untracked, modified or staged, and which branch you are on.", unlock: { chapter: "liftoff", levels: 1 } },
           { command: "git diff", what: "Shows the lines you changed and have not staged; git diff --staged shows what is staged.", unlock: { chapter: "vault" } },
           { command: "git log", what: "Lists the commits, newest first, with their hash, author and message.", unlock: { chapter: "vault" } },
         ],
@@ -31,14 +32,14 @@ const InfographicText = Object.freeze({
       {
         title: "Start a repository",
         commands: [
-          { command: "git init", what: "Makes the current folder a repository: Git creates the hidden .git folder.", unlock: { level: "liftoff-flag" } },
+          { command: "git init", what: "Makes the current folder a repository: Git creates the hidden .git folder.", unlock: { chapter: "liftoff", levels: 2 } },
           { command: "git clone <url>", what: "Copies a remote repository, its whole history included, into a new folder.", unlock: { chapter: "branch" } },
         ],
       },
       {
         title: "Stage and commit",
         commands: [
-          { command: "git add <file>", what: "Copies a file, as it is now, from the working folder into the staging area.", unlock: { level: "cargo-first" } },
+          { command: "git add <file>", what: "Copies a file, as it is now, from the working folder into the staging area.", unlock: { chapter: "cargo", levels: 1 } },
           { command: "git rm --cached <file>", what: "Takes a file out of the staging area and leaves it in the working folder.", unlock: { chapter: "cargo" } },
           { command: "git restore --staged <file>", what: "Unstages a file: the staging area gets back the version of the last commit.", unlock: { chapter: "cargo" } },
           { command: "git commit -m \"<message>\"", what: "Saves the staging area as a new commit in your local repository.", unlock: { chapter: "vault" } },
@@ -77,13 +78,13 @@ const InfographicText = Object.freeze({
   places: {
     title: "Git's four places",
     places: [
-      { id: "workshop", space: "Workshop", git: "working folder", what: "Your files as you edit them. Git watches but does not save them.", unlock: { level: "liftoff-aboard" } },
-      { id: "dock", space: "Cargo dock", git: "staging area", what: "The files you chose for your next commit, as they were when you added them.", unlock: { level: "cargo-first" } },
-      { id: "vault", space: "Vault", git: "local repository", what: "Every commit you made, on this computer only, in the hidden .git folder.", unlock: { level: "liftoff-flag" } },
+      { id: "workshop", space: "Workshop", git: "working folder", what: "Your files as you edit them. Git watches but does not save them.", unlock: { chapter: "liftoff", levels: 1 } },
+      { id: "dock", space: "Cargo dock", git: "staging area", what: "The files you chose for your next commit, as they were when you added them.", unlock: { chapter: "cargo", levels: 1 } },
+      { id: "vault", space: "Vault", git: "local repository", what: "Every commit you made, on this computer only, in the hidden .git folder.", unlock: { chapter: "liftoff", levels: 2 } },
       { id: "mothership", space: "Mothership", git: "remote repository", what: "A copy of the repository on a server, such as GitHub, shared with your team.", unlock: { chapter: "mothership" } },
     ],
     moves: [
-      { from: "workshop", to: "dock", command: "git add", unlock: { level: "cargo-first" } },
+      { from: "workshop", to: "dock", command: "git add", unlock: { chapter: "cargo", levels: 1 } },
       { from: "dock", to: "workshop", command: "git restore --staged", unlock: { chapter: "cargo" } },
       { from: "dock", to: "vault", command: "git commit", unlock: { chapter: "vault" } },
       { from: "vault", to: "workshop", command: "git switch, git restore", unlock: { chapter: "branch" } },
@@ -96,13 +97,13 @@ const InfographicText = Object.freeze({
   states: {
     title: "A file's states",
     states: [
-      { id: "untracked", name: "untracked", space: "new in the workshop", what: "In the working folder, in no commit and not staged. Git does not follow it yet.", unlock: { level: "cargo-first" } },
-      { id: "staged", name: "staged", space: "on the dock", what: "Its current version is in the staging area, ready for the next commit.", unlock: { level: "cargo-first" } },
+      { id: "untracked", name: "untracked", space: "new in the workshop", what: "In the working folder, in no commit and not staged. Git does not follow it yet.", unlock: { chapter: "cargo", levels: 1 } },
+      { id: "staged", name: "staged", space: "on the dock", what: "Its current version is in the staging area, ready for the next commit.", unlock: { chapter: "cargo", levels: 1 } },
       { id: "committed", name: "committed", space: "sealed in the vault", what: "Saved in a commit, and the working copy matches it: nothing to do.", unlock: { chapter: "vault" } },
       { id: "modified", name: "modified", space: "edited in the workshop", what: "Changed in the working folder since its last commit, and not staged.", unlock: { chapter: "vault" } },
     ],
     moves: [
-      { from: "untracked", to: "staged", how: "git add", unlock: { level: "cargo-first" } },
+      { from: "untracked", to: "staged", how: "git add", unlock: { chapter: "cargo", levels: 1 } },
       { from: "staged", to: "untracked", how: "git rm --cached (before the file's first commit)", unlock: { chapter: "cargo" } },
       { from: "staged", to: "committed", how: "git commit", unlock: { chapter: "vault" } },
       { from: "committed", to: "modified", how: "edit the file", unlock: { chapter: "vault" } },

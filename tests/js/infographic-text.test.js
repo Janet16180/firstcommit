@@ -10,7 +10,6 @@ installBrowser();
 const { InfographicText } = load(["infographic-text.js"], ["InfographicText"]);
 
 const ROOT = path.join(STATIC, "..", "..", "..", "..");
-const levelIds = fs.readdirSync(path.join(ROOT, "src", "firstcommit", "levels")).filter((name) => name.endsWith(".py") && name !== "__init__.py").map((name) => name.replace(".py", "").replaceAll("_", "-"));
 const chaptersPy = fs.readFileSync(path.join(ROOT, "src", "firstcommit", "chapters.py"), "utf8");
 const planned = fs.readFileSync(path.join(ROOT, "docs", "drafts", "chapters-3-7.md"), "utf8").match(/Chapter ids: ([^.]+)\./)[1].match(/`(\w+)`/g).map((id) => id.replaceAll("`", ""));
 
@@ -22,10 +21,12 @@ const items = [
   ...InfographicText.states.moves,
 ];
 
-test("every item says what unlocks it: a level that exists, or a chapter that exists or is planned", () => {
+test("every item is unlocked by a chapter that exists or is planned, whole or by a number of its levels", () => {
   for (const item of items) {
-    const { level, chapter } = item.unlock;
-    assert.ok(level ? levelIds.includes(level) : chaptersPy.includes(`"${chapter}"`) || planned.includes(chapter), JSON.stringify(item));
+    const { chapter, levels, ...rest } = item.unlock;
+    assert.deepEqual(rest, {}, JSON.stringify(item));
+    assert.ok(chaptersPy.includes(`"${chapter}"`) || planned.includes(chapter), JSON.stringify(item));
+    assert.ok(levels === undefined || (Number.isInteger(levels) && levels > 0), JSON.stringify(item));
   }
 });
 
