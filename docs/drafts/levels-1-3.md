@@ -203,10 +203,11 @@ committing. What reached GitHub?" · "After a push, is your commit still on your
 flag; animator: "Packing day". (2) map teammate: simple map; author: Level 2. (3) G1 and helper A;
 animator: "Shipping"; author: Level 3. Each level: shots, fact-check, merge with the slow tier.
 
-## 6. Questions for the user
+## 6. Decisions (the user, 2026-10-06)
 
-1. Branch and hash words in the terminal: name them once in a friendly line (proposed), or hide
-   them with quiet commands?
-2. Predictions: no XP, or a small bonus for a right guess (never a penalty)?
-3. The scene: every time the level opens, or only the first time (then a "Watch the intro" button)?
-4. Chapter 2's id and title: rename `start` to `publish`, "Publish your work"?
+1. Branch and hash words in the terminal: named once in a friendly line, never asked about.
+2. Predictions: no XP; just "Let's see" and "You called it".
+3. Scenes: play automatically the first time; afterwards a "Watch the intro" button.
+4. Chapter 2: id `publish`, "Publish your work".
+5. Fact-check (checker, faabd88): the scene's files become `.md` (git cannot show line changes in
+   a Word file).
