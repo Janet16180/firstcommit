@@ -1,6 +1,8 @@
 """The chapters of the game, in play order. Keys are the chapter ids used in level and deck file names."""
 
 CHAPTERS: dict[str, str] = {
+    "liftoff": "Lift-off",
+    "cargo": "The cargo dock",
     "start": "Git, GitHub and your first clone",
     "basics": "The three areas",
     "hash": "Fingerprints",
@@ -17,6 +19,8 @@ CHAPTERS: dict[str, str] = {
 }
 
 BLURBS: dict[str, str] = {
+    "liftoff": "Your first base: what a repository is, and how one starts.",
+    "cargo": "The staging area: you choose what goes into your next commit.",
     "start": "What Git and GitHub are, and your first clone.",
     "basics": "The working folder, the staging area and your first commits.",
     "hash": "How Git names every file and commit by its content.",

@@ -262,12 +262,13 @@ def test_a_new_player_sees_every_chapter_no_xp_and_nothing_in_progress(sample_le
     assert (status["xp"], status["rank"], status["active"], status["last_payout"], status["cards_due"]) == (0, score.rank(0), None, None, 0)
     assert [(chapter["id"], chapter["title"]) for chapter in status["chapters"]] == list(CHAPTERS.items())
     assert status["max_difficulty"] == max(runner.DIFFICULTIES) == 3
-    basics = status["chapters"][1]
+    chapters = {chapter["id"]: chapter for chapter in status["chapters"]}
+    basics = chapters["basics"]
     assert basics["levels"] == [
         {"id": "basics-sample", "title": "Say hello", "difficulty": 1, "xp": 100, "command": "git add", "stars": 0, "done": False, "has_lesson": True, "has_quest": True}
     ]
     assert basics["cards"] == 12
-    assert status["chapters"][0]["levels"] == []
+    assert chapters["start"]["levels"] == []
 
 
 def test_each_chapter_has_its_blurb(sample_level: runner.Level) -> None:
@@ -293,7 +294,7 @@ def test_a_finished_level_shows_its_best_stars_on_the_map(sample_level: runner.L
     game.hint()
     solve(sample_level)
     game.check(None, auto=False)
-    summary = game.status()["chapters"][1]["levels"][0]
+    summary = next(chapter for chapter in game.status()["chapters"] if chapter["id"] == "basics")["levels"][0]
     assert (summary["done"], summary["stars"]) == (True, 2)
 
 
