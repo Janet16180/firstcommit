@@ -320,6 +320,10 @@ E33:
 | E53 | then `git fetch`, `git status` | fetch 0, `origin/main` moves to Alex's commit; status says behind `origin/main` by 1 commit and can be fast-forwarded, and suggests `git pull` |
 | E54 | then `git pull`, with no name or email set | status 0, a fast-forward: `main` at Alex's commit, Alex's line in `notes.txt`; up to date again. A fast-forward makes no commit, so it needs no identity |
 | E55 | the game's configuration with the Cadet identity; `map.txt` staged, `journal.txt` untracked, an empty bare GitHub no remote names; bare `git commit`, then `git commit -m "Add the map"`, `git log`, `git status --short` | bare commit 1 (empty message aborted); commit 0, a root commit holding only `map.txt`, author `Cadet <cadet@example.com>`; `git log` shows the hash, author, date and message; `?? journal.txt`; GitHub still has no ref |
+| E56 | one commit of `route.txt` and `engine.cfg`; both edited (a new stop; `power=99999`); `git diff` | status 0; both files, each line twice: `-` before, `+` after |
+| E57 | then `git add route.txt`; `git diff`; `git diff --staged` | `git diff` shows only `engine.cfg`; `--staged` only `route.txt` |
+| E58 | `git add engine.cfg`, then `git restore --staged engine.cfg` | status 0; ` M engine.cfg`, the file keeps `power=99999` |
+| E59 | then `git commit -m "Add the Phobos stop"` | the commit changes only `route.txt`; ` M engine.cfg` stays |
 | E43 | `git restore --staged .` | status 0; nothing staged; the two files keep their changes in the folder, `keys.txt` untracked |
 
 ### Level `cargo-selective` (Selective cargo, 2-2)
@@ -490,3 +494,18 @@ a log before the commit, the journal sealed too (lost), and a commit without the
 | `LOOKED` | `git log` lists the commit with hash, name, date and message | E55, E45 |
 | `JOURNAL_SEALED` (lost) | a commit cannot be taken back until a later chapter | chapters-3-7 (revert and reset in chapter 7) |
 | `MAP_MISSING` | stage the map, then commit again | E13, E55 |
+
+### Level `vault-look` (Look before you seal, 3-2)
+
+*Re-checked* by `tests/levels/test_vault_look.py`: the overnight edits as a level event, the
+whole path, the typo named by its file, `git add .` then `git restore --staged engine.cfg`, a
+staged check before the add, the typo committed (lost), and the two diffs after staging the fix.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, debrief | `git diff` shows changes in the working folder not staged; `git diff --staged` what the next commit takes | E56, E57; git-diff(1) |
+| hint 1, `DIFFED` | each changed line twice, `-` before, `+` after | E56 |
+| `TYPO_FOUND`, `ROUTE_IS_FIX` | `power=99999` is the typo; the route gained a stop | setup |
+| `TYPO_STAGED`, `EVERYTHING_STAGED` | `git restore --staged engine.cfg` unstages it, the file keeps the edit | E58 |
+| `CHECKED`, `SEALED`, debrief | after staging the route, `--staged` shows only the new stop; the commit holds the fix, not the typo | E57, E59 |
+| `TYPO_SEALED` (lost) | a commit cannot be taken back until a later chapter | as vault-seal |

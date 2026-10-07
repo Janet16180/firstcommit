@@ -1,0 +1,71 @@
+from firstcommit import kit
+from firstcommit.levels import vault_look as level
+from level_helpers import arrived, reaction, started, typed_in, watch
+
+
+def answer_step() -> kit.AnswerStep:
+    """
+    Give the step that asks for the file with the typo.
+
+    Returns
+    -------
+    kit.AnswerStep
+        The step.
+    """
+    step = level.QUEST[1]
+    assert isinstance(step, kit.AnswerStep)
+    return step
+
+
+def test_the_overnight_edits_arrive_once_the_page_has_looked() -> None:
+    lab, state = started(level)
+    assert kit.unstaged(kit.snapshot(lab.project)) == []
+    assert watch(level, "diff").watch(lab, state, []).message == level.WAITING
+    lab, _ = arrived(level)
+    assert kit.unstaged(kit.snapshot(lab.project)) == ["engine.cfg", "route.txt"]
+
+
+def test_diff_stage_the_fix_check_and_commit_solves_the_level() -> None:
+    lab, state = arrived(level)
+    typed = typed_in(lab, "git diff", "git add route.txt", "git diff --staged", 'git commit -m "Add the Phobos stop"')
+    assert [line["status"] for line in typed] == [0, 0, 0, 0]
+    assert level.check(lab, state, None, typed).solved
+    assert kit.unstaged(kit.snapshot(lab.project)) == ["engine.cfg"]
+
+
+def test_the_typo_is_named_by_its_file_and_the_fix_is_told_apart() -> None:
+    lab, state = arrived(level)
+    assert all(answer_step().check(lab, state, name).solved for name in ("engine.cfg", " Engine.cfg ", "`engine.cfg`", "engine"))
+    assert answer_step().check(lab, state, "route.txt").message == level.ROUTE_IS_FIX
+    assert answer_step().check(lab, state, "power=99999").message == level.NOT_A_FILE
+
+
+def test_staging_everything_takes_the_typo_too_and_restore_staged_takes_it_back_out() -> None:
+    lab, state = arrived(level)
+    typed = typed_in(lab, "git add .")
+    rule = reaction(level, typed[0], {"file-staged"}, True, True)
+    assert rule is not None and (rule.mood, rule.text) == ("warn", level.EVERYTHING_STAGED)
+    assert watch(level, "stage").watch(lab, state, typed).message == level.TYPO_STAGED
+    typed += typed_in(lab, "git restore --staged engine.cfg")
+    assert typed[-1]["status"] == 0 and watch(level, "stage").watch(lab, state, typed).solved
+    assert (lab.project / "engine.cfg").read_text() == "power=99999\n"
+
+
+def test_a_staged_check_before_the_add_does_not_count() -> None:
+    lab, state = arrived(level)
+    typed = typed_in(lab, "git diff --staged", "git add route.txt")
+    assert watch(level, "check").watch(lab, state, typed).message == level.NOT_CHECKED
+
+
+def test_the_typo_sealed_in_a_commit_is_said_and_the_level_offers_to_start_again() -> None:
+    lab, state = arrived(level)
+    typed = typed_in(lab, "git add .", 'git commit -m "Overnight"')
+    verdict = level.check(lab, state, None, typed)
+    assert (verdict.solved, verdict.lost, verdict.message) == (False, True, level.TYPO_SEALED)
+
+
+def test_a_plain_diff_after_staging_the_fix_shows_only_the_engine() -> None:
+    lab, _ = arrived(level)
+    kit.git(lab.project, "add", "route.txt")
+    assert kit.git(lab.project, "diff", "--name-only").split() == ["engine.cfg"]
+    assert kit.git(lab.project, "diff", "--staged", "--name-only").split() == ["route.txt"]
