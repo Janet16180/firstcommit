@@ -499,6 +499,8 @@ test("the three-place figure flies only what it draws: a pull from a remote adde
 test("before git init the staging area says it does not exist yet, rather than that it is empty", () => {
   const figure = TimePlaces.render({ project: record("snapshots").empty, github: null }, {});
   assert.equal(figure.querySelector('[data-area="index"] .tt-place-empty').textContent, "No staging area yet: git init makes one.");
+  const cloning = TimePlaces.render({ project: record("snapshots").empty, github: hub(ONE) }, {});
+  assert.equal(cloning.querySelector('[data-area="index"] .tt-place-empty').textContent, "No staging area yet: git clone makes one.", "with a GitHub, the player clones it");
   const started = TimePlaces.render({ project: record("snapshots").unborn, github: null }, {});
   assert.doesNotMatch(started.querySelector('[data-area="index"]').textContent, /No staging area yet/);
 });
