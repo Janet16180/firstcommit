@@ -86,7 +86,7 @@ Parked as WIP when the day ended (resume in this order, at most 3 teammates work
    debrief at 1280; do not merge before P1 and P2; the test_routes fix that skips `_` helper
    modules is in 6f655bb; author's next steps: move the clone check into
    `kit.cloned_from_github` with tests in test_kit.py, fix the frames test once P1 lands, the
-   lesson browser shots, then the final hash for mapcheck, which checks the claims list at the
+   lesson browser shots (`.scratch/visual-start/run_start.sh <out-dir>`), then the final hash for mapcheck, which checks the claims list at the
    end of the log): `start-git-and-github` (guided:
    a 5-slide lesson in the four places with a practice GitHub, then clone, cd, count files and
    commits, name the remote) and `start-first-clone` (challenge: who added the checklist, from
