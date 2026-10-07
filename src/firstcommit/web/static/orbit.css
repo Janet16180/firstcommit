@@ -41,7 +41,7 @@
   --night-edge: #04030F;
   --night-line: #3A3470;
   --night-mute: #4A4478;
-  --f-px: 'Pixelify Sans', 'Courier New', monospace;
+  --f-px: 'Tiny5', 'Courier New', monospace;
   --f-body: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --f-term: 'VT323', ui-monospace, Menlo, Consolas, monospace;
   --term-min: 420px;
@@ -86,8 +86,8 @@
   box-sizing: border-box;
 }
 
-/* Pixelify Sans draws its "fi" and "fl" ligatures as one glyph that reads like an "A" (upstream's
-   design, not a broken file). The `font` shorthand resets ligatures to normal on every element
+/* Pixel fonts may draw "fi" and "fl" as one glyph (Pixelify Sans, the design's first heading
+   font, drew it like an "A"). The `font` shorthand resets ligatures to normal on every element
    that uses it, here and in app.css, so only an important rule keeps them off everywhere. */
 *,
 *::before,

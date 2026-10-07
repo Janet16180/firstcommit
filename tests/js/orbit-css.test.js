@@ -34,9 +34,9 @@ test("the older views' tokens are mapped onto the design's, so every view wears 
   for (const name of ["--sans", "--surface", "--surface-2", "--muted", "--accent", "--focus"]) assert.match(ours[name], /^var\(--/, name);
 });
 
-test("the fonts are the design's three, and nothing is loaded from the network", () => {
+test("the fonts are Tiny5 for headings and the design's text and terminal fonts, and nothing is loaded from the network", () => {
   const ours = tokens(css, ":root");
-  assert.match(ours["--f-px"], /^'Pixelify Sans'/);
+  assert.match(ours["--f-px"], /^'Tiny5'/);
   assert.match(ours["--f-body"], /^'Atkinson Hyperlegible'/);
   assert.match(ours["--f-term"], /^'VT323'/);
   assert.doesNotMatch(css, /url\(|@import|https?:/);
@@ -52,7 +52,7 @@ test("the motions stop for players who ask for reduced motion", () => {
   for (const name of [".band-veil", ".band", ".dock"]) assert.ok(reduced.includes(name), name);
 });
 
-test("ligatures are off on every element, so Pixelify Sans never joins fi or fl into one glyph", () => {
+test("ligatures are off on every element, so a pixel font never joins fi or fl into one glyph", () => {
   assert.match(css, /\*,\s*\*::before,\s*\*::after\s*{\s*font-variant-ligatures:\s*none\s*!important;\s*}/);
 });
 
