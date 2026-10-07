@@ -308,6 +308,10 @@ E33:
 | E40 | the same with `git rm keys.txt` | status 1; git refuses (the file has staged changes, use `--cached` to keep it); nothing changed |
 | E41 | `rm keys.txt` (the shell), then `git restore keys.txt` | after `rm`: `AD keys.txt`; the restore exits 0 and the file is back, as staged |
 | E42 | `rm keys.txt`, then `git restore --staged keys.txt`, then `git restore keys.txt` | the first restore exits 0, and the file is in no area; the second exits 1: git knows no such path |
+| E44 | four commits, two of them changing `oxygen.cfg`; `git log oxygen.cfg` and `git log -- oxygen.cfg` | both exit 0 and list only those two, newest first, the commit that created the file among them |
+| E45 | `git log -1` | a `commit` line with the full hash, then `Author:` and `Date:` lines, then the message |
+| E46 | `git log -p -1 oxygen.cfg` | the change itself: `-O2=21`, `+O2=17` |
+| E47 | `git log nosuch.txt` | status 128: git cannot tell it from a revision and suggests `--` |
 | E43 | `git restore --staged .` | status 0; nothing staged; the two files keep their changes in the folder, `keys.txt` untracked |
 
 ### Level `cargo-selective` (Selective cargo, 2-2)
@@ -343,3 +347,21 @@ and unstaged file lost, `git restore --staged .`, and keys that reach a commit.
 | `KEYS_LOST` (lost) | in neither area and in no commit, that copy is lost; unstaging never needs deleting | E42 (the blob may linger in the object database, but nothing names it; recovering it is not taught, so the scope is "that copy") |
 | `CARGO_UNSTAGED` | `git add engine.cfg route.txt` stages them again | E43, E34 |
 | `KEYS_COMMITTED`, `NO_REPOSITORY` | as cargo-selective's | `kit.in_history`; E32 |
+
+### Level `vault-recorder` (Flight recorder, 3-3)
+
+*Re-checked* by `tests/levels/test_vault_recorder.py`: seven commits, only the first and the
+culprit touch `oxygen.cfg`; the culprit's place moves between plays; whole, abbreviated and
+upper-case hashes pass; the first commit, the decoy whose message names the oxygen, text that is
+no hash and a hash of no commit each get their own message; the author by full or first name.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, hint 2, debrief | `git log <file>` lists only the commits that changed the file, newest first, each with hash, author, date and message | E44, E45; git-log(1) `[--] <path>...` ("Show only commits that are enough to explain how the files that match the specified paths came to be") |
+| hint 1, `READ` | `git log` lists every commit newest first, with hash, author, date and message | E30, E45 |
+| hint 3 | the `commit` line holds the hash, the `Author` line the name | E45 |
+| `SET_UP` | the first commit created `oxygen.cfg` with the right setting | setup; E44 lists it |
+| `OTHER_COMMIT` | that commit did not touch `oxygen.cfg` | the check answers it only for a commit `git log oxygen.cfg` does not list (setup) |
+| `NOT_A_HASH` | at least the first 4 characters of the hash | `kit.MIN_HASH_PREFIX`; git-rev-parse(1) accepts a unique prefix of 4 or more |
+| debrief | a message can say little or mislead; the changes never do | the decoy commit; E46 shows the change itself |
+| scene | someone changed the setting some days ago; every commit records who changed what and when | setup's dates; E31 (author, committer) |
