@@ -37,15 +37,18 @@ const TimePlaces = (function () {
   const NOTES = { index: "open box: the next commit", repository: "closed boxes: the commits" };
   const COMPUTER = "Your computer";
   const GITHUB = "GitHub (the practice copy)";
-  const NO_REMOTE = "No remote yet.";
   const NO_FILES = "No files.";
+  /* Before there is a repository there is no staging area at all (it lives in .git): a lab with
+     a GitHub is cloned, one without is made with git init. */
+  const NO_INDEX = { init: "No staging area yet: git init makes one.", clone: "No staging area yet: git clone makes one." };
 
   /* Each command's arrow: the places its work passes, first to last, and the checked sentence
-     shown when it lights (A1 to A6). The pull arrow is pull's merge half: its fetch half is the
-     fetch arrow (`after`), which lights with it and which its spoken route names first. */
+     shown when it lights (A1 to A6), with `alone` in its place while your repository has no
+     origin/ branch to name. The pull arrow is pull's merge half: its fetch half is the fetch
+     arrow (`after`), which lights with it and which its spoken route names first. */
   const ARROWS = {
     add: { path: ["folder", "index"], text: "`add` copies a file's current content from the working folder into the staging area; the working folder keeps it." },
-    commit: { path: ["index", "repository"], text: "`commit` saves the staging area as a new commit in your repository; the staging area keeps its files. Your branch moves onto the new commit, and `origin/main` does not move." },
+    commit: { path: ["index", "repository"], text: "`commit` saves the staging area as a new commit in your repository; the staging area keeps its files. Your branch moves onto the new commit, and `origin/main` does not move.", alone: "`commit` saves the staging area as a new commit in your repository; the staging area keeps its files. Your branch moves onto the new commit (your first commit starts it)." },
     push: { path: ["repository", "remote"], text: "`push` sends the commits GitHub is missing and moves GitHub's branch to your commit; your `origin/main` moves to match. Git refuses a push that is not a fast-forward unless you force it, and a refused push changes nothing on either side." },
     fetch: { path: ["remote", "repository"], text: "`fetch` downloads the commits you do not have and moves `origin/main` (and the other `origin/` names). It changes no branch of yours, no working file and nothing in the staging area." },
     pull: { path: ["repository", "index", "folder"], label: "pull = fetch + merge", after: "fetch", text: "`pull` is a fetch, then a merge of `origin/main` into your branch (or a rebase, if you ask for one). When your branch has no commits of its own, the merge is a fast-forward: your branch slides forward, and the staging area and working folder update to match. When both sides have new commits, git fetches, then stops with an error that asks you to choose: `git pull --no-rebase` merges, `git pull --rebase` rebases." },
@@ -78,32 +81,62 @@ const TimePlaces = (function () {
     return seen;
   }
 
+  /* Whether every tracked file ends where the checkout of a pull would leave it (mapcheck's rule,
+     checked on 32 real batches). Where the tip's version did not change, the staging area and the
+     folder keep theirs. Where it changed, a staging area that already held the new version keeps
+     both as they were, a file clean at the old version takes the new one in both, and anything
+     else (an unsaved edit, an untracked file in the way, even with the same text) is a state git
+     pull refuses, so the batch was not a pull: a reset --hard, say, which overwrites it. A path
+     only in the folder, untracked or ignored, before and after, says nothing either way: neither
+     moves it. One gone from the folder does say something: a reset deletes an untracked file in
+     a new file's way, and so does git clean. */
+  function followsTips(before, after) {
+    const was = new Map(before.files.map((file) => [file.path, file]));
+    const now = new Map(after.files.map((file) => [file.path, file]));
+    const blob = (files, path, area) => (files.get(path) || {})[area] || null;
+    const tracked = (files, path) => blob(files, path, "head") !== null || blob(files, path, "index") !== null;
+    const untouched = (path) => now.has(path) && !tracked(now, path) && !tracked(was, path);
+    function lands(path) {
+      const [oldTip, newTip, index, folder] = [blob(was, path, "head"), blob(now, path, "head"), blob(was, path, "index"), blob(was, path, "folder")];
+      let end = null;
+      if (oldTip === newTip || index === newTip) end = [index, folder];
+      else if (index === oldTip && folder === oldTip) end = [newTip, newTip];
+      return end !== null && end[0] === blob(now, path, "index") && end[1] === blob(now, path, "folder");
+    }
+    return [...new Set([...was.keys(), ...now.keys()])].every((path) => untouched(path) || lands(path));
+  }
+
   /* Whether your branch took in work from GitHub: it is the same branch, its new tip reaches the
      tip of its upstream, origin/<branch> (as clone and push -u set it), which its old tip did not,
-     and it kept its own commits (a fast-forward or a merge) or replayed them on top (a rebase).
-     A branch that now sits exactly on its upstream without its old tip was reset there, as by
-     git reset --hard origin/main. A reset of a branch with no commits of its own looks the same as
-     a fast-forward, and lights pull. */
+     it kept its own commits (a fast-forward or a merge) or replayed them on top (a rebase), and
+     a branch that ends exactly on its upstream (where a reset --hard origin/main lands) has its
+     files where a pull leaves them (followsTips). A branch that now sits exactly on its upstream
+     without its old tip was reset there, and so was one whose files a pull would not have left
+     that way. A reset of a branch with no commits of its own and nothing uncommitted looks the
+     same as a fast-forward, and lights pull. A branch past its upstream (a merge commit, or a
+     commit made in the same batch) cannot be a reset there, so its files are not checked: a
+     commit in the batch moves the tip the files would be compared with. */
   function merged(before, after) {
     const upstream = after.refs.find((ref) => ref.kind === "remote" && ref.name === `origin/${after.branch}`);
     if (!after.branch || after.branch !== before.branch || !upstream) return false;
     const now = history(after, after.head);
     const reached = now.has(upstream.target) && !history(before, before.head).has(upstream.target);
     const kept = !before.head || now.has(before.head) || after.head !== upstream.target;
-    return reached && kept;
+    return reached && kept && (after.head !== upstream.target || followsTips(before, after));
   }
 
   /* The commands that match a batch of feed events, in the order they run; [] when none does.
      `before` and `after` are your repository's snapshots around the batch. A pull lights the
      fetch arrow (when it fetched) and the pull arrow, its merge half, which also takes in the
-     staging area's update and a merge commit, so neither lights add or commit. */
+     staging area's update and a merge commit, so neither lights add or commit. Add lights only
+     when a file's version went into the staging area: staging a deletion copies nothing. */
   function commands(events, before, after) {
     const has = (kind) => events.some((event) => event.kind === kind);
     const pushed = has("push-received");
     const pulled = !pushed && merged(before, after);
     const lit = [];
     if (has("repository-created") && after.refs.some((ref) => ref.kind === "remote")) lit.push("clone");
-    if (has("file-staged") && !pulled) lit.push("add");
+    if (has("file-staged") && !pulled && changedFiles(before, after, "index").length > 0) lit.push("add");
     if (COMMITS.some(has) && !pulled) lit.push("commit");
     if (pushed) lit.push("push");
     else if (has("remote-updated")) lit.push("fetch");
@@ -132,8 +165,17 @@ const TimePlaces = (function () {
     const fetched = lit.includes("fetch") || lit.includes("clone") ? fresh.filter((hash) => onGithub.has(hash)) : [];
     const made = fresh.filter((hash) => !fetched.includes(hash));
     const pushed = after.github ? newCommits(before.github, after.github) : [];
-    const staged = changedFiles(before.project, after.project, "index");
-    const checkedOut = changedFiles(before.project, after.project, "folder");
+    const version = (snapshot, path, area) => (snapshot.files.find((entry) => entry.path === path) || {})[area] || null;
+    const [was, now] = [before.project, after.project];
+    /* git add copies a file's version from the folder into the staging area: the folder's before
+       the batch, or, for a file the tip did not change, its version after it (made or edited in
+       the same refresh). A version a pull's checkout brought is pull's to carry, not add's. */
+    const copied = (path) => version(now, path, "index") === version(was, path, "folder")
+      || (version(was, path, "head") === version(now, path, "head") && version(now, path, "index") === version(now, path, "folder"));
+    const staged = changedFiles(was, now, "index").filter(copied);
+    /* A checkout writes the new tip's version; other folder changes (untracked or ignored files)
+       are the player's, and change where they lie. */
+    const checkedOut = changedFiles(was, now, "folder").filter((path) => version(now, path, "folder") === version(now, path, "head"));
     const commit = (by, path) => (hash) => ({ what: "commit", id: hash, by, path });
     const file = (by, path) => (name) => ({ what: "file", id: name, by, path });
     const clone = ARROWS.clone.path;
@@ -175,23 +217,33 @@ const TimePlaces = (function () {
   }
 
   /* The working folder's pages, or the staging area's: an open box holding the next commit. */
-  function filePlace(area, files, owner = null) {
+  function filePlace(area, files, owner = null, empty = NO_FILES) {
     const rows = RepoMap.areaRows(files).filter((row) => row[area]);
     const said = boxes.words.states[area];
-    const pages = rows.length ? el("ul", { class: "tt-pages" }, rows.map((row) => page(row.path, row[area], said))) : el("p", { class: "tt-place-empty" }, NO_FILES);
+    const pages = rows.length ? el("ul", { class: "tt-pages" }, rows.map((row) => page(row.path, row[area], said))) : el("p", { class: "tt-place-empty" }, empty);
     const held = area === "index"
       ? el("div", { class: "tt-open-box" }, el("span", { class: "tt-flap is-left", "aria-hidden": "true" }), el("span", { class: "tt-flap is-right", "aria-hidden": "true" }), pages)
       : pages;
     return el("section", { class: `tt-place is-${area}`, "data-area": area }, title(area, owner), held);
   }
 
-  /* A repository's commits: closed boxes on its timeline. GitHub has no HEAD you are on, so an
-     empty GitHub only says it has no commits. */
-  function repositoryPlace(area, snapshot, showHead, owner = null) {
-    const empty = !snapshot ? NO_REMOTE : !showHead && !snapshot.commits.length ? boxes.words.noCommits : null;
+  /* A timeline wider than its place is drawn smaller, down to this share of its size (the CSS
+     lets it shrink); past it, its place scrolls rather than shrink hashes and subjects out of
+     reading. Each commit's tooltip keeps its whole subject. */
+  const FLOOR = 0.8;
+
+  /* A repository's commits: closed boxes on its timeline, drawn with `theme` (the small boxes
+     unless given), whose key, if any, goes under the whole figure instead. GitHub has no HEAD
+     you are on, so an empty GitHub only says it has no commits. */
+  function repositoryPlace(area, snapshot, showHead, owner = null, theme = boxes) {
+    const empty = !showHead && !snapshot.commits.length ? theme.words.noCommits : null;
+    const keyless = RepoMap.theme({ ...theme, shapes: { ...theme.shapes, key: () => null } });
+    const map = empty ? null : RepoMap.render(snapshot, { theme: keyless, showHead });
+    const graph = map && map.querySelector("svg.map-graph");
+    if (graph) graph.style.minWidth = `${Math.round(FLOOR * Number(graph.getAttribute("width")))}px`;
     return el("section", { class: `tt-place is-${area}`, "data-area": area },
       title(area, owner),
-      empty ? el("p", { class: "tt-place-empty" }, empty) : el("div", { class: "tt-place-graph" }, RepoMap.render(snapshot, { theme: boxes, showHead })),
+      empty ? el("p", { class: "tt-place-empty" }, empty) : el("div", { class: "tt-place-graph" }, map),
     );
   }
 
@@ -235,25 +287,40 @@ const TimePlaces = (function () {
   /* Two arrows across one gap between places: the one towards GitHub above, the one back below. */
   const pair = (gap, ...arrows) => el("div", { class: `tt-arrows-pair is-gap-${gap}` }, arrows);
 
-  /* The sentences of the lit arrows; pull's tells its own fetch half. */
-  const told = (lit) => (lit.includes("pull") ? lit.filter((name) => name !== "fetch") : lit);
+  /* The sentences of the lit arrows; pull's tells its own fetch half. A sentence names
+     origin/main only when `project` has an origin/ branch. */
+  function told(lit, project) {
+    const linked = project.refs.some((ref) => ref.kind === "remote");
+    const names = lit.includes("pull") ? lit.filter((name) => name !== "fetch") : lit;
+    return names.map((name) => (!linked && ARROWS[name].alone) || ARROWS[name].text);
+  }
 
-  /* The four places as a figure, lighting `options.commands`' arrows and showing their sentences. */
-  function render(observation, { commands: lit = [] } = {}) {
+  /* The lit arrows a figure draws: every one, or without a GitHub only add and commit. */
+  const LOCAL = ["add", "commit"];
+  const drawn = (github, matched) => (github ? matched : matched.filter((name) => LOCAL.includes(name)));
+
+  /* The four places as a figure, lighting `options.commands`' arrows and showing their sentences;
+     without a GitHub (`observation.github` null), your computer's three places, joined by add and
+     commit only ("is-local"). `options.theme` draws the repositories (the small boxes unless
+     given; "is-full" otherwise), and its key, if it has one, goes once under the figure. */
+  function render(observation, { commands: matched = [], theme = boxes } = {}) {
     const { project, github } = observation;
+    const key = project.commits.length > 0 && theme.shapes.key({ snapshot: project, map: RepoMap.layout(project, { theme, showHead: true }), theme });
+    const look = [github ? "" : " is-local", theme === boxes ? "" : " is-full"].join("");
+    const lit = drawn(github, matched);
     const merge = ARROWS.pull.path;
-    return el("figure", { class: "tt-places", "aria-label": `The four places: ${Object.values(PLACES).join(", ")}` }, el("div", { class: "tt-places-grid" },
+    const back = (part) => github && arrow("pull", lit, part);
+    const label = github ? `The four places: ${Object.values(PLACES).join(", ")}` : `${COMPUTER}: ${[PLACES.folder, PLACES.index, PLACES.repository].join(", ")}`;
+    return el("figure", { class: `tt-places${look}`, "aria-label": label }, el("div", { class: "tt-places-grid" },
       el("div", { class: "tt-frame is-computer", "aria-hidden": "true" }, el("span", {}, COMPUTER)),
-      el("div", { class: "tt-frame is-github", "aria-hidden": "true" }, el("span", {}, GITHUB)),
+      github && el("div", { class: "tt-frame is-github", "aria-hidden": "true" }, el("span", {}, GITHUB)),
       filePlace("folder", project.files),
-      pair(1, arrow("add", lit), arrow("pull", lit, merge.slice(1))),
-      filePlace("index", project.files),
-      pair(2, arrow("commit", lit), arrow("pull", lit, merge.slice(0, 2))),
-      repositoryPlace("repository", project, true),
-      pair(3, arrow("push", lit), arrow("fetch", lit)),
-      repositoryPlace("remote", github, false),
-      arrow("clone", lit),
-    ), lit.length > 0 && el("figcaption", { class: "tt-places-caption" }, told(lit).map((name) => el("p", {}, inline(ARROWS[name].text)))));
+      pair(1, arrow("add", lit), back(merge.slice(1))),
+      filePlace("index", project.files, null, project.exists ? NO_FILES : NO_INDEX[github ? "clone" : "init"]),
+      pair(2, arrow("commit", lit), back(merge.slice(0, 2))),
+      repositoryPlace("repository", project, true, null, theme),
+      github && [pair(3, arrow("push", lit), arrow("fetch", lit)), repositoryPlace("remote", github, false, null, theme), arrow("clone", lit)],
+    ), key || null, lit.length > 0 && el("figcaption", { class: "tt-places-caption" }, told(lit, project).map((sentence) => el("p", {}, inline(sentence)))));
   }
 
   const find = (scope, attribute, value) => [...scope.querySelectorAll(`[${attribute}]`)].find((node) => node.getAttribute(attribute) === value) || null;
@@ -314,10 +381,11 @@ const TimePlaces = (function () {
   }
 
   /* The commit graph of one place moves from its old drawing to its new one, `offset` ms late. */
-  function settle(place, before, after, showHead, offset, reduced) {
+  function settle(place, before, after, { showHead, offset, reduced, theme }) {
+    if (!before || !after) return [];
     const graph = place.querySelector(".repo-map");
-    if (!graph || !before || !after) return [];
-    return TimeMotion.playMap(graph, before, after, { theme: boxes, showHead, reduced, offset });
+    if (!graph) return [];
+    return TimeMotion.playMap(graph, before, after, { theme, showHead, reduced, offset });
   }
 
   /* When each flight leaves: one after another within a group (same arrow, same kind of thing),
@@ -338,8 +406,9 @@ const TimePlaces = (function () {
 
   /* Plays a transition {before, after, commands} on the figure render(after) drew; returns the
      animations started. `lookup` finds the places and arrows (see `within`). */
-  function play(figure, { before, after, commands: lit }, reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches, lookup = within(figure)) {
+  function play(figure, { before, after, commands: matched }, reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches, lookup = within(figure), theme = boxes) {
     if (reduced || !before || typeof figure.animate !== "function") return [];
+    const lit = drawn(after.github, matched);
     const started = [];
     const animate = (node, frames, timing) => {
       const animation = node.animate(frames, { easing: EASE, fill: "backwards", ...timing });
@@ -411,13 +480,21 @@ const TimePlaces = (function () {
       const index = here >= 0 ? here : firstCommit(() => true);
       return index >= 0 ? delays[index] + TIMING.land : 0;
     };
-    started.push(...settle(lookup.place("repository"), before.project, after.project, true, landing("repository"), reduced));
-    started.push(...settle(lookup.place("remote"), before.github, after.github, false, landing("remote"), reduced));
+    started.push(...settle(lookup.place("repository"), before.project, after.project, { showHead: true, offset: landing("repository"), reduced, theme }));
+    started.push(...settle(lookup.place("remote"), before.github, after.github, { showHead: false, offset: landing("remote"), reduced, theme }));
     return started;
   }
 
   /* The figure's building blocks, for figures with more than one computer (theme-time-share.js). */
   const parts = { filePlace, repositoryPlace, arrow, pair, inline };
 
-  return { commands, flights, render, play, parts, ARROWS, PLACES, TIMING };
+  /* The figure drawn and played with `theme`'s maps, as the live page shows it; the same
+     interface as TimePlaces' own render, play and commands. */
+  const withTheme = (theme) => ({
+    commands,
+    render: (observation, options = {}) => render(observation, { ...options, theme }),
+    play: (figure, transition, reduced, lookup) => play(figure, transition, reduced, lookup, theme),
+  });
+
+  return { commands, flights, render, play, withTheme, parts, ARROWS, PLACES, TIMING };
 })();

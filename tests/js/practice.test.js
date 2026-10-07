@@ -3,28 +3,30 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const { makeEvent } = require("./fakedom");
-const { createClock, fakeServer, httpError, installBrowser, load, record, settle } = require("./load");
+const { createClock, fakeServer, httpError, installBrowser, load, playgroundObservation, pressView, record, settle } = require("./load");
 
-const document = installBrowser();
-const { Practice, createGameApi } = load(
-  ["dom.js", "markup.js", "map.js", "api.js", "poll.js", "dialog.js", "live.js", "quest.js", "challenge.js", "practice.js"],
-  ["Practice", "createGameApi"],
+const document = installBrowser({ reducedMotion: true });
+const { Polling, Practice, TimeShare, createGameApi } = load(
+  ["dom.js", "markup.js", "map.js", "theme-time.js", "theme-time-motion.js", "theme-time-places.js", "theme-time-share.js", "api.js", "poll.js", "dialog.js", "live.js", "playground.js", "quest.js", "challenge.js", "practice.js"],
+  ["Polling", "Practice", "TimeShare", "createGameApi"],
 );
 
 const correct = (step, questDone = false) => ({ correct: true, message: [{ kind: "para", spans: [{ text: "Right.", code: false }] }], step, quest_done: questDone });
 
 /* A practice view on step `step`; `done` is a finished quest (step 3 of 3), which the server lets the page check by itself. */
-function practice({ step = 1, done = false, replies = {}, level = record("level"), playMap } = {}) {
+function practice({ step = 1, done = false, replies = {}, level = record("level"), playMap, places, share, wrap = (api) => api } = {}) {
   const clock = createClock();
   const server = fakeServer({ "/api/observe": record("observation"), "/api/step": record("step"), "/api/check": record("check_unsolved"), "/api/hint": record("hint"), "/api/abort": { level: "x" }, ...replies });
   const seen = { solved: [], ended: 0, left: 0, sounds: [], attached: 0, detached: 0, typed: [] };
   const ctx = {
-    game: createGameApi(server.api),
+    game: createGameApi(wrap(server.api)),
     sound: { play: (name) => seen.sounds.push(name) },
     timers: clock,
     page: document,
     terminal: { attach: () => (seen.attached += 1), detach: () => (seen.detached += 1), type: (text) => seen.typed.push(text) },
     playMap,
+    places,
+    share,
   };
   const view = Practice.create(ctx, {
     level,
@@ -188,6 +190,27 @@ test("when the server does not answer the page says so and keeps trying", async 
   run.view.dispose();
 });
 
+test("a poll the server gave no answer to reports nothing and polling goes on, while a server error still surfaces", async () => {
+  const surfaced = [];
+  const realStart = Polling.start;
+  Polling.start = (options) => realStart({ ...options, tick: () => options.tick().catch((error) => surfaced.push(error)) });
+  try {
+    let reply = httpError(0, "the game server did not answer. Is `firstcommit` still running?");
+    const run = practice({ replies: { "/api/observe": () => reply } });
+    await settle();
+    await run.clock.advance(1500);
+    assert.equal(run.server.calls.length, 2);
+    assert.equal(run.q(".offline").hidden, false);
+    assert.deepEqual(surfaced, []);
+    reply = httpError(500, "IndexError: tuple index out of range", { error: "IndexError: tuple index out of range", kind: "bug" });
+    await run.clock.advance(1500);
+    assert.deepEqual(surfaced.map((error) => [error.status, error.data.kind]), [[500, "bug"]]);
+    run.view.dispose();
+  } finally {
+    Polling.start = realStart;
+  }
+});
+
 test("leaving asks first, then ends the level", async () => {
   const run = practice();
   await settle();
@@ -243,5 +266,91 @@ test("the live map moves from its drawing before when a commit appears, through 
   assert.equal(plays.length, 1);
   assert.equal(plays[0].figure, run.q(".live-project .repo-map"));
   assert.deepEqual([plays[0].before.commits.length, plays[0].after.commits.length, plays[0].options.showHead], [older.project.commits.length, observation.project.commits.length, true]);
+  run.view.dispose();
+});
+
+test("the live panel draws the page's places in the three areas part when the page gives them", async () => {
+  const drawn = [];
+  const places = {
+    commands: () => [],
+    render: (observation) => {
+      drawn.push(observation);
+      return document.createElement("figure");
+    },
+    play: () => [],
+  };
+  const run = practice({ places });
+  await settle();
+  assert.equal(drawn.length, 1);
+  assert.deepEqual(drawn[0], { project: record("observation").project, github: record("observation").github });
+  assert.equal(run.q(".live-three .areas-row"), null);
+  run.view.dispose();
+});
+
+/* A practice view on a playground level: the real share figure, the lab as Observation.buttons sends it. */
+const playground = (options = {}) => practice({ share: TimeShare, ...options, replies: { "/api/observe": playgroundObservation(), ...options.replies } });
+const barButton = (run, person, label) => [...run.view.element.querySelectorAll(`[data-slot="${person}"] .pg-button`)].find((item) => item.textContent === label);
+const para = (text) => [{ kind: "para", spans: [{ text, code: false }] }];
+
+test("on a playground level, a press goes to the server, the lab is drawn as the press left it, and its result shows", async () => {
+  const after = { ...playgroundObservation(), teammate_events: [{ kind: "file-changed", text: para("notes.txt changed.") }] };
+  const run = playground({ replies: { "/api/press": pressView({ person: "alex", command: 'echo "Alex: line 2" >> notes.txt', after }) } });
+  await settle();
+  barButton(run, "alex", "Edit notes.txt").click();
+  await settle();
+  assert.deepEqual(run.server.calls.at(-1), { path: "/api/press", body: { person: "alex", button: "edit:notes.txt" } });
+  assert.match(run.q(".pg-result .pg-ran").textContent, /Alex ran.*done/);
+  assert.match(run.q(".feed").textContent, /On Alex's computer: notes\.txt changed\./);
+  assert.equal(run.q(".playground").getAttribute("aria-busy"), "false");
+  run.view.dispose();
+});
+
+test("a poll answer asked for before a press answered is dropped, so it never draws over the press", async () => {
+  let hold = false;
+  const held = [];
+  const wrap = (api) => (target, body) => {
+    const answer = api(target, body);
+    return hold && target === "/api/observe" ? new Promise((resolve) => held.push(() => resolve(answer))) : answer;
+  };
+  const stale = { ...playgroundObservation(), teammate_events: [{ kind: "file-deleted", text: para("old news.") }] };
+  const run = playground({ wrap, replies: { "/api/observe": () => (hold ? stale : playgroundObservation()), "/api/press": pressView({ person: "you", command: "git status" }) } });
+  await settle();
+  hold = true;
+  await run.clock.advance(1500);
+  hold = false;
+  barButton(run, "you", "git push").click();
+  await settle();
+  held.forEach((release) => release());
+  await settle();
+  assert.doesNotMatch(run.q(".feed").textContent, /old news/);
+  run.view.dispose();
+});
+
+test("a button the server found off says why, and the level goes on", async () => {
+  const reason = "There is no notes.txt to delete.";
+  const run = playground({ replies: { "/api/press": httpError(409, reason, { error: reason, kind: "off" }) } });
+  await settle();
+  barButton(run, "you", "git push").click();
+  await settle();
+  assert.match(run.q(".pg-result").textContent, /There is no notes\.txt to delete\./);
+  assert.equal(run.seen.ended, 0);
+  run.view.dispose();
+});
+
+test("a press when the level ended elsewhere ends the practice, as a poll would", async () => {
+  const run = playground({ replies: { "/api/press": httpError(409, "no level is in progress", { error: "no level is in progress" }) } });
+  await settle();
+  barButton(run, "you", "git push").click();
+  await settle();
+  assert.equal(run.seen.ended, 1);
+});
+
+test("your press's line can be typed in the terminal from its result", async () => {
+  const run = playground({ replies: { "/api/press": pressView({ person: "you", command: "git push" }) } });
+  await settle();
+  barButton(run, "you", "git push").click();
+  await settle();
+  run.q(".pg-result button.type-command").click();
+  assert.deepEqual(run.seen.typed, ["git push"]);
   run.view.dispose();
 });

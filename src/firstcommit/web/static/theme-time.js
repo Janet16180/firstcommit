@@ -9,8 +9,9 @@
  * short hash and subject, every chip its real name, HEAD's chip reads HEAD, and the key under the
  * graph puts each metaphor next to its Git word. Needs dom.js and map.js. Defines one global,
  * TimeTheme: `map` (a RepoMap theme), `small` (the same map, smaller and with no key, for
- * figures), `boxes` (`small` with each commit drawn as a closed box), `withGuide(guide)` (`map`
- * with the button of TimeGuide's `guide` in its key), `panel` (LivePanel's
+ * figures), `boxes` (`small` with each commit drawn as a closed box), `live` (`map` with each
+ * commit drawn as the live page's four places draw it), `withGuide(guide, base)` (`base`, or
+ * `map`, with the button of TimeGuide's `guide` in its key), `panel` (LivePanel's
  * titles), `terminal` (xterm colours, light and dark), `legend(layout)`, `mark(name)` (the small
  * picture the key and the guide put beside a word) and `tabKey(label)`, the name
  * theme-time-motion.js follows a tab by.
@@ -25,9 +26,10 @@ const TimeTheme = (function () {
   const POINT = 7;
   const NOTCH = 5;
 
-  /* Each entry: the metaphor, Git's word, and what the Git word means when that is worth saying. */
+  /* Each entry: the metaphor, Git's word, and what the Git word means when that is worth saying.
+     A commit's metaphor is the theme's (`words.commit`), as its picture is the theme's shape. */
   const LEGEND = {
-    commit: ["save point", "commit", "a snapshot of every tracked file"],
+    commit: [null, "commit", "a snapshot of every tracked file"],
     branch: ["timeline", "branch", null],
     merge: ["timelines joining", "merge commit", null],
     tag: ["milestone", "tag", null],
@@ -151,7 +153,7 @@ const TimeTheme = (function () {
       el("ul", { class: "tt-legend", "aria-label": words.legend },
         legend(map).map((entry) => {
           const [metaphor, git, meaning] = LEGEND[entry];
-          return el("li", {}, mark(entry, theme), el("span", {}, metaphor, " = ", el("b", {}, git), meaning && `: ${meaning}`));
+          return el("li", {}, mark(entry, theme), el("span", {}, metaphor || words[entry], " = ", el("b", {}, git), meaning && `: ${meaning}`));
         }),
       ),
     );
@@ -160,6 +162,7 @@ const TimeTheme = (function () {
   const map = RepoMap.theme({
     sizes: { pad: 16, row: 34, lane: 24, radius: 6, gap: 14, chipPad: 8, chipHeight: 21, char: 7.8, subject: 48 },
     words: {
+      commit: "save point",
       now: "HEAD = now",
       here: "the commit you are on.",
       hereDetached: "the commit you are on, with no branch (detached HEAD).",
@@ -180,12 +183,20 @@ const TimeTheme = (function () {
   });
 
   /* The small map with each commit drawn as a closed box. */
-  const boxes = RepoMap.theme({ ...small, shapes: { ...small.shapes, commit: closedBox } });
+  const boxes = RepoMap.theme({ ...small, words: { ...small.words, commit: "closed box" }, shapes: { ...small.shapes, commit: closedBox } });
+
+  /* How the live page draws a commit, in the four places: the one switch between a closed box and
+     a save point (`{ shape: savePoint, word: "save point" }` draws rings). */
+  const LIVE_COMMIT = { shape: closedBox, word: "closed box" };
+
+  /* The live page's map: the map's own size, each commit drawn as LIVE_COMMIT says. */
+  const live = RepoMap.theme({ ...map, words: { ...map.words, commit: LIVE_COMMIT.word }, shapes: { ...map.shapes, commit: LIVE_COMMIT.shape } });
 
   const panel = {
     project: "Your repository · its timelines",
     github: "GitHub (the practice copy) · shared archive",
     areas: "The three areas",
+    places: "The four places",
     feed: "What just happened",
   };
 
@@ -203,8 +214,8 @@ const TimeTheme = (function () {
     },
   };
 
-  /* The map with the guide's button in its key. */
-  const withGuide = (guide) => RepoMap.theme({ ...map, shapes: { ...map.shapes, key: (ctx) => key(ctx, guide) } });
+  /* A map (`map` unless given) with the guide's button in its key. */
+  const withGuide = (guide, base = map) => RepoMap.theme({ ...base, shapes: { ...base.shapes, key: (ctx) => key(ctx, guide) } });
 
-  return { map, small, boxes, withGuide, panel, legend, tabKey, terminal, mark: (name) => mark(name, map) };
+  return { map, small, boxes, live, withGuide, panel, legend, tabKey, terminal, mark: (name) => mark(name, map) };
 })();

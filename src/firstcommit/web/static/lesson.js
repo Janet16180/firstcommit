@@ -63,8 +63,9 @@ const LessonPlayer = (function () {
   }
 
   /* options: lesson, theme, timers, reducedMotion, onFinish (after the last slide), onExit
-     (Back on the first slide). */
-  function create({ lesson, theme = RepoMap.DEFAULT_THEME, timers = window, reducedMotion = false, onFinish, onExit }) {
+     (Back on the first slide), play(figure, before, after, {theme, showHead}) to move a map
+     slide's figure from the previous slide's map once its last command shows. */
+  function create({ lesson, theme = RepoMap.DEFAULT_THEME, timers = window, reducedMotion = false, onFinish, onExit, play = () => {} }) {
     const { slides } = lesson;
     const { element, count, title, text, figure, pauseButton, nextButton, dots } = skeleton(lesson, { back: () => back(), toggle: () => toggle(), next: () => next() });
     let index = 0;
@@ -77,11 +78,13 @@ const LessonPlayer = (function () {
     const done = () => shown >= lines().length;
     const before = () => (index > 0 ? slides[index - 1] : { map: NO_REPOSITORY, objects: [] });
 
-    function drawFigure() {
+    /* `finished`: the slide's last command has just shown, so a map moves from the slide before's. */
+    function drawFigure(finished = false) {
       const visibleLines = lines();
       const repository = picture(slide(), before(), done(), theme);
       figure.replaceChildren(visibleLines.length ? transcript(visibleLines, shown) : "", repository || "");
       figure.hidden = !visibleLines.length && !repository;
+      if (finished && slide().view === "map") play(repository, before().map, slide().map, { theme, showHead: true });
     }
 
     function drawControls() {
@@ -97,7 +100,7 @@ const LessonPlayer = (function () {
       const wait = shown === 0 ? FIRST_LINE_MS : lineDelay(lines()[shown - 1]);
       timer = timers.setTimeout(() => {
         shown += 1;
-        drawFigure();
+        drawFigure(done());
         drawControls();
         schedule();
       }, wait);

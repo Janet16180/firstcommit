@@ -1,4 +1,8 @@
-# Share a file with Alex (draft, revision 2, for fact-check)
+# Share a file with Alex (draft, revision 3)
+
+**Revision 3** changes only the layout, marked **(r3)**: you and Alex side by side with GitHub
+across the whole width below both, from about 800 px up, and one column below that. No caption,
+claim or recording changed, so revision 2's fact-check stands.
 
 **Revision 2** applies `.scratch/review/share-check.md` and the lead's notes on it. Everything
 new for the checker is marked **(r2)**:
@@ -14,9 +18,9 @@ new for the checker is marked **(r2)**:
 
 S1 to S5, S8, S9 and S11's words are unchanged.
 
-A figure in the boxes pictures: your computer, GitHub (the practice copy) and Alex's computer side
-by side. Each computer stacks its working folder, its open box (the staging area) and its
-repository (closed boxes on a timeline). It plays one step at a time, and each step has one
+A figure in the boxes pictures: **(r3)** your computer and Alex's side by side, with GitHub (the
+practice copy) across the whole width below both. Each computer stacks its working folder, its
+open box (the staging area) and its repository (closed boxes on a timeline). It plays one step at a time, and each step has one
 caption that says what Alex can see. Part 1 is how the figure is made, Part 2 the captions with
 their claim tags, Part 3 the claims register.
 
@@ -76,11 +80,16 @@ The commands, as run:
 | pull-merge | you | `git pull --no-rebase --no-edit` |
 | push-again | you | `git push` |
 
-**(r2) Narrow screens.** Below about 800 px the figure is one column: you, then GitHub, then
-Alex. Alex's computer is drawn upside down (repository nearest GitHub, working folder last), so
-each arrow still joins the two places it moves work between: yours point down towards GitHub,
-Alex's up towards it, and a shared file travels down the page from your working folder to
-Alex's. The words are the same as in the wide layout.
+**(r3) Layout.** From about 800 px up, you and Alex stand side by side, each computer stacked as
+in the four places (working folder, open box, repository), with GitHub across the whole width
+below both: to share, work moves down; to receive, it comes up. Every arrow is upright, between
+the two places it joins. Below about 800 px the figure is one column: you, then GitHub, then
+Alex. Alex's computer is drawn upside down there (repository nearest GitHub, working folder
+last), so each arrow still joins the two places it moves work between: yours point down towards
+GitHub, Alex's up towards it, and a shared file travels down the page from your working folder to
+Alex's. A test checks both layouts (`tests/js/theme-time-share-css.test.js`). A timeline wider
+than its place is drawn smaller, down to four fifths of its size; past that, its place scrolls.
+The words are the same in both layouts.
 
 ---
 

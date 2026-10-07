@@ -1,4 +1,38 @@
-# The four places (revision 4: the revision 3 re-check applied, for fact-check)
+# The four places (revision 8: the revision 7 re-check applied, for fact-check)
+
+**Revision 8** applies mapcheck's revision 7 re-check, marked **(r8)**: before there is a
+repository, the open box names the command that makes one by whether the lab has a GitHub
+(`git clone` with one, `git init` without); the sentence on files riding the pull arrow covers an
+edit and commit before or after the pull; and a mode-only change joins the stated misses. Since
+revision 7 the live page also draws the timelines inside the places at full size, with closed
+boxes and the key under the figure (Part 1, "Where it lives").
+
+**Revision 7** applies mapcheck's revision 6 re-check (`.scratch/review/four-places-check.md`,
+"Re-check (revision 6)"), marked **(r7)**: pull and clone carry only files their checkout wrote;
+add also carries a file made or edited in the same refresh; a commit and a pull in one refresh
+light pull again, because only a branch that ends exactly on its upstream is checked for a reset;
+the three-place figure flies only the arrows it draws; staging a deletion lights no add (so A1 is
+never shown for `git rm`); before `git init` the open box says there is no staging area yet; and
+the wording points of that re-check. Register row L10 is new, run
+on real git 2.43 like L1 to L9 (`rev7_check.py` in my job folder).
+
+**Revision 6** applies the revision 5 re-check and mapcheck's "Before revision 6" (both in
+`.scratch/review/four-places-check.md`). New for the checker, marked **(r6)**: pull's rule is now
+mapcheck's: every tracked file ends where the checkout of a pull would leave it, and a file only
+in the folder is set aside only while it is there before and after (Part 1, "What lights up").
+The reason sentence no longer claims a rebase keeps unsaved work, the limits are restated, and
+`add` carries only what `git add` copied (Part 1, motion). Commit's sentence drops its
+`origin/main` clause while there is no `origin/` branch, and the three-place figure tells only add
+and commit (Part 2, A2). Register rows L6 to L9 are new, run on
+real git 2.43 labs like L1 to L5 (`rev6_check.py` in my job folder).
+
+**Revision 5** applies the revision 4 re-check (`.scratch/review/four-places-check.md`, item 5).
+New for the checker, marked **(r5)**: a merge of your own branch "does not light pull" (a merge
+commit lights commit), and the reset sentence says "nothing uncommitted". The figure's rule
+changed with it: pull lights only when every file that changed in the staging area or the
+working folder also changed between the old tip and the new tip, so a `git reset --hard
+origin/main` that throws away an unsaved line is no longer drawn as a pull (Part 1, "What lights
+up"; register rows L1, L2 and L5).
 
 **Revision 4** applies the revision 3 re-check. New for the checker, marked **(r4)**: pull lights
 only for the branch's own upstream, and not for a reset that drops your commits (Part 1, "What
@@ -6,7 +40,8 @@ lights up"); pull's spoken route names the fetch arrow first and the repository'
 "closed boxes: the commits" (Part 2); the motion's time bound is restated after the motions were
 slowed by about a quarter (Part 1, motion). `git commit -a` and `git push` in one batch now light
 add, commit and push, since the feed tells that commit as made here. Register rows L1-L4 were
-run on real git 2.43 labs, snapshots and feed (`upstream_check.py` in my job folder).
+run on real git 2.43 labs, snapshots and feed (`upstream_check.py` in my job folder), and L5
+with them in revision 5.
 
 **Revision 3** draws the figure in the boxes language the user asked for: files are pages,
 the staging area is an open box, commits are closed boxes on their timeline. It also draws
@@ -87,11 +122,11 @@ command ran first.
 
 | What happened (one batch) | Arrows |
 |---|---|
-| `file-staged` | add |
+| **(r7)** `file-staged`, with a new version of a file in the staging area (staging a deletion, as `git rm` does, lights nothing) | add |
 | `commit-created`, `merge-commit-created`, `commit-replaced` | commit |
 | `push-received` (the practice copy's side) | push |
 | `remote-updated` without `push-received` | fetch |
-| **(r4)** on the same branch and without a push, your branch's new tip reaches the tip of its upstream, `origin/<branch>`, which its old tip did not, and it kept its own commits or replayed them on top | pull (its merge half): fast-forward, merge or rebase, whether or not the fetch was in the same batch |
+| **(r4, r6, r7)** on the same branch and without a push, your branch's new tip reaches the tip of its upstream, `origin/<branch>`, which its old tip did not; it kept its own commits or replayed them on top; and, when it ends exactly on its upstream (the only place a `git reset --hard origin/main` can land), every tracked file ends where the checkout of a pull would leave it | pull (its merge half): fast-forward, merge or rebase, whether or not the fetch was in the same batch |
 | the repository appeared with an `origin/` branch (a clone) | clone |
 
 So `git pull` lights fetch and pull; `git pull` or `git merge origin/main` after an earlier
@@ -100,20 +135,46 @@ So `git pull` lights fetch and pull; `git pull` or `git merge origin/main` after
 a pull belongs to pull, so it does not also light commit or add. A refused push and a diverged
 `git pull` that stops after its fetch are shown as they are: nothing, and fetch alone (D4, D5).
 **(r4)** `git commit -a` and `git push` in one batch light add, commit and push. Only the
-branch's own upstream counts: `git merge feature` on `main`, after `git push -u origin feature`,
-lights nothing, and `git pull` on `feature` takes in `origin/feature`. `git reset --hard
-origin/main` lights nothing when it drops commits of yours. When your branch had no commits of
-its own, the reset ends exactly where a fast-forward would, with the same files, and the two
-snapshots cannot tell them apart, so it lights pull. The upstream is taken to be
-`origin/<branch>`, as `git clone` and `git push -u origin <branch>` set it; the snapshots do not
-record a branch's upstream setting.
+branch's own upstream counts: **(r5)** `git merge feature` on `main`, after `git push -u origin
+feature`, does not light pull (a merge commit lights commit), and `git pull` on `feature` takes in
+`origin/feature`. `git reset --hard origin/main` lights nothing when it drops commits of yours
+or **(r6)** ends anywhere a pull would not. A file whose tip version the pull does not change
+keeps its staging-area and folder versions; one it changes takes the new version in both when it
+was clean, and keeps both as they were when the new version was already staged **(r7)** (for a
+fast-forward; a merging or rebasing pull refuses while anything is staged); anything else (an
+unsaved edit, an untracked file in the way, even with the incoming text) makes `git pull` refuse.
+A merge or fast-forward changes only the files the commits changed, and keeps an unsaved line in
+any other file (a rebase pull refuses to start while anything is unsaved). A reset overwrites all
+of these and deletes an untracked file in the way of a new one; **(r7)** `git clean` deletes
+untracked files too. **(r7)** A file that is only in the folder after the batch and was never
+tracked says nothing either way. When your branch had no commits of its own and nothing
+uncommitted, the reset ends exactly where a fast-forward would, with the same files, and the two
+snapshots cannot tell them apart, so it lights pull. **(r7)** A reset can only land exactly on the
+upstream, so a branch that ends past it (a merge commit, or a commit made in the same refresh)
+is not checked this way, and a commit and a pull in one refresh light pull. **(r6, r7)** The rule
+misses a real pull when, within one refresh of the page, you also: stage or edit any tracked
+file; stash, pull and pop a file the pull also changes; or delete an untracked file (by hand or
+with `git clean`, ignored files included). It also misses a pull over a file forced into an
+ignored folder with `git add -f`. In those batches pull does not light. **(r8)** A change of mode
+alone (`chmod +x run.sh && git add run.sh`) lights nothing, not even add: a snapshot's version of
+a file is its content. The upstream is
+taken to be `origin/<branch>`, as `git clone` and `git push -u origin <branch>` set it; the
+snapshots do not record a branch's upstream setting.
 
 **(r3) Motion** (off under reduced motion), from the two snapshots like the map's motions. Each
 lit arrow draws itself, then its work flies along it: a copy of a page, by name and content
 colour, or a closed box with its short hash. A group of flights leaves once the one before it has
 arrived, and what a flight brings shows in each place as it gets there: a new page appears, and a
 known page's old id and colour fade out as the new ones, with git status's words for them, fade
-in. `add` drops a copy of the page into the open box; the folder keeps its page. `commit` lifts a
+in. `add` drops a copy of the page into the open box; the folder keeps its page. **(r6)** It
+carries only files whose new staging-area version was in the folder before the batch, which is
+what `git add` copies, **(r7)** or, for a file the pull did not change, is in the folder after it
+(a file made or edited in the same refresh as its `git add`), so a file a pull checked out in the
+same refresh does not ride on it. **(r7)** Pull and clone carry only files whose new folder
+version is the new tip's, which is what a checkout writes; an untracked or ignored file that
+changed in the same refresh changes where it lies. **(r8)** (A file you edit and commit in the
+same refresh as a pull, before or after it, also rides the pull arrow: the snapshot holds only
+the new tip's files, not the upstream's.) **(r7)** The three-place figure flies only the arrows it draws. `commit` lifts a
 copy of the open box, holding a page for every tracked file, closes it on the way and sets it on
 your timeline, where HEAD and the branch slide onto it; the open box keeps its pages. A push
 carries the boxes GitHub is missing, oldest first, then GitHub's `main` and your `origin/main`
@@ -127,17 +188,30 @@ two seconds however many files move, because the flights of one group spread ove
 300 ms: about 1.1 s for a push, 1.6 s for a pull, 1.8 s for a pull of many files and 2 s for a
 big clone, the longest.
 
-**Where it lives.** As a lesson figure (a slide view next to `map`, `areas` and `objects`), and
-as a toggle in the live panel ("Timelines" or "Four places") once the remote chapter starts. The
-map key's "How to read the map" guide links to it from the "Shared archive" entry.
+**Where it lives.** **(r5, r8)** In the live panel beside the terminal, at the top, from the
+first level on, in place of both the timelines cards and the three areas strip: your computer's
+three places while the lab has no GitHub ("The three areas"), all four once it has one ("The four
+places"), with the "What just happened" feed under the figure. Your repository's and GitHub's
+places carry their full timelines at the map's own size, each commit a closed box, and the map's
+key sits once under the figure ("closed box = commit", with the box picture; lessons and the
+guide keep the save point picture). It is redrawn when either repository changes, lights the
+arrows of what that batch did and plays its motion; the first drawing plays nothing. Later, also
+as a lesson figure (a slide view next to `map`, `areas` and `objects`).
 
 ---
 
 ## Part 2: the words the figure shows
 
 **(r3)** Notes under the titles: "open box: the next commit" (staging area), "closed boxes:
-the commits" (your repository). Empty places: "No files.", "No commits yet." (GitHub), "No remote
-yet." Pull's two parts each read "pull". Each arrow's spoken route (`aria-label`), exactly:
+the commits" (your repository). Empty places: "No files.", "No commits yet." (GitHub).
+**(r7)** Before `git init` there is no staging area at all (the index lives in `.git`), so the
+open box says "No staging area yet: git init makes one." (share's wording) instead of "No files.".
+**(r8)** In a lab with a GitHub and nothing cloned yet it says "No staging area yet: git clone
+makes one.", since there the player clones rather than runs `git init`. **(r5)**
+Without a GitHub there is no remote place and no push, fetch, pull or clone arrow, and the figure
+is said as `Your computer: Working folder, Staging area, Your repository` (with one, `The four
+places: Working folder, Staging area, Your repository, Remote repository`). Pull's two parts each
+read "pull". Each arrow's spoken route (`aria-label`), exactly:
 
 - `add: from the working folder to the staging area`
 - `commit: from the staging area to your repository`
@@ -156,6 +230,11 @@ Titles: **Your computer** (with *Working folder*, *Staging area*, *Your reposito
   working folder keeps it. **[A1]**
 - **commit**: saves the staging area as a new commit in your repository; the staging area keeps
   its files. Your branch moves onto the new commit, and `origin/main` does not move. **[A2]**
+  **(r6, r7)** While your repository has no `origin/` branch (no GitHub, or until your first
+  push, or a fetch or clone that brings commits), the sentence ends at "Your branch moves onto
+  the new commit (your first commit starts it)." A caption
+  names only what the figure shows: without a GitHub only add and commit are drawn, and only
+  their sentences are told.
 - **push**: sends the commits GitHub is missing and moves GitHub's branch to your commit; your
   `origin/main` moves to match. Git refuses a push that is not a fast-forward unless you force
   it, and a refused push changes nothing on either side. **[A3]**
@@ -195,8 +274,14 @@ Titles: **Your computer** (with *Working folder*, *Staging area*, *Your reposito
 | B2 (r3) | A commit holds every tracked file; an unchanged file keeps its id | `git ls-tree HEAD~1`; `git ls-tree HEAD` after changing only README | `rules.md` `6b1b585c99...` in both commits; README `f386038` then `83d38e8` |
 | B3 (r3) | Identical content is stored once | `git cat-file --batch-all-objects --batch-check` after those two commits | 2 commits, 2 trees, 3 blobs: `rules.md`'s blob once though both commits hold it |
 | B4 (r3) | After a commit the staging area keeps its files and matches the new commit | `git ls-files -s` before and after `git commit`; `git diff --cached` | Unchanged; `diff --cached` empty (as the checker found for A2) |
-| L1 (r4) | Merging a branch of yours into `main` lights nothing, even when that branch is on GitHub | Lab (clone of a practice copy): `git switch -c feature`, commit, `git push -u origin feature`, `git switch main`; then `git merge feature`; the feed's events and `TimePlaces.commands` on the two snapshots | events `[branch-moved]`, lit `[]` |
-| L2 (r4) | `git reset --hard origin/main` lights nothing when it drops a commit of yours; with no commit of yours it ends as a fast-forward does and lights pull | Teammate pushes; commit locally, `git fetch`, then `git reset --hard origin/main`; again with no local commit | dropped a commit: `[branch-moved]`, lit `[]`; only behind: `[branch-moved]`, lit `[pull]` |
+| L1 (r5) | Merging a branch of yours into `main` does not light pull, even when that branch is on GitHub; a merge commit lights commit | Lab (clone of a practice copy): `git switch -c feature`, commit, `git push -u origin feature`, `git switch main`; then `git merge feature`; again with a commit of `main`'s own first; the feed's events and `TimePlaces.commands` on the two snapshots | fast-forward: `[branch-moved]`, lit `[]`; merge commit: `[merge-commit-created]`, lit `[commit]` |
+| L2 (r5) | `git reset --hard origin/main` lights nothing when it drops a commit of yours; with no commit of yours and nothing uncommitted it ends as a fast-forward does and lights pull | Teammate pushes; commit locally, `git fetch`, then `git reset --hard origin/main`; again with no local commit | dropped a commit: `[branch-moved]`, lit `[]`; only behind, clean: `[branch-moved]`, lit `[pull]` |
 | L3 (r4) | A pull lights for the branch's own upstream: `--rebase` on diverged branches, and `git pull` on `feature` tracking `origin/feature` | Diverge, `git pull --rebase`; `git push -u origin feature`, another clone pushes to `feature`, `git pull` | both `[branch-moved, remote-updated]`, lit `[fetch, pull]` |
 | L4 (r4) | `git commit -a` and `git push` in one batch light add, commit and push | Edit README, then `git commit -qam 'More' && git push -q` as one batch | events `[commit-created, remote-updated, file-staged, push-received]`, lit `[add, commit, push]` |
+| L5 (r5) | A reset that throws away an unsaved line lights nothing; a pull or a merging pull keeps the line and lights pull | Teammate pushes a change to `rules.md`; `git fetch`; append an unsaved line to `README.md`; then `git reset --hard origin/main`, or `git pull`; again diverged (a commit of yours) with `git pull --no-rebase` | reset: `[branch-moved, file-changed]`, lit `[]`; pull: `[branch-moved]`, lit `[pull]`; merging pull: `[merge-commit-created, remote-updated]`, lit `[fetch, pull]` |
+| L6 (r6) | A reset over unsaved work in a file the commit changes lights nothing; `git pull` refuses there | Behind by one commit that changes `rules.md` (fetched); then each of: an unsaved line in `rules.md`; the incoming text in `rules.md`, unstaged; the incoming text staged plus an unstaged line; then `git reset --hard origin/main`; and `git pull` on the first state | resets: `[branch-moved, file-unstaged, file-changed]`, `[branch-moved, file-unstaged]`, `[branch-moved, file-changed]`, each lit `[]`; `git pull`: exit 1, "Your local changes to the following files would be overwritten by merge" |
+| L7 (r6) | A pull whose incoming text is already staged lights pull, with or without an unstaged line on top, which it keeps | Same state; the incoming text staged; `git pull`; again with an unsaved line added after staging | both `[branch-moved]`, lit `[pull]` |
+| L8 (r6) | A reset over an untracked file in the way lights nothing, also when it is identical or deleted, and so does a reset with `git clean`; `git pull` refuses there; a pull plus a new untracked file still lights pull | The incoming commit adds `new1.txt`, `new2.txt` or `doc/x.txt`; an untracked `new1.txt` "mine", `new2.txt` with the same text, or a file `doc`; `git reset --hard origin/main`; also `git reset --hard origin/main && git clean -fd` with `scratch.txt`; `git pull && echo scratch > scratch.txt` | resets: `[branch-moved, file-unstaged, file-changed]`, `[branch-moved, file-unstaged]`, `[branch-moved, file-deleted]`, `[branch-moved, file-deleted]`, each lit `[]`; `git pull` with `new2.txt` in the way: exit 1, "untracked working tree files would be overwritten by merge"; pull plus a new file: `[branch-moved, file-created]`, lit `[pull]` |
+| L9 (r6) | In `git add README.md && git pull` (one refresh), add carries README.md only; pull does not light (a stated miss); `git pull --rebase` with anything unsaved refuses before fetching | Fetched, README.md edited, then the batch; diverged with an unsaved line, `git pull --rebase` | `[branch-moved, file-staged]`, lit `[add]`, add carries `[README.md]`; rebase: exit 128, "cannot pull with rebase: You have unstaged changes" |
+| L10 (r7) | Flights carry what moved: pull only what its checkout wrote, add a file made or edited in the same refresh; a commit and a pull in one refresh light pull; `git rm` lights no add | From a clone a teammate pushed to: fetched, `git pull && echo scratch > scratch.txt`; `echo hi > new.txt && git add new.txt`; `echo more >> README.md && git add README.md`; edit, `git commit -qam mine && git pull --no-rebase --no-edit`; behind, `git pull && <edit> && git commit -qam mine`; `git rm rules.md` | `[branch-moved, file-created]`, lit `[pull]`, flies `rules.md` only; `[file-staged, file-created]`, lit `[add]`, flies `new.txt`; `[file-staged, file-changed]`, lit `[add]`, flies `README.md`; `[branch-moved, remote-updated, file-unstaged]`, lit `[fetch, pull]`, flies `rules.md`; `[branch-moved, remote-updated]`, lit `[fetch, pull]`, flies `README.md` and `rules.md` (the committed README.md too, as stated); `[file-staged, file-deleted]`, lit `[]` |
 | A8 | The practice copy is bare: no working folder | `git --git-dir=hub.git rev-parse --is-bare-repository`; `ls hub.git`; `kit.Lab.github` (`<lab>/github/project.git`) | `true`; `HEAD branches config description hooks info objects refs` |
