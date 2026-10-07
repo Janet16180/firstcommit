@@ -85,7 +85,7 @@ const LevelPage = (function () {
     const { ctx } = page;
     try {
       const view = await ctx.game.lesson(page.levelId);
-      const player = LessonPlayer.create({ lesson: view, theme: ctx.theme, timers: ctx.timers, reducedMotion: ctx.reducedMotion, play: ctx.playMap, onFinish: () => start(page, null), onExit: () => intro(page) });
+      const player = LessonPlayer.create({ lesson: view, theme: ctx.theme, timers: ctx.timers, reducedMotion: ctx.reducedMotion, play: ctx.playMap, places: ctx.places, onFinish: () => start(page, null), onExit: () => intro(page) });
       mount(page, player.element, player);
     } catch (error) {
       if (!expected(page, error)) throw error;

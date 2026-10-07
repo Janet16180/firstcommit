@@ -143,6 +143,29 @@ test("the lesson's map slide moves through the page's playMap once its commands 
   run.view.dispose();
 });
 
+test("the lesson's places slide is drawn and played by the page's places once its commands have shown", async () => {
+  const lesson = record("lesson");
+  lesson.slides[2].view = "places";
+  const calls = [];
+  const places = {
+    commands: () => ["commit"],
+    render: (observation, options = {}) => {
+      calls.push(["render", observation.project, options.commands]);
+      return document.createElement("figure");
+    },
+    play: (figure, transition) => calls.push(["play", transition.after.project]),
+  };
+  const run = page({ replies: { "/api/lesson": lesson }, extra: { reducedMotion: false, places } });
+  await settle();
+  button(run, /Start the lesson/).click();
+  await settle();
+  while (!run.q(".lesson-count").textContent.includes("3 of")) run.q(".lesson-next").click();
+  await run.ctx.timers.advance(20000);
+  assert.deepEqual(calls.at(-2), ["render", lesson.slides[2].map, ["commit"]]);
+  assert.deepEqual(calls.at(-1), ["play", lesson.slides[2].map]);
+  run.view.dispose();
+});
+
 test("a win is celebrated, then the debrief teaches and suggests what comes next", async () => {
   const solved = record("check_solved");
   const run = page({ active: { ...record("active"), level: ID, step: 3, auto_check: true }, replies: { "/api/check": solved } });
