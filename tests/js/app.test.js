@@ -80,8 +80,10 @@ test("a level's address opens the level screen, with its zones and the terminal 
   assert.ok(page.main.querySelector(".termcol .term-dock"));
 }));
 
-test("the terminal wears the design's night colours in both looks", () => onLevel((page) => {
+test("the terminal wears the design's night colours and VT323 at the design's size, in both looks", () => onLevel((page) => {
   assert.equal(page.seen.looks.light.theme.background, "#120F2C");
+  assert.match(page.seen.looks.light.fontFamily, /^VT323, /);
+  assert.equal(page.seen.looks.light.fontSize, 19);
   assert.deepEqual(page.seen.looks.dark.theme, page.seen.looks.light.theme);
 }));
 
