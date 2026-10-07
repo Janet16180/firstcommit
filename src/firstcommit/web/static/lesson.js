@@ -5,8 +5,10 @@
  * figure: the slide's commands with their real output, appearing one at a time at a pace the
  * player can read, and the repository they act on, shown as it was before them and then as
  * they left it, with what is new marked. Next first finishes a slide, then moves on; Space
- * pauses; under prefers-reduced-motion everything shows at once. Needs dom.js, markup.js and
- * map.js. Defines one global, LessonPlayer.
+ * pauses; under prefers-reduced-motion everything shows at once. A "places" slide draws your
+ * computer's places (TimePlaces, handed in as `places`) and, once its commands have shown, lights
+ * the arrows its change implies: the change the server tells for the slide (its `events`). Needs
+ * dom.js, markup.js and map.js. Defines one global, LessonPlayer.
  */
 
 /* global Dom, Markup, RepoMap */
@@ -29,8 +31,15 @@ const LessonPlayer = (function () {
     );
   }
 
+  /* What a "places" slide shows: your repository before the slide's commands or after them (a
+     lesson's frames hold no GitHub), and, after them, the commands its change lit. */
+  function placesTransition(slide, before, places) {
+    const [was, now] = [{ project: before.map, github: null }, { project: slide.map, github: null }];
+    return { before: was, after: now, commands: places.commands(slide.events, before.map, slide.map) };
+  }
+
   /* The repository part of the figure, before the slide's commands (`done` false) or after them. */
-  function picture(slide, before, done, theme) {
+  function picture(slide, before, done, theme, places) {
     const map = done ? slide.map : before.map;
     const objects = done ? slide.objects : before.objects;
     const previousCommits = done ? new Set(before.map.commits.map((commit) => commit.hash)) : null;
@@ -39,8 +48,19 @@ const LessonPlayer = (function () {
       map: () => RepoMap.render(map, { theme, previous: previousCommits }),
       areas: () => RepoMap.renderAreas(map.files, { theme }),
       objects: () => RepoMap.renderObjects(objects, { theme, previous: previousObjects }),
+      places: () => {
+        const { before: was, after: now, commands } = placesTransition(slide, before, places);
+        return done ? places.render(now, { commands }) : places.render(was);
+      },
     };
     return views[slide.view] ? views[slide.view]() : null;
+  }
+
+  /* Moves a slide's figure once its last command has shown: a map from the slide before's map,
+     the places from the slide before's repository. */
+  function move(figure, slide, before, { theme, play, places, reducedMotion }) {
+    if (slide.view === "map") play(figure, before.map, slide.map, { theme, showHead: true });
+    if (slide.view === "places") places.play(figure, placesTransition(slide, before, places), reducedMotion);
   }
 
   function skeleton(lesson, actions) {
@@ -64,8 +84,9 @@ const LessonPlayer = (function () {
 
   /* options: lesson, theme, timers, reducedMotion, onFinish (after the last slide), onExit
      (Back on the first slide), play(figure, before, after, {theme, showHead}) to move a map
-     slide's figure from the previous slide's map once its last command shows. */
-  function create({ lesson, theme = RepoMap.DEFAULT_THEME, timers = window, reducedMotion = false, onFinish, onExit, play = () => {} }) {
+     slide's figure from the previous slide's map once its last command shows, and places
+     ({commands, render, play}, as TimePlaces) to draw a "places" slide and play its change. */
+  function create({ lesson, theme = RepoMap.DEFAULT_THEME, timers = window, reducedMotion = false, onFinish, onExit, play = () => {}, places = null }) {
     const { slides } = lesson;
     const { element, count, title, text, figure, pauseButton, nextButton, dots } = skeleton(lesson, { back: () => back(), toggle: () => toggle(), next: () => next() });
     let index = 0;
@@ -78,13 +99,14 @@ const LessonPlayer = (function () {
     const done = () => shown >= lines().length;
     const before = () => (index > 0 ? slides[index - 1] : { map: NO_REPOSITORY, objects: [] });
 
-    /* `finished`: the slide's last command has just shown, so a map moves from the slide before's. */
+    /* `finished`: the slide's last command has just shown, so a map or the places move from the
+       slide before's. */
     function drawFigure(finished = false) {
       const visibleLines = lines();
-      const repository = picture(slide(), before(), done(), theme);
+      const repository = picture(slide(), before(), done(), theme, places);
       figure.replaceChildren(visibleLines.length ? transcript(visibleLines, shown) : "", repository || "");
       figure.hidden = !visibleLines.length && !repository;
-      if (finished && slide().view === "map") play(repository, before().map, slide().map, { theme, showHead: true });
+      if (finished) move(repository, slide(), before(), { theme, play, places, reducedMotion });
     }
 
     function drawControls() {
