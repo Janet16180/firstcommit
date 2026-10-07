@@ -125,12 +125,99 @@ const TimePlaces = (function () {
     return reached && kept && (after.head !== upstream.target || followsTips(before, after));
   }
 
-  /* The commands that match a batch of feed events, in the order they run; [] when none does.
-     `before` and `after` are your repository's snapshots around the batch. A pull lights the
-     fetch arrow (when it fetched) and the pull arrow, its merge half, which also takes in the
-     staging area's update and a merge commit, so neither lights add or commit. Add lights only
-     when a file's version went into the staging area: staging a deletion copies nothing. */
-  function commands(events, before, after) {
+  /* A typed line's words as the shell splits them, outside quotes and with quotes and
+     backslashes taken off, one list per command it runs: &&, ||, ;, |, & and a new line end a
+     command, and a word starting with # comments out the rest of its line. */
+  const TOKENS = /(&&|\|\||[;&|\n])|#.*|((?:[^\s'"\\;&|]|\\.|'[^']*'|"(?:[^"\\]|\\.)*")+)/g;
+  const unquote = (word) => word.replace(/'([^']*)'|"((?:[^"\\]|\\.)*)"|\\(.)/g, (whole, single, double, escaped) => single ?? escaped ?? double.replace(/\\([$`"\\])/g, "$1"));
+
+  function shellCommands(line) {
+    const words = [[]];
+    for (const [, operator, word] of line.matchAll(TOKENS)) {
+      if (operator) words.push([]);
+      else if (word) words[words.length - 1].push(unquote(word));
+    }
+    return words.filter((command) => command.length > 0);
+  }
+
+  /* git's own options that take the next word as their value, when it is not given with "=". */
+  const GIT_VALUES = ["-C", "-c", "--git-dir", "--work-tree", "--namespace", "--config-env", "--super-prefix"];
+  const ASSIGNMENT = /^[A-Za-z_][A-Za-z0-9_]*=/;
+
+  /* A shell command's git subcommand and its arguments, after any VAR=value words, git (by any
+     path) and git's own options; null when the command is not git. */
+  function gitCommand(words) {
+    const start = words.findIndex((word) => !ASSIGNMENT.test(word));
+    if (start < 0 || words[start].split("/").pop() !== "git") return null;
+    let at = start + 1;
+    while (at < words.length && words[at].startsWith("-")) at += GIT_VALUES.includes(words[at]) ? 2 : 1;
+    return { name: words[at] || null, args: words.slice(at + 1) };
+  }
+
+  /* git commit's long options that take the next word as their value. Its short ones -m, -F, -c,
+     -C and -t take the rest of their cluster (-mFix) or else the next word; -u and -S take only
+     the rest of theirs. */
+  const COMMIT_VALUES = ["--message", "--file", "--reuse-message", "--reedit-message", "--fixup", "--squash", "--author", "--date", "--template", "--cleanup", "--trailer", "--pathspec-from-file"];
+  const SHORT = /^-([^mFcCtuS]*)([mFcCtuS]?)(.*)$/;
+
+  /* Whether git commit stages files itself, as git add would: with -a (--all), or with paths, the
+     words no option takes, whose working-folder versions it commits. */
+  function commitStages(args) {
+    let stages = false;
+    let value = false;
+    let paths = false;
+    for (const arg of args) {
+      if (value) value = false;
+      else if (paths || !arg.startsWith("-") || arg === "-") stages = true;
+      else if (arg === "--") paths = true;
+      else if (arg.startsWith("--")) {
+        stages = stages || arg === "--all";
+        value = COMMIT_VALUES.includes(arg);
+      } else {
+        const [, flags, valued, attached] = SHORT.exec(arg);
+        stages = stages || flags.includes("a");
+        value = valued !== "" && "mFcCt".includes(valued) && attached === "";
+      }
+    }
+    return stages;
+  }
+
+  /* The arrows each typed git command lights: its own, pull's fetch half with it, and add with a
+     commit that stages files itself. A command with no arrow, or asking for help, lights none. */
+  const LIGHTS = new Map([
+    ["add", () => ["add"]],
+    ["commit", (args) => (commitStages(args) ? ["add", "commit"] : ["commit"])],
+    ["push", () => ["push"]],
+    ["fetch", () => ["fetch"]],
+    ["pull", () => ["fetch", "pull"]],
+    ["clone", () => ["clone"]],
+  ]);
+  const lights = ({ name, args }) => (LIGHTS.has(name) && !args.includes("--help") ? LIGHTS.get(name)(args) : []);
+
+  /* The arrows lit by the lines typed in the game's terminal ([{line, status}], since the last
+     observation), in the order they ran, each once; null when no line ran git, so that the
+     snapshots decide. A line that failed (a status other than 0) lights nothing, since which of
+     its commands failed is not known. */
+  function typedCommands(typed) {
+    const ran = typed.map(({ line, status }) => ({ ok: status === 0, git: shellCommands(line).map(gitCommand).filter(Boolean) }));
+    const lit = ran.filter((entry) => entry.ok).flatMap((entry) => entry.git.flatMap(lights));
+    return ran.some((entry) => entry.git.length > 0) ? [...new Set(lit)] : null;
+  }
+
+  /* The commands that match a batch, in the order they run; [] when none does. `before` and
+     `after` are your repository's snapshots around the batch, `events` its feed events and
+     `typed` the lines typed in the game's terminal meanwhile. The git commands typed decide when
+     there are any (typedCommands); otherwise (a command run outside the game's terminal) the
+     change does (changeCommands). */
+  function commands(events, before, after, typed = []) {
+    return typedCommands(typed) ?? changeCommands(events, before, after);
+  }
+
+  /* The commands that match a batch of feed events. A pull lights the fetch arrow (when it
+     fetched) and the pull arrow, its merge half, which also takes in the staging area's update
+     and a merge commit, so neither lights add or commit. Add lights only when a file's version
+     went into the staging area: staging a deletion copies nothing. */
+  function changeCommands(events, before, after) {
     const has = (kind) => events.some((event) => event.kind === kind);
     const pushed = has("push-received");
     const pulled = !pushed && merged(before, after);
