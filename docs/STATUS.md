@@ -124,6 +124,12 @@ boxes, one picture of a commit everywhere), and security L3.
 - Screenshots of the game page: reset the prompt after every reload and refuse to save if the
   visible terminal shows "@" (a reload once brought back the user's prompt with their email).
 
+- Revert checks (break the code on purpose, expect a test to fail): a same-size mutation restored
+  within the same second leaves Python's .pyc of the mutant valid (it checks only mtime to the
+  second and size), so the suite can run the wrong code. Run them with
+  `PYTHONDONTWRITEBYTECODE=1`, delete the module's .pyc after each write and restore, and print
+  which test failed, so a "caught" names its catcher (found by insight, 2026-10-07).
+
 ## Backlog (decided later, not now)
 
 - repomap `outer` field (path to an enclosing repository, e.g. ".."), proposed by insight, for a
