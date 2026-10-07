@@ -780,6 +780,36 @@ code {
   transform: scaleX(-1);
 }
 
+.fl.is-lit {
+  color: var(--ink);
+  opacity: 1;
+}
+
+.fl.is-lit .art-icon {
+  animation: fl-blink 0.3s steps(2) 5;
+}
+
+@keyframes fl-blink {
+  50% { opacity: 0; }
+}
+
+.zone.is-waking {
+  animation: zone-wake 0.6s steps(3);
+}
+
+@keyframes zone-wake {
+  50% { background: color-mix(in srgb, var(--zc) 45%, var(--panel)); }
+}
+
+/* A copy of a file or capsule flying between zones (zone-panel.js). */
+.ghost {
+  position: fixed;
+  z-index: 60;
+  margin: 0;
+  pointer-events: none;
+  box-shadow: 4px 4px 0 rgba(4, 3, 15, 0.55);
+}
+
 .file {
   --fs: var(--s-clean);
   display: inline-flex;
@@ -1020,6 +1050,14 @@ code {
 .goal.is-done .goal-box {
   background: var(--z-st);
   box-shadow: inset -3px -3px 0 rgba(0, 0, 0, 0.22);
+}
+
+.goal-note {
+  margin-top: 6px;
+  padding-left: 8px;
+  border-left: 3px dashed var(--line);
+  font-size: 0.9rem;
+  color: var(--ink-soft);
 }
 
 .goal-act {
@@ -1682,7 +1720,9 @@ code {
   .band-veil,
   .band,
   .dock,
-  .hud-stars.is-lost {
+  .hud-stars.is-lost,
+  .fl.is-lit .art-icon,
+  .zone.is-waking {
     animation: none;
   }
 }

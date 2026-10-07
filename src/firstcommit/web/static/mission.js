@@ -105,6 +105,18 @@ const Mission = (function () {
         drawGoals();
       },
 
+      /* What the game says about the current goal while it waits for it, under that goal. The same
+         text is left in place, so it is not announced again on every poll. */
+      note(blocks) {
+        const text = list.querySelector(".goal.is-current .goal-text");
+        if (!text) return;
+        const shown = text.querySelector(".goal-note");
+        if (shown && shown.dataset.text === JSON.stringify(blocks)) return;
+        const note = el("div", { class: "goal-note", "aria-live": "polite", "data-text": JSON.stringify(blocks) }, Markup.render(blocks));
+        if (shown) shown.replaceWith(note);
+        else text.append(note);
+      },
+
       /* Every goal checked: the level is solved. */
       solved() {
         current = Infinity;

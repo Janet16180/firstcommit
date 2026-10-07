@@ -139,3 +139,14 @@ test("a hint that cost nothing says so", () => {
   run.view.addHint({ ...record("hint"), cost: 0 });
   assert.equal(run.q(".hint-row small").textContent, "That hint cost no XP. 2 left.");
 });
+
+test("a note on the current goal shows under it, and the same note is not drawn twice", () => {
+  const run = mission({ active: { ...record("active"), step: 2 } });
+  run.view.note(para("No file is staged yet."));
+  const note = run.q(".goal.is-current .goal-note");
+  assert.equal(note.textContent, "No file is staged yet.");
+  run.view.note(para("No file is staged yet."));
+  assert.equal(run.q(".goal.is-current .goal-note"), note);
+  run.view.setStep(3);
+  assert.equal(run.q(".goal-note"), null);
+});

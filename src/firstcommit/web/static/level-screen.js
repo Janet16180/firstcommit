@@ -1,23 +1,23 @@
 "use strict";
 
 /*
- * The level screen: a head with the way back to the map and a restart, the four zones across the
- * top, the mission panel, Rama's comms line and the terminal; and, once the mission is solved, the
- * completion band and the dock at the bottom. Opening a mission that is not in progress starts it.
- * It keeps no game state of its own: the step, the hints and whether the mission is solved come
- * from the server's replies, and the page polls the lab while the player works (poll.js).
- * Expected failures are handled here, by HTTP status: 404 means there is no such level, 409 that
- * it is no longer in progress (solved or ended from the command line or another tab), 0 that the
- * server did not answer. Anything else is a bug and is left to surface. Needs dom.js, markup.js,
- * art-sprites.js, progress.js, poll.js, zone-panel.js, mission.js, comms.js and completion.js.
- * Defines one global, LevelScreen.
- *
- * Waiting for fields of docs/briefs/ORBIT.md (marked ORBIT-GAP below): the command label, the
- * stars in play and the commands typed in the head, the scene and its Intro button, and Rama's
- * reactions to typed lines.
+ * The level screen: a head with the way back to the map, the mission's number, title and command,
+ * the commands typed against the par, the stars still in play, Intro (the level's scene again)
+ * and Restart; the four zones across the top, the mission panel, Rama's comms line and the
+ * terminal; and, once the mission is solved, the completion band and the dock at the bottom.
+ * Opening a mission that is not in progress starts it, and a level's scene plays the first time
+ * it opens. It keeps no game state of its own: the step, the hints, the commands, the stars and
+ * whether the mission is solved come from the server's replies, and the page polls the lab while
+ * the player works (poll.js). Rama says what the game says about each typed line (the
+ * observation's reactions). Expected failures are handled here, by HTTP status: 404 means there
+ * is no such level, 409 that it is no longer in progress (solved or ended from the command line
+ * or another tab), 0 that the server did not answer. Anything else is a bug and is left to
+ * surface. Needs dom.js, markup.js, art-sprites.js, progress.js, poll.js, zone-panel.js,
+ * mission.js, comms.js, completion.js, collection.js and scene.js. Defines one global,
+ * LevelScreen.
  */
 
-/* global Dom, ArtSprites, Progress, Polling, ZonePanel, Mission, Comms, Completion */
+/* global Dom, ArtSprites, Progress, Polling, ZonePanel, Mission, Comms, Completion, Collection, ScenePlayer */
 /* exported LevelScreen */
 
 const LevelScreen = (function () {
@@ -32,21 +32,56 @@ const LevelScreen = (function () {
   };
 
   function hud(screen) {
-    screen.ui.number = el("span", { class: "hud-num" });
-    screen.ui.name = el("b", { class: "hud-name" });
-    screen.ui.restart = el("button", { type: "button", class: "btn restart", disabled: true, onclick: () => restart(screen) }, ArtSprites.icon("restart"), el("span", { class: "lbl" }, "Restart"));
-    /* ORBIT-GAP(command, commands, stars, scene): the command label after the name, the commands
-       typed against the par, the stars still in play, and the Intro button that replays the scene. */
+    const { ui } = screen;
+    ui.number = el("span", { class: "hud-num" });
+    ui.name = el("b", { class: "hud-name" });
+    ui.command = el("code", { class: "hud-command" });
+    ui.commands = el("span", { class: "hud-cmds" });
+    ui.stars = el("span", { class: "hud-stars" });
+    ui.intro = el("button", { type: "button", class: "btn intro", hidden: true, "aria-label": "Replay the introduction", onclick: () => scene(screen) }, ArtSprites.icon("replay"), el("span", { class: "lbl" }, "Intro"));
+    ui.restart = el("button", { type: "button", class: "btn restart", disabled: true, onclick: () => restart(screen) }, ArtSprites.icon("restart"), el("span", { class: "lbl" }, "Restart"));
     return el("header", { class: "hud" },
       el("a", { class: "btn", href: "#/", "aria-label": "Back to the map" }, ArtSprites.icon("back"), el("span", { class: "lbl" }, "Map")),
-      el("div", { class: "hud-title" }, screen.ui.number, screen.ui.name),
-      screen.ui.restart,
+      el("div", { class: "hud-title" }, ui.number, ui.name, ui.command),
+      ui.commands,
+      ui.stars,
+      ui.intro,
+      ui.restart,
     );
+  }
+
+  /* The commands typed against the par plus three, and the stars still in play; a lost star shakes. */
+  function drawHud(screen) {
+    const { ui, state, level } = screen;
+    ui.commands.textContent = `${state.commands} / ${level.par + 3} commands`;
+    const lost = screen.shownStars !== null && state.stars < screen.shownStars;
+    screen.shownStars = state.stars;
+    ui.stars.replaceChildren(ArtSprites.stars(state.stars, { label: `${state.stars} ${state.stars === 1 ? "star" : "stars"} in play` }));
+    ui.stars.classList.toggle("is-lost", lost);
+  }
+
+  /* The commands and stars as the game now counts them (the level in progress, from the dashboard). */
+  async function recount(screen) {
+    const status = await screen.ctx.refresh();
+    const active = status.active;
+    if (!active || active.level !== screen.levelId || screen.finished) return;
+    screen.state.commands = active.commands;
+    screen.state.stars = active.stars;
+    drawHud(screen);
+  }
+
+  /* Plays the level's scene; the first time, the game is told it was seen. */
+  async function scene(screen) {
+    const { ctx, level } = screen;
+    await ScenePlayer.play({ scene: level.scene, timers: ctx.timers, reducedMotion: ctx.reducedMotion });
+    if (level.scene_seen) return;
+    level.scene_seen = true;
+    await ctx.game.scene(screen.levelId);
   }
 
   function layout(screen) {
     const { ui } = screen;
-    ui.zones = ZonePanel.create();
+    ui.zones = ZonePanel.create({ reducedMotion: screen.ctx.reducedMotion, timers: screen.ctx.timers });
     ui.comms = Comms.create();
     ui.mission = el("aside", { class: "mission px", "aria-label": "Mission" }, el("p", {}, "Loading the mission…"));
     ui.termcol = el("div", { class: "termcol" }, ui.comms.element);
@@ -88,11 +123,12 @@ const LevelScreen = (function () {
      says what to do next, it is not the player's mistake. */
   function stepped(screen, result, watched = false) {
     const { ui, state, ctx } = screen;
-    if (!result.correct) {
-      ui.comms.say(result.message, watched ? "info" : "err");
-      if (!watched) ctx.sound.play("wrong");
-      return;
+    if (!result.correct && watched) screen.mission.note(result.message);
+    if (!result.correct && !watched) {
+      ui.comms.say(result.message, "err");
+      ctx.sound.play("wrong");
     }
+    if (!result.correct) return;
     state.step = result.step;
     state.auto_check = result.quest_done;
     ui.comms.say(result.message, "ok");
@@ -105,7 +141,7 @@ const LevelScreen = (function () {
     if (result.solved) {
       if (screen.finished) return;
       stop(screen);
-      won(screen, result.debrief);
+      won(screen, { debrief: result.debrief, stars: result.stars, card: result.new_card, payout: result.payout });
     } else if (!auto) {
       screen.ui.comms.say(result.message, "err");
       screen.ctx.sound.play("wrong");
@@ -117,19 +153,32 @@ const LevelScreen = (function () {
     screen.mission.addHint(hint);
     screen.ui.comms.say(SAY.hint, "info");
     screen.ctx.sound.play("hint");
+    return recount(screen);
   }
 
-  async function won(screen, debrief) {
+  /* What a solved play paid, in a line for the dock. */
+  function rewardLine(payout, hints) {
+    let line = "No XP this time.";
+    if (payout && payout.xp > 0) line = `+${payout.xp} XP`;
+    else if (hints > 0) line = "No XP this time: a hint was used.";
+    return line;
+  }
+
+  /* A solve: `debrief` (the lesson), `stars` won, the new command `card` or null, the `payout`. */
+  async function won(screen, { debrief, stars, card, payout }) {
     const { ctx, levelId } = screen;
     screen.mission.solved();
     const status = await ctx.refresh();
     const next = Progress.nextLevel(status.chapters, levelId);
+    const sector = Progress.missionNumber(status.chapters, levelId).sector - 1;
     ctx.sound.play("celebrate");
-    /* ORBIT-GAP(stars): the band and the dock show the stars won. */
-    await Completion.band({ title: "Mission complete", subtitle: `Mission ${screen.number}: ${screen.level.title}`, timers: ctx.timers, reducedMotion: ctx.reducedMotion });
+    await Completion.band({ title: "Mission complete", subtitle: `Mission ${screen.number}: ${screen.level.title}`, stars, timers: ctx.timers, reducedMotion: ctx.reducedMotion });
     const dock = Completion.dock({
       title: `Mission complete: mission ${screen.number}`,
+      stars,
       lesson: debrief,
+      reward: rewardLine(payout, screen.state.hints),
+      card: card && Collection.card(card, sector),
       next: next && { href: `#/level/${encodeURIComponent(next.id)}`, title: next.title },
       onRetry: () => restart(screen),
     });
@@ -144,7 +193,10 @@ const LevelScreen = (function () {
     stop(screen);
     const status = await screen.ctx.refresh();
     const payout = status.last_payout;
-    if (payout && payout.level === screen.levelId) won(screen, (await screen.ctx.game.level(screen.levelId)).debrief);
+    if (payout && payout.level === screen.levelId) {
+      const best = Progress.findLevel(status.chapters, screen.levelId);
+      won(screen, { debrief: (await screen.ctx.game.level(screen.levelId)).debrief, stars: best ? best.stars : 0, card: null, payout });
+    }
     else screen.ui.comms.say(SAY.ended, "warn");
   }
 
@@ -168,6 +220,12 @@ const LevelScreen = (function () {
     screen.element.style.setProperty("--term-top", `${Math.round(top)}px`);
   }
 
+  /* What Rama says about the lines just typed, oldest first, in the mood of the newest. */
+  function react(screen, reactions) {
+    if (!reactions.length) return;
+    screen.ui.comms.say(reactions.flatMap((reaction) => reaction.text), reactions[reactions.length - 1].mood);
+  }
+
   async function tick(screen) {
     const { game } = screen.ctx;
     try {
@@ -175,9 +233,10 @@ const LevelScreen = (function () {
       const observation = await game.observe();
       screen.ui.zones.update(observation);
       measureTerminal(screen);
-      /* ORBIT-GAP(reactions): Rama's reactions to the typed lines (observation.reactions) go on the comms line. */
       if (screen.offline) screen.ui.comms.say(SAY.back, "info");
       screen.offline = false;
+      react(screen, observation.reactions);
+      if (observation.commands.length) await recount(screen);
       if (plan.watchStep) stepped(screen, await game.step(null), true);
       if (plan.autoCheck && !screen.finished) checked(screen, await game.check(null, true), true);
     } catch (error) {
@@ -192,7 +251,10 @@ const LevelScreen = (function () {
     screen.number = Progress.missionNumber(ctx.status().chapters, screen.levelId)?.number || "";
     ui.number.textContent = `Mission ${screen.number}`;
     ui.name.textContent = level.title;
+    ui.command.textContent = level.command;
+    ui.intro.hidden = level.scene.length === 0;
     ui.restart.disabled = false;
+    drawHud(screen);
     screen.mission = Mission.create({
       level,
       active,
@@ -209,6 +271,7 @@ const LevelScreen = (function () {
     screen.attached = true;
     measureTerminal(screen);
     screen.poller = Polling.start({ tick: () => tick(screen), timers: ctx.timers, page: ctx.page });
+    if (level.scene.length && !level.scene_seen) scene(screen);
   }
 
   async function load(screen) {
@@ -235,7 +298,7 @@ const LevelScreen = (function () {
   /* ctx: game, status(), refresh(), reload() (shows this screen again), sound, timers, page,
      reducedMotion, terminal ({attach(host), detach(), type(text)}). */
   function create(ctx, levelId) {
-    const screen = { ctx, levelId, level: null, state: null, number: "", mission: null, poller: null, finished: false, offline: false, attached: false, disposed: false, ui: {} };
+    const screen = { ctx, levelId, level: null, state: null, number: "", shownStars: null, mission: null, poller: null, finished: false, offline: false, attached: false, disposed: false, ui: {} };
     screen.element = el("div", { class: "level-screen" });
     layout(screen);
     load(screen);

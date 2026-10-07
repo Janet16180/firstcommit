@@ -7,21 +7,27 @@ const { createClock, fakeServer, httpError, installBrowser, load, record, settle
 
 const document = installBrowser({ reducedMotion: true });
 const { LevelScreen, createGameApi } = load(
-  ["dom.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "api.js", "progress.js", "poll.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "level-screen.js"],
+  ["dom.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "collection.js", "scene.js", "level-screen.js"],
   ["LevelScreen", "createGameApi"],
 );
 
 const para = (text) => [{ kind: "para", spans: [{ text, code: false }] }];
 const correct = (step, questDone = false) => ({ correct: true, message: para("Right."), step, quest_done: questDone });
 
-/* A level screen for the sample level; `active` is the level in progress as the status first says (null: none). */
-function screen({ active = record("active"), replies = {}, levelId = "sample-second" } = {}) {
+/* The sample level, its scene already seen unless the test says otherwise. */
+const seenLevel = () => ({ ...record("level"), scene_seen: true });
+const quiet = () => ({ ...record("observation"), commands: [], reactions: [] });
+
+/* A level screen for the sample level; `active` is the level in progress as the status first says
+   (null: none), `recounted` the level in progress the dashboard gives after typed lines. */
+function screen({ active = record("active"), replies = {}, levelId = "sample-second", recounted = null } = {}) {
   const clock = createClock();
   let status = { ...record("status"), active };
   const server = fakeServer({
-    "/api/level": record("level"),
+    "/api/level": seenLevel(),
+    "/api/scene": {},
     "/api/start": { ...record("active"), step: 0 },
-    "/api/observe": record("observation"),
+    "/api/observe": quiet(),
     "/api/step": record("step"),
     "/api/check": record("check_unsolved"),
     "/api/hint": record("hint"),
@@ -34,6 +40,7 @@ function screen({ active = record("active"), replies = {}, levelId = "sample-sec
     refresh: async () => {
       seen.refreshed += 1;
       if (server.calls.some((call) => call.path === "/api/start")) status = { ...status, active: record("active") };
+      if (recounted) status = { ...status, active: recounted };
       return status;
     },
     reload: () => (seen.reloads += 1),
@@ -256,5 +263,94 @@ test("the page tells the stylesheet where the terminal's column starts, so the t
   const run = screen();
   await settle();
   assert.equal(run.view.element.style["--term-top"], "0px");
+  run.view.dispose();
+});
+
+test("the head shows the mission's command, the commands typed against the par plus three, and the stars in play", async () => {
+  const run = screen();
+  await settle();
+  assert.equal(run.q(".hud-command").textContent, "git commit -m");
+  assert.equal(run.q(".hud-cmds").textContent, "3 / 7 commands");
+  assert.equal(run.q(".hud-stars .art-stars").getAttribute("aria-label"), "3 stars in play");
+  run.view.dispose();
+});
+
+test("after typed lines the head shows the commands and stars as the game counts them, and a lost star shakes", async () => {
+  const run = screen({ replies: { "/api/observe": { ...quiet(), commands: [{ line: "ls", status: 0 }] } }, recounted: { ...record("active"), commands: 8, stars: 2 } });
+  await settle();
+  await settle();
+  assert.equal(run.q(".hud-cmds").textContent, "8 / 7 commands");
+  assert.equal(run.q(".hud-stars .art-stars").getAttribute("aria-label"), "2 stars in play");
+  assert.ok(run.q(".hud-stars").classList.contains("is-lost"));
+  run.view.dispose();
+});
+
+test("Rama says the game's reactions to the typed lines, oldest first, in the newest one's mood", async () => {
+  const reactions = [{ line: "git status", mood: "err", text: para("Not a repository yet.") }, { line: "git init", mood: "ok", text: para("Flag planted.") }];
+  const run = screen({ replies: { "/api/observe": { ...quiet(), reactions } } });
+  await settle();
+  assert.equal(run.q(".comms-text").textContent, "Not a repository yet.Flag planted.");
+  assert.equal(run.q(".comms").dataset.mood, "ok");
+  run.view.dispose();
+});
+
+test("while a watch goal waits, the game's note shows under the goal, not on Rama's line", async () => {
+  const run = screen({ active: { ...record("active"), step: 2 } });
+  await settle();
+  assert.match(run.q(".goal.is-current .goal-note").textContent, /Not quite/);
+  assert.match(run.q(".comms").textContent, /Read the goals/);
+  run.view.dispose();
+});
+
+test("a level's scene plays the first time it opens, and the game is told once it is over", async () => {
+  const run = screen({ replies: { "/api/level": record("level") } });
+  await settle();
+  const dialog = document.body.querySelector("dialog.cutscene");
+  assert.ok(dialog.open);
+  assert.equal(run.routes().includes("/api/scene"), false);
+  dialog.querySelector(".cs-skip").click();
+  await settle();
+  assert.deepEqual(run.server.calls.filter((call) => call.path === "/api/scene").map((call) => call.body), [{ level: "sample-second" }]);
+  run.view.dispose();
+});
+
+test("a scene already seen does not play by itself; Intro plays it again without telling the game", async () => {
+  const run = screen();
+  await settle();
+  assert.equal(document.body.querySelector("dialog.cutscene"), null);
+  assert.equal(run.q(".hud .intro").hidden, false);
+  run.q(".hud .intro").click();
+  const dialog = document.body.querySelector("dialog.cutscene");
+  assert.ok(dialog.open);
+  dialog.querySelector(".cs-skip").click();
+  await settle();
+  assert.equal(run.routes().includes("/api/scene"), false);
+  run.view.dispose();
+});
+
+test("a level without a scene has no Intro button", async () => {
+  const run = screen({ replies: { "/api/level": { ...seenLevel(), scene: [] } } });
+  await settle();
+  assert.equal(run.q(".hud .intro").hidden, true);
+  run.view.dispose();
+});
+
+test("the dock shows the stars won, what the play paid and the new command card", async () => {
+  const run = screen({ active: { ...record("active"), step: 3, auto_check: true }, replies: { "/api/check": record("check_solved") } });
+  await settle();
+  await settle();
+  const dock = run.q(".dock");
+  assert.equal(dock.querySelector(".dock-stars .art-stars").getAttribute("aria-label"), "3 of 3 stars");
+  assert.equal(dock.querySelector(".dock-xp").textContent, "+150 XP");
+  assert.equal(dock.querySelector(".dock-card .cmdcard code").textContent, 'git commit -m "Message"');
+  run.view.dispose();
+});
+
+test("a solve with a hint used and no XP says why", async () => {
+  const solved = { ...record("check_solved"), payout: { ...record("check_solved").payout, xp: 0 } };
+  const run = screen({ active: { ...record("active"), step: 3, auto_check: true, hints: 1 }, replies: { "/api/check": solved } });
+  await settle();
+  await settle();
+  assert.equal(run.q(".dock-xp").textContent, "No XP this time: a hint was used.");
   run.view.dispose();
 });

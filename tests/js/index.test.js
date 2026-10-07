@@ -45,5 +45,5 @@ test("the time-travel theme and the old level page are no longer loaded, but sta
 });
 
 test("the page loads the map screen, the level screen and their parts", () => {
-  for (const name of ["art-pixels.js", "art-sprites.js", "art-sky.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "level-screen.js", "starmap.js"]) assert.ok(scripts.includes(name), name);
+  for (const name of ["art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "typed.js", "collection.js", "scene.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "level-screen.js", "starmap.js"]) assert.ok(scripts.includes(name), name);
 });
