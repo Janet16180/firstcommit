@@ -18,11 +18,17 @@
  *   kind "head", "branch", "remote" or "tag"; null without a repository;
  * - remote: the same for the level's GitHub, or null when the level has none.
  *
- * moves(before, after, typed) says how to animate the change between two such readings: the
- * arrows to light ("add", "commit", "push", "pull"), the items that fly ({from, to}, each
- * "<zone>:<path or hash>") and the zones that switch on. `typed` names the git commands that
- * succeeded meanwhile (typed.js): when there are any, only the moves they make are drawn; with
- * none, the change was made outside the game's terminal and is drawn as it is.
+ * moves(before, after, typed, refused) says how to animate the change between two such readings:
+ * - lit: the arrows to light ("add", "commit", "push", "pull");
+ * - flights: the items that fly, {from, to}, each a key: "<zone>:<path or hash>" for a file or
+ *   a capsule, "<zone>-ref:<branch, or HEAD>" for a label (a label that moved slides);
+ * - wake: the zones that switched on;
+ * - fades: the capsules that left every branch (a reset); appears: those that came back or were
+ *   made without flying in from anywhere;
+ * - bounces: {from, to}, a capsule thrown at a zone that sends it back (a refused push).
+ * `typed` names the git commands that succeeded meanwhile and `refused` those that failed
+ * (typed.js): when any succeeded, only the flights they make are drawn; with none, the change
+ * was made outside the game's terminal and is drawn as it is.
  */
 
 /* exported Zones */
@@ -118,7 +124,9 @@ const Zones = (function () {
     { kind: "unstage", commands: ["restore", "reset", "rm"], arrow: null, flights: (before, after) => leftDock(before, after).map((path) => [`dock:${path}`, `workshop:${path}`]) },
     { kind: "commit", commands: ["commit", "merge", "cherry-pick", "revert"], arrow: "commit", flights: (before, after) => sealed(before, after) },
     { kind: "push", commands: ["push"], arrow: "push", flights: (before, after) => added(after.remote, before.remote).map((hash) => [`vault:${hash}`, `remote:${hash}`]) },
-    { kind: "pull", commands: ["pull", "fetch", "merge"], arrow: "pull", flights: (before, after) => added(after.vault, before.vault).filter((hash) => hashes(before.remote).has(hash)).map((hash) => [`remote:${hash}`, `vault:${hash}`]) },
+    { kind: "pull", commands: ["pull", "fetch", "merge", "clone"], arrow: "pull", flights: (before, after) => added(after.vault, before.vault).filter((hash) => hashes(before.remote).has(hash)).map((hash) => [`remote:${hash}`, `vault:${hash}`]) },
+    { kind: "merge", commands: ["merge", "pull"], arrow: null, flights: (before, after) => joined(before, after) },
+    { kind: "slide", commands: null, arrow: null, flights: (before, after) => [...slid(before, after, "vault"), ...slid(before, after, "remote")] },
   ];
 
   const hashes = (list) => new Set((list || []).map((commit) => commit.hash));
@@ -134,15 +142,47 @@ const Zones = (function () {
     return fresh.length ? (before.dock || []).map((item) => [`dock:${item.path}`, `vault:${fresh[0]}`]) : [];
   }
 
-  function moves(before, after, typed) {
-    const allowed = (move) => typed.length === 0 || move.commands.some((command) => typed.includes(command));
+  /* A new merge capsule draws a line in from each of its parents. */
+  function joined(before, after) {
+    const fresh = new Set(added(after.vault, before.vault));
+    const had = hashes(before.vault);
+    return (after.vault || []).filter((commit) => fresh.has(commit.hash) && commit.parents.length > 1)
+      .flatMap((commit) => commit.parents.filter((parent) => had.has(parent)).map((parent) => [`vault:${parent}`, `vault:${commit.hash}`]));
+  }
+
+  /* Where each label sits in a zone: its key (a branch's name, or HEAD) and its capsule. */
+  function labelled(list) {
+    const at = new Map();
+    for (const commit of list || []) for (const label of commit.labels) at.set(label.kind === "head" ? "HEAD" : label.text, commit.hash);
+    return at;
+  }
+
+  /* The labels of a zone that now sit on another capsule. */
+  function slid(before, after, zone) {
+    const was = labelled(before[zone]);
+    return [...labelled(after[zone])].filter(([key, hash]) => was.has(key) && was.get(key) !== hash).map(([key]) => [`${zone}-ref:${key}`, `${zone}-ref:${key}`]);
+  }
+
+  /* A refused push throws the HEAD capsule at the mothership, which sends it back. */
+  function bounced(after, refused) {
+    const top = (after.vault || []).find((commit) => commit.labels.some((label) => label.kind === "head"));
+    return refused.includes("push") && top && after.remote !== null ? [{ from: `vault:${top.hash}`, to: "remote" }] : [];
+  }
+
+  function moves(before, after, typed, refused = []) {
+    const allowed = (move) => typed.length === 0 || move.commands === null || move.commands.some((command) => typed.includes(command));
     const made = MOVES.filter(allowed).map((move) => ({ ...move, pairs: move.flights(before, after) })).filter((move) => move.pairs.length);
     const flights = made.flatMap((move) => move.pairs.map(([from, to]) => ({ from, to })));
     const lit = [...new Set(made.map((move) => move.arrow).filter(Boolean))];
     const wake = [];
     if (!before.repository && after.repository) wake.push("dock", "vault");
     if (before.remote === null && after.remote !== null) wake.push("remote");
-    return { lit, flights: [...new Map(flights.map((flight) => [`${flight.from}>${flight.to}`, flight])).values()], wake };
+    const landed = new Set(flights.map((flight) => flight.to));
+    const zones = ["vault", "remote"];
+    const fades = zones.flatMap((zone) => added(before[zone], after[zone]).map((hash) => `${zone}:${hash}`));
+    const appears = zones.flatMap((zone) => (before[zone] ? added(after[zone], before[zone]) : []).map((hash) => `${zone}:${hash}`)).filter((key) => !landed.has(key));
+    const unique = [...new Map(flights.map((flight) => [`${flight.from}>${flight.to}`, flight])).values()];
+    return { lit, flights: unique, wake, fades, appears, bounces: bounced(after, refused) };
   }
 
   return { read, moves };
