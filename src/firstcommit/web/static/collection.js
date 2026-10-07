@@ -35,5 +35,5 @@ const Collection = (function () {
     return dialog;
   }
 
-  return { open, card: cardElement };
+  return { open };
 })();

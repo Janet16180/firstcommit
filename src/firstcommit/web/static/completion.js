@@ -9,8 +9,8 @@
  * band({title, subtitle, stars, timers, reducedMotion}) plays the band and resolves when it has
  *   gone (after BAND_MS, or at once on a click); with reduced motion it shows nothing.
  * dock({title, stars, lesson, reward, card, next, onRetry}) builds the dock: `lesson` is the
- *   game's blocks or null, `reward` a line on what this play paid or null, `card` the new command card's element or
- *   null, `next` {href, title} or null.
+ *   game's blocks or null, `reward` a line on what this play paid or null, `card` the new command card
+ *   (CommandCard) or null, `next` {href, title} or null.
  */
 
 /* global Dom, Markup, ArtSprites, ArtSky */
@@ -46,7 +46,7 @@ const Completion = (function () {
         el("b", { class: "dock-title" }, title),
         el("div", { class: "dock-lesson" }, lesson ? Markup.render(lesson) : el("p", {}, "This mission's lesson is not available.")),
         reward && el("small", { class: "dock-xp" }, reward),
-        card && el("div", { class: "dock-card" }, el("small", {}, "New card in your collection:"), card),
+        card && el("small", { class: "dock-card" }, "New card in your collection: ", el("code", {}, card.command)),
       ),
       el("div", { class: "dock-actions" },
         el("button", { type: "button", class: "btn", onclick: () => onRetry() }, "Retry"),

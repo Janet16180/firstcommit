@@ -342,7 +342,7 @@ test("the dock shows the stars won, what the play paid and the new command card"
   const dock = run.q(".dock");
   assert.equal(dock.querySelector(".dock-stars .art-stars").getAttribute("aria-label"), "3 of 3 stars");
   assert.equal(dock.querySelector(".dock-xp").textContent, "+150 XP");
-  assert.equal(dock.querySelector(".dock-card .cmdcard code").textContent, 'git commit -m "Message"');
+  assert.equal(dock.querySelector(".dock-card code").textContent, 'git commit -m "Message"');
   run.view.dispose();
 });
 

@@ -13,11 +13,11 @@
  * is no such level, 409 that it is no longer in progress (solved or ended from the command line
  * or another tab), 0 that the server did not answer. Anything else is a bug and is left to
  * surface. Needs dom.js, markup.js, art-sprites.js, progress.js, poll.js, zone-panel.js,
- * mission.js, comms.js, completion.js, collection.js and scene.js. Defines one global,
+ * mission.js, comms.js, completion.js and scene.js. Defines one global,
  * LevelScreen.
  */
 
-/* global Dom, ArtSprites, Progress, Polling, ZonePanel, Mission, Comms, Completion, Collection, ScenePlayer */
+/* global Dom, ArtSprites, Progress, Polling, ZonePanel, Mission, Comms, Completion, ScenePlayer */
 /* exported LevelScreen */
 
 const LevelScreen = (function () {
@@ -170,7 +170,6 @@ const LevelScreen = (function () {
     screen.mission.solved();
     const status = await ctx.refresh();
     const next = Progress.nextLevel(status.chapters, levelId);
-    const sector = Progress.missionNumber(status.chapters, levelId).sector - 1;
     ctx.sound.play("celebrate");
     await Completion.band({ title: "Mission complete", subtitle: `Mission ${screen.number}: ${screen.level.title}`, stars, timers: ctx.timers, reducedMotion: ctx.reducedMotion });
     const dock = Completion.dock({
@@ -178,7 +177,7 @@ const LevelScreen = (function () {
       stars,
       lesson: debrief,
       reward: rewardLine(payout, screen.state.hints),
-      card: card && Collection.card(card, sector),
+      card,
       next: next && { href: `#/level/${encodeURIComponent(next.id)}`, title: next.title },
       onRetry: () => restart(screen),
     });
