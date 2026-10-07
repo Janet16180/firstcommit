@@ -1,8 +1,8 @@
 """
 The smoke flow of DESIGN.md section 3, shared by each runtime's smoke test.
 
-`play_the_template_level` plays the template level as a player does in the page: through the
-game's API and the page's terminal, so the same flow runs against ``firstcommit serve`` on this
+`play_the_template_level` plays the template level (`TEMPLATE_LEVEL`, the Orbit level "Plant the
+flag") as a player does in the page: through the game's API and the page's terminal, so the same flow runs against ``firstcommit serve`` on this
 machine (``tests/test_smoke.py``) and in the Docker image (``tests/test_docker.py``).
 """
 
@@ -17,20 +17,12 @@ import struct
 import time
 from typing import Any
 
-from firstcommit.levels import basics_first_commit as template
 from firstcommit.web import routes
 
 TOKEN_HEADER = routes.SETTINGS.token_header
 LINK = re.compile(r"http://localhost:(?P<port>\d+)/#token=(?P<token>[A-Za-z0-9_-]+)")
 PROMPT = r"\$ $"
-TEMPLATE_LEVEL = "basics-first-commit"
-# What a player types to read the answer to a quest question; the marker keeps the typed line
-# itself from matching.
-READ_ANSWER = {
-    "status": 'echo "answer=$(git branch --show-current)"',
-    "hash": 'echo "answer=$(git rev-parse --short HEAD)"',
-}
-ANSWER = r"(?s)answer=([\w.-]+)\r\n.*\$ $"
+TEMPLATE_LEVEL = "liftoff-flag"
 
 
 def call(port: int, method: str, path: str, token: str | None, body: dict[str, Any] | None = None) -> tuple[int, Any]:
@@ -73,32 +65,13 @@ def call(port: int, method: str, path: str, token: str | None, body: dict[str, A
     return response.status, reply
 
 
-def player_command(command: str) -> str:
-    """
-    Turn a quest step's suggested command into what a player types: their own name and email for the examples.
-
-    Parameters
-    ----------
-    command : str
-        The command the page shows.
-
-    Returns
-    -------
-    str
-        The command with the template level's player in place of its examples.
-    """
-    return command.replace(template.EXAMPLE_NAME, template.PLAYER.name).replace(
-        template.EXAMPLE_EMAIL, template.PLAYER.email
-    )
-
-
 def play_the_template_level(port: int, token: str) -> dict[str, Any]:
     """
     Play the smoke flow of DESIGN.md section 3: the template level, through the page's API and terminal.
 
-    Open the level and start it; for each quest step, type its command into the page's terminal,
-    read the answer when the step asks a question, and report the step as the page does; then
-    check the level as the page's polling does.
+    Open the level and start it; for each quest step, type its command into the page's terminal
+    and report the step as the page does (its goals read the typed lines); then check the level
+    as the page's polling does.
 
     Parameters
     ----------
@@ -122,14 +95,9 @@ def play_the_template_level(port: int, token: str) -> dict[str, Any]:
     type_and_expect(page, "", PROMPT)
     typed = []
     for step in level["steps"]:
-        typed.append(player_command(step["command"]))
+        typed.append(step["command"])
         type_and_expect(page, typed[-1] + "\r", PROMPT)
-        answer = None
-        if step["kind"] == "answer":
-            typed.append(READ_ANSWER[step["id"]])
-            shown = re.search(ANSWER, type_and_expect(page, typed[-1] + "\r", ANSWER))
-            answer = shown[1] if shown else None
-        status, result = call(port, "POST", "/api/step", token, {"answer": answer})
+        status, result = call(port, "POST", "/api/step", token, {"answer": None})
         assert status == 200 and result["correct"], (step["id"], result)
     page.close()
     status, observed = call(port, "GET", "/api/observe", token)
