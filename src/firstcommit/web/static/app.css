@@ -871,7 +871,7 @@ input[type="text"]::placeholder {
 /* On a places slide the commands keep one height and scroll with the newest line in view
    (lesson.js), so the places under them stay put and the slide fits the screen. */
 .transcript.is-capped {
-  height: 7.6rem;
+  height: 7rem;
   overflow-y: auto;
 }
 
