@@ -158,3 +158,7 @@ def test_a_verdict_may_say_the_work_is_lost_for_good_but_never_while_solved() ->
     assert kit.Verdict(False, "Not yet.").lost is False
     with pytest.raises(ValueError, match="lost"):
         kit.Verdict(True, "Done.", lost=True)
+
+
+def test_a_level_reads_history_and_ancestry_through_the_toolkit() -> None:
+    assert (kit.in_history, kit.is_ancestor, kit.reachable) == (repomap.in_history, repomap.is_ancestor, repomap.reachable)
