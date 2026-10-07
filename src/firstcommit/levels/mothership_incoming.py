@@ -25,9 +25,8 @@ CARD = kit.CommandCard(
     text="Asks the remote what it holds now and updates `origin/main`, your repository's copy of its news. Your own `main` and your files stay as they are.",
 )
 SCENE = [
-    # ART: pull (a capsule coming down from the mothership to the base)
-    kit.SceneFrame(art="space", text="Alex, on the night shift, just sent a report to the mothership."),
-    kit.SceneFrame(art="space", text="Your repository does not watch the mothership. It knows only what it heard the last time it asked."),
+    kit.SceneFrame(art="pull", text="Alex, on the night shift, just sent a report to the mothership."),
+    kit.SceneFrame(art="orbit", text="Your repository does not watch the mothership. It knows only what it heard the last time it asked."),
 ]
 
 STATUS = r"git status\b"

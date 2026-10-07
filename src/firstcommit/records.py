@@ -138,7 +138,7 @@ class Command(TypedDict):
 
 Mood = Literal["info", "ok", "warn", "err"]
 """How Rama says something about a typed line (`firstcommit.reactions`): neutral, pleased, careful or about a failure."""
-Art = Literal["space", "timeline", "terminal", "planet", "flag", "zones", "conveyor"]
+Art = Literal["space", "timeline", "terminal", "planet", "flag", "zones", "conveyor", "capsule", "chain", "orbit", "rocket", "pull", "alarm", "fork", "merge", "collision", "blackbox"]
 """The pictures a level's scene can show; the page draws each one (its art files)."""
 
 Language = Literal["en", "es"]
