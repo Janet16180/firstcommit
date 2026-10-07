@@ -215,8 +215,22 @@ the terminal opens in the empty `project` folder; the commit step says that with
 opens an editor. Left for the second basics level ("A message that helps"): teaching the editor
 itself (write, save, quit).
 
+## Folded instructions (merged 2026-10-06, bdc5202; all 1116 tests passed)
+
+While playing a level the player can fold the instructions ("« Hide"): the map and terminal take
+the whole width (the three areas then fit in one row at 1280) and a one-line card in the map's
+heading row names the current step, flashes when it changes, has Continue on read steps and
+"Answer" (opens on the answer box). The choice is kept in localStorage
+(`firstcommit.instructions`). Code: `practice.js`, `app.css`; tests in `tests/js/practice.test.js`;
+screenshot script `.scratch/visual-fold/run_fold.sh <out-dir>`.
+
 ## Next
 
+0. The user's next request, after the current work: rethink the start of the game (which level,
+   chapter 1 or "Your first commit", still to be asked). The lead proposed "do first": one or
+   two slides naming the places, a guided quest where each typed command animates the live map,
+   then a challenge with the map hidden and revealed on solve (needs a level option to hide the
+   live panel). The user has not picked a shape yet; ask before spawning the agent.
 1. Resume the parked work above, in order, with at most 3 teammates.
 2. The user plays with the new look (restart the playtest when a bigger change lands); then merge
    `phase-2-engine` to `main` (ask first).
