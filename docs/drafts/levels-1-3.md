@@ -86,9 +86,9 @@ dial. "Let's make your first commit."
 | 5 | watch | `git commit -m "Add the README"` | a copy of the box closes and slides onto the shelf; "now" lands on it; the open box stays full; a confetti puff | "Your first commit: a snapshot of the box, saved on the shelf." |
 | 6 | answer | `git status`; "Is anything waiting to be saved?" (no) | desk, box and shelf glow together | "Desk, box and shelf agree: everything is saved." |
 
-**Blindfold mission "By feel":** "No map this time. Add a second page, `todo.txt`, and save it
+**Blindfold mission "By feel":** "No map this time. Add a second page, `todo.md`, and save it
 in a new commit. Your eyes: `git status`." Check: exactly one new commit on top of the quest's
-commit; it holds `todo.txt` (any content) and the unchanged README; nothing is changed or staged.
+commit; it holds `todo.md` (any content) and the unchanged README; nothing is changed or staged.
 Hints (cost XP): "`git status` lists the new page: what puts a copy in the box?" then the two
 commands.
 
@@ -105,9 +105,9 @@ box?" · "Which command shows what is waiting to be saved?"
 **Goal:** the box is a choice: a commit saves the box, not the desk. **Twist:** the box keeps the
 copy from the moment you added it; later edits stay on the desk until you add again.
 
-**Scene "Packing day"** (new, ~22 s): the desk holds `README.md` and `todo.txt`; the open box
+**Scene "Packing day"** (new, ~22 s): the desk holds `README.md` and `todo.md`; the open box
 already holds copies of both; the shelf has one box. Both desk pages get scribbled on (they glow).
-A hand drags only `todo.txt`: a photocopier flash, and its fresh copy replaces the old todo copy in
+A hand drags only `todo.md`: a photocopier flash, and its fresh copy replaces the old todo copy in
 the box; README's old copy stays in the box. The box's copy closes onto the shelf. Zoom on the new
 saved box: new todo, old README. The desk's README still glows. Captions: "Two changes on the
 desk." · "Put only the one you mean in the box." · "The commit saves the box: the new todo, and
@@ -115,14 +115,14 @@ README as it was." Your turn: the player picks which changed pages to put in the
 "Save", and the zoom shows what the snapshot holds. (The scene does not show editing after
 adding: that is the quest's twist.)
 
-**Setup:** one commit with `README.md` and `todo.txt`; the box matches it.
+**Setup:** one commit with `README.md` and `todo.md`; the box matches it.
 
 **Guided quest** (7 steps):
 
 | # | Kind | The player does | The map shows | One line |
 |---|---|---|---|---|
-| 1 | watch | add a line to `todo.txt` and to `README.md` | both desk pages glow *changed*; box and shelf unchanged | "Two changes, both only on the desk." |
-| 2 | watch | `git add todo.txt` | todo's new copy replaces the old one in the box | "The box now holds your new todo, and README as it was." |
+| 1 | watch | add a line to `todo.md` and to `README.md` | both desk pages glow *changed*; box and shelf unchanged | "Two changes, both only on the desk." |
+| 2 | watch | `git add todo.md` | todo's new copy replaces the old one in the box | "The box now holds your new todo, and README as it was." |
 | 3 | watch | `git commit -m "Update the todo"` | a copy of the box goes onto the shelf; README still glows on the desk | "Saved: the new todo. README's change waits on the desk." |
 | 4 | **predict** | "Now: `git add README.md`, then you add one more line to README.md, then commit. Which README is saved? (a) with the last line (b) without it" | | "Let's see." |
 | 5 | watch | `git add README.md`, then add one more line to `README.md` | the box gets README's copy; then the desk page changes again and differs from the box | "The box kept the copy from when you added it." |
