@@ -15,6 +15,7 @@ PROGRESS: save.Progress = {
     "best_streak": 3,
     "last_payout": PAYOUT,
     "scenes": ["liftoff-aboard"],
+    "language": "es",
 }
 ACTIVE: save.Active = {
     "level": "liftoff-aboard",
@@ -31,7 +32,7 @@ ACTIVE: save.Active = {
 
 
 def test_a_new_player_has_no_progress(game_home: Path) -> None:
-    assert save.load_progress() == {"xp": 0, "levels": {}, "cards": {}, "streak": 0, "best_streak": 0, "last_payout": None, "scenes": []}
+    assert save.load_progress() == {"xp": 0, "levels": {}, "cards": {}, "streak": 0, "best_streak": 0, "last_payout": None, "scenes": [], "language": "en"}
     assert not (game_home / "progress.json").exists()
 
 
@@ -143,6 +144,8 @@ PROGRESS_DAMAGE = [
     ("scenes", ...),
     ("scenes", "liftoff-aboard"),
     ("scenes.0", 3),
+    ("language", ...),
+    ("language", "fr"),
     ("cards.cargo-staging-area.box", ...),
     ("cards.cargo-staging-area.due", 20261009),
     ("cards.cargo-staging-area.due", "tomorrow"),

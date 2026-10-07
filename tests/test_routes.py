@@ -365,6 +365,21 @@ def test_resetting_needs_an_explicit_confirmation(site: Site, monkeypatch: pytes
     assert calls == [()]
 
 
+def test_the_page_picks_a_language_the_game_speaks(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = record(monkeypatch, "set_language", None)
+    for body in ({}, {"language": "fr"}, {"language": "ES"}, {"language": ["es"]}, {"language": None}):
+        assert api(site, "/api/language", body)[0] == 400
+    assert calls == []
+    assert api(site, "/api/language", {"language": "es"}) == (200, {})
+    assert calls == [("es",)]
+
+
+def test_the_real_game_speaks_the_language_the_page_picked(site: Site, sample_level: runner.Level) -> None:
+    assert api(site, "/api/language", {"language": "es"}) == (200, {})
+    assert api(site, "/api/status")[1]["language"] == "es"
+    assert api(site, f"/api/level?id={sample_level.id}")[1]["title"] == "Di hola"
+
+
 def test_cards_are_listed_for_a_chapter_or_all_with_a_limit(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
     card = {"id": "cargo-x", "chapter": "cargo", "kind": "choice", "prompt": [], "choices": ["a", "b"]}
     calls = record(monkeypatch, "due_cards", [card])
@@ -684,5 +699,6 @@ def test_every_route_is_a_get_or_post_under_api() -> None:
         ("GET", "/api/guide"),
         ("POST", "/api/press"),
         ("POST", "/api/scene"),
+        ("POST", "/api/language"),
     }
     assert set(routes.ROUTES) == expected

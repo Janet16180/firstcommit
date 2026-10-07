@@ -8,6 +8,11 @@ interfaces only render. In a step's command each value is filled as one shell wo
 or a watch's message is parsed only, never filled: it may hold names the player chose. Game
 rules never live in the interfaces (Ring Zero audit ARCH-1).
 
+The game speaks the player's language (`set_language`): a level's, a deck's and a chapter's
+texts are read in it, and a message (a verdict, a reaction, the game's own) is turned into it
+from its English text (`_messages`). Lessons, the changes the page animates and the
+playground's explanations are in English only.
+
 Records returned here are the API contract of the web routes: changing a field is a change to
 the page too. Every field the player reads is parsed blocks; every value the page sends back
 (a step's command, a card option's ``value``, an answer) stays a raw string. Text the player sends (answers, card replies) may hold anything; characters that
@@ -29,6 +34,7 @@ handed on from `firstcommit.save`, and `shell_environment` builds the player's s
 Anything else is a bug.
 """
 
+import dataclasses
 import os
 import random
 import re
@@ -38,7 +44,7 @@ import sys
 from collections.abc import Callable, Iterable, Mapping
 from datetime import date, datetime
 from pathlib import Path
-from typing import Any, Literal, TypedDict
+from typing import Any, Literal, TypedDict, get_args
 
 from firstcommit import (
     cards,
@@ -65,7 +71,7 @@ from firstcommit.lab import Lab
 from firstcommit.markup import Block
 from firstcommit.playground import ButtonOffError as ButtonOffError
 from firstcommit.reactions import ReactionRule
-from firstcommit.records import Art, ButtonView, Command, Mood, Press, Who
+from firstcommit.records import Art, ButtonView, Command, Language, Mood, Press, Who
 from firstcommit.repomap import ObjectInfo, Snapshot
 from firstcommit.save import Payout
 from firstcommit.save import SaveError as SaveError
@@ -80,6 +86,12 @@ GIT_VERSION = re.compile(r"git version (\d+)\.(\d+)")
 CHALLENGE_MOODS = ("warn", "err")
 """What Rama still says in a challenge: danger and errors, never guidance."""
 QUEST_FIRST = "The guided quest is not finished yet: step {step} of {steps} is next."
+LANGUAGES: tuple[Language, ...] = get_args(Language)
+SPANISH = {
+    QUEST_FIRST: "La misión guiada aún no ha terminado: el siguiente es el paso {step} de {steps}.",
+    kit.PICK_ONE: "Elige una de las opciones.",
+}
+"""The game's own messages in Spanish, by their English text."""
 
 
 class LevelSummary(TypedDict):
@@ -164,9 +176,11 @@ class Status(TypedDict):
     The dashboard; ``max_difficulty`` is the highest difficulty a level can have, so the page can show the scale.
 
     ``chapters`` lists every chapter; one with no level yet is still to come.
-    ``collection`` holds the card of each finished level, in play order.
+    ``collection`` holds the card of each finished level, in play order. ``language`` is the
+    one the game speaks.
     """
 
+    language: Language
     xp: int
     rank: Rank
     chapters: list[ChapterSummary]
@@ -438,19 +452,21 @@ def status() -> Status:
         If a save file is damaged.
     """
     progress = save.load_progress()
+    language = progress["language"]
     active = save.load_active()
     levels = runner.catalogue()
     chapters: list[ChapterSummary] = [
         {
             "id": chapter,
-            "title": title,
-            "blurb": BLURBS[chapter],
-            "levels": [_level_summary(entry, progress["levels"].get(entry.id)) for entry in levels.values() if entry.chapter == chapter],
-            "cards": len(cards.deck(chapter).cards),
+            "title": titles[language],
+            "blurb": BLURBS[chapter][language],
+            "levels": [_level_summary(entry, progress["levels"].get(entry.id), language) for entry in levels.values() if entry.chapter == chapter],
+            "cards": len(cards.deck(chapter, language).cards),
         }
-        for chapter, title in CHAPTERS.items()
+        for chapter, titles in CHAPTERS.items()
     ]
     return {
+        "language": language,
         "xp": progress["xp"],
         "rank": score.rank(progress["xp"]),
         "chapters": chapters,
@@ -458,8 +474,30 @@ def status() -> Status:
         "last_payout": progress["last_payout"],
         "cards_due": len(_cards_to_review(None, progress, sys.maxsize)),
         "max_difficulty": max(runner.DIFFICULTIES),
-        "collection": [_command_card(entry) for entry in levels.values() if entry.id in progress["levels"]],
+        "collection": [_command_card(entry, language) for entry in levels.values() if entry.id in progress["levels"]],
     }
+
+
+def set_language(language: str) -> None:
+    """
+    Make the game speak a language from now on.
+
+    Parameters
+    ----------
+    language : str
+        One of `LANGUAGES`.
+
+    Raises
+    ------
+    ValueError
+        If the game does not speak it; nothing changes then.
+    """
+    if language not in LANGUAGES:
+        raise ValueError(f"the game speaks {', '.join(LANGUAGES)}, not {language!r}")
+    with save.lock():
+        progress = save.load_progress()
+        progress["language"] = language
+        save.write_progress(progress)
 
 
 def level(level_id: str) -> LevelView:
@@ -484,32 +522,34 @@ def level(level_id: str) -> LevelView:
     """
     entry = _level(level_id)
     progress = save.load_progress()
+    language = progress["language"]
+    texts = entry.texts[language]
     finished = progress["levels"].get(level_id)
     active = save.load_active()
     playing = active if active is not None and active["level"] == level_id else None
     state = playing["state"] if playing is not None else {}
-    revealed = entry.hints[: playing["hints"]] if playing is not None else ()
+    revealed = texts.hints[: playing["hints"]] if playing is not None else ()
     return {
         "id": entry.id,
         "chapter": entry.chapter,
-        "chapter_title": CHAPTERS[entry.chapter],
-        "title": entry.title,
+        "chapter_title": CHAPTERS[entry.chapter][language],
+        "title": texts.title,
         "difficulty": entry.difficulty,
         "xp": entry.xp,
         "command": entry.command,
         "par": entry.par,
-        "scene": [{"art": frame.art, "text": markup.parse(frame.text)} for frame in entry.scene],
+        "scene": [{"art": frame.art, "text": markup.parse(text)} for frame, text in zip(entry.scene, texts.scene, strict=True)],
         "scene_seen": entry.id in progress["scenes"],
-        "card": _command_card(entry) if finished is not None or not entry.challenge else None,
+        "card": _command_card(entry, language) if finished is not None or not entry.challenge else None,
         "challenge": entry.challenge,
-        "briefing": _blocks(entry.briefing, state),
-        "question": _blocks(entry.question, state),
-        "placeholder": _fill(entry.placeholder, state),
-        "steps": [_step_view(step, state) for step in entry.quest],
-        "hints_total": len(entry.hints),
+        "briefing": _blocks(texts.briefing, state),
+        "question": _blocks(texts.question, state),
+        "placeholder": _fill(texts.placeholder, state),
+        "steps": [_step_view(step, texts.steps[step.id], state) for step in entry.quest],
+        "hints_total": len(texts.hints),
         "has_lesson": bool(entry.lesson),
         "hints": [_blocks(hint_text, state) for hint_text in revealed],
-        "debrief": _blocks(entry.debrief, finished["state"]) if finished is not None else None,
+        "debrief": _blocks(texts.debrief, finished["state"]) if finished is not None else None,
     }
 
 
@@ -572,7 +612,7 @@ def lesson(level_id: str) -> LessonView:
         }
         for slide, frame, before in zip(entry.lesson, frames, befores, strict=True)
     ]
-    return {"level": entry.id, "title": entry.title, "slides": slides}
+    return {"level": entry.id, "title": entry.texts[_language()].title, "slides": slides}
 
 
 def guide() -> GuideView:
@@ -666,10 +706,11 @@ def quest_step(answer: str | None) -> StepResult:
         active, entry = _playing()
         active = _catch_up(active)
         lab = runner.lab_of(entry.id)
+        language = _language()
         reached: list[str] = []
         message: list[Block] = []
         if not _quest_done(active, entry):
-            verdicts = [(step.id, _check_step(step, lab, active, _typed(answer))) for step in _pending(active, entry)]
+            verdicts = [(step.id, _check_step(step, entry.texts[language].steps[step.id], lab, active, _typed(answer), _messages(entry, language))) for step in _pending(active, entry)]
             reached = [step_id for step_id, verdict in verdicts if verdict.solved]
             unmet = [verdict for _, verdict in verdicts if not verdict.solved]
             message = markup.parse((unmet[0] if unmet else verdicts[-1][1]).message)
@@ -717,9 +758,13 @@ def check(answer: str | None, auto: bool) -> CheckResult:
     with save.lock():
         active, entry = _playing()
         active = _catch_up(active)
+        language = _language()
+        messages = _messages(entry, language)
         verdict = entry.check(runner.lab_of(entry.id), active["state"], typed, active["typed"])
+        message = _say(verdict.message, messages)
         if auto and not _quest_done(active, entry) and not verdict.lost:
-            verdict = kit.Verdict(False, QUEST_FIRST.format(step=active["step"] + 1, steps=len(entry.quest)))
+            verdict = kit.Verdict(False, QUEST_FIRST)
+            message = _say(QUEST_FIRST, messages).format(step=active["step"] + 1, steps=len(entry.quest))
         payout = None
         stars = 0
         if verdict.solved:
@@ -730,11 +775,11 @@ def check(answer: str | None, auto: bool) -> CheckResult:
             save.write_active(active)
     return {
         "solved": verdict.solved,
-        "message": markup.parse(verdict.message),
+        "message": markup.parse(message),
         "payout": payout,
-        "debrief": _blocks(entry.debrief, active["state"]) if verdict.solved else None,
+        "debrief": _blocks(entry.texts[language].debrief, active["state"]) if verdict.solved else None,
         "stars": stars,
-        "new_card": _command_card(entry) if payout is not None and payout["first_time"] else None,
+        "new_card": _command_card(entry, language) if payout is not None and payout["first_time"] else None,
         "lost": verdict.lost,
     }
 
@@ -757,13 +802,14 @@ def hint() -> HintView:
     """
     with save.lock():
         active, entry = _playing()
+        hints = entry.texts[_language()].hints
         cost = 0
-        if active["hints"] < len(entry.hints):
+        if active["hints"] < len(hints):
             active["hints"] += 1
             save.write_active(active)
             first_time = entry.id not in save.load_progress()["levels"]
             cost = score.hint_cost(entry.xp, active["hints"], first_time)
-    return {"hint": _blocks(entry.hints[active["hints"] - 1], active["state"]), "used": active["hints"], "total": len(entry.hints), "cost": cost}
+    return {"hint": _blocks(hints[active["hints"] - 1], active["state"]), "used": active["hints"], "total": len(hints), "cost": cost}
 
 
 def observe() -> Observation:
@@ -794,7 +840,7 @@ def observe() -> Observation:
         lab = runner.lab_of(entry.id)
         last = save.load_observed()
         now, typed = _look(entry.id, lab, last, active["typed"])
-        observation = _observation(last, now, _buttons(lab, now), typed, _rules(entry))
+        observation = _observation(last, now, _buttons(lab, now), typed, _rules(entry), _messages(entry, _language()))
         if now != last:
             save.write_observed(now)
         if last is None or last["level"] != entry.id:
@@ -848,13 +894,14 @@ def press(person: str, button: str) -> PressView:
             raise NoPlaygroundError(f"the level {entry.id!r} has no playground")
         last = save.load_observed()
         active = _catch_up(active)
+        messages = _messages(entry, _language())
         then, typed_before = _look(entry.id, lab, last, active["typed"])
-        before = _observation(last, then, _buttons(lab, then), typed_before, _rules(entry))
+        before = _observation(last, then, _buttons(lab, then), typed_before, _rules(entry), messages)
         facts = playground.facts(lab, who, _clones(then)[who], then["github"])
         pressed = playground.press(lab, who, which)
         active = _catch_up(active)
         now, typed_during = _look(entry.id, lab, then, active["typed"])
-        observation = _observation(then, now, _buttons(lab, now), typed_during, _rules(entry))
+        observation = _observation(then, now, _buttons(lab, now), typed_during, _rules(entry), messages)
         if now != last:
             save.write_observed(now)
     found = explanations.explain(pressed, _clones(then)[who], _clones(now)[who], facts, playground.BUTTON_IDS)
@@ -917,9 +964,9 @@ def due_cards(chapter: str | None, limit: int) -> list[CardView]:
     UnknownIdError
         If `chapter` is not a chapter id.
     """
-    if chapter is not None:
-        _chapter(chapter)
     progress = save.load_progress()
+    if chapter is not None:
+        _chapter(chapter, progress["language"])
     today = date.today()
     rng = random.Random()
     return [_card_view(card, cards.is_due(progress["cards"].get(card.id), today), rng) for card in _cards_to_review(chapter, progress, limit)]
@@ -989,7 +1036,8 @@ def notes(chapter: str) -> Notes:
     UnknownIdError
         If `chapter` is not a chapter id.
     """
-    return {"chapter": chapter, "title": _chapter(chapter), "notes": markup.parse(cards.deck(chapter).notes)}
+    language = _language()
+    return {"chapter": chapter, "title": _chapter(chapter, language), "notes": markup.parse(cards.deck(chapter, language).notes)}
 
 
 def shell_environment(base: Mapping[str, str]) -> dict[str, str]:
@@ -1090,7 +1138,7 @@ def _level(level_id: str) -> runner.Level:
     return levels[level_id]
 
 
-def _chapter(chapter: str) -> str:
+def _chapter(chapter: str, language: Language) -> str:
     """
     Look a chapter up by its id.
 
@@ -1098,6 +1146,8 @@ def _chapter(chapter: str) -> str:
     ----------
     chapter : str
         The id the player or the page sent.
+    language : Language
+        The language of its title.
 
     Returns
     -------
@@ -1111,7 +1161,7 @@ def _chapter(chapter: str) -> str:
     """
     if chapter not in CHAPTERS:
         raise UnknownIdError(f"no chapter has the id {chapter!r}")
-    return CHAPTERS[chapter]
+    return CHAPTERS[chapter][language]
 
 
 def _card(card_id: str) -> cards.Card:
@@ -1126,7 +1176,7 @@ def _card(card_id: str) -> cards.Card:
     Returns
     -------
     cards.Card
-        The card.
+        The card, in the language the game speaks.
 
     Raises
     ------
@@ -1134,7 +1184,7 @@ def _card(card_id: str) -> cards.Card:
         If no deck holds a card with this id.
     """
     try:
-        card = cards.find(card_id)
+        card = cards.find(card_id, _language())
     except KeyError as error:
         raise UnknownIdError(f"no card has the id {card_id!r}") from error
     return card
@@ -1330,7 +1380,12 @@ def _clones(observed: save.Observed) -> dict[Who, Snapshot]:
 
 
 def _observation(
-    last: save.Observed | None, now: save.Observed, buttons: dict[Who, list[ButtonView]], typed: list[Command], rules: tuple[ReactionRule, ...]
+    last: save.Observed | None,
+    now: save.Observed,
+    buttons: dict[Who, list[ButtonView]],
+    typed: list[Command],
+    rules: tuple[ReactionRule, ...],
+    messages: Mapping[str, str],
 ) -> Observation:
     """
     Tell what changed in a lab between two observations, and what Rama says about the lines typed in between.
@@ -1347,6 +1402,8 @@ def _observation(
         The commands typed between the two (`_look`).
     rules : tuple[ReactionRule, ...]
         The level's reaction rules (`_rules`).
+    messages : Mapping[str, str]
+        The messages in the player's language (`_messages`).
 
     Returns
     -------
@@ -1371,7 +1428,7 @@ def _observation(
         "teammate_events": _event_views(teammate_events),
         "buttons": buttons,
         "commands": typed,
-        "reactions": [{"line": command["line"], "mood": rule.mood, "text": markup.parse(rule.text)} for command, rule in said if rule is not None],
+        "reactions": [{"line": command["line"], "mood": rule.mood, "text": markup.parse(_say(rule.text, messages))} for command, rule in said if rule is not None],
     }
 
 
@@ -1436,10 +1493,11 @@ def _playing() -> tuple[save.Active, runner.Level]:
     if active is None or active["level"] not in levels:
         raise NotPlayingError("no level is in progress")
     entry = levels[active["level"]]
-    if active["hints"] > len(entry.hints) or active["step"] > len(entry.quest):
+    hints = len(entry.texts["en"].hints)
+    if active["hints"] > hints or active["step"] > len(entry.quest):
         raise save.damaged(
             save.home() / save.ACTIVE_FILE,
-            f"`hints` is {active['hints']} and `step` is {active['step']}, but level {entry.id} has {len(entry.hints)} hints and {len(entry.quest)} quest steps",
+            f"`hints` is {active['hints']} and `step` is {active['step']}, but level {entry.id} has {hints} hints and {len(entry.quest)} quest steps",
         )
     if active["step"] != len(active["done"]) or not set(active["done"]) <= {step.id for step in entry.quest}:
         raise save.damaged(save.home() / save.ACTIVE_FILE, f"`done` must list `step` ({active['step']}) goals of level {entry.id}, not {active['done']!r}")
@@ -1482,20 +1540,24 @@ def _pay(entry: runner.Level, active: save.Active, stars: int) -> Payout:
     return payout
 
 
-def _check_step(step: kit.Step, lab: kit.Lab, active: save.Active, answer: str | None) -> kit.Verdict:
+def _check_step(step: kit.Step, text: kit.StepText, lab: kit.Lab, active: save.Active, answer: str | None, messages: Mapping[str, str]) -> kit.Verdict:
     """
-    Check one quest step by its kind.
+    Check one quest step by its kind, its message in the player's language.
 
     Parameters
     ----------
     step : kit.Step
         The step.
+    text : kit.StepText
+        Its texts in the player's language, for a prediction's reveal.
     lab : kit.Lab
         The lab.
     active : save.Active
         The level in progress: its state, and the lines typed since it started.
     answer : str | None
         What the player answered, or None.
+    messages : Mapping[str, str]
+        The messages in the player's language (`_messages`).
 
     Returns
     -------
@@ -1509,7 +1571,8 @@ def _check_step(step: kit.Step, lab: kit.Lab, active: save.Active, answer: str |
         verdict = step.watch(lab, active["state"], active["typed"])
     elif isinstance(step, kit.ChoiceStep):
         verdict = kit.choose(step, answer or "")
-    return verdict
+    message = text.reveal if isinstance(step, kit.ChoiceStep) and verdict.solved else _say(verdict.message, messages)
+    return dataclasses.replace(verdict, message=message)
 
 
 def _cards_to_review(chapter: str | None, progress: save.Progress, limit: int) -> list[cards.Card]:
@@ -1530,16 +1593,17 @@ def _cards_to_review(chapter: str | None, progress: save.Progress, limit: int) -
     list[cards.Card]
         The cards, in the order to ask them.
     """
+    language = progress["language"]
     if chapter is not None:
-        pool = list(cards.deck(chapter).cards)
+        pool = list(cards.deck(chapter, language).cards)
     else:
         levels = runner.catalogue()
         met = {levels[level_id].chapter for level_id in progress["levels"] if level_id in levels}
-        pool = [card for name in CHAPTERS for card in cards.deck(name).cards if card.id in progress["cards"] or name in met]
+        pool = [card for name in CHAPTERS for card in cards.deck(name, language).cards if card.id in progress["cards"] or name in met]
     return cards.pick(pool, progress["cards"], date.today(), limit, random.Random())
 
 
-def _level_summary(entry: runner.Level, finished: save.LevelRecord | None) -> LevelSummary:
+def _level_summary(entry: runner.Level, finished: save.LevelRecord | None, language: Language) -> LevelSummary:
     """
     Summarise a level for the map of chapters.
 
@@ -1549,6 +1613,8 @@ def _level_summary(entry: runner.Level, finished: save.LevelRecord | None) -> Le
         The level.
     finished : save.LevelRecord | None
         Its record once the player has finished it, else None.
+    language : Language
+        The language of its title.
 
     Returns
     -------
@@ -1557,7 +1623,7 @@ def _level_summary(entry: runner.Level, finished: save.LevelRecord | None) -> Le
     """
     return {
         "id": entry.id,
-        "title": entry.title,
+        "title": entry.texts[language].title,
         "difficulty": entry.difficulty,
         "xp": entry.xp,
         "command": entry.command,
@@ -1569,7 +1635,7 @@ def _level_summary(entry: runner.Level, finished: save.LevelRecord | None) -> Le
     }
 
 
-def _command_card(entry: runner.Level) -> CommandCard:
+def _command_card(entry: runner.Level, language: Language) -> CommandCard:
     """
     Show a level's command card.
 
@@ -1577,13 +1643,15 @@ def _command_card(entry: runner.Level) -> CommandCard:
     ----------
     entry : runner.Level
         The level.
+    language : Language
+        The language of its text.
 
     Returns
     -------
     CommandCard
         Its card, the text parsed.
     """
-    return {"level": entry.id, "command": entry.card.command, "text": markup.parse(entry.card.text)}
+    return {"level": entry.id, "command": entry.card.command, "text": markup.parse(entry.texts[language].card)}
 
 
 def _stars(active: save.Active, entry: runner.Level) -> int:
@@ -1626,7 +1694,7 @@ def _active_view(active: save.Active, entry: runner.Level) -> ActiveView:
         "step": active["step"],
         "steps": len(entry.quest),
         "hints": active["hints"],
-        "hints_total": len(entry.hints),
+        "hints_total": len(entry.texts["en"].hints),
         "attempts": active["attempts"],
         "started": active["started"],
         "auto_check": _quest_done(active, entry),
@@ -1677,7 +1745,7 @@ def _quest_done(active: save.Active, entry: runner.Level) -> bool:
     return active["step"] >= len(entry.quest)
 
 
-def _step_view(step: kit.Step, state: kit.State) -> StepView:
+def _step_view(step: kit.Step, text: kit.StepText, state: kit.State) -> StepView:
     """
     Show a quest step without its checks.
 
@@ -1685,6 +1753,8 @@ def _step_view(step: kit.Step, state: kit.State) -> StepView:
     ----------
     step : kit.Step
         The step.
+    text : kit.StepText
+        Its texts in the player's language; a prediction's options keep their English values.
     state : kit.State
         The level's state, to fill its text.
 
@@ -1694,23 +1764,22 @@ def _step_view(step: kit.Step, state: kit.State) -> StepView:
         The view.
     """
     kind: Literal["answer", "watch", "read", "choice"] = "read"
-    question, placeholder = "", ""
     options: tuple[str, ...] = ()
     if isinstance(step, kit.AnswerStep):
-        kind, question, placeholder = "answer", step.question, step.placeholder
+        kind = "answer"
     elif isinstance(step, kit.WatchStep):
         kind = "watch"
     elif isinstance(step, kit.ChoiceStep):
-        kind, question, options = "choice", step.question, step.options
+        kind, options = "choice", step.options
     return {
         "id": step.id,
         "kind": kind,
-        "text": _blocks(step.text, state),
+        "text": _blocks(text.text, state),
         "command": _fill(step.command, state, _shell_word),
-        "question": _blocks(question, state),
-        "placeholder": _fill(placeholder, state),
-        "choices": [{"value": option, "text": markup.parse(option)} for option in options],
-        "more": _blocks(step.more, state),
+        "question": _blocks(text.question, state),
+        "placeholder": _fill(text.placeholder, state),
+        "choices": [{"value": option, "text": markup.parse(shown)} for option, shown in zip(options, text.options, strict=True)],
+        "more": _blocks(text.more, state),
     }
 
 
@@ -1744,6 +1813,66 @@ def _card_view(card: cards.Card, pays: bool, rng: random.Random) -> CardView:
         "placeholder": card.placeholder,
         "pays": pays,
     }
+
+
+def _language() -> Language:
+    """
+    Read the language the game speaks.
+
+    Returns
+    -------
+    Language
+        The player's choice, English until they pick one (`set_language`).
+    """
+    return save.load_progress()["language"]
+
+
+def _messages(entry: runner.Level, language: Language) -> Mapping[str, str]:
+    """
+    Give every message a level may show, turned from English into a language.
+
+    Parameters
+    ----------
+    entry : runner.Level
+        The level.
+    language : Language
+        The language.
+
+    Returns
+    -------
+    Mapping[str, str]
+        Empty for English, which needs no turning; else the game's own messages, the shared
+        reactions' and the level's, by their English text.
+    """
+    found: Mapping[str, str] = {}
+    if language == "es":
+        found = {**SPANISH, **reactions.SPANISH, **entry.texts["es"].messages}
+    return found
+
+
+def _say(text: str, messages: Mapping[str, str]) -> str:
+    """
+    Turn a message into the player's language.
+
+    Parameters
+    ----------
+    text : str
+        The message in English, as the game, a reaction rule or a level's code wrote it.
+    messages : Mapping[str, str]
+        The messages in the player's language (`_messages`), empty for English.
+
+    Returns
+    -------
+    str
+        Its text in the player's language; an empty message stays empty.
+
+    Raises
+    ------
+    KeyError
+        If the message has no translation: a level module whose Spanish sibling lacks one of its
+        messages (the level harness checks every message it meets).
+    """
+    return messages[text] if messages and text else text
 
 
 def _typed(answer: str | None) -> str | None:
@@ -1787,16 +1916,16 @@ def _option_text(card: cards.Card, option: str) -> list[Block]:
     Parameters
     ----------
     card : cards.Card
-        The card.
+        The card, in the player's language.
     option : str
-        One of its options, or its right answer.
+        One of its options, or its right answer, as the page sends it.
 
     Returns
     -------
     list[Block]
-        One verbatim block for a predict card, else the parsed text.
+        One verbatim block for a predict card, else the parsed text in the card's language.
     """
-    return [{"kind": "code", "text": option}] if card.kind == "predict" else markup.parse(option)
+    return [{"kind": "code", "text": option}] if card.kind == "predict" else markup.parse(card.shown[option] if card.shown else option)
 
 
 def _fill(text: str, state: Mapping[str, Any], show: Callable[[Any], str] = str) -> str:

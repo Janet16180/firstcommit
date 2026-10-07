@@ -2,7 +2,8 @@
 The levels and their labs: read every level module once into a typed record, and own the lab a level is played in.
 
 A level module follows the contract of AUTHORING.md section 3.3. A module that breaks it is a bug
-in the content, so reading it raises with the module's name and what is wrong.
+in the content, so reading it raises with the module's name and what is wrong. Its texts in Spanish
+live in a sibling module, ``<module>_es`` (`load`), which is never read as a level itself.
 
 There is one lab at a time, ``<home>/labs/<level id>/``. Starting a level removes every lab first
 (through `termlab.sandbox`, which never deletes outside the home), so nothing a player did in an
@@ -25,7 +26,7 @@ from termlab import sandbox
 
 from firstcommit import gitcmd, kit, levels, reactions, save
 from firstcommit.chapters import CHAPTERS
-from firstcommit.records import Art, Mood
+from firstcommit.records import Art, Language, Mood
 
 MODULE_NAME = re.compile(r"([a-z]+)_[a-z0-9_]+")
 DIFFICULTIES = (1, 2, 3)
@@ -39,6 +40,34 @@ Check = Callable[[kit.Lab, kit.State, str | None, kit.Typed], kit.Verdict]
 Solve = Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]
 
 
+SPANISH_SUFFIX = "_es"
+TEXT_NAMES = ("TITLE", "BRIEFING", "QUESTION", "PLACEHOLDER", "HINTS", "DEBRIEF", "CARD", "SCENE", "STEPS")
+"""The names of a level's Spanish module that are not messages."""
+
+
+@dataclass(frozen=True)
+class LevelTexts:
+    """
+    Every text of a level in one language.
+
+    ``card`` is the command card's text, ``scene`` the scene frames' texts in order, and ``steps``
+    the quest steps' texts by step id. ``messages`` turns each English message the level's code
+    returns (a module constant: a watch's or check's message, a reaction's text) into this
+    language's; it is empty for English.
+    """
+
+    title: str
+    briefing: str
+    question: str
+    placeholder: str
+    hints: tuple[str, ...]
+    debrief: str
+    card: str
+    scene: tuple[str, ...]
+    steps: Mapping[str, kit.StepText]
+    messages: Mapping[str, str]
+
+
 @dataclass(frozen=True)
 class Level:
     """
@@ -46,14 +75,14 @@ class Level:
 
     ``id`` is the module name with ``_`` turned into ``-``; ``chapter`` is the part before the
     first ``_``. The other fields are the module's names of AUTHORING.md section 3.3;
-    ``question`` and ``placeholder`` are empty for a level checked against the repository only;
     ``scene``, ``reactions`` and ``events`` are empty for a level without them. ``challenge``
-    marks a level whose quest is goals met in any order, with no guidance.
+    marks a level whose quest is goals met in any order, with no guidance. ``texts`` holds every
+    text the player reads, by language; the cards, scene frames and steps keep the English ones
+    the module wrote, with what is not text (the command, the pictures, the checks).
     """
 
     id: str
     chapter: str
-    title: str
     difficulty: int
     xp: int
     command: str
@@ -65,24 +94,22 @@ class Level:
     challenge: bool
     lesson: tuple[kit.Slide, ...]
     quest: tuple[kit.Step, ...]
-    briefing: str
-    question: str
-    placeholder: str
-    hints: tuple[str, ...]
-    debrief: str
+    texts: Mapping[Language, LevelTexts]
     setup: Setup
     check: Check
     solve: Solve
 
 
-def load(module: ModuleType) -> Level:
+def load(module: ModuleType, spanish: ModuleType | None = None) -> Level:
     """
-    Read a level module into a record, checking its contract.
+    Read a level module and its Spanish sibling into a record, checking their contract.
 
     Parameters
     ----------
     module : ModuleType
         A module named ``<chapter>_<slug>``.
+    spanish : ModuleType | None
+        Its texts in Spanish (AUTHORING.md section 3.3), or None, which shows the English ones.
 
     Returns
     -------
@@ -125,10 +152,22 @@ def load(module: ModuleType) -> Level:
         )
     if problem is not None:
         raise ValueError(f"level module {module.__name__}: {problem}")
+    english = LevelTexts(
+        title=values["TITLE"],
+        briefing=values["BRIEFING"],
+        question=question,
+        placeholder=placeholder,
+        hints=tuple(values["HINTS"]),
+        debrief=values["DEBRIEF"],
+        card=values["CARD"].text,
+        scene=tuple(frame.text for frame in scene),
+        steps=MappingProxyType({step.id: step_text(step) for step in quest}),
+        messages=MappingProxyType({}),
+    )
+    translated = english if spanish is None else _spanish_texts(spanish, module, english)
     return Level(
         id=name.replace("_", "-"),
         chapter=name.split("_", 1)[0],
-        title=values["TITLE"],
         difficulty=values["DIFFICULTY"],
         xp=values["XP"],
         command=values["COMMAND"],
@@ -140,15 +179,144 @@ def load(module: ModuleType) -> Level:
         challenge=challenge,
         lesson=tuple(lesson),
         quest=tuple(quest),
-        briefing=values["BRIEFING"],
-        question=question,
-        placeholder=placeholder,
-        hints=tuple(values["HINTS"]),
-        debrief=values["DEBRIEF"],
+        texts=MappingProxyType({"en": english, "es": translated}),
         setup=values["setup"],
         check=values["check"],
         solve=values["solve"],
     )
+
+
+def step_text(step: kit.Step) -> kit.StepText:
+    """
+    Gather a quest step's texts.
+
+    Parameters
+    ----------
+    step : kit.Step
+        The step.
+
+    Returns
+    -------
+    kit.StepText
+        Its text and more, plus its question, placeholder, options and reveal where its kind has them.
+    """
+    found = kit.StepText(text=step.text, more=step.more)
+    if isinstance(step, kit.AnswerStep):
+        found = kit.StepText(text=step.text, more=step.more, question=step.question, placeholder=step.placeholder)
+    elif isinstance(step, kit.ChoiceStep):
+        found = kit.StepText(text=step.text, more=step.more, question=step.question, options=step.options, reveal=step.reveal)
+    return found
+
+
+def _spanish_texts(spanish: ModuleType, module: ModuleType, english: LevelTexts) -> LevelTexts:
+    """
+    Read a level's Spanish module, checking it holds the same texts as the English one.
+
+    Parameters
+    ----------
+    spanish : ModuleType
+        The module ``<module>_es``.
+    module : ModuleType
+        The level's own module, already read.
+    english : LevelTexts
+        Its texts.
+
+    Returns
+    -------
+    LevelTexts
+        The texts in Spanish; ``messages`` maps the value of each English constant the Spanish
+        module also defines to the Spanish one.
+
+    Raises
+    ------
+    ValueError
+        If the Spanish module lacks a text, has one the English module does not, or one of
+        another shape; the message names the module and the name.
+    """
+    names = [name for name in vars(spanish) if name.isupper() and name not in TEXT_NAMES]
+    problem = _spanish_problem(spanish, english) or next(
+        (f"{name} must be text, as the English module's" for name in names if not isinstance(getattr(spanish, name), str) or not isinstance(getattr(module, name, None), str)),
+        None,
+    )
+    if problem is not None:
+        raise ValueError(f"level module {spanish.__name__}: {problem}")
+    return LevelTexts(
+        title=spanish.TITLE,
+        briefing=spanish.BRIEFING,
+        question=getattr(spanish, "QUESTION", ""),
+        placeholder=getattr(spanish, "PLACEHOLDER", ""),
+        hints=tuple(spanish.HINTS),
+        debrief=spanish.DEBRIEF,
+        card=spanish.CARD,
+        scene=tuple(getattr(spanish, "SCENE", [])),
+        steps=MappingProxyType(dict(getattr(spanish, "STEPS", {}))),
+        messages=MappingProxyType({getattr(module, name): getattr(spanish, name) for name in names}),
+    )
+
+
+def _spanish_problem(spanish: ModuleType, english: LevelTexts) -> str | None:
+    """
+    Check that a level's Spanish module has a text for each of the English ones, and only those.
+
+    Parameters
+    ----------
+    spanish : ModuleType
+        The module ``<module>_es``.
+    english : LevelTexts
+        The level's English texts.
+
+    Returns
+    -------
+    str | None
+        What is wrong, or None.
+    """
+    texts = {key: getattr(spanish, key, None) for key in ("TITLE", "BRIEFING", "DEBRIEF", "CARD")}
+    hints = getattr(spanish, "HINTS", None)
+    scene = getattr(spanish, "SCENE", [])
+    steps = getattr(spanish, "STEPS", {})
+    blank = [key for key, value in texts.items() if not _is_text(value)]
+    problem = None
+    if blank:
+        problem = f"{blank[0]} must be text that is not empty"
+    elif _is_text(getattr(spanish, "QUESTION", "")) != bool(english.question) or _is_text(getattr(spanish, "PLACEHOLDER", "")) != bool(english.placeholder):
+        problem = "QUESTION and PLACEHOLDER must be there exactly when the English module has them"
+    elif not isinstance(hints, list) or len(hints) != len(english.hints) or not all(_is_text(hint) for hint in hints):
+        problem = f"HINTS must be {len(english.hints)} texts, one per English hint"
+    elif not isinstance(scene, list) or len(scene) != len(english.scene) or not all(_is_text(text) for text in scene):
+        problem = f"SCENE must be {len(english.scene)} texts, one per scene frame"
+    elif not isinstance(steps, dict) or set(steps) != set(english.steps) or not all(isinstance(text, kit.StepText) for text in steps.values()):
+        problem = f"STEPS must give a kit.StepText for each quest step: {', '.join(english.steps) or 'none'}"
+    else:
+        problem = next((found for step_id, text in steps.items() if (found := _step_text_problem(step_id, text, english.steps[step_id])) is not None), None)
+    return problem
+
+
+def _step_text_problem(step_id: str, text: kit.StepText, english: kit.StepText) -> str | None:
+    """
+    Check one step's Spanish texts against its English ones: the same fields, and as many options.
+
+    Parameters
+    ----------
+    step_id : str
+        The step's id.
+    text : kit.StepText
+        Its Spanish texts.
+    english : kit.StepText
+        Its English texts.
+
+    Returns
+    -------
+    str | None
+        What is wrong, naming the step, or None.
+    """
+    fields = ("text", "more", "question", "placeholder", "reveal")
+    differ = [field for field in fields if _is_text(getattr(text, field)) != _is_text(getattr(english, field))]
+    problem = None
+    if differ:
+        problem = f"STEPS: step {step_id!r} must have its {differ[0]} exactly when the English step has one"
+    elif len(text.options) != len(english.options) or not all(_is_text(option) for option in text.options):
+        problem = f"STEPS: step {step_id!r} must have {len(english.options)} options"
+    return problem
 
 
 def _is_text(value: Any) -> bool:
@@ -500,7 +668,8 @@ def discover(package: ModuleType) -> dict[str, Level]:
     """
     Read every level module of a package, in play order.
 
-    Modules whose name starts with ``_`` are helpers and are not imported here.
+    Modules whose name starts with ``_`` are helpers and are not imported here; a module ending in
+    ``_es`` is the Spanish texts of the level it names, read with it.
 
     Parameters
     ----------
@@ -518,9 +687,36 @@ def discover(package: ModuleType) -> dict[str, Level]:
         If a module breaks the level contract.
     """
     order = list(CHAPTERS)
-    found = [load(importlib.import_module(f"{package.__name__}.{info.name}")) for info in pkgutil.iter_modules(package.__path__) if not info.name.startswith("_")]
+    names = {info.name for info in pkgutil.iter_modules(package.__path__) if not info.name.startswith("_")}
+    found = [
+        load(importlib.import_module(f"{package.__name__}.{name}"), _spanish_module(package, name, names))
+        for name in sorted(names)
+        if not name.endswith(SPANISH_SUFFIX)
+    ]
     found.sort(key=lambda level: (order.index(level.chapter), level.difficulty, level.id))
     return {level.id: level for level in found}
+
+
+def _spanish_module(package: ModuleType, name: str, names: set[str]) -> ModuleType | None:
+    """
+    Import a level's Spanish sibling, if the package has one.
+
+    Parameters
+    ----------
+    package : ModuleType
+        The package of level modules.
+    name : str
+        The level module's name.
+    names : set[str]
+        Every module name in the package.
+
+    Returns
+    -------
+    ModuleType | None
+        The module ``<name>_es``, or None.
+    """
+    sibling = name + SPANISH_SUFFIX
+    return importlib.import_module(f"{package.__name__}.{sibling}") if sibling in names else None
 
 
 @functools.cache

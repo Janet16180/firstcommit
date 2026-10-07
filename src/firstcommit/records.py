@@ -141,6 +141,9 @@ Mood = Literal["info", "ok", "warn", "err"]
 Art = Literal["space", "timeline", "terminal", "planet", "flag", "zones", "conveyor"]
 """The pictures a level's scene can show; the page draws each one (its art files)."""
 
+Language = Literal["en", "es"]
+"""The languages every text the player reads is written in: English and Spanish."""
+
 Who = Literal["you", "alex"]
 """The two people of the playground (`firstcommit.playground`), who share one remote."""
 Button = Literal["edit", "add", "commit", "push", "fetch", "pull", "pull-no-rebase", "status", "merge-abort", "keep-ours", "keep-theirs"]

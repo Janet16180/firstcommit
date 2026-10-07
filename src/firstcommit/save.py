@@ -27,7 +27,7 @@ from typing import Annotated, Any, Literal, TypedDict, cast
 
 from termlab import store
 
-from firstcommit.records import Command, Snapshot
+from firstcommit.records import Command, Language, Snapshot
 
 HOME_VARIABLE = "FIRSTCOMMIT_HOME"
 DEFAULT_HOME = "~/.firstcommit"
@@ -108,7 +108,12 @@ class Payout(TypedDict):
 
 
 class Progress(TypedDict):
-    """Everything the player has earned, and the ids of the levels whose scene the player has seen, in the order seen."""
+    """
+    Everything the player has earned, and what the game remembers for them.
+
+    ``scenes`` holds the ids of the levels whose scene the player has seen, in the order seen,
+    and ``language`` the language the game speaks.
+    """
 
     xp: int
     levels: dict[str, LevelRecord]
@@ -117,6 +122,7 @@ class Progress(TypedDict):
     best_streak: int
     last_payout: Payout | None
     scenes: list[str]
+    language: Language
 
 
 class Active(TypedDict):
@@ -202,9 +208,9 @@ def new_progress() -> Progress:
     Returns
     -------
     Progress
-        No XP, no levels, no cards, no streak, no payout and no scene seen.
+        No XP, no levels, no cards, no streak, no payout and no scene seen, in English.
     """
-    return {"xp": 0, "levels": {}, "cards": {}, "streak": 0, "best_streak": 0, "last_payout": None, "scenes": []}
+    return {"xp": 0, "levels": {}, "cards": {}, "streak": 0, "best_streak": 0, "last_payout": None, "scenes": [], "language": "en"}
 
 
 def load_progress() -> Progress:

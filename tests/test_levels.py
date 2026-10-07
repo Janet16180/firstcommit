@@ -109,7 +109,7 @@ def tree(root: Path) -> dict[str, str]:
 
 def texts(level: runner.Level) -> list[str]:
     """
-    List every text of a level that may hold ``{{key}}`` placeholders.
+    List every text of a level that may hold ``{{key}}`` placeholders, in every language.
 
     Parameters
     ----------
@@ -119,11 +119,30 @@ def texts(level: runner.Level) -> list[str]:
     Returns
     -------
     list[str]
-        Briefing, question, placeholder, hints, debrief, and each quest step's text, command,
-        more, question and placeholder.
+        Briefing, question, placeholder, hints, debrief, each quest step's command, and each
+        step's text, more, question and placeholder.
     """
-    steps = [field for step in level.quest for field in (step.text, step.command, step.more, *((step.question, step.placeholder) if isinstance(step, kit.AnswerStep) else ()))]
-    return [level.briefing, level.question, level.placeholder, *level.hints, level.debrief, *steps]
+    found = [step.command for step in level.quest]
+    for text in level.texts.values():
+        steps = [field for step in text.steps.values() for field in (step.text, step.more, step.question, step.placeholder)]
+        found += [text.briefing, text.question, text.placeholder, *text.hints, text.debrief, *steps]
+    return found
+
+
+def assert_spoken(level: runner.Level, verdicts: list[kit.Verdict]) -> None:
+    """
+    Check that every message a level gave has its Spanish, once the level has a Spanish sibling.
+
+    Parameters
+    ----------
+    level : runner.Level
+        The level.
+    verdicts : list[kit.Verdict]
+        What its checks and watches answered.
+    """
+    spanish = level.texts["es"]
+    unspoken = {verdict.message for verdict in verdicts if verdict.message} - set(spanish.messages)
+    assert spanish == level.texts["en"] or not unspoken, f"no Spanish for {sorted(unspoken)}"
 
 
 @pytest.mark.parametrize(("package", "level"), CASES, ids=IDS)
@@ -148,11 +167,14 @@ def test_before_solving_a_check_fails_with_no_answer_and_any_wrong_one_and_chang
     state = runner.start_lab(level)
     lab = runner.lab_of(level.id)
     before = tree(lab.root)
+    verdicts = []
     for answer in [None, *HOSTILE]:
         verdict = level.check(lab, state, answer, [])
         assert isinstance(verdict, kit.Verdict) and isinstance(verdict.message, str)
         assert not verdict.solved, f"solved with {answer!r:.40}"
+        verdicts.append(verdict)
     assert tree(lab.root) == before
+    assert_spoken(level, verdicts)
 
 
 @pytest.mark.parametrize(("package", "level"), CASES, ids=IDS)
@@ -163,6 +185,7 @@ def test_hostile_typed_lines_never_crash_a_check_or_a_watch_or_solve_the_level(p
     verdicts += [step.watch(lab, state, HOSTILE_LINES) for step in level.quest if isinstance(step, kit.WatchStep)]
     assert all(isinstance(verdict, kit.Verdict) for verdict in verdicts)
     assert not verdicts[0].solved
+    assert_spoken(level, verdicts)
 
 
 @pytest.mark.parametrize(("package", "level"), CASES, ids=IDS)
@@ -173,6 +196,7 @@ def test_hostile_answers_never_crash_or_pass_a_quest_step(package: ModuleType, l
         if isinstance(step, kit.AnswerStep):
             verdicts = [step.check(lab, state, answer) for answer in HOSTILE]
             assert all(isinstance(verdict, kit.Verdict) and not verdict.solved for verdict in verdicts), step.id
+            assert_spoken(level, verdicts)
         if isinstance(step, kit.ChoiceStep):
             assert not any(kit.choose(step, answer).solved for answer in HOSTILE if answer not in step.options), step.id
 
@@ -183,17 +207,23 @@ def test_each_quest_step_passes_only_after_the_players_action(package: ModuleTyp
     lab = runner.lab_of(level.id)
     actions = quest_actions(package, level)
     typed: list[kit.Command] = []
+    verdicts = []
     for step in level.quest:
         if isinstance(step, kit.WatchStep):
-            assert not step.watch(lab, state, typed).solved, f"step {step.id} passed before the player acted"
+            verdicts.append(step.watch(lab, state, typed))
+            assert not verdicts[-1].solved, f"step {step.id} passed before the player acted"
         answer = actions[step.id](lab, state, typed) if step.id in actions else None
         if isinstance(step, kit.WatchStep):
-            assert step.watch(lab, state, typed).solved, f"step {step.id} did not pass after the player acted"
+            verdicts.append(step.watch(lab, state, typed))
+            assert verdicts[-1].solved, f"step {step.id} did not pass after the player acted"
         if isinstance(step, kit.ChoiceStep):
             assert answer in step.options and all(kit.choose(step, option).solved for option in step.options), f"step {step.id} refused an option"
         if isinstance(step, kit.AnswerStep):
             assert not step.check(lab, state, "").solved, f"step {step.id} passed with an empty answer"
             assert answer is not None and step.check(lab, state, answer).solved, f"step {step.id} refused the player's answer {answer!r}"
+            verdicts += [step.check(lab, state, ""), step.check(lab, state, answer)]
+    verdicts.append(level.check(lab, state, None, typed))
+    assert_spoken(level, verdicts)
 
 
 @pytest.mark.parametrize(("package", "level"), CASES, ids=IDS)
@@ -202,8 +232,10 @@ def test_the_reference_solution_solves_the_level_and_the_lab_is_removed_afterwar
     lab = runner.lab_of(level.id)
     typed: list[kit.Command] = []
     answer = level.solve(lab, state, typed)
-    assert (answer is not None) == bool(level.question), "solve returns an answer exactly when the level asks a QUESTION"
-    assert level.check(lab, state, answer, typed).solved
+    assert (answer is not None) == bool(level.texts["en"].question), "solve returns an answer exactly when the level asks a QUESTION"
+    verdict = level.check(lab, state, answer, typed)
+    assert verdict.solved
+    assert_spoken(level, [verdict])
     runner.remove_labs()
     assert not (game_home / "labs").exists()
 
@@ -218,3 +250,9 @@ def test_checks_survive_a_lab_the_player_wrecked(package: ModuleType, level: run
     verdicts += [step.watch(lab, state, []) for step in level.quest if isinstance(step, kit.WatchStep)]
     verdicts += [step.check(lab, state, "x") for step in level.quest if isinstance(step, kit.AnswerStep)]
     assert all(isinstance(verdict, kit.Verdict) for verdict in verdicts)
+    assert_spoken(level, verdicts)
+
+
+@pytest.mark.parametrize(("package", "level"), CASES, ids=IDS)
+def test_every_reaction_of_a_level_with_a_spanish_sibling_has_its_spanish(package: ModuleType, level: runner.Level) -> None:
+    assert_spoken(level, [kit.Verdict(False, rule.text) for rule in level.reactions])

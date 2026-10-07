@@ -11,7 +11,7 @@ import pytest
 from termlab.web import terminal
 
 from firstcommit import cards, kit, runner
-from sample_levels import cargo_sample
+from sample_levels import cargo_sample, cargo_sample_es
 
 
 @pytest.fixture(autouse=True)
@@ -49,9 +49,9 @@ def sample_level(monkeypatch: pytest.MonkeyPatch) -> runner.Level:
     Returns
     -------
     runner.Level
-        The sample level, ``cargo-sample``.
+        The sample level, ``cargo-sample``, with its Spanish texts.
     """
-    level = runner.load(cargo_sample)
+    level = runner.load(cargo_sample, cargo_sample_es)
     monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
     return level
 

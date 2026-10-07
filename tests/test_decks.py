@@ -9,7 +9,7 @@ from termlab import snippets
 from firstcommit import cards, demos
 
 MAX_EXTRA_LENGTH = 15
-DECK_FILES = sorted(cards.DECKS.glob("*.toml"))
+DECK_FILES = sorted(path for path in cards.DECKS.glob("*.toml") if not path.name.endswith(f"{cards.SPANISH_SUFFIX}.toml"))
 
 
 def valid_decks() -> list[cards.Deck]:

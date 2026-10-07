@@ -1,34 +1,76 @@
 """The chapters of the game, in play order. Keys are the chapter ids used in level and deck file names."""
 
-CHAPTERS: dict[str, str] = {
-    "liftoff": "Lift-off",
-    "cargo": "The cargo dock",
-    "vault": "The time vault",
-    "mothership": "The mothership",
-    "branch": "Parallel universes",
-    "conflict": "Collisions",
-    "undo": "Time travel",
-    "start": "Git, GitHub and your first clone",
-    "rebase": "Keeping up to date",
-    "github": "The GitHub flow",
-    "hygiene": "What not to commit",
-    "setup": "Your real setup",
-    "toolbox": "Extra tools",
-}
+from firstcommit.records import Language
 
-BLURBS: dict[str, str] = {
-    "liftoff": "Your first base: what a repository is, and how one starts.",
-    "cargo": "The staging area: you choose what goes into your next commit.",
-    "vault": "Commits: sealed capsules of your project, and the history they make.",
-    "mothership": "Remotes, push and pull: your work safe and shared.",
-    "branch": "Branches are labels: work on a second course without touching main.",
-    "conflict": "Merges, and what to do when two changes touch the same part of a file.",
-    "undo": "Restore, revert, reset and the reflog: take changes back safely.",
-    "start": "What Git and GitHub are, and your first clone.",
-    "rebase": "Merge or rebase to keep your work up to date.",
-    "github": "Branches, pull requests and reviews: the GitHub flow.",
-    "hygiene": "What stays out of a repository: generated files, big binaries, secrets.",
-    "setup": "Git on your own computer, ready for real work.",
-    "toolbox": "Tags, cherry-pick, bisect and other handy tools.",
+CHAPTERS: dict[str, dict[Language, str]] = {
+    "liftoff": {"en": "Lift-off", "es": "Despegue"},
+    "cargo": {"en": "The cargo dock", "es": "El muelle de carga"},
+    "vault": {"en": "The time vault", "es": "La cámara del tiempo"},
+    "mothership": {"en": "The mothership", "es": "La nave nodriza"},
+    "branch": {"en": "Parallel universes", "es": "Universos paralelos"},
+    "conflict": {"en": "Collisions", "es": "Colisiones"},
+    "undo": {"en": "Time travel", "es": "Viajes en el tiempo"},
+    "start": {"en": "Git, GitHub and your first clone", "es": "Git, GitHub y tu primer clon"},
+    "rebase": {"en": "Keeping up to date", "es": "Al día con los demás"},
+    "github": {"en": "The GitHub flow", "es": "El flujo de GitHub"},
+    "hygiene": {"en": "What not to commit", "es": "Lo que no va en un commit"},
+    "setup": {"en": "Your real setup", "es": "Tu equipo de verdad"},
+    "toolbox": {"en": "Extra tools", "es": "Herramientas extra"},
 }
-"""One line under each chapter's name on the map, by chapter id, in the order of `CHAPTERS`."""
+"""Each chapter's name, by chapter id, in each language."""
+
+BLURBS: dict[str, dict[Language, str]] = {
+    "liftoff": {
+        "en": "Your first base: what a repository is, and how one starts.",
+        "es": "Tu primera base: qué es un repositorio y cómo se empieza uno.",
+    },
+    "cargo": {
+        "en": "The staging area: you choose what goes into your next commit.",
+        "es": "El área de preparación: tú eliges qué entra en tu próximo commit.",
+    },
+    "vault": {
+        "en": "Commits: sealed capsules of your project, and the history they make.",
+        "es": "Los commits: cápsulas selladas de tu proyecto y la historia que forman.",
+    },
+    "mothership": {
+        "en": "Remotes, push and pull: your work safe and shared.",
+        "es": "Remotos, push y pull: tu trabajo a salvo y compartido.",
+    },
+    "branch": {
+        "en": "Branches are labels: work on a second course without touching main.",
+        "es": "Las ramas son etiquetas: sigue otro rumbo sin tocar main.",
+    },
+    "conflict": {
+        "en": "Merges, and what to do when two changes touch the same part of a file.",
+        "es": "Los merges, y qué hacer si dos cambios tocan la misma parte de un archivo.",
+    },
+    "undo": {
+        "en": "Restore, revert, reset and the reflog: take changes back safely.",
+        "es": "Restore, revert, reset y el reflog: deshaz cambios sin riesgo.",
+    },
+    "start": {
+        "en": "What Git and GitHub are, and your first clone.",
+        "es": "Qué son Git y GitHub, y tu primer clon.",
+    },
+    "rebase": {
+        "en": "Merge or rebase to keep your work up to date.",
+        "es": "Merge o rebase para tener tu trabajo al día.",
+    },
+    "github": {
+        "en": "Branches, pull requests and reviews: the GitHub flow.",
+        "es": "Ramas, pull requests y revisiones: el flujo de GitHub.",
+    },
+    "hygiene": {
+        "en": "What stays out of a repository: generated files, big binaries, secrets.",
+        "es": "Lo que no entra en un repositorio: archivos generados, binarios, secretos.",
+    },
+    "setup": {
+        "en": "Git on your own computer, ready for real work.",
+        "es": "Git en tu propio ordenador, listo para trabajar de verdad.",
+    },
+    "toolbox": {
+        "en": "Tags, cherry-pick, bisect and other handy tools.",
+        "es": "Tags, cherry-pick, bisect y otras herramientas útiles.",
+    },
+}
+"""One line under each chapter's name on the map, by chapter id, in the order of `CHAPTERS`, in each language."""

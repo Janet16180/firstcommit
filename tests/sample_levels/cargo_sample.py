@@ -17,7 +17,8 @@ SCENE = [
     kit.SceneFrame(art="zones", text="Three places: the working folder, the staging area and the repository."),
     kit.SceneFrame(art="conveyor", text="`git add` copies a file into the staging area."),
 ]
-REACTIONS = [kit.ReactionRule(line=r"git add hello\.txt\b", mood="ok", text="Hello is staged.", event="file-staged")]
+HELLO_STAGED = "Hello is staged."
+REACTIONS = [kit.ReactionRule(line=r"git add hello\.txt\b", mood="ok", text=HELLO_STAGED, event="file-staged")]
 LESSON = [
     kit.Slide(id="init", title="A repository", text="Make one:\n\n    $ git init -q demo", run="git init -q demo", view="terminal"),
     kit.Slide(
@@ -35,6 +36,12 @@ HINTS = [
     "Type `git add hello.txt`, then `git commit -m 'Say hello'`.",
 ]
 DEBRIEF = "`hello.txt` is now in a commit on `{{branch}}`."
+STAGED = "Staged."
+NOT_STAGED = "Not staged yet."
+RIGHT = "Right."
+LOOK = "Look at the first line of `git status`."
+COMMITTED = "Committed."
+NOT_COMMITTED = "`hello.txt` is not in a commit yet."
 
 
 def is_staged(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
@@ -56,7 +63,7 @@ def is_staged(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
         Whether the file is staged.
     """
     staged = kit.git_run(lab.project, "ls-files", "--stage", "--", "hello.txt").stdout != ""
-    return kit.Verdict(staged, "Staged." if staged else "Not staged yet.")
+    return kit.Verdict(staged, STAGED if staged else NOT_STAGED)
 
 
 def names_the_branch(lab: kit.Lab, state: kit.State, answer: str) -> kit.Verdict:
@@ -78,7 +85,7 @@ def names_the_branch(lab: kit.Lab, state: kit.State, answer: str) -> kit.Verdict
         Whether the answer is the branch.
     """
     right = answer.strip() == state["branch"]
-    return kit.Verdict(right, "Right." if right else "Look at the first line of `git status`.")
+    return kit.Verdict(right, RIGHT if right else LOOK)
 
 
 QUEST: list[kit.Step] = [
@@ -128,7 +135,7 @@ def check(lab: kit.Lab, state: kit.State, answer: str | None, typed: kit.Typed) 
         Whether the file is committed on the branch.
     """
     committed = kit.git_run(lab.project, "rev-parse", "--verify", "-q", f"refs/heads/{state['branch']}:hello.txt").returncode == 0
-    return kit.Verdict(committed, "Committed." if committed else "`hello.txt` is not in a commit yet.")
+    return kit.Verdict(committed, COMMITTED if committed else NOT_COMMITTED)
 
 
 def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
