@@ -159,3 +159,47 @@ class Press(TypedDict):
     command: str
     status: int
     output: str
+
+
+FileKind = Literal["file", "missing", "other"]
+"""What a path is in a working folder: a regular file, nothing, or anything else (a folder, a link)."""
+
+
+class FolderFacts(TypedDict):
+    """
+    A person's playground folder, as its buttons and their explanations need it, read from disk.
+
+    ``usable`` says that the folder is where the lab puts it, with no link on the way; the other
+    fields are empty when it is not. ``kinds`` says what each button file is there; ``lines``
+    counts the line breaks of each regular one (in its first 64 KiB), and ``marked`` lists, sorted,
+    those holding a conflict marker line. ``locked`` says whether ``.git/index.lock`` exists:
+    a git command is changing the staging area, or stopped halfway.
+    """
+
+    usable: bool
+    kinds: dict[str, FileKind]
+    lines: dict[str, int]
+    marked: list[str]
+    locked: bool
+
+
+class ConfigFacts(TypedDict):
+    """What a person's repository configuration holds: a name and an email, a remote, and an upstream for the current branch."""
+
+    name: bool
+    email: bool
+    remote: bool
+    upstream: bool
+
+
+class Facts(TypedDict):
+    """
+    What a press's explanation is chosen from, besides the person's repository before and after it.
+
+    All of it is read just before the press. ``github`` is the stand-in GitHub then, or None
+    in a playground without one.
+    """
+
+    github: Snapshot | None
+    folder: FolderFacts
+    config: ConfigFacts

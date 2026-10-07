@@ -396,6 +396,67 @@ def test_a_conditional_button_pressed_out_of_its_state_runs_and_git_answers() ->
         assert "fatal: There is no merge to abort (MERGE_HEAD missing).\n" in abort["output"]
 
 
+
+def test_the_folder_facts_say_what_each_button_file_is_and_its_lines() -> None:
+    with new_lab() as lab:
+        assert playground.folder_facts(lab, "you") == {
+            "usable": True,
+            "kinds": {"README.md": "file", "notes.txt": "file"},
+            "lines": {"README.md": 1, "notes.txt": 1},
+            "marked": [],
+            "locked": False,
+        }
+        (lab.project / NOTES).unlink()
+        (lab.project / "README.md").write_text("one\ntwo")
+        facts = playground.folder_facts(lab, "you")
+        assert (facts["kinds"], facts["lines"]) == ({"README.md": "file", "notes.txt": "missing"}, {"README.md": 1})
+
+
+def test_the_folder_facts_mark_a_file_holding_conflict_markers_and_a_left_lock() -> None:
+    with new_lab() as lab:
+        conflicted_lab(lab)
+        (lab.project / ".git" / "index.lock").write_text("")
+        facts = playground.folder_facts(lab, "you")
+        assert (facts["marked"], facts["locked"]) == (["notes.txt"], True)
+
+
+def test_a_gone_clone_has_no_usable_folder_and_no_facts_about_its_files() -> None:
+    with new_lab() as lab:
+        shutil.rmtree(lab.teammate)
+        assert playground.folder_facts(lab, "alex") == {"usable": False, "kinds": {}, "lines": {}, "marked": [], "locked": False}
+
+
+def test_edit_numbers_its_line_by_the_line_breaks_in_the_file() -> None:
+    with new_lab() as lab:
+        (lab.project / NOTES).write_text("Notes")
+        assert bar(lab, "you")["edit:notes.txt"]["line"] == 'echo "You: line 1" >> notes.txt'
+
+
+def test_the_config_facts_say_whether_an_identity_a_remote_and_an_upstream_are_set() -> None:
+    with new_lab() as lab:
+        snap = repomap.snapshot(lab.project)
+        assert playground.config_facts(lab, "you", snap) == {"name": True, "email": True, "remote": True, "upstream": True}
+        gitcmd.output(lab.project, "remote", "remove", "origin")
+        assert playground.config_facts(lab, "you", repomap.snapshot(lab.project)) == {"name": True, "email": True, "remote": False, "upstream": False}
+
+
+def test_the_config_facts_say_when_the_player_has_no_identity_while_alex_has_one() -> None:
+    with new_lab(identity=False) as lab:
+        facts = playground.config_facts(lab, "you", repomap.snapshot(lab.project))
+        assert (facts["name"], facts["email"]) == (False, False)
+        assert playground.config_facts(lab, "alex", repomap.snapshot(lab.teammate))["name"]
+
+
+def test_the_facts_of_a_press_hold_github_only_where_there_is_one() -> None:
+    with new_lab() as lab:
+        seen = views(lab)
+        facts = playground.facts(lab, "alex", seen["alex"], seen["github"])
+        assert facts["github"] == seen["github"]
+        assert facts["folder"] == playground.folder_facts(lab, "alex")
+        assert facts["config"] == playground.config_facts(lab, "alex", seen["alex"])
+        assert playground.facts(lab, "alex", seen["alex"], repomap.snapshot(lab.root / "nowhere"))["github"] is None
+
+
 GONE = "The project folder is gone: start the playground again."
 
 

@@ -376,6 +376,21 @@ def test_no_remote_tracking_branch_counts_as_pushed_without_reflogs_or_without_r
     assert repomap.snapshot(tmp_path / "project")["pushed"] == []
 
 
+
+def test_history_gives_a_commit_and_every_ancestor_the_snapshot_lists(tmp_path: Path) -> None:
+    repo = new_repo(
+        tmp_path,
+        "git commit -q --allow-empty -m one && git switch -q -c side && git commit -q --allow-empty -m side\n"
+        "git switch -q main && git commit -q --allow-empty -m two && git merge -q --no-edit side",
+    )
+    snap = repomap.snapshot(repo)
+    names = {rev(repo, name): name for name in ("main", "main~1", "side", "main~2")}
+    assert {names.get(commit, commit) for commit in repomap.history(snap, rev(repo, "main"))} == {"main", "main~1", "side", "main~2"}
+    assert {names.get(commit, commit) for commit in repomap.history(snap, rev(repo, "side"))} == {"side", "main~2"}
+    assert repomap.history(snap, None) == set()
+    assert repomap.history(snap, "0" * 40) == set()
+
+
 def test_a_merge_conflict_flags_the_path_and_shows_the_merge_in_progress(tmp_path: Path) -> None:
     repo = new_repo(
         tmp_path,

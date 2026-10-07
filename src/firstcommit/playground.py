@@ -22,16 +22,15 @@ clone. Edit is written in Python, never through a link, with exactly the bytes i
 """
 
 import os
+import re
 import shlex
 import stat
 from collections.abc import Mapping
-from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal
 
 from firstcommit import gitcmd, repomap
 from firstcommit.lab import Lab
-from firstcommit.records import FILE_MODE, ButtonView, Press, Snapshot, Who
+from firstcommit.records import FILE_MODE, ButtonView, ConfigFacts, Facts, FileKind, FolderFacts, Press, Snapshot, Who
 
 ALEX = gitcmd.Person("Alex", "alex@example.com")
 """Alex's identity, set in Alex's clone's own configuration by `setup`."""
@@ -80,27 +79,13 @@ FALLBACK_MESSAGE = "Save my work"
 VERBS = {"added": "add", "modified": "update", "typechange": "update", "deleted": "delete"}
 GONE = "The project folder is gone: start the playground again."
 READ_LIMIT = 64 * 1024
-"""How much of a file Edit reads to number its line; a longer file is numbered from its start only."""
-
-FileKind = Literal["file", "missing", "other"]
+"""How much of a button file is read for its facts; a longer file is numbered from its start only."""
+MARKER = re.compile(rb"^<<<<<<< ", re.MULTILINE)
+"""The line git starts a conflict with in a file."""
 
 
 class ButtonOffError(Exception):
     """A button pressed while it is off; the message is the reason the button shows."""
-
-
-@dataclass(frozen=True)
-class _Folder:
-    """
-    A person's working folder, as the buttons need it.
-
-    ``usable`` says that it is a folder, where the lab puts it, with no link on the way; ``kinds``
-    says what each of `FILES` is there, and ``lines`` counts the lines of each plain one.
-    """
-
-    usable: bool
-    kinds: Mapping[str, FileKind]
-    lines: Mapping[str, int]
 
 
 def setup(lab: Lab) -> None:
@@ -154,7 +139,7 @@ def buttons(lab: Lab, snapshots: Mapping[Who, Snapshot]) -> dict[Who, list[Butto
         ``merge-abort`` with Keep mine, Keep theirs and git add for each conflicted file while a
         merge is paused, then ``pull-no-rebase`` while the branches have diverged.
     """
-    return {person: [_view(button, person, snapshots[person], _folder(lab, person)) for button in _shown(snapshots[person])] for person in PEOPLE}
+    return {person: [_view(button, person, snapshots[person], folder_facts(lab, person)) for button in _shown(snapshots[person])] for person in PEOPLE}
 
 
 def press(lab: Lab, person: Who, button: str) -> Press:
@@ -187,7 +172,7 @@ def press(lab: Lab, person: Who, button: str) -> Press:
     """
     if button not in BUTTON_IDS:
         raise KeyError(f"no button {button!r} in the playground")
-    clone, folder = _clone(lab, person), _folder(lab, person)
+    clone, folder = _clone(lab, person), folder_facts(lab, person)
     view = _view(button, person, repomap.snapshot(clone), folder)
     if view["off"]:
         raise ButtonOffError(view["off"])
@@ -198,6 +183,91 @@ def press(lab: Lab, person: Who, button: str) -> Press:
     else:
         status, output = gitcmd.run_on_terminal(clone, *shlex.split(view["line"])[1:])
     return {"person": person, "button": button, "command": view["line"], "status": status, "output": output}
+
+
+def facts(lab: Lab, person: Who, snap: Snapshot, github: Snapshot) -> Facts:
+    """
+    Read what a press's explanation is chosen from, just before the press.
+
+    Parameters
+    ----------
+    lab : Lab
+        The lab.
+    person : Who
+        Who is about to press.
+    snap : Snapshot
+        Their clone, as just read.
+    github : Snapshot
+        The stand-in GitHub, as just read.
+
+    Returns
+    -------
+    Facts
+        GitHub (None when it holds no repository), the person's folder and configuration.
+    """
+    return {"github": github if github["exists"] else None, "folder": folder_facts(lab, person), "config": config_facts(lab, person, snap)}
+
+
+def folder_facts(lab: Lab, person: Who) -> FolderFacts:
+    """
+    Read a person's working folder, as the buttons and their explanations need it.
+
+    Each button file is looked at without following a link, and only its first `READ_LIMIT`
+    bytes are read.
+
+    Parameters
+    ----------
+    lab : Lab
+        The lab.
+    person : Who
+        Whose folder.
+
+    Returns
+    -------
+    FolderFacts
+        Whether the folder can be used and, if so, what each of `FILES` is there.
+    """
+    path = _clone(lab, person)
+    usable = path.is_dir() and path.resolve() == lab.root.resolve() / path.relative_to(lab.root)
+    kinds = {name: _kind(path / name) for name in FILES} if usable else {}
+    starts = {name: _start_of(path / name) for name, kind in kinds.items() if kind == "file"}
+    return {
+        "usable": usable,
+        "kinds": kinds,
+        "lines": {name: start.count(b"\n") for name, start in starts.items()},
+        "marked": sorted(name for name, start in starts.items() if MARKER.search(start)),
+        "locked": usable and (path / ".git" / "index.lock").exists(),
+    }
+
+
+def config_facts(lab: Lab, person: Who, snap: Snapshot) -> ConfigFacts:
+    """
+    Read what a person's repository configuration holds, with read-only git commands.
+
+    Parameters
+    ----------
+    lab : Lab
+        The lab.
+    person : Who
+        Whose repository.
+    snap : Snapshot
+        Their clone, as just read.
+
+    Returns
+    -------
+    ConfigFacts
+        Whether git has a name and an email for them (from any configuration file), whether the
+        repository has a remote, and whether its current branch has an upstream.
+    """
+    path = _clone(lab, person)
+    remote = snap["exists"] and gitcmd.run(path, "remote").stdout.strip() != ""
+    upstream = snap["exists"] and snap["branch"] is not None and gitcmd.run(path, "config", f"branch.{snap['branch']}.merge").returncode == 0
+    return {
+        "name": gitcmd.run(path, "config", "user.name").returncode == 0,
+        "email": gitcmd.run(path, "config", "user.email").returncode == 0,
+        "remote": remote,
+        "upstream": upstream,
+    }
 
 
 def message(snap: Snapshot) -> str:
@@ -248,7 +318,7 @@ def _shown(snap: Snapshot) -> list[str]:
     return list(dict.fromkeys(ids))
 
 
-def _view(button: str, person: Who, snap: Snapshot, folder: _Folder) -> ButtonView:
+def _view(button: str, person: Who, snap: Snapshot, folder: FolderFacts) -> ButtonView:
     """
     Give a button as it stands in this state.
 
@@ -260,7 +330,7 @@ def _view(button: str, person: Who, snap: Snapshot, folder: _Folder) -> ButtonVi
         Whose button.
     snap : Snapshot
         The person's clone.
-    folder : _Folder
+    folder : FolderFacts
         The person's working folder.
 
     Returns
@@ -270,14 +340,14 @@ def _view(button: str, person: Who, snap: Snapshot, folder: _Folder) -> ButtonVi
     """
     kind, _, name = button.partition(":")
     off = ""
-    if not folder.usable:
+    if not folder["usable"]:
         off = GONE
-    elif kind == "edit" and folder.kinds[name] == "other":
+    elif kind == "edit" and folder["kinds"][name] == "other":
         off = f"{name} is not a plain file any more."
     return {"id": button, "label": LABELS[kind].format(file=name), "line": _line(kind, name, person, snap, folder), "off": off}
 
 
-def _line(kind: str, name: str, person: Who, snap: Snapshot, folder: _Folder) -> str:
+def _line(kind: str, name: str, person: Who, snap: Snapshot, folder: FolderFacts) -> str:
     """
     Give the line a button runs in this state.
 
@@ -291,7 +361,7 @@ def _line(kind: str, name: str, person: Who, snap: Snapshot, folder: _Folder) ->
         Whose button.
     snap : Snapshot
         The person's clone.
-    folder : _Folder
+    folder : FolderFacts
         The person's working folder.
 
     Returns
@@ -308,7 +378,7 @@ def _line(kind: str, name: str, person: Who, snap: Snapshot, folder: _Folder) ->
     return line
 
 
-def _edit_text(person: Who, name: str, folder: _Folder) -> str:
+def _edit_text(person: Who, name: str, folder: FolderFacts) -> str:
     """
     Give the line Edit appends: its writer and its number in the file.
 
@@ -318,7 +388,7 @@ def _edit_text(person: Who, name: str, folder: _Folder) -> str:
         Who edits.
     name : str
         One of `FILES`.
-    folder : _Folder
+    folder : FolderFacts
         The person's working folder.
 
     Returns
@@ -326,7 +396,7 @@ def _edit_text(person: Who, name: str, folder: _Folder) -> str:
     str
         Such as ``You: line 3``, without its line break.
     """
-    return f"{PEOPLE[person]}: line {folder.lines.get(name, 0) + 1}"
+    return f"{PEOPLE[person]}: line {folder['lines'].get(name, 0) + 1}"
 
 
 def _append(path: Path, text: str) -> None:
@@ -344,29 +414,6 @@ def _append(path: Path, text: str) -> None:
     descriptor = os.open(path, os.O_WRONLY | os.O_APPEND | os.O_CREAT | os.O_NOFOLLOW, 0o666)
     with os.fdopen(descriptor, "ab") as file:
         file.write(f"{text}\n".encode())
-
-
-def _folder(lab: Lab, person: Who) -> _Folder:
-    """
-    Read a person's working folder, as the buttons need it.
-
-    Parameters
-    ----------
-    lab : Lab
-        The lab.
-    person : Who
-        Whose folder.
-
-    Returns
-    -------
-    _Folder
-        Whether it can be used, and what each of `FILES` is there.
-    """
-    path = _clone(lab, person)
-    usable = path.is_dir() and path.resolve() == lab.root.resolve() / path.relative_to(lab.root)
-    kinds = {name: _kind(path / name) for name in FILES} if usable else {}
-    lines = {name: _count_lines(path / name) for name, kind in kinds.items() if kind == "file"}
-    return _Folder(usable, kinds, lines)
 
 
 def _kind(path: Path) -> FileKind:
@@ -393,9 +440,9 @@ def _kind(path: Path) -> FileKind:
     return found
 
 
-def _count_lines(path: Path) -> int:
+def _start_of(path: Path) -> bytes:
     """
-    Count a file's lines as Edit numbers them, never through a link.
+    Read the start of a file, never through a link.
 
     Parameters
     ----------
@@ -404,19 +451,18 @@ def _count_lines(path: Path) -> int:
 
     Returns
     -------
-    int
-        The lines in its first `READ_LIMIT` bytes (a last line without a line break counts);
-        0 when it is gone or cannot be read.
+    bytes
+        Its first `READ_LIMIT` bytes; nothing when it is gone or cannot be read.
     """
     try:
         descriptor: int | None = os.open(path, os.O_RDONLY | os.O_NOFOLLOW)
     except (FileNotFoundError, PermissionError):  # the player may delete or lock it at any time
         descriptor = None
-    count = 0
+    start = b""
     if descriptor is not None:
         with os.fdopen(descriptor, "rb") as file:
-            count = len(file.read(READ_LIMIT).splitlines())
-    return count
+            start = file.read(READ_LIMIT)
+    return start
 
 
 def _diverged(snap: Snapshot) -> bool:
@@ -435,34 +481,7 @@ def _diverged(snap: Snapshot) -> bool:
     """
     theirs = next((ref["target"] for ref in snap["refs"] if ref["kind"] == "remote" and ref["name"] == f"origin/{snap['branch']}"), None)
     head = snap["head"]
-    return theirs is not None and head is not None and theirs not in _history(snap, head) and head not in _history(snap, theirs)
-
-
-def _history(snap: Snapshot, start: str) -> set[str]:
-    """
-    Collect a commit and every ancestor the snapshot lists.
-
-    Parameters
-    ----------
-    snap : Snapshot
-        A repository.
-    start : str
-        A commit's full hash.
-
-    Returns
-    -------
-    set[str]
-        The hashes, ``start`` included.
-    """
-    parents = {commit["hash"]: commit["parents"] for commit in snap["commits"]}
-    seen: set[str] = set()
-    pending = [start]
-    while pending:
-        current = pending.pop()
-        if current not in seen:
-            seen.add(current)
-            pending.extend(parents.get(current, []))
-    return seen
+    return theirs is not None and head is not None and theirs not in repomap.history(snap, head) and head not in repomap.history(snap, theirs)
 
 
 def _joined(items: list[str]) -> str:
