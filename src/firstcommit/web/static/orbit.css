@@ -826,6 +826,10 @@ pre.code code {
   background: var(--fs);
 }
 
+.file[data-state="conflicted"]::before {
+  display: none;
+}
+
 .file[data-state="none"]::before {
   background: transparent;
   box-shadow: inset 0 0 0 2px var(--s-clean);
