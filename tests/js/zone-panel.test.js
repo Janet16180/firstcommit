@@ -2,13 +2,15 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { installBrowser, load, record } = require("./load");
+const { createClock, installBrowser, load, record } = require("./load");
 
 installBrowser();
-const { ZonePanel } = load(["dom.js", "art-pixels.js", "art-sprites.js", "zones.js", "zone-panel.js"], ["ZonePanel"]);
+const { ZonePanel } = load(["dom.js", "art-pixels.js", "art-sprites.js", "typed.js", "zones.js", "zone-panel.js"], ["ZonePanel"]);
 
 const observe = (project, github = null) => ({ ...record("observation"), project, github });
 const zone = (panel, name) => panel.element.querySelector(`.zone[data-zone="${name}"]`);
+/* The item with a fly-by key, found without a selector (a file name may hold any character). */
+const keyed = (node, key) => [...node.querySelectorAll("[data-key]")].find((item) => item.dataset.key === key);
 const texts = (node, selector) => [...node.querySelectorAll(selector)].map((item) => item.textContent);
 
 test("the four zones are named in the design's order, with the git name under each", () => {
@@ -21,6 +23,7 @@ test("the four zones are named in the design's order, with the git name under ea
 test("drawn arrows between the zones name the commands that move work along", () => {
   const panel = ZonePanel.create();
   assert.deepEqual(texts(panel.element, ".fl span"), ["git add", "git commit", "git push", "git pull"]);
+  assert.deepEqual([...panel.element.querySelectorAll(".fl")].map((arrow) => arrow.dataset.arrow), ["add", "commit", "push", "pull"]);
   assert.equal(panel.element.querySelectorAll(".fl svg.art-icon").length, 4);
   assert.ok(panel.element.querySelector(".fl.is-back"));
 });
@@ -77,4 +80,36 @@ test("an observation that changed nothing leaves the zones' nodes in place", () 
   const first = zone(panel, "vault").querySelector(".cap");
   panel.update(observe(record("observation").project));
   assert.equal(zone(panel, "vault").querySelector(".cap"), first);
+});
+
+const typed = (...lines) => lines.map((line) => ({ line, status: 0 }));
+
+test("typing git init wakes the dock and the vault for a moment", async () => {
+  const clock = createClock();
+  const panel = ZonePanel.create({ timers: clock });
+  panel.update(observe(record("snapshots").folder));
+  panel.update({ ...observe(record("snapshots").unborn), commands: typed("git init") });
+  assert.ok(zone(panel, "dock").classList.contains("is-waking"));
+  assert.ok(zone(panel, "vault").classList.contains("is-waking"));
+  await clock.advance(1600);
+  assert.equal(zone(panel, "dock").classList.contains("is-waking"), false);
+});
+
+test("staging a file with git add lights the add arrow, and every item carries the key it flies by", () => {
+  const clock = createClock();
+  const panel = ZonePanel.create({ timers: clock });
+  const project = record("snapshots").one;
+  panel.update(observe(project));
+  const file = { ...project.files[0], index: "new-version", index_change: "modified" };
+  panel.update({ ...observe({ ...project, files: [file] }), commands: typed("git add hello.txt") });
+  assert.ok(panel.element.querySelector('.fl[data-arrow="add"]').classList.contains("is-lit"));
+  assert.ok(keyed(zone(panel, "dock"), "dock:hello.txt"));
+  assert.ok(keyed(zone(panel, "workshop"), "workshop:hello.txt"));
+  assert.ok(keyed(zone(panel, "vault"), `vault:${project.head}`));
+});
+
+test("the first drawing animates nothing", () => {
+  const panel = ZonePanel.create({ timers: createClock() });
+  panel.update({ ...observe(record("snapshots").unborn), commands: typed("git init") });
+  assert.equal(panel.element.querySelector(".is-lit, .is-waking"), null);
 });
