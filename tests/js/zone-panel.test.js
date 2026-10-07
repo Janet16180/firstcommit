@@ -5,7 +5,7 @@ const test = require("node:test");
 const { createClock, installBrowser, load, record } = require("./load");
 
 installBrowser();
-const { ZonePanel } = load(["dom.js", "art-pixels.js", "art-sprites.js", "typed.js", "zones.js", "zone-panel.js"], ["ZonePanel"]);
+const { ZonePanel } = load(["dom.js", "strings.js", "art-pixels.js", "art-sprites.js", "typed.js", "zones.js", "zone-panel.js"], ["ZonePanel"]);
 
 const observe = (project, github = null) => ({ ...record("observation"), project, github });
 const zone = (panel, name) => panel.element.querySelector(`.zone[data-zone="${name}"]`);

@@ -5,7 +5,7 @@ const test = require("node:test");
 const { createClock, installBrowser, load, settle } = require("./load");
 
 const document = installBrowser();
-const { Completion } = load(["dom.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "completion.js"], ["Completion"]);
+const { Completion } = load(["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "completion.js"], ["Completion"]);
 
 const para = (text) => [{ kind: "para", spans: [{ text, code: false }] }];
 

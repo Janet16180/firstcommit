@@ -4,7 +4,7 @@
  * A level's scene: Rama's short explanation, one line at a time beside its picture (art-scenes.js),
  * each line typed in a few characters at a time as in the design. Next finishes a line still
  * typing, then moves on; Skip (or Escape) ends the scene. It opens on the browser's own <dialog>.
- * Needs dom.js, art-sprites.js and art-scenes.js. Defines one global, ScenePlayer.
+ * Needs dom.js, strings.js, art-sprites.js and art-scenes.js. Defines one global, ScenePlayer.
  *
  * play({scene, timers, reducedMotion, sound}) resolves once the scene is over; `scene` is the
  * level's list of {art, text} (LevelView.scene). With reduced motion each line shows whole at
@@ -12,11 +12,12 @@
  * new line.
  */
 
-/* global Dom, ArtSprites, ArtScenes */
+/* global Dom, Strings, ArtSprites, ArtScenes */
 /* exported ScenePlayer */
 
 const ScenePlayer = (function () {
   const { el } = Dom;
+  const { t } = Strings;
   const TYPE_MS = 22;
   const STEP = 2;
 
@@ -42,12 +43,12 @@ const ScenePlayer = (function () {
         text: el("div", { class: "cs-txt", "aria-live": "polite" }),
         pips: el("div", { class: "pips", "aria-hidden": "true" }, scene.map(() => el("i"))),
         next: el("button", { type: "button", class: "btn btn-primary cs-next" }),
-        skip: el("button", { type: "button", class: "btn cs-skip" }, "Skip"),
+        skip: el("button", { type: "button", class: "btn cs-skip" }, t("scene.skip")),
       };
-      const dialog = el("dialog", { class: "cutscene", "aria-label": "Rama explains" },
+      const dialog = el("dialog", { class: "cutscene", "aria-label": t("scene.label") },
         parts.art,
         el("div", { class: "cs-dlg" },
-          el("span", { class: "cs-who" }, "Rama"),
+          el("span", { class: "cs-who" }, t("scene.who")),
           ArtSprites.rama({ size: "comms" }),
           parts.text,
           el("div", { class: "cs-ctl" }, parts.pips, parts.skip, parts.next),
@@ -79,7 +80,7 @@ const ScenePlayer = (function () {
         if (state.index > 0) sound.play("page");
         state.art = art;
         parts.pips.querySelectorAll("i").forEach((pip, index) => pip.classList.toggle("on", index <= state.index));
-        parts.next.textContent = state.index === scene.length - 1 ? "Start" : "Next";
+        parts.next.textContent = t(state.index === scene.length - 1 ? "scene.start" : "scene.next");
         state.total = length(pieces(text));
         state.shown = 0;
         if (reducedMotion) finish();

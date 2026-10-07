@@ -5,7 +5,7 @@ const test = require("node:test");
 const { fakeServer, installBrowser, load, record, settle } = require("./load");
 
 const document = installBrowser();
-const { StarMap, createGameApi, Dom } = load(["dom.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "api.js", "progress.js", "dialog.js", "starmap.js"], ["StarMap", "createGameApi", "Dom"]);
+const { StarMap, createGameApi, Dom } = load(["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "api.js", "progress.js", "dialog.js", "starmap.js"], ["StarMap", "createGameApi", "Dom"]);
 
 function starMap(status = record("status")) {
   const server = fakeServer({ "/api/reset": {} });

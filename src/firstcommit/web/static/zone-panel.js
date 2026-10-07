@@ -9,56 +9,34 @@
  * files and capsules fly from their old place to their new one, labels slide, a refused push
  * bounces off the mothership, capsules that left every branch fade off and those that came back
  * fade in; none of the movement plays when the player asked for reduced motion.
- * Needs dom.js, art-sprites.js, typed.js and zones.js. Defines one global, ZonePanel.
+ * Needs dom.js, strings.js, art-sprites.js, typed.js and zones.js. Defines one global, ZonePanel.
  */
 
-/* global Dom, ArtSprites, Typed, Zones */
+/* global Dom, Strings, ArtSprites, Typed, Zones */
 /* exported ZonePanel */
 
 const ZonePanel = (function () {
   const { el, svg } = Dom;
+  const { t, parts } = Strings;
   /* The graph's measures, in pixels: a lane's width, a capsule row's height, and where a
      capsule's block centre sits in its row (orbit.css draws the rows to match). */
   const LANE = 16;
   const ROW = 40;
   const CENTRE = 11;
-  const ZONES = [
-    { name: "workshop", title: "Workshop", git: "working folder" },
-    { name: "dock", title: "Cargo dock", git: "staging area" },
-    { name: "vault", title: "Vault", git: "local repository" },
-    { name: "remote", title: "Mothership", git: "remote repository" },
-  ];
+  const ZONES = ["workshop", "dock", "vault", "remote"];
   const FLOWS = [[["add", false]], [["commit", false]], [["push", false], ["pull", true]]];
   const LIT_MS = 1600;
   const FLY_MS = 720;
   const CRACK_MS = 600;
   const RISE_MS = 800;
-  const STATE_TAGS = { none: "", conflicted: "conflict", new: "new", edited: "edited", deleted: "deleted", staged: "on the dock", saved: "" };
-  const STATE_TIPS = {
-    none: "Git does not watch this folder",
-    conflicted: "both sides changed it: choose what stays, then git add it",
-    new: "untracked: Git does not follow it yet",
-    edited: "modified: changed since it was last loaded",
-    deleted: "deleted from the folder",
-    staged: "its current version is on the dock",
-    saved: "saved and unchanged",
-  };
-  const CHANGE_TAGS = { added: "new", modified: "change", deleted: "deleted", typechange: "type change" };
-  const LEGEND = [["none", "no repository"], ["conflicted", "conflict (both sides changed it)"], ["new", "new (untracked)"], ["edited", "edited (modified)"], ["staged", "on the dock (staged)"], ["saved", "saved (committed)"]];
+  const TAGGED = ["conflicted", "new", "edited", "deleted", "staged"];
+  const LEGEND = ["none", "conflicted", "new", "edited", "staged", "saved"];
+  const stateTag = (state) => (TAGGED.includes(state) ? t(`zones.tag.${state}`) : "");
 
-  /* A sentence with commands in it: [text, [command], text, ...]. */
-  const say = (...parts) => el("p", { class: "zone-empty" }, parts.map((part) => (Array.isArray(part) ? el("code", {}, part[0]) : part)));
-  const OFF = {
-    dock: () => say("Off. It switches on when you plant the flag with ", ["git init"], "."),
-    vault: () => say("Off. Without a repository there is no history."),
-    remote: () => say("Out of range: this mission has no mothership."),
-  };
-  const EMPTY = {
-    workshop: () => say("Empty workshop. Create a file with ", ["touch"], "."),
-    dock: () => say("Empty dock. Load changes with ", ["git add"], "."),
-    vault: () => say("No capsules yet. Seal them with ", ["git commit"], "."),
-    remote: () => say("Connected but empty. Launch your capsules with ", ["git push"], "."),
-  };
+  /* A sentence from the strings, its commands as code. */
+  const say = (key) => el("p", { class: "zone-empty" }, parts(key).map((part) => (typeof part === "string" ? part : el("code", {}, part.code))));
+  const OFF = { dock: "zones.off.dock", vault: "zones.off.vault", remote: "zones.off.remote" };
+  const EMPTY = { workshop: "zones.empty.workshop", dock: "zones.empty.dock", vault: "zones.empty.vault", remote: "zones.empty.remote" };
 
   function fileChip(path, tag, attributes) {
     const conflicted = attributes["data-state"] === "conflicted";
@@ -106,8 +84,8 @@ const ZonePanel = (function () {
 
   /* Each zone's items, or null when the zone is off. */
   function contents(zones) {
-    const workshop = zones.workshop.map((file) => fileChip(file.path, STATE_TAGS[file.state], { "data-state": file.state, "data-key": `workshop:${file.path}`, title: STATE_TIPS[file.state] }));
-    const dock = zones.dock && zones.dock.map((change) => fileChip(change.path, CHANGE_TAGS[change.change], { class: "file is-staged", "data-key": `dock:${change.path}` }));
+    const workshop = zones.workshop.map((file) => fileChip(file.path, stateTag(file.state), { "data-state": file.state, "data-key": `workshop:${file.path}`, title: t(`zones.tip.${file.state}`) }));
+    const dock = zones.dock && zones.dock.map((change) => fileChip(change.path, t(`zones.change.${change.change}`), { class: "file is-staged", "data-key": `dock:${change.path}` }));
     return {
       workshop: { count: workshop.length, nodes: workshop },
       dock: zones.dock && { count: dock.length, nodes: dock },
@@ -116,15 +94,17 @@ const ZonePanel = (function () {
     };
   }
 
-  function zoneShell({ name, title, git }) {
-    const parts = { count: el("span", { class: "z-count" }, "–"), body: el("div", { class: "z-body" }) };
-    parts.operation = el("p", { class: "z-op", hidden: true });
-    parts.element = el("article", { class: "zone", "data-zone": name, "aria-label": title },
-      el("header", { class: "z-head" }, el("span", { class: "zico", "aria-hidden": "true" }), el("div", {}, el("h3", {}, title), el("small", {}, git)), parts.count),
-      parts.operation,
-      parts.body,
+  function zoneShell(name) {
+    const title = t(`zones.${name}`);
+    const git = t(`zones.${name}Git`);
+    const shell = { count: el("span", { class: "z-count" }, "–"), body: el("div", { class: "z-body" }) };
+    shell.operation = el("p", { class: "z-op", hidden: true });
+    shell.element = el("article", { class: "zone", "data-zone": name, "aria-label": title },
+      el("header", { class: "z-head" }, el("span", { class: "zico", "aria-hidden": "true" }), el("div", {}, el("h3", {}, title), el("small", {}, git)), shell.count),
+      shell.operation,
+      shell.body,
     );
-    return parts;
+    return shell;
   }
 
   const flow = (arrows) => el("div", { class: "flow", "aria-hidden": "true" },
@@ -220,26 +200,26 @@ const ZonePanel = (function () {
 
   /* options: reducedMotion (no flying items; the arrows and zones still light), timers. */
   function create({ reducedMotion = true, timers = window } = {}) {
-    const shells = Object.fromEntries(ZONES.map((zone) => [zone.name, zoneShell(zone)]));
-    const row = el("div", { class: "viz-row" }, ZONES.map((zone, index) => [shells[zone.name].element, index < FLOWS.length && flow(FLOWS[index])]));
-    const legend = el("ul", { class: "legend" }, LEGEND.map(([state, text]) => el("li", { "data-state": state }, text)));
-    const element = el("section", { class: "viz px", "aria-label": "Your repository" }, row, legend);
+    const shells = Object.fromEntries(ZONES.map((name) => [name, zoneShell(name)]));
+    const row = el("div", { class: "viz-row" }, ZONES.map((name, index) => [shells[name].element, index < FLOWS.length && flow(FLOWS[index])]));
+    const legend = el("ul", { class: "legend" }, LEGEND.map((state) => el("li", { "data-state": state }, t(`zones.legend.${state}`))));
+    const element = el("section", { class: "viz px", "aria-label": t("zones.label") }, row, legend);
     let drawn = null;
     let last = null;
 
     function draw(zones) {
       const filled = contents(zones);
-      for (const { name } of ZONES) {
+      for (const name of ZONES) {
         const shell = shells[name];
         const zone = filled[name];
         shell.element.classList.toggle("is-dormant", !zone);
         shell.count.textContent = zone ? String(zone.count) : "–";
-        shell.body.replaceChildren(...(!zone ? [OFF[name]()] : zone.count ? zone.nodes : [EMPTY[name]()]));
+        shell.body.replaceChildren(...(!zone ? [say(OFF[name])] : zone.count ? zone.nodes : [say(EMPTY[name])]));
       }
       /* A merge (or rebase, cherry-pick...) stopped halfway is said over the vault. */
       const paused = shells.vault.operation;
       paused.hidden = !zones.operation;
-      paused.replaceChildren(...(zones.operation ? [ArtSprites.icon("merging"), `${zones.operation} paused`] : []));
+      paused.replaceChildren(...(zones.operation ? [ArtSprites.icon("merging"), t("zones.paused", { operation: zones.operation })] : []));
     }
 
     return {

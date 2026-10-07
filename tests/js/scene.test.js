@@ -5,7 +5,7 @@ const test = require("node:test");
 const { createClock, installBrowser, load, settle } = require("./load");
 
 const document = installBrowser();
-const { ScenePlayer } = load(["dom.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-scenes.js", "scene.js"], ["ScenePlayer"]);
+const { ScenePlayer } = load(["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-scenes.js", "scene.js"], ["ScenePlayer"]);
 
 const line = (art, ...spans) => ({ art, text: [{ kind: "para", spans: spans.map((span) => (Array.isArray(span) ? { text: span[0], code: true } : { text: span, code: false })) }] });
 const SCENE = [line("space", "I am Rama."), line("flag", "Plant the flag with ", ["git init"], ".")];

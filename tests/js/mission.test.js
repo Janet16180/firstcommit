@@ -6,7 +6,7 @@ const { makeEvent } = require("./fakedom");
 const { installBrowser, load, record } = require("./load");
 
 const document = installBrowser();
-const { Mission } = load(["dom.js", "markup.js", "art-pixels.js", "art-sprites.js", "mission.js"], ["Mission"]);
+const { Mission } = load(["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "mission.js"], ["Mission"]);
 
 const para = (text) => [{ kind: "para", spans: [{ text, code: false }] }];
 
