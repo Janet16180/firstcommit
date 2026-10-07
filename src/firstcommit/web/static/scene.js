@@ -76,7 +76,7 @@ const ScenePlayer = (function () {
 
       function show() {
         const { art, text } = scene[state.index];
-        if (art !== state.art) parts.art.replaceChildren(ArtScenes.scene(art));
+        if (art !== state.art) parts.art.replaceChildren(ArtScenes.scene(art, { label: t(`sceneLabel.${art}`), captions: Strings.group(`sceneCaption.${art}.`) }));
         if (state.index > 0) sound.play("page");
         state.art = art;
         parts.pips.querySelectorAll("i").forEach((pip, index) => pip.classList.toggle("on", index <= state.index));

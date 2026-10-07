@@ -66,12 +66,13 @@ test("without a next mission the map is the way on, and a missing lesson is said
   assert.equal(dock.querySelector(".dock-lesson").textContent, "This mission's lesson is not available.");
 });
 
-test("the dock shows the stars won, what the play paid and the new command card", () => {
+test("the dock shows the stars won, what the play paid and the new command, linked to the field guide", () => {
   const card = { level: "x", command: "git init", text: para("Makes a repository.") };
   const dock = Completion.dock({ title: "Done", stars: 2, lesson: null, reward: "+150 XP", card, next: null, onRetry: () => {} });
   assert.equal(dock.querySelector(".dock-stars .art-stars").getAttribute("aria-label"), "2 of 3 stars");
   assert.equal(dock.querySelector(".dock-xp").textContent, "+150 XP");
-  assert.equal(dock.querySelector(".dock-card").textContent, "New card in your collection: git init");
+  assert.equal(dock.querySelector(".dock-card").textContent, "New in your field guide: git init");
+  assert.equal(dock.querySelector(".dock-card").getAttribute("href"), "#/guide");
 });
 
 test("without a reward line or a new card the dock leaves them out", () => {

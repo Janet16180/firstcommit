@@ -2,9 +2,9 @@
 
 /*
  * A mission's completion, as the design shows it: a short band across the screen with sparks,
- * then the dock at the bottom with the stars won, the lesson, the new command card and the ways
- * on (Retry, Map, Next), so the terminal and the zones stay in view. Needs dom.js, strings.js, markup.js,
- * art-sprites.js and art-sky.js. Defines one global, Completion.
+ * then the dock at the bottom with the stars won, the lesson, the new command (linked to the
+ * field guide) and the ways on (Retry, Map, Next), so the terminal and the zones stay in view.
+ * Needs dom.js, strings.js, markup.js, art-sprites.js and art-sky.js. Defines one global, Completion.
  *
  * band({title, subtitle, stars, timers, reducedMotion}) plays the band and resolves when it has
  *   gone (after BAND_MS, or at once on a click); with reduced motion it shows nothing.
@@ -50,7 +50,7 @@ const Completion = (function () {
         el("b", { class: "dock-title" }, title),
         el("div", { class: "dock-lesson" }, lesson ? Markup.render(lesson) : el("p", {}, t("dock.noLesson"))),
         reward && el("small", { class: "dock-xp" }, reward),
-        card && el("small", { class: "dock-card" }, t("dock.newCard"), el("code", {}, card.command)),
+        card && el("a", { class: "dock-card", href: "#/guide" }, t("dock.newInGuide"), el("code", {}, card.command)),
       ),
       el("div", { class: "dock-actions" },
         el("button", { type: "button", class: "btn", onclick: () => onRetry() }, t("dock.retry")),
