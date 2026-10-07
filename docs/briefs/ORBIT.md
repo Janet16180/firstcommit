@@ -47,8 +47,8 @@ Changes to `firstcommit.game`'s records, on top of what exists. Every field is a
 - `LevelSummary` gains `command: str` (the short label, such as ``git init``) and
   `stars: int` (the best result, 0 while not done, else 1 to 3).
 - `ChapterSummary` gains `blurb: str` (one line under the sector's name).
-- `Status` gains `coming: list[{title: str, blurb: str}]` (sectors not playable yet) and
-  `collection: list[CommandCard]` (one per finished level, in play order).
+- `Status` gains `collection: list[CommandCard]` (one per finished level, in play order). A
+  chapter with no levels is a "coming soon" sector; the page derives that from `chapters`.
 - `CommandCard` is new: `{level: str, command: str, text: list[Block]}`.
 - `LevelView` gains:
   - `command: str` and `par: int`;
@@ -67,17 +67,20 @@ Changes to `firstcommit.game`'s records, on top of what exists. Every field is a
 - `Observation` gains `reactions: list[Reaction]`, one per typed line Rama has something to say
   about, oldest first: `Reaction = {line: str, mood: "info" | "ok" | "warn" | "err", text:
   list[Block]}`.
-- New route `POST /api/scene {level}` marks a level's scene seen; `game.reset` forgets it.
+- New route `POST /api/scene {level}` marks a level's scene seen and replies `{}`; `game.reset`
+  forgets it.
 
 Guarantees the page relies on:
 
-- A goal can depend on what was typed: every line typed since the level started counts, even
-  after `observe` has returned it. The page keeps polling as now (`observe`, then `step(null)`
+- A goal can depend on what was typed: a level's watch and check functions receive every line
+  typed since the level started, `(lab, state, typed)`, even after `observe` has returned them. The page keeps polling as now (`observe`, then `step(null)`
   for a watch step, then the automatic check).
 - Reactions come from the game, never from the page. A reaction reads the typed line, its exit
   status and what changed in the repository; the same rule serves every level, and a level may
   add its own (1-1's `git status`).
 - Stars are counted by the game; the page only shows them.
+- Saves from before Orbit do not load: the error names `firstcommit reset` (or
+  `deploy/docker/run reset`). The game is not released, so there is no migration.
 
 ## Who does what
 
