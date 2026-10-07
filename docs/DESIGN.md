@@ -203,7 +203,8 @@ infrastructure termlab: store, sandbox, snippets, web.shell, web.terminal, clien
 - `kit.py`: the level authors' toolkit: run git in a lab under the game environment, the fixed
   identity and dates, the three kinds of quest step, the `git status` lists (`untracked`,
   `staged`, `unstaged` and others), `code` for names, answer parsing (short hashes, numbers),
-  answer digests.
+  answer digests, and the lines typed since the level started (`typed`, `after`), which every
+  watch and level check receives as its last argument.
 - `save.py`: the game's records as `TypedDict`s, validated on load, on top of `termlab.store`.
 - `web/routes.py`: the route table and terminal settings handed to `termlab.web.shell`; each
   route validates its body (400) and calls one `game` function.

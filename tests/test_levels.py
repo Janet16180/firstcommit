@@ -40,7 +40,8 @@ HOSTILE = [
     "x" * 60_000,
 ]
 PLACEHOLDER = re.compile(r"\{\{\s*(\w+)\s*\}\}")
-QuestAction = Callable[[kit.Lab, kit.State], str | None]
+QuestAction = Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]
+HOSTILE_LINES: list[kit.Command] = [{"line": line, "status": status} for line in HOSTILE for status in (0, 1, 127)]
 
 CASES = [(levels, level) for level in runner.catalogue().values()] + [(sample_levels, level) for level in runner.discover(sample_levels).values()]
 IDS = [level.id for _, level in CASES]
@@ -148,10 +149,20 @@ def test_before_solving_a_check_fails_with_no_answer_and_any_wrong_one_and_chang
     lab = runner.lab_of(level.id)
     before = tree(lab.root)
     for answer in [None, *HOSTILE]:
-        verdict = level.check(lab, state, answer)
+        verdict = level.check(lab, state, answer, [])
         assert isinstance(verdict, kit.Verdict) and isinstance(verdict.message, str)
         assert not verdict.solved, f"solved with {answer!r:.40}"
     assert tree(lab.root) == before
+
+
+@pytest.mark.parametrize(("package", "level"), CASES, ids=IDS)
+def test_hostile_typed_lines_never_crash_a_check_or_a_watch_or_solve_the_level(package: ModuleType, level: runner.Level) -> None:
+    state = runner.start_lab(level)
+    lab = runner.lab_of(level.id)
+    verdicts = [level.check(lab, state, None, HOSTILE_LINES)]
+    verdicts += [step.watch(lab, state, HOSTILE_LINES) for step in level.quest if isinstance(step, kit.WatchStep)]
+    assert all(isinstance(verdict, kit.Verdict) for verdict in verdicts)
+    assert not verdicts[0].solved
 
 
 @pytest.mark.parametrize(("package", "level"), CASES, ids=IDS)
@@ -169,12 +180,13 @@ def test_each_quest_step_passes_only_after_the_players_action(package: ModuleTyp
     state = runner.start_lab(level)
     lab = runner.lab_of(level.id)
     actions = quest_actions(package, level)
+    typed: list[kit.Command] = []
     for step in level.quest:
         if isinstance(step, kit.WatchStep):
-            assert not step.watch(lab, state).solved, f"step {step.id} passed before the player acted"
-        answer = actions[step.id](lab, state) if step.id in actions else None
+            assert not step.watch(lab, state, typed).solved, f"step {step.id} passed before the player acted"
+        answer = actions[step.id](lab, state, typed) if step.id in actions else None
         if isinstance(step, kit.WatchStep):
-            assert step.watch(lab, state).solved, f"step {step.id} did not pass after the player acted"
+            assert step.watch(lab, state, typed).solved, f"step {step.id} did not pass after the player acted"
         if isinstance(step, kit.AnswerStep):
             assert not step.check(lab, state, "").solved, f"step {step.id} passed with an empty answer"
             assert answer is not None and step.check(lab, state, answer).solved, f"step {step.id} refused the player's answer {answer!r}"
@@ -184,9 +196,10 @@ def test_each_quest_step_passes_only_after_the_players_action(package: ModuleTyp
 def test_the_reference_solution_solves_the_level_and_the_lab_is_removed_afterwards(package: ModuleType, level: runner.Level, game_home: Path) -> None:
     state = runner.start_lab(level)
     lab = runner.lab_of(level.id)
-    answer = level.solve(lab, state)
+    typed: list[kit.Command] = []
+    answer = level.solve(lab, state, typed)
     assert (answer is not None) == bool(level.question), "solve returns an answer exactly when the level asks a QUESTION"
-    assert level.check(lab, state, answer).solved
+    assert level.check(lab, state, answer, typed).solved
     runner.remove_labs()
     assert not (game_home / "labs").exists()
 
@@ -197,7 +210,7 @@ def test_checks_survive_a_lab_the_player_wrecked(package: ModuleType, level: run
     state = runner.start_lab(level)
     lab = runner.lab_of(level.id)
     sandbox.remove_tree(lab.project / ".git" if wreck == "the .git folder" else lab.project, game_home)
-    verdicts = [level.check(lab, state, None), level.check(lab, state, "x")]
-    verdicts += [step.watch(lab, state) for step in level.quest if isinstance(step, kit.WatchStep)]
+    verdicts = [level.check(lab, state, None, []), level.check(lab, state, "x", [])]
+    verdicts += [step.watch(lab, state, []) for step in level.quest if isinstance(step, kit.WatchStep)]
     verdicts += [step.check(lab, state, "x") for step in level.quest if isinstance(step, kit.AnswerStep)]
     assert all(isinstance(verdict, kit.Verdict) for verdict in verdicts)

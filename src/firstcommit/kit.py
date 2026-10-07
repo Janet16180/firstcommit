@@ -10,10 +10,11 @@ the page's button runs, so a level can prepare a state such as "Alex already pus
 
 import hashlib
 import re
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal
 
+from firstcommit.commands import type_line
 from firstcommit.gitcmd import GAME, Person
 from firstcommit.gitcmd import output as git
 from firstcommit.gitcmd import run as git_run
@@ -21,8 +22,8 @@ from firstcommit.lab import Lab
 from firstcommit.markup import code
 from firstcommit.playground import press
 from firstcommit.playground import setup as setup_playground
-from firstcommit.reactions import ReactionRule
-from firstcommit.records import Art
+from firstcommit.reactions import Outcome, ReactionRule, matches
+from firstcommit.records import Art, Command
 from firstcommit.repomap import (
     Commit,
     FileEntry,
@@ -43,6 +44,7 @@ __all__ = [
     "AnswerCheck",
     "AnswerStep",
     "Art",
+    "Command",
     "CommandCard",
     "Commit",
     "FileEntry",
@@ -56,9 +58,11 @@ __all__ = [
     "Snapshot",
     "State",
     "Step",
+    "Typed",
     "Verdict",
     "Watch",
     "WatchStep",
+    "after",
     "answer_is",
     "code",
     "conflicted",
@@ -70,6 +74,8 @@ __all__ = [
     "nested",
     "parse_int",
     "press",
+    "type_line",
+    "typed",
     "setup_playground",
     "snapshot",
     "staged",
@@ -94,8 +100,11 @@ class Verdict:
 
 
 
+Typed = Sequence[Command]
+"""Every line typed in the game's terminal since the level started, oldest first, with its exit status."""
+
 AnswerCheck = Callable[[Lab, State, str], Verdict]
-Watch = Callable[[Lab, State], Verdict]
+Watch = Callable[[Lab, State, Typed], Verdict]
 
 
 @dataclass(frozen=True)
@@ -192,6 +201,49 @@ class ReadStep:
 
 Step = AnswerStep | WatchStep | ReadStep
 """One step of a guided quest: each kind carries exactly what it needs, so no other shape exists."""
+
+
+def typed(lines: Typed, pattern: str, outcome: Outcome = "any") -> bool:
+    r"""
+    Tell whether the player typed a line that starts as a pattern says and ended as asked.
+
+    Parameters
+    ----------
+    lines : Typed
+        The lines typed since the level started.
+    pattern : str
+        A regular expression matched at the start of each line, its runs of spaces made single,
+        such as ``git status\b``.
+    outcome : Outcome
+        How the line must have ended: ``"any"``, ``"ok"`` (status 0), ``"failed"`` or
+        ``"unknown-command"``.
+
+    Returns
+    -------
+    bool
+        True if any line fits.
+    """
+    return any(matches(line, pattern, outcome) for line in lines)
+
+
+def after(lines: Typed, pattern: str) -> list[Command]:
+    """
+    Give the lines typed after the last line that fits a pattern and worked (status 0).
+
+    Parameters
+    ----------
+    lines : Typed
+        The lines typed since the level started.
+    pattern : str
+        A regular expression matched at the start of each line, as in `typed`.
+
+    Returns
+    -------
+    list[Command]
+        The lines after it, oldest first; every line when none fits.
+    """
+    worked = [index for index, line in enumerate(lines) if matches(line, pattern, "ok")]
+    return list(lines[worked[-1] + 1 :] if worked else lines)
 
 
 def parse_int(text: str | None) -> int | None:

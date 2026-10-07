@@ -133,3 +133,11 @@ def test_files_made_or_changed_by_the_shell_are_explained_in_a_repository() -> N
 def test_reading_the_status_or_the_history_is_explained() -> None:
     assert said("git status --short") == f"info: {reactions.STATUS}"
     assert said("git log --oneline") == f"info: {reactions.LOG}"
+
+
+def test_a_typed_line_matches_a_pattern_from_its_start_and_an_outcome() -> None:
+    failed: Command = {"line": "  git   status ", "status": 128}
+    assert reactions.matches(failed, r"git status\b", "any")
+    assert reactions.matches(failed, r"git status\b", "failed")
+    assert not reactions.matches(failed, r"git status\b", "ok")
+    assert not reactions.matches(failed, r"status\b", "any")

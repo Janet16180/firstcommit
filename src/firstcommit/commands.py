@@ -13,12 +13,18 @@ logs nothing.
 Each record is ``<history number>\t<status>\t<line>`` and a NUL byte. Bash strings cannot hold
 NUL, so a line with tabs or newlines is still one record. `since` reads the log back from a
 position; only whole records count, so a record the shell is still writing is read next time.
+
+`type_line` runs one line the way a player would type it, for the levels' reference solutions
+and their tests.
 """
 
+import os
 import re
 import shlex
+import subprocess
 from pathlib import Path
 
+from firstcommit import gitcmd, save
 from firstcommit.records import Command
 
 COMPLETION = Path("/usr/share/bash-completion/bash_completion")
@@ -151,3 +157,35 @@ def _contents(log: Path) -> bytes:
     except FileNotFoundError:
         data = b""
     return data
+
+
+def type_line(folder: Path, line: str) -> Command:
+    """
+    Run one command line as the player would type it in the game's terminal, and record how it ended.
+
+    The line runs in bash, in ``folder``, with the game shell's git isolation
+    (`firstcommit.gitcmd.shell_environment`), the game home as ``HOME`` and no history, so it
+    never reads or writes the player's own files. Nothing is logged: the caller keeps the
+    record.
+
+    Parameters
+    ----------
+    folder : Path
+        The folder to run in; it must exist.
+    line : str
+        The command line, as typed.
+
+    Returns
+    -------
+    Command
+        The line as given and its exit status.
+
+    Raises
+    ------
+    subprocess.TimeoutExpired
+        If the line runs longer than `firstcommit.gitcmd.TIMEOUT` seconds.
+    """
+    home = save.home()
+    env = {**gitcmd.shell_environment(os.environ, home), "HOME": str(home), "HISTFILE": "/dev/null"}
+    ran = subprocess.run(["bash", "--noprofile", "--norc", "-c", line], cwd=folder, env=env, capture_output=True, stdin=subprocess.DEVNULL, timeout=gitcmd.TIMEOUT, check=False)
+    return {"line": line, "status": ran.returncode}

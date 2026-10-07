@@ -114,11 +114,38 @@ def react(command: Command, kinds: Collection[str], repository: bool, rules: Seq
     ReactionRule | None
         The first rule that fits, or None.
     """
-    line = " ".join(command["line"].split())
-    return next((rule for rule in rules if _fits(rule, line, command["status"], kinds, repository)), None)
+    return next((rule for rule in rules if _fits(rule, command, kinds, repository)), None)
 
 
-def _fits(rule: ReactionRule, line: str, status: int, kinds: Collection[str], repository: bool) -> bool:
+def matches(command: Command, pattern: str, outcome: Outcome) -> bool:
+    """
+    Tell whether a typed line starts as a pattern says and ended as asked.
+
+    Parameters
+    ----------
+    command : Command
+        The typed line and its exit status.
+    pattern : str
+        A regular expression matched at the start of the line, its runs of spaces made single.
+    outcome : Outcome
+        How the line must have ended.
+
+    Returns
+    -------
+    bool
+        True when both fit.
+    """
+    status = command["status"]
+    ended = {
+        "any": True,
+        "ok": status == 0,
+        "failed": status != 0,
+        "unknown-command": status == UNKNOWN_COMMAND_STATUS,
+    }
+    return re.match(pattern, " ".join(command["line"].split())) is not None and ended[outcome]
+
+
+def _fits(rule: ReactionRule, command: Command, kinds: Collection[str], repository: bool) -> bool:
     """
     Tell whether a rule fits a typed line.
 
@@ -126,10 +153,8 @@ def _fits(rule: ReactionRule, line: str, status: int, kinds: Collection[str], re
     ----------
     rule : ReactionRule
         The rule.
-    line : str
-        The typed line, its runs of spaces made single.
-    status : int
-        Its exit status.
+    command : Command
+        The typed line and its exit status.
     kinds : Collection[str]
         The event kinds of what changed.
     repository : bool
@@ -140,15 +165,8 @@ def _fits(rule: ReactionRule, line: str, status: int, kinds: Collection[str], re
     bool
         True when the line, its outcome, the change and the repository all fit.
     """
-    ended = {
-        "any": True,
-        "ok": status == 0,
-        "failed": status != 0,
-        "unknown-command": status == UNKNOWN_COMMAND_STATUS,
-    }
     return (
-        re.match(rule.line, line) is not None
-        and ended[rule.outcome]
+        matches(command, rule.line, rule.outcome)
         and (not rule.event or rule.event in kinds)
         and (rule.repository is None or rule.repository == repository)
     )

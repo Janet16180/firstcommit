@@ -625,9 +625,10 @@ def quest_step(answer: str | None) -> StepResult:
     Check the current step of the guided quest, and move on if it passed.
 
     Only the current step is ever checked, so the quest is played in order. An answer step is
-    checked with ``answer`` (a missing or blank one counts as empty), a watch step against the lab (the
-    page polls it with None), and a read step always passes. Once the quest is done, nothing is
-    checked and the result says so.
+    checked with ``answer`` (a missing or blank one counts as empty), a watch step against the lab
+    and every line typed since the level started (the page polls it with None; the log is read
+    first), and a read step always passes. Once the quest is done, nothing is checked and the
+    result says so.
 
     Parameters
     ----------
@@ -646,10 +647,11 @@ def quest_step(answer: str | None) -> StepResult:
     """
     with save.lock():
         active, entry = _playing()
+        active = _catch_up(active)
         correct = False
         message: list[Block] = []
         if not _quest_done(active, entry):
-            verdict = _check_step(entry.quest[active["step"]], runner.lab_of(entry.id), active["state"], _typed(answer))
+            verdict = _check_step(entry.quest[active["step"]], runner.lab_of(entry.id), active, _typed(answer))
             correct = verdict.solved
             message = markup.parse(verdict.message)
         if correct:
@@ -696,7 +698,7 @@ def check(answer: str | None, auto: bool) -> CheckResult:
         if auto and not _quest_done(active, entry):
             verdict = kit.Verdict(False, QUEST_FIRST.format(step=active["step"] + 1, steps=len(entry.quest)))
         else:
-            verdict = entry.check(runner.lab_of(entry.id), active["state"], typed)
+            verdict = entry.check(runner.lab_of(entry.id), active["state"], typed, active["typed"])
         payout = None
         stars = 0
         if verdict.solved:
@@ -1420,7 +1422,7 @@ def _pay(entry: runner.Level, active: save.Active, stars: int) -> Payout:
     return payout
 
 
-def _check_step(step: kit.Step, lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict:
+def _check_step(step: kit.Step, lab: kit.Lab, active: save.Active, answer: str | None) -> kit.Verdict:
     """
     Check one quest step by its kind.
 
@@ -1430,10 +1432,10 @@ def _check_step(step: kit.Step, lab: kit.Lab, state: kit.State, answer: str | No
         The step.
     lab : kit.Lab
         The lab.
-    state : kit.State
-        The level's state.
+    active : save.Active
+        The level in progress: its state, and the lines typed since it started.
     answer : str | None
-        What the player typed, or None.
+        What the player answered, or None.
 
     Returns
     -------
@@ -1442,9 +1444,9 @@ def _check_step(step: kit.Step, lab: kit.Lab, state: kit.State, answer: str | No
     """
     verdict = kit.Verdict(True, "")
     if isinstance(step, kit.AnswerStep):
-        verdict = step.check(lab, state, answer or "")
+        verdict = step.check(lab, active["state"], answer or "")
     elif isinstance(step, kit.WatchStep):
-        verdict = step.watch(lab, state)
+        verdict = step.watch(lab, active["state"], active["typed"])
     return verdict
 
 

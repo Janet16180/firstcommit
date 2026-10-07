@@ -156,8 +156,8 @@ HINTS: list[str]              # 2-4, from a nudge to almost the answer; each cos
 DEBRIEF: str                  # shown once solved
 
 def setup(lab: kit.Lab) -> kit.State: ...
-def check(lab: kit.Lab, state: kit.State, answer: str | None) -> kit.Verdict: ...
-def solve(lab: kit.Lab, state: kit.State) -> str | None: ...
+def check(lab: kit.Lab, state: kit.State, answer: str | None, typed: kit.Typed) -> kit.Verdict: ...
+def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None: ...
 ```
 
 - **`setup(lab)`** builds the starting point in `lab.project` (a repository or an empty folder)
@@ -165,7 +165,13 @@ def solve(lab: kit.Lab, state: kit.State) -> str | None: ...
   folder exists and is empty. Make commits with `kit.git(..., author=..., when=...)` so their
   hashes are stable when text refers to them, and randomise what the player must find out when
   a fixed answer could be memorised. Store answers as `kit.digest(...)`, never in clear text.
-- **`check(lab, state, answer)`** reads the lab and decides. It must not change anything (no
+- **`typed`** is every line typed in the game's terminal since the level started, oldest first,
+  each with its exit status (`kit.Command`), even lines an observation already showed. A goal
+  that depends on what the player typed reads it with `kit.typed(typed, r"git status\b", "ok")`
+  (a regular expression matched at the start of the line, and how it ended) or
+  `kit.after(typed, r"git init\b")` (the lines after the last one of those that worked). Prefer
+  the repository when it can tell: typed lines are for goals such as "you looked with `ls`".
+- **`check(lab, state, answer, typed)`** reads the lab and decides. It must not change anything (no
   `add`, no `commit`, no `gc`): read with `kit.snapshot(lab.project)` and read-only commands
   through `kit.git_run`. It is called every couple of seconds while the player works, with
   `answer=None`, and must stay fast and survive any state the player can create: a missing
@@ -184,9 +190,11 @@ def solve(lab: kit.Lab, state: kit.State) -> str | None: ...
 - **`QUESTION`** is for levels whose goal is something the player finds out ("which commit
   introduced the bug?"). Without it, the page offers no answer box and the level is checked
   against the repository only, with `answer=None`.
-- **`solve(lab, state)`** is the reference solution the tests use. It plays like a player:
-  ordinary git commands through `kit.git` in `lab.project`, never a stored answer. It returns
-  the answer to submit, or None for levels checked against the repository.
+- **`solve(lab, state, typed)`** is the reference solution the tests use. It plays like a player:
+  ordinary git commands through `kit.git` in `lab.project`, never a stored answer, and each line
+  a goal reads typed with `typed.append(kit.type_line(lab.project, "ls"))`, which runs it in bash
+  with the game's git and records its exit status. It returns the answer to submit, or None for
+  levels checked against the repository.
 - **`QUEST`** steps happen in the same lab, in order, and lead to the level's goal, so finishing
   the quest usually solves the level. The server enforces the order. While the quest is
   unfinished, the page's automatic check never ends the level, even when `check` would pass, so
@@ -195,7 +203,7 @@ def solve(lab: kit.Lab, state: kit.State) -> str | None: ...
   exactly what it needs:
   - `kit.AnswerStep(id, text, question, check, command="", placeholder="", more="")`:
     `check(lab, state, answer) -> Verdict` judges the player's answer;
-  - `kit.WatchStep(id, text, watch, command="", more="")`: `watch(lab, state) -> Verdict` passes
+  - `kit.WatchStep(id, text, watch, command="", more="")`: `watch(lab, state, typed) -> Verdict` passes
     once the lab shows the step was done (polled like `check`; same rules);
   - `kit.ReadStep(id, text, command="", more="")`: the player reads, then continues.
 
@@ -233,6 +241,8 @@ for people.
 | `kit.parse_int(text)` | a typed number, or None (never `isdigit()` + `int()`) |
 | `kit.is_hash_of(text, full)` | the player typed this object id, whole or abbreviated |
 | `kit.digest(text)`, `kit.answer_is(text, digest)` | store and compare secret answers |
+| `kit.typed(typed, pattern, outcome)`, `kit.after(typed, pattern)` | whether a line was typed and how it ended; the lines after the last one that worked |
+| `kit.type_line(folder, line)` | run a line in bash as the player would, for `solve` and `QUEST_ACTIONS`; returns its `kit.Command` |
 
 ### 3.5 Lessons
 
@@ -321,21 +331,27 @@ The quest is walked step by step, as a player would play it. A level with a ques
 player's part of each step in `QUEST_ACTIONS`, a module-level name the game itself never reads:
 
 ```python
-def stage_hello(lab: kit.Lab, state: kit.State) -> str | None:
+def stage_hello(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
     kit.git(lab.project, "add", "hello.txt")      # what the player types for this step
     return None                                   # a watch step needs no answer
 
 
-def read_branch(lab: kit.Lab, state: kit.State) -> str | None:
+def look(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
+    typed.append(kit.type_line(lab.project, "ls"))  # a goal reads this line, so type it for real
+    return None
+
+
+def read_branch(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
     return kit.git(lab.project, "branch", "--show-current").strip()  # what the player reads and types
 
 
-QUEST_ACTIONS = {"stage": stage_hello, "branch": read_branch}
+QUEST_ACTIONS = {"stage": stage_hello, "look": look, "branch": read_branch}
 ```
 
 Keys are step ids; every watch step and every answer step needs one (a read step may have one
 when the next step depends on it). Each action does what the player would do, with ordinary
-commands, and returns the answer to type for an answer step (None otherwise). For each step in
+commands, and returns the answer to type for an answer step (None otherwise). The harness passes
+one list of typed lines through the whole walk, as the game does. For each step in
 order, the harness asserts that a watch step fails before its action and passes after it, and
 that an answer step refuses the empty answer and accepts the action's answer. So each watch must
 notice the very thing its step asks for, and not pass early because of an earlier step.

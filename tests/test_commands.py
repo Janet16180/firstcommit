@@ -7,7 +7,7 @@ from hypothesis import given, settings
 from hypothesis import strategies as st
 from termlab.web import terminal
 
-from firstcommit import commands
+from firstcommit import commands, gitcmd, save
 
 Typist = Callable[..., bytes]
 
@@ -178,3 +178,21 @@ def test_records_written_in_any_pieces_read_back_whole_and_in_order(tmp_path_fac
         typed += new
     assert typed == [{"line": line, "status": status} for _, status, line in logged]
     assert offset == len(data)
+
+
+def test_a_line_typed_for_a_level_runs_in_bash_and_comes_back_with_its_exit_status(game_home: Path) -> None:
+    folder = game_home / "labs" / "some-level" / "project"
+    folder.mkdir(parents=True)
+    (folder / "map.txt").write_text("Earth, Moon, Mars\n")
+    assert commands.type_line(folder, "ls  map.txt") == {"line": "ls  map.txt", "status": 0}
+    assert commands.type_line(folder, "ls nothing.txt") == {"line": "ls nothing.txt", "status": 2}
+    assert commands.type_line(folder, "git status") == {"line": "git status", "status": 128}
+    assert commands.type_line(folder, "gti status") == {"line": "gti status", "status": 127}
+
+
+def test_a_line_typed_for_a_level_uses_the_games_git_and_never_the_players_home(game_home: Path) -> None:
+    folder = game_home / "project"
+    folder.mkdir()
+    save.ensure_gitconfig(gitcmd.BASE_CONFIG)
+    assert commands.type_line(folder, 'test "$GIT_CONFIG_GLOBAL" = "$HOME/gitconfig" && test "$HOME" = "$FIRSTCOMMIT_HOME"')["status"] == 0
+    assert commands.type_line(folder, "git init -q && git symbolic-ref --short HEAD | grep -qx main")["status"] == 0
