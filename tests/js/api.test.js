@@ -83,6 +83,13 @@ test("every sample record is accepted as it is", async () => {
   await game.card("x", "y");
 });
 
+test("a lesson slide may show the places", async () => {
+  const lesson = record("lesson");
+  lesson.slides[2].view = "places";
+  const { game } = gameApi({ ...REPLIES, "/api/lesson": lesson });
+  assert.equal((await game.lesson("x")).slides[2].view, "places");
+});
+
 test("an unsolved check and an empty observation are accepted", async () => {
   const observation = { ...record("observation"), github: null, events: [], project: record("snapshots").empty };
   const { game } = gameApi({ "/api/check": record("check_unsolved"), "/api/observe": observation });

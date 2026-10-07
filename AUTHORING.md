@@ -220,8 +220,10 @@ lines added to the lesson's demonstration repository. The game runs every slide'
 in order in an empty folder, with a fixed identity, date and locale, and only the game's
 starting global configuration (`gitcmd.BASE_CONFIG`) plus the settings below that make git
 print what a terminal shows. It shows each of the slide's commands with its real output, plus
-a figure (`view`): the repository map, the three areas, the object database, the commands
-only, or nothing. So every hash and line of output a lesson shows is what git really prints.
+a figure (`view`): the repository map, the three areas, your computer's places (`places`: the
+working folder, staging area and repository, with the arrows the slide's change lit, played from
+the slide before), the object database, the commands only, or nothing. So every hash and line
+of output a lesson shows is what git really prints.
 
 - Each non-blank line of `run` is one command. The whole lesson runs in one bash shell, so
   `cd`, variables and `$?` carry over to the next line and the next slide. Keep a command on

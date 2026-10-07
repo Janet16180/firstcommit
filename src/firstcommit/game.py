@@ -156,7 +156,7 @@ class SlideView(TypedDict):
     id: str
     title: str
     text: list[Block]
-    view: Literal["map", "areas", "objects", "terminal", "none"]
+    view: Literal["map", "areas", "places", "objects", "terminal", "none"]
     transcript: list[Line]
     map: Snapshot
     objects: list[ObjectInfo]

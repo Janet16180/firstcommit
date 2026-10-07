@@ -100,14 +100,16 @@ class Slide:
     ``run`` holds shell lines added to the lesson's demonstration repository. The game runs
     the lesson's ``run`` lines in order, in an empty folder, with a fixed identity and date,
     and shows each of this slide's commands with its real output; ``view`` picks the figure:
-    the repository map, the three areas, the object database, the commands only, or nothing.
+    the repository map, the three areas, your computer's places (working folder, staging area
+    and repository, with the arrows the slide's change lit), the object database, the commands
+    only, or nothing.
     """
 
     id: str
     title: str
     text: str
     run: str = ""
-    view: Literal["map", "areas", "objects", "terminal", "none"] = "map"
+    view: Literal["map", "areas", "places", "objects", "terminal", "none"] = "map"
 
 
 @dataclass(frozen=True)

@@ -397,6 +397,12 @@ def test_a_lesson_gives_each_slide_its_figure(sample_level: runner.Level) -> Non
     assert second["map"]["exists"] is False
 
 
+def test_a_slide_may_show_the_places_of_its_repository(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    level = dataclasses.replace(sample_level, lesson=(kit.Slide(id="init", title="A repository", text="x", run="git init -q", view="places"),))
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    assert game.lesson(level.id)["slides"][0]["view"] == "places"
+
+
 def test_a_lesson_shows_the_real_commands_their_output_and_the_repository_they_leave(sample_level: runner.Level) -> None:
     first, second = game.lesson(sample_level.id)["slides"]
     assert first["transcript"] == [{"command": "git init -q demo", "output": ""}]

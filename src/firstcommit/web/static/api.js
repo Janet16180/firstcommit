@@ -111,7 +111,7 @@ const createGameApi = (function () {
       id: text,
       title: text,
       text: BLOCKS,
-      view: oneOf("map", "areas", "objects", "terminal", "none"),
+      view: oneOf("map", "areas", "places", "objects", "terminal", "none"),
       transcript: TRANSCRIPT,
       map: SNAPSHOT,
       objects: OBJECTS,
