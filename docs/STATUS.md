@@ -75,8 +75,11 @@ Parked as WIP when the day ended (resume in this order, at most 3 teammates work
    shell; the game runs bash with its own rc: a plain prompt and a PROMPT_COMMAND log of
    {line, status}; observe returns the commands since the last observation), then web (the
    terminal setting, api.js, records.json), then timetravel (wire typed lines into live.js, one
-   paragraph in the four-places draft). Branches: termlab `firstcommit`, `p2/core`, `p2/web`,
-   `p2/theme-time`.
+   paragraph in the four-places draft). Done: termlab 01ee4e8 (the shell option) and core
+   d053403 (the game's bash with prompt `project $ `, the command log, `Observation.commands`;
+   `firstcommit shell` already uses it). Next: web adds `shell=game.shell_command` to the
+   terminal route, api.js and records.json on d053403; then timetravel wires live.js (its parse
+   is 30b2e11, merged). Until web's link, the page's terminal runs the user's $SHELL.
 2. Chapter 1 "Git, GitHub and your first clone" (plan approved): `start-git-and-github` (guided:
    a 5-slide lesson in the four places with a practice GitHub, then clone, cd, count files and
    commits, name the remote) and `start-first-clone` (challenge: who added the checklist, from
