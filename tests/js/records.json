@@ -1316,6 +1316,34 @@
    "operation": null,
    "stash": 0,
    "truncated": false
+  },
+  "folder": {
+   "exists": false,
+   "bare": false,
+   "head": null,
+   "branch": null,
+   "commits": [],
+   "refs": [],
+   "pushed": [],
+   "files": [
+    {
+     "path": "notes.txt",
+     "head": null,
+     "index": null,
+     "folder": "5f0f9bb007c646838fe0aba05f3449fba6a85eef",
+     "head_mode": null,
+     "index_mode": null,
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    }
+   ],
+   "operation": null,
+   "stash": 0,
+   "truncated": false
   }
  },
  "files": [

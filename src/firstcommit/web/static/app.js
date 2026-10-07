@@ -208,7 +208,7 @@
     theme: TimeTheme.withGuide(mapGuide),
     panelWords: TimeTheme.panel,
     playMap: TimeMotion.playMap,
-    places: TimePlaces,
+    places: TimePlaces.withTheme(TimeTheme.withGuide(mapGuide, TimeTheme.live)),
     share: TimeShare,
     reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     terminal,

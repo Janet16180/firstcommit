@@ -148,6 +148,25 @@ test("the key draws each commit with the map's own shape", () => {
   assert.equal(RepoMap.render(MERGED, { theme }).querySelector(".tt-key .tt-box"), null);
 });
 
+test("the live map draws each commit as a closed box, at the map's own size, and its key says closed box = commit", () => {
+  const { live } = TimeTheme;
+  const figure = RepoMap.render(MERGED, { theme: live });
+  assert.ok([...figure.querySelectorAll(".map-commit")].every((commit) => commit.querySelector(".tt-box")));
+  assert.deepEqual(live.sizes, theme.sizes);
+  const place = (map) => map.commits.map((commit) => [commit.hash, commit.row, commit.lane]);
+  assert.deepEqual(place(RepoMap.layout(MERGED, { theme: live })), place(RepoMap.layout(MERGED, { theme })));
+  assert.match(legendText(figure)[0], /^closed box = commit/);
+  assert.ok(figure.querySelector(".tt-key .tt-mark.is-commit .tt-box"));
+  assert.match(legendText(RepoMap.render(MERGED, { theme }))[0], /^save point = commit/);
+});
+
+test("the guide's button goes into the key of whichever map it is given", () => {
+  const button = () => Object.assign(document.createElement("button"), { className: "tt-guide-button" });
+  const key = RepoMap.render(MERGED, { theme: TimeTheme.withGuide({ button }, TimeTheme.live) }).querySelector(".tt-key");
+  assert.ok(key.querySelector(".tt-guide-button"));
+  assert.match(key.textContent, /closed box = commit/);
+});
+
 test("the theme changes the look, never where a commit goes", () => {
   const project = record("observation").project;
   const place = (map) => map.commits.map((commit) => [commit.hash, commit.row, commit.lane]);

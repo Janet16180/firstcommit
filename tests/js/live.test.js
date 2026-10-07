@@ -117,6 +117,20 @@ test("with places, the part is called the three areas until a GitHub is there, t
   assert.deepEqual([part.querySelector("h3").textContent, part.getAttribute("aria-label")], ["The four places", "The four places"]);
 });
 
+test("with places, the places replace the map cards and come before the feed, and new commits are still reported", () => {
+  const changes = [];
+  const places = { commands: () => [], render: () => document.createElement("figure"), play: () => [] };
+  const panel = LivePanel.create({ places, onChange: (change) => changes.push(change) });
+  const observation = record("observation");
+  const older = { ...observation, project: { ...observation.project, commits: observation.project.commits.slice(1) }, events: [] };
+  panel.update(older);
+  panel.update(observation);
+  assert.equal(panel.element.querySelector(".live-project"), null, "no timelines card");
+  const parts = [...panel.element.querySelectorAll(".live-part")].map((part) => part.getAttribute("class"));
+  assert.deepEqual(parts, ["live-part live-three", "live-part live-feed"]);
+  assert.deepEqual(changes.map((change) => change.newCommits), [0, 1]);
+});
+
 test("what just happened lists the events newest first, with the time they were seen", () => {
   let now = "10:00:00";
   const panel = LivePanel.create({ now: () => clockAt(now)() });
@@ -152,6 +166,18 @@ test("given a playground, an observation with Alex's clone puts it in the places
   assert.deepEqual(playground.draws, [{ observation, options: { person: null } }]);
   panel.update(observation, { person: "alex" });
   assert.deepEqual(playground.draws[1].options, { person: "alex" });
+});
+
+test("on a playground, a commit new in your repository is reported, and Alex's commits are not", () => {
+  const changes = [];
+  const panel = LivePanel.create({ playground: playgroundStandIn(), onChange: (change) => changes.push(change) });
+  const { observation } = record("press");
+  const yours = { ...observation.project, commits: observation.project.commits.slice(1) };
+  const alexs = { ...observation.teammate, commits: observation.teammate.commits.slice(1) };
+  panel.update({ ...observation, project: yours, teammate: alexs });
+  panel.update({ ...observation, project: yours });
+  panel.update(observation);
+  assert.deepEqual(changes.map((change) => change.newCommits), [0, 0, 1]);
 });
 
 test("without Alex's clone a playground stays out, and the three areas show as before", () => {
