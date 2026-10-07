@@ -1,3 +1,4 @@
+import typing
 
 import pytest
 from hypothesis import given
@@ -90,3 +91,11 @@ def test_a_level_sets_up_the_playground_and_presses_its_buttons_through_the_tool
     assert kit.setup_playground is playground.setup
     assert kit.press is playground.press
     assert {"setup_playground", "press"} <= set(kit.__all__)
+
+
+def test_a_level_writes_its_scene_card_and_reactions_with_the_toolkit() -> None:
+    frame = kit.SceneFrame(art="flag", text="`git init` plants the flag.")
+    card = kit.CommandCard(command="git init", text="Makes the current folder a repository.")
+    rule = kit.ReactionRule(line=r"git init\b", mood="ok", text="Flag planted.")
+    assert (frame.art, card.command, rule.mood) == ("flag", "git init", "ok")
+    assert set(typing.get_args(kit.Art)) >= {"space", "timeline", "terminal", "planet", "flag", "zones", "conveyor"}
