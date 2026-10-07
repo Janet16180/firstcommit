@@ -144,6 +144,11 @@ The user says the layout responds well, so no more screen-size work.
   `PYTHONDONTWRITEBYTECODE=1`, delete the module's .pyc after each write and restore, and print
   which test failed, so a "caught" names its catcher (found by insight, 2026-10-07).
 
+- Tests that start real shells must give them a temporary HOME and HISTFILE. On 2026-10-07
+  core's terminal-log tests ran bash with the user's real HOME: an inner `bash --norc` appended
+  24 test lines to the user's ~/.bash_history and cut it to bash's default 500 lines. The shared
+  fixture now isolates HOME and fails a test if ~/.bash_history changes.
+
 ## Backlog (decided later, not now)
 
 - Playground re-record, paused 2026-10-07 at `p2/playground-design` 3378348 (WIP port of the
