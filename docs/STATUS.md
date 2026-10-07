@@ -84,7 +84,9 @@ Parked as WIP when the day ended (resume in this order, at most 3 teammates work
    a 5-slide lesson in the four places with a practice GitHub, then clone, cd, count files and
    commits, name the remote) and `start-first-clone` (challenge: who added the checklist, from
    `git log`). Needs insight's P1 (a lesson's practice GitHub: `p2/insight` f115816, done;
-   `LESSON_GITHUB` bash lines, Frame and SlideView `github`; web's api.js/records.json link next), guide's P2 (the
+   Frame and SlideView `github`; web's api.js/records.json link next; decided for next session:
+   `LESSON_GITHUB` becomes a Python builder `(Path) -> None` using kit.git, the same function the
+   level's setup calls on lab.github, instead of bash lines), guide's P2 (the
    places view with GitHub: `p2/lesson-github` 49fee17, lights clone, commit, push, fetch and pull
    right) and `kit.cloned_from_github` (author). A typed clone keeps git's absolute origin; fine
    while the chapter never pushes or pulls. Open: a four-place lesson slide does not fit 1280x800
