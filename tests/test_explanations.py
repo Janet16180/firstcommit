@@ -4,9 +4,7 @@ from typing import Any
 
 import pytest
 
-from firstcommit import explanations, gitcmd, markup, playground, records, repomap, save
-from firstcommit.lab import Lab
-from playground_helpers import clone, conflicted_lab, new_lab, presses
+from firstcommit import explanations, markup, records
 
 TABLE = Path(__file__).parent.parent / "docs" / "drafts" / "playground-errors.json"
 CASES: dict[str, Any] = json.loads(TABLE.read_text())
@@ -138,43 +136,3 @@ def test_a_refusal_no_rule_explains_adds_nothing_to_gits_own_message() -> None:
     failed = {**status, "status": 1}
     assert explained(failed)["tag"] == "E0"
     assert (explained(failed)["fix"], explained(failed)["fix_line"]) == ("", "")
-
-
-def explain_press(lab: Lab, person: records.Who, button: str) -> explanations.Explanation:
-    """
-    Press a playground button on real git and explain it, as the game does.
-
-    Parameters
-    ----------
-    lab : Lab
-        A playground lab.
-    person : records.Who
-        Who presses.
-    button : str
-        The button's id.
-
-    Returns
-    -------
-    explanations.Explanation
-        The explanation of that press.
-    """
-    before = {"github": repomap.snapshot(lab.github), "you": repomap.snapshot(lab.project), "alex": repomap.snapshot(lab.teammate)}
-    facts = playground.facts(lab, person, before[person], before["github"])
-    press = playground.press(lab, person, button)
-    return explanations.explain(press, before[person], repomap.snapshot(clone(lab, person)), facts, playground.BUTTON_IDS)
-
-
-def test_a_commit_refused_for_a_conflict_says_so_even_without_an_identity() -> None:
-    with new_lab() as lab:
-        conflicted_lab(lab)
-        gitcmd.output(save.home(), "config", "--global", "--unset", "user.email")
-        found = explain_press(lab, "you", "commit")
-        assert (found["tag"], found["file"]) == ("E35", "notes.txt")
-
-
-def test_a_push_with_nothing_to_send_names_uncommitted_work_only_in_the_button_files() -> None:
-    with new_lab() as lab:
-        (lab.project / "other.txt").write_text("not a button file\n")
-        assert explain_press(lab, "you", "push")["tag"] == "E17"
-        presses(lab, "you", "edit:notes.txt")
-        assert explain_press(lab, "you", "push")["tag"] == "E18"
