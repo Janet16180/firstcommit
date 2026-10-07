@@ -51,6 +51,9 @@ global.AudioContext = class {
 
   resume() {}
 };
+const fs = require("node:fs");
+const path = require("node:path");
+const { STATIC } = require("./load");
 const { Sound } = load(["sound.js"], ["Sound"]);
 
 test("the player's choice to mute is remembered", () => {
@@ -80,4 +83,16 @@ test("every sound the page uses exists, and muting silences them", () => {
   const before = started.length;
   Sound.play("celebrate");
   assert.equal(started.length, before);
+});
+
+test("every sound a page script asks for exists", () => {
+  const scripts = fs.readdirSync(STATIC).filter((name) => name.endsWith(".js") && !name.startsWith("theme-time"));
+  const calls = scripts.flatMap((name) => [...fs.readFileSync(path.join(STATIC, name), "utf8").matchAll(/sound\.play\(([^)]*)\)/g)].map((match) => match[1]));
+  const asked = calls.flatMap((call) => [...call.matchAll(/"(\w+)"/g)].map((match) => match[1]));
+  assert.ok(asked.length > 5);
+  for (const name of asked) assert.ok(Sound.NAMES.includes(name), name);
+});
+
+test("there is a sound for a typed command, a failed one, a goal, a lost star, a mission complete, the typewriter and a page turn", () => {
+  for (const name of ["command", "failed", "goal", "starlost", "complete", "type", "page"]) assert.ok(Sound.NAMES.includes(name), name);
 });

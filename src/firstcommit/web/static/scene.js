@@ -6,8 +6,10 @@
  * typing, then moves on; Skip (or Escape) ends the scene. It opens on the browser's own <dialog>.
  * Needs dom.js, art-sprites.js and art-scenes.js. Defines one global, ScenePlayer.
  *
- * play({scene, timers, reducedMotion}) resolves once the scene is over; `scene` is the level's
- * list of {art, text} (LevelView.scene). With reduced motion each line shows whole at once.
+ * play({scene, timers, reducedMotion, sound}) resolves once the scene is over; `scene` is the
+ * level's list of {art, text} (LevelView.scene). With reduced motion each line shows whole at
+ * once. `sound` (as sound.js) plays the typewriter while a line types and a page turn for each
+ * new line.
  */
 
 /* global Dom, ArtSprites, ArtScenes */
@@ -32,7 +34,7 @@ const ScenePlayer = (function () {
     })));
   }
 
-  function play({ scene, timers, reducedMotion }) {
+  function play({ scene, timers, reducedMotion, sound = { play() {} } }) {
     if (!scene.length) return Promise.resolve();
     return new Promise((resolve) => {
       const parts = {
@@ -58,6 +60,7 @@ const ScenePlayer = (function () {
       }
 
       function tick() {
+        if (state.shown % (STEP * 3) === 0) sound.play("type");
         state.shown += STEP;
         draw();
         state.timer = state.shown < state.total ? timers.setTimeout(tick, TYPE_MS) : null;
@@ -73,6 +76,7 @@ const ScenePlayer = (function () {
       function show() {
         const { art, text } = scene[state.index];
         if (art !== state.art) parts.art.replaceChildren(ArtScenes.scene(art));
+        if (state.index > 0) sound.play("page");
         state.art = art;
         parts.pips.querySelectorAll("i").forEach((pip, index) => pip.classList.toggle("on", index <= state.index));
         parts.next.textContent = state.index === scene.length - 1 ? "Start" : "Next";
