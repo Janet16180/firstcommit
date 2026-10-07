@@ -133,13 +133,13 @@ uv run firstcommit --help
 ### 3.3 Module contract
 
 File `src/firstcommit/levels/<chapter>_<slug>.py`. Its id is the file name with `_` turned into
-`-` (`basics_first_commit.py` is `basics-first-commit`), and its chapter is the part before the
+`-` (`liftoff_aboard.py` is `liftoff-aboard`), and its chapter is the part before the
 first `_`.
 
 ```python
 from firstcommit import kit
 
-TITLE: str                    # short and concrete: "Your first commit"
+TITLE: str                    # short and concrete: "Plant the flag"
 DIFFICULTY: int               # 1 first steps, 2 solid, 3 stretch
 XP: int                       # guide: 100 for 1, 150-200 for 2, 250-300 for 3
 COMMAND: str                  # the short label on the map and the level: "git init"
@@ -152,7 +152,7 @@ QUEST: list[kit.Step] = []    # optional; the first level of a chapter has one
 BRIEFING: str                 # the situation and what counts as success
 QUESTION: str = ""            # optional; set it when the level is solved by a typed answer
 PLACEHOLDER: str = ""         # optional; example shape of that answer ("a short hash")
-HINTS: list[str]              # 2-4, from a nudge to almost the answer; each costs XP
+HINTS: list[str]              # 2-4, from a nudge to almost the answer; any hint costs the play's XP and a star
 DEBRIEF: str                  # shown once solved
 
 def setup(lab: kit.Lab) -> kit.State: ...
@@ -356,13 +356,13 @@ order, the harness asserts that a watch step fails before its action and passes 
 that an answer step refuses the empty answer and accepts the action's answer. So each watch must
 notice the very thing its step asks for, and not pass early because of an earlier step.
 
-Two patterns from the template level (`levels/basics_first_commit.py`) keep a level short and
-consistent:
+Two patterns from the Orbit levels (`levels/liftoff_flag.py`, `levels/cargo_first.py`) keep a
+level short and consistent:
 
-- **One "next move".** Write one function that reads the snapshot and says what the player should
-  do next from any state (no repository, wrong branch, a file not staged, nothing committed...).
-  Every watch and the mission `check` reuse it, so the advice is the same wherever the player is,
-  and advice that depends on the repository (does `main` exist yet?) is written once.
+- **One verdict per goal, reused.** Each watch reads the state its goal is about and says what to
+  do next from any state (no repository, a file not staged, a second file staged too...). A later
+  goal starts from the earlier goal's verdict, and the mission `check` returns the first goal not
+  met, so the advice is the same wherever the player is.
 - **`solve` reuses `QUEST_ACTIONS`**: it runs the actions in order, so the reference solution and
   the quest walk cannot drift apart.
 

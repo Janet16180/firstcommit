@@ -6,18 +6,18 @@ import pytest
 
 from firstcommit import records, save
 
-PAYOUT: save.Payout = {"level": "basics-first-commit", "xp": 85, "first_time": True, "rank_before": "Untracked", "rank_after": "Untracked"}
+PAYOUT: save.Payout = {"level": "liftoff-aboard", "xp": 85, "first_time": True, "rank_before": "Untracked", "rank_after": "Untracked"}
 PROGRESS: save.Progress = {
     "xp": 95,
-    "levels": {"basics-first-commit": {"finished": "2026-10-06T10:00:00+02:00", "xp": 85, "stars": 2, "state": {"branch": "main"}}},
+    "levels": {"liftoff-aboard": {"finished": "2026-10-06T10:00:00+02:00", "xp": 85, "stars": 2, "state": {"branch": "main"}}},
     "cards": {"basics-staging-area": {"box": 2, "due": "2026-10-09"}},
     "streak": 1,
     "best_streak": 3,
     "last_payout": PAYOUT,
-    "scenes": ["basics-first-commit"],
+    "scenes": ["liftoff-aboard"],
 }
 ACTIVE: save.Active = {
-    "level": "basics-first-commit",
+    "level": "liftoff-aboard",
     "started": "2026-10-06T10:00:00+02:00",
     "step": 1,
     "hints": 0,
@@ -81,7 +81,7 @@ SNAPSHOT: records.Snapshot = {
     "stash": 0,
     "truncated": False,
 }
-OBSERVED: save.Observed = {"level": "basics-first-commit", "project": SNAPSHOT, "github": {**SNAPSHOT, "bare": True, "files": []}, "teammate": SNAPSHOT, "told": 2}
+OBSERVED: save.Observed = {"level": "liftoff-aboard", "project": SNAPSHOT, "github": {**SNAPSHOT, "bare": True, "files": []}, "teammate": SNAPSHOT, "told": 2}
 
 
 @pytest.mark.parametrize("observed", [OBSERVED, {**OBSERVED, "github": None, "teammate": None}], ids=["playground", "project only"])
@@ -102,7 +102,7 @@ def damaged(record: dict[str, Any], dotted: str, value: Any) -> dict[str, Any]:
     record : dict[str, Any]
         A valid record.
     dotted : str
-        Path to the field, such as ``"levels.basics-first-commit.xp"``; a number picks a list item.
+        Path to the field, such as ``"levels.liftoff-aboard.xp"``; a number picks a list item.
     value : Any
         The new value, or ``...`` to delete the field.
 
@@ -131,26 +131,26 @@ PROGRESS_DAMAGE = [
     ("xp", -1),
     ("xp", ...),
     ("levels", []),
-    ("levels.basics-first-commit.finished", None),
-    ("levels.basics-first-commit.xp", "85"),
-    ("levels.basics-first-commit.bonus", 1),
-    ("levels.basics-first-commit.state", ["main"]),
-    ("levels.basics-first-commit.state", ...),
-    ("levels.basics-first-commit.stars", ...),
-    ("levels.basics-first-commit.stars", "3"),
+    ("levels.liftoff-aboard.finished", None),
+    ("levels.liftoff-aboard.xp", "85"),
+    ("levels.liftoff-aboard.bonus", 1),
+    ("levels.liftoff-aboard.state", ["main"]),
+    ("levels.liftoff-aboard.state", ...),
+    ("levels.liftoff-aboard.stars", ...),
+    ("levels.liftoff-aboard.stars", "3"),
     ("scenes", ...),
-    ("scenes", "basics-first-commit"),
+    ("scenes", "liftoff-aboard"),
     ("scenes.0", 3),
     ("cards.basics-staging-area.box", ...),
     ("cards.basics-staging-area.due", 20261009),
     ("cards.basics-staging-area.due", "tomorrow"),
     ("cards.basics-staging-area.due", "2026-02-30"),
-    ("levels.basics-first-commit.finished", "yesterday"),
+    ("levels.liftoff-aboard.finished", "yesterday"),
     ("streak", None),
     ("best_streak", -3),
     ("last_payout.first_time", "yes"),
     ("last_payout.rank_after", 3),
-    ("last_payout", "basics-first-commit"),
+    ("last_payout", "liftoff-aboard"),
     ("surprise", 1),
 ]
 
@@ -302,7 +302,7 @@ def test_the_home_must_not_hold_a_colon(tmp_path: Path, monkeypatch: pytest.Monk
 
 OLDER_SHAPES = [
     ("progress.json", damaged(dict(PROGRESS), "scenes", ...), save.load_progress),
-    ("progress.json", damaged(dict(PROGRESS), "levels.basics-first-commit.stars", ...), save.load_progress),
+    ("progress.json", damaged(dict(PROGRESS), "levels.liftoff-aboard.stars", ...), save.load_progress),
     ("active.json", damaged(dict(ACTIVE), "typed", ...), save.load_active),
     ("active.json", damaged(damaged(dict(ACTIVE), "typed", ...), "log_offset", ...), save.load_active),
 ]

@@ -272,7 +272,8 @@ real name and hash.
 
 1. Phase 2, lead: the uv project on termlab, tooling, `save`, `score`, `cards`, `markup`, `kit`,
    `runner`, `game`, the routes and page shell, `AUTHORING.md`, the test harness and the Docker
-   adapter; then the template level `basics_first_commit` end to end, in WSL and in the image.
+   adapter; then the template level `basics_first_commit` end to end, in WSL and in the image
+   (replaced on 2026-10-07 by the Orbit levels; `liftoff-flag` is now the smoke flow's level).
    Test-first throughout.
 2. Two theme agents build the prototypes on the template level in parallel; the user picks.
 3. Security review of this game's routes, terminal environment and container.
