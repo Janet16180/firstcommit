@@ -509,3 +509,17 @@ staged check before the add, the typo committed (lost), and the two diffs after 
 | `TYPO_STAGED`, `EVERYTHING_STAGED` | `git restore --staged engine.cfg` unstages it, the file keeps the edit | E58 |
 | `CHECKED`, `SEALED`, debrief | after staging the route, `--staged` shows only the new stop; the commit holds the fix, not the typo | E57, E59 |
 | `TYPO_SEALED` (lost) | a commit cannot be taken back until a later chapter | as vault-seal |
+
+### Level `vault-inspection` (Cargo inspection, 3-5, challenge)
+
+*Re-checked* by `tests/levels/test_vault_inspection.py`: `git add .` as a level event, both ways
+to unstage, goals in any order, a commit at once (lost), the keys deleted then unstaged (lost),
+a deleted log (asked back, not lost), and the `git add .` warning kept in the challenge.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, debrief | `git diff --staged` shows exactly what the next commit takes; a capsule holds what was staged when sealed | E57, E59; git-commit(1) |
+| briefing | `git add .` staged the patch, the keys and the log | E37 (the same setup shape) |
+| hints, debrief | unstage the keys and the log, keep the files, then commit | E38, E39, E43 (per file), E59 |
+| `KEYS_DELETED`, `KEYS_LOST`, `LOG_DELETED` | a staged file deleted from the folder is still staged; unstaged then, it is in no area | E41, E42 |
+| `KEYS_SEALED`, `LOG_SEALED` (lost) | a commit cannot be taken back until a later chapter | as vault-seal |
