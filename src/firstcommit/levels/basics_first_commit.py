@@ -1,4 +1,11 @@
-"""Your first commit: the three areas, and the first commit of a new repository."""
+"""
+Your first commit: the three places, and the first commit of a new repository.
+
+The lesson is picture-first (AUTHORING.md section 3.5): each slide shows one change in the four
+places figure, and its text only reads the picture; details are folded into ``more``. It has
+nine slides, one more than the 4-8 of AUTHORING.md, because "an empty box makes no commit" is the
+beginner's biggest misconception and gets a picture of its own (nothing moves).
+"""
 
 import shlex
 from collections.abc import Callable
@@ -25,95 +32,141 @@ LESSON = [
         id="history",
         title="Why keep history",
         text="""
-A project changes every day: files are added, edited and deleted. A version control system
-records those changes over time, so you can see what changed, who changed it and when, and get
-an earlier version back.
-
-Git is a version control system. Each version you save is called a commit.
+Your project folder is empty, and Git keeps nothing for it yet. Git can save versions of your
+project as closed boxes, called commits, and you can get any of them back.
 """,
-        view="none",
+        more="""
+A project changes every day: files are added, edited and deleted. A version control system
+records those changes over time, so you can see what changed, who changed it and when. Git is a
+version control system.
+
+The picture shows three places on your computer: the working folder, the staging area and your
+repository. The next slides fill them, one command at a time.
+""",
+        view="places",
     ),
     kit.Slide(
         id="init",
-        title="A folder becomes a repository",
+        title="The folder becomes a repository",
         text="""
-`git init` turns the current folder into a repository: it creates a hidden `.git` folder, where
-Git keeps the history of the project.
+`git init` turns the folder into a repository. The open box, the staging area, is empty, and
+your repository has no closed boxes yet.
+""",
+        more="""
+`git init` creates a hidden `.git` folder, which `ls -A` shows: Git keeps your repository there,
+and the staging area too once you add a file.
 
 A new repository has no commits yet, but you are already on its first branch. A branch is a line
 of development; this chapter uses only one. The game sets Git's `init.defaultBranch` setting to
 `main`, so in the game a new repository's first branch is called `main`.
 """,
-        run="git init\nls -A",
-        view="terminal",
+        run="git init",
+        view="places",
     ),
     kit.Slide(
-        id="areas",
-        title="The three areas",
+        id="file",
+        title="A new file is a page",
         text="""
-Git works with three areas. The working folder holds the files you see and edit (Git calls it
-the working tree). The staging area holds what will go into the next commit (Git calls it the
-index). The repository holds the commits.
-
-A new file starts in the working folder only. Git calls it untracked: it is in no commit and
-not in the staging area. `git status` lists the files that are untracked, staged, or changed but
-not staged.
+A new file appears as a page in the working folder. It is untracked: it is in neither box yet.
 """,
-        run='echo "# Team handbook" > README.md\ngit status',
-        view="areas",
+        more="""
+A page shows the file's name and a short id of its content. The same content always gets the
+same id and colour, so a page that changes gets a new one.
+
+`git status` lists the file as untracked. Git's own name for the working folder is the working
+tree.
+""",
+        run='echo "# Team handbook" > README.md',
+        view="places",
     ),
     kit.Slide(
         id="nothing-staged",
-        title="Staging comes first",
+        title="An empty box makes no commit",
         text="""
-Committing now fails. A plain `git commit` takes the content of the staging area, and the
-staging area is still empty: a file being in the working folder is not enough.
+The open box is empty, so `git commit` has nothing to close. No closed box appears: a page in
+the working folder is not enough.
+""",
+        more="""
+A plain `git commit` takes the content of the staging area, and a new file gets there only with
+`git add`. Here Git makes no commit and says why.
 """,
         run='! git commit -m "Add the README"',
-        view="areas",
+        view="places",
     ),
     kit.Slide(
         id="add",
-        title="Stage with git add",
+        title="git add copies the page",
         text="""
-`git add` copies the file's current content into the staging area. The file stays in the
-working folder too.
-
-If you edit the file after `git add`, the staging area keeps the content as it was when you
-added it: run `git add` again to stage the new content.
+`git add` drops a copy of the page into the open box. The working folder keeps its page.
 """,
-        run="git add README.md\ngit status",
-        view="areas",
+        more="""
+`git add` copies the file's content as it is at that moment, and usually prints nothing. The open
+box holds a page for every file the next commit will contain, not only the changed ones. Git's
+own name for the staging area is the index.
+""",
+        run="git add README.md",
+        view="places",
     ),
     kit.Slide(
         id="commit",
-        title="Commit",
+        title="git commit closes the box",
         text="""
-A plain `git commit` saves the content of the staging area as a new commit, with the author's
-name and email, the date and the message given with `-m`. Git answers with a summary that
-includes the commit's short hash: the first characters of its hash, the name Git computes for it.
-
-`git status` lists no files any more: the working folder, the staging area and the last commit
-hold the same content.
+`git commit` closes a copy of the open box and sets it in your repository: your first commit,
+labelled with its short hash. The open box keeps its page, ready for the next commit.
 """,
-        run='git commit -m "Add the README"\ngit status',
-        view="map",
+        more="""
+A plain `git commit` saves the content of the staging area as a new commit, with the author's
+name and email, the date and the message given with `-m`. Your branch, `main`, now points to it.
+
+The short hash is the first characters of the commit's hash, the name Git computes from all of
+that. `git status` now lists no files: the three places hold the same content.
+""",
+        run='git commit -m "Add the README"',
+        view="places",
     ),
     kit.Slide(
-        id="log",
-        title="Read the history",
+        id="edit",
+        title="A new version of the page",
         text="""
-A new commit goes on top of the last one: Git records the last commit as its parent.
-`git log --oneline` lists the commits, newest first, one per line: a short hash, then the
-message. On a terminal, the newest line also shows `(HEAD -> main)` between them: the branch
-`main` points to that commit, and you are on that branch.
+Editing the file changes its page in the working folder: a new id and colour. The open box and
+the closed box still hold the old version.
 """,
-        run=(
-            'echo "Be kind to each other." >> README.md\n'
-            "git add README.md\n"
-            'git commit -m "Add the first rule"\n'
-            "git log --oneline"
-        ),
+        more="""
+`>>` adds a line at the end of the file. `git status` lists the file as modified but not staged.
+A plain `git commit` now would make no commit: the open box still holds what the last closed box
+holds.
+""",
+        run='echo "Be kind to each other." >> README.md',
+        view="places",
+    ),
+    kit.Slide(
+        id="add-again",
+        title="Stage the new version",
+        text="""
+`git add` drops the new version into the open box, in place of the old one. The closed box keeps
+the old version.
+""",
+        more="""
+The staging area keeps a file's content as it was at the last `git add`, so after another edit
+you add the file again. `git status` now lists it as modified and staged.
+""",
+        run="git add README.md",
+        view="places",
+    ),
+    kit.Slide(
+        id="second-commit",
+        title="Two saved versions",
+        text="""
+Each closed box is a saved version of your project: a commit. The new one sits on top of the
+first, its parent. `git log --oneline` lists them newest first, each with its short hash and
+message.
+""",
+        more="""
+On a terminal, and here, the newest line also shows `(HEAD -> main)`: your branch points to that
+commit, and you are on it. Any saved version can come back: `git show HEAD~1:README.md` prints
+the README as the first commit saved it.
+""",
+        run='git commit -m "Add the first rule"\ngit log --oneline',
         view="map",
     ),
 ]
@@ -677,13 +730,14 @@ QUEST: list[kit.Step] = [
     kit.WatchStep(
         id="init",
         text="""
-Your terminal is open in an empty folder called `project`. To give it a history, make it a Git
-repository:
+Make the empty `project` folder a repository:
 
     $ git init
-
-`git init` creates a hidden `.git` folder: that is where Git keeps the project's commits.
-Its first branch is called `main`, the name the game sets as the default.
+""",
+        more="""
+Your terminal is open in the `project` folder. `git init` creates a hidden `.git` folder, where
+Git keeps your repository. Its first branch is called `main`, the name the game sets as the
+default.
 """,
         command="git init",
         watch=watch_init,
@@ -691,9 +745,13 @@ Its first branch is called `main`, the name the game sets as the default.
     kit.AnswerStep(
         id="status",
         text="""
-`git status` is the command you will run most. It names the branch you are on and lists the
-files that are untracked, staged, or changed but not staged. Run it now. The repository has no
-files and no commits yet, so it has little to report.
+Run `git status`: it names the branch you are on.
+
+    $ git status
+""",
+        more="""
+`git status` also lists the files that are untracked, staged, or changed but not staged. The
+repository has no files and no commits yet, so it has little to report. You will run it often.
 """,
         command="git status",
         question="Which branch does `git status` say you are on?",
@@ -703,16 +761,16 @@ files and no commits yet, so it has little to report.
     kit.WatchStep(
         id="name",
         text="""
-Every commit records who made it, with a name and an email. Tell Git your name, keeping the
-quotes so that a name with spaces stays one value:
+Every commit records who made it. Set your name, with your own in place of `Your Name`:
 
     $ git config --global user.name "Your Name"
-
-Replace `Your Name` with your own. `--global` means "for all my repositories on this computer,
-unless one of them sets its own". Inside the game, it writes the game's own settings file
-instead of your real one, so nothing outside the game changes. At work you will run the same
-commands in your own terminal; the chapter "Your real setup" walks you through it. If you
-already set your name earlier in the game, this step passes at once.
+""",
+        more="""
+Keep the quotes, so that a name with spaces stays one value. `--global` means "for all my
+repositories on this computer, unless one of them sets its own". Inside the game, it writes the
+game's own settings file instead of your real one, so nothing outside the game changes. At work
+you will run the same commands in your own terminal; the chapter "Your real setup" walks you
+through it. If you already set your name earlier in the game, this step passes at once.
 """,
         command=NAME_COMMAND,
         watch=watch_name,
@@ -720,11 +778,12 @@ already set your name earlier in the game, this step passes at once.
     kit.WatchStep(
         id="email",
         text="""
-Now your email. Use the address you will use for work:
+Now your email, with your own address in place of `you@example.com`:
 
     $ git config --global user.email you@example.com
-
-Replace `you@example.com` with your own address.
+""",
+        more="""
+Use the address you will use for work.
 """,
         command=EMAIL_COMMAND,
         watch=watch_email,
@@ -732,14 +791,14 @@ Replace `you@example.com` with your own address.
     kit.WatchStep(
         id="file",
         text="""
-Give the project its first file, a `README.md`, the file that tells people what a project is
-about:
+Create the project's first file. Its page appears in the working folder:
 
     $ echo "# My project" > README.md
-
-`echo` prints a line of text, and `>` writes it into the file: it creates the file, or replaces
-everything in it if the file already exists. Run `git status` again: Git sees the new file, but
-does not track it yet.
+""",
+        more="""
+A `README.md` is the file that tells people what a project is about. `echo` prints a line of
+text, and `>` writes it into the file: it creates the file, or replaces everything in it if the
+file already exists. `git status` lists the new file as untracked.
 """,
         command='echo "# My project" > README.md',
         watch=watch_file,
@@ -747,12 +806,13 @@ does not track it yet.
     kit.WatchStep(
         id="stage",
         text="""
-A new file gets into a commit only through the staging area, so copy it there:
+Drop a copy of the page into the open box:
 
     $ git add README.md
-
-`git add` usually prints nothing. Run `git status` once more: `README.md` is now staged, ready
-for the next commit. It is still in your working folder too: `git add` copies, it does not move.
+""",
+        more="""
+`git add` usually prints nothing. The working folder keeps its page: `git add` copies, it does
+not move. A new file gets into a commit only through the staging area.
 """,
         command="git add README.md",
         watch=watch_stage,
@@ -760,12 +820,13 @@ for the next commit. It is still in your working folder too: `git add` copies, i
     kit.WatchStep(
         id="commit",
         text="""
-Save the staging area as your first commit, with a message that says what it does:
+Close the box: save the staging area as your first commit.
 
     $ git commit -m "Add the README"
-
+""",
+        more="""
 `-m` gives the message; without it, Git opens a text editor for you to write one. Git answers
-with a short summary of the new commit, and the map shows your first commit on `main`.
+with a short summary of the new commit, and a closed box appears in your repository, on `main`.
 """,
         command='git commit -m "Add the README"',
         watch=watch_commit,
@@ -773,10 +834,11 @@ with a short summary of the new commit, and the map shows your first commit on `
     kit.AnswerStep(
         id="hash",
         text="""
-List the history:
+List the history, then type your commit's short hash.
 
     $ git log --oneline
-
+""",
+        more="""
 Each line is one commit, newest first: a short hash, then the message. On your terminal, the
 newest line also shows `(HEAD -> main)` between them: your branch points to that commit.
 
