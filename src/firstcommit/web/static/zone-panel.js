@@ -14,7 +14,12 @@
 /* exported ZonePanel */
 
 const ZonePanel = (function () {
-  const { el } = Dom;
+  const { el, svg } = Dom;
+  /* The graph's measures, in pixels: a lane's width, a capsule row's height, and where a
+     capsule's block centre sits in its row (orbit.css draws the rows to match). */
+  const LANE = 16;
+  const ROW = 40;
+  const CENTRE = 11;
   const ZONES = [
     { name: "workshop", title: "Workshop", git: "working folder" },
     { name: "dock", title: "Cargo dock", git: "staging area" },
@@ -54,15 +59,39 @@ const ZonePanel = (function () {
     return el("span", { class: "file", ...attributes }, el("span", { class: "fname" }, path), tag && el("span", { class: "ftag" }, tag));
   }
 
-  const capsule = (zone) => (commit) => el("div", { class: "cap", "data-key": `${zone}:${commit.hash}` },
-    el("span", { class: "cblock", "aria-hidden": "true" }),
+  const capsule = (zone) => (commit) => el("div", { class: commit.parents.length > 1 ? "cap is-merge" : "cap", "data-key": `${zone}:${commit.hash}` },
+    el("span", { class: "cgutter", "aria-hidden": "true" }, el("span", { class: "cblock", style: `margin-left:${commit.lane * LANE}px` })),
     el("div", { class: "cinfo" },
       el("div", { class: "cline" }, el("span", { class: "chash" }, commit.short), commit.labels.map((label) => el("span", { class: "ref", "data-kind": label.kind }, label.text))),
       el("span", { class: "cmsg", title: commit.subject }, commit.subject),
     ),
   );
 
-  const capsules = (zone, commits) => el("div", { class: "caps" }, commits.map(capsule(zone)));
+  /* The line from a commit down to one of its parents (`row` its place in the list; a parent not
+     in the list goes to the bottom). The first parent bends just above itself, so a branch
+     splits off where it starts; another parent bends just below the merge, so a merge reaches
+     out to the branch it joins. */
+  function link(commit, row, parent, parentRow, first) {
+    const x = commit.lane * LANE + 9;
+    const y = row * ROW + CENTRE;
+    const px = parent.lane * LANE + 9;
+    const py = parentRow * ROW + CENTRE;
+    const bend = first ? `L ${x} ${py - ROW} L ${px} ${py}` : `L ${px} ${y + ROW} L ${px} ${py}`;
+    return svg("path", { class: "link", d: `M ${x} ${y} ${px === x ? `L ${px} ${py}` : bend}` });
+  }
+
+  /* The capsules as a graph: each in its lane, with lines from every commit to its parents. */
+  function capsules(zone, commits) {
+    const rows = new Map(commits.map((commit, index) => [commit.hash, index]));
+    const width = (Math.max(...commits.map((commit) => commit.lane)) + 1) * LANE;
+    const links = commits.flatMap((commit, row) => commit.parents.map((hash, index) => {
+      const parentRow = rows.has(hash) ? rows.get(hash) : commits.length;
+      const parent = rows.has(hash) ? commits[parentRow] : commit;
+      return link(commit, row, parent, parentRow, index === 0);
+    }));
+    const lines = svg("svg", { class: "links", width, height: commits.length * ROW, "aria-hidden": "true" }, links);
+    return el("div", { class: "caps", style: `--gutter:${width}px` }, lines, commits.map(capsule(zone)));
+  }
 
   /* Each zone's items, or null when the zone is off. */
   function contents(zones) {

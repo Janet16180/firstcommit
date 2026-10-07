@@ -822,22 +822,44 @@ pre.code code {
   color: var(--ink-soft);
 }
 
+/* The vault and the mothership as a graph: rows of a fixed height (zone-panel.js's ROW), each
+   capsule's block in its lane inside the gutter, and the lines to parents drawn behind. */
 .caps {
+  position: relative;
   display: flex;
   flex-direction: column;
-  gap: 10px;
   width: 100%;
 }
 
+.caps .links {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.links path {
+  fill: none;
+  stroke: var(--edge);
+  stroke-width: 3;
+}
+
 .cap {
-  position: relative;
   display: grid;
-  grid-template-columns: 18px minmax(0, 1fr);
+  grid-template-columns: var(--gutter, 16px) minmax(0, 1fr);
   gap: 8px;
   align-items: start;
+  height: 40px;
+}
+
+.cgutter {
+  position: relative;
+  z-index: 1;
 }
 
 .cblock {
+  display: block;
   width: 18px;
   height: 18px;
   margin-top: 2px;
@@ -846,14 +868,9 @@ pre.code code {
   box-shadow: inset -4px -4px 0 rgba(0, 0, 0, 0.25);
 }
 
-.cap:not(:last-child)::after {
-  content: "";
-  position: absolute;
-  left: 7px;
-  top: 20px;
-  width: 4px;
-  height: calc(100% - 10px);
-  background: var(--edge);
+/* A merge capsule: two halves, one for each history it joins. */
+.cap.is-merge .cblock {
+  background: linear-gradient(90deg, var(--zc) 50%, var(--gold) 50%);
 }
 
 .cinfo {

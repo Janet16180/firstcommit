@@ -113,3 +113,42 @@ test("the first drawing animates nothing", () => {
   panel.update({ ...observe(record("snapshots").unborn), commands: typed("git init") });
   assert.equal(panel.element.querySelector(".is-lit, .is-waking"), null);
 });
+
+const capsuleCommit = (hash, parents = []) => ({ hash, short: hash, parents, subject: `commit ${hash}`, author: "You", time: 0 });
+
+test("the vault draws two branches as two lanes, with the merge capsule marked and a line to each parent", () => {
+  const project = {
+    ...record("snapshots").one,
+    head: "m",
+    branch: "main",
+    commits: [capsuleCommit("m", ["a2", "b1"]), capsuleCommit("b1", ["a1"]), capsuleCommit("a2", ["a1"]), capsuleCommit("a1")],
+    refs: [{ name: "main", kind: "branch", target: "m" }, { name: "feature", kind: "branch", target: "b1" }],
+  };
+  const panel = ZonePanel.create();
+  panel.update(observe(project));
+  const vault = zone(panel, "vault");
+  const merge = keyed(vault, "vault:m");
+  assert.ok(merge.classList.contains("is-merge"));
+  assert.equal(keyed(vault, "vault:b1").querySelector(".cblock").getAttribute("style"), "margin-left:16px");
+  assert.equal(keyed(vault, "vault:a2").querySelector(".cblock").getAttribute("style"), "margin-left:0px");
+  assert.equal(vault.querySelectorAll("svg.links path").length, 4);
+  assert.deepEqual([...keyed(vault, "vault:b1").querySelectorAll(".ref")].map((ref) => ref.textContent), ["feature"]);
+});
+
+test("a single branch keeps one lane: every capsule in the first column, one line between each", () => {
+  const panel = ZonePanel.create();
+  const project = { ...record("snapshots").one, head: "c2", branch: "main", commits: [capsuleCommit("c2", ["c1"]), capsuleCommit("c1")], refs: [{ name: "main", kind: "branch", target: "c2" }] };
+  panel.update(observe(project));
+  const vault = zone(panel, "vault");
+  assert.deepEqual([...vault.querySelectorAll(".cblock")].map((block) => block.getAttribute("style")), ["margin-left:0px", "margin-left:0px"]);
+  assert.equal(vault.querySelectorAll("svg.links path").length, 1);
+  assert.equal(vault.querySelector("svg.links").getAttribute("width"), "16");
+});
+
+test("the mothership draws what the stand-in GitHub holds, every branch included", () => {
+  const github = { ...record("snapshots").one, bare: true, head: "g2", branch: "main", commits: [capsuleCommit("g2", ["g1"]), capsuleCommit("t1", ["g1"]), capsuleCommit("g1")], refs: [{ name: "main", kind: "branch", target: "g2" }, { name: "topic", kind: "branch", target: "t1" }] };
+  const panel = ZonePanel.create();
+  panel.update(observe(record("snapshots").one, github));
+  assert.equal(zone(panel, "remote").querySelectorAll(".cap").length, 3);
+  assert.ok(keyed(zone(panel, "remote"), "remote:t1"));
+});
