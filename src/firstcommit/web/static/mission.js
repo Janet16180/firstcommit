@@ -70,7 +70,7 @@ const Mission = (function () {
     const hintList = el("div", { class: "hint-list" }, level.hints.map((blocks) => el("div", {}, Markup.render(blocks))));
     const hintButton = el("button", { type: "button", class: "btn", onclick: () => on.onHint() }, ArtSprites.icon("hint"), "Ask for a hint");
     const hintNote = el("small", {});
-    /* ORBIT-GAP(stars): a hint costs a star; the note will say so once the game counts stars. */
+    let cost = null;
     const element = el("aside", { class: "mission px", "aria-label": "Mission" },
       el("div", { class: "brief" }, Markup.render(level.briefing)),
       el("h3", {}, "Goals"),
@@ -90,7 +90,8 @@ const Mission = (function () {
 
     function drawHints() {
       hintButton.disabled = used >= total;
-      hintNote.textContent = used < total ? `${total - used} left` : "No hints left";
+      const price = cost === null ? "A hint costs a star and this play's XP." : `That hint cost ${cost ? `${cost} XP` : "no XP"}.`;
+      hintNote.textContent = `${price} ${used < total ? `${total - used} left.` : "No hints left."}`;
     }
 
     drawGoals();
@@ -113,6 +114,7 @@ const Mission = (function () {
       /* A hint the server revealed (HintView). */
       addHint(hint) {
         used = hint.used;
+        cost = hint.cost;
         hintList.append(el("div", {}, Markup.render(hint.hint)));
         drawHints();
       },
