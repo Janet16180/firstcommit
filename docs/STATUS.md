@@ -47,50 +47,60 @@ Done since: the code review and the security review (both report only), then a f
 `SSH_AGENT_PID`, `GH_TOKEN`, `GITHUB_TOKEN` and `GH_ENTERPRISE_TOKEN` from the page's shell (the
 lead recommends yes).
 
-## Phase 2b: visual explanations (in progress, 2026-10-06)
+## Phase 2b: visual explanations (state at the end of 2026-10-07)
 
-The user picked the time-travel theme (over metro) and asked for picture-first explanations
-(AUTHORING 3.5: a figure from real git, at most three short sentences) and an interactive
-playground: two people on one remote, each with the same buttons (edit, add, commit, push,
-fetch, pull, status), common mistakes detected, then the same problem for real in the terminal.
-There is no game story; the visuals are the creative part.
+The user picked the time-travel theme and asked for picture-first explanations (AUTHORING 3.5)
+and an interactive playground. There is no game story; the visuals are the creative part.
+Pictures: a file is a page, the staging area an open box, a commit a closed box; the four places
+are the working folder, the staging area, your repository and GitHub. Every motion is drawn
+from the diff of two real snapshots.
 
-Pictures: a file is a page, the staging area an open box, a commit a closed box. The four
-places are the working folder, the staging area, your repository and GitHub; Alex is an SVG
-person, not an emoji. Every motion is drawn from the diff of two real snapshots.
+Merged into `phase-2-engine` (tip ff1bdb3; fast tier 1078 passed, slow tier run at the merge):
+- The live page: the four places are the map (option A): full-size timelines with closed boxes,
+  the key "closed box = commit" under the figure, heading "The three areas" or "The four places"
+  (with a GitHub), the feed below, the guide's button in the key. Lighting and captions were
+  fact-checked through revision 9 (`docs-draft/four-places.md`, `.scratch/review/`).
+- Lessons: the "places" view (compact, every slide fits 1280x800), per-slide events by the live
+  feed's rule, a folded "More" on slides and quest steps.
+- "Your first commit" rewritten picture-first: 9 slides, short quest steps, claims V1-V18 checked.
+- The map guide (revision 6) and "Share a file with Alex" (share revision 2; in the demo only).
+- The two-person playground engine: catalogue, press with before and after, the route, the page
+  panel, explanations (`firstcommit.explanations`, from the fact-checked mistakes table). No level
+  uses it yet.
+- The typed-command parse in TimePlaces (not wired yet).
+- termlab's `firstcommit` branch: d98edf1, aee1388.
 
-Agents and branches (worktrees under `.scratch/wt/`):
-- timetravel, `p2/theme-time`: the theme, motions (`TimeMotion.playMap`), the four places
-  figure, the demo generator `tools/demo/`, and the page integration (live-map motion hook from
-  metro's c156a29, the guide's button in the key, index.html).
-- guide, `p2/theme-guide`: "How to read the map" as tiny figures served by `game.guide()`
-  (`/api/guide`); its text is generated from `docs/drafts/map-guide.md` by
-  `tools/guide_text.py --check`.
-- share, `p2/theme-share`: "Share a file with Alex" (13 steps, `tools/demo/share.py`,
-  `docs/drafts/share.md`); next, the two-person playground figure.
-- playground, `p2/playground-design`: the playground's design and its mistakes table, recorded
-  from real git (`docs/drafts/playground-errors.*`); then insight writes
-  `explain(press, before, after)` from it.
-- Merged into `phase-2-engine`: `firstcommit.playground` and `lab.py` (insight), `game.press`
-  and the teammate in `observe` (core, d1d7726). web is adding `POST /api/press`.
-- mapcheck re-runs every claim of every draft on git 2.43 (`.scratch/review/`). Order: four
-  places revision 4, share revision 2, then the playground mistakes table.
-- metro, `p2/theme-metro` and `p2/boxes-live`: the earlier metro look; the boxes and cardboard
-  live-map variants wait for the user's choice.
+Parked as WIP when the day ended (resume in this order, at most 3 teammates working at once):
+1. Lighting from typed commands (user approved): core (termlab option to choose the terminal's
+   shell; the game runs bash with its own rc: a plain prompt and a PROMPT_COMMAND log of
+   {line, status}; observe returns the commands since the last observation), then web (the
+   terminal setting, api.js, records.json), then timetravel (wire typed lines into live.js, one
+   paragraph in the four-places draft). Branches: termlab `firstcommit`, `p2/core`, `p2/web`,
+   `p2/theme-time`.
+2. Chapter 1 "Git, GitHub and your first clone" (plan approved): `start-git-and-github` (guided:
+   a 5-slide lesson in the four places with a practice GitHub, then clone, cd, count files and
+   commits, name the remote) and `start-first-clone` (challenge: who added the checklist, from
+   `git log`). Needs insight's P1 (a lesson's practice GitHub, `p2/insight`), guide's P2 (the
+   places view with GitHub, `p2/lesson-places`) and `kit.cloned_from_github` (author). A typed
+   clone keeps git's absolute origin; fine while the chapter never pushes or pulls.
+3. The playground in a real level (author phase); then the paused re-record (Backlog).
 
-Merged into `phase-2-engine` (fc8e000, 924 passed with Docker, mypy over `tools` too): the theme
-in the live page (the map's motion, the guide's button in the key), the guide at revision 6, and
-the Alex walkthrough at share revision 2, all fact-checked. Next for timetravel: four places
-revision 5, then the four places replacing the "Three areas" table in the live page. The agents
-keep working on their branches and merge `phase-2-engine` back.
+Team rules (the user's, 2026-10-07): named teammates, never one-shot subagents, at most 3
+working at once; agents run the fast tier, the lead the slow tier on merge; fact-check only text
+players will see soon; one short report per job; when stuck on something complex, ask the user
+for what would unblock it.
 
-Shared with the user (private artifacts): the Four Places Demo
-(https://claude.ai/artifact/72KsUGhDae4pErRzU7Kzrv, published from `tools/demo/build.py` output
-with the page skeleton stripped; the share walkthrough is left out until its check passes) and
-Commit Shape Choice (https://claude.ai/artifact/GB9XGi8bZC5oz21zDja7du).
+Shared with the user: the Four Places Demo (https://claude.ai/artifact/72KsUGhDae4pErRzU7Kzrv,
+version 4, with the Alex walkthrough), Commit Shape Choice
+(https://claude.ai/artifact/GB9XGi8bZC5oz21zDja7du), and the playground mock as a local file
+(`.scratch/wt/playground/docs/drafts/playground-mock.html`, older button set).
 
-Waiting for the user: rings or boxes for commits in the live map (the lead recommends plain
-boxes, one picture of a commit everywhere), and security L3.
+Playtest: Docker on port 8890 still runs the ebe0fff build; the user asked to restart only for a
+bigger change (typed-command lighting or chapter 1).
+
+Waiting for the user: rings or boxes (the live page and lessons already show boxes; rings are
+one switch, `LIVE_COMMIT`), security L3, and the situations new hires hit (for chapter content).
+The user says the layout responds well, so no more screen-size work.
 
 ## Lessons for the method (to fold into GAME_METHODOLOGY.md)
 
@@ -172,10 +182,9 @@ itself (write, save, quit).
 
 ## Next
 
-1. Finish phase 2b (above): the page integration, `/api/press`, the playground figure and its
-   explanations, each draft through mapcheck; merge the theme branches.
-2. The user plays the template level with the new look; then merge `phase-2-engine` to `main`
-   (ask first).
-3. Chapter authors in parallel, picture first, each followed by a fact-checker. Chapter 1 has
-   only the template level today.
+1. Resume the parked work above, in order, with at most 3 teammates.
+2. The user plays with the new look (restart the playtest when a bigger change lands); then merge
+   `phase-2-engine` to `main` (ask first).
+3. Ask the user before deleting branches: `p2-integrate`, `p2/theme-metro`, `p2/boxes-live`,
+   `p2/core-press-wip` and the finished `p2/*` branches once merged.
 4. The VM adapter (`vm/game.env`, `vm/guest-setup.sh`, wrapper) on termlab's VM.
