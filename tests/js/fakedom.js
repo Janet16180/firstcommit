@@ -137,14 +137,15 @@ class FakeFragment extends FakeNode {
   }
 }
 
+/* A selector list, as alternatives of descendant parts: "a.b c, d" gives [[a.b, c], [d]]. */
 function parseSelector(text) {
-  return text.trim().split(/\s+/).map((part) => {
+  return text.split(",").map((alternative) => alternative.trim().split(/\s+/).map((part) => {
     const tag = (part.match(/^[a-zA-Z][\w-]*/) || [""])[0].toLowerCase();
     const id = (part.match(/#([\w-]+)/) || [null, null])[1];
     const classes = [...part.matchAll(/\.([\w-]+)/g)].map((match) => match[1]);
     const attributes = [...part.matchAll(/\[([\w-]+)(?:="([^"]*)")?\]/g)].map((match) => ({ name: match[1], value: match[2] }));
     return { tag, id, classes, attributes };
-  });
+  }));
 }
 
 function matchesPart(element, part) {
@@ -154,7 +155,9 @@ function matchesPart(element, part) {
     && part.attributes.every(({ name, value }) => element.hasAttribute(name) && (value === undefined || element.getAttribute(name) === value));
 }
 
-function matches(element, parts) {
+const matches = (element, alternatives) => alternatives.some((parts) => matchesParts(element, parts));
+
+function matchesParts(element, parts) {
   if (!matchesPart(element, parts[parts.length - 1])) return false;
   let rest = parts.length - 2;
   for (let at = element.parentElement; at && rest >= 0; at = at.parentElement) {

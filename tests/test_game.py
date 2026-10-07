@@ -3,6 +3,7 @@ import fcntl
 import json
 import os
 import stat
+import subprocess
 import threading
 import time
 from collections.abc import Callable, Sequence
@@ -16,6 +17,7 @@ from termlab import sandbox
 from firstcommit import (
     changes,
     demos,
+    explanations,
     game,
     gitcmd,
     guide,
@@ -915,7 +917,7 @@ def test_starting_a_level_forgets_the_last_observation(sample_level: runner.Leve
 def test_observing_a_level_without_a_playground_has_no_teammate(sample_level: runner.Level) -> None:
     game.start(sample_level.id)
     observation = game.observe()
-    assert (observation["teammate"], observation["teammate_events"]) == (None, [])
+    assert (observation["teammate"], observation["teammate_events"], observation["buttons"]) == (None, [], {})
 
 
 def test_observing_a_playground_snapshots_alexs_clone_and_tells_its_changes_apart(playground_level: runner.Level, game_home: Path) -> None:
@@ -923,10 +925,10 @@ def test_observing_a_playground_snapshots_alexs_clone_and_tells_its_changes_apar
     first = game.observe()
     assert first["teammate"] is not None and first["teammate"]["branch"] == "main"
     assert first["teammate_events"] == []
-    (game_home / "labs" / playground_level.id / "teammate" / "project" / "notes.txt").write_text("x")
+    (game_home / "labs" / playground_level.id / "teammate" / "project" / "todo.txt").write_text("x")
     second = game.observe()
     assert ([event["kind"] for event in second["teammate_events"]], second["events"]) == (["file-created"], [])
-    assert "notes.txt" in plain(second["teammate_events"][0]["text"])
+    assert "todo.txt" in plain(second["teammate_events"][0]["text"])
 
 
 
@@ -943,36 +945,82 @@ def test_a_teammates_clone_removed_from_the_terminal_leaves_no_playground(playgr
 def test_each_press_runs_in_the_clone_of_the_person_who_pressed(playground_level: runner.Level) -> None:
     game.start(playground_level.id)
     game.observe()
-    yours = game.press("you", "edit")["observation"]
-    assert ([event["kind"] for event in yours["events"]], yours["teammate_events"]) == (["file-created"], [])
-    alexs = game.press("alex", "edit")["observation"]
-    assert (alexs["events"], [event["kind"] for event in alexs["teammate_events"]]) == ([], ["file-created"])
+    yours = game.press("you", "edit:notes.txt")["observation"]
+    assert ([event["kind"] for event in yours["events"]], yours["teammate_events"]) == (["file-changed"], [])
+    alexs = game.press("alex", "edit:notes.txt")["observation"]
+    assert (alexs["events"], [event["kind"] for event in alexs["teammate_events"]]) == ([], ["file-changed"])
     assert alexs["teammate"] is not None
-    assert [entry["path"] for entry in alexs["project"]["files"]] == ["README.md", "you.txt"]
-    assert [entry["path"] for entry in alexs["teammate"]["files"]] == ["README.md", "alex.txt"]
+    for snap in (alexs["project"], alexs["teammate"]):
+        assert [(entry["path"], entry["folder_change"]) for entry in snap["files"]] == [("README.md", None), ("notes.txt", "modified")]
 
 
 def test_a_press_gives_the_command_as_the_player_could_type_it_and_what_git_printed(playground_level: runner.Level) -> None:
     game.start(playground_level.id)
     pressed = game.press("alex", "commit")
     press = pressed["press"]
-    assert (press["person"], press["button"], press["command"], press["status"]) == ("alex", "commit", playground.BUTTONS["commit"]["alex"], 1)
+    assert (press["person"], press["button"], press["command"], press["status"]) == ("alex", "commit", 'git commit -m "Save my work"', 1)
     assert "nothing to commit" in press["output"]
-    assert pressed["explanation"] is None
+    assert (pressed["explanation"], pressed["fix"], pressed["fix_line"]) == (markup.parse(explanations.EXPLANATIONS["E9"]), None, "")
+
+
+def test_a_refused_press_comes_with_its_explanation_and_its_fix(playground_level: runner.Level) -> None:
+    game.start(playground_level.id)
+    game.press("alex", "edit:notes.txt")
+    unstaged = game.press("alex", "commit")
+    assert (unstaged["press"]["status"], unstaged["fix"], unstaged["fix_line"]) == (1, "add:notes.txt", "")
+    assert unstaged["explanation"] == markup.parse(explanations.EXPLANATIONS["E8"])
+    game.press("you", "edit:notes.txt")
+    game.press("you", "add:notes.txt")
+    nameless = game.press("you", "commit")
+    assert (nameless["press"]["status"], nameless["fix"], nameless["fix_line"]) == (128, None, explanations.NAME_LINE)
+    assert nameless["explanation"] == markup.parse(explanations.EXPLANATIONS["E10"])
+
+
+def test_a_press_that_works_needs_no_explanation(playground_level: runner.Level) -> None:
+    game.start(playground_level.id)
+    pressed = game.press("alex", "status")
+    assert (pressed["press"]["status"], pressed["explanation"], pressed["fix"], pressed["fix_line"]) == (0, None, None, "")
 
 
 def test_what_a_press_changed_is_told_once_and_observing_then_sees_the_same_lab(playground_level: runner.Level) -> None:
     game.start(playground_level.id)
     game.observe()
-    pressed = game.press("alex", "edit")["observation"]
+    pressed = game.press("alex", "edit:notes.txt")["observation"]
     again = game.observe()
-    assert (again["project"], again["github"], again["teammate"]) == (pressed["project"], pressed["github"], pressed["teammate"])
+    assert (again["project"], again["github"], again["teammate"], again["buttons"]) == (pressed["project"], pressed["github"], pressed["teammate"], pressed["buttons"])
     assert (again["events"], again["teammate_events"]) == ([], [])
 
 
+def test_a_press_tells_what_the_terminal_changed_before_it_apart_from_its_own_changes(playground_level: runner.Level, game_home: Path) -> None:
+    game.start(playground_level.id)
+    game.observe()
+    (game_home / "labs" / playground_level.id / "teammate" / "project" / "todo.txt").write_text("x")
+    pressed = game.press("you", "edit:notes.txt")
+    before, after = pressed["before"], pressed["observation"]
+    assert (before["events"], [event["kind"] for event in before["teammate_events"]]) == ([], ["file-created"])
+    assert ([event["kind"] for event in after["events"]], after["teammate_events"]) == (["file-changed"], [])
+    assert before["teammate"] == after["teammate"]
+    assert [entry["folder_change"] for entry in before["project"]["files"]] == [None, None]
+
+
+def test_a_press_that_does_not_finish_saves_nothing_so_the_next_observation_tells_the_typed_changes(playground_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    game.start(playground_level.id)
+    game.observe()
+    (game_home / "labs" / playground_level.id / "teammate" / "project" / "todo.txt").write_text("x")
+
+    def hanging(lab: kit.Lab, person: records.Who, button: str) -> records.Press:
+        raise subprocess.TimeoutExpired(["git", "push"], gitcmd.TIMEOUT)
+
+    monkeypatch.setattr(playground, "press", hanging)
+    with pytest.raises(subprocess.TimeoutExpired):
+        game.press("alex", "push")
+    assert [event["kind"] for event in game.observe()["teammate_events"]] == ["file-created"]
+
+
+@pytest.mark.slow
 def test_a_push_from_alex_is_told_among_the_events_of_github(playground_level: runner.Level) -> None:
     game.start(playground_level.id)
-    for button in ["edit", "add", "commit"]:
+    for button in ["edit:notes.txt", "add:notes.txt", "commit"]:
         game.press("alex", button)
     pushed = game.press("alex", "push")
     assert pushed["press"]["status"] == 0
@@ -984,7 +1032,7 @@ def test_a_press_runs_and_snapshots_the_lab_while_holding_the_save_lock(playgrou
     held: list[tuple[str, bool]] = []
     real_press, real_snapshot = playground.press, repomap.snapshot
 
-    def pressing(lab: kit.Lab, person: records.Who, button: records.Button) -> records.Press:
+    def pressing(lab: kit.Lab, person: records.Who, button: str) -> records.Press:
         held.append(("press", lock_is_held(game_home)))
         return real_press(lab, person, button)
 
@@ -995,17 +1043,64 @@ def test_a_press_runs_and_snapshots_the_lab_while_holding_the_save_lock(playgrou
     monkeypatch.setattr(playground, "press", pressing)
     monkeypatch.setattr(repomap, "snapshot", snapshotting)
     game.press("you", "status")
-    assert held == [("press", True)] + [("snapshot", True)] * 3
+    # The press reads the person's clone to choose its line (one snapshot), then the lab is read again.
+    assert held == [("snapshot", True)] * 3 + [("press", True)] + [("snapshot", True)] * 4
 
 
 def test_pressing_needs_a_level_with_a_playground(sample_level: runner.Level, game_home: Path) -> None:
     game.start(sample_level.id)
     with pytest.raises(game.NoPlaygroundError, match="playground"):
-        game.press("you", "edit")
-    assert not (lab_project(game_home) / "you.txt").exists()
+        game.press("you", "edit:notes.txt")
+    assert not (lab_project(game_home) / "notes.txt").exists()
 
 
-@pytest.mark.parametrize(("person", "button"), [("bob", "status"), ("You", "status"), ("alex", "rebase"), ("alex", "")])
+
+@pytest.mark.slow
+def test_each_person_gets_the_buttons_of_their_own_clone(playground_level: runner.Level) -> None:
+    game.start(playground_level.id)
+    lab = runner.lab_of(playground_level.id)
+    gitcmd.output(lab.project, "config", "--global", "user.name", "Sam Lee")
+    gitcmd.output(lab.project, "config", "--global", "user.email", "sam@example.com")
+    first = game.observe()["buttons"]
+    assert list(first) == ["you", "alex"]
+    assert all(button["off"] == "" for bar in first.values() for button in bar)
+    for person, button in [("alex", "edit:notes.txt"), ("alex", "add:notes.txt"), ("alex", "commit"), ("alex", "push"), ("you", "edit:README.md"), ("you", "add:README.md"), ("you", "commit"), ("you", "fetch")]:
+        assert game.press(person, button)["press"]["status"] == 0, (person, button)
+    bars = game.observe()["buttons"]
+    assert "pull-no-rebase" in [button["id"] for button in bars["you"]]
+    assert "pull-no-rebase" not in [button["id"] for button in bars["alex"]]
+
+
+@pytest.mark.slow
+def test_a_press_shows_the_buttons_before_and_after_it(playground_level: runner.Level) -> None:
+    game.start(playground_level.id)
+    lab = runner.lab_of(playground_level.id)
+    gitcmd.output(lab.project, "config", "--global", "user.name", "Sam Lee")
+    gitcmd.output(lab.project, "config", "--global", "user.email", "sam@example.com")
+    for person, button in [("alex", "edit:notes.txt"), ("alex", "add:notes.txt"), ("alex", "commit"), ("alex", "push"), ("you", "edit:README.md"), ("you", "add:README.md"), ("you", "commit")]:
+        game.press(person, button)
+    pressed = game.press("you", "fetch")
+    assert "pull-no-rebase" not in [button["id"] for button in pressed["before"]["buttons"]["you"]]
+    assert "pull-no-rebase" in [button["id"] for button in pressed["observation"]["buttons"]["you"]]
+    assert pressed["observation"]["buttons"] == game.observe()["buttons"]
+
+
+def test_a_button_that_is_off_runs_nothing_and_says_why(playground_level: runner.Level) -> None:
+    game.start(playground_level.id)
+    game.observe()
+    notes = runner.lab_of(playground_level.id).teammate / "notes.txt"
+    notes.unlink()
+    notes.mkdir()
+    with pytest.raises(game.ButtonOffError) as raised:
+        game.press("alex", "edit:notes.txt")
+    assert list(notes.iterdir()) == []
+    after = game.observe()
+    [view] = [button for button in after["buttons"]["alex"] if button["id"] == "edit:notes.txt"]
+    assert view["off"] == str(raised.value) != ""
+    assert "file-deleted" in [event["kind"] for event in after["teammate_events"]]
+
+
+@pytest.mark.parametrize(("person", "button"), [("bob", "status"), ("You", "status"), ("alex", "rebase"), ("alex", ""), ("alex", "edit"), ("you", "edit:../x")])
 def test_an_unknown_person_or_button_is_an_unknown_id_before_anything_else(person: str, button: str) -> None:
     with pytest.raises(game.UnknownIdError, match="playground"):
         game.press(person, button)

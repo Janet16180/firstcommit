@@ -60,6 +60,7 @@ __all__ = [
     "RefKind",
     "Snapshot",
     "conflicted",
+    "history",
     "mode_changed",
     "nested",
     "objects",
@@ -245,6 +246,33 @@ class _Repository:
     git_dir: Path
     bare: bool
     object_format: str
+
+
+def history(snap: Snapshot, start: str | None) -> set[str]:
+    """
+    Collect a commit and every ancestor of it that a snapshot lists.
+
+    Parameters
+    ----------
+    snap : Snapshot
+        A repository.
+    start : str | None
+        A commit's full hash, or None.
+
+    Returns
+    -------
+    set[str]
+        The hashes; empty for None, or for a commit the snapshot does not list.
+    """
+    parents = {commit["hash"]: commit["parents"] for commit in snap["commits"]}
+    seen: set[str] = set()
+    pending = [start] if start is not None else []
+    while pending:
+        current = pending.pop()
+        if current in parents and current not in seen:
+            seen.add(current)
+            pending.extend(parents[current])
+    return seen
 
 
 def snapshot(path: Path) -> Snapshot:

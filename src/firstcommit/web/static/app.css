@@ -418,6 +418,16 @@ code.words > span {
   white-space: nowrap;
 }
 
+/* In a narrow line of text (a press's result, the feed), long code such as a merge subject wraps
+   anywhere rather than run off a phone's screen. */
+.pg-result code,
+.pg-result code.words > span,
+.feed-text code,
+.feed-text code.words > span {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .practice-side pre.code {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -1526,6 +1536,95 @@ input[type="text"]::placeholder {
 .areas-empty {
   margin: 0.5rem 0 0;
   color: var(--muted);
+}
+
+/* The playground: each person's buttons under their computer, and the last press's result */
+
+.playground {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.pg-bar {
+  display: grid;
+  gap: 0.3rem;
+  margin-top: 0.5rem;
+}
+
+.pg-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.btn[aria-disabled="true"] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.pg-line {
+  min-height: 1.3em;
+  margin: 0;
+  color: var(--muted);
+  font: 0.8rem var(--mono);
+  overflow-wrap: anywhere;
+}
+
+.pg-result {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-small);
+  background: var(--surface);
+}
+
+.pg-ran {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
+  margin: 0 0 0.5rem;
+}
+
+.pg-status {
+  margin-left: auto;
+  font-weight: 650;
+}
+
+.pg-refusal {
+  margin: 0;
+}
+
+.pg-status.is-done {
+  color: var(--accent-strong);
+}
+
+.pg-status.is-refused {
+  color: var(--warn);
+}
+
+.pg-output {
+  max-height: 14rem;
+  margin: 0 0 0.6rem;
+  padding: 0.6rem 0.8rem;
+  overflow: auto;
+  border-radius: var(--radius-small);
+  background: var(--surface-2);
+  font: 0.82rem/1.45 var(--mono);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.pg-explanation {
+  margin-bottom: 0.5rem;
+}
+
+.pg-result .command {
+  margin-top: 0.5rem;
+}
+
+.feed-where {
+  margin-right: 0.25rem;
+  font-weight: 650;
 }
 
 /* The object list */

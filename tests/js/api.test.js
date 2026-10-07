@@ -213,12 +213,41 @@ test("a press must say who pressed which button, what ran and what it printed, a
     delete pressed.press[field];
     await assert.rejects(gameApi({ "/api/press": pressed }).game.press("alex", "push"), new RegExp(`/api/press\\.press\\.${field} should be`), field);
   }
-  for (const field of ["explanation", "observation"]) {
+  for (const field of ["before", "observation", "explanation", "fix", "fix_line"]) {
     const pressed = record("press");
     delete pressed[field];
     await assert.rejects(gameApi({ "/api/press": pressed }).game.press("alex", "push"), new RegExp(`/api/press\\.${field} should be`), field);
   }
+  const offered = record("press");
+  offered.fix = "rebase";
+  await assert.rejects(gameApi({ "/api/press": offered }).game.press("alex", "push"), /\/api\/press\.fix should be one of/);
   const stranger = record("press");
   stranger.press.person = "bob";
   await assert.rejects(gameApi({ "/api/press": stranger }).game.press("alex", "push"), /press\.person should be one of you, alex/);
+});
+
+test("a press names its button by one of the playground's ids", async () => {
+  const pressing = (button) => {
+    const pressed = record("press");
+    pressed.press.button = button;
+    return gameApi({ "/api/press": pressed }).game.press("you", button);
+  };
+  assert.equal((await pressing("add:notes.txt")).press.button, "add:notes.txt");
+  for (const button of ["edit", "add:you.txt", "rebase", "keep-ours:"]) await assert.rejects(pressing(button), /press\.button should be one of/, button);
+});
+
+test("an observation carries each person's buttons, by person, each with its id, label, line and why it is off", async () => {
+  const observation = record("press").observation;
+  assert.deepEqual(Object.keys(observation.buttons), ["you", "alex"]);
+  const observe = (changed) => gameApi({ "/api/observe": changed }).game.observe();
+  assert.deepEqual(await observe({ ...record("observation"), buttons: {} }), { ...record("observation"), buttons: {} });
+  const missing = record("observation");
+  delete missing.buttons;
+  await assert.rejects(observe(missing), /\/api\/observe\.buttons should be/);
+  await assert.rejects(observe({ ...observation, buttons: { bob: observation.buttons.you } }), /buttons's key should be one of you, alex/);
+  for (const field of ["id", "label", "line", "off"]) {
+    const changed = record("press").observation;
+    delete changed.buttons.alex[0][field];
+    await assert.rejects(observe(changed), new RegExp(`buttons\\.alex\\[0\\]\\.${field} should be`), field);
+  }
 });
