@@ -74,6 +74,10 @@ deeper, 10% advanced.
 
 ### Chapters
 
+Since 2026-10-08, `chapters.py` follows the Orbit plan (`docs/drafts/chapters-3-7.md`): `liftoff`,
+`cargo`, `vault`, `mothership`, `branch`, `conflict` and `undo`, then the chapters below still to
+come. `basics`, `hash`, `history` and `remote` left it; their ideas moved into the Orbit chapters.
+
 | id | Title | Teaches | Left to |
 |---|---|---|---|
 | `start` | Git, GitHub and your first clone | what version control is; Git (a tool) vs GitHub (a hosting service); `git clone` from the lab's "GitHub" | |

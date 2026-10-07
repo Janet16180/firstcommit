@@ -138,7 +138,7 @@ def record(
 
 LEVEL_VIEW = {
     "id": "some-level",
-    "chapter": "basics",
+    "chapter": "cargo",
     "chapter_title": "The three areas",
     "title": "A level",
     "difficulty": 1,
@@ -366,12 +366,12 @@ def test_resetting_needs_an_explicit_confirmation(site: Site, monkeypatch: pytes
 
 
 def test_cards_are_listed_for_a_chapter_or_all_with_a_limit(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
-    card = {"id": "basics-x", "chapter": "basics", "kind": "choice", "prompt": [], "choices": ["a", "b"]}
+    card = {"id": "cargo-x", "chapter": "cargo", "kind": "choice", "prompt": [], "choices": ["a", "b"]}
     calls = record(monkeypatch, "due_cards", [card])
-    assert api(site, "/api/cards?chapter=basics&limit=5") == (200, {"cards": [card]})
+    assert api(site, "/api/cards?chapter=cargo&limit=5") == (200, {"cards": [card]})
     assert api(site, "/api/cards") == (200, {"cards": [card]})
     assert api(site, "/api/cards?chapter=&limit=100") == (200, {"cards": [card]})
-    assert calls == [("basics", 5), (None, routes.DEFAULT_CARDS), (None, 100)]
+    assert calls == [("cargo", 5), (None, routes.DEFAULT_CARDS), (None, 100)]
 
 
 @pytest.mark.parametrize(
@@ -401,20 +401,20 @@ def test_cards_of_an_unknown_chapter_are_not_found(site: Site, monkeypatch: pyte
 def test_a_card_reply_is_judged(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
     result = {"correct": True, "answer": "a", "explain": [], "xp": 5, "streak": 2, "bonus": 0}
     calls = record(monkeypatch, "answer_card", result)
-    assert api(site, "/api/card", {"id": "basics-x", "reply": "a"}) == (200, result)
-    assert calls == [("basics-x", "a")]
+    assert api(site, "/api/card", {"id": "cargo-x", "reply": "a"}) == (200, result)
+    assert calls == [("cargo-x", "a")]
 
 
 @pytest.mark.parametrize(
     "body",
     [
         {},
-        {"id": "basics-x"},
+        {"id": "cargo-x"},
         {"reply": "a"},
         {"id": 3, "reply": "a"},
-        {"id": "basics-x", "reply": None},
+        {"id": "cargo-x", "reply": None},
         {"id": "", "reply": "a"},
-        {"id": "basics-x", "reply": "a" * 1001},
+        {"id": "cargo-x", "reply": "a" * 1001},
     ],
 )
 def test_a_card_reply_needs_an_id_and_a_text_reply(
@@ -431,11 +431,11 @@ def test_a_reply_to_an_unknown_card_is_not_found(site: Site, monkeypatch: pytest
 
 
 def test_notes_are_looked_up_by_chapter(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
-    notes = {"chapter": "basics", "title": "The three areas", "notes": []}
+    notes = {"chapter": "cargo", "title": "The three areas", "notes": []}
     calls = record(monkeypatch, "notes", notes)
-    assert api(site, "/api/notes?chapter=basics") == (200, notes)
+    assert api(site, "/api/notes?chapter=cargo") == (200, notes)
     assert api(site, "/api/notes")[0] == 400
-    assert calls == [("basics",)]
+    assert calls == [("cargo",)]
 
 
 def test_notes_of_an_unknown_chapter_are_not_found(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -575,11 +575,11 @@ def test_a_lesson_comes_with_its_figures_from_real_git(site: Site, sample_level:
 
 
 def test_cards_and_notes_come_from_the_decks(site: Site, sample_decks: Path) -> None:
-    cards = api(site, "/api/cards?chapter=basics&limit=3")[1]["cards"]
+    cards = api(site, "/api/cards?chapter=cargo&limit=3")[1]["cards"]
     assert len(cards) == 3
     status, result = api(site, "/api/card", {"id": cards[0]["id"], "reply": "nonsense"})
     assert (status, result["correct"]) == (200, False)
-    assert api(site, "/api/notes?chapter=basics")[1]["title"] == "The three areas"
+    assert api(site, "/api/notes?chapter=cargo")[1]["title"] == "The cargo dock"
 
 
 def test_a_press_sends_who_pressed_which_button_and_gives_the_games_view(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:

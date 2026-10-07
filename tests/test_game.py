@@ -159,9 +159,9 @@ def lab_project(home: Path) -> Path:
     Returns
     -------
     Path
-        ``<home>/labs/basics-sample/project``.
+        ``<home>/labs/cargo-sample/project``.
     """
-    return home / "labs" / "basics-sample" / "project"
+    return home / "labs" / "cargo-sample" / "project"
 
 
 def lock_is_held(home: Path) -> bool:
@@ -263,11 +263,11 @@ def test_a_new_player_sees_every_chapter_no_xp_and_nothing_in_progress(sample_le
     assert [(chapter["id"], chapter["title"]) for chapter in status["chapters"]] == list(CHAPTERS.items())
     assert status["max_difficulty"] == max(runner.DIFFICULTIES) == 3
     chapters = {chapter["id"]: chapter for chapter in status["chapters"]}
-    basics = chapters["basics"]
-    assert basics["levels"] == [
-        {"id": "basics-sample", "title": "Say hello", "difficulty": 1, "xp": 100, "command": "git add", "stars": 0, "challenge": False, "done": False, "has_lesson": True, "has_quest": True}
+    cargo = chapters["cargo"]
+    assert cargo["levels"] == [
+        {"id": "cargo-sample", "title": "Say hello", "difficulty": 1, "xp": 100, "command": "git add", "stars": 0, "challenge": False, "done": False, "has_lesson": True, "has_quest": True}
     ]
-    assert basics["cards"] == 12
+    assert cargo["cards"] == 12
     assert chapters["start"]["levels"] == []
 
 
@@ -276,7 +276,7 @@ def test_each_chapter_has_its_blurb(sample_level: runner.Level) -> None:
 
 
 def test_the_collection_holds_the_card_of_each_finished_level_in_play_order(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
-    other = dataclasses.replace(sample_level, id="basics-other", card=kit.CommandCard(command="git status", text="Shows the three places."))
+    other = dataclasses.replace(sample_level, id="cargo-other", card=kit.CommandCard(command="git status", text="Shows the three places."))
     monkeypatch.setattr(runner, "catalogue", lambda: {sample_level.id: sample_level, other.id: other})
     assert game.status()["collection"] == []
     for level in (other, sample_level):
@@ -284,8 +284,8 @@ def test_the_collection_holds_the_card_of_each_finished_level_in_play_order(samp
         solve(level)
         game.check(None, auto=False)
     assert game.status()["collection"] == [
-        {"level": "basics-sample", "command": "git add <file>", "text": markup.parse("Copies a file into the staging area.")},
-        {"level": "basics-other", "command": "git status", "text": markup.parse("Shows the three places.")},
+        {"level": "cargo-sample", "command": "git add <file>", "text": markup.parse("Copies a file into the staging area.")},
+        {"level": "cargo-other", "command": "git status", "text": markup.parse("Shows the three places.")},
     ]
 
 
@@ -294,7 +294,7 @@ def test_a_finished_level_shows_its_best_stars_on_the_map(sample_level: runner.L
     game.hint()
     solve(sample_level)
     game.check(None, auto=False)
-    summary = next(chapter for chapter in game.status()["chapters"] if chapter["id"] == "basics")["levels"][0]
+    summary = next(chapter for chapter in game.status()["chapters"] if chapter["id"] == "cargo")["levels"][0]
     assert (summary["done"], summary["stars"]) == (True, 2)
 
 
@@ -304,7 +304,7 @@ def test_the_dashboard_shows_the_level_in_progress(sample_level: runner.Level) -
     active = game.status()["active"]
     assert active is not None
     assert {key: value for key, value in active.items() if key != "started"} == {
-        "level": "basics-sample",
+        "level": "cargo-sample",
         "step": 0,
         "steps": 3,
         "hints": 1,
@@ -335,8 +335,8 @@ def test_the_page_may_check_a_level_without_a_quest_automatically_from_the_start
 
 def test_an_unknown_level_id_raises_unknown_id_error(sample_level: runner.Level) -> None:
     for action in (game.level, game.lesson, game.start, game.see_scene):
-        with pytest.raises(game.UnknownIdError, match="basics-nothing"):
-            action("basics-nothing")
+        with pytest.raises(game.UnknownIdError, match="cargo-nothing"):
+            action("cargo-nothing")
 
 
 def test_an_unknown_id_is_a_lookup_error_that_no_key_error_can_pass_for() -> None:
@@ -371,20 +371,20 @@ def test_a_key_error_while_scoring_a_card_is_a_bug_not_an_unknown_id(sample_leve
 
     monkeypatch.setattr(score, "card_score", broken_score)
     with pytest.raises(KeyError):
-        game.answer_card("basics-c01", "right")
+        game.answer_card("cargo-c01", "right")
 
 
 def test_starting_an_unknown_level_leaves_the_level_in_progress_alone(sample_level: runner.Level, game_home: Path) -> None:
     game.start(sample_level.id)
     with pytest.raises(game.UnknownIdError):
-        game.start("basics-nothing")
+        game.start("cargo-nothing")
     assert game.status()["active"] is not None
     assert lab_project(game_home).is_dir()
 
 
 def test_a_level_page_shows_its_briefing_steps_and_hint_count(sample_level: runner.Level) -> None:
     view = game.level(sample_level.id)
-    assert (view["id"], view["chapter"], view["chapter_title"], view["title"], view["difficulty"], view["xp"]) == ("basics-sample", "basics", CHAPTERS["basics"], "Say hello", 1, 100)
+    assert (view["id"], view["chapter"], view["chapter_title"], view["title"], view["difficulty"], view["xp"]) == ("cargo-sample", "cargo", CHAPTERS["cargo"], "Say hello", 1, 100)
     assert (view["hints_total"], view["has_lesson"], view["hints"]) == (3, True, [])
     assert [(step["id"], step["kind"]) for step in view["steps"]] == [("look", "read"), ("stage", "watch"), ("branch", "answer")]
     assert view["steps"][1]["command"] == "git add hello.txt"
@@ -400,14 +400,14 @@ def test_a_level_page_shows_its_command_par_scene_and_card(sample_level: runner.
         {"art": "zones", "text": markup.parse("Three places: the working folder, the staging area and the repository.")},
         {"art": "conveyor", "text": markup.parse("`git add` copies a file into the staging area.")},
     ]
-    assert view["card"] == {"level": "basics-sample", "command": "git add <file>", "text": markup.parse("Copies a file into the staging area.")}
+    assert view["card"] == {"level": "cargo-sample", "command": "git add <file>", "text": markup.parse("Copies a file into the staging area.")}
 
 
 def test_a_scene_stays_seen_once_the_player_saw_it_until_a_reset(sample_level: runner.Level) -> None:
     game.see_scene(sample_level.id)
     game.see_scene(sample_level.id)
     assert game.level(sample_level.id)["scene_seen"] is True
-    assert save.load_progress()["scenes"] == ["basics-sample"]
+    assert save.load_progress()["scenes"] == ["cargo-sample"]
     game.reset()
     assert game.level(sample_level.id)["scene_seen"] is False
 
@@ -463,7 +463,7 @@ def test_a_level_page_lists_the_hints_already_revealed(sample_level: runner.Leve
 @pytest.mark.usefixtures("fake_insight")
 def test_a_lesson_gives_each_slide_its_figure(sample_level: runner.Level) -> None:
     lesson = game.lesson(sample_level.id)
-    assert (lesson["level"], lesson["title"]) == ("basics-sample", "Say hello")
+    assert (lesson["level"], lesson["title"]) == ("cargo-sample", "Say hello")
     first, second = lesson["slides"]
     assert (first["id"], first["title"], first["view"]) == ("init", "A repository", "terminal")
     assert first["text"] == markup.parse(sample_level.lesson[0].text)
@@ -528,10 +528,10 @@ def test_the_map_guide_shows_each_figure_before_and_after_its_change() -> None:
 
 def test_starting_a_level_builds_its_lab_and_records_it(sample_level: runner.Level, game_home: Path) -> None:
     view = game.start(sample_level.id)
-    assert (view["level"], view["step"], view["steps"], view["hints"], view["hints_total"], view["attempts"]) == ("basics-sample", 0, 3, 0, 3, 0)
+    assert (view["level"], view["step"], view["steps"], view["hints"], view["hints_total"], view["attempts"]) == ("cargo-sample", 0, 3, 0, 3, 0)
     assert datetime.fromisoformat(view["started"]).tzinfo is not None
     assert (lab_project(game_home) / "hello.txt").exists()
-    assert save.load_active() == {"level": "basics-sample", "started": view["started"], "step": 0, "hints": 0, "attempts": 0, "state": {"branch": "trunk"}, "log_offset": 0, "typed": [], "events": [], "done": []}
+    assert save.load_active() == {"level": "cargo-sample", "started": view["started"], "step": 0, "hints": 0, "attempts": 0, "state": {"branch": "trunk"}, "log_offset": 0, "typed": [], "events": [], "done": []}
 
 
 def test_starting_again_ends_the_level_in_progress_with_a_fresh_lab(sample_level: runner.Level, game_home: Path) -> None:
@@ -560,7 +560,7 @@ def test_a_level_whose_setup_fails_leaves_nothing_in_progress(sample_level: runn
     with pytest.raises(RuntimeError):
         game.start(broken.id)
     assert save.load_active() is None
-    assert not (game_home / "labs" / "basics-sample").exists()
+    assert not (game_home / "labs" / "cargo-sample").exists()
 
 
 @pytest.mark.parametrize("action", [lambda: game.quest_step(None), lambda: game.check(None, auto=True), game.hint, game.observe, lambda: game.press("you", "status")])
@@ -585,7 +585,7 @@ def test_an_active_record_at_its_levels_limits_is_fine(sample_level: runner.Leve
 
 
 def test_a_level_in_progress_that_no_longer_exists_counts_as_none(sample_level: runner.Level) -> None:
-    save.write_active({"level": "basics-gone", "started": "2026-10-06T10:00:00+00:00", "step": 0, "hints": 0, "attempts": 0, "state": {}, "log_offset": 0, "typed": [], "events": [], "done": []})
+    save.write_active({"level": "cargo-gone", "started": "2026-10-06T10:00:00+00:00", "step": 0, "hints": 0, "attempts": 0, "state": {}, "log_offset": 0, "typed": [], "events": [], "done": []})
     assert game.status()["active"] is None
     with pytest.raises(game.NotPlayingError):
         game.check(None, auto=False)
@@ -896,8 +896,8 @@ def test_text_the_player_sends_that_utf8_cannot_encode_is_only_a_wrong_answer(sa
     for garbage in ["\ud800", "main\udfff", "\udcff" * 3]:
         assert game.check(garbage, auto=False)["solved"] is False
         assert game.quest_step(garbage)["correct"] is False
-        assert game.answer_card("basics-text", garbage)["correct"] is False
-        assert game.answer_card("basics-c01", garbage)["correct"] is False
+        assert game.answer_card("cargo-text", garbage)["correct"] is False
+        assert game.answer_card("cargo-c01", garbage)["correct"] is False
     assert game.quest_step("main")["correct"] is True
 
 
@@ -920,12 +920,12 @@ def test_solving_a_level_pays_once_and_records_it(sample_level: runner.Level, ga
     game.start(sample_level.id)
     solve(sample_level)
     result = game.check(None, auto=False)
-    payout: save.Payout = {"level": "basics-sample", "xp": 100, "first_time": True, "rank_before": "Untracked", "rank_after": "Untracked"}
+    payout: save.Payout = {"level": "cargo-sample", "xp": 100, "first_time": True, "rank_before": "Untracked", "rank_after": "Untracked"}
     assert (result["solved"], result["payout"]) == (True, payout)
     assert result["debrief"] == markup.parse("`hello.txt` is now in a commit on `trunk`.")
     progress = save.load_progress()
     assert (progress["xp"], progress["last_payout"]) == (100, payout)
-    assert {key: value for key, value in progress["levels"]["basics-sample"].items() if key != "finished"} == {"xp": 100, "stars": 3, "state": {"branch": "trunk"}}
+    assert {key: value for key, value in progress["levels"]["cargo-sample"].items() if key != "finished"} == {"xp": 100, "stars": 3, "state": {"branch": "trunk"}}
     assert save.load_active() is None
     assert lab_project(game_home).is_dir()
 
@@ -1102,26 +1102,26 @@ def test_a_replay_keeps_the_best_stars_and_brings_no_new_card(sample_level: runn
     solve(replay)
     result = game.check(None, auto=False)
     assert (result["stars"], result["new_card"]) == (3, None)
-    assert save.load_progress()["levels"]["basics-sample"]["stars"] == 3
+    assert save.load_progress()["levels"]["cargo-sample"]["stars"] == 3
     game.start(replay.id)
     game.hint()
     solve(replay)
     assert game.check(None, auto=False)["stars"] == 2
-    assert save.load_progress()["levels"]["basics-sample"]["stars"] == 3
+    assert save.load_progress()["levels"]["cargo-sample"]["stars"] == 3
 
 
 def test_a_replay_pays_nothing_and_keeps_the_first_finish_and_payment(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
     game.start(sample_level.id)
     solve(sample_level)
     game.check(None, auto=False)
-    first = save.load_progress()["levels"]["basics-sample"]
+    first = save.load_progress()["levels"]["cargo-sample"]
     replay = dataclasses.replace(sample_level, setup=setup_on("main"))
     monkeypatch.setattr(runner, "catalogue", lambda: {replay.id: replay})
     game.start(replay.id)
     solve(replay)
     payout = game.check(None, auto=False)["payout"]
-    assert payout == {"level": "basics-sample", "xp": 0, "first_time": False, "rank_before": "Untracked", "rank_after": "Untracked"}
-    assert save.load_progress()["levels"]["basics-sample"] == {**first, "stars": 3, "state": {"branch": "main"}}
+    assert payout == {"level": "cargo-sample", "xp": 0, "first_time": False, "rank_before": "Untracked", "rank_after": "Untracked"}
+    assert save.load_progress()["levels"]["cargo-sample"] == {**first, "stars": 3, "state": {"branch": "main"}}
     assert save.load_progress()["xp"] == 100
 
 
@@ -1163,7 +1163,7 @@ def test_hints_cost_nothing_on_a_replay(sample_level: runner.Level) -> None:
 def test_observing_the_lab_snapshots_it_and_tells_what_changed(sample_level: runner.Level, game_home: Path) -> None:
     game.start(sample_level.id)
     first = game.observe()
-    assert (first["level"], first["github"], first["events"]) == ("basics-sample", None, [])
+    assert (first["level"], first["github"], first["events"]) == ("cargo-sample", None, [])
     assert [entry["path"] for entry in first["project"]["files"]] == ["hello.txt"]
     (lab_project(game_home) / "notes.txt").write_text("x")
     second = game.observe()
@@ -1204,7 +1204,7 @@ def test_an_observation_saved_by_an_older_game_is_dropped_without_events_or_erro
 @pytest.mark.usefixtures("fake_insight")
 def test_a_stale_or_damaged_observation_is_dropped_without_events_or_error(sample_level: runner.Level, game_home: Path) -> None:
     game.start(sample_level.id)
-    (game_home / "observed.json").write_text(json.dumps({"level": "basics-sample", "project": {"files": "an older shape"}}))
+    (game_home / "observed.json").write_text(json.dumps({"level": "cargo-sample", "project": {"files": "an older shape"}}))
     assert game.observe()["events"] == []
     observed = save.load_observed()
     assert observed is not None and observed["project"]["exists"] is True
@@ -1224,7 +1224,7 @@ def test_observing_an_unchanged_lab_does_not_rewrite_the_observation(sample_leve
 @pytest.mark.usefixtures("fake_insight")
 def test_observing_a_lab_with_a_stand_in_github_snapshots_it_too(sample_level: runner.Level, game_home: Path) -> None:
     game.start(sample_level.id)
-    github = game_home / "labs" / "basics-sample" / "github" / "project.git"
+    github = game_home / "labs" / "cargo-sample" / "github" / "project.git"
     github.mkdir(parents=True)
     first = game.observe()
     assert first["github"] is not None and first["github"]["exists"] is True
@@ -1584,7 +1584,7 @@ def test_aborting_ends_the_level_and_removes_its_lab(sample_level: runner.Level,
     assert game.abort() is None
     game.start(sample_level.id)
     game.observe()
-    assert game.abort() == "basics-sample"
+    assert game.abort() == "cargo-sample"
     assert save.load_active() is None
     assert not (game_home / "labs").exists()
     assert not (game_home / "observed.json").exists()
@@ -1612,7 +1612,7 @@ def test_reset_works_on_a_damaged_save(sample_level: runner.Level, game_home: Pa
 
 def test_a_new_player_has_cards_to_review_only_in_the_chapter_they_ask_for(sample_level: runner.Level) -> None:
     assert game.due_cards(None, 50) == []
-    picked = game.due_cards("basics", 50)
+    picked = game.due_cards("cargo", 50)
     assert len(picked) == 12
     assert [card["level"] for card in picked] == sorted(card["level"] for card in picked)
     assert all(card["pays"] for card in picked)
@@ -1623,29 +1623,29 @@ def test_new_cards_come_from_chapters_with_a_finished_level(sample_level: runner
     solve(sample_level)
     game.check(None, auto=False)
     picked = game.due_cards(None, 50)
-    assert {card["chapter"] for card in picked} == {"basics"}
+    assert {card["chapter"] for card in picked} == {"cargo"}
     assert game.status()["cards_due"] == 12
 
 
 def test_cards_due_for_review_come_from_any_chapter_and_cards_not_due_wait(sample_level: runner.Level) -> None:
     yesterday = (date.today() - timedelta(days=1)).isoformat()
     later = (date.today() + timedelta(days=3)).isoformat()
-    save.write_progress({**save.new_progress(), "cards": {"hash-c01": {"box": 2, "due": yesterday}, "basics-c01": {"box": 1, "due": later}}})
+    save.write_progress({**save.new_progress(), "cards": {"vault-c01": {"box": 2, "due": yesterday}, "cargo-c01": {"box": 1, "due": later}}})
     picked = game.due_cards(None, 50)
-    assert [card["id"] for card in picked] == ["hash-c01"]
-    assert [card["id"] for card in game.due_cards("basics", 3)][0] != "basics-c01"
-    assert len(game.due_cards("basics", 50)) == 11
+    assert [card["id"] for card in picked] == ["vault-c01"]
+    assert [card["id"] for card in game.due_cards("cargo", 3)][0] != "cargo-c01"
+    assert len(game.due_cards("cargo", 50)) == 11
 
 
 def test_a_due_card_comes_before_new_ones(sample_level: runner.Level) -> None:
     yesterday = (date.today() - timedelta(days=1)).isoformat()
-    save.write_progress({**save.new_progress(), "cards": {"basics-c05": {"box": 2, "due": yesterday}}})
-    assert game.due_cards("basics", 50)[0]["id"] == "basics-c05"
+    save.write_progress({**save.new_progress(), "cards": {"cargo-c05": {"box": 2, "due": yesterday}}})
+    assert game.due_cards("cargo", 50)[0]["id"] == "cargo-c05"
 
 
 def test_a_card_view_hides_the_answer_among_shuffled_choices(sample_level: runner.Level) -> None:
-    views = {card["id"]: card for card in game.due_cards("basics", 50)}
-    choice, predict, text = views["basics-c01"], views["basics-predict"], views["basics-text"]
+    views = {card["id"]: card for card in game.due_cards("cargo", 50)}
+    choice, predict, text = views["cargo-c01"], views["cargo-predict"], views["cargo-text"]
     assert [view["level_name"] for view in (choice, predict, text)] == ["basic", "deeper", "advanced"]
     assert (choice["kind"], sorted(option["value"] for option in choice["choices"]), choice["code"]) == ("choice", ["right", "worse", "wrong"], "")
     assert all(option["text"] == markup.parse(option["value"]) for option in choice["choices"])
@@ -1682,8 +1682,8 @@ source = "git-commit(1)"
 def test_an_unknown_chapter_or_card_raises_unknown_id_error(sample_level: runner.Level) -> None:
     with pytest.raises(game.UnknownIdError, match="nowhere"):
         game.due_cards("nowhere", 5)
-    with pytest.raises(game.UnknownIdError, match="basics-nothing"):
-        game.answer_card("basics-nothing", "right")
+    with pytest.raises(game.UnknownIdError, match="cargo-nothing"):
+        game.answer_card("cargo-nothing", "right")
     with pytest.raises(game.UnknownIdError, match="nowhere"):
         game.answer_card("nowhere-card", "right")
     with pytest.raises(game.UnknownIdError, match="nowhere"):
@@ -1691,36 +1691,36 @@ def test_an_unknown_chapter_or_card_raises_unknown_id_error(sample_level: runner
 
 
 def test_a_right_answer_to_a_new_card_pays_and_schedules_it(sample_level: runner.Level) -> None:
-    result = game.answer_card("basics-predict", "hi")
+    result = game.answer_card("cargo-predict", "hi")
     assert result == {"correct": True, "answer": "hi", "answer_text": [{"kind": "code", "text": "hi"}], "explain": markup.parse("It echoes."), "xp": 20, "streak": 1, "bonus": 0}
     progress = save.load_progress()
     assert (progress["xp"], progress["streak"], progress["best_streak"]) == (20, 1, 1)
-    assert progress["cards"]["basics-predict"] == {"box": 1, "due": (date.today() + timedelta(days=1)).isoformat()}
+    assert progress["cards"]["cargo-predict"] == {"box": 1, "due": (date.today() + timedelta(days=1)).isoformat()}
 
 
 def test_a_wrong_answer_pays_nothing_and_brings_the_card_back_today(sample_level: runner.Level) -> None:
-    game.answer_card("basics-c01", "right")
-    result = game.answer_card("basics-text", "master")
+    game.answer_card("cargo-c01", "right")
+    result = game.answer_card("cargo-text", "master")
     assert (result["correct"], result["answer"], result["answer_text"], result["xp"], result["streak"]) == (False, "main", markup.parse("main"), 0, 0)
     progress = save.load_progress()
     assert (progress["streak"], progress["best_streak"]) == (0, 1)
-    assert progress["cards"]["basics-text"] == {"box": 0, "due": date.today().isoformat()}
+    assert progress["cards"]["cargo-text"] == {"box": 0, "due": date.today().isoformat()}
 
 
 def test_a_card_that_is_not_due_pays_nothing(sample_level: runner.Level) -> None:
-    game.answer_card("basics-c01", "right")
-    assert game.answer_card("basics-c01", "right")["xp"] == 0
+    game.answer_card("cargo-c01", "right")
+    assert game.answer_card("cargo-c01", "right")["xp"] == 0
     assert save.load_progress()["xp"] == 10
 
 
 def test_the_fifth_paying_right_answer_in_a_row_earns_the_streak_bonus(sample_level: runner.Level) -> None:
-    results = [game.answer_card(f"basics-c{number:02}", "right") for number in range(1, 6)]
+    results = [game.answer_card(f"cargo-c{number:02}", "right") for number in range(1, 6)]
     assert [result["bonus"] for result in results] == [0, 0, 0, 0, 25]
     assert save.load_progress()["xp"] == 5 * 10 + 25
 
 
 def test_answers_given_at_the_same_time_are_all_counted(sample_level: runner.Level) -> None:
-    threads = [threading.Thread(target=game.answer_card, args=(f"basics-c{number:02}", "right")) for number in range(1, 11)]
+    threads = [threading.Thread(target=game.answer_card, args=(f"cargo-c{number:02}", "right")) for number in range(1, 11)]
     for thread in threads:
         thread.start()
     for thread in threads:
@@ -1730,7 +1730,7 @@ def test_answers_given_at_the_same_time_are_all_counted(sample_level: runner.Lev
 
 
 def test_a_chapters_notes_are_parsed_with_its_title(sample_level: runner.Level) -> None:
-    assert game.notes("basics") == {"chapter": "basics", "title": CHAPTERS["basics"], "notes": markup.parse("The `three` areas.")}
+    assert game.notes("cargo") == {"chapter": "cargo", "title": CHAPTERS["cargo"], "notes": markup.parse("The `three` areas.")}
     assert game.notes("toolbox")["notes"] == []
 
 
@@ -1739,8 +1739,8 @@ def test_the_terminal_opens_in_the_lab_project_else_the_lab_else_the_players_hom
     assert game.terminal_folder() == str(tmp_path)
     game.start(sample_level.id)
     assert game.terminal_folder() == str(lab_project(game_home))
-    runner.lab_of(sample_level.id).project.rename(game_home / "labs" / "basics-sample" / "moved")
-    assert game.terminal_folder() == str(game_home / "labs" / "basics-sample")
+    runner.lab_of(sample_level.id).project.rename(game_home / "labs" / "cargo-sample" / "moved")
+    assert game.terminal_folder() == str(game_home / "labs" / "cargo-sample")
 
 
 def test_asking_where_a_terminal_opens_changes_nothing(sample_level: runner.Level, game_home: Path) -> None:
@@ -1821,7 +1821,7 @@ def test_the_doctor_refuses_a_relative_or_unwritable_home(tmp_path: Path, monkey
 
 def test_every_record_is_json(sample_level: runner.Level) -> None:
     game.start(sample_level.id)
-    for record in (game.status(), game.level(sample_level.id), game.lesson(sample_level.id), game.observe(), game.due_cards("basics", 3), game.check(None, auto=True)):
+    for record in (game.status(), game.level(sample_level.id), game.lesson(sample_level.id), game.observe(), game.due_cards("cargo", 3), game.check(None, auto=True)):
         json.dumps(record)
 
 

@@ -101,7 +101,7 @@ def test_the_shell_starts_in_the_lab_with_the_games_git_settings(sample_level: r
     monkeypatch.setenv("GIT_DIR", "/somewhere/else/.git")
     monkeypatch.setenv("EDITOR", "nano")
     status, printed = run(capsys, "shell")
-    lab = str(game_home / "labs" / "basics-sample" / "project")
+    lab = str(game_home / "labs" / "cargo-sample" / "project")
     (call,) = calls
     assert (status, call["args"], call["cwd"]) == (3, ["bash", "--noprofile", "--rcfile", str(game_home / save.STARTUP_FILE), "-i"], lab)
     assert {key: call["env"][key] for key in gitcmd.isolation(game_home)} == gitcmd.isolation(game_home)

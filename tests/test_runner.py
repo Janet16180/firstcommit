@@ -9,12 +9,12 @@ from typing import Any
 import pytest
 
 from firstcommit import gitcmd, kit, runner
-from sample_levels import basics_sample
+from sample_levels import cargo_sample
 
 CONTRACT = ["TITLE", "DIFFICULTY", "XP", "COMMAND", "PAR", "CARD", "SCENE", "LESSON", "QUEST", "BRIEFING", "HINTS", "DEBRIEF", "REACTIONS", "setup", "check", "solve"]
 
 
-def level_module(name: str = "basics_sample", **changes: Any) -> types.ModuleType:
+def level_module(name: str = "cargo_sample", **changes: Any) -> types.ModuleType:
     """
     Make a level module from the sample level, with some names changed (or removed when given ``...``).
 
@@ -32,7 +32,7 @@ def level_module(name: str = "basics_sample", **changes: Any) -> types.ModuleTyp
     """
     module = types.ModuleType(f"sample_levels.{name}")
     for key in CONTRACT:
-        setattr(module, key, getattr(basics_sample, key))
+        setattr(module, key, getattr(cargo_sample, key))
     for key, value in changes.items():
         if value is ...:
             delattr(module, key)
@@ -42,16 +42,16 @@ def level_module(name: str = "basics_sample", **changes: Any) -> types.ModuleTyp
 
 
 def test_a_level_module_is_read_into_a_typed_record() -> None:
-    level = runner.load(basics_sample)
-    assert (level.id, level.chapter, level.title, level.difficulty, level.xp) == ("basics-sample", "basics", "Say hello", 1, 100)
-    assert level.lesson == tuple(basics_sample.LESSON)
-    assert level.quest == tuple(basics_sample.QUEST)
-    assert level.hints == tuple(basics_sample.HINTS)
-    assert (level.briefing, level.debrief) == (basics_sample.BRIEFING, basics_sample.DEBRIEF)
-    assert (level.setup, level.check, level.solve) == (basics_sample.setup, basics_sample.check, basics_sample.solve)
+    level = runner.load(cargo_sample)
+    assert (level.id, level.chapter, level.title, level.difficulty, level.xp) == ("cargo-sample", "cargo", "Say hello", 1, 100)
+    assert level.lesson == tuple(cargo_sample.LESSON)
+    assert level.quest == tuple(cargo_sample.QUEST)
+    assert level.hints == tuple(cargo_sample.HINTS)
+    assert (level.briefing, level.debrief) == (cargo_sample.BRIEFING, cargo_sample.DEBRIEF)
+    assert (level.setup, level.check, level.solve) == (cargo_sample.setup, cargo_sample.check, cargo_sample.solve)
     assert (level.question, level.placeholder) == ("", "")
-    assert (level.command, level.par, level.card) == ("git add", 3, basics_sample.CARD)
-    assert (level.scene, level.reactions) == (tuple(basics_sample.SCENE), tuple(basics_sample.REACTIONS))
+    assert (level.command, level.par, level.card) == ("git add", 3, cargo_sample.CARD)
+    assert (level.scene, level.reactions) == (tuple(cargo_sample.SCENE), tuple(cargo_sample.REACTIONS))
 
 
 def test_a_level_without_a_scene_or_reactions_has_empty_ones() -> None:
@@ -84,7 +84,7 @@ def test_a_level_solved_by_a_typed_answer_reads_its_question_and_placeholder() -
 
 
 def test_a_level_record_cannot_be_changed() -> None:
-    level = runner.load(basics_sample)
+    level = runner.load(cargo_sample)
     with pytest.raises(dataclasses.FrozenInstanceError):
         level.xp = 1_000_000  # type: ignore[misc]
 
@@ -113,7 +113,7 @@ def step(step_id: str) -> kit.ReadStep:
 
 BROKEN: dict[str, tuple[types.ModuleType, str]] = {
     "an unknown chapter": (level_module("nowhere_sample"), "chapter"),
-    "a name without a slug": (level_module("basics"), "chapter"),
+    "a name without a slug": (level_module("cargo"), "chapter"),
     "a missing title": (level_module(TITLE=...), "TITLE"),
     "an empty title": (level_module(TITLE=" "), "TITLE"),
     "a difficulty of 4": (level_module(DIFFICULTY=4), "DIFFICULTY"),
@@ -152,10 +152,10 @@ BROKEN: dict[str, tuple[types.ModuleType, str]] = {
     "five hints": (level_module(HINTS=["a", "b", "c", "d", "e"]), "HINTS"),
     "an empty hint": (level_module(HINTS=["a", ""]), "HINTS"),
     "a lesson of strings": (level_module(LESSON=["slide"]), "LESSON"),
-    "two slides with one id": (level_module(LESSON=[basics_sample.LESSON[0]] * 2), "init"),
+    "two slides with one id": (level_module(LESSON=[cargo_sample.LESSON[0]] * 2), "init"),
     "a quest that is not a list": (level_module(QUEST=step("a")), "QUEST"),
     "two steps with one id": (level_module(QUEST=[step("a"), step("a")]), "a"),
-    "a quest holding a slide": (level_module(QUEST=[basics_sample.LESSON[0]]), "QUEST"),
+    "a quest holding a slide": (level_module(QUEST=[cargo_sample.LESSON[0]]), "QUEST"),
     "a setup that is not a function": (level_module(setup="setup"), "setup"),
     "a missing check": (level_module(check=...), "check"),
     "a question that is not text": (level_module(QUESTION=3), "QUESTION"),
@@ -163,7 +163,7 @@ BROKEN: dict[str, tuple[types.ModuleType, str]] = {
     "a placeholder without a question": (level_module(PLACEHOLDER="a short hash"), "PLACEHOLDER"),
     "a placeholder with backticks": (level_module(QUESTION="Which?", PLACEHOLDER="a `short` hash"), "PLACEHOLDER"),
     "a step placeholder with backticks": (
-        level_module(QUEST=[kit.AnswerStep(id="a", text="Do it.", question="Q?", placeholder="`main`", check=basics_sample.names_the_branch)]),
+        level_module(QUEST=[kit.AnswerStep(id="a", text="Do it.", question="Q?", placeholder="`main`", check=cargo_sample.names_the_branch)]),
         "a",
     ),
 }
@@ -195,8 +195,8 @@ def level_package(tmp_path: Path) -> Iterator[types.ModuleType]:
     package.mkdir()
     (package / "__init__.py").write_text("")
     (package / "_shared.py").write_text("raise RuntimeError('a helper is not a level')\n")
-    for name, difficulty in [("basics_b", 2), ("basics_a", 2), ("start_z", 3), ("basics_c", 1)]:
-        (package / f"{name}.py").write_text(f"from sample_levels.basics_sample import *\nDIFFICULTY = {difficulty}\n")
+    for name, difficulty in [("cargo_b", 2), ("cargo_a", 2), ("start_z", 3), ("cargo_c", 1)]:
+        (package / f"{name}.py").write_text(f"from sample_levels.cargo_sample import *\nDIFFICULTY = {difficulty}\n")
     sys.path.insert(0, str(tmp_path))
     yield importlib.import_module("fakelevels")
     sys.path.remove(str(tmp_path))
@@ -205,7 +205,7 @@ def level_package(tmp_path: Path) -> Iterator[types.ModuleType]:
 
 
 def test_levels_are_found_in_chapter_then_difficulty_then_id_order_without_helpers(level_package: types.ModuleType) -> None:
-    assert list(runner.discover(level_package)) == ["start-z", "basics-c", "basics-a", "basics-b"]
+    assert list(runner.discover(level_package)) == ["cargo-c", "cargo-a", "cargo-b", "start-z"]
 
 
 def test_the_catalogue_is_read_once() -> None:
@@ -217,17 +217,17 @@ def test_the_catalogue_holds_the_games_own_levels() -> None:
 
 
 def test_a_lab_lives_under_the_game_home(game_home: Path) -> None:
-    assert runner.lab_of("basics-sample") == kit.Lab(game_home / "labs" / "basics-sample")
+    assert runner.lab_of("cargo-sample") == kit.Lab(game_home / "labs" / "cargo-sample")
 
 
 def test_starting_a_lab_runs_setup_in_an_empty_folder(game_home: Path) -> None:
-    leftover = game_home / "labs" / "basics-sample" / "left-from-before.txt"
+    leftover = game_home / "labs" / "cargo-sample" / "left-from-before.txt"
     leftover.parent.mkdir(parents=True)
     leftover.write_text("old\n")
-    state = runner.start_lab(runner.load(basics_sample))
+    state = runner.start_lab(runner.load(cargo_sample))
     assert state == {"branch": "trunk"}
-    assert sorted(path.name for path in (game_home / "labs" / "basics-sample").iterdir()) == ["project"]
-    assert (game_home / "labs" / "basics-sample" / "project" / "hello.txt").read_text() == "hello\n"
+    assert sorted(path.name for path in (game_home / "labs" / "cargo-sample").iterdir()) == ["project"]
+    assert (game_home / "labs" / "cargo-sample" / "project" / "hello.txt").read_text() == "hello\n"
 
 
 def test_starting_a_lab_removes_every_other_lab(game_home: Path) -> None:
@@ -235,8 +235,8 @@ def test_starting_a_lab_removes_every_other_lab(game_home: Path) -> None:
     other.mkdir(parents=True)
     other.chmod(0o500)
     (game_home / "labs" / "stray.txt").write_text("x")
-    runner.start_lab(runner.load(basics_sample))
-    assert [path.name for path in (game_home / "labs").iterdir()] == ["basics-sample"]
+    runner.start_lab(runner.load(cargo_sample))
+    assert [path.name for path in (game_home / "labs").iterdir()] == ["cargo-sample"]
 
 
 def plain_init(lab: kit.Lab) -> kit.State:
@@ -258,14 +258,14 @@ def plain_init(lab: kit.Lab) -> kit.State:
 
 
 def test_a_lab_starts_from_the_games_git_config_so_a_plain_init_is_on_main(game_home: Path) -> None:
-    runner.start_lab(dataclasses.replace(runner.load(basics_sample), setup=plain_init))
+    runner.start_lab(dataclasses.replace(runner.load(cargo_sample), setup=plain_init))
     assert (game_home / "gitconfig").read_text() == gitcmd.BASE_CONFIG
-    assert kit.git(runner.lab_of("basics-sample").project, "symbolic-ref", "--short", "HEAD") == "main\n"
+    assert kit.git(runner.lab_of("cargo-sample").project, "symbolic-ref", "--short", "HEAD") == "main\n"
 
 
 def test_starting_a_lab_keeps_the_game_git_config_the_player_changed(game_home: Path) -> None:
     (game_home / "gitconfig").write_text("[user]\n\tname = Ada\n")
-    runner.start_lab(runner.load(basics_sample))
+    runner.start_lab(runner.load(cargo_sample))
     assert (game_home / "gitconfig").read_text() == "[user]\n\tname = Ada\n"
 
 
@@ -275,27 +275,27 @@ def test_a_failed_setup_leaves_no_lab_and_raises(game_home: Path) -> None:
         raise RuntimeError("setup broke")
 
     with pytest.raises(RuntimeError, match="setup broke"):
-        runner.start_lab(dataclasses.replace(runner.load(basics_sample), setup=broken_setup))
-    assert not (game_home / "labs" / "basics-sample").exists()
+        runner.start_lab(dataclasses.replace(runner.load(cargo_sample), setup=broken_setup))
+    assert not (game_home / "labs" / "cargo-sample").exists()
 
 
 def test_a_setup_that_returns_no_state_is_a_bug_and_leaves_no_lab(game_home: Path) -> None:
     def forgetful_setup(lab: kit.Lab) -> kit.State:
         return None  # type: ignore[return-value]
 
-    with pytest.raises(ValueError, match="basics-sample.*setup"):
-        runner.start_lab(dataclasses.replace(runner.load(basics_sample), setup=forgetful_setup))
-    assert not (game_home / "labs" / "basics-sample").exists()
+    with pytest.raises(ValueError, match="cargo-sample.*setup"):
+        runner.start_lab(dataclasses.replace(runner.load(cargo_sample), setup=forgetful_setup))
+    assert not (game_home / "labs" / "cargo-sample").exists()
 
 
 def test_removing_the_labs_deletes_them_all_and_tolerates_none(game_home: Path) -> None:
-    runner.start_lab(runner.load(basics_sample))
+    runner.start_lab(runner.load(cargo_sample))
     runner.remove_labs()
     runner.remove_labs()
     assert not (game_home / "labs").exists()
 
 
 def test_a_level_is_a_challenge_only_when_it_says_so() -> None:
-    goals = [step for step in basics_sample.QUEST if isinstance(step, kit.WatchStep)]
+    goals = [step for step in cargo_sample.QUEST if isinstance(step, kit.WatchStep)]
     assert runner.load(level_module(CHALLENGE=True, QUEST=goals)).challenge is True
     assert runner.load(level_module()).challenge is False
