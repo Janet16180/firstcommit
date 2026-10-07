@@ -136,6 +136,11 @@ class Command(TypedDict):
     line: str
     status: int
 
+Mood = Literal["info", "ok", "warn", "err"]
+"""How Rama says something about a typed line (`firstcommit.reactions`): neutral, pleased, careful or about a failure."""
+Art = Literal["space", "timeline", "terminal", "planet", "flag", "zones", "conveyor"]
+"""The pictures a level's scene can show; the page draws each one (its art files)."""
+
 Who = Literal["you", "alex"]
 """The two people of the playground (`firstcommit.playground`), who share one remote."""
 Button = Literal["edit", "add", "commit", "push", "fetch", "pull", "pull-no-rebase", "status", "merge-abort", "keep-ours", "keep-theirs"]
