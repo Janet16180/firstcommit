@@ -2,7 +2,7 @@
 The level authors' toolkit: what a level is made of, and the helpers a level may use.
 
 A level module imports this module and the standard library only (AUTHORING.md section 3):
-the types of its lesson and quest, its lab, git kept to the game's configuration, the snapshot
+the types of its scene, card, lesson, quest and reactions, its lab, git kept to the game's configuration, the snapshot
 its checks read, helpers that parse what a player types, and the two-person playground
 (`setup_playground` builds it in a lab; `press` runs one of its buttons, the same real command
 the page's button runs, so a level can prepare a state such as "Alex already pushed").
@@ -21,6 +21,8 @@ from firstcommit.lab import Lab
 from firstcommit.markup import code
 from firstcommit.playground import press
 from firstcommit.playground import setup as setup_playground
+from firstcommit.reactions import ReactionRule
+from firstcommit.records import Art
 from firstcommit.repomap import (
     Commit,
     FileEntry,
@@ -40,12 +42,16 @@ __all__ = [
     "GAME",
     "AnswerCheck",
     "AnswerStep",
+    "Art",
+    "CommandCard",
     "Commit",
     "FileEntry",
     "Lab",
     "Person",
+    "ReactionRule",
     "ReadStep",
     "Ref",
+    "SceneFrame",
     "Slide",
     "Snapshot",
     "State",
@@ -90,6 +96,32 @@ class Verdict:
 
 AnswerCheck = Callable[[Lab, State, str], Verdict]
 Watch = Callable[[Lab, State], Verdict]
+
+
+@dataclass(frozen=True)
+class SceneFrame:
+    """
+    One picture of a level's scene, Rama's short animated explanation shown the first time the level opens.
+
+    ``art`` names the picture (the page draws it); ``text`` is what Rama says under it, as
+    markup. A scene's text is never filled from a level's state: it is shown before the level
+    starts.
+    """
+
+    art: Art
+    text: str
+
+
+@dataclass(frozen=True)
+class CommandCard:
+    """
+    The card a level adds to the player's collection once solved: a command and what it does.
+
+    ``command`` is shown as written (``git add <file>``); ``text`` is markup.
+    """
+
+    command: str
+    text: str
 
 
 @dataclass(frozen=True)

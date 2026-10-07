@@ -11,7 +11,7 @@ import pytest
 from firstcommit import gitcmd, kit, runner
 from sample_levels import basics_sample
 
-CONTRACT = ["TITLE", "DIFFICULTY", "XP", "LESSON", "QUEST", "BRIEFING", "HINTS", "DEBRIEF", "setup", "check", "solve"]
+CONTRACT = ["TITLE", "DIFFICULTY", "XP", "COMMAND", "PAR", "CARD", "SCENE", "LESSON", "QUEST", "BRIEFING", "HINTS", "DEBRIEF", "REACTIONS", "setup", "check", "solve"]
 
 
 def level_module(name: str = "basics_sample", **changes: Any) -> types.ModuleType:
@@ -50,6 +50,13 @@ def test_a_level_module_is_read_into_a_typed_record() -> None:
     assert (level.briefing, level.debrief) == (basics_sample.BRIEFING, basics_sample.DEBRIEF)
     assert (level.setup, level.check, level.solve) == (basics_sample.setup, basics_sample.check, basics_sample.solve)
     assert (level.question, level.placeholder) == ("", "")
+    assert (level.command, level.par, level.card) == ("git add", 3, basics_sample.CARD)
+    assert (level.scene, level.reactions) == (tuple(basics_sample.SCENE), tuple(basics_sample.REACTIONS))
+
+
+def test_a_level_without_a_scene_or_reactions_has_empty_ones() -> None:
+    level = runner.load(level_module(SCENE=..., REACTIONS=...))
+    assert (level.scene, level.reactions) == ((), ())
 
 
 def test_a_level_solved_by_a_typed_answer_reads_its_question_and_placeholder() -> None:
@@ -95,6 +102,21 @@ BROKEN: dict[str, tuple[types.ModuleType, str]] = {
     "no XP": (level_module(XP=0), "XP"),
     "XP as text": (level_module(XP="100"), "XP"),
     "a missing briefing": (level_module(BRIEFING=...), "BRIEFING"),
+    "a missing command label": (level_module(COMMAND=...), "COMMAND"),
+    "a blank command label": (level_module(COMMAND=" "), "COMMAND"),
+    "a par of zero": (level_module(PAR=0), "PAR"),
+    "a par that is a boolean": (level_module(PAR=True), "PAR"),
+    "a missing card": (level_module(CARD=...), "CARD"),
+    "a card that is text": (level_module(CARD="git add"), "CARD"),
+    "a card without text": (level_module(CARD=kit.CommandCard(command="git add", text=" ")), "CARD"),
+    "a scene of strings": (level_module(SCENE=["frame"]), "SCENE"),
+    "a scene frame with a picture nobody drew": (level_module(SCENE=[kit.SceneFrame(art="dragon", text="Hi.")]), "SCENE"),  # type: ignore[arg-type]
+    "a scene frame without text": (level_module(SCENE=[kit.SceneFrame(art="space", text="")]), "SCENE"),
+    "reactions that are not rules": (level_module(REACTIONS=["git add"]), "REACTIONS"),
+    "a reaction whose line is not a pattern": (level_module(REACTIONS=[kit.ReactionRule(line="git (add", mood="ok", text="Hi.")]), "REACTIONS"),
+    "a reaction with an unknown mood": (level_module(REACTIONS=[kit.ReactionRule(line="git", mood="happy", text="Hi.")]), "REACTIONS"),  # type: ignore[arg-type]
+    "a reaction with an unknown outcome": (level_module(REACTIONS=[kit.ReactionRule(line="git", mood="ok", text="Hi.", outcome="won")]), "REACTIONS"),  # type: ignore[arg-type]
+    "a reaction without text": (level_module(REACTIONS=[kit.ReactionRule(line="git", mood="ok", text="")]), "REACTIONS"),
     "a debrief that is not text": (level_module(DEBRIEF=["x"]), "DEBRIEF"),
     "one hint": (level_module(HINTS=["only"]), "HINTS"),
     "five hints": (level_module(HINTS=["a", "b", "c", "d", "e"]), "HINTS"),

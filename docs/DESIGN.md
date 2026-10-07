@@ -164,13 +164,13 @@ runtime        WSL (nothing) | deploy/docker/ | vm/ (later)          outside the
 interface      cli.py | web/routes.py, web/static/*                    parse input, render output
 orchestration  game.py                                                 every player action, under the save lock
 core           levels/*, runner.py, score.py, cards.py, markup.py, gitcmd.py, repomap.py,
-               changes.py, demos.py, kit.py
+               changes.py, demos.py, reactions.py, kit.py
 data           save.py (the save's records), records.py (snapshot records), chapters.py
 infrastructure termlab: store, sandbox, snippets, web.shell, web.terminal, client.js, terminal.js, VM
 ```
 
-- `game.py` is the only thing the interfaces call: `status`, `level`, `lesson`, `start`,
-  `quest_step`, `check`, `hint`, `observe`, `abort`, `reset`, `due_cards`, `answer_card`,
+- `game.py` is the only thing the interfaces call: `status`, `level`, `see_scene`, `lesson`,
+  `start`, `quest_step`, `check`, `hint`, `observe`, `abort`, `reset`, `due_cards`, `answer_card`,
   `notes`, `shell_environment`, `terminal_folder` and `doctor`. It returns typed records (the
   debrief comes inside `LevelView` and `CheckResult`), raises `UnknownIdError` for an id it does
   not have and `NotPlayingError` when no level is in progress, and re-exports `SaveError` and
@@ -181,6 +181,8 @@ infrastructure termlab: store, sandbox, snippets, web.shell, web.terminal, clien
 - `runner.py` reads each level module once into a typed `Level` record and owns the lab
   lifecycle (a fresh lab and its bare "GitHub", cleanup through `termlab.sandbox`).
 - `score.py` (pure): ranks, mission reward, hint cost, card XP and streak.
+- `reactions.py`: what Rama says about a typed line, from the line, its exit status and what
+  changed; one shared rule set written as data, plus each level's own rules, tried first.
 - `cards.py`: loads and validates decks, Leitner scheduling, judging an answer. No printing.
 - `markup.py`: the one parser for lesson and debrief text into blocks; the CLI and the page both
   render blocks. `markup.code` writes any text (a file name, a commit subject) as one code span

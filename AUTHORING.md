@@ -142,6 +142,11 @@ from firstcommit import kit
 TITLE: str                    # short and concrete: "Your first commit"
 DIFFICULTY: int               # 1 first steps, 2 solid, 3 stretch
 XP: int                       # guide: 100 for 1, 150-200 for 2, 250-300 for 3
+COMMAND: str                  # the short label on the map and the level: "git init"
+PAR: int                      # lines a good play types; more than PAR + 3 costs a star
+CARD: kit.CommandCard         # the command card the player collects: command and what it does
+SCENE: list[kit.SceneFrame] = []        # optional; Rama's scene the first time the level opens
+REACTIONS: list[kit.ReactionRule] = []  # optional; tried before the shared ones
 LESSON: list[kit.Slide] = []  # optional; the first level of a chapter has one
 QUEST: list[kit.Step] = []    # optional; the first level of a chapter has one
 BRIEFING: str                 # the situation and what counts as success
@@ -165,6 +170,17 @@ def solve(lab: kit.Lab, state: kit.State) -> str | None: ...
   through `kit.git_run`. It is called every couple of seconds while the player works, with
   `answer=None`, and must stay fast and survive any state the player can create: a missing
   folder, a deleted `.git`, a detached HEAD, a merge in progress, garbage answers.
+- **Stars.** A solved play earns 3 stars, one less once a hint is used and one less once the
+  lines typed in the game's terminal since the level started pass `PAR + 3`, never below 1
+  (`score.stars`). Set `PAR` to the lines a player following the level types.
+- **`SCENE`** frames each name a picture the page draws (`kit.Art`) and say one or two short
+  sentences. **`CARD`** says what its command does, scoped like any claim. Neither is filled
+  from the state: both are shown before the level starts.
+- **`REACTIONS`**: what Rama says about a typed line (`firstcommit.reactions`). A rule matches
+  the start of the line (a regular expression), how it ended (`outcome`), an event kind of what
+  changed (`event`) and whether a repository is there afterwards (`repository`). The first rule
+  that fits speaks; a level's rules come before the shared `reactions.RULES`, so add one only
+  when the level can say something more precise.
 - **`QUESTION`** is for levels whose goal is something the player finds out ("which commit
   introduced the bug?"). Without it, the page offers no answer box and the level is checked
   against the repository only, with `answer=None`.

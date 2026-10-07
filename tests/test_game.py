@@ -26,13 +26,14 @@ from firstcommit import (
     kit,
     markup,
     playground,
+    reactions,
     records,
     repomap,
     runner,
     save,
     score,
 )
-from firstcommit.chapters import CHAPTERS
+from firstcommit.chapters import BLURBS, CHAPTERS
 
 pytestmark = pytest.mark.usefixtures("sample_decks")
 
@@ -201,6 +202,24 @@ def active_record() -> save.Active:
     return active
 
 
+def type_lines(home: Path, *typed: tuple[str, int]) -> None:
+    """
+    Log lines as typed in the game's terminal, as its shell logs them (`firstcommit.commands`).
+
+    Parameters
+    ----------
+    home : Path
+        The game home.
+    *typed : tuple[str, int]
+        Each line and its exit status, in the order typed.
+    """
+    log = home / save.COMMANDS_FILE
+    count = log.read_bytes().count(b"\0") if log.exists() else 0
+    with log.open("ab") as handle:
+        for number, (line, status) in enumerate(typed, start=count + 1):
+            handle.write(f"{number}\t{status}\t{line}\0".encode())
+
+
 def solve(level: runner.Level) -> None:
     """
     Play the sample level's reference solution in its lab.
@@ -244,9 +263,40 @@ def test_a_new_player_sees_every_chapter_no_xp_and_nothing_in_progress(sample_le
     assert [(chapter["id"], chapter["title"]) for chapter in status["chapters"]] == list(CHAPTERS.items())
     assert status["max_difficulty"] == max(runner.DIFFICULTIES) == 3
     basics = status["chapters"][1]
-    assert basics["levels"] == [{"id": "basics-sample", "title": "Say hello", "difficulty": 1, "xp": 100, "done": False, "has_lesson": True, "has_quest": True}]
+    assert basics["levels"] == [
+        {"id": "basics-sample", "title": "Say hello", "difficulty": 1, "xp": 100, "command": "git add", "stars": 0, "done": False, "has_lesson": True, "has_quest": True}
+    ]
     assert basics["cards"] == 12
     assert status["chapters"][0]["levels"] == []
+
+
+def test_each_chapter_has_a_blurb_and_the_chapters_without_levels_are_coming(sample_level: runner.Level) -> None:
+    status = game.status()
+    assert [chapter["blurb"] for chapter in status["chapters"]] == [BLURBS[chapter] for chapter in CHAPTERS]
+    assert status["coming"] == [{"title": CHAPTERS[chapter], "blurb": BLURBS[chapter]} for chapter in CHAPTERS if chapter != "basics"]
+
+
+def test_the_collection_holds_the_card_of_each_finished_level_in_play_order(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    other = dataclasses.replace(sample_level, id="basics-other", card=kit.CommandCard(command="git status", text="Shows the three places."))
+    monkeypatch.setattr(runner, "catalogue", lambda: {sample_level.id: sample_level, other.id: other})
+    assert game.status()["collection"] == []
+    for level in (other, sample_level):
+        game.start(level.id)
+        solve(level)
+        game.check(None, auto=False)
+    assert game.status()["collection"] == [
+        {"level": "basics-sample", "command": "git add <file>", "text": markup.parse("Copies a file into the staging area.")},
+        {"level": "basics-other", "command": "git status", "text": markup.parse("Shows the three places.")},
+    ]
+
+
+def test_a_finished_level_shows_its_best_stars_on_the_map(sample_level: runner.Level) -> None:
+    game.start(sample_level.id)
+    game.hint()
+    solve(sample_level)
+    game.check(None, auto=False)
+    summary = game.status()["chapters"][1]["levels"][0]
+    assert (summary["done"], summary["stars"]) == (True, 2)
 
 
 def test_the_dashboard_shows_the_level_in_progress(sample_level: runner.Level) -> None:
@@ -262,6 +312,8 @@ def test_the_dashboard_shows_the_level_in_progress(sample_level: runner.Level) -
         "hints_total": 3,
         "attempts": 0,
         "auto_check": False,
+        "commands": 0,
+        "stars": 2,
     }
 
 
@@ -282,7 +334,7 @@ def test_the_page_may_check_a_level_without_a_quest_automatically_from_the_start
 
 
 def test_an_unknown_level_id_raises_unknown_id_error(sample_level: runner.Level) -> None:
-    for action in (game.level, game.lesson, game.start):
+    for action in (game.level, game.lesson, game.start, game.see_scene):
         with pytest.raises(game.UnknownIdError, match="basics-nothing"):
             action("basics-nothing")
 
@@ -339,6 +391,25 @@ def test_a_level_page_shows_its_briefing_steps_and_hint_count(sample_level: runn
     assert view["steps"][2]["placeholder"] == "a branch name"
     assert view["briefing"] == markup.parse(sample_level.briefing)
     assert (view["question"], view["placeholder"], view["debrief"]) == ([], "", None)
+
+
+def test_a_level_page_shows_its_command_par_scene_and_card(sample_level: runner.Level) -> None:
+    view = game.level(sample_level.id)
+    assert (view["command"], view["par"], view["scene_seen"]) == ("git add", 3, False)
+    assert view["scene"] == [
+        {"art": "zones", "text": markup.parse("Three places: the working folder, the staging area and the repository.")},
+        {"art": "conveyor", "text": markup.parse("`git add` copies a file into the staging area.")},
+    ]
+    assert view["card"] == {"level": "basics-sample", "command": "git add <file>", "text": markup.parse("Copies a file into the staging area.")}
+
+
+def test_a_scene_stays_seen_once_the_player_saw_it_until_a_reset(sample_level: runner.Level) -> None:
+    game.see_scene(sample_level.id)
+    game.see_scene(sample_level.id)
+    assert game.level(sample_level.id)["scene_seen"] is True
+    assert save.load_progress()["scenes"] == ["basics-sample"]
+    game.reset()
+    assert game.level(sample_level.id)["scene_seen"] is False
 
 
 def test_a_level_solved_by_a_typed_answer_shows_its_question_filled_from_its_state(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -460,7 +531,7 @@ def test_starting_a_level_builds_its_lab_and_records_it(sample_level: runner.Lev
     assert (view["level"], view["step"], view["steps"], view["hints"], view["hints_total"], view["attempts"]) == ("basics-sample", 0, 3, 0, 3, 0)
     assert datetime.fromisoformat(view["started"]).tzinfo is not None
     assert (lab_project(game_home) / "hello.txt").exists()
-    assert save.load_active() == {"level": "basics-sample", "started": view["started"], "step": 0, "hints": 0, "attempts": 0, "state": {"branch": "trunk"}}
+    assert save.load_active() == {"level": "basics-sample", "started": view["started"], "step": 0, "hints": 0, "attempts": 0, "state": {"branch": "trunk"}, "log_offset": 0, "typed": []}
 
 
 def test_starting_again_ends_the_level_in_progress_with_a_fresh_lab(sample_level: runner.Level, game_home: Path) -> None:
@@ -514,7 +585,7 @@ def test_an_active_record_at_its_levels_limits_is_fine(sample_level: runner.Leve
 
 
 def test_a_level_in_progress_that_no_longer_exists_counts_as_none(sample_level: runner.Level) -> None:
-    save.write_active({"level": "basics-gone", "started": "2026-10-06T10:00:00+00:00", "step": 0, "hints": 0, "attempts": 0, "state": {}})
+    save.write_active({"level": "basics-gone", "started": "2026-10-06T10:00:00+00:00", "step": 0, "hints": 0, "attempts": 0, "state": {}, "log_offset": 0, "typed": []})
     assert game.status()["active"] is None
     with pytest.raises(game.NotPlayingError):
         game.check(None, auto=False)
@@ -709,7 +780,7 @@ def test_solving_a_level_pays_once_and_records_it(sample_level: runner.Level, ga
     assert result["debrief"] == markup.parse("`hello.txt` is now in a commit on `trunk`.")
     progress = save.load_progress()
     assert (progress["xp"], progress["last_payout"]) == (100, payout)
-    assert {key: value for key, value in progress["levels"]["basics-sample"].items() if key != "finished"} == {"xp": 100, "state": {"branch": "trunk"}}
+    assert {key: value for key, value in progress["levels"]["basics-sample"].items() if key != "finished"} == {"xp": 100, "stars": 3, "state": {"branch": "trunk"}}
     assert save.load_active() is None
     assert lab_project(game_home).is_dir()
 
@@ -783,6 +854,80 @@ def test_hints_lower_what_a_level_pays(sample_level: runner.Level) -> None:
     assert payout is not None and payout["xp"] == score.level_reward(100, 1, first_time=True) == 85
 
 
+def test_a_level_starts_with_no_lines_typed_and_every_star_in_play(sample_level: runner.Level, game_home: Path) -> None:
+    type_lines(game_home, ("ls", 0))
+    active = game.start(sample_level.id)
+    assert (active["commands"], active["stars"]) == (0, 3)
+
+
+def test_every_line_typed_since_the_level_started_counts_even_after_an_observation_told_it(sample_level: runner.Level, game_home: Path) -> None:
+    type_lines(game_home, ("echo before", 0))
+    game.start(sample_level.id)
+    game.observe()
+    type_lines(game_home, ("git status", 0), ("ls", 0))
+    assert game.observe()["commands"] == [{"line": "git status", "status": 0}, {"line": "ls", "status": 0}]
+    type_lines(game_home, ("git add hello.txt", 0))
+    assert game.observe()["commands"] == [{"line": "git add hello.txt", "status": 0}]
+    assert active_record()["typed"] == [{"line": "git status", "status": 0}, {"line": "ls", "status": 0}, {"line": "git add hello.txt", "status": 0}]
+    active = game.status()["active"]
+    assert active is not None and active["commands"] == 3
+
+
+def test_the_dashboard_counts_lines_typed_since_the_last_observation_without_saving_them(sample_level: runner.Level, game_home: Path) -> None:
+    game.start(sample_level.id)
+    type_lines(game_home, ("ls", 0), ("ls -a", 0))
+    active = game.status()["active"]
+    assert active is not None and active["commands"] == 2
+    assert active_record()["typed"] == []
+
+
+def test_typing_more_than_par_and_three_lines_costs_a_star_while_playing(sample_level: runner.Level, game_home: Path) -> None:
+    game.start(sample_level.id)
+    type_lines(game_home, *[("ls", 0)] * (sample_level.par + 3))
+    active = game.status()["active"]
+    assert active is not None and active["stars"] == 3
+    type_lines(game_home, ("ls", 0))
+    active = game.status()["active"]
+    assert active is not None and (active["commands"], active["stars"]) == (sample_level.par + 4, 2)
+
+
+def test_an_unsolved_check_earns_no_stars_and_no_card(sample_level: runner.Level) -> None:
+    game.start(sample_level.id)
+    result = game.check(None, auto=False)
+    assert (result["solved"], result["stars"], result["new_card"]) == (False, 0, None)
+
+
+def test_a_first_solve_earns_its_stars_and_the_levels_card(sample_level: runner.Level, game_home: Path) -> None:
+    game.start(sample_level.id)
+    game.hint()
+    type_lines(game_home, *[("git status", 0)] * (sample_level.par + 4))
+    solve(sample_level)
+    result = game.check(None, auto=True)
+    assert (result["solved"], result["stars"]) == (False, 0)
+    result = game.check(None, auto=False)
+    assert (result["solved"], result["stars"]) == (True, 1)
+    assert result["new_card"] == game.level(sample_level.id)["card"]
+
+
+def test_a_replay_keeps_the_best_stars_and_brings_no_new_card(sample_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    game.start(sample_level.id)
+    game.hint()
+    solve(sample_level)
+    assert game.check(None, auto=False)["stars"] == 2
+    replay = dataclasses.replace(sample_level, setup=setup_on("main"))
+    monkeypatch.setattr(runner, "catalogue", lambda: {replay.id: replay})
+    game.start(replay.id)
+    solve(replay)
+    result = game.check(None, auto=False)
+    assert (result["stars"], result["new_card"]) == (3, None)
+    assert save.load_progress()["levels"]["basics-sample"]["stars"] == 3
+    game.start(replay.id)
+    game.hint()
+    solve(replay)
+    assert game.check(None, auto=False)["stars"] == 2
+    assert save.load_progress()["levels"]["basics-sample"]["stars"] == 3
+
+
 def test_a_replay_pays_nothing_and_keeps_the_first_finish_and_payment(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
     game.start(sample_level.id)
     solve(sample_level)
@@ -794,7 +939,7 @@ def test_a_replay_pays_nothing_and_keeps_the_first_finish_and_payment(sample_lev
     solve(replay)
     payout = game.check(None, auto=False)["payout"]
     assert payout == {"level": "basics-sample", "xp": 0, "first_time": False, "rank_before": "Untracked", "rank_after": "Untracked"}
-    assert save.load_progress()["levels"]["basics-sample"] == {**first, "state": {"branch": "main"}}
+    assert save.load_progress()["levels"]["basics-sample"] == {**first, "stars": 3, "state": {"branch": "main"}}
     assert save.load_progress()["xp"] == 100
 
 
@@ -934,6 +1079,26 @@ def test_observing_tells_the_commands_typed_since_the_last_observation_once(samp
     assert [event["kind"] for event in observed["events"]] == ["file-staged"]
     assert game.observe()["commands"] == []
 
+
+
+def test_observing_reacts_to_each_typed_line_rama_has_something_to_say_about_with_the_levels_rules_first(sample_level: runner.Level, game_home: Path) -> None:
+    game.start(sample_level.id)
+    game.observe()
+    kit.git(lab_project(game_home), "add", "hello.txt")
+    type_lines(game_home, ("ls", 0), ("true", 0), ("git add hello.txt", 0))
+    assert game.observe()["reactions"] == [
+        {"line": "ls", "mood": "info", "text": markup.parse(reactions.LS_IN_REPOSITORY)},
+        {"line": "git add hello.txt", "mood": "ok", "text": markup.parse("Hello is staged.")},
+    ]
+    assert game.observe()["reactions"] == []
+
+
+def test_the_first_observation_of_a_level_tells_no_lines_and_no_reactions(sample_level: runner.Level, game_home: Path) -> None:
+    game.start(sample_level.id)
+    type_lines(game_home, ("ls", 0))
+    first = game.observe()
+    assert (first["commands"], first["reactions"]) == ([], [])
+    assert active_record()["typed"] == [{"line": "ls", "status": 0}]
 
 
 def test_observing_reads_the_typed_commands_before_the_snapshots_so_their_changes_are_in_them(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1398,7 +1563,7 @@ def test_the_doctor_refuses_a_relative_or_unwritable_home(tmp_path: Path, monkey
 
 def test_every_record_is_json(sample_level: runner.Level) -> None:
     game.start(sample_level.id)
-    for record in (game.status(), game.level(sample_level.id), game.lesson(sample_level.id), game.observe(), game.due_cards("basics", 3)):
+    for record in (game.status(), game.level(sample_level.id), game.lesson(sample_level.id), game.observe(), game.due_cards("basics", 3), game.check(None, auto=True)):
         json.dumps(record)
 
 

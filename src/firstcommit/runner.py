@@ -14,6 +14,7 @@ import functools
 import importlib
 import pkgutil
 import re
+import typing
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
@@ -22,8 +23,9 @@ from typing import Any
 
 from termlab import sandbox
 
-from firstcommit import gitcmd, kit, levels, save
+from firstcommit import gitcmd, kit, levels, reactions, save
 from firstcommit.chapters import CHAPTERS
+from firstcommit.records import Art, Mood
 
 MODULE_NAME = re.compile(r"([a-z]+)_[a-z0-9_]+")
 DIFFICULTIES = (1, 2, 3)
@@ -42,7 +44,8 @@ class Level:
 
     ``id`` is the module name with ``_`` turned into ``-``; ``chapter`` is the part before the
     first ``_``. The other fields are the module's names of AUTHORING.md section 3.3;
-    ``question`` and ``placeholder`` are empty for a level checked against the repository only.
+    ``question`` and ``placeholder`` are empty for a level checked against the repository only;
+    ``scene`` and ``reactions`` are empty for a level without them.
     """
 
     id: str
@@ -50,6 +53,11 @@ class Level:
     title: str
     difficulty: int
     xp: int
+    command: str
+    par: int
+    card: kit.CommandCard
+    scene: tuple[kit.SceneFrame, ...]
+    reactions: tuple[kit.ReactionRule, ...]
     lesson: tuple[kit.Slide, ...]
     quest: tuple[kit.Step, ...]
     briefing: str
@@ -83,7 +91,11 @@ def load(module: ModuleType) -> Level:
     """
     name = module.__name__.rsplit(".", 1)[-1]
     match = MODULE_NAME.fullmatch(name)
-    values: dict[str, Any] = {key: getattr(module, key, None) for key in ("TITLE", "DIFFICULTY", "XP", "BRIEFING", "HINTS", "DEBRIEF", "setup", "check", "solve")}
+    values: dict[str, Any] = {
+        key: getattr(module, key, None) for key in ("TITLE", "DIFFICULTY", "XP", "COMMAND", "PAR", "CARD", "BRIEFING", "HINTS", "DEBRIEF", "setup", "check", "solve")
+    }
+    scene = getattr(module, "SCENE", [])
+    level_reactions = getattr(module, "REACTIONS", [])
     lesson = getattr(module, "LESSON", [])
     quest = getattr(module, "QUEST", [])
     question = getattr(module, "QUESTION", "")
@@ -96,6 +108,9 @@ def load(module: ModuleType) -> Level:
             _texts_problem(values)
             or _question_problem(question, placeholder)
             or _numbers_problem(values)
+            or _orbit_problem(values)
+            or _scene_problem(scene)
+            or _reactions_problem(level_reactions)
             or _lesson_problem(lesson)
             or _quest_problem(quest)
         )
@@ -107,6 +122,11 @@ def load(module: ModuleType) -> Level:
         title=values["TITLE"],
         difficulty=values["DIFFICULTY"],
         xp=values["XP"],
+        command=values["COMMAND"],
+        par=values["PAR"],
+        card=values["CARD"],
+        scene=tuple(scene),
+        reactions=tuple(level_reactions),
         lesson=tuple(lesson),
         quest=tuple(quest),
         briefing=values["BRIEFING"],
@@ -213,6 +233,106 @@ def _numbers_problem(values: dict[str, Any]) -> str | None:
         problem = "XP must be a whole number above zero"
     elif missing:
         problem = f"{missing[0]} must be a function"
+    return problem
+
+
+def _orbit_problem(values: dict[str, Any]) -> str | None:
+    """
+    Check the command label, par and card of a level module.
+
+    Parameters
+    ----------
+    values : dict[str, Any]
+        The module's names, None where missing.
+
+    Returns
+    -------
+    str | None
+        What is wrong, or None.
+    """
+    par = values["PAR"]
+    card = values["CARD"]
+    problem = None
+    if not _is_text(values["COMMAND"]):
+        problem = "COMMAND must be text that is not empty"
+    elif not isinstance(par, int) or isinstance(par, bool) or par <= 0:
+        problem = "PAR must be a whole number above zero"
+    elif not isinstance(card, kit.CommandCard) or not _is_text(card.command) or not _is_text(card.text):
+        problem = "CARD must be a kit.CommandCard whose command and text are not empty"
+    return problem
+
+
+def _scene_problem(scene: Any) -> str | None:
+    """
+    Check a level's scene: frames, each with a picture the page draws and some text.
+
+    Parameters
+    ----------
+    scene : Any
+        The module's ``SCENE``.
+
+    Returns
+    -------
+    str | None
+        What is wrong, or None.
+    """
+    pictures = typing.get_args(Art)
+    problem = None
+    if not isinstance(scene, list) or not all(isinstance(frame, kit.SceneFrame) for frame in scene):
+        problem = "SCENE must be a list of kit.SceneFrame"
+    elif not all(frame.art in pictures and _is_text(frame.text) for frame in scene):
+        problem = f"SCENE frames need text and a picture among {', '.join(pictures)}"
+    return problem
+
+
+def _reactions_problem(rules: Any) -> str | None:
+    """
+    Check a level's own reactions: rules whose line is a regular expression, with a known mood and outcome and some text.
+
+    Parameters
+    ----------
+    rules : Any
+        The module's ``REACTIONS``.
+
+    Returns
+    -------
+    str | None
+        What is wrong, or None.
+    """
+    problem = None
+    if not isinstance(rules, list) or not all(isinstance(rule, kit.ReactionRule) for rule in rules):
+        problem = "REACTIONS must be a list of kit.ReactionRule"
+    else:
+        problem = next((found for rule in rules if (found := _rule_problem(rule)) is not None), None)
+    return problem
+
+
+def _rule_problem(rule: kit.ReactionRule) -> str | None:
+    """
+    Check one reaction rule of a level.
+
+    Parameters
+    ----------
+    rule : kit.ReactionRule
+        The rule.
+
+    Returns
+    -------
+    str | None
+        What is wrong, naming the rule's line, or None.
+    """
+    try:
+        re.compile(rule.line)
+        pattern = True
+    except re.error:
+        pattern = False
+    problem = None
+    if not pattern:
+        problem = f"REACTIONS: {rule.line!r} is not a regular expression"
+    elif rule.mood not in typing.get_args(Mood) or rule.outcome not in typing.get_args(reactions.Outcome):
+        problem = f"REACTIONS: the rule for {rule.line!r} has an unknown mood or outcome"
+    elif not _is_text(rule.text):
+        problem = f"REACTIONS: the rule for {rule.line!r} needs text"
     return problem
 
 

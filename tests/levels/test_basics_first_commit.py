@@ -6,7 +6,7 @@ import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from firstcommit import demos, gitcmd, kit
+from firstcommit import demos, gitcmd, kit, reactions
 from firstcommit.levels import basics_first_commit as level
 
 CODE_SPAN = re.compile(r"`[^`]*`")
@@ -738,3 +738,12 @@ def test_gits_own_terms_and_the_details_are_folded_into_more() -> None:
         assert term not in shown, term
         assert term in folded, term
     assert all(item.more for item in [*level.LESSON, *level.QUEST])
+
+
+@pytest.mark.parametrize("key", ["name", "email"])
+def test_setting_the_identity_is_acknowledged_and_only_reading_it_is_not(key: str) -> None:
+    rules = (*level.REACTIONS, *reactions.RULES)
+    setting = reactions.react({"line": f'git config --global user.{key} "Robin Park"', "status": 0}, (), True, rules)
+    reading = reactions.react({"line": f"git config --global user.{key}", "status": 0}, (), True, rules)
+    assert setting is not None and key in setting.text
+    assert reading is None

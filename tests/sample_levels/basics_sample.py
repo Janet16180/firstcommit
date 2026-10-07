@@ -10,6 +10,14 @@ from firstcommit import kit
 TITLE = "Say hello"
 DIFFICULTY = 1
 XP = 100
+COMMAND = "git add"
+PAR = 3
+CARD = kit.CommandCard(command="git add <file>", text="Copies a file into the staging area.")
+SCENE = [
+    kit.SceneFrame(art="zones", text="Three places: the working folder, the staging area and the repository."),
+    kit.SceneFrame(art="conveyor", text="`git add` copies a file into the staging area."),
+]
+REACTIONS = [kit.ReactionRule(line=r"git add hello\.txt\b", mood="ok", text="Hello is staged.", event="file-staged")]
 LESSON = [
     kit.Slide(id="init", title="A repository", text="Make one:\n\n    $ git init -q demo", run="git init -q demo", view="terminal"),
     kit.Slide(

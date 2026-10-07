@@ -11,18 +11,22 @@
    {
     "id": "start",
     "title": "Git, GitHub and your first clone",
+    "blurb": "What Git and GitHub are, and your first clone.",
     "levels": [],
     "cards": 0
    },
    {
     "id": "basics",
     "title": "The three areas",
+    "blurb": "The working folder, the staging area and your first commits.",
     "levels": [
      {
       "id": "sample-first",
       "title": "Your first commit",
       "difficulty": 1,
       "xp": 100,
+      "command": "git init",
+      "stars": 2,
       "done": true,
       "has_lesson": true,
       "has_quest": true
@@ -32,6 +36,8 @@
       "title": "A message that helps",
       "difficulty": 2,
       "xp": 150,
+      "command": "git commit -m",
+      "stars": 0,
       "done": false,
       "has_lesson": false,
       "has_quest": false
@@ -42,6 +48,7 @@
    {
     "id": "hash",
     "title": "Fingerprints",
+    "blurb": "How Git names every file and commit by its content.",
     "levels": [],
     "cards": 0
    }
@@ -54,7 +61,9 @@
    "hints_total": 3,
    "attempts": 0,
    "started": "2026-10-06T10:00:00+00:00",
-   "auto_check": false
+   "auto_check": false,
+   "commands": 3,
+   "stars": 3
   },
   "last_payout": {
    "level": "sample-first",
@@ -64,7 +73,34 @@
    "rank_after": "Committer"
   },
   "cards_due": 4,
-  "max_difficulty": 3
+  "max_difficulty": 3,
+  "coming": [
+   {
+    "title": "Git, GitHub and your first clone",
+    "blurb": "What Git and GitHub are, and your first clone."
+   },
+   {
+    "title": "Fingerprints",
+    "blurb": "How Git names every file and commit by its content."
+   }
+  ],
+  "collection": [
+   {
+    "level": "sample-first",
+    "command": "git init",
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "Makes the current folder a repository.",
+        "code": false
+       }
+      ]
+     }
+    ]
+   }
+  ]
  },
  "level": {
   "id": "sample-second",
@@ -73,6 +109,58 @@
   "title": "A message that helps",
   "difficulty": 2,
   "xp": 150,
+  "command": "git commit -m",
+  "par": 4,
+  "scene": [
+   {
+    "art": "zones",
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "Three places on your computer: the working folder, the staging area and the repository.",
+        "code": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "art": "conveyor",
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "git add",
+        "code": true
+       },
+       {
+        "text": " copies a file into the staging area.",
+        "code": false
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "scene_seen": false,
+  "card": {
+   "level": "sample-second",
+   "command": "git commit -m \"Message\"",
+   "text": [
+    {
+     "kind": "para",
+     "spans": [
+      {
+       "text": "Saves the staging area as a new commit, with your message.",
+       "code": false
+      }
+     ]
+    }
+   ]
+  },
   "briefing": [
    {
     "kind": "para",
@@ -674,7 +762,9 @@
   "hints_total": 3,
   "attempts": 0,
   "started": "2026-10-06T10:00:00+00:00",
-  "auto_check": false
+  "auto_check": false,
+  "commands": 3,
+  "stars": 3
  },
  "step": {
   "correct": false,
@@ -722,7 +812,9 @@
    }
   ],
   "payout": null,
-  "debrief": null
+  "debrief": null,
+  "stars": 0,
+  "new_card": null
  },
  "check_solved": {
   "solved": true,
@@ -767,7 +859,23 @@
     "kind": "code",
     "text": "$ git status\n$ git add <file>\n$ git commit -m \"<message>\""
    }
-  ]
+  ],
+  "stars": 3,
+  "new_card": {
+   "level": "sample-second",
+   "command": "git commit -m \"Message\"",
+   "text": [
+    {
+     "kind": "para",
+     "spans": [
+      {
+       "text": "Saves the staging area as a new commit, with your message.",
+       "code": false
+      }
+     ]
+    }
+   ]
+  }
  },
  "hint": {
   "hint": [
@@ -1072,6 +1180,23 @@
    {
     "line": "git add README.md",
     "status": 0
+   }
+  ],
+  "reactions": [
+   {
+    "line": "git add README.md",
+    "mood": "ok",
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "Staged: your next commit will take the file as it is now.",
+        "code": false
+       }
+      ]
+     }
+    ]
    }
   ]
  },
@@ -3119,7 +3244,8 @@
      }
     ]
    },
-   "commands": []
+   "commands": [],
+   "reactions": []
   },
   "observation": {
    "level": "basics-sample",
@@ -3507,7 +3633,8 @@
      }
     ]
    },
-   "commands": []
+   "commands": [],
+   "reactions": []
   },
   "explanation": null,
   "fix": null,

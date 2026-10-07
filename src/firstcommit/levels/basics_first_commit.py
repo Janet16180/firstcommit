@@ -16,6 +16,25 @@ from firstcommit import kit
 TITLE = "Your first commit"
 DIFFICULTY = 1
 XP = 100
+COMMAND = "git commit"
+PAR = 8
+"""The quest's eight commands: init, status, the name, the email, the file, add, commit and log."""
+CARD = kit.CommandCard(
+    command='git commit -m "Message"',
+    text="Saves what is in the staging area as a new commit, with your message, in the repository's history.",
+)
+SCENE = [
+    kit.SceneFrame(art="planet", text="Your `project` folder is a plain folder for now: Git keeps no history of it yet."),
+    kit.SceneFrame(art="flag", text="`git init` makes it a repository: Git creates a hidden `.git` folder and keeps the history in it."),
+    kit.SceneFrame(
+        art="zones",
+        text="Then `git add` copies a file from the working folder into the staging area, and `git commit` saves the staging area as a commit.",
+    ),
+]
+REACTIONS = [
+    kit.ReactionRule(line=r"git config --global user\.name \S", mood="ok", outcome="ok", text="Saved: Git puts this name on the commits you make here."),
+    kit.ReactionRule(line=r"git config --global user\.email \S", mood="ok", outcome="ok", text="Saved: Git puts this email on the commits you make here."),
+]
 
 BRANCH = "main"
 FILE = "README.md"

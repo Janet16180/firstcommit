@@ -285,6 +285,44 @@ def api_start(body: dict[str, Any]) -> Reply:
     return found(lambda: game.start(level_id))
 
 
+def api_scene(body: dict[str, Any]) -> Reply:
+    """
+    POST /api/scene {"level": id}: remember that the player has seen a level's scene.
+
+    Parameters
+    ----------
+    body : dict[str, Any]
+        The JSON body.
+
+    Returns
+    -------
+    Reply
+        200 and ``{}``; 400 without a level id, 404 for an unknown one.
+    """
+    level_id = body.get("level")
+    if not is_id(level_id):
+        return bad('send {"level": "<level id>"}')
+    return found(lambda: _seen(level_id))
+
+
+def _seen(level_id: str) -> dict[str, Any]:
+    """
+    Mark a level's scene seen, for `found`.
+
+    Parameters
+    ----------
+    level_id : str
+        The level's id.
+
+    Returns
+    -------
+    dict[str, Any]
+        An empty reply.
+    """
+    game.see_scene(level_id)
+    return {}
+
+
 def api_step(body: dict[str, Any]) -> Reply:
     """
     POST /api/step {"answer": text or null}: check the current quest step.
@@ -509,6 +547,7 @@ ROUTES: dict[tuple[str, str], shell.Route] = {
         ("GET", "/api/level"): api_level,
         ("GET", "/api/lesson"): api_lesson,
         ("POST", "/api/start"): api_start,
+        ("POST", "/api/scene"): api_scene,
         ("POST", "/api/step"): api_step,
         ("POST", "/api/check"): api_check,
         ("POST", "/api/hint"): api_hint,
