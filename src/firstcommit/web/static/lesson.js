@@ -32,8 +32,9 @@ const LessonPlayer = (function () {
     );
   }
 
-  /* What a "places" slide shows: your repository before the slide's commands or after them (a
-     lesson's frames hold no GitHub), and, after them, the commands its change lit. */
+  /* What a "places" slide shows, in the places' compact form: your repository before the slide's
+     commands or after them (a lesson's frames hold no GitHub), and, after them, the commands its
+     change lit. */
   function placesTransition(slide, before, places) {
     const [was, now] = [{ project: before.map, github: null }, { project: slide.map, github: null }];
     return { before: was, after: now, commands: places.commands(slide.events, before.map, slide.map) };
@@ -51,7 +52,7 @@ const LessonPlayer = (function () {
       objects: () => RepoMap.renderObjects(objects, { theme, previous: previousObjects }),
       places: () => {
         const { before: was, after: now, commands } = placesTransition(slide, before, places);
-        return done ? places.render(now, { commands }) : places.render(was);
+        return done ? places.render(now, { commands, compact: true }) : places.render(was, { compact: true });
       },
     };
     return views[slide.view] ? views[slide.view]() : null;

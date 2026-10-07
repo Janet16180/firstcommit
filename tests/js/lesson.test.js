@@ -246,3 +246,13 @@ test("a places slide's commands keep one height and scroll to the newest line, s
     delete proto.scrollHeight;
   }
 });
+
+test("a places slide asks for the compact places, before its commands and after them", async () => {
+  const asked = [];
+  const places = { ...TimePlaces, render: (observation, options) => { asked.push(options); return TimePlaces.render(observation, options); } };
+  const view = player({ slide: 3, lesson: placesLesson(), places });
+  await finishCommitSlide(view);
+  assert.ok(asked.length >= 2);
+  assert.ok(asked.every((options) => options.compact === true));
+  assert.deepEqual(asked.at(-1).commands, ["commit"]);
+});
