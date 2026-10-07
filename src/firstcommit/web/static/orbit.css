@@ -100,6 +100,12 @@ body {
   z-index: 1;
 }
 
+/* The map and the level screen run to the window's edges, as in the design. */
+#app:has(> .starmap),
+#app:has(> .level-screen) {
+  padding: 0;
+}
+
 [hidden] {
   display: none !important;
 }
