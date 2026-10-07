@@ -216,3 +216,7 @@ animator: "Shipping"; author: Level 3. Each level: shots, fact-check, merge with
    only copies that differ from the newest commit are bright ("ready to save"). The box is never
    drawn empty while it holds files. Level 1 gets a prediction before its commit: "After
    `git commit`, is README.md still in the box?"
+7. The live map (the user, 2026-10-06): concept A, "Station strip", everywhere in the live panel:
+   one row of cards (Desk, Open box, Shelf, GitHub), up to three files by name then a stack with
+   counts, the last three commits plus "+N", no hashes or branch names; a "How it works"
+   infographic explains the places in detail. Mockup: `.scratch/demo/compact-map/` (concept A).
