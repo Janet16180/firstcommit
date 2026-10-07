@@ -38,7 +38,9 @@ const TimePlaces = (function () {
   const COMPUTER = "Your computer";
   const GITHUB = "GitHub (the practice copy)";
   const NO_FILES = "No files.";
-  const NO_INDEX = "No staging area yet: git init makes one.";
+  /* Before there is a repository there is no staging area at all (it lives in .git): a lab with
+     a GitHub is cloned, one without is made with git init. */
+  const NO_INDEX = { init: "No staging area yet: git init makes one.", clone: "No staging area yet: git clone makes one." };
 
   /* Each command's arrow: the places its work passes, first to last, and the checked sentence
      shown when it lights (A1 to A6), with `alone` in its place while your repository has no
@@ -314,7 +316,7 @@ const TimePlaces = (function () {
       github && el("div", { class: "tt-frame is-github", "aria-hidden": "true" }, el("span", {}, GITHUB)),
       filePlace("folder", project.files),
       pair(1, arrow("add", lit), back(merge.slice(1))),
-      filePlace("index", project.files, null, project.exists ? NO_FILES : NO_INDEX),
+      filePlace("index", project.files, null, project.exists ? NO_FILES : NO_INDEX[github ? "clone" : "init"]),
       pair(2, arrow("commit", lit), back(merge.slice(0, 2))),
       repositoryPlace("repository", project, true, null, theme),
       github && [pair(3, arrow("push", lit), arrow("fetch", lit)), repositoryPlace("remote", github, false, null, theme), arrow("clone", lit)],

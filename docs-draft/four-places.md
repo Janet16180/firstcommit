@@ -1,4 +1,11 @@
-# The four places (revision 7: the revision 6 re-check applied, for fact-check)
+# The four places (revision 8: the revision 7 re-check applied, for fact-check)
+
+**Revision 8** applies mapcheck's revision 7 re-check, marked **(r8)**: before there is a
+repository, the open box names the command that makes one by whether the lab has a GitHub
+(`git clone` with one, `git init` without); the sentence on files riding the pull arrow covers an
+edit and commit before or after the pull; and a mode-only change joins the stated misses. Since
+revision 7 the live page also draws the timelines inside the places at full size, with closed
+boxes and the key under the figure (Part 1, "Where it lives").
 
 **Revision 7** applies mapcheck's revision 6 re-check (`.scratch/review/four-places-check.md`,
 "Re-check (revision 6)"), marked **(r7)**: pull and clone carry only files their checkout wrote;
@@ -148,7 +155,9 @@ is not checked this way, and a commit and a pull in one refresh light pull. **(r
 misses a real pull when, within one refresh of the page, you also: stage or edit any tracked
 file; stash, pull and pop a file the pull also changes; or delete an untracked file (by hand or
 with `git clean`, ignored files included). It also misses a pull over a file forced into an
-ignored folder with `git add -f`. In those batches pull does not light. The upstream is
+ignored folder with `git add -f`. In those batches pull does not light. **(r8)** A change of mode
+alone (`chmod +x run.sh && git add run.sh`) lights nothing, not even add: a snapshot's version of
+a file is its content. The upstream is
 taken to be `origin/<branch>`, as `git clone` and `git push -u origin <branch>` set it; the
 snapshots do not record a branch's upstream setting.
 
@@ -163,9 +172,9 @@ what `git add` copies, **(r7)** or, for a file the pull did not change, is in th
 (a file made or edited in the same refresh as its `git add`), so a file a pull checked out in the
 same refresh does not ride on it. **(r7)** Pull and clone carry only files whose new folder
 version is the new tip's, which is what a checkout writes; an untracked or ignored file that
-changed in the same refresh changes where it lies. (In a pull followed by a commit within one
-refresh, the committed file also rides the pull arrow: the snapshot holds only the new tip's
-files, not the upstream's.) **(r7)** The three-place figure flies only the arrows it draws. `commit` lifts a
+changed in the same refresh changes where it lies. **(r8)** (A file you edit and commit in the
+same refresh as a pull, before or after it, also rides the pull arrow: the snapshot holds only
+the new tip's files, not the upstream's.) **(r7)** The three-place figure flies only the arrows it draws. `commit` lifts a
 copy of the open box, holding a page for every tracked file, closes it on the way and sets it on
 your timeline, where HEAD and the branch slide onto it; the open box keeps its pages. A push
 carries the boxes GitHub is missing, oldest first, then GitHub's `main` and your `origin/main`
@@ -179,11 +188,15 @@ two seconds however many files move, because the flights of one group spread ove
 300 ms: about 1.1 s for a push, 1.6 s for a pull, 1.8 s for a pull of many files and 2 s for a
 big clone, the longest.
 
-**Where it lives.** **(r5)** In the live panel beside the terminal, in place of the three areas
-strip, under the same heading, from the first level on: your computer's three places while the
-lab has no GitHub, all four once it has one. It is redrawn when either repository changes, lights
-the arrows of what that batch did and plays its motion; the first drawing plays nothing. Later,
-also as a lesson figure (a slide view next to `map`, `areas` and `objects`).
+**Where it lives.** **(r5, r8)** In the live panel beside the terminal, at the top, from the
+first level on, in place of both the timelines cards and the three areas strip: your computer's
+three places while the lab has no GitHub ("The three areas"), all four once it has one ("The four
+places"), with the "What just happened" feed under the figure. Your repository's and GitHub's
+places carry their full timelines at the map's own size, each commit a closed box, and the map's
+key sits once under the figure ("closed box = commit", with the box picture; lessons and the
+guide keep the save point picture). It is redrawn when either repository changes, lights the
+arrows of what that batch did and plays its motion; the first drawing plays nothing. Later, also
+as a lesson figure (a slide view next to `map`, `areas` and `objects`).
 
 ---
 
@@ -192,7 +205,9 @@ also as a lesson figure (a slide view next to `map`, `areas` and `objects`).
 **(r3)** Notes under the titles: "open box: the next commit" (staging area), "closed boxes:
 the commits" (your repository). Empty places: "No files.", "No commits yet." (GitHub).
 **(r7)** Before `git init` there is no staging area at all (the index lives in `.git`), so the
-open box says "No staging area yet: git init makes one." (share's wording) instead of "No files.". **(r5)**
+open box says "No staging area yet: git init makes one." (share's wording) instead of "No files.".
+**(r8)** In a lab with a GitHub and nothing cloned yet it says "No staging area yet: git clone
+makes one.", since there the player clones rather than runs `git init`. **(r5)**
 Without a GitHub there is no remote place and no push, fetch, pull or clone arrow, and the figure
 is said as `Your computer: Working folder, Staging area, Your repository` (with one, `The four
 places: Working folder, Staging area, Your repository, Remote repository`). Pull's two parts each
