@@ -28,30 +28,39 @@ const LivePanel = (function () {
 
   const hashes = (snapshot) => new Set(snapshot.commits.map((commit) => commit.hash));
 
+  /* The panel's parts: the timelines cards, the feed and the three areas; with places, the places
+     part first and the feed under it, and no cards. */
+  function skeleton(titles, withPlaces) {
+    const ui = {
+      projectBox: el("div", { class: "live-map" }),
+      githubBox: el("div", { class: "live-map" }),
+      areasBox: el("div", { class: "live-areas" }),
+      areasTitle: el("h3", {}, titles.areas),
+      feedList: el("ol", { class: "feed" }),
+      quiet: el("p", { class: "feed-quiet" }, titles.quiet),
+      announce: el("p", { class: "sr-only", "aria-live": "polite" }),
+    };
+    ui.githubPart = el("section", { class: "live-part live-github", hidden: true, "aria-label": titles.github }, el("h3", {}, titles.github), ui.githubBox);
+    const feedPart = el("section", { class: "live-part live-feed", "aria-label": titles.feed }, el("h3", {}, titles.feed), ui.quiet, ui.feedList, ui.announce);
+    const areasPart = el("section", { class: "live-part live-three", "aria-label": titles.areas }, ui.areasTitle, ui.areasBox);
+    const maps = el("div", { class: "live-maps" },
+      el("section", { class: "live-part live-project", "aria-label": titles.project }, el("h3", {}, titles.project), ui.projectBox),
+      ui.githubPart,
+    );
+    ui.element = withPlaces
+      ? el("div", { class: "live has-places" }, areasPart, feedPart)
+      : el("div", { class: "live" }, el("div", { class: "live-top" }, maps, feedPart), areasPart);
+    return ui;
+  }
+
   /* options: theme (RepoMap's), words (this panel's titles), now (a clock), onChange({newCommits, events}),
      play(figure, before, after, {theme, showHead}) to move a map redrawn after a change from its
      drawing before (the snapshots before and after), and places ({commands, render, play}, as
-     TimePlaces) to draw the three areas as the player's places instead of the strip. */
+     TimePlaces) to draw the player's places instead: they then hold the timelines too, so they
+     take the maps' place at the top, with the feed under them, and the strip goes. */
   function create({ theme = RepoMap.DEFAULT_THEME, words = {}, now = () => new Date(), onChange = () => {}, play = () => {}, places = null } = {}) {
     const titles = { ...WORDS, ...words };
-    const projectBox = el("div", { class: "live-map" });
-    const githubBox = el("div", { class: "live-map" });
-    const githubPart = el("section", { class: "live-part live-github", hidden: true, "aria-label": titles.github }, el("h3", {}, titles.github), githubBox);
-    const areasBox = el("div", { class: "live-areas" });
-    const areasTitle = el("h3", {}, titles.areas);
-    const feedList = el("ol", { class: "feed" });
-    const quiet = el("p", { class: "feed-quiet" }, titles.quiet);
-    const announce = el("p", { class: "sr-only", "aria-live": "polite" });
-    const element = el("div", { class: "live" },
-      el("div", { class: "live-top" },
-        el("div", { class: "live-maps" },
-          el("section", { class: "live-part live-project", "aria-label": titles.project }, el("h3", {}, titles.project), projectBox),
-          githubPart,
-        ),
-        el("section", { class: "live-part live-feed", "aria-label": titles.feed }, el("h3", {}, titles.feed), quiet, feedList, announce),
-      ),
-      el("section", { class: "live-part live-three", "aria-label": titles.areas }, areasTitle, areasBox),
-    );
+    const { element, projectBox, githubBox, githubPart, areasBox, areasTitle, feedList, quiet, announce } = skeleton(titles, places !== null);
     const drawn = { project: null, github: null, files: null, places: null };
     let feed = [];
 
@@ -80,7 +89,7 @@ const LivePanel = (function () {
     function drawPlaces({ project, github, events }) {
       const after = { project, github };
       const text = JSON.stringify(after);
-      if (drawn.places === text) return;
+      if (drawn.places === text) return 0;
       const before = drawn.places === null ? null : JSON.parse(drawn.places);
       drawn.places = text;
       const commands = before ? places.commands(events, before.project, project) : [];
@@ -89,7 +98,10 @@ const LivePanel = (function () {
       areasTitle.textContent = name;
       areasTitle.parentNode.setAttribute("aria-label", name);
       areasBox.replaceChildren(figure);
-      if (before) places.play(figure, { before, after, commands });
+      if (!before) return 0;
+      places.play(figure, { before, after, commands });
+      const previous = hashes(before.project);
+      return project.commits.filter((commit) => !previous.has(commit.hash)).length;
     }
 
     function drawFeed(events) {
@@ -109,11 +121,15 @@ const LivePanel = (function () {
       element,
 
       update(observation) {
-        const newCommits = drawMap(projectBox, "project", observation.project, true);
-        githubPart.hidden = observation.github === null;
-        if (observation.github) drawMap(githubBox, "github", observation.github, false);
-        if (places) drawPlaces(observation);
-        else drawAreas(observation.project.files);
+        let newCommits = 0;
+        if (places) {
+          newCommits = drawPlaces(observation);
+        } else {
+          newCommits = drawMap(projectBox, "project", observation.project, true);
+          githubPart.hidden = observation.github === null;
+          if (observation.github) drawMap(githubBox, "github", observation.github, false);
+          drawAreas(observation.project.files);
+        }
         drawFeed(observation.events);
         onChange({ newCommits, events: observation.events });
       },

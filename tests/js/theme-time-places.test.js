@@ -5,7 +5,7 @@ const test = require("node:test");
 const { installBrowser, load, record } = require("./load");
 
 const document = installBrowser();
-const { TimePlaces } = load(["dom.js", "map.js", "theme-time.js", "theme-time-motion.js", "theme-time-places.js"], ["TimePlaces"]);
+const { TimePlaces, TimeTheme, RepoMap } = load(["dom.js", "map.js", "theme-time.js", "theme-time-motion.js", "theme-time-places.js"], ["TimePlaces", "TimeTheme", "RepoMap"]);
 
 const full = (name) => name.padEnd(40, "0");
 const blob = (name) => name.padEnd(40, "b");
@@ -499,8 +499,48 @@ test("the three-place figure flies only what it draws: a pull from a remote adde
 test("before git init the staging area says it does not exist yet, rather than that it is empty", () => {
   const figure = TimePlaces.render({ project: record("snapshots").empty, github: null }, {});
   assert.equal(figure.querySelector('[data-area="index"] .tt-place-empty').textContent, "No staging area yet: git init makes one.");
+  const cloning = TimePlaces.render({ project: record("snapshots").empty, github: hub(ONE) }, {});
+  assert.equal(cloning.querySelector('[data-area="index"] .tt-place-empty').textContent, "No staging area yet: git clone makes one.", "with a GitHub, the player clones it");
   const started = TimePlaces.render({ project: record("snapshots").unborn, github: null }, {});
   assert.doesNotMatch(started.querySelector('[data-area="index"]').textContent, /No staging area yet/);
+});
+
+test("drawn with a full-size map theme, the repositories carry full-size timelines and the key sits once under the figure", () => {
+  const button = () => Object.assign(document.createElement("button"), { className: "tt-guide-button" });
+  const theme = TimeTheme.withGuide({ button }, TimeTheme.live);
+  const figure = TimePlaces.withTheme(theme).render({ project: at(TWO, "b", "b"), github: hub(TWO) }, {});
+  assert.ok(figure.classList.contains("is-full"));
+  assert.equal(figure.querySelectorAll(".tt-key").length, 1);
+  assert.equal(figure.querySelector(".tt-place .tt-key"), null, "no key inside a place");
+  const [grid, key] = [...figure.childNodes];
+  assert.deepEqual([grid.getAttribute("class"), key.getAttribute("class")], ["tt-places-grid", "map-key tt-key"], "the key right under the grid");
+  assert.ok(key.querySelector(".tt-guide-button"));
+  const graph = figure.querySelector('[data-area="repository"] svg.map-graph');
+  assert.equal(Number(graph.getAttribute("height")), RepoMap.layout(at(TWO, "b", "b"), { theme }).height);
+  const plain = TimePlaces.render({ project: at(TWO, "b", "b"), github: hub(TWO) }, {});
+  assert.equal(plain.querySelector(".tt-key"), null);
+  assert.ok(!plain.classList.contains("is-full"));
+});
+
+test("played with its theme, a full-size figure moves its timelines by that theme's rows", () => {
+  const theme = TimeTheme.live;
+  const places = TimePlaces.withTheme(theme);
+  const before = { project: at(TWO, "b", "b"), github: hub(TWO) };
+  const after = { project: at([C, ...TWO], "c", "b"), github: hub(TWO) };
+  const figure = places.render(after, { commands: ["commit"] });
+  document.body.replaceChildren(figure);
+  const proto = Object.getPrototypeOf(figure);
+  const calls = [];
+  proto.animate = function (frames, timing) {
+    calls.push({ node: this, frames, timing });
+    return { onfinish: null };
+  };
+  proto.getTotalLength = () => 100;
+  places.play(figure, { before, after, commands: ["commit"] }, false);
+  delete proto.animate;
+  delete proto.getTotalLength;
+  const tab = calls.find((call) => call.node.getAttribute("data-label") === "branch:main");
+  assert.equal(tab.frames[0].transform, `translate(0px, ${theme.sizes.row}px)`);
 });
 
 const shortOf = (name) => blob(name).slice(0, 7);

@@ -110,9 +110,12 @@ boxes, one picture of a commit everywhere), and security L3.
 
 - With eight agents, parallel full suites (each building the Docker image) and Playwright
   browsers overloaded the machine; the user noticed. Rule since 2026-10-06: every browser run
-  under `flock .scratch/locks/browser.lock`, the Docker suite only before reporting and under
-  `flock .scratch/locks/docker.lock`, `pytest -m "not docker"` while iterating. Give this rule in
-  the first brief.
+  under `flock .scratch/locks/browser.lock`. Tests in two tiers (the user's call, 2026-10-07):
+  agents run only the fast tier, `uv run pytest -m "not slow and not docker"` (about 20 s, node
+  tests included), plus ruff and mypy; the slow tier (`slow` and `docker` markers: property
+  tests over real git, the Docker image) runs once, by the lead, when merging into
+  `phase-2-engine`, under `flock .scratch/locks/docker.lock`. A test that takes 0.5 s or more
+  gets the `slow` marker. Give this rule in the first brief.
 - Merge the hash an agent reports, never its branch name: a branch moves while its agent keeps
   working. The lead once merged `p2/core` mid-step and pulled in an unfinished records change
   (4 red tests); the merge was redone from the reported hash. When one change needs edits in
@@ -121,7 +124,18 @@ boxes, one picture of a commit everywhere), and security L3.
 - Screenshots of the game page: reset the prompt after every reload and refuse to save if the
   visible terminal shows "@" (a reload once brought back the user's prompt with their email).
 
+- Revert checks (break the code on purpose, expect a test to fail): a same-size mutation restored
+  within the same second leaves Python's .pyc of the mutant valid (it checks only mtime to the
+  second and size), so the suite can run the wrong code. Run them with
+  `PYTHONDONTWRITEBYTECODE=1`, delete the module's .pyc after each write and restore, and print
+  which test failed, so a "caught" names its catcher (found by insight, 2026-10-07).
+
 ## Backlog (decided later, not now)
+
+- Playground layout, when it goes into a real level: at 1280 the result box (.pg-result) sits
+  below the live pane's fold after a press; scroll it into view or put it beside the bars.
+- At 390 px the top bar (.player, .prefs) makes every page 827 px wide. Left as is: the game
+  needs a terminal, so it is for laptops; revisit only if phones become a target.
 
 - repomap `outer` field (path to an enclosing repository, e.g. ".."), proposed by insight, for a
   generic "Git sees a repository one folder up" hint on the map. Deferred: no second use yet.
