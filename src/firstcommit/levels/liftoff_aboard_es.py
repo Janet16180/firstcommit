@@ -1,9 +1,9 @@
-"""Welcome aboard in Spanish (`liftoff_aboard`)."""
+"""Welcome aboard in Spanish (`liftoff_aboard`), written with docs/i18n-glossary.md."""
 
 from firstcommit import kit
 
 TITLE = "Bienvenida a bordo"
-CARD = "Lista los archivos de la carpeta actual. `ls -a` también lista los ocultos: los que tienen un nombre que empieza por punto."
+CARD = "Lista los archivos de la carpeta actual. `ls -a` también lista los ocultos: los que tienen un nombre que empieza con punto."
 SCENE = [
     "Soy Rama, la computadora de la nave. Te acompañaré durante el entrenamiento.",
     "La misión: construir bases por toda la galaxia sin perder nunca ni una línea de trabajo.",
@@ -19,7 +19,7 @@ La misión termina cuando hayas listado la carpeta con `ls` y hayas escrito `git
 """
 
 HINTS = [
-    "Escribe `ls` y pulsa Enter. Lista lo que hay en la carpeta.",
+    "Escribe `ls` y presiona Enter. Lista lo que hay en la carpeta.",
     "Ahora escribe `git status`. Si muestra un error, bien: lee lo que dice.",
 ]
 
@@ -41,16 +41,16 @@ STEPS = {
 }
 
 LISTED = "Estos son los archivos de la carpeta: `map.txt` y `journal.txt`, archivos normales que todavía no guarda ningún repositorio."
-NOT_LISTED = "Escribe `ls` y pulsa Enter para listar los archivos de la carpeta."
-REFUSED = "Le has preguntado a Git: esta carpeta todavía no es un repositorio, así que se ha negado. La próxima misión la convierte en uno."
-ANSWERED = "Le has preguntado a Git y te ha respondido: esta carpeta es un repositorio, así que `git status` puede decir cómo están las cosas."
+NOT_LISTED = "Escribe `ls` y presiona Enter para listar los archivos de la carpeta."
+REFUSED = "Le preguntaste a Git: esta carpeta todavía no es un repositorio, así que se negó. La próxima misión la convierte en uno."
+ANSWERED = "Le preguntaste a Git y te respondió: esta carpeta es un repositorio, así que `git status` puede decir cómo están las cosas."
 REFUSED_EARLIER = (
-    "Le preguntaste a Git antes, sin haber listado la carpeta: esta carpeta todavía no es un repositorio, así que se negó. "
+    "Le preguntaste a Git antes de listar la carpeta: esta carpeta todavía no es un repositorio, así que se negó. "
     "La próxima misión la convierte en uno."
 )
-ANSWERED_EARLIER = "Le preguntaste a Git antes, sin haber listado la carpeta, y te respondió: esta carpeta es un repositorio."
+ANSWERED_EARLIER = "Le preguntaste a Git antes de listar la carpeta, y te respondió: esta carpeta es un repositorio."
 NOT_ASKED = "Ahora pregúntale a Git cómo están las cosas: escribe `git status`."
 NO_REPOSITORY_YET = (
-    "Git no ha encontrado ningún repositorio aquí, así que no tiene nada que contar. Esa es la lección: `git status` solo funciona dentro de un repositorio. "
+    "Git no encontró ningún repositorio aquí, así que no tiene nada que contar. Esa es la lección: `git status` solo funciona dentro de un repositorio. "
     "La próxima misión convierte esta carpeta en uno."
 )

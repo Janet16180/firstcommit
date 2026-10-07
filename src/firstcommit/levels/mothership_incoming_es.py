@@ -32,7 +32,7 @@ detrás. `git pull` volvió a hacer fetch y trajo ese commit a tu `main`, y la l
 Comandos para recordar:
 
     $ git fetch     # pide noticias al remoto; tu main y tus archivos no cambian
-    $ git pull      # hace fetch y trae las noticias a tu rama
+    $ git pull      # hace fetch y trae las noticias a tu branch
 """
 
 STEPS = {
@@ -42,7 +42,7 @@ STEPS = {
         options=("Al día con `origin/main`", "Un commit por detrás de `origin/main`"),
         reveal=(
             "Al día: `git status` compara tu `main` con `origin/main`, las últimas noticias que tiene tu repositorio de la nave nodriza, "
-            "y no ha preguntado desde que Alex hizo push."
+            "y no volvió a preguntar desde que Alex hizo push."
         ),
     ),
     "status": kit.StepText(text="Pregunta a tu repositorio cómo está `main`."),
@@ -51,13 +51,13 @@ STEPS = {
     "pull": kit.StepText(text="Trae el commit de Alex a tu `main`."),
 }
 
-NO_REPOSITORY = "Esta carpeta ya no es un repositorio: `.git` ha desaparecido. Sal del nivel y vuelve a empezarlo para recuperarlo."
+NO_REPOSITORY = "Esta carpeta ya no es un repositorio: `.git` desapareció. Sal del nivel y vuelve a empezarlo para recuperarlo."
 WAITING = "La nave nodriza todavía no tiene noticias. Espera un momento al informe de Alex."
 LOOKED = "`git status` dice que estás al día: compara con `origin/main`, que no sabe nada del push de Alex."
 NOT_LOOKED = "Pregunta a tu repositorio qué sabe: escribe `git status`."
 FETCHED = "`origin/main` ya tiene el commit de Alex: tu repositorio tiene las noticias."
 NOT_FETCHED = "Tu repositorio no sabe nada del commit de Alex. Pregunta a la nave nodriza: `git fetch`."
 BEHIND = "`git status` compara con el nuevo `origin/main`."
-NOT_AGAIN = "Ahora vuelve a preguntar a `git status`: `origin/main` se ha movido."
+NOT_AGAIN = "Ahora vuelve a preguntar a `git status`: `origin/main` se movió."
 PULLED = "El commit de Alex está en tu `main`, y su línea en `notes.txt`."
 NOT_PULLED = "El commit de Alex todavía no está en tu `main`: `git pull` lo trae."

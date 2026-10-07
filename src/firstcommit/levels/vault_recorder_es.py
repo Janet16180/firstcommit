@@ -43,7 +43,7 @@ STEPS = {
     "commit": kit.StepText(text="Encuentra el commit que cambió `oxygen.cfg`.", question="¿Cuál es su hash?", placeholder="un hash, como 3f9a2c1"),
 }
 
-NO_REPOSITORY = "Esta carpeta ya no es un repositorio: `.git` ha desaparecido. Sal del nivel y vuelve a empezarlo para recuperarlo."
+NO_REPOSITORY = "Esta carpeta ya no es un repositorio: `.git` desapareció. Sal del nivel y vuelve a empezarlo para recuperarlo."
 READ = "Esa es la historia de la base, del commit más reciente al más antiguo: cada uno con su hash, autor, fecha y mensaje."
 NOT_READ = "Lee la historia: escribe `git log`."
 FOUND = "Ese es el commit que bajó el oxígeno."

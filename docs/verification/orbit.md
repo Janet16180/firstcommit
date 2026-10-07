@@ -287,9 +287,9 @@ Where the Spanish words it differently from a word-for-word translation:
 | `cargo` deck, `cargo-unstage-before-commit` | "`git commit journal.txt` would commit it" | "`git commit journal.txt` haría un commit con él" | the same claim |
 | `chapters.CHAPTERS["rebase"]` | "Keeping up to date" | "Al día con los demás" | a coming chapter; names the same idea |
 
-Words, as AUTHORING section 7 lists them: área de preparación (staging area; git's own `index`
-is named once in the cargo notes, as in English), carpeta de trabajo, repositorio, commit (noun)
-and hacer un commit (verb), preparar (stage), sin seguimiento (untracked), rama, hash.
+Words: `docs/i18n-glossary.md` (neutral Latin American Spanish; Git's terms kept in English, such
+as commit, push, branch and staging area). Re-read after the glossary sweep: the sweep changed
+words and tenses, never a claim.
 
 ## Wave 1 of chapters 3 to 7 (added 2026-10-07)
 

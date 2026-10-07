@@ -73,7 +73,7 @@ def test_a_level_reads_its_texts_in_english_and_in_spanish_from_its_sibling() ->
     assert (english.title, english.card, english.hints) == ("Say hello", cargo_sample.CARD.text, tuple(cargo_sample.HINTS))
     assert (spanish.title, spanish.briefing, spanish.card) == ("Di hola", cargo_sample_es.BRIEFING, cargo_sample_es.CARD)
     assert spanish.scene == tuple(cargo_sample_es.SCENE)
-    assert spanish.steps["branch"] == kit.StepText(text="Encuentra la rama.", question="¿Qué rama es `{{branch}}`?", placeholder="un nombre de rama")
+    assert spanish.steps["branch"] == kit.StepText(text="Encuentra el branch.", question="¿Qué branch es `{{branch}}`?", placeholder="un nombre de branch")
     assert english.steps["branch"] == kit.StepText(text="Find the branch.", question="Which branch is `{{branch}}`?", placeholder="a branch name")
     assert spanish.messages[cargo_sample.LOOK] == cargo_sample_es.LOOK
     assert spanish.messages[cargo_sample.HELLO_STAGED] == cargo_sample_es.HELLO_STAGED

@@ -20,6 +20,38 @@ PLACEHOLDER = re.compile(r"\{\{\s*(\w+)\s*\}\}")
 # A str.format field: one brace, a name, one brace, not part of a {{placeholder}}.
 FORMAT_FIELD = re.compile(r"(?<!\{)\{(\w+)\}(?!\})")
 
+NEVER = {
+    "confirmación": "commit",
+    "confirmar": "commit (hacer un commit)",
+    "empujar": "push (hacer push)",
+    "empuja": "push (haz push)",
+    "jalar": "pull (hacer pull)",
+    "fusión": "merge",
+    "fusionar": "merge (hacer merge)",
+    "rama": "branch (el branch)",
+    "ramas": "branch (los branches)",
+    "área de preparación": "staging area (el staging area)",
+    "preparado": "staging area (está en el staging area)",
+    "preparados": "staging area (están en el staging area)",
+    "preparar": "staging area (agregar al staging area)",
+    "prepara": "staging area (agrega al staging area)",
+    "índice": "staging area",
+    "bifurcación": "branch",
+    "registro de cambios": "log",
+    "clonación": "clone",
+    "ordenador": "computadora",
+    "pulsa": "presiona",
+    "añade": "agrega",
+    "añadir": "agregar",
+    "añades": "agregas",
+    "vosotros": "ustedes",
+    "has preguntado": "le preguntaste (simple past)",
+    "ha creado": "creó (simple past)",
+    "se ha negado": "se negó (simple past)",
+    "ha desaparecido": "desapareció (simple past)",
+}
+"""Spanish forms never written, each with what docs/i18n-glossary.md says instead."""
+
 LEVELS = [*runner.catalogue().values(), *runner.discover(sample_levels).values()]
 SPANISH_DECKS = sorted(path.name.removesuffix(".es.toml") for path in cards.DECKS.glob("*.es.toml"))
 
@@ -116,6 +148,56 @@ def level_pairs(level: runner.Level) -> list[tuple[str, str]]:
         pairs += [(getattr(step, name), getattr(other, name)) for name in ("text", "more", "question", "placeholder", "reveal")]
         pairs += list(zip(step.options, other.options, strict=True))
     return pairs
+
+
+def spanish_texts() -> list[str]:
+    """
+    Gather every Spanish text the game shows.
+
+    Returns
+    -------
+    list[str]
+        The levels', the shared reactions', the game's own, the chapters', the card levels' and
+        every Spanish deck's texts.
+    """
+    found = [*reactions.SPANISH.values(), *game.SPANISH.values(), *cards.LEVEL_NAMES["es"].values()]
+    found += [texts["es"] for texts in [*CHAPTERS.values(), *BLURBS.values()]]
+    for level in LEVELS:
+        found += [spanish for _, spanish in level_pairs(level)]
+    for chapter in SPANISH_DECKS:
+        deck = cards.deck(chapter, "es")
+        found.append(deck.notes)
+        for card in deck.cards:
+            found += [card.prompt, card.explain, card.placeholder, *card.shown.values(), *card.accept]
+    return found
+
+
+def prose(text: str) -> str:
+    """
+    Keep a text's prose: its code spans and verbatim lines dropped, lower-cased.
+
+    Parameters
+    ----------
+    text : str
+        Game markup.
+
+    Returns
+    -------
+    str
+        The words a translation chose; "Rama", capitalized, is the ship's computer and is left out.
+    """
+    words = " ".join(span["text"] for block in markup.parse(text) for span in spans(block) if not span["code"])
+    return re.sub(r"\bRama\b", "", words).lower()
+
+
+def test_no_spanish_text_uses_a_form_the_glossary_rules_out() -> None:
+    found = {
+        (word, text[:60])
+        for text in spanish_texts()
+        for word in NEVER
+        if re.search(rf"(?<!\w){re.escape(word)}(?!\w)", prose(text))
+    }
+    assert not found, "\n".join(f"{word!r} (use {NEVER[word]}) in {text!r}" for word, text in sorted(found))
 
 
 def test_the_shape_of_a_text_is_its_blocks_code_and_placeholders() -> None:

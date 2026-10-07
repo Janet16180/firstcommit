@@ -283,7 +283,8 @@ The shared reactions' Spanish is `reactions_es.py`, a deck's `content/cards/<cha
 game's own messages in `game.SPANISH`. Lessons, the changes the page animates and the
 playground's explanations stay English.
 
-Write the Spanish as a Spanish-speaking teacher would, not word for word (section 7). Commands,
+Write the Spanish as a Latin American teacher would, not word for word, with the words of
+`docs/i18n-glossary.md` (section 7). Commands,
 file names, branch names, commit messages and git's own output stay as they are.
 
 ### 3.4 Reading the lab
@@ -542,16 +543,6 @@ Beginners learn the words with the ideas, so use one word for one thing, everywh
 - Short sentences, active voice. No "simply", "just", "obviously" or "easy".
 - English, and Spanish beside it (section 3.7). No emojis.
 
-In Spanish, address the player as `tú`, and keep the same one word for one thing:
-
-| English | Spanish |
-|---|---|
-| working folder | carpeta de trabajo |
-| staging area | área de preparación |
-| stage, unstage | preparar, sacar del área de preparación |
-| repository | repositorio |
-| commit (noun); to commit | commit; hacer un commit |
-| branch | rama |
-| hash | hash |
-| untracked | sin seguimiento |
-| remote | remoto |
+In Spanish, follow `docs/i18n-glossary.md`: neutral Latin American Spanish, `tú`, the simple
+past, and Git's terms in English (commit, push, branch, staging area...). `tests/test_translations.py`
+refuses the forms it rules out.

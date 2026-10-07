@@ -47,7 +47,7 @@ STEPS = {
     "list": kit.StepText(text="Lista los remotos que conoce tu repositorio."),
 }
 
-NO_REPOSITORY = "Esta carpeta ya no es un repositorio: `.git` ha desaparecido. Sal del nivel y vuelve a empezarlo para recuperarlo."
+NO_REPOSITORY = "Esta carpeta ya no es un repositorio: `.git` desapareció. Sal del nivel y vuelve a empezarlo para recuperarlo."
 NO_REMOTE = "Tu repositorio todavía no conoce ningún remoto. Da nombre a la dirección de la nave nodriza: `git remote add origin ../github/project.git`."
 OTHER_NAME = "La dirección de la nave nodriza tiene otro nombre. En esta misión se llama `origin`: `git remote add origin ../github/project.git`."
 WRONG_URL = "`origin` apunta a otra dirección. La nave nodriza está en `../github/project.git`: `git remote set-url origin ../github/project.git` la cambia."

@@ -1,4 +1,4 @@
-"""Plant the flag in Spanish (`liftoff_flag`)."""
+"""Plant the flag in Spanish (`liftoff_flag`), written with docs/i18n-glossary.md."""
 
 from firstcommit import kit
 
@@ -19,7 +19,7 @@ La misión termina cuando la carpeta sea un repositorio, hayas visto su carpeta 
 
 HINTS = [
     "El comando que crea un repositorio es `git init`.",
-    "Los nombres que empiezan por punto están ocultos. `ls -a` los muestra.",
+    "Los nombres que empiezan con punto están ocultos. `ls -a` los muestra.",
 ]
 
 DEBRIEF = """

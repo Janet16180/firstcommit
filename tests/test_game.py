@@ -1937,19 +1937,19 @@ def test_in_spanish_a_level_page_shows_its_spanish_texts(sample_level: runner.Le
     game.set_language("es")
     view = game.level(sample_level.id)
     assert (view["title"], view["chapter_title"]) == ("Di hola", CHAPTERS["cargo"]["es"])
-    assert view["briefing"] == markup.parse("Haz un commit de `hello.txt` en la rama `{{branch}}`.")
+    assert view["briefing"] == markup.parse("Haz un commit de `hello.txt` en el branch `{{branch}}`.")
     assert [frame["text"] for frame in view["scene"]] == [markup.parse(text) for text in cargo_sample_es.SCENE]
     assert [frame["art"] for frame in view["scene"]] == ["zones", "conveyor"]
     assert [step["text"] for step in view["steps"]] == [markup.parse(text.text) for text in cargo_sample_es.STEPS.values()]
     assert view["steps"][1]["command"] == "git add hello.txt"
-    assert (view["steps"][2]["placeholder"], view["card"]) == ("un nombre de rama", {"level": "cargo-sample", "command": "git add <file>", "text": markup.parse(cargo_sample_es.CARD)})
+    assert (view["steps"][2]["placeholder"], view["card"]) == ("un nombre de branch", {"level": "cargo-sample", "command": "git add <file>", "text": markup.parse(cargo_sample_es.CARD)})
     assert game.lesson(sample_level.id)["title"] == "Di hola"
 
 
 def test_in_spanish_the_verdicts_hints_and_debrief_are_spanish(sample_level: runner.Level) -> None:
     game.set_language("es")
     game.start(sample_level.id)
-    assert game.check(None, auto=True)["message"] == markup.parse("La misión guiada aún no ha terminado: el siguiente es el paso 1 de 3.")
+    assert game.check(None, auto=True)["message"] == markup.parse("La misión guiada todavía no termina: el siguiente es el paso 1 de 3.")
     assert game.check(None, auto=False)["message"] == markup.parse(cargo_sample_es.NOT_COMMITTED)
     game.quest_step(None)
     assert game.quest_step(None)["message"] == markup.parse(cargo_sample_es.NOT_STAGED)
@@ -2012,6 +2012,7 @@ def test_in_spanish_cards_and_notes_are_spanish_and_choices_answer_with_their_en
     assert game.notes("cargo") == {"chapter": "cargo", "title": CHAPTERS["cargo"]["es"], "notes": markup.parse("Las `three` zonas.")}
     view = next(card for card in game.due_cards("cargo", 20) if card["id"] == "cargo-c01")
     assert view["prompt"] == markup.parse("¿Cuál es `right`?")
+    assert view["level_name"] == "básico"
     assert sorted((choice["value"], choice["text"]) for choice in view["choices"]) == [(value, markup.parse(text)) for value, text in [("right", "la buena"), ("worse", "la peor"), ("wrong", "la mala")]]
     result = game.answer_card("cargo-c01", "right")
     assert (result["correct"], result["answer"], result["answer_text"], result["explain"]) == (True, "right", markup.parse("la buena"), markup.parse("Porque sí."))
