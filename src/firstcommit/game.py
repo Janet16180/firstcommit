@@ -19,6 +19,8 @@ cards only ever see a wrong answer. Errors the interfaces handle:
   function, so a ``KeyError`` from a level's setup, the scoring or a lesson stays what it is: a bug;
 - `NotPlayingError`: an action on the level in progress when there is none (409);
 - `NoPlaygroundError`: a playground button pressed in a level that has no playground (409);
+- `ButtonOffError`: a playground button pressed while it is off (409); its message is the
+  reason, as the button shows it (handed on from `firstcommit.playground`);
 - `SaveError`: a damaged save file (``firstcommit reset --yes`` starts over).
 
 The interfaces import nothing else from the game's lower layers: `SaveError` and `home` are
@@ -46,7 +48,8 @@ from firstcommit.chapters import CHAPTERS
 from firstcommit.demos import Line
 from firstcommit.lab import Lab
 from firstcommit.markup import Block
-from firstcommit.records import Press
+from firstcommit.playground import ButtonOffError as ButtonOffError
+from firstcommit.records import ButtonView, Press, Who
 from firstcommit.repomap import ObjectInfo, Snapshot
 from firstcommit.save import Payout
 from firstcommit.save import SaveError as SaveError
@@ -223,7 +226,9 @@ class Observation(TypedDict):
     ``github`` and ``teammate`` (the teammate's clone of the playground, `firstcommit.playground`)
     are None when the level has none. ``events`` tells the changes in the player's repository and
     the stand-in GitHub; ``teammate_events`` those in the teammate's clone, kept apart because an
-    event's sentence does not say which clone it happened in.
+    event's sentence does not say which clone it happened in. ``buttons`` is each person's bar of
+    the playground as it stands now (`firstcommit.playground.buttons`), and empty for a level
+    without one.
     """
 
     level: str
@@ -232,6 +237,7 @@ class Observation(TypedDict):
     teammate: Snapshot | None
     events: list[EventView]
     teammate_events: list[EventView]
+    buttons: dict[Who, list[ButtonView]]
 
 
 class PressView(TypedDict):
@@ -621,9 +627,10 @@ def observe() -> Observation:
     """
     with save.lock():
         active, entry = _playing()
+        lab = runner.lab_of(entry.id)
         last = save.load_observed()
-        now = _snapshots(entry.id, runner.lab_of(entry.id))
-        observation = _observation(last, now)
+        now = _snapshots(entry.id, lab)
+        observation = _observation(last, now, _buttons(lab, now))
         if now != last:
             save.write_observed(now)
     return observation
@@ -645,7 +652,7 @@ def press(person: str, button: str) -> PressView:
     person : str
         Who pressed (`firstcommit.records.Who`).
     button : str
-        Which button (`firstcommit.records.Button`).
+        Which button: one of `firstcommit.playground.BUTTON_IDS`.
 
     Returns
     -------
@@ -661,11 +668,13 @@ def press(person: str, button: str) -> PressView:
         If no level is in progress.
     NoPlaygroundError
         If the level in progress has no playground: its lab has no teammate's clone.
+    ButtonOffError
+        If the button is off now; nothing runs, and the message says why.
     subprocess.TimeoutExpired
         If the command runs longer than `firstcommit.gitcmd.TIMEOUT` seconds.
     """
     who = _playground_id(person, playground.PEOPLE, "person")
-    which = _playground_id(button, playground.BUTTONS, "button")
+    which = _playground_id(button, playground.BUTTON_IDS, "button")
     with save.lock():
         active, entry = _playing()
         lab = runner.lab_of(entry.id)
@@ -673,10 +682,10 @@ def press(person: str, button: str) -> PressView:
             raise NoPlaygroundError(f"the level {entry.id!r} has no playground")
         last = save.load_observed()
         then = _snapshots(entry.id, lab)
-        before = _observation(last, then)
+        before = _observation(last, then, _buttons(lab, then))
         pressed = playground.press(lab, who, which)
         now = _snapshots(entry.id, lab)
-        observation = _observation(then, now)
+        observation = _observation(then, now, _buttons(lab, now))
         if now != last:
             save.write_observed(now)
     return {
@@ -995,7 +1004,29 @@ def _snapshots(level_id: str, lab: Lab) -> save.Observed:
     }
 
 
-def _observation(last: save.Observed | None, now: save.Observed) -> Observation:
+def _buttons(lab: Lab, now: save.Observed) -> dict[Who, list[ButtonView]]:
+    """
+    Give each person's playground buttons for the lab as just snapshotted.
+
+    Parameters
+    ----------
+    lab : Lab
+        The level's lab.
+    now : save.Observed
+        Its snapshots.
+
+    Returns
+    -------
+    dict[Who, list[ButtonView]]
+        Each person's bar, or nothing when the lab has no teammate's clone (no playground).
+    """
+    bars: dict[Who, list[ButtonView]] = {}
+    if now["teammate"] is not None:
+        bars = playground.buttons(lab, {"you": now["project"], "alex": now["teammate"]})
+    return bars
+
+
+def _observation(last: save.Observed | None, now: save.Observed, buttons: dict[Who, list[ButtonView]]) -> Observation:
     """
     Tell what changed in a lab between two observations.
 
@@ -1005,6 +1036,8 @@ def _observation(last: save.Observed | None, now: save.Observed) -> Observation:
         The earlier observation, or None; one of another level counts as none.
     now : save.Observed
         The lab now.
+    buttons : dict[Who, list[ButtonView]]
+        The playground's buttons now (`_buttons`).
 
     Returns
     -------
@@ -1023,6 +1056,7 @@ def _observation(last: save.Observed | None, now: save.Observed) -> Observation:
         "teammate": now["teammate"],
         "events": _event_views(events),
         "teammate_events": _event_views(teammate_events),
+        "buttons": buttons,
     }
 
 

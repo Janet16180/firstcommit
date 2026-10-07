@@ -87,7 +87,9 @@ class Snapshot(TypedDict):
     """
     The state of one repository.
 
-    ``exists`` is False when the folder holds no repository (all else empty). ``branch`` names
+    ``exists`` is False when the folder holds no repository. All else is then empty, except that
+    a folder no repository holds lists its own files in ``files`` (cut as below), with only
+    ``folder``, ``folder_mode`` and ``repository`` set: no area of git holds them. ``branch`` names
     the branch HEAD is on, even before its first commit (when ``head`` is None); it is None when
     HEAD is detached. ``operation`` names a merge, rebase, cherry-pick, revert or bisect in
     progress. ``commits`` lists every commit reachable from HEAD and the refs, newest first, at
@@ -123,7 +125,7 @@ class ObjectInfo(TypedDict):
 
 Who = Literal["you", "alex"]
 """The two people of the playground (`firstcommit.playground`), who share one remote."""
-Button = Literal["edit", "add", "commit", "push", "fetch", "pull", "pull-no-rebase", "status"]
+Button = Literal["edit", "add", "commit", "push", "fetch", "pull", "pull-no-rebase", "status", "merge-abort", "keep-ours", "keep-theirs"]
 """
 The kinds of the playground's buttons. A button's id is its kind, or ``"<kind>:<file>"`` for a
 kind that acts on one file (``"add:notes.txt"``, ``"keep-ours:README.md"``).
