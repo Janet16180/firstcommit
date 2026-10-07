@@ -163,7 +163,7 @@ def test_a_hint_shows_its_text_and_its_cost(sample_level: runner.Level, capsys: 
     game.start(sample_level.id)
     status, printed = run(capsys, "hint")
     assert status == 0
-    assert "Hint 1 of 3" in printed and "100 XP" in printed and sample_level.hints[0] in printed
+    assert "Hint 1 of 3" in printed and "15 XP" in printed and sample_level.hints[0] in printed
 
 
 def test_reset_needs_yes(sample_level: runner.Level, capsys: pytest.CaptureFixture[str]) -> None:

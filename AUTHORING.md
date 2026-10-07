@@ -152,7 +152,7 @@ QUEST: list[kit.Step] = []    # optional; the first level of a chapter has one
 BRIEFING: str                 # the situation and what counts as success
 QUESTION: str = ""            # optional; set it when the level is solved by a typed answer
 PLACEHOLDER: str = ""         # optional; example shape of that answer ("a short hash")
-HINTS: list[str]              # 2-4, from a nudge to almost the answer; any hint costs the play's XP and a star
+HINTS: list[str]              # 2-4, from a nudge to almost the answer; each lowers the XP (score.py)
 DEBRIEF: str                  # shown once solved
 
 def setup(lab: kit.Lab) -> kit.State: ...
@@ -179,6 +179,9 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
 - **Stars.** A solved play earns 3 stars, one less once a hint is used and one less once the
   lines typed in the game's terminal since the level started pass `PAR + 3`, never below 1
   (`score.stars`). Set `PAR` to the lines a player following the level types.
+- **XP.** A first solve pays the level's `XP`, less 15% of it for each hint revealed, but never
+  less than half (`score.level_reward`); the hint view shows what each hint took off. A replay
+  pays nothing.
 - **`SCENE`** frames each name a picture the page draws (`kit.Art`) and say one or two short
   sentences. **`CARD`** says what its command does, scoped like any claim. Neither is filled
   from the state: both are shown before the level starts.
