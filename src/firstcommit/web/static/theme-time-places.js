@@ -302,11 +302,13 @@ const TimePlaces = (function () {
   /* The four places as a figure, lighting `options.commands`' arrows and showing their sentences;
      without a GitHub (`observation.github` null), your computer's three places, joined by add and
      commit only ("is-local"). `options.theme` draws the repositories (the small boxes unless
-     given; "is-full" otherwise), and its key, if it has one, goes once under the figure. */
-  function render(observation, { commands: matched = [], theme = boxes } = {}) {
+     given; "is-full" otherwise), and its key, if it has one, goes once under the figure.
+     `options.compact` lays the same figure out tighter, for a lesson slide beside its text
+     ("is-compact"). */
+  function render(observation, { commands: matched = [], theme = boxes, compact = false } = {}) {
     const { project, github } = observation;
     const key = project.commits.length > 0 && theme.shapes.key({ snapshot: project, map: RepoMap.layout(project, { theme, showHead: true }), theme });
-    const look = [github ? "" : " is-local", theme === boxes ? "" : " is-full"].join("");
+    const look = [github ? "" : " is-local", theme === boxes ? "" : " is-full", compact ? " is-compact" : ""].join("");
     const lit = drawn(github, matched);
     const merge = ARROWS.pull.path;
     const back = (part) => github && arrow("pull", lit, part);

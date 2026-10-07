@@ -522,6 +522,17 @@ test("drawn with a full-size map theme, the repositories carry full-size timelin
   assert.ok(!plain.classList.contains("is-full"));
 });
 
+test("drawn compact, for a lesson beside its text, the figure has the same places, arrows, key and words, only laid out tighter", () => {
+  const places = TimePlaces.withTheme(TimeTheme.live);
+  const observation = { project: at(TWO, "b", "b"), github: null };
+  const compact = places.render(observation, { commands: ["commit"], compact: true });
+  const roomy = places.render(observation, { commands: ["commit"] });
+  assert.ok(compact.classList.contains("is-compact"));
+  assert.ok(!roomy.classList.contains("is-compact"), "the live page's figure stays full");
+  assert.equal(compact.textContent, roomy.textContent);
+  assert.ok(compact.querySelector(".tt-key"));
+});
+
 test("played with its theme, a full-size figure moves its timelines by that theme's rows", () => {
   const theme = TimeTheme.live;
   const places = TimePlaces.withTheme(theme);

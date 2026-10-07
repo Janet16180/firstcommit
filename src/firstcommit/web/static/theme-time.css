@@ -1134,3 +1134,131 @@ h2,
     clip-path: polygon(50% 0, 100% 100%, 0 100%);
   }
 }
+
+/* Compact, for a lesson slide beside its text (render's `compact`): the same figure, tighter. A
+   place's note follows its title and a page's id its name, on one line; an empty place says so
+   without a margin; the arrows between rows are short; the key keeps its words without what
+   they mean (the guide says it), on one line. */
+.tt-places.is-compact .tt-places-grid {
+  row-gap: 0.2rem;
+  padding-top: 1.55rem;
+  padding-bottom: 0.45rem;
+}
+
+.tt-places.is-compact .tt-frame {
+  margin-top: -1.35rem;
+}
+
+.tt-places.is-compact .tt-place {
+  padding: 0.3rem 0.5rem 0.4rem;
+}
+
+.tt-places.is-compact .tt-place h4,
+.tt-places.is-compact .tt-place-note {
+  display: inline;
+  margin: 0 0.5rem 0 0;
+}
+
+.tt-places.is-compact .tt-place-empty,
+.tt-places.is-compact .map-empty {
+  margin: 0.2rem 0 0;
+  padding: 0;
+}
+
+.tt-places.is-compact .tt-open-box .tt-place-empty {
+  margin: 0;
+}
+
+.tt-places.is-compact .tt-open-box {
+  margin-top: 0.75rem;
+  padding: 0.25rem 0.3rem;
+}
+
+.tt-places.is-compact .tt-open-box > .tt-flap {
+  width: min(50%, 1.3rem);
+}
+
+.tt-places.is-compact .tt-page {
+  grid-template-columns: 1.05rem minmax(0, max-content) auto;
+  grid-template-areas: "icon name id" "icon said said";
+}
+
+.tt-places.is-compact .tt-page-icon {
+  margin-top: 0;
+}
+
+.tt-places.is-compact .tt-page-was {
+  grid-column: 1 / 4;
+  grid-template-rows: subgrid;
+  grid-template-columns: subgrid;
+  grid-template-areas: "icon . id" "icon . .";
+}
+
+/* Inside a lesson's figure a map has a frame of its own (app.css); here its place is the frame. */
+.tt-places.is-compact .repo-map {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+/* The timeline's own margin (the map theme's pad) is mostly empty above the first commit and
+   below the last; the place's title and border stand in for part of it. */
+.tt-places.is-compact .tt-place-graph {
+  margin: -0.45rem 0 -0.4rem;
+}
+
+.tt-places.is-compact > .tt-key {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.2rem 0;
+  margin: 0.35rem 0.15rem 0;
+  padding: 0;
+  border: 0;
+}
+
+.tt-places.is-compact .tt-key-now {
+  display: contents;
+}
+
+.tt-places.is-compact .tt-key-now > span {
+  margin: 0 0.8rem 0 0.35rem;
+}
+
+.tt-places.is-compact .tt-legend li {
+  margin-right: 0.8rem;
+}
+
+.tt-places.is-compact .tt-key-meaning {
+  display: none;
+}
+
+/* The guide's button leaves the key's line for the figure's top right corner, beside "Your
+   computer", where the line has room to spare. */
+.tt-places.is-compact .tt-key-now > .tt-guide-button {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.6rem;
+}
+
+.tt-places.is-compact .tt-places-caption {
+  margin: 0.35rem 0.4rem 0;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+@container tt-places (max-width: 1000px) {
+  .tt-places.is-compact .tt-places-grid {
+    grid-template-rows: auto 2.4rem auto 3rem auto;
+  }
+
+  .tt-places.is-compact.is-local .tt-places-grid {
+    grid-template-rows: auto 2.4rem auto;
+  }
+
+  .tt-places.is-compact .tt-arrows-pair.is-gap-2,
+  .tt-places.is-compact .tt-arrows-pair.is-gap-3 {
+    padding: 0.1rem 0 0.25rem;
+  }
+}
