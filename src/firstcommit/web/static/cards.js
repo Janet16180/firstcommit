@@ -4,15 +4,16 @@
  * Flashcards (firstcommit/game.py's CardView and CardResult): a round of up to ten cards,
  * due ones first, as the server picks them. Choices are numbered (keys 1 to 9 pick them); each
  * shows its text and sends its raw value back. The server judges each reply, schedules the
- * card and pays XP. Needs dom.js and markup.js.
+ * card and pays XP. Needs dom.js, strings.js and markup.js.
  * Defines one global, CardsView.
  */
 
-/* global Dom, Markup */
+/* global Dom, Strings, Markup */
 /* exported CardsView */
 
 const CardsView = (function () {
   const { el } = Dom;
+  const { t } = Strings;
   const ROUND = 10;
 
   /* Everything below works on one `round`: ctx, chapter, the cards, the index of the one on
@@ -20,7 +21,7 @@ const CardsView = (function () {
 
   function chapterTitle(round) {
     const chapter = round.ctx.status().chapters.find((item) => item.id === round.chapter);
-    return chapter ? chapter.title : "All chapters";
+    return chapter ? chapter.title : t("cards.all");
   }
 
   function enable(round, on) {
@@ -39,7 +40,7 @@ const CardsView = (function () {
       if (error.status !== 0) throw error;
       round.answered = false;
       enable(round, true);
-      round.element.querySelector(".card-result").replaceChildren(el("p", { class: "notice" }, "The game server did not answer. Is it still running? Try again."));
+      round.element.querySelector(".card-result").replaceChildren(el("p", { class: "notice" }, t("cards.down")));
       return;
     }
     round.results.push(result);
@@ -53,17 +54,17 @@ const CardsView = (function () {
   }
 
   function showResult(round, result) {
-    const nextButton = el("button", { type: "button", class: "btn btn-primary card-next", onclick: () => advance(round) }, round.index + 1 < round.cards.length ? "Next card" : "Finish");
+    const nextButton = el("button", { type: "button", class: "btn btn-primary card-next", onclick: () => advance(round) }, round.index + 1 < round.cards.length ? t("cards.next") : t("cards.finish"));
     const verdict = result.correct
-      ? el("p", { class: "verdict is-correct" }, "Right.")
-      : el("div", { class: "verdict is-wrong" }, el("p", {}, "Not this time. The answer:"), el("div", { class: "right-answer prose" }, Markup.render(result.answer_text)));
+      ? el("p", { class: "verdict is-correct" }, t("cards.right"))
+      : el("div", { class: "verdict is-wrong" }, el("p", {}, t("cards.wrong")), el("div", { class: "right-answer prose" }, Markup.render(result.answer_text)));
     round.element.querySelector(".card-result").replaceChildren(
       verdict,
       el("div", { class: "prose" }, Markup.render(result.explain)),
       el("p", { class: "card-score" },
-        result.xp > 0 && el("span", { class: "xp" }, `+${result.xp} XP`),
-        result.bonus > 0 && el("span", { class: "xp" }, `+${result.bonus} streak bonus`),
-        el("span", {}, `Streak: ${result.streak}`),
+        result.xp > 0 && el("span", { class: "xp" }, t("cards.xp", { xp: result.xp })),
+        result.bonus > 0 && el("span", { class: "xp" }, t("cards.bonus", { bonus: result.bonus })),
+        el("span", {}, t("cards.streak", { streak: result.streak })),
       ),
       nextButton,
     );
@@ -72,7 +73,7 @@ const CardsView = (function () {
 
   function cardView(round) {
     const card = round.cards[round.index];
-    const input = el("input", { type: "text", autocomplete: "off", spellcheck: "false", placeholder: card.placeholder || null, "aria-label": "Your answer" });
+    const input = el("input", { type: "text", autocomplete: "off", spellcheck: "false", placeholder: card.placeholder || null, "aria-label": t("cards.answer") });
     const choices = el("ol", { class: "choices" }, card.choices.map((choice, index) => el("li", {},
       el("button", { type: "button", class: "choice", "data-choice": choice.value, onclick: (event) => reply(round, choice.value, event.currentTarget) },
         el("kbd", {}, String(index + 1)),
@@ -85,11 +86,11 @@ const CardsView = (function () {
         event.preventDefault();
         if (input.value.trim()) reply(round, input.value.trim(), null);
       },
-    }, el("div", { class: "answer-row" }, input, el("button", { type: "submit", class: "btn btn-primary" }, "Check")));
+    }, el("div", { class: "answer-row" }, input, el("button", { type: "submit", class: "btn btn-primary" }, t("cards.check"))));
     return el("section", { class: "cards panel narrow", "aria-live": "polite" },
-      el("p", { class: "kicker card-count" }, `Card ${round.index + 1} of ${round.cards.length} · ${chapterTitle(round)}`),
+      el("p", { class: "kicker card-count" }, t("cards.count", { number: round.index + 1, total: round.cards.length, chapter: chapterTitle(round) })),
       el("p", { class: "card-level" }, card.level_name),
-      !card.pays && el("p", { class: "card-pays muted" }, "Practice only: no XP, this card is not due yet."),
+      !card.pays && el("p", { class: "card-pays muted" }, t("cards.practice")),
       el("div", { class: "card-prompt prose" }, Markup.render(card.prompt)),
       card.code && el("pre", { class: "code card-code" }, el("code", {}, card.code)),
       card.choices.length ? choices : form,
@@ -100,21 +101,21 @@ const CardsView = (function () {
   /* What the round paid, as the server reported it; "not due" only when no card could pay. */
   function roundPay(round) {
     const xp = round.results.reduce((sum, result) => sum + result.xp + result.bonus, 0);
-    let line = "No XP this round.";
-    if (xp > 0) line = `+${xp} XP this round.`;
-    else if (!round.cards.some((card) => card.pays)) line = "No XP this round: these cards were not due yet.";
+    let line = t("cards.noXp");
+    if (xp > 0) line = t("cards.roundXp", { xp });
+    else if (!round.cards.some((card) => card.pays)) line = t("cards.notDue");
     return line;
   }
 
   function summary(round) {
     const right = round.results.filter((result) => result.correct).length;
     return el("section", { class: "cards-summary panel narrow" },
-      el("p", { class: "kicker" }, "Round complete"),
-      el("h1", {}, `${right} of ${round.results.length} right`),
+      el("p", { class: "kicker" }, t("cards.complete")),
+      el("h1", {}, t("cards.score", { right, total: round.results.length })),
       el("p", {}, roundPay(round)),
       el("div", { class: "actions" },
-        el("button", { type: "button", class: "btn btn-primary", onclick: () => start(round) }, "Another round"),
-        el("a", { class: "btn btn-quiet", href: "#/" }, "Back to the map"),
+        el("button", { type: "button", class: "btn btn-primary", onclick: () => start(round) }, t("cards.another")),
+        el("a", { class: "btn btn-quiet", href: "#/" }, t("cards.back")),
       ),
     );
   }
@@ -132,7 +133,7 @@ const CardsView = (function () {
     round.index = -1;
     round.results = [];
     if (!round.cards.length) {
-      round.element.replaceChildren(el("section", { class: "panel narrow" }, el("h1", {}, "No cards to review"), el("p", {}, "Every card is scheduled for later. Come back tomorrow, or play a level."), el("a", { class: "btn btn-primary", href: "#/" }, "Back to the map")));
+      round.element.replaceChildren(el("section", { class: "panel narrow" }, el("h1", {}, t("cards.none")), el("p", {}, t("cards.later")), el("a", { class: "btn btn-primary", href: "#/" }, t("cards.back"))));
       return;
     }
     advance(round);
@@ -140,7 +141,7 @@ const CardsView = (function () {
 
   /* ctx: game, status(), refresh(), sound. `chapter` is a chapter id, or null for every chapter. */
   function create(ctx, chapter) {
-    const round = { ctx, chapter, cards: [], index: -1, results: [], answered: false, element: el("div", { class: "cards-page" }, el("p", { class: "loading" }, "Picking your cards…")) };
+    const round = { ctx, chapter, cards: [], index: -1, results: [], answered: false, element: el("div", { class: "cards-page" }, el("p", { class: "loading" }, t("cards.picking"))) };
     start(round);
     return {
       element: round.element,

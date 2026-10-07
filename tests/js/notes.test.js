@@ -5,7 +5,7 @@ const test = require("node:test");
 const { fakeServer, httpError, installBrowser, load, record, settle } = require("./load");
 
 const document = installBrowser();
-const { NotesView, createGameApi } = load(["dom.js", "markup.js", "api.js", "progress.js", "notes.js"], ["NotesView", "createGameApi"]);
+const { NotesView, createGameApi } = load(["dom.js", "strings.js", "markup.js", "api.js", "progress.js", "notes.js"], ["NotesView", "createGameApi"]);
 
 function notes(chapter, { status = record("status"), reply = record("notes") } = {}) {
   const server = fakeServer({ "/api/notes": reply });
