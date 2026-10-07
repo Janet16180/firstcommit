@@ -149,3 +149,31 @@ def test_only_paying_right_answers_ever_earn_xp_or_a_bonus(answers: list[tuple[b
     for (correct, pays), result in zip(answers, answer_run(answers), strict=True):
         if not (correct and pays):
             assert (result.xp, result.bonus, result.streak) == (0, 0, 0)
+
+
+def test_a_level_played_without_hints_within_par_and_three_keeps_three_stars() -> None:
+    assert score.stars(hints=0, commands=7, par=4) == 3
+
+
+def test_a_hint_costs_one_star_however_many_are_used() -> None:
+    assert score.stars(hints=1, commands=0, par=4) == 2
+    assert score.stars(hints=3, commands=0, par=4) == 2
+
+
+def test_typing_more_than_par_and_three_lines_costs_one_star() -> None:
+    assert score.stars(hints=0, commands=8, par=4) == 2
+    assert score.stars(hints=0, commands=80, par=4) == 2
+
+
+def test_hints_and_too_many_lines_together_leave_one_star() -> None:
+    assert score.stars(hints=2, commands=9, par=4) == 1
+
+
+@given(hint_counts, st.integers(min_value=0, max_value=1000), st.integers(min_value=1, max_value=50))
+def test_stars_are_always_between_one_and_three(hints: int, commands: int, par: int) -> None:
+    assert 1 <= score.stars(hints, commands, par) <= 3
+
+
+def test_a_negative_hint_or_line_count_is_a_bug() -> None:
+    with pytest.raises(ValueError, match="commands"):
+        score.stars(hints=0, commands=-1, par=4)

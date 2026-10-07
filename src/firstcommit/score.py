@@ -1,5 +1,5 @@
 """
-The scoring rules, in one place: ranks, what a level pays, what a hint costs, card XP and the streak bonus.
+The scoring rules, in one place: ranks, what a level pays, what a hint costs, a level's stars, card XP and the streak bonus.
 
 Pure functions of plain numbers: the save and the game decide when to call them.
 """
@@ -24,6 +24,9 @@ REWARD_FLOOR_PERCENT = 50
 CARD_XP = {1: 10, 2: 20, 3: 30}
 STREAK_LENGTH = 5
 STREAK_BONUS = 25
+MAX_STARS = 3
+PAR_MARGIN = 3
+"""Lines a player may type beyond a level's par before it costs a star."""
 
 
 class Rank(TypedDict):
@@ -132,6 +135,38 @@ def hint_cost(xp: int, used: int, first_time: bool) -> int:
     if used < 1:
         raise ValueError(f"used counts the hint just revealed and must be at least 1, got {used}")
     return level_reward(xp, used - 1, first_time) - level_reward(xp, used, first_time)
+
+
+def stars(hints: int, commands: int, par: int) -> int:
+    """
+    Count the stars a play of a level earns.
+
+    It starts at `MAX_STARS`, loses one once a hint is used and one once the lines typed pass
+    ``par + PAR_MARGIN``, and never goes below 1.
+
+    Parameters
+    ----------
+    hints : int
+        Hints revealed in this play.
+    commands : int
+        Lines typed in the game's terminal since the level started.
+    par : int
+        The level's par: the lines its shortest play types.
+
+    Returns
+    -------
+    int
+        1 to `MAX_STARS`.
+
+    Raises
+    ------
+    ValueError
+        If `hints` or `commands` is negative (a bug in the caller).
+    """
+    if hints < 0 or commands < 0:
+        raise ValueError(f"hints and commands must not be negative, got hints={hints}, commands={commands}")
+    lost = (hints > 0) + (commands > par + PAR_MARGIN)
+    return max(1, MAX_STARS - lost)
 
 
 def card_score(level: int, correct: bool, pays: bool, streak: int) -> CardScore:
