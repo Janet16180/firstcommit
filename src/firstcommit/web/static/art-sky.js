@@ -17,7 +17,7 @@
 /* global Dom, ArtPixels */
 /* exported ArtSky */
 
-const ArtSky = (() => {
+const ArtSky = (function () {
   const { tone, picture, random, stars } = ArtPixels;
 
   function field(seed) {

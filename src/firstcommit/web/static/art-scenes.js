@@ -13,7 +13,7 @@
 /* global Dom, ArtPixels */
 /* exported ArtScenes */
 
-const ArtScenes = (() => {
+const ArtScenes = (function () {
   const { tone, draw, place, picture, stars, rama: ramaParts, planet, ARROW } = ArtPixels;
   const OUTLINE = tone("art-outline");
 

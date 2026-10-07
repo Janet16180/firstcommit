@@ -26,7 +26,7 @@
 /* global Dom */
 /* exported ArtPixels */
 
-const ArtPixels = (() => {
+const ArtPixels = (function () {
   const tone = (name) => `var(--${name})`;
 
   function draw(rows, palette) {
@@ -115,29 +115,26 @@ const ArtPixels = (() => {
     const halfWidth = ringed ? Math.round(radius * 1.75) : radius + 1;
     const width = halfWidth * 2 + 1;
     const height = radius * 2 + 3;
-    const inside = (x, y) => x * x + y * y <= radius * radius + radius * 0.6;
-    const rows = [];
-    for (let row = 0; row < height; row += 1) {
-      let line = "";
-      for (let column = 0; column < width; column += 1) {
-        const x = column - halfWidth;
-        const y = row - (radius + 1);
-        let pixel = ".";
-        if (inside(x, y)) {
-          const rim = !inside(x + 1, y) || !inside(x - 1, y) || !inside(x, y + 1) || !inside(x, y - 1);
-          const spotX = x + radius * 0.38;
-          const spotY = y + radius * 0.38;
-          if (rim) pixel = "k";
-          else if (spotX * spotX + spotY * spotY < (radius * 0.3) ** 2) pixel = "c";
-          else pixel = x + y > radius * 0.55 ? "b" : "a";
-        }
-        const ring = (x * x) / (halfWidth * halfWidth) + (y * y) / (radius * 0.42) ** 2;
-        if (ringed && ring > 0.72 && ring < 1.18 && (y >= 0 || !inside(x, y))) pixel = "n";
-        line += pixel;
-      }
-      rows.push(line);
-    }
+    const rows = Array.from({ length: height }, (_, row) =>
+      Array.from({ length: width }, (_cell, column) => planetPixel(column - halfWidth, row - (radius + 1), radius, ringed && halfWidth)).join(""));
     return { rects: draw(rows, { k: tone("art-outline"), ...palette }), width, height };
+  }
+
+  /* The pixel at (x, y) from the planet's centre: rim k, spot c, shade b, body a, ring n, or clear. */
+  function planetPixel(x, y, radius, ringHalfWidth) {
+    const inside = (dx, dy) => dx * dx + dy * dy <= radius * radius + radius * 0.6;
+    if (ringHalfWidth && onRing(x, y, radius, ringHalfWidth) && (y >= 0 || !inside(x, y))) return "n";
+    if (!inside(x, y)) return ".";
+    if (!inside(x + 1, y) || !inside(x - 1, y) || !inside(x, y + 1) || !inside(x, y - 1)) return "k";
+    const spotX = x + radius * 0.38;
+    const spotY = y + radius * 0.38;
+    if (spotX * spotX + spotY * spotY < (radius * 0.3) ** 2) return "c";
+    return x + y > radius * 0.55 ? "b" : "a";
+  }
+
+  function onRing(x, y, radius, halfWidth) {
+    const distance = (x * x) / (halfWidth * halfWidth) + (y * y) / (radius * 0.42) ** 2;
+    return distance > 0.72 && distance < 1.18;
   }
 
   const ARROW = ["....k...", "....kk..", "kkkkkkk.", "kkkkkkkk", "kkkkkkk.", "....kk..", "....k..."];

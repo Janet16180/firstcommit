@@ -7,7 +7,7 @@ const { installBrowser, load } = require("./load");
 const { assertPalette } = require("./art-check");
 
 installBrowser();
-const { ArtPixels } = load(["dom.js", "art-pixels.js"], ["ArtPixels"]);
+const { ArtPixels, Dom } = load(["dom.js", "art-pixels.js"], ["ArtPixels", "Dom"]);
 
 test("a grid becomes one rect per run of a colour, and clear pixels draw nothing", () => {
   const rects = ArtPixels.draw(["aab.", ".a.b"], { a: "var(--gold)", b: "var(--ink)" });

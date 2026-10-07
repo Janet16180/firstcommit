@@ -21,7 +21,7 @@
 /* global Dom, ArtPixels */
 /* exported ArtSprites */
 
-const ArtSprites = (() => {
+const ArtSprites = (function () {
   const { tone, draw, picture, rama: ramaParts, planet: planetParts, ARROW } = ArtPixels;
 
   const RAMA_SIZES = { header: [84, 94], comms: [52, 58], here: [32, 36] };
