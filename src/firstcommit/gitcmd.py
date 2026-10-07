@@ -67,6 +67,14 @@ login and host names: no machine-dependent identity, and no login or host name i
 commit.
 """
 
+PLAYER_SETTINGS = {"core.editor": "true"}
+"""
+Settings every git the game starts keeps, the player's shell included, whatever its configuration
+files say: no editor ever opens (`BASE_CONFIG` explains why). As ``GIT_CONFIG_COUNT`` entries
+they reach a game home whose configuration is older than the setting, and outrank a
+``git config --global core.editor`` the player runs.
+"""
+
 TERMINAL_SETTINGS = {**NO_PROGRAMS, "color.ui": "never"}
 """Settings of `run_on_terminal`: `NO_PROGRAMS` and no colours, as ``GIT_CONFIG_COUNT`` entries that outrank every configuration file."""
 
@@ -83,14 +91,37 @@ def isolation(home: Path) -> dict[str, str]:
     Returns
     -------
     dict[str, str]
-        ``GIT_CONFIG_GLOBAL``, ``GIT_CONFIG_NOSYSTEM`` and ``GIT_CEILING_DIRECTORIES`` (the
-        labs folder and the lessons folder, where `firstcommit.demos` runs lessons).
+        ``GIT_CONFIG_GLOBAL``, ``GIT_CONFIG_NOSYSTEM``, ``GIT_CEILING_DIRECTORIES`` (the labs
+        folder and the lessons folder, where `firstcommit.demos` runs lessons), and
+        `PLAYER_SETTINGS` as ``GIT_CONFIG_COUNT`` entries.
     """
     return {
         "GIT_CONFIG_GLOBAL": str(home / save.GITCONFIG_FILE),
         "GIT_CONFIG_NOSYSTEM": "1",
         "GIT_CEILING_DIRECTORIES": f"{home / save.LABS_FOLDER}:{home / save.LESSONS_FOLDER}",
+        **config_entries(PLAYER_SETTINGS),
     }
+
+
+def config_entries(settings: Mapping[str, str]) -> dict[str, str]:
+    """
+    Write settings as ``GIT_CONFIG_COUNT`` entries, which outrank every configuration file (git(1)).
+
+    Parameters
+    ----------
+    settings : Mapping[str, str]
+        Setting names and values, such as ``{"core.editor": "true"}``.
+
+    Returns
+    -------
+    dict[str, str]
+        ``GIT_CONFIG_COUNT`` and a ``GIT_CONFIG_KEY_<n>`` and ``GIT_CONFIG_VALUE_<n>`` per setting.
+    """
+    entries = {"GIT_CONFIG_COUNT": str(len(settings))}
+    for index, (key, value) in enumerate(settings.items()):
+        entries[f"GIT_CONFIG_KEY_{index}"] = key
+        entries[f"GIT_CONFIG_VALUE_{index}"] = value
+    return entries
 
 
 def shell_environment(base: Mapping[str, str], home: Path) -> dict[str, str]:
@@ -155,10 +186,7 @@ def environment(base: Mapping[str, str], home: Path, author: Person, when: str |
             "GIT_COMMITTER_EMAIL": author.email,
         }
     )
-    env["GIT_CONFIG_COUNT"] = str(len(NO_PROGRAMS))
-    for index, (key, value) in enumerate(NO_PROGRAMS.items()):
-        env[f"GIT_CONFIG_KEY_{index}"] = key
-        env[f"GIT_CONFIG_VALUE_{index}"] = value
+    env.update(config_entries({**PLAYER_SETTINGS, **NO_PROGRAMS}))
     if when is not None:
         env["GIT_AUTHOR_DATE"] = when
         env["GIT_COMMITTER_DATE"] = when
@@ -252,10 +280,7 @@ def run_on_terminal(cwd: Path, *args: str) -> tuple[int, str]:
     """
     env = shell_environment(os.environ, save.home())
     env.update({"LC_ALL": "C", "TERM": "dumb", "GIT_PAGER": "cat", "GIT_EDITOR": ":", "GIT_TERMINAL_PROMPT": "0"})
-    env["GIT_CONFIG_COUNT"] = str(len(TERMINAL_SETTINGS))
-    for index, (key, value) in enumerate(TERMINAL_SETTINGS.items()):
-        env[f"GIT_CONFIG_KEY_{index}"] = key
-        env[f"GIT_CONFIG_VALUE_{index}"] = value
+    env.update(config_entries({**PLAYER_SETTINGS, **TERMINAL_SETTINGS}))
     deadline = time.monotonic() + TIMEOUT
     controller, terminal = pty.openpty()
     modes = termios.tcgetattr(terminal)

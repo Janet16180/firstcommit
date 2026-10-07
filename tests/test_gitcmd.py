@@ -77,6 +77,7 @@ def test_isolation_names_the_games_config_and_labs(tmp_path: Path) -> None:
         "GIT_CONFIG_GLOBAL": str(tmp_path / save.GITCONFIG_FILE),
         "GIT_CONFIG_NOSYSTEM": "1",
         "GIT_CEILING_DIRECTORIES": f"{tmp_path / 'labs'}:{tmp_path / 'lessons'}",
+        **gitcmd.config_entries(gitcmd.PLAYER_SETTINGS),
     }
 
 
@@ -102,7 +103,9 @@ def test_the_players_shell_keeps_its_own_settings_but_loses_inherited_git_variab
 def test_game_commands_start_from_the_players_shell_environment(tmp_path: Path) -> None:
     base = {"PATH": "/usr/bin", "GIT_WORK_TREE": "/x"}
     env = gitcmd.environment(base, tmp_path, gitcmd.GAME, None)
-    assert gitcmd.shell_environment(base, tmp_path).items() <= env.items()
+    shell = {key: value for key, value in gitcmd.shell_environment(base, tmp_path).items() if not key.startswith("GIT_CONFIG_") or key in ("GIT_CONFIG_GLOBAL", "GIT_CONFIG_NOSYSTEM")}
+    assert shell.items() <= env.items()
+    assert gitcmd.config_entries({**gitcmd.PLAYER_SETTINGS, **gitcmd.NO_PROGRAMS}).items() <= env.items()
 
 
 def test_a_missing_folder_gives_gits_own_failure_instead_of_crashing(tmp_path: Path) -> None:
@@ -217,8 +220,9 @@ def test_the_games_git_never_runs_a_signature_program_to_show_a_log(tmp_path: Pa
     assert not marker.exists()
 
 
-def test_the_players_shell_keeps_the_repositorys_own_settings(tmp_path: Path) -> None:
-    assert "GIT_CONFIG_COUNT" not in gitcmd.shell_environment({"PATH": "/usr/bin"}, tmp_path)
+def test_the_players_shell_keeps_the_repositorys_own_settings_and_only_loses_the_editor(tmp_path: Path) -> None:
+    env = gitcmd.shell_environment({"PATH": "/usr/bin"}, tmp_path)
+    assert {key: value for key, value in env.items() if key.startswith(("GIT_CONFIG_COUNT", "GIT_CONFIG_KEY", "GIT_CONFIG_VALUE"))} == gitcmd.config_entries({"core.editor": "true"})
 
 
 def test_the_games_git_never_opens_the_players_editor(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -556,3 +560,19 @@ def test_in_the_players_shell_merge_revert_and_commit_no_edit_keep_gits_message(
     subjects = gitcmd.output(project, "log", "--format=%s").splitlines()
     assert subjects[0] == "Merge branch 'side'"
     assert {"Merge branch 'other'", 'Revert "Add c"'} <= set(subjects)
+
+
+def test_an_older_game_config_or_the_players_own_editor_setting_never_opens_an_editor(game_home: Path) -> None:
+    (game_home / "gitconfig").write_text("[init]\n\tdefaultBranch = main\n[core]\n\teditor = touch editor-ran; false\n")
+    project = game_home / "labs" / "editor" / "project"
+    project.mkdir(parents=True)
+    setup = "git init -q && git config user.name Robin && git config user.email robin@example.com && echo a > map.txt && git add map.txt"
+    assert players_line(project, setup, "touch editor-ran; false") == 0
+    assert players_line(project, "git commit", "touch editor-ran; false") == 1
+    assert not (project / "editor-ran").exists()
+
+
+def test_the_isolation_sets_no_editor_as_a_setting_that_outranks_every_config_file(tmp_path: Path) -> None:
+    env = gitcmd.isolation(tmp_path)
+    entries = {env[f"GIT_CONFIG_KEY_{index}"]: env[f"GIT_CONFIG_VALUE_{index}"] for index in range(int(env["GIT_CONFIG_COUNT"]))}
+    assert entries == gitcmd.PLAYER_SETTINGS == {"core.editor": "true"}
