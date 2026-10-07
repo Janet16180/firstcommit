@@ -24,6 +24,7 @@ const REPLIES = {
   "/api/guide": record("guide"),
   "/api/press": record("press"),
   "/api/scene": {},
+  "/api/language": {},
 };
 
 function gameApi(replies = REPLIES) {
@@ -51,6 +52,7 @@ test("each action calls its route with the body the server expects", async () =>
   await game.guide();
   await game.press("alex", "push");
   await game.scene("lvl");
+  await game.language("es");
   assert.deepEqual(calls.map((call) => [call.path, call.body]), [
     ["/api/status", undefined],
     ["/api/level?id=a%20level%2Fx", undefined],
@@ -70,6 +72,7 @@ test("each action calls its route with the body the server expects", async () =>
     ["/api/guide", undefined],
     ["/api/press", { person: "alex", button: "push" }],
     ["/api/scene", { level: "lvl" }],
+    ["/api/language", { language: "es" }],
   ]);
 });
 

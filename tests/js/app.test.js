@@ -12,14 +12,14 @@ const { Dom } = load(
 );
 
 /* A fresh page with index.html's header, the given address, key and server; then app.js boots. */
-async function boot({ hash = "#/", token = "KEY", replies = {}, stored = {}, wrap = (api) => api } = {}) {
+async function boot({ hash = "#/", token = "KEY", replies = {}, stored = {}, wrap = (api) => api, browserLanguage = "en-US" } = {}) {
   const document = installBrowser();
   const { el } = Dom;
   document.body.append(
     el("header", { class: "topbar" },
-      el("nav", { class: "nav" }, el("a", { href: "#/", "data-view": "home" }, "Map"), el("a", { href: "#/cards", "data-view": "cards" }, "Cards", el("span", { class: "badge", hidden: true })), el("a", { href: "#/notes", "data-view": "notes" }, "Notes")),
+      el("nav", { class: "nav" }, el("a", { href: "#/", "data-view": "home", "data-text": "nav.map" }, "Map"), el("a", { href: "#/cards", "data-view": "cards" }, el("span", { "data-text": "nav.cards" }, "Cards"), el("span", { class: "badge", hidden: true })), el("a", { href: "#/notes", "data-view": "notes", "data-text": "nav.notes" }, "Notes")),
       el("div", { class: "player", hidden: true }, el("span", { class: "player-rank" }), el("span", { class: "meter small" }, el("i")), el("span", { class: "player-xp" })),
-      el("button", { class: "pref pref-theme" }), el("button", { class: "pref pref-sound" }),
+      el("button", { class: "pref pref-theme" }), el("button", { class: "pref pref-sound" }), el("button", { class: "pref pref-language" }),
     ),
     el("main", { id: "app" }),
     el("div", { class: "toasts" }),
@@ -28,6 +28,7 @@ async function boot({ hash = "#/", token = "KEY", replies = {}, stored = {}, wra
   const windowListeners = new Map();
   const server = fakeServer({ "/api/status": { ...record("status"), active: null }, "/api/cards": { cards: record("cards") }, "/api/notes": record("notes"), ...replies });
   const seen = { locked: 0, terminals: 0 };
+  Object.defineProperty(global, "navigator", { value: { language: browserLanguage }, configurable: true });
   Object.assign(global, {
     location: { hash, pathname: "/", search: "" },
     history: { replaceState: (state, title, address) => (global.location.hash = address.startsWith("#") ? address : "") },
@@ -255,4 +256,39 @@ test("the field guide's address shows the guide under its own head", async () =>
   const page = await boot({ hash: "#/guide" });
   assert.ok(page.main.querySelector(".field-guide"));
   assert.equal(page.document.querySelector(".topbar").hidden, true);
+});
+
+test("the page speaks the browser's language until the player picks one", async () => {
+  const page = await boot({ browserLanguage: "es-MX" });
+  assert.equal(page.document.documentElement.lang, "es");
+  assert.equal(page.document.querySelector(".nav a").textContent, "Mapa");
+  assert.equal(page.main.querySelector(".map-bar .pref-language").textContent, "English");
+  const chosen = await boot({ browserLanguage: "es-MX", stored: { "firstcommit.language": "en" } });
+  assert.equal(chosen.document.documentElement.lang, "en");
+  assert.equal(chosen.document.querySelector(".nav a").textContent, "Map");
+});
+
+test("the map bar's language button switches the page, keeps the choice, tells the server and reloads the records", async () => {
+  const page = await boot({ replies: { "/api/language": {} } });
+  page.main.querySelector(".map-bar .pref-language").click();
+  await settle();
+  await settle();
+  assert.equal(page.storage.get("firstcommit.language"), "es");
+  assert.equal(page.document.documentElement.lang, "es");
+  assert.equal(page.document.querySelector(".nav a").textContent, "Mapa");
+  assert.equal(page.document.querySelector(".topbar .pref-language").textContent, "English");
+  const paths = page.server.calls.map((call) => call.path);
+  const told = paths.indexOf("/api/language");
+  assert.deepEqual(page.server.calls[told].body, { language: "es" });
+  assert.ok(paths.lastIndexOf("/api/status") > told);
+  assert.equal(page.main.querySelector(".map-bar .pref-language").textContent, "English");
+});
+
+test("a server without the language route still switches the page's own words", async () => {
+  const page = await boot();
+  page.main.querySelector(".map-bar .pref-language").click();
+  await settle();
+  await settle();
+  assert.equal(page.document.documentElement.lang, "es");
+  assert.equal(page.document.querySelectorAll(".toast").length, 0);
 });

@@ -207,6 +207,8 @@ const createGameApi = (function () {
       press: (person, button) => checked(PRESSED, "/api/press", { person, button }),
       /* Marks a level's scene seen, so it does not play by itself again. */
       scene: (level) => checked(NOTHING, "/api/scene", { level }),
+      /* ORBIT-GAP: engine is adding POST /api/language; the records come back in this language. */
+      language: (language) => checked(NOTHING, "/api/language", { language }),
     };
   };
 })();

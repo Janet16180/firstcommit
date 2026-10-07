@@ -2,18 +2,21 @@
 
 /*
  * The page's composition root: it builds the API client, the views and the terminal, routes
- * the address to a view, keeps the header and the view preferences (light or dark, sound), and
+ * the address to a view, keeps the header and the view preferences (light or dark, sound,
+ * English or Spanish), and
  * shows what goes wrong. It holds no game rule and no game state beyond the last dashboard the
  * server sent (refreshed on every view change). The map and the level screen have their own
- * heads, so the header bar shows only over the cards and the notes; the look and sound buttons
+ * heads, so the header bar shows only over the cards and the notes; the preference buttons
  * also sit in the map's bar. Loads last; defines no global.
  */
 
-/* global createClient, createTerminal, createGameApi, Dom, Route, Sound, Dialog, ArtSky, Progress, StarMap, LevelScreen, FieldGuide, CardsView, NotesView */
+/* global createClient, createTerminal, createGameApi, Dom, Strings, Route, Sound, Dialog, ArtSky, Progress, StarMap, LevelScreen, FieldGuide, CardsView, NotesView */
 
 (function () {
   const { el } = Dom;
+  const { t } = Strings;
   const THEME_KEY = "firstcommit.theme";
+  const LANGUAGE_KEY = "firstcommit.language";
   const THEMES = ["auto", "light", "dark"];
   const TOAST_MS = 9000;
   const MONO = "\"Cascadia Mono\", \"DejaVu Sans Mono\", \"Liberation Mono\", Menlo, Consolas, monospace";
@@ -54,9 +57,7 @@
     cards: (ctx, route) => CardsView.create(ctx, route.chapter),
     notes: (ctx, route) => NotesView.create(ctx, route.chapter),
   };
-  const TITLES = { home: "Map", level: "Mission", guide: "Field guide", cards: "Cards", notes: "Notes" };
   const OWN_HEAD = ["home", "level", "guide"];
-  const THEME_LABELS = { auto: "Look: system", light: "Look: light", dark: "Look: dark" };
 
   /* client.js removes the fragment when it carries the access key; keep the address part first. */
   const firstAddress = location.hash.split("&")[0];
@@ -66,36 +67,40 @@
   const main = document.getElementById("app");
   const darkScheme = window.matchMedia("(prefers-color-scheme: dark)");
 
-  function readTheme() {
+  function readStored(key) {
     try {
-      return THEMES.includes(localStorage.getItem(THEME_KEY)) ? localStorage.getItem(THEME_KEY) : "auto";
+      return localStorage.getItem(key);
     } catch (error) {
-      return "auto"; /* Storage is blocked: follow the system for this visit. */
+      return null; /* Storage is blocked: the defaults hold for this visit. */
     }
   }
 
-  let themeChoice = readTheme();
+  function store(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch (error) {
+      /* Storage is blocked: the choice lasts for this visit. */
+    }
+  }
+
+  let themeChoice = THEMES.includes(readStored(THEME_KEY)) ? readStored(THEME_KEY) : "auto";
   const shownTheme = () => (themeChoice === "auto" ? (darkScheme.matches ? "dark" : "light") : themeChoice);
 
   function applyTheme() {
     document.documentElement.dataset.theme = shownTheme();
-    for (const button of document.querySelectorAll(".pref-theme")) button.textContent = THEME_LABELS[themeChoice];
-    if (app.terminal) app.terminal.setLook(shownTheme(), "Terminal");
+    for (const button of document.querySelectorAll(".pref-theme")) button.textContent = t(`pref.theme.${themeChoice}`);
+    if (app.terminal) app.terminal.setLook(shownTheme(), t("terminal.title"));
   }
 
   function cycleTheme() {
     themeChoice = THEMES[(THEMES.indexOf(themeChoice) + 1) % THEMES.length];
-    try {
-      localStorage.setItem(THEME_KEY, themeChoice);
-    } catch (error) {
-      /* Storage is blocked: the choice lasts for this visit. */
-    }
+    store(THEME_KEY, themeChoice);
     applyTheme();
   }
 
   function renderSound() {
     for (const button of document.querySelectorAll(".pref-sound")) {
-      button.textContent = Sound.isEnabled() ? "Sound: on" : "Sound: off";
+      button.textContent = t(Sound.isEnabled() ? "pref.sound.on" : "pref.sound.off");
       button.setAttribute("aria-pressed", String(Sound.isEnabled()));
     }
   }
@@ -105,10 +110,39 @@
     renderSound();
   }
 
-  /* New look and sound buttons, for a view's own bar. */
+  /* The page's own words; the records the server sends switch when it is told the language. */
+  function applyLanguage(language) {
+    Strings.use(language);
+    document.documentElement.lang = Strings.language();
+    for (const node of document.querySelectorAll("[data-text]")) node.textContent = t(node.dataset.text);
+    for (const button of document.querySelectorAll(".pref-theme")) button.title = t("pref.theme.tip");
+    for (const button of document.querySelectorAll(".pref-sound")) button.title = t("pref.sound.tip");
+    for (const button of document.querySelectorAll(".pref-language")) {
+      button.textContent = t("pref.language");
+      button.title = t("pref.language.tip");
+    }
+    applyTheme();
+    renderSound();
+  }
+
+  async function switchLanguage() {
+    const language = Strings.language() === "es" ? "en" : "es";
+    store(LANGUAGE_KEY, language);
+    applyLanguage(language);
+    try {
+      await game.language(language);
+    } catch (error) {
+      /* ORBIT-GAP: until engine's route lands, only the page's own words switch. */
+      if (error.status !== 404) throw error;
+    }
+    show(Route.parse(location.hash));
+  }
+
+  /* New look, sound and language buttons, for a view's own bar. */
   const prefButtons = () => [
-    el("button", { type: "button", class: "btn btn-quiet pref pref-theme", title: "Light, dark, or as your system is set", onclick: cycleTheme }, THEME_LABELS[themeChoice]),
-    el("button", { type: "button", class: "btn btn-quiet pref pref-sound", title: "Soft sound effects, made in your browser", "aria-pressed": String(Sound.isEnabled()), onclick: toggleSound }, Sound.isEnabled() ? "Sound: on" : "Sound: off"),
+    el("button", { type: "button", class: "btn btn-quiet pref pref-theme", title: t("pref.theme.tip"), onclick: cycleTheme }, t(`pref.theme.${themeChoice}`)),
+    el("button", { type: "button", class: "btn btn-quiet pref pref-sound", title: t("pref.sound.tip"), "aria-pressed": String(Sound.isEnabled()), onclick: toggleSound }, t(Sound.isEnabled() ? "pref.sound.on" : "pref.sound.off")),
+    el("button", { type: "button", class: "btn btn-quiet pref pref-language", lang: Strings.language() === "es" ? "en" : "es", title: t("pref.language.tip"), onclick: switchLanguage }, t("pref.language")),
   ];
 
   function renderHeader() {
@@ -122,13 +156,13 @@
     const badge = document.querySelector(".nav .badge");
     badge.hidden = status.cards_due === 0;
     badge.textContent = String(status.cards_due);
-    badge.setAttribute("aria-label", `${status.cards_due} due`);
+    badge.setAttribute("aria-label", t("nav.due", { count: status.cards_due }));
   }
 
   function toast(message) {
     const item = el("div", { class: "toast", role: "alert" },
       el("p", {}, message),
-      el("button", { type: "button", class: "link-button", onclick: () => item.remove() }, "Dismiss"),
+      el("button", { type: "button", class: "link-button", onclick: () => item.remove() }, t("toast.dismiss")),
     );
     document.querySelector(".toasts").append(item);
     setTimeout(() => item.remove(), TOAST_MS);
@@ -137,19 +171,21 @@
   /* A 500 says its kind in the reply: "save" for a damaged save file. Anything else, a 500
      without a kind included, is a bug, which starting over would not fix. */
   const damagedSave = (error) => error.status === 500 && Boolean(error.data) && error.data.kind === "save";
-  const BUG_DETAILS = "The details are in the terminal where firstcommit is running.";
 
   /* The last resort for errors no view handled. */
   function report(error) {
     if (app.locked || (error && error.status === 403)) return;
     const status = error ? error.status : undefined;
     const detail = error && error.message ? error.message : String(error);
-    let message = `Something went wrong: ${detail}`;
-    if (status === 0) message = "The game server did not answer. Is `firstcommit` still running in your terminal?";
-    else if (damagedSave(error)) message = `Your saved game is damaged: ${detail}. Open the map to start over.`;
-    else if (status === 500) message = `The game hit a bug: ${detail}. ${BUG_DETAILS}`;
+    let message = t("error.any", { detail });
+    if (status === 0) message = t("error.down");
+    else if (damagedSave(error)) message = t("error.damaged", { detail });
+    else if (status === 500) message = t("error.bug", { detail });
     toast(message);
   }
+
+  /* A paragraph whose commands, between backticks in the string, show as code. */
+  const say = (key) => el("p", {}, Strings.parts(key).map((part) => (typeof part === "string" ? part : el("code", {}, part.code))));
 
   function showScreen(title, ...body) {
     if (app.view && app.view.dispose) app.view.dispose();
@@ -158,16 +194,16 @@
   }
 
   function showLocked() {
-    showScreen("Open the game from its link", el("p", {}, "This page needs the link that ", el("code", {}, "firstcommit"), " printed in your terminal when it started: the link carries the key that lets the page talk to the game."), el("p", {}, "Find the line that starts with http://localhost in that terminal and open it (Ctrl+click in most terminals)."));
+    showScreen(t("locked.title"), say("locked.why"), say("locked.how"));
     app.locked = true;
   }
 
   async function startOver() {
     const sure = await Dialog.confirm({
-      title: "Start over?",
-      text: "This erases your progress and makes a fresh save. It cannot be undone.",
-      confirm: "Start over",
-      cancel: "Not now",
+      title: t("restart.title"),
+      text: t("restart.text"),
+      confirm: t("restart.confirm"),
+      cancel: t("restart.cancel"),
       danger: true,
     });
     if (!sure) return;
@@ -176,18 +212,18 @@
   }
 
   function showBug(message) {
-    showScreen("The game hit a bug",
+    showScreen(t("bug.title"),
       el("p", {}, message),
-      el("p", {}, BUG_DETAILS, " Starting over would not help: try again, and if it keeps happening, those details say what went wrong."),
-      el("div", { class: "actions" }, el("button", { type: "button", class: "btn btn-primary", onclick: () => show(Route.parse(location.hash)) }, "Try again")),
+      el("p", {}, `${t("error.details")} ${t("bug.retry")}`),
+      el("div", { class: "actions" }, el("button", { type: "button", class: "btn btn-primary", onclick: () => show(Route.parse(location.hash)) }, t("bug.again"))),
     );
   }
 
   function showDamaged(message) {
-    showScreen("Your saved game is damaged",
+    showScreen(t("damaged.title"),
       el("p", {}, message),
-      el("p", {}, "This happens when a save file is edited by hand or cut short. Starting over makes a fresh save; you can also run ", el("code", {}, "firstcommit reset --yes"), " in a terminal."),
-      el("div", { class: "actions" }, el("button", { type: "button", class: "btn btn-danger start-over", onclick: startOver }, "Start over")),
+      say("damaged.why"),
+      el("div", { class: "actions" }, el("button", { type: "button", class: "btn btn-danger start-over", onclick: startOver }, t("restart.confirm"))),
     );
   }
 
@@ -206,7 +242,7 @@
       if (!app.terminal) {
         app.terminal = createTerminal({ protocol: "firstcommit", token: client.token, command: "firstcommit", looks: TERMINAL_LOOKS, storagePrefix: "firstcommit.", openFromHeight: 0, onUnreachable: probe });
         app.terminalFor = key;
-        app.terminal.setLook(shownTheme(), "Terminal");
+        app.terminal.setLook(shownTheme(), t("terminal.title"));
       }
       host.append(app.terminal.element);
       app.terminal.start();
@@ -254,7 +290,7 @@
     try {
       await refresh();
     } catch (error) {
-      if (error.status === 0) showScreen("Cannot reach the game", el("p", {}, "Is ", el("code", {}, "firstcommit"), " still running in your terminal? Start it again and open the link it prints."));
+      if (error.status === 0) showScreen(t("unreachable.title"), say("unreachable.text"));
       else if (damagedSave(error)) showDamaged(error.message);
       else if (error.status === 500) showBug(error.message);
       else if (error.status !== 403) throw error;
@@ -264,7 +300,7 @@
     app.view = VIEWS[route.view](ctx, route);
     main.replaceChildren(app.view.element);
     document.querySelector(".topbar").hidden = OWN_HEAD.includes(route.view);
-    document.title = `${TITLES[route.view]} · First Commit`;
+    document.title = `${t(`view.${route.view}`)} · ${t("app.title")}`;
     for (const link of document.querySelectorAll(".nav a")) link.toggleAttribute("aria-current", link.dataset.view === route.view);
     main.focus({ preventScroll: true });
     window.scrollTo(0, 0);
@@ -277,11 +313,11 @@
 
   function boot() {
     document.body.prepend(ArtSky.dust("first-commit"));
-    applyTheme();
-    renderSound();
+    applyLanguage(readStored(LANGUAGE_KEY) || Strings.guess(navigator.language));
     darkScheme.addEventListener("change", applyTheme);
     document.querySelector(".pref-theme").addEventListener("click", cycleTheme);
     document.querySelector(".pref-sound").addEventListener("click", toggleSound);
+    document.querySelector(".pref-language").addEventListener("click", switchLanguage);
     for (const type of ["pointerdown", "keydown"]) document.addEventListener(type, Sound.unlock);
     document.addEventListener("keydown", releaseTerminalFocus, true);
     document.addEventListener("keydown", (event) => app.view && app.view.keydown && app.view.keydown(event));
