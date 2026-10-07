@@ -1283,9 +1283,9 @@ def test_observing_tells_the_commands_typed_since_the_last_observation_once(samp
     shell, env, folder = game.shell_command(), game.shell_environment(terminal.player_env(os.environ)), Path(game.terminal_folder())
     typist(shell, env, folder, [(b"git status --short\n", b"$ ")])
     assert game.observe()["commands"] == []
-    typist(shell, env, folder, [(b"git add hello.txt\n", b"$ "), (b"git commit -q -m Hello\n", b"$ ")])
+    typist(shell, env, folder, [(b"git add hello.txt\n", b"$ "), (b"git commit -q\n", b"$ ")])
     observed = game.observe()
-    assert observed["commands"] == [{"line": "git add hello.txt", "status": 0}, {"line": "git commit -q -m Hello", "status": 128}]
+    assert observed["commands"] == [{"line": "git add hello.txt", "status": 0}, {"line": "git commit -q", "status": 1}]
     assert [event["kind"] for event in observed["events"]] == ["file-staged"]
     assert game.observe()["commands"] == []
 
@@ -1471,6 +1471,8 @@ def test_a_refused_press_comes_with_its_explanation_and_its_fix(playground_level
     unstaged = game.press("alex", "commit")
     assert (unstaged["press"]["status"], unstaged["fix"], unstaged["fix_line"]) == (1, "add:notes.txt", "")
     assert unstaged["explanation"] == markup.parse(explanations.EXPLANATIONS["E8"])
+    for key in ("user.name", "user.email"):
+        gitcmd.output(save.home(), "config", "--global", "--unset", key)
     game.press("you", "edit:notes.txt")
     game.press("you", "add:notes.txt")
     nameless = game.press("you", "commit")

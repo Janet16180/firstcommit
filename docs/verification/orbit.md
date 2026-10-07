@@ -432,3 +432,13 @@ Checked the same way as the vault deck: each `verify` snippet runs in `tests/tes
 | `mothership-push-upstream` | `git push -u origin main` records `origin/main` as the upstream; `--set-upstream` is the long name | `verify`; git-push(1) `-u, --set-upstream` |
 | `mothership-refused-push` | a refused push changes nothing here or on the remote; pull first, then push | `verify`: both tips unchanged; git-push(1) NOTE ABOUT FAST-FORWARDS |
 | notes | as the cards above; a remote is GitHub at work and a folder in the game | `Lab.github_url`; the cards |
+
+## The player signs as Cadet (added 2026-10-07)
+
+`gitcmd.BASE_CONFIG` sets `user.name = Cadet` and `user.email = cadet@example.com` and keeps
+`user.useConfigOnly = true`; `gitcmd.ensure_config` adds both to an older game config that has
+neither. *Re-checked* by `tests/test_gitcmd.py`: a commit in the player's shell is by
+`Cadet <cadet@example.com>`; after `git config --global user.name` and `user.email` in that shell
+(they write the game's config, E22), the next commit is by the player's name; an older config is
+signed once and keeps its other settings; one with only a name is left alone. With the identity
+unset (the playground tests), a commit still stops as before (E21).

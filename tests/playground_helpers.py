@@ -33,9 +33,8 @@ def new_lab(identity: bool = True) -> Iterator[Lab]:
         The lab: GitHub and both clones.
     """
     save.ensure_gitconfig(gitcmd.BASE_CONFIG)
-    if identity:
-        gitcmd.output(save.home(), "config", "--global", "user.name", PLAYER.name)
-        gitcmd.output(save.home(), "config", "--global", "user.email", PLAYER.email)
+    for key, value in (("user.name", PLAYER.name), ("user.email", PLAYER.email)):
+        gitcmd.output(save.home(), "config", "--global", *((key, value) if identity else ("--unset", key)))
     labs = save.home() / save.LABS_FOLDER
     labs.mkdir(exist_ok=True)
     with tempfile.TemporaryDirectory(dir=labs) as root:

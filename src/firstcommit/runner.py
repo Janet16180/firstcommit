@@ -770,7 +770,7 @@ def start_lab(level: Level) -> kit.State:
     """
     Build a fresh lab for a level: remove every lab, make an empty one, and run the level's setup.
 
-    The game's git configuration is created first if it is missing (never overwritten), so
+    The game's git configuration is made ready first (`firstcommit.gitcmd.ensure_config`), so
     setup and the player's ``git init`` start from `firstcommit.gitcmd.BASE_CONFIG`. If setup
     fails, its lab is removed and the error raised again.
 
@@ -791,7 +791,7 @@ def start_lab(level: Level) -> kit.State:
     """
     lab = lab_of(level.id)
     remove_labs()
-    save.ensure_gitconfig(gitcmd.BASE_CONFIG)
+    gitcmd.ensure_config()
     lab.root.mkdir(parents=True)
     try:
         state = level.setup(lab)

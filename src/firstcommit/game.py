@@ -937,7 +937,7 @@ def reset() -> None:
     with save.lock():
         runner.remove_labs()
         save.erase()
-        save.ensure_gitconfig(gitcmd.BASE_CONFIG)
+        gitcmd.ensure_config()
 
 
 def due_cards(chapter: str | None, limit: int) -> list[CardView]:
@@ -1058,7 +1058,7 @@ def shell_environment(base: Mapping[str, str]) -> dict[str, str]:
     dict[str, str]
         ``base`` without its git variables, plus the game's isolation.
     """
-    save.ensure_gitconfig(gitcmd.BASE_CONFIG)
+    gitcmd.ensure_config()
     return gitcmd.shell_environment(base, save.home())
 
 
