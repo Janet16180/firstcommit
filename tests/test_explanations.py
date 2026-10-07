@@ -27,7 +27,11 @@ CATALOGUE = frozenset(
         *(f"{kind}:{name}" for kind in ("edit", "delete", "add", "keep-ours", "keep-theirs") for name in TABLE_FILES),
     ]
 )
-"""Every button of the playgrounds the table was recorded in, by id."""
+"""Every button of the one-person playgrounds the table was recorded in, by id."""
+TWO_PEOPLE_CATALOGUE = frozenset(button for button in CATALOGUE if button.partition(":")[0] not in ("init", "clone", "delete"))
+"""The buttons of the two-person playground the table was recorded in."""
+REWORDED = {"records its author's name and email": "records who made it, with a name and an email"}
+"""Words the game changed after the table was recorded: git names the committer, not the author, when a merge commit has no identity."""
 OWN_FILES = {"you": "you.txt", "alex": "alex.txt"}
 """The file each person's edit and add acted on in the two-person playground the table was recorded in, whose ids named no file."""
 
@@ -70,7 +74,7 @@ def recorded_facts(case: dict[str, Any]) -> records.Facts:
     return {"github": github if github["exists"] else None, "folder": case["folder"], "config": case["config"]}
 
 
-def explained(case: dict[str, Any], buttons: frozenset[str] = CATALOGUE) -> explanations.Explanation:
+def explained(case: dict[str, Any], buttons: frozenset[str] | None = None) -> explanations.Explanation:
     """
     Explain a recorded case.
 
@@ -78,8 +82,8 @@ def explained(case: dict[str, Any], buttons: frozenset[str] = CATALOGUE) -> expl
     ----------
     case : dict[str, Any]
         A case of the table.
-    buttons : frozenset[str]
-        The playground's buttons.
+    buttons : frozenset[str] | None
+        The playground's buttons, or None for those of the playground it was recorded in.
 
     Returns
     -------
@@ -87,17 +91,22 @@ def explained(case: dict[str, Any], buttons: frozenset[str] = CATALOGUE) -> expl
         What `explanations.explain` gives for it.
     """
     place = "project" if case["who"] == "you" else "teammate"
-    return explanations.explain(recorded_press(case), case["before"][place], case["after"][place], recorded_facts(case), buttons)
+    recorded_in = TWO_PEOPLE_CATALOGUE if case["before"]["teammate"]["exists"] else CATALOGUE
+    found = explanations.explain(recorded_press(case), case["before"][place], case["after"][place], recorded_facts(case), recorded_in if buttons is None else buttons)
+    return found
 
 
 @pytest.mark.parametrize("key", list(PRESSED))
 def test_every_recorded_press_gets_its_recorded_explanation_and_fix(key: str) -> None:
     case = PRESSED[key]
     expected = case["explanation"]
+    text = expected["text"]
+    for old, new in REWORDED.items():
+        text = text.replace(old, new)
     assert explained(case) == {
         "tag": expected["tag"],
         "file": expected["file"],
-        "text": expected["text"],
+        "text": text,
         "fix": case["fix"]["button"],
         "fix_line": case["fix"]["line"],
     }
