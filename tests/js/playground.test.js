@@ -182,10 +182,12 @@ test("your presses offer their line and the fix's line to type in the terminal; 
   assert.equal(run.q(".pg-result").querySelectorAll("button.type-command").length, 0);
 });
 
-test("a button the server found off says why in the result, and is announced", () => {
+test("a button the server found off says why in the result, as one paragraph, and is announced", () => {
   const run = panel();
   run.draw(observation());
   run.refused("There is no notes.txt to delete.");
-  assert.match(run.q(".pg-result").textContent, /There is no notes\.txt to delete\./);
+  const paragraphs = [...run.q(".pg-result").querySelectorAll("p")].map((node) => node.textContent);
+  assert.deepEqual(paragraphs, ["That button cannot be pressed now. There is no notes.txt to delete."]);
+  assert.ok(run.q(".pg-result .pg-status.is-refused"));
   assert.equal(run.q('[aria-live="polite"]').textContent, "That button cannot be pressed now. There is no notes.txt to delete.");
 });

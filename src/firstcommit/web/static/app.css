@@ -1577,6 +1577,10 @@ input[type="text"]::placeholder {
   font-weight: 650;
 }
 
+.pg-refusal {
+  margin: 0;
+}
+
 .pg-status.is-done {
   color: var(--accent-strong);
 }

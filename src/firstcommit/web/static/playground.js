@@ -162,7 +162,7 @@ const PlaygroundPanel = (function () {
   }
 
   function refused(panel, reason) {
-    panel.box.replaceChildren(el("p", { class: "pg-ran" }, el("span", { class: "pg-status is-refused" }, OFF)), el("p", {}, reason));
+    panel.box.replaceChildren(el("p", { class: "pg-refusal" }, el("span", { class: "pg-status is-refused" }, OFF), " ", reason));
     panel.box.hidden = false;
     panel.announce.textContent = `${OFF} ${reason}`;
   }
