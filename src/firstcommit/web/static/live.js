@@ -4,7 +4,9 @@
  * The live panel beside the terminal: the player's repository as a commit graph, the
  * stand-in GitHub when the level has one, the three areas strip, and "what just happened",
  * all from /api/observe (firstcommit/game.py's Observation). It redraws a part only when its
- * snapshot changed, and marks the commits that are new since the last drawing. Needs dom.js,
+ * snapshot changed, and marks the commits that are new since the last drawing. On a playground
+ * (an observation with the teammate's clone), the places part holds the playground panel
+ * instead, and the teammate's events join the feed, each saying where it happened. Needs dom.js,
  * markup.js and map.js. Defines one global, LivePanel.
  */
 
@@ -19,7 +21,9 @@ const LivePanel = (function () {
     github: "GitHub (the practice copy)",
     areas: "The three areas",
     places: "The four places",
+    playground: "You, GitHub and Alex",
     feed: "What just happened",
+    teammate: "On Alex's computer:",
     quiet: "Nothing yet. Type a command in the terminal and watch this space.",
   };
 
@@ -27,6 +31,22 @@ const LivePanel = (function () {
   const mergeEvents = (feed, events, at, max = MAX_EVENTS) => [...events.map((event) => ({ ...event, at })), ...feed].slice(0, max);
 
   const hashes = (snapshot) => new Set(snapshot.commits.map((commit) => commit.hash));
+
+  /* Names a part: its heading, and its section's label. */
+  function retitle(heading, name) {
+    heading.textContent = name;
+    heading.parentNode.setAttribute("aria-label", name);
+  }
+
+  /* A feed event's words, after where it happened when that was the teammate's clone (`teammate`, the title saying so). */
+  const where = (event, teammate) => (event.teammate ? `${teammate} ` : "");
+  const time = (date) => date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+
+  /* The feed's items, those seen `at` marked fresh. */
+  const feedItems = (feed, at, teammate) => feed.map((event) => el("li", { "data-kind": event.kind, class: event.at === at ? "is-fresh" : null },
+    el("time", {}, time(event.at)),
+    el("div", { class: "feed-text" }, event.teammate && el("span", { class: "feed-where" }, where(event, teammate)), Markup.render(event.text)),
+  ));
 
   /* The panel's parts: the timelines cards, the feed and the three areas; with places, the places
      part first and the feed under it, and no cards. */
@@ -55,13 +75,15 @@ const LivePanel = (function () {
 
   /* options: theme (RepoMap's), words (this panel's titles), now (a clock), onChange({newCommits, events}),
      play(figure, before, after, {theme, showHead}) to move a map redrawn after a change from its
-     drawing before (the snapshots before and after), and places ({commands, render, play}, as
+     drawing before (the snapshots before and after), places ({commands, render, play}, as
      TimePlaces) to draw the player's places instead: they then hold the timelines too, so they
-     take the maps' place at the top, with the feed under them, and the strip goes. */
-  function create({ theme = RepoMap.DEFAULT_THEME, words = {}, now = () => new Date(), onChange = () => {}, play = () => {}, places = null } = {}) {
+     take the maps' place at the top, with the feed under them, and the strip goes; and
+     playground ({element, draw(observation, {person})}, as PlaygroundPanel), which takes the
+     places' part for a lab with a teammate. */
+  function create({ theme = RepoMap.DEFAULT_THEME, words = {}, now = () => new Date(), onChange = () => {}, play = () => {}, places = null, playground = null } = {}) {
     const titles = { ...WORDS, ...words };
     const { element, projectBox, githubBox, githubPart, areasBox, areasTitle, feedList, quiet, announce } = skeleton(titles, places !== null);
-    const drawn = { project: null, github: null, files: null, places: null };
+    const drawn = { project: null, github: null, files: null, places: null, playground: null };
     let feed = [];
 
     function drawMap(box, key, snapshot, showHead) {
@@ -94,9 +116,7 @@ const LivePanel = (function () {
       drawn.places = text;
       const commands = before ? places.commands(events, before.project, project) : [];
       const figure = places.render(after, { commands });
-      const name = github ? titles.places : titles.areas;
-      areasTitle.textContent = name;
-      areasTitle.parentNode.setAttribute("aria-label", name);
+      retitle(areasTitle, github ? titles.places : titles.areas);
       areasBox.replaceChildren(figure);
       if (!before) return 0;
       places.play(figure, { before, after, commands });
@@ -104,25 +124,37 @@ const LivePanel = (function () {
       return project.commits.filter((commit) => !previous.has(commit.hash)).length;
     }
 
+    /* The playground in the places part, put there once; gives how many commits are new in your
+       repository since the drawing before. */
+    function drawPlayground(observation, person) {
+      if (areasBox.firstChild !== playground.element) {
+        areasBox.replaceChildren(playground.element);
+        retitle(areasTitle, titles.playground);
+      }
+      const previous = drawn.playground && hashes(drawn.playground);
+      drawn.playground = observation.project;
+      playground.draw(observation, { person });
+      return previous ? observation.project.commits.filter((commit) => !previous.has(commit.hash)).length : 0;
+    }
+
     function drawFeed(events) {
       if (!events.length) return;
       const at = now();
       feed = mergeEvents(feed, events, at);
-      const time = (date) => date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-      feedList.replaceChildren(...feed.map((event) => el("li", { "data-kind": event.kind, class: event.at === at ? "is-fresh" : null },
-        el("time", {}, time(event.at)),
-        el("div", { class: "feed-text" }, Markup.render(event.text)),
-      )));
+      feedList.replaceChildren(...feedItems(feed, at, titles.teammate));
       quiet.hidden = true;
-      announce.textContent = events.map((event) => Markup.plain(event.text)).join(" ");
+      announce.textContent = events.map((event) => `${where(event, titles.teammate)}${Markup.plain(event.text)}`).join(" ");
     }
 
     return {
       element,
 
-      update(observation) {
+      /* Draws an observation; after a playground press, `person` is who pressed. */
+      update(observation, { person = null } = {}) {
         let newCommits = 0;
-        if (places) {
+        if (playground && observation.teammate) {
+          newCommits = drawPlayground(observation, person);
+        } else if (places) {
           newCommits = drawPlaces(observation);
         } else {
           newCommits = drawMap(projectBox, "project", observation.project, true);
@@ -130,7 +162,7 @@ const LivePanel = (function () {
           if (observation.github) drawMap(githubBox, "github", observation.github, false);
           drawAreas(observation.project.files);
         }
-        drawFeed(observation.events);
+        drawFeed([...observation.events, ...observation.teammate_events.map((event) => ({ ...event, teammate: true }))]);
         onChange({ newCommits, events: observation.events });
       },
     };

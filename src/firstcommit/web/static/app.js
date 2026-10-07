@@ -7,7 +7,7 @@
  * server sent (refreshed on every view change). Loads last; defines no global.
  */
 
-/* global createClient, createTerminal, createGameApi, Dom, Route, Sound, Celebrate, Dialog, TimeTheme, TimeMotion, TimePlaces, TimeGuide, Progress, HomeView, LevelPage, CardsView, NotesView */
+/* global createClient, createTerminal, createGameApi, Dom, Route, Sound, Celebrate, Dialog, TimeTheme, TimeMotion, TimePlaces, TimeShare, TimeGuide, Progress, HomeView, LevelPage, CardsView, NotesView */
 
 (function () {
   const { el } = Dom;
@@ -209,6 +209,7 @@
     panelWords: TimeTheme.panel,
     playMap: TimeMotion.playMap,
     places: TimePlaces.withTheme(TimeTheme.withGuide(mapGuide, TimeTheme.live)),
+    share: TimeShare,
     reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     terminal,
   };

@@ -125,20 +125,81 @@ class ObjectInfo(TypedDict):
 
 Who = Literal["you", "alex"]
 """The two people of the playground (`firstcommit.playground`), who share one remote."""
-Button = Literal["edit", "add", "commit", "push", "fetch", "pull", "pull-no-rebase", "status"]
-"""The playground's buttons: each person has all of them."""
+Button = Literal["edit", "add", "commit", "push", "fetch", "pull", "pull-no-rebase", "status", "merge-abort", "keep-ours", "keep-theirs"]
+"""
+The kinds of the playground's buttons. A button's id is its kind, or ``"<kind>:<file>"`` for a
+kind that acts on one file (``"add:notes.txt"``, ``"keep-ours:README.md"``).
+"""
+
+
+class ButtonView(TypedDict):
+    """
+    A playground button as the page draws it now.
+
+    ``id`` is what the page sends back to press it; ``line`` is the exact line it runs in the
+    current state; ``off`` says why it cannot be pressed now, or is empty.
+    """
+
+    id: str
+    label: str
+    line: str
+    off: str
 
 
 class Press(TypedDict):
     """
-    One press of a playground button: who pressed which button, the command it ran, and what that printed.
+    One press of a playground button: who pressed which button (its id), the command it ran, and what that printed.
 
     ``command`` is exactly what ran, as the player could type it; ``status`` is its exit status
     and ``output`` its standard output and error, interleaved, as a terminal shows them.
     """
 
     person: Who
-    button: Button
+    button: str
     command: str
     status: int
     output: str
+
+
+FileKind = Literal["file", "missing", "other"]
+"""What a path is in a working folder: a regular file, nothing, or anything else (a folder, a link)."""
+
+
+class FolderFacts(TypedDict):
+    """
+    A person's playground folder, as its buttons and their explanations need it, read from disk.
+
+    ``usable`` says that the folder is where the lab puts it, with no link on the way; the other
+    fields are empty when it is not. ``kinds`` says what each button file is there; ``lines``
+    counts the line breaks of each regular one (in its first 64 KiB), and ``marked`` lists, sorted,
+    those holding a conflict marker line. ``locked`` says whether ``.git/index.lock`` exists:
+    a git command is changing the staging area, or stopped halfway.
+    """
+
+    usable: bool
+    kinds: dict[str, FileKind]
+    lines: dict[str, int]
+    marked: list[str]
+    locked: bool
+
+
+class ConfigFacts(TypedDict):
+    """What a person's repository configuration holds: a name and an email, a remote, and an upstream for the current branch."""
+
+    name: bool
+    email: bool
+    remote: bool
+    upstream: bool
+
+
+class Facts(TypedDict):
+    """
+    What a press's explanation is chosen from, besides the person's repository before and after it.
+
+    All of it is read just before the press. ``github`` is the stand-in GitHub then, or None
+    in a playground without one.
+    """
+
+    github: Snapshot | None
+    folder: FolderFacts
+    config: ConfigFacts

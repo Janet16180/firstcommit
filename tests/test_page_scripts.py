@@ -127,9 +127,9 @@ def choices_in_api_js(name: str) -> list[str]:
     return re.findall(r'"([^"]+)"', found.group(1))
 
 
-def test_the_page_accepts_exactly_the_playgrounds_people_and_buttons() -> None:
+def test_the_page_accepts_exactly_the_playgrounds_people_and_button_ids() -> None:
     assert choices_in_api_js("WHO") == list(get_args(records.Who)) == list(playground.PEOPLE)
-    assert choices_in_api_js("BUTTON") == list(get_args(records.Button)) == list(playground.BUTTONS)
+    assert choices_in_api_js("BUTTON") == sorted(playground.BUTTON_IDS)
 
 
 def test_a_record_with_a_missing_or_extra_field_is_caught() -> None:
