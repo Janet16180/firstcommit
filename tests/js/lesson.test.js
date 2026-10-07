@@ -5,7 +5,7 @@ const test = require("node:test");
 const { makeEvent } = require("./fakedom");
 const { createClock, installBrowser, load, record } = require("./load");
 
-installBrowser();
+const document = installBrowser();
 const { LessonPlayer, TimePlaces } = load(["dom.js", "markup.js", "map.js", "theme-time.js", "theme-time-motion.js", "theme-time-places.js", "lesson.js"], ["LessonPlayer", "TimePlaces"]);
 
 /* A lesson player, moved on with Next to the slide numbered `slide` (from 1). */
@@ -230,4 +230,29 @@ test("a places slide shown finished at once does not move, but still lights its 
   await early.clock.advance(10000);
   assert.deepEqual(plays, []);
   for (const view of [early, back, still]) assert.ok(view.q(".tt-arrow.is-commit.is-active"));
+});
+
+test("a places slide's commands keep one height and scroll to the newest line, so the places stay put; other slides' do not", async () => {
+  const proto = Object.getPrototypeOf(document.createElement("ol"));
+  Object.defineProperty(proto, "scrollHeight", { get: () => 480, configurable: true });
+  try {
+    const view = player({ slide: 3, lesson: placesLesson(), places: TimePlaces });
+    await view.clock.advance(LessonPlayer.FIRST_LINE_MS);
+    assert.ok(view.q(".transcript").classList.contains("is-capped"));
+    assert.equal(view.q(".transcript").scrollTop, 480, "scrolled to the newest line");
+    const map = player({ slide: 3 });
+    assert.ok(!map.q(".transcript").classList.contains("is-capped"));
+  } finally {
+    delete proto.scrollHeight;
+  }
+});
+
+test("a places slide asks for the compact places, before its commands and after them", async () => {
+  const asked = [];
+  const places = { ...TimePlaces, render: (observation, options) => { asked.push(options); return TimePlaces.render(observation, options); } };
+  const view = player({ slide: 3, lesson: placesLesson(), places });
+  await finishCommitSlide(view);
+  assert.ok(asked.length >= 2);
+  assert.ok(asked.every((options) => options.compact === true));
+  assert.deepEqual(asked.at(-1).commands, ["commit"]);
 });

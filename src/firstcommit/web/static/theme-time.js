@@ -145,15 +145,18 @@ const TimeTheme = (function () {
     return svg("svg", { class: `tt-mark is-${entry}`, width: 22, height: 22, viewBox, "aria-hidden": "true", focusable: "false" }, picture);
   }
 
+  /* What the key says after a picture's words, on its own, so a compact figure can leave it out. */
+  const keyMeaning = (text) => el("span", { class: "tt-key-meaning" }, `: ${text}`);
+
   /* The key under the map; `guide` (TimeGuide's) adds its button at the end of HEAD's line. */
   function key({ snapshot, map, theme }, guide = null) {
     const { words } = theme;
     return el("div", { class: "map-key tt-key" },
-      el("p", { class: "tt-key-now" }, mark("now", theme), el("span", {}, el("b", {}, words.now), ": ", snapshot.branch ? words.here : words.hereDetached), guide && guide.button()),
+      el("p", { class: "tt-key-now" }, mark("now", theme), el("span", {}, el("b", {}, words.now), keyMeaning(snapshot.branch ? words.here : words.hereDetached)), guide && guide.button()),
       el("ul", { class: "tt-legend", "aria-label": words.legend },
         legend(map).map((entry) => {
           const [metaphor, git, meaning] = LEGEND[entry];
-          return el("li", {}, mark(entry, theme), el("span", {}, metaphor || words[entry], " = ", el("b", {}, git), meaning && `: ${meaning}`));
+          return el("li", {}, mark(entry, theme), el("span", {}, metaphor || words[entry], " = ", el("b", {}, git), meaning && keyMeaning(meaning)));
         }),
       ),
     );

@@ -22,8 +22,9 @@ const LessonPlayer = (function () {
   /* How long a line stays the newest: long enough to read the command and its output. */
   const lineDelay = (line) => Math.min(5000, Math.max(1400, 800 + 25 * (line.command.length + line.output.length)));
 
-  function transcript(lines, shown) {
-    return el("ol", { class: "transcript", "aria-label": "Commands and their output" },
+  /* `capped`: the list keeps one height and scrolls (a places slide, whose figure is tall). */
+  function transcript(lines, shown, capped) {
+    return el("ol", { class: capped ? "transcript is-capped" : "transcript", "aria-label": "Commands and their output" },
       lines.map((line, index) => el("li", { class: index < shown ? "transcript-line" : "transcript-line is-pending", "aria-hidden": index < shown ? null : "true" },
         el("code", { class: "transcript-command" }, el("span", { class: "prompt", "aria-hidden": "true" }, "$ "), line.command),
         line.output && el("pre", { class: "transcript-output" }, line.output.replace(/\n$/, "")),
@@ -31,8 +32,9 @@ const LessonPlayer = (function () {
     );
   }
 
-  /* What a "places" slide shows: your repository before the slide's commands or after them (a
-     lesson's frames hold no GitHub), and, after them, the commands its change lit. */
+  /* What a "places" slide shows, in the places' compact form: your repository before the slide's
+     commands or after them (a lesson's frames hold no GitHub), and, after them, the commands its
+     change lit. */
   function placesTransition(slide, before, places) {
     const [was, now] = [{ project: before.map, github: null }, { project: slide.map, github: null }];
     return { before: was, after: now, commands: places.commands(slide.events, before.map, slide.map) };
@@ -50,10 +52,17 @@ const LessonPlayer = (function () {
       objects: () => RepoMap.renderObjects(objects, { theme, previous: previousObjects }),
       places: () => {
         const { before: was, after: now, commands } = placesTransition(slide, before, places);
-        return done ? places.render(now, { commands }) : places.render(was);
+        return done ? places.render(now, { commands, compact: true }) : places.render(was, { compact: true });
       },
     };
     return views[slide.view] ? views[slide.view]() : null;
+  }
+
+  /* A slide's figure: its commands, capped on a places slide (whose figure is tall), and its
+     repository, before the commands or after them; either may be null. */
+  function figureParts(slide, before, lines, shown, { theme, places }) {
+    const commands = lines.length ? transcript(lines, shown, slide.view === "places") : null;
+    return [commands, picture(slide, before, shown >= lines.length, theme, places)];
   }
 
   /* Moves a slide's figure once its last command has shown: a map from the slide before's map,
@@ -102,10 +111,10 @@ const LessonPlayer = (function () {
     /* `finished`: the slide's last command has just shown, so a map or the places move from the
        slide before's. */
     function drawFigure(finished = false) {
-      const visibleLines = lines();
-      const repository = picture(slide(), before(), done(), theme, places);
-      figure.replaceChildren(visibleLines.length ? transcript(visibleLines, shown) : "", repository || "");
-      figure.hidden = !visibleLines.length && !repository;
+      const [commands, repository] = figureParts(slide(), before(), lines(), shown, { theme, places });
+      figure.replaceChildren(commands || "", repository || "");
+      figure.hidden = !commands && !repository;
+      if (commands) commands.scrollTop = commands.scrollHeight;
       if (finished) move(repository, slide(), before(), { theme, play, places, reducedMotion });
     }
 

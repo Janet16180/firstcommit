@@ -868,6 +868,17 @@ input[type="text"]::placeholder {
   visibility: hidden;
 }
 
+/* On a places slide the commands keep one height and scroll with the newest line in view
+   (lesson.js), so the places under them stay put and the slide fits the screen. */
+.transcript.is-capped {
+  height: 7rem;
+  overflow-y: auto;
+}
+
+.transcript.is-capped .transcript-line.is-pending {
+  display: none;
+}
+
 .transcript-line:not(.is-pending) {
   animation: appear 0.35s ease both;
 }
