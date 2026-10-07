@@ -4,10 +4,42 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const { html } = require("./fakedom");
 const { installBrowser, load } = require("./load");
-const { assertPalette, assertStyled, labelOf, walk } = require("./art-check");
+const { assertPalette, assertStyled, isHidden, labelOf, walk } = require("./art-check");
 
 installBrowser();
 const { ArtScenes } = load(["dom.js", "art-pixels.js", "art-scenes.js"], ["ArtScenes"]);
+
+/* The captions the page passes, in English and in the Spanish the scenes must fit. */
+const ENGLISH = {
+  space: {},
+  timeline: { v1: "v1", v2: "v2", v3: "v3", v4: "v4", back: "back in time", snapshot: "every commit is a snapshot" },
+  terminal: { ls: "$ ls", status: "$ git status", fatal: "fatal: not a git repository" },
+  planet: { folder: "a plain folder", question: "does Git know it?" },
+  flag: { init: "git init", dotgit: ".git" },
+  zones: { workshop: "workshop", edit: "you edit", dock: "cargo dock", pick: "you pick", vault: "vault", keep: "you keep" },
+  conveyor: { workshop: "workshop", dock: "cargo dock", title: "git add picks what goes up" },
+  capsule: { vault: "vault", hash: "a1b2c3d", message: '-m "first liftoff"', commit: "git commit" },
+  chain: { hash1: "a1b2c3d", message1: "liftoff", hash2: "f00d42e", message2: "Phobos stop", hash3: "9c0ffee", message3: "logbook", head: "HEAD", caption: "each capsule points to the one before" },
+  orbit: { base: "your base (local)", origin: "origin" },
+  rocket: { remote: "git remote add", push: "git push" },
+  pull: { alex: "Alex's commit", pull: "git pull" },
+  alarm: { base: "base 7", alert: "alert" },
+  fork: { feature: "feature", main: "main", command: "git switch -c feature" },
+  merge: { main: "main", command: "git merge" },
+  collision: { conflict: "CONFLICT", lines: "same file, same lines" },
+  blackbox: { main: "main", reflog: "reflog" },
+};
+
+const SPANISH = {
+  timeline: { ...ENGLISH.timeline, back: "de vuelta al pasado", snapshot: "cada commit es una foto del proyecto" },
+  planet: { folder: "una carpeta común", question: "¿Git la conoce?" },
+  zones: { workshop: "taller", edit: "tú editas", dock: "muelle", pick: "tú eliges", vault: "bóveda", keep: "tú guardas" },
+  conveyor: { workshop: "taller", dock: "muelle", title: "git add elige qué se carga" },
+  chain: { ...ENGLISH.chain, message1: "despegue", message2: "parada en Fobos", message3: "bitácora", caption: "cada cápsula apunta a la anterior" },
+  collision: { conflict: "CONFLICT", lines: "mismo archivo, mismas líneas" },
+};
+
+const wordsOf = (picture) => [...walk(picture)].filter((node) => node.localName === "text").map((node) => node.textContent);
 
 test("the scenes are the design's thirteen and the four new ones of chapters 5 to 7", () => {
   assert.deepEqual([...ArtScenes.NAMES], [
@@ -17,55 +49,48 @@ test("the scenes are the design's thirteen and the four new ones of chapters 5 t
   ]);
 });
 
-test("every scene is a labelled picture on the 160x90 canvas, in tokens and styled classes only", () => {
+test("CAPTIONS lists the keys each scene draws, in drawing order", () => {
+  assert.deepEqual(Object.keys(ArtScenes.CAPTIONS), [...ArtScenes.NAMES]);
+  for (const name of ArtScenes.NAMES) assert.deepEqual([...ArtScenes.CAPTIONS[name]], Object.keys(ENGLISH[name]), name);
+});
+
+test("every word a scene draws is one of its captions, in order, and nothing else", () => {
   for (const name of ArtScenes.NAMES) {
-    const scene = ArtScenes.scene(name);
-    assert.equal(scene.getAttribute("viewBox"), "0 0 160 90", name);
-    assert.ok(labelOf(scene), `${name} has a description`);
-    assertPalette(scene);
-    assertStyled(scene);
-    assert.equal(html(scene), html(ArtScenes.scene(name)), `${name} is drawn the same each time`);
+    const marked = Object.fromEntries(ArtScenes.CAPTIONS[name].map((key) => [key, `<${name}.${key}>`]));
+    assert.deepEqual(wordsOf(ArtScenes.scene(name, { captions: marked })), Object.values(marked), name);
   }
 });
 
-test("a scene takes the page's own label", () => {
-  assert.equal(labelOf(ArtScenes.scene("flag", { label: "Planting the flag" })), "Planting the flag");
+test("every scene is a picture on the 160x90 canvas, in tokens and styled classes only", () => {
+  for (const name of ArtScenes.NAMES) {
+    const scene = ArtScenes.scene(name, { label: name, captions: ENGLISH[name] });
+    assert.equal(scene.getAttribute("viewBox"), "0 0 160 90", name);
+    assertPalette(scene);
+    assertStyled(scene);
+    assert.equal(html(scene), html(ArtScenes.scene(name, { label: name, captions: ENGLISH[name] })), `${name} is drawn the same each time`);
+  }
 });
 
-test("the words in the scenes are English and short", () => {
-  const words = (name) => [...walk(ArtScenes.scene(name))].filter((node) => node.localName === "text").map((node) => node.textContent);
-  assert.deepEqual(words("timeline"), ["v1", "v2", "v3", "v4", "back in time", "every commit is a snapshot"]);
-  assert.deepEqual(words("planet"), ["a plain folder", "does Git know it?"]);
-  assert.deepEqual(words("zones").filter((word) => ["workshop", "cargo dock", "vault"].includes(word)), ["workshop", "cargo dock", "vault"]);
-  assert.ok(words("conveyor").includes("git add picks what goes up"));
-  assert.ok(words("flag").includes("git init") && words("flag").includes(".git"));
+test("a scene is named by the page's label, and hidden without one", () => {
+  assert.equal(labelOf(ArtScenes.scene("flag", { label: "Planting the flag", captions: ENGLISH.flag })), "Planting the flag");
+  assert.ok(isHidden(ArtScenes.scene("flag", { captions: ENGLISH.flag })));
 });
 
-const wordsOf = (name) => [...walk(ArtScenes.scene(name))].filter((node) => node.localName === "text").map((node) => node.textContent);
+test("the scenes speak Spanish when given Spanish captions", () => {
+  for (const [name, captions] of Object.entries(SPANISH)) assert.deepEqual(wordsOf(ArtScenes.scene(name, { captions })), Object.values(captions), name);
+});
 
-test("the chapter 3 to 7 scenes say little, in English", () => {
-  assert.deepEqual(wordsOf("capsule"), ["vault", "a1b2c3d", '-m "first liftoff"', "git commit"]);
-  assert.deepEqual(wordsOf("chain").slice(0, 6), ["a1b2c3d", "liftoff", "f00d42e", "Phobos stop", "9c0ffee", "logbook"]);
-  assert.ok(wordsOf("chain").includes("HEAD"));
-  assert.deepEqual(wordsOf("orbit"), ["your base (local)", "origin"]);
-  assert.deepEqual(wordsOf("rocket"), ["git remote add", "git push"]);
-  assert.deepEqual(wordsOf("pull"), ["Alex's commit", "git pull"]);
-  assert.deepEqual(wordsOf("alarm"), ["base 7", "alert"]);
-  assert.deepEqual(wordsOf("fork"), ["feature", "main", "git switch -c feature"]);
-  assert.deepEqual(wordsOf("merge"), ["main", "git merge"]);
-  assert.deepEqual(wordsOf("collision"), ["CONFLICT", "same file, same lines"]);
-  assert.deepEqual(wordsOf("blackbox"), ["main", "reflog"]);
+test("a missing caption is refused, naming the scene and the key", () => {
+  const partial = Object.fromEntries(Object.entries(ENGLISH.timeline).filter(([key]) => key !== "snapshot"));
+  assert.throws(() => ArtScenes.scene("timeline", { captions: partial }), (error) => error instanceof RangeError && /timeline/.test(error.message) && /snapshot/.test(error.message));
+  assert.throws(() => ArtScenes.scene("chain"), (error) => error instanceof RangeError && /chain/.test(error.message) && /hash1/.test(error.message));
+  assert.doesNotThrow(() => ArtScenes.scene("space"));
 });
 
 test("the moving pictures move with the art sheet's step animations", () => {
-  const classes = (name) => [...walk(ArtScenes.scene(name))].flatMap((node) => node.classList.list());
+  const classes = (name) => [...walk(ArtScenes.scene(name, { captions: ENGLISH[name] }))].flatMap((node) => node.classList.list());
   const moves = { capsule: ["art-drop", "art-lid"], orbit: ["art-orbit"], rocket: ["art-push"], pull: ["art-pull"], alarm: ["art-meteor", "art-boom", "art-alarm"], fork: ["art-slide"], collision: ["art-slide"], blackbox: ["art-vanish", "art-slide"], merge: ["art-pop"] };
   for (const [name, wanted] of Object.entries(moves)) for (const className of wanted) assert.ok(classes(name).includes(className), `${name} uses ${className}`);
-});
-
-test("the terminal scene lists the folder without naming any file", () => {
-  const lines = [...walk(ArtScenes.scene("terminal"))].filter((node) => node.localName === "text").map((node) => node.textContent);
-  assert.deepEqual(lines, ["$ ls", "$ git status", "fatal: not a git repository"]);
 });
 
 test("an unknown scene is refused", () => {
