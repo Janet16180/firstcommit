@@ -401,3 +401,20 @@ second look before the fetch not counting, and a pull first.
 | `FETCHED`, `BEHIND`, debrief | after the fetch, `git status` says behind by one | E53 |
 | hint 2, `PULLED`, debrief | `git pull` fetches again and brings Alex's commit into `main`, and Alex's line into `notes.txt` | E54; git-pull(1) ("Incorporates changes from a remote repository into the current branch ... runs git fetch") |
 | scene | your repository knows only what it heard the last time it asked | E52, E53 |
+
+### Deck `vault`
+
+Every choice and text card carries a `verify` snippet and the predict card its `code`;
+`tests/test_decks.py` runs them with bash in an empty folder with the lessons' environment, so
+each claim is *re-checked* on every slow run (the image's git 2.43.0 in the Docker tier).
+
+| Card | Claim | Evidence |
+|---|---|---|
+| `vault-commit-local` | a commit is only in your repository until you push | `verify`: the bare remote has no ref after the commit; git-push(1) |
+| `vault-commit-takes-staged` | a commit takes the staging area only; an untracked file stays out | `verify`; git-commit(1) ("the current contents of the index") |
+| `vault-log-order` | `git log` lists newest first; `--format=%s` prints the subjects | `code` and `correct`; E30 |
+| `vault-diff-after-add` | a plain `git diff` compares the working folder with the staging area; `--staged` the staging area with the last commit | `verify`; git-diff(1) ("changes relative to the index", `--staged` "relative to the named <commit>", HEAD by default) |
+| `vault-bare-commit` | in the game a bare `git commit` makes no commit and the file stays staged; outside, git opens an editor | `verify` with `core.editor=true`; the "No editor" section above |
+| `vault-log-file` | `git log <file>` lists only the commits that changed it; `--` marks a file; `-p` and `--oneline` | `verify`; E44, E46; git-log(1) |
+| `vault-short-hash` | a unique start of a hash names the commit; `--oneline` prints one long enough | `verify`; gitrevisions(7) `<sha1>` ("a leading substring that is unique within the repository") |
+| notes | as the cards above, plus `-m` gives the message on the line | git-commit(1) `-m` |

@@ -1,0 +1,186 @@
+notes = """
+A commit seals what is in the staging area: a snapshot of the project, with its author, date and
+message, named by its hash. It goes into your repository, on this computer: nothing leaves until
+you push. Files you did not stage stay as they are in the working folder.
+
+Every commit needs a message. In the game no editor opens, so give it on the line with `-m`.
+`git diff` shows what changed in the working folder since you staged; `git diff --staged` shows
+what the next commit will take. `git log` lists the history, newest commit first, and
+`git log <file>` only the commits that changed that file.
+
+    $ git commit -m "Add the map"   # seal the staging area into a commit
+    $ git diff                      # working folder against the staging area
+    $ git diff --staged             # staging area against the last commit
+    $ git log                       # every commit, newest first
+    $ git log oxygen.cfg            # only the commits that changed this file
+"""
+
+[[card]]
+id = "vault-commit-local"
+kind = "choice"
+level = 1
+prompt = 'Your repository has a remote, `origin`. You run `git commit -m "Add the map"`. Where is the new commit?'
+correct = "Only in your repository, on this computer"
+wrong = [
+    "In your repository, and a copy on the remote at once",
+    "Only on the remote, until you pull",
+    "Nowhere yet: `git log` saves it",
+]
+explain = """
+`git commit` writes the commit into your own repository and nowhere else: a remote gets
+commits only when you push them. `git log` only lists commits; it saves nothing. Until you push,
+the remote has not heard of the new commit.
+"""
+source = "git-commit(1), DESCRIPTION; git-push(1), DESCRIPTION"
+verify = """
+git init -q --bare remote.git
+git init -q base && cd base
+git remote add origin ../remote.git
+echo "Route: Earth, Moon, Mars" > map.txt
+git add map.txt && git commit -q -m "Add the map"
+git rev-parse -q --verify HEAD >/dev/null && test -z "$(git -C ../remote.git for-each-ref)"
+"""
+
+[[card]]
+id = "vault-commit-takes-staged"
+kind = "choice"
+level = 1
+prompt = '`map.txt` is staged, and `journal.txt` is untracked. You run `git commit -m "Map"`. What does the commit hold?'
+correct = "`map.txt` only"
+wrong = [
+    "`map.txt` and `journal.txt`",
+    "Nothing, until `journal.txt` is staged",
+    "Every file in the working folder",
+]
+explain = """
+A commit takes what is in the staging area, and only that. `journal.txt` was never staged, so it
+stays in the working folder, untracked, and the commit does not hold it. Nothing has to be staged
+for the commit to work but the files you want in it.
+"""
+source = "git-commit(1), DESCRIPTION"
+verify = """
+git init -q base && cd base
+echo "Route: Earth, Moon, Mars" > map.txt
+echo "Day 1: landed without trouble." > journal.txt
+git add map.txt && git commit -q -m "Map"
+test "$(git ls-tree --name-only HEAD)" = "map.txt" && test -f journal.txt
+"""
+
+[[card]]
+id = "vault-log-order"
+kind = "predict"
+level = 1
+prompt = "What does the last command print?"
+code = """
+git init -q base && cd base
+for step in Land Explore Build; do
+  echo "$step" >> log.txt
+  git add log.txt
+  git commit -q -m "$step"
+done
+git log --format=%s
+"""
+correct = "Build\nExplore\nLand"
+wrong = ["Land\nExplore\nBuild", "Build", "Land"]
+explain = """
+`git log` lists the history newest commit first, and `--format=%s` prints only each commit's
+message (its subject). All three commits are listed: `git log` shows the whole history it can
+reach, not only the last commit.
+"""
+source = "git-log(1), DESCRIPTION and PRETTY FORMATS"
+
+[[card]]
+id = "vault-diff-after-add"
+kind = "choice"
+level = 2
+prompt = "You change `route.txt` and stage it with `git add`. What does a plain `git diff` show for `route.txt` now?"
+correct = "Nothing for `route.txt`"
+wrong = [
+    "The change you just staged",
+    "Every change since the last commit",
+    "The difference between the last two commits",
+]
+explain = """
+A plain `git diff` compares the working folder with the staging area. Once you stage the file,
+the two match, so it shows nothing for `route.txt`. To see what the next commit will take, use
+`git diff --staged`, which compares the staging area with the last commit.
+"""
+source = "git-diff(1), DESCRIPTION"
+verify = """
+git init -q base && cd base
+echo "Route: Earth, Moon" > route.txt
+git add route.txt && git commit -q -m "Route"
+echo "Mars" >> route.txt
+git add route.txt
+test -z "$(git diff)" && test -n "$(git diff --staged)"
+"""
+
+[[card]]
+id = "vault-bare-commit"
+kind = "choice"
+level = 2
+prompt = "In the game's terminal, `map.txt` is staged, and you type a bare `git commit` with no message. What happens?"
+correct = "No commit is made, and `map.txt` stays staged"
+wrong = [
+    "Git commits with an empty message",
+    "An editor opens, and the commit waits for your message",
+    "Git commits with a message it makes up",
+]
+explain = """
+Every commit needs a message. The game opens no editor, so a bare `git commit` stops without a
+message and makes no commit; the staging area keeps `map.txt`. Give the message on the line:
+`git commit -m "Add the map"`. Outside the game, git opens your editor for it instead.
+"""
+source = "git-commit(1), `-m` and DISCUSSION; git-var(1), GIT_EDITOR"
+verify = """
+git init -q base && cd base
+echo "Route: Earth, Moon, Mars" > map.txt
+git add map.txt
+git -c core.editor=true commit >/dev/null 2>&1
+test $? -ne 0 && ! git rev-parse -q --verify HEAD >/dev/null && test "$(git diff --cached --name-only)" = "map.txt"
+"""
+
+[[card]]
+id = "vault-log-file"
+kind = "text"
+level = 2
+prompt = "Which command lists only the commits that changed `oxygen.cfg`? Type the whole command."
+accept = ["git log oxygen.cfg", "git log -- oxygen.cfg", "git log -p oxygen.cfg", "git log --oneline oxygen.cfg"]
+placeholder = "a git command"
+explain = """
+Give `git log` a file's name and it lists only the commits that changed that file, newest first.
+`--` before the name tells git it is a file, not a branch. `-p` adds each change, and `--oneline`
+shows one short line per commit.
+"""
+source = "git-log(1), `[--] <path>...`"
+verify = """
+git init -q base && cd base
+echo "O2=21" > oxygen.cfg && git add oxygen.cfg && git commit -q -m "Set up"
+echo "Robin" > crew.txt && git add crew.txt && git commit -q -m "Crew"
+echo "O2=17" > oxygen.cfg && git add oxygen.cfg && git commit -q -m "Night tweaks"
+test "$(git log --format=%s oxygen.cfg | tr '\\n' ' ')" = "Night tweaks Set up "
+"""
+
+[[card]]
+id = "vault-short-hash"
+kind = "choice"
+level = 3
+prompt = "`git log --oneline` shows `3f9a2c1 Night tweaks`. Can you name that commit by `3f9a2c1` in other git commands?"
+correct = "Yes, as long as no other object's hash starts the same"
+wrong = [
+    "No: other commands need the full 40-character hash every time",
+    "Only in `git log`, nowhere else",
+    "Only if you add `--short` to the command",
+]
+explain = """
+Git accepts the start of a hash wherever it expects a commit, if no other object in the
+repository has a hash that starts the same way. `git log --oneline` prints a start long enough to
+be unique. The full hash always works too.
+"""
+source = "gitrevisions(7), `<sha1>`"
+verify = """
+git init -q base && cd base
+echo "O2=17" > oxygen.cfg && git add oxygen.cfg && git commit -q -m "Night tweaks"
+short=$(git log --oneline | cut -d' ' -f1)
+test "$(git rev-parse "$short")" = "$(git rev-parse HEAD)" && test "$(git show -s --format=%s "$short")" = "Night tweaks"
+"""
