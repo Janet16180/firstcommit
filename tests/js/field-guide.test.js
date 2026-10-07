@@ -55,7 +55,7 @@ test("the guide speaks the page's language", () => {
     assert.equal(view.element.querySelector("h1").textContent, "Guía de campo");
     assert.match(view.element.querySelector('a[href="#/"]').textContent, /Mapa/);
     assert.match(view.element.textContent, /Taller/);
-    assert.match(view.element.textContent, /Aún no lo has aprendido/);
+    assert.match(view.element.textContent, /Aún no lo aprendiste/);
     assert.doesNotMatch(view.element.textContent, /Workshop/);
   } finally {
     Strings.use("en");
