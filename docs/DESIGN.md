@@ -139,6 +139,10 @@ are deterministic.
   `GIT_CEILING_DIRECTORIES=$FIRSTCOMMIT_HOME/labs`. The player's own Git settings (credential
   helpers, `push.autoSetupRemote`, aliases, signing) cannot change what a mission does, and a lab
   never falls through to a repository in a parent folder. Both variables were checked 2026-10-05.
+  Whatever the player's own shell, the game shell is bash with the game's startup file, so the
+  prompt is the game's (the folder's name, never the user or the host), and each command line
+  typed there is logged with its exit status in `$FIRSTCOMMIT_HOME/commands.log` for the figure;
+  the log holds only commands typed in the game's own terminal and never leaves the game home.
 - **Lab repos pin what their lesson depends on** in their local config (for example
   `push.autoSetupRemote=false` in the upstream mission), so they still behave if the player runs
   git from a normal terminal.
