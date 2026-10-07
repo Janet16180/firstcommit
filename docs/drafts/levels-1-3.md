@@ -211,3 +211,8 @@ animator: "Shipping"; author: Level 3. Each level: shots, fact-check, merge with
 4. Chapter 2: id `publish`, "Publish your work".
 5. Fact-check (checker, faabd88): the scene's files become `.md` (git cannot show line changes in
    a Word file).
+6. The staging box after a commit (the user's playtest, 2026-10-06): copies that match the newest
+   commit are drawn pale ("same as the last commit") and the box says "nothing new to save";
+   only copies that differ from the newest commit are bright ("ready to save"). The box is never
+   drawn empty while it holds files. Level 1 gets a prediction before its commit: "After
+   `git commit`, is README.md still in the box?"
