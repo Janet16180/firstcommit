@@ -12,7 +12,7 @@ test("an empty or unknown address is the map", () => {
 });
 
 test("a level address names the level", () => {
-  assert.deepEqual(Route.parse("#/level/basics-first-commit"), { view: "level", id: "basics-first-commit" });
+  assert.deepEqual(Route.parse("#/level/cargo-first"), { view: "level", id: "cargo-first" });
   assert.deepEqual(Route.parse("#/level/a%20b"), { view: "level", id: "a b" });
 });
 

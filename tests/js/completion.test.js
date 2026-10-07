@@ -5,18 +5,19 @@ const test = require("node:test");
 const { createClock, installBrowser, load, settle } = require("./load");
 
 const document = installBrowser();
-const { Completion } = load(["dom.js", "markup.js", "art-pixels.js", "art-sky.js", "completion.js"], ["Completion"]);
+const { Completion } = load(["dom.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "completion.js"], ["Completion"]);
 
 const para = (text) => [{ kind: "para", spans: [{ text, code: false }] }];
 
 test("the band crosses the screen with the title and the mission, with sparks, then leaves by itself", async () => {
   const clock = createClock();
   let over = false;
-  Completion.band({ title: "Mission complete", subtitle: "Mission 2.1: First cargo", timers: clock, reducedMotion: false }).then(() => (over = true));
+  Completion.band({ title: "Mission complete", subtitle: "Mission 2.1: First cargo", stars: 2, timers: clock, reducedMotion: false }).then(() => (over = true));
   const layer = document.body.querySelector(".band-layer");
   assert.equal(layer.querySelector(".band h2").textContent, "Mission complete");
   assert.equal(layer.querySelector(".band small").textContent, "Mission 2.1: First cargo");
   assert.ok(layer.querySelector(".art-sparks"));
+  assert.equal(layer.querySelector(".band .art-stars").getAttribute("aria-label"), "2 of 3 stars");
   assert.equal(layer.getAttribute("aria-hidden"), "true");
   await clock.advance(1749);
   assert.equal(over, false);
@@ -28,7 +29,7 @@ test("the band crosses the screen with the title and the mission, with sparks, t
 test("a click ends the band at once", async () => {
   const clock = createClock();
   let over = false;
-  Completion.band({ title: "Mission complete", subtitle: "", timers: clock, reducedMotion: false }).then(() => (over = true));
+  Completion.band({ title: "Mission complete", subtitle: "", stars: 3, timers: clock, reducedMotion: false }).then(() => (over = true));
   document.body.querySelector(".band-layer").click();
   await settle();
   assert.equal(over, true);
@@ -38,13 +39,13 @@ test("a click ends the band at once", async () => {
 
 test("with reduced motion there is no band", async () => {
   const clock = createClock();
-  await Completion.band({ title: "Mission complete", subtitle: "", timers: clock, reducedMotion: true });
+  await Completion.band({ title: "Mission complete", subtitle: "", stars: 3, timers: clock, reducedMotion: true });
   assert.equal(document.body.querySelector(".band-layer"), null);
 });
 
 test("the dock names the mission, shows its lesson and offers Retry, Map and the next mission", () => {
   let retried = 0;
-  const dock = Completion.dock({ title: "Mission complete: mission 2.1", lesson: para("git add loads a file."), next: { href: "#/level/two", title: "Second" }, onRetry: () => (retried += 1) });
+  const dock = Completion.dock({ title: "Mission complete: mission 2.1", stars: 3, lesson: para("git add loads a file."), next: { href: "#/level/two", title: "Second" }, onRetry: () => (retried += 1) });
   assert.equal(dock.getAttribute("role"), "status");
   assert.equal(dock.querySelector(".dock-title").textContent, "Mission complete: mission 2.1");
   assert.equal(dock.querySelector(".dock-lesson").textContent, "git add loads a file.");
@@ -58,9 +59,23 @@ test("the dock names the mission, shows its lesson and offers Retry, Map and the
 });
 
 test("without a next mission the map is the way on, and a missing lesson is said plainly", () => {
-  const dock = Completion.dock({ title: "Done", lesson: null, next: null, onRetry: () => {} });
+  const dock = Completion.dock({ title: "Done", stars: 1, lesson: null, next: null, onRetry: () => {} });
   const actions = [...dock.querySelectorAll(".dock-actions .btn")];
   assert.deepEqual(actions.map((action) => action.textContent), ["Retry", "Map"]);
   assert.ok(actions[1].classList.contains("btn-primary"));
   assert.equal(dock.querySelector(".dock-lesson").textContent, "This mission's lesson is not available.");
+});
+
+test("the dock shows the stars won, what the play paid and the new command card", () => {
+  const card = { level: "x", command: "git init", text: para("Makes a repository.") };
+  const dock = Completion.dock({ title: "Done", stars: 2, lesson: null, reward: "+150 XP", card, next: null, onRetry: () => {} });
+  assert.equal(dock.querySelector(".dock-stars .art-stars").getAttribute("aria-label"), "2 of 3 stars");
+  assert.equal(dock.querySelector(".dock-xp").textContent, "+150 XP");
+  assert.equal(dock.querySelector(".dock-card").textContent, "New card in your collection: git init");
+});
+
+test("without a reward line or a new card the dock leaves them out", () => {
+  const dock = Completion.dock({ title: "Done", stars: 2, lesson: null, next: null, onRetry: () => {} });
+  assert.equal(dock.querySelector(".dock-xp"), null);
+  assert.equal(dock.querySelector(".dock-card"), null);
 });

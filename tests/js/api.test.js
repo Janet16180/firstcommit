@@ -23,6 +23,7 @@ const REPLIES = {
   "/api/notes": record("notes"),
   "/api/guide": record("guide"),
   "/api/press": record("press"),
+  "/api/scene": {},
 };
 
 function gameApi(replies = REPLIES) {
@@ -49,6 +50,7 @@ test("each action calls its route with the body the server expects", async () =>
   await game.notes("basics");
   await game.guide();
   await game.press("alex", "push");
+  await game.scene("lvl");
   assert.deepEqual(calls.map((call) => [call.path, call.body]), [
     ["/api/status", undefined],
     ["/api/level?id=a%20level%2Fx", undefined],
@@ -67,6 +69,7 @@ test("each action calls its route with the body the server expects", async () =>
     ["/api/notes?chapter=basics", undefined],
     ["/api/guide", undefined],
     ["/api/press", { person: "alex", button: "push" }],
+    ["/api/scene", { level: "lvl" }],
   ]);
 });
 
@@ -264,4 +267,54 @@ test("an observation carries each person's buttons, by person, each with its id,
     delete changed.buttons.alex[0][field];
     await assert.rejects(observe(changed), new RegExp(`buttons\\.alex\\[0\\]\\.${field} should be`), field);
   }
+});
+
+/* The reply of `route` after `change` edits a copy of its sample record. */
+async function refused(route, change, call) {
+  const reply = structuredClone(REPLIES[route]);
+  change(reply);
+  const { game } = gameApi({ ...REPLIES, [route]: reply });
+  return assert.rejects(call(game));
+}
+
+test("the map's records must carry each mission's command and stars, each sector's blurb and the command collection", async () => {
+  await refused("/api/status", (status) => delete status.chapters[1].levels[0].command, (game) => game.status());
+  await refused("/api/status", (status) => (status.chapters[1].levels[0].stars = "two"), (game) => game.status());
+  await refused("/api/status", (status) => delete status.chapters[0].blurb, (game) => game.status());
+  await refused("/api/status", (status) => delete status.collection, (game) => game.status());
+  await refused("/api/status", (status) => (status.collection[0].text = "plain"), (game) => game.status());
+});
+
+test("a level must carry its command, its par, its scene and whether it was seen, and its card", async () => {
+  await refused("/api/level", (level) => delete level.command, (game) => game.level("x"));
+  await refused("/api/level", (level) => delete level.par, (game) => game.level("x"));
+  await refused("/api/level", (level) => delete level.scene_seen, (game) => game.level("x"));
+  await refused("/api/level", (level) => delete level.card, (game) => game.level("x"));
+  await refused("/api/level", (level) => (level.scene[0].art = "volcano"), (game) => game.level("x"));
+});
+
+test("a scene's pictures are the ones the artist has drawn", async () => {
+  for (const art of ["space", "timeline", "terminal", "planet", "flag", "zones", "conveyor"]) {
+    const level = { ...record("level"), scene: [{ ...record("level").scene[0], art }] };
+    const { game } = gameApi({ ...REPLIES, "/api/level": level });
+    assert.equal((await game.level("x")).scene[0].art, art);
+  }
+});
+
+test("the level in progress must say the commands typed and the stars still in play", async () => {
+  await refused("/api/start", (active) => delete active.commands, (game) => game.start("x"));
+  await refused("/api/start", (active) => delete active.stars, (game) => game.start("x"));
+});
+
+test("a check must say the stars won and the new card, which may be null", async () => {
+  const { game: api } = gameApi({ ...REPLIES, "/api/check": { ...record("check_unsolved"), stars: 0, new_card: null } });
+  assert.equal((await api.check(null, false)).new_card, null);
+  await refused("/api/check", (check) => delete check.stars, (game) => game.check(null, false));
+  await refused("/api/check", (check) => (check.new_card = { level: "x" }), (game) => game.check(null, false));
+});
+
+test("an observation must carry Rama's reactions, each with its line, a known mood and text", async () => {
+  await refused("/api/observe", (observation) => delete observation.reactions, (game) => game.observe());
+  await refused("/api/observe", (observation) => (observation.reactions[0].mood = "happy"), (game) => game.observe());
+  await refused("/api/observe", (observation) => delete observation.reactions[0].line, (game) => game.observe());
 });

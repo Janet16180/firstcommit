@@ -45,18 +45,19 @@ test("a file deleted from the folder shows as deleted, and ignored files and fil
 
 test("the dock holds every staged change with its kind, in the snapshot's order", () => {
   const zones = Zones.read(observe(snapshot({ exists: true, files: record("files") })));
-  assert.deepEqual(zones.dock, [
+  assert.deepEqual(zones.dock.map(({ path, change }) => ({ path, change })), [
     { path: "added.txt", change: "added" },
     { path: "staged.txt", change: "modified" },
     { path: "removed.txt", change: "deleted" },
     { path: "staged-link", change: "typechange" },
   ]);
+  assert.equal(zones.dock[0].version, record("files")[0].index);
 });
 
 test("a repository before its first commit has an empty vault, and what was added waits on the dock", () => {
   const zones = Zones.read(observe(record("snapshots").unborn));
   assert.equal(zones.repository, true);
-  assert.deepEqual(zones.dock, [{ path: "hello.txt", change: "added" }]);
+  assert.deepEqual(zones.dock.map((item) => item.path), ["hello.txt"]);
   assert.deepEqual(zones.vault, []);
 });
 
@@ -92,4 +93,63 @@ test("the mothership is the level's GitHub, with its history from its HEAD", () 
 test("the authors of the commits are kept, so the page can name a teammate's", () => {
   const project = snapshot({ exists: true, head: "c1", branch: "main", commits: [{ ...commit("c1"), author: "Alex Kim" }], refs: [] });
   assert.equal(Zones.read(observe(project)).vault[0].author, "Alex Kim");
+});
+
+/* Zones before and after a change, from bare models. */
+const model = (fields = {}) => ({ repository: true, workshop: [], dock: [], vault: [], remote: null, ...fields });
+const capsule = (hash) => ({ hash, short: hash, subject: hash, author: "You", labels: [] });
+const staged = (path, version = "v1") => ({ path, change: "added", version });
+
+test("plain typing that changes nothing moves nothing", () => {
+  assert.deepEqual(Zones.moves(model(), model(), []), { lit: [], flights: [], wake: [] });
+});
+
+test("git init wakes the dock and the vault", () => {
+  assert.deepEqual(Zones.moves(model({ repository: false, dock: null, vault: null }), model(), ["init"]).wake, ["dock", "vault"]);
+});
+
+test("git add flies each newly staged file from the workshop to the dock and lights the add arrow", () => {
+  const moves = Zones.moves(model({ dock: [staged("a.txt")] }), model({ dock: [staged("a.txt"), staged("map.txt")] }), ["add"]);
+  assert.deepEqual(moves.flights, [{ from: "workshop:map.txt", to: "dock:map.txt" }]);
+  assert.deepEqual(moves.lit, ["add"]);
+});
+
+test("a file staged again after an edit flies again", () => {
+  const moves = Zones.moves(model({ dock: [staged("a.txt", "v1")] }), model({ dock: [staged("a.txt", "v2")] }), ["add"]);
+  assert.deepEqual(moves.flights, [{ from: "workshop:a.txt", to: "dock:a.txt" }]);
+});
+
+test("unstaging flies a file back from the dock to the workshop", () => {
+  const moves = Zones.moves(model({ dock: [staged("secret.txt")] }), model(), ["restore"]);
+  assert.deepEqual(moves.flights, [{ from: "dock:secret.txt", to: "workshop:secret.txt" }]);
+  assert.deepEqual(moves.lit, []);
+});
+
+test("git commit flies what was on the dock into the new capsule and lights the commit arrow", () => {
+  const moves = Zones.moves(model({ dock: [staged("a.txt"), staged("b.txt")] }), model({ vault: [capsule("c1")] }), ["commit"]);
+  assert.deepEqual(moves.flights, [{ from: "dock:a.txt", to: "vault:c1" }, { from: "dock:b.txt", to: "vault:c1" }]);
+  assert.deepEqual(moves.lit, ["commit"]);
+});
+
+test("a push flies the new capsules to the mothership, and a pull brings them down", () => {
+  const pushed = Zones.moves(model({ vault: [capsule("c1")], remote: [] }), model({ vault: [capsule("c1")], remote: [capsule("c1")] }), ["push"]);
+  assert.deepEqual(pushed.flights, [{ from: "vault:c1", to: "remote:c1" }]);
+  assert.deepEqual(pushed.lit, ["push"]);
+  const pulled = Zones.moves(model({ vault: [], remote: [capsule("t1")] }), model({ vault: [capsule("t1")], remote: [capsule("t1")] }), ["pull"]);
+  assert.deepEqual(pulled.flights, [{ from: "remote:t1", to: "vault:t1" }]);
+  assert.deepEqual(pulled.lit, ["pull"]);
+});
+
+test("when git commands were typed, only the moves they make are drawn", () => {
+  const moves = Zones.moves(model({ dock: [] }), model({ dock: [staged("a.txt")] }), ["status"]);
+  assert.deepEqual(moves, { lit: [], flights: [], wake: [] });
+});
+
+test("a change with no git typed (made outside the game's terminal) is drawn from the change alone", () => {
+  const moves = Zones.moves(model({ dock: [] }), model({ dock: [staged("a.txt")] }), []);
+  assert.deepEqual(moves.lit, ["add"]);
+});
+
+test("a mothership that appears wakes", () => {
+  assert.deepEqual(Zones.moves(model(), model({ remote: [] }), ["remote"]).wake, ["remote"]);
 });

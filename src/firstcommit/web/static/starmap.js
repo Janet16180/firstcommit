@@ -1,20 +1,17 @@
 "use strict";
 
 /*
- * The map screen: Rama and the game's name, a bar with the missions done, the cards due and the
- * look and sound buttons, then every chapter as a sector in play order. A sector with missions
- * is a strip of space with its planet and its numbered mission nodes along a route; a chapter
- * with none yet is a sector coming soon. Choosing a node shows its mission on the card at the
- * bottom, whose button opens the level. Everything comes from firstcommit/game.py's Status.
- * Needs dom.js, art-sprites.js, art-sky.js, progress.js and dialog.js. Defines one global,
- * StarMap.
- *
- * Waiting for fields of docs/briefs/ORBIT.md (marked ORBIT-GAP below): the stars counter, the
- * sector's blurb, the coming sectors, the command collection, and each mission's command label
- * and stars.
+ * The map screen: Rama and the game's name, a bar with the stars won, the missions done, the
+ * command collection, the cards due and the look and sound buttons, then every chapter as a
+ * sector in play order. A sector with missions is a strip of space with its planet and its
+ * numbered mission nodes along a route; a chapter with none yet is a sector coming soon.
+ * Choosing a node shows its mission on the card at the bottom (its command and best stars),
+ * whose button opens the level. Everything comes from firstcommit/game.py's Status. Needs
+ * dom.js, art-sprites.js, art-sky.js, progress.js, dialog.js and collection.js. Defines one
+ * global, StarMap.
  */
 
-/* global Dom, ArtSprites, ArtSky, Progress, Dialog */
+/* global Dom, ArtSprites, ArtSky, Progress, Dialog, Collection */
 /* exported StarMap */
 
 const StarMap = (function () {
@@ -45,10 +42,12 @@ const StarMap = (function () {
   function bar(status, prefButtons) {
     const levels = status.chapters.flatMap((chapter) => chapter.levels);
     const done = levels.filter((level) => level.done).length;
-    /* ORBIT-GAP(stars, collection): the stars counter and the command collection's button. */
+    const stars = levels.reduce((sum, level) => sum + level.stars, 0);
     return el("div", { class: "map-bar" },
+      el("span", { class: "counter px stars-won", role: "img", "aria-label": `${stars} of ${levels.length * 3} stars` }, ArtSprites.star(true), " ", el("b", {}, `${stars}/${levels.length * 3}`)),
       el("span", { class: "counter px" }, "Missions ", el("b", {}, `${done}/${levels.length}`)),
       el("span", { class: "spacer" }),
+      el("button", { type: "button", class: "btn collection-open", onclick: () => Collection.open(status) }, "Command collection"),
       status.cards_due > 0 && el("a", { class: "btn", href: "#/cards" }, `Review ${plural(status.cards_due, "card")}`),
       prefButtons(),
     );
@@ -56,10 +55,10 @@ const StarMap = (function () {
 
   function sectorHead(chapter, index) {
     const id = encodeURIComponent(chapter.id);
-    /* ORBIT-GAP(blurb): the sector's one line under its name. */
     return el("header", { class: "sector-head" },
       el("span", { class: "snum" }, `Sector ${index + 1}`),
       el("h2", {}, chapter.title),
+      el("p", { class: "sector-blurb" }, chapter.blurb),
       chapter.levels.length > 0 && chapter.cards > 0 && el("p", { class: "sector-links" }, el("a", { href: `#/notes/${id}` }, "Notes"), el("a", { href: `#/cards/${id}` }, `Practise ${plural(chapter.cards, "card")}`)),
     );
   }
@@ -93,7 +92,6 @@ const StarMap = (function () {
 
   function sector(chapter, index, options) {
     if (!chapter.levels.length) {
-      /* ORBIT-GAP(coming): the coming sectors will come from Status.coming. */
       return el("section", { class: "sector is-soon" }, sectorHead(chapter, index), el("div", { class: "soon-field" }, "Coming soon"));
     }
     return el("section", { class: "sector" }, sectorHead(chapter, index), field(chapter, index, options));
@@ -112,10 +110,10 @@ const StarMap = (function () {
     const { sector: number, number: mission } = Progress.missionNumber(status.chapters, id);
     const { active } = status;
     const other = active && active.level !== id ? Progress.findLevel(status.chapters, active.level) : null;
-    /* ORBIT-GAP(command, stars): the mission's command label and its best stars, under the title. */
     return [
       el("span", { class: "card-num" }, `Sector ${number}, mission ${mission}`),
       el("h2", { class: "card-title" }, level.title),
+      el("div", { class: "card-meta" }, el("code", {}, level.command), ArtSprites.stars(level.stars)),
       el("p", { class: "card-note" }, other ? `Starting it ends “${other.title}”, which is in progress.` : ""),
       el("a", { class: "btn btn-primary", href: levelHref(id) }, playLabel(level, active)),
     ];

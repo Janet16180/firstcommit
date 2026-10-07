@@ -2,30 +2,30 @@
 
 /*
  * A mission's completion, as the design shows it: a short band across the screen with sparks,
- * then the dock at the bottom with the lesson and the ways on (Retry, Map, Next), so the
- * terminal and the zones stay in view. Needs dom.js, markup.js and art-sky.js. Defines one
- * global, Completion.
+ * then the dock at the bottom with the stars won, the lesson, the new command card and the ways
+ * on (Retry, Map, Next), so the terminal and the zones stay in view. Needs dom.js, markup.js,
+ * art-sprites.js and art-sky.js. Defines one global, Completion.
  *
- * band({title, subtitle, timers, reducedMotion}) plays the band and resolves when it has gone
- *   (after BAND_MS, or at once on a click); with reduced motion it shows nothing.
- * dock({title, lesson, next, onRetry}) builds the dock: `lesson` is the game's blocks or null,
- *   `next` is {href, title} or null.
+ * band({title, subtitle, stars, timers, reducedMotion}) plays the band and resolves when it has
+ *   gone (after BAND_MS, or at once on a click); with reduced motion it shows nothing.
+ * dock({title, stars, lesson, reward, card, next, onRetry}) builds the dock: `lesson` is the
+ *   game's blocks or null, `reward` a line on what this play paid or null, `card` the new command card
+ *   (CommandCard) or null, `next` {href, title} or null.
  */
 
-/* global Dom, Markup, ArtSky */
+/* global Dom, Markup, ArtSprites, ArtSky */
 /* exported Completion */
 
 const Completion = (function () {
   const { el } = Dom;
   const BAND_MS = 1750;
 
-  function band({ title, subtitle, timers, reducedMotion }) {
+  function band({ title, subtitle, stars, timers, reducedMotion }) {
     if (reducedMotion) return Promise.resolve();
-    /* ORBIT-GAP(stars): the band's row of stars won. */
     const layer = el("div", { class: "band-layer", "aria-hidden": "true" },
       el("div", { class: "band-veil" }),
       ArtSky.sparks(title),
-      el("div", { class: "band" }, el("h2", {}, title), el("small", {}, subtitle)),
+      el("div", { class: "band" }, el("h2", {}, title), el("div", { class: "band-stars" }, ArtSprites.stars(stars, { pop: true })), el("small", {}, subtitle)),
     );
     document.body.append(layer);
     return new Promise((resolve) => {
@@ -39,13 +39,14 @@ const Completion = (function () {
     });
   }
 
-  function dock({ title, lesson, next, onRetry }) {
-    /* ORBIT-GAP(stars): the stars won, before the title, and why fewer than three. */
+  function dock({ title, stars, lesson, reward = null, card = null, next, onRetry }) {
     return el("div", { class: "dock px", role: "status", "aria-live": "polite" },
-      el("div", { class: "dock-stars" }),
+      el("div", { class: "dock-stars" }, ArtSprites.stars(stars)),
       el("div", { class: "dock-info" },
         el("b", { class: "dock-title" }, title),
         el("div", { class: "dock-lesson" }, lesson ? Markup.render(lesson) : el("p", {}, "This mission's lesson is not available.")),
+        reward && el("small", { class: "dock-xp" }, reward),
+        card && el("small", { class: "dock-card" }, "New card in your collection: ", el("code", {}, card.command)),
       ),
       el("div", { class: "dock-actions" },
         el("button", { type: "button", class: "btn", onclick: () => onRetry() }, "Retry"),

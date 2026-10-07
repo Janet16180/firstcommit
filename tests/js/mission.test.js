@@ -104,18 +104,18 @@ test("a hint is asked for with a button, and revealed hints are listed", () => {
   const level = { ...record("level"), hints: [para("First hint.")] };
   const run = mission({ level, active: { ...record("active"), hints: 1 } });
   assert.deepEqual(run.all(".hint-list div").map((node) => node.textContent), ["First hint."]);
-  assert.equal(run.q(".hint-row small").textContent, "2 left");
+  assert.equal(run.q(".hint-row small").textContent, "A hint costs a star and this play's XP. 2 left.");
   run.q(".hint-row button").click();
   assert.equal(run.seen.hints, 1);
   run.view.addHint({ ...record("hint"), hint: para("Second hint."), used: 2 });
   assert.equal(run.all(".hint-list div").length, 2);
-  assert.equal(run.q(".hint-row small").textContent, "1 left");
+  assert.equal(run.q(".hint-row small").textContent, "That hint cost 10 XP. 1 left.");
 });
 
 test("once every hint is used the button is off", () => {
   const run = mission({ active: { ...record("active"), hints: 3 } });
   assert.equal(run.q(".hint-row button").disabled, true);
-  assert.equal(run.q(".hint-row small").textContent, "No hints left");
+  assert.match(run.q(".hint-row small").textContent, /No hints left\.$/);
 });
 
 test("while a request runs the current goal's controls and the hint button are off", () => {
@@ -132,4 +132,21 @@ test("a solved mission checks every goal", () => {
   run.view.solved();
   assert.equal(run.all(".goal.is-done").length, 3);
   assert.equal(run.q(".goal.is-current"), null);
+});
+
+test("a hint that cost nothing says so", () => {
+  const run = mission();
+  run.view.addHint({ ...record("hint"), cost: 0 });
+  assert.equal(run.q(".hint-row small").textContent, "That hint cost no XP. 2 left.");
+});
+
+test("a note on the current goal shows under it, and the same note is not drawn twice", () => {
+  const run = mission({ active: { ...record("active"), step: 2 } });
+  run.view.note(para("No file is staged yet."));
+  const note = run.q(".goal.is-current .goal-note");
+  assert.equal(note.textContent, "No file is staged yet.");
+  run.view.note(para("No file is staged yet."));
+  assert.equal(run.q(".goal.is-current .goal-note"), note);
+  run.view.setStep(3);
+  assert.equal(run.q(".goal-note"), null);
 });

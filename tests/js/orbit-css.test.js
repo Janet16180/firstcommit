@@ -34,9 +34,9 @@ test("the older views' tokens are mapped onto the design's, so every view wears 
   for (const name of ["--sans", "--surface", "--surface-2", "--muted", "--accent", "--focus"]) assert.match(ours[name], /^var\(--/, name);
 });
 
-test("the fonts are the design's three, and nothing is loaded from the network", () => {
+test("the fonts are Tiny5 for headings and the design's text and terminal fonts, and nothing is loaded from the network", () => {
   const ours = tokens(css, ":root");
-  assert.match(ours["--f-px"], /^'Pixelify Sans'/);
+  assert.match(ours["--f-px"], /^'Tiny5'/);
   assert.match(ours["--f-body"], /^'Atkinson Hyperlegible'/);
   assert.match(ours["--f-term"], /^'VT323'/);
   assert.doesNotMatch(css, /url\(|@import|https?:/);
@@ -52,7 +52,7 @@ test("the motions stop for players who ask for reduced motion", () => {
   for (const name of [".band-veil", ".band", ".dock"]) assert.ok(reduced.includes(name), name);
 });
 
-test("ligatures are off on every element, so Pixelify Sans never joins fi or fl into one glyph", () => {
+test("ligatures are off on every element, so a pixel font never joins fi or fl into one glyph", () => {
   assert.match(css, /\*,\s*\*::before,\s*\*::after\s*{\s*font-variant-ligatures:\s*none\s*!important;\s*}/);
 });
 
@@ -60,4 +60,10 @@ test("the terminal's column reaches the bottom of the window, with a minimum hei
   assert.match(css, /\.termcol {\s*height: max\(var\(--term-min\), calc\(100vh - var\(--term-top/);
   assert.match(tokens(css, ":root")["--term-min"], /^\d+px$/);
   assert.match(css, /\.termcol \.term-host,[^{]*{[^}]*flex: 1;[^}]*height: auto !important;/);
+});
+
+test("the dock never cuts its lesson off: it grows up to half the window, then scrolls as a whole", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.match(rule(".dock"), /max-height: 50vh;\s*overflow-y: auto;/);
+  assert.doesNotMatch(rule(".dock-lesson"), /max-height|overflow/);
 });

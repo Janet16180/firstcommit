@@ -10,9 +10,9 @@ const css = fs.readFileSync(path.join(STATIC, "fonts.css"), "utf8");
 const faces = [...css.matchAll(/@font-face\s*{([^}]*)}/g)].map((match) => match[1]);
 const field = (face, name) => (face.match(new RegExp(`${name}:\\s*([^;]+);`)) || [])[1];
 
-test("the three design fonts are declared in the weights the design uses", () => {
+test("the heading, text and terminal fonts are declared in the weights the page uses", () => {
   const declared = faces.map((face) => `${field(face, "font-family")} ${field(face, "font-weight")}`).sort();
-  assert.deepEqual(declared, ["'Atkinson Hyperlegible' 400", "'Atkinson Hyperlegible' 700", "'Pixelify Sans' 500", "'Pixelify Sans' 700", "'VT323' 400"]);
+  assert.deepEqual(declared, ["'Atkinson Hyperlegible' 400", "'Atkinson Hyperlegible' 700", "'Tiny5' 400 700", "'VT323' 400"]);
 });
 
 test("every font file ships with the game, served from the page's own static folder", () => {
@@ -25,7 +25,7 @@ test("every font file ships with the game, served from the page's own static fol
 });
 
 test("each font family keeps its OFL licence next to its files", () => {
-  for (const name of ["pixelify-sans", "atkinson-hyperlegible", "vt323"]) {
+  for (const name of ["tiny5", "atkinson-hyperlegible", "vt323"]) {
     const licence = fs.readFileSync(path.join(STATIC, `${name}-OFL.txt`), "utf8");
     assert.match(licence, /SIL OPEN FONT LICENSE Version 1\.1/);
   }

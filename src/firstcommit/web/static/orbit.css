@@ -41,7 +41,7 @@
   --night-edge: #04030F;
   --night-line: #3A3470;
   --night-mute: #4A4478;
-  --f-px: 'Pixelify Sans', 'Courier New', monospace;
+  --f-px: 'Tiny5', 'Courier New', monospace;
   --f-body: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --f-term: 'VT323', ui-monospace, Menlo, Consolas, monospace;
   --term-min: 420px;
@@ -86,8 +86,8 @@
   box-sizing: border-box;
 }
 
-/* Pixelify Sans draws its "fi" and "fl" ligatures as one glyph that reads like an "A" (upstream's
-   design, not a broken file). The `font` shorthand resets ligatures to normal on every element
+/* Pixel fonts may draw "fi" and "fl" as one glyph (Pixelify Sans, the design's first heading
+   font, drew it like an "A"). The `font` shorthand resets ligatures to normal on every element
    that uses it, here and in app.css, so only an important rule keeps them off everywhere. */
 *,
 *::before,
@@ -131,6 +131,23 @@ code {
   background: color-mix(in srgb, var(--ink) 9%, transparent);
   padding: 0 0.3em;
   border-radius: 0;
+}
+
+/* The game's command examples, as lines on the night terminal. */
+pre.code,
+:root[data-theme="dark"] pre.code {
+  padding: 6px 12px;
+  background: var(--crt);
+  color: var(--crt-ink);
+  border: 2px solid var(--edge);
+  border-radius: 0;
+  font: 1.1rem/1.25 var(--f-term);
+}
+
+pre.code code {
+  font: inherit;
+  color: inherit;
+  background: none;
 }
 
 .sr-only {
@@ -441,11 +458,114 @@ code {
   color: var(--ink-soft);
 }
 
+.card-meta {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.card-meta .art-stars,
+.counter .art-star {
+  font-size: 20px;
+}
+
 .mission-card .btn {
-  grid-row: 1 / span 3;
+  grid-row: 1 / span 4;
   grid-column: 2;
   font-size: 1.15rem;
   padding: 10px 18px;
+}
+
+/* The command collection and its cards; a card takes its sector's zone colour. */
+.collection {
+  width: min(760px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  overflow: auto;
+  padding: 22px;
+  color: var(--ink);
+}
+
+.collection::backdrop {
+  background: rgba(4, 3, 15, 0.66);
+}
+
+.collection h2 {
+  margin: 0 0 4px;
+  font-family: var(--f-px);
+}
+
+.collection > p {
+  margin: 0 0 16px;
+  color: var(--ink-soft);
+}
+
+.coll-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.cmdcard {
+  --cc: var(--z-wd);
+  display: block;
+  text-align: left;
+  background: var(--crt);
+  color: var(--night-ink);
+  border: 3px solid var(--cc);
+  box-shadow: 4px 4px 0 var(--edge);
+  padding: 12px 14px;
+}
+
+.cmdcard[data-sector="1"],
+.cmdcard[data-sector="5"],
+.cmdcard[data-sector="9"] {
+  --cc: var(--z-st);
+}
+
+.cmdcard[data-sector="2"],
+.cmdcard[data-sector="6"],
+.cmdcard[data-sector="10"] {
+  --cc: var(--z-va);
+}
+
+.cmdcard[data-sector="3"],
+.cmdcard[data-sector="7"],
+.cmdcard[data-sector="11"] {
+  --cc: var(--z-re);
+}
+
+.cmdcard code {
+  display: block;
+  background: none;
+  padding: 0;
+  color: var(--crt-cmd);
+  font-size: 1.45rem;
+  line-height: 1.1;
+  white-space: normal;
+}
+
+.cmdcard p {
+  margin: 6px 0 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--night-soft);
+}
+
+.cmdcard p code {
+  display: inline;
+  font-size: 1em;
+  color: var(--night-ink);
+}
+
+.cmdcard.is-locked {
+  border-style: dashed;
+  border-color: var(--night-mute);
+}
+
+.cmdcard.is-locked code {
+  color: var(--s-clean);
 }
 
 .map-foot {
@@ -494,6 +614,37 @@ code {
   font-size: 1.2rem;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.hud-title code {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--night-ink);
+}
+
+.hud-cmds {
+  font: 1.15rem var(--f-term);
+  color: var(--night-soft);
+  white-space: nowrap;
+}
+
+.hud-stars {
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* Off stars on the night bars take the night's muted colour, as in the design. */
+.hud .art-star--off rect,
+.band .art-star--off rect {
+  fill: var(--night-mute);
+}
+
+.hud-stars.is-lost {
+  animation: hud-shake 0.5s steps(4);
+}
+
+@keyframes hud-shake {
+  25% { transform: translateX(-4px); }
+  75% { transform: translateX(4px); }
 }
 
 .stage {
@@ -644,6 +795,36 @@ code {
 
 .fl.is-back .art-icon {
   transform: scaleX(-1);
+}
+
+.fl.is-lit {
+  color: var(--ink);
+  opacity: 1;
+}
+
+.fl.is-lit .art-icon {
+  animation: fl-blink 0.3s steps(2) 5;
+}
+
+@keyframes fl-blink {
+  50% { opacity: 0; }
+}
+
+.zone.is-waking {
+  animation: zone-wake 0.6s steps(3);
+}
+
+@keyframes zone-wake {
+  50% { background: color-mix(in srgb, var(--zc) 45%, var(--panel)); }
+}
+
+/* A copy of a file or capsule flying between zones (zone-panel.js). */
+.ghost {
+  position: fixed;
+  z-index: 60;
+  margin: 0;
+  pointer-events: none;
+  box-shadow: 4px 4px 0 rgba(4, 3, 15, 0.55);
 }
 
 .file {
@@ -888,6 +1069,14 @@ code {
   box-shadow: inset -3px -3px 0 rgba(0, 0, 0, 0.22);
 }
 
+.goal-note {
+  margin-top: 6px;
+  padding-left: 8px;
+  border-left: 3px dashed var(--line);
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
 .goal-act {
   display: flex;
   flex-wrap: wrap;
@@ -1125,6 +1314,12 @@ code {
   text-shadow: 4px 4px 0 #7A52D1;
 }
 
+.band-stars {
+  margin-top: 10px;
+  font-size: clamp(2rem, 6vw, 3rem);
+  line-height: 1;
+}
+
 .band small {
   display: block;
   margin-top: 8px;
@@ -1145,6 +1340,10 @@ code {
   align-items: center;
   padding: 12px 16px;
   border-left: 8px solid var(--gold);
+  /* A long lesson makes the dock grow up to half the window, then the dock scrolls as a whole,
+     so no line is ever cut off. */
+  max-height: 50vh;
+  overflow-y: auto;
   animation: dock-in 0.35s steps(4) both;
 }
 
@@ -1170,12 +1369,125 @@ code {
   margin: 2px 0 0;
   font-size: 0.92rem;
   line-height: 1.4;
-  max-height: 7.5em;
-  overflow: auto;
 }
 
 .dock-lesson p {
   margin: 0 0 0.4em;
+}
+
+.dock-xp {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.dock-card {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+/* A level's scene: a window onto space over Rama's dialogue box. */
+.cutscene {
+  width: min(700px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  overflow: auto;
+  padding: 0;
+  background: var(--crt);
+  color: var(--night-ink);
+  border: 4px solid var(--night-ink);
+  outline: 4px solid var(--night-edge);
+  box-shadow: 8px 8px 0 var(--night-edge);
+}
+
+.cutscene::backdrop {
+  background: rgba(4, 3, 15, 0.66);
+}
+
+.cs-art {
+  background: var(--void);
+  border-bottom: 4px solid var(--night-ink);
+  cursor: pointer;
+}
+
+.cs-art .art-scene {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.cs-dlg {
+  position: relative;
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 6px 14px;
+  padding: 22px 18px 14px;
+}
+
+.cs-who {
+  position: absolute;
+  top: -17px;
+  left: 16px;
+  font: 700 1rem/1.5 var(--f-px);
+  background: var(--gold);
+  color: #1F1A3D;
+  border: 3px solid var(--night-edge);
+  padding: 0 10px;
+}
+
+.cs-txt {
+  min-height: 4.4em;
+  font-size: 1.08rem;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.cs-txt p {
+  margin: 0;
+}
+
+.cs-txt code {
+  background: none;
+  color: var(--crt-cmd);
+  font-weight: 700;
+}
+
+.cs-ctl {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pips {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+}
+
+.pips i {
+  width: 8px;
+  height: 8px;
+  background: var(--night-line);
+}
+
+.pips i.on {
+  background: var(--night-ink);
+}
+
+.cutscene .btn {
+  background: transparent;
+  color: var(--night-ink);
+  border-color: var(--night-ink);
+  box-shadow: none;
+}
+
+.cutscene .btn-primary {
+  background: var(--gold);
+  color: #1F1A3D;
+  border-color: var(--night-edge);
 }
 
 .dock-actions {
@@ -1225,7 +1537,122 @@ code {
     font-size: 1.4rem;
   }
 
-  .dock-actions {
+  .dock-xp {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.dock-card {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+/* A level's scene: a window onto space over Rama's dialogue box. */
+.cutscene {
+  width: min(700px, calc(100% - 32px));
+  max-height: calc(100% - 32px);
+  overflow: auto;
+  padding: 0;
+  background: var(--crt);
+  color: var(--night-ink);
+  border: 4px solid var(--night-ink);
+  outline: 4px solid var(--night-edge);
+  box-shadow: 8px 8px 0 var(--night-edge);
+}
+
+.cutscene::backdrop {
+  background: rgba(4, 3, 15, 0.66);
+}
+
+.cs-art {
+  background: var(--void);
+  border-bottom: 4px solid var(--night-ink);
+  cursor: pointer;
+}
+
+.cs-art .art-scene {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.cs-dlg {
+  position: relative;
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 6px 14px;
+  padding: 22px 18px 14px;
+}
+
+.cs-who {
+  position: absolute;
+  top: -17px;
+  left: 16px;
+  font: 700 1rem/1.5 var(--f-px);
+  background: var(--gold);
+  color: #1F1A3D;
+  border: 3px solid var(--night-edge);
+  padding: 0 10px;
+}
+
+.cs-txt {
+  min-height: 4.4em;
+  font-size: 1.08rem;
+  line-height: 1.5;
+  cursor: pointer;
+}
+
+.cs-txt p {
+  margin: 0;
+}
+
+.cs-txt code {
+  background: none;
+  color: var(--crt-cmd);
+  font-weight: 700;
+}
+
+.cs-ctl {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.pips {
+  display: flex;
+  gap: 6px;
+  flex: 1;
+}
+
+.pips i {
+  width: 8px;
+  height: 8px;
+  background: var(--night-line);
+}
+
+.pips i.on {
+  background: var(--night-ink);
+}
+
+.cutscene .btn {
+  background: transparent;
+  color: var(--night-ink);
+  border-color: var(--night-ink);
+  box-shadow: none;
+}
+
+.cutscene .btn-primary {
+  background: var(--gold);
+  color: #1F1A3D;
+  border-color: var(--night-edge);
+}
+
+.dock-actions {
     grid-column: 1 / -1;
     justify-content: stretch;
   }
@@ -1285,7 +1712,10 @@ code {
 @media (prefers-reduced-motion: reduce) {
   .band-veil,
   .band,
-  .dock {
+  .dock,
+  .hud-stars.is-lost,
+  .fl.is-lit .art-icon,
+  .zone.is-waking {
     animation: none;
   }
 }

@@ -7,7 +7,7 @@ const { fakeServer, httpError, installBrowser, load, record, settle } = require(
 
 installBrowser();
 const { Dom } = load(
-  ["dom.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "api.js", "progress.js", "route.js", "poll.js", "sound.js", "dialog.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "level-screen.js", "starmap.js", "cards.js", "notes.js"],
+  ["dom.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "api.js", "progress.js", "route.js", "poll.js", "sound.js", "dialog.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "collection.js", "scene.js", "level-screen.js", "starmap.js", "cards.js", "notes.js"],
   ["Dom"],
 );
 
@@ -80,8 +80,10 @@ test("a level's address opens the level screen, with its zones and the terminal 
   assert.ok(page.main.querySelector(".termcol .term-dock"));
 }));
 
-test("the terminal wears the design's night colours in both looks", () => onLevel((page) => {
+test("the terminal wears the design's night colours and VT323 at the design's size, in both looks", () => onLevel((page) => {
   assert.equal(page.seen.looks.light.theme.background, "#120F2C");
+  assert.match(page.seen.looks.light.fontFamily, /^VT323, /);
+  assert.equal(page.seen.looks.light.fontSize, 19);
   assert.deepEqual(page.seen.looks.dark.theme, page.seen.looks.light.theme);
 }));
 

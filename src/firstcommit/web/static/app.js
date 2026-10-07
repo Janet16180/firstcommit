@@ -17,8 +17,9 @@
   const THEMES = ["auto", "light", "dark"];
   const TOAST_MS = 9000;
   const MONO = "\"Cascadia Mono\", \"DejaVu Sans Mono\", \"Liberation Mono\", Menlo, Consolas, monospace";
-  /* The design's terminal is always night, in both looks. termlab draws at 14 px, too small for
-     the design's VT323, so the terminal keeps a plain monospace font. */
+  /* The design's terminal: VT323 at the design's size, always night, in both looks. */
+  const TERMINAL_FONT = `VT323, ${MONO}`;
+  const TERMINAL_SIZE = 19;
   const CRT = {
     background: "#120F2C",
     foreground: "#FFE6B0",
@@ -43,8 +44,8 @@
     brightWhite: "#FFFFFF",
   };
   const TERMINAL_LOOKS = {
-    light: { fontFamily: MONO, theme: CRT },
-    dark: { fontFamily: MONO, theme: CRT },
+    light: { fontFamily: TERMINAL_FONT, fontSize: TERMINAL_SIZE, theme: CRT },
+    dark: { fontFamily: TERMINAL_FONT, fontSize: TERMINAL_SIZE, theme: CRT },
   };
   const VIEWS = {
     home: (ctx) => StarMap.create(ctx),

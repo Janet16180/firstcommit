@@ -1,23 +1,17 @@
 /*
  * The design's three fonts, shipped with the game (latin subset, from Fontsource), so the page
- * loads nothing from the network. All three are under the SIL Open Font License 1.1: see
- * pixelify-sans-OFL.txt, atkinson-hyperlegible-OFL.txt and vt323-OFL.txt next to them.
+ * loads nothing from the network. Tiny5 sets the headings (its capital C never reads as an O),
+ * Atkinson Hyperlegible the text and VT323 the terminal. All three are under the SIL Open Font
+ * License 1.1: see tiny5-OFL.txt, atkinson-hyperlegible-OFL.txt and vt323-OFL.txt next to them.
  */
 
+/* Tiny5 has one weight; declaring it for 400 to 700 keeps browsers from smearing a fake bold. */
 @font-face {
-  font-family: 'Pixelify Sans';
+  font-family: 'Tiny5';
   font-style: normal;
-  font-weight: 500;
+  font-weight: 400 700;
   font-display: swap;
-  src: url(/static/pixelify-sans-latin-500-normal.woff2) format('woff2');
-}
-
-@font-face {
-  font-family: 'Pixelify Sans';
-  font-style: normal;
-  font-weight: 700;
-  font-display: swap;
-  src: url(/static/pixelify-sans-latin-700-normal.woff2) format('woff2');
+  src: url(/static/tiny5-latin-400-normal.woff2) format('woff2');
 }
 
 @font-face {
