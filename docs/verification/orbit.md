@@ -442,3 +442,33 @@ neither. *Re-checked* by `tests/test_gitcmd.py`: a commit in the player's shell 
 (they write the game's config, E22), the next commit is by the player's name; an older config is
 signed once and keeps its other settings; one with only a name is left alone. With the identity
 unset (the playground tests), a commit still stops as before (E21).
+
+## Field guide text (`web/static/infographic-text.js`, frontend's file; checked 2026-10-07)
+
+Run in the image (`firstcommit:latest`, git 2.43.0) with the game's configuration:
+
+| Tag | What ran | Result |
+|---|---|---|
+| G1 | `git rm --cached map.txt` on a file the last commit holds, then `git commit` | status 0; `D  map.txt` and `?? map.txt`: the deletion is staged, the file stays; the next commit no longer holds it |
+| G2 | `git pull` with diverged branches, `pull.rebase` unset | the fetch happens, then status 128: git asks how to reconcile (`--rebase`, `--no-rebase` or `--ff-only`) and merges nothing |
+| G3 | `git reset HEAD~1` (no option) with a change staged | `f` back to unstaged (` M f`), the working folder keeps `3`: the default `--mixed` resets the staging area too |
+| G4 | a conflicting `git merge side`, then `git merge --abort` | merge 1, abort 0; the file back to `main`'s version, nothing to commit |
+| E38 | `git restore --staged keys.txt` for a file the last commit does not hold | the file becomes untracked, not modified |
+| E52-E54 | `git status`, `git fetch`, `git pull` | git looks at the files only when a command runs: `git status` knew nothing of a push until a fetch |
+
+Texts that are right as written: `ls`, `git status`, `git diff`, `git log`, `git init`,
+`git clone`, `git add`, `git commit`, `git remote add`, `git push`, `git fetch`, `git switch -c`,
+`git merge`, `git merge --abort` (G4), `git revert`, `git reflog`, the dock, the mothership, the
+states untracked, staged, committed and modified, and every move but the ones below.
+
+Wrong or misleading, with the correction sent to frontend:
+
+| Item | Now | Why | Correction |
+|---|---|---|---|
+| command `git rm --cached <file>` | "Takes a file out of the staging area and leaves it in the working folder." | true for a new file; for a file the last commit holds it stages its deletion, so the next commit drops it (G1) | "Takes a file out of the staging area and keeps it in the working folder. For a file the last commit holds, the next commit then deletes it from the repository." |
+| command `git pull` | "A fetch, then a merge of the remote's branch into yours: your files update too." | with `pull.rebase` unset and both sides moved on, git merges nothing and asks you to choose (G2); when only the remote moved, it fast-forwards (E54) | "A fetch, then brings the remote's commits into your branch: a fast-forward when only the remote moved on; when both did, you choose a merge (--no-rebase) or a rebase (--rebase)." |
+| move mothership to workshop | "git pull (fetch, then merge)" | G2 | "git pull (fetch, then merge or rebase)" |
+| place workshop | "Your files as you edit them. Git watches but does not save them." | Git does not watch: it looks only when a command runs (E52-E54), the very lesson of 4-3 | "Your files as you edit them. Git saves nothing here until you add and commit." |
+| place vault | "Every commit you made, on this computer only, in the hidden .git folder." | it also holds the commits you fetched or cloned | "Every commit of your repository, yours and the ones you fetched, on this computer, in the hidden .git folder." |
+| command `git reset <commit>` | "Moves the current branch's label back to an earlier commit." | the default also resets the staging area (G3); the target need not be earlier | "Moves the current branch's label to another commit, and the staging area with it; the working folder keeps its files." |
+| state move staged to modified | "git restore --staged" | only for a file the last commit holds; a new file becomes untracked (E38) | "git restore --staged (a file the last commit holds)", and a second move staged to untracked: "git restore --staged (a new file, once the repository has a commit)" |
