@@ -50,6 +50,24 @@ Done since: the code review and the security review (both report only), then a f
 `SSH_AGENT_PID`, `GH_TOKEN`, `GITHUB_TOKEN` and `GH_ENTERPRISE_TOKEN` from the page's shell (the
 lead recommends yes).
 
+## Orbit (2026-10-07, merged into `phase-2-engine` at 7858432)
+
+The user approved a new look and level style (`docs/drafts/orbit-design.html`); the contract is
+`docs/briefs/ORBIT.md`. All 1402 tests, the 19 Docker tests, ruff, mypy and ESLint pass.
+- The page's terminal runs the game's bash; typed lines and their exit status reach the game
+  (`Observation.commands`, goals read them, Rama reacts to them).
+- Three short levels on real git: `liftoff-aboard`, `liftoff-flag`, `cargo-first`, with scenes,
+  stars, par, command cards and decks; texts fact-checked in `docs/verification/orbit.md`.
+- The Orbit page: map of sectors, level screen (zones, goals, Rama, VT323 terminal), scenes,
+  completion dock, collection. Tiny5 headings. The old level and the old page modules are gone.
+- termlab `firstcommit` is at 567ba04 (per-look font size, font/woff2).
+- Team: named teammates engine and frontend, and the artist subagent (`.claude/agents/artist.md`)
+  that whoever needs graphics calls.
+- Waiting for the user: delete lessons, answer steps and the map guide (with map.js and the
+  theme-time files), drop the empty `basics` chapter, keep the playground; and whether the dock
+  should start small.
+- Saves from before Orbit do not load: `deploy/docker/run reset`.
+
 ## Phase 2b: visual explanations (state at the end of 2026-10-07)
 
 The user picked the time-travel theme and asked for picture-first explanations (AUTHORING 3.5)
