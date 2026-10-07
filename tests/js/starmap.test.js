@@ -5,7 +5,7 @@ const test = require("node:test");
 const { fakeServer, installBrowser, load, record, settle } = require("./load");
 
 const document = installBrowser();
-const { StarMap, createGameApi, Dom } = load(["dom.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "api.js", "progress.js", "dialog.js", "collection.js", "starmap.js"], ["StarMap", "createGameApi", "Dom"]);
+const { StarMap, createGameApi, Dom } = load(["dom.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "api.js", "progress.js", "dialog.js", "starmap.js"], ["StarMap", "createGameApi", "Dom"]);
 
 function starMap(status = record("status")) {
   const server = fakeServer({ "/api/reset": {} });
@@ -145,10 +145,7 @@ test("the card shows the mission's command and its best stars", () => {
   assert.equal(run.q(".card-meta .art-stars").getAttribute("aria-label"), "2 of 3 stars");
 });
 
-test("the collection button opens the command collection", () => {
+test("the bar links the field guide", () => {
   const run = starMap();
-  run.q(".collection-open").click();
-  const dialog = document.body.querySelector("dialog.collection");
-  assert.ok(dialog.open);
-  dialog.close();
+  assert.equal(run.q(".field-guide-open").getAttribute("href"), "#/guide");
 });

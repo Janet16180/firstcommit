@@ -28,7 +28,7 @@ test("the page loads every script another script needs, before it", () => {
 const styles = [...page.matchAll(/<link rel="stylesheet" href="\/static\/([^"]+)">/g)].map((match) => match[1]);
 
 test("the page wears the Orbit look: the shipped fonts, the art's styles and the design's stylesheet last, over app.css", () => {
-  assert.deepEqual(styles.slice(styles.indexOf("app.css")), ["app.css", "fonts.css", "art-style.css", "orbit.css"]);
+  assert.deepEqual(styles.slice(styles.indexOf("app.css")), ["app.css", "fonts.css", "art-style.css", "art-infographics.css", "orbit.css"]);
 });
 
 test("the page loads nothing from the network", () => {
@@ -42,5 +42,5 @@ test("the old level page is gone; the time theme's map guide stays in the tree, 
 });
 
 test("the page loads the map screen, the level screen and their parts", () => {
-  for (const name of ["art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "typed.js", "collection.js", "scene.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "level-screen.js", "starmap.js"]) assert.ok(scripts.includes(name), name);
+  for (const name of ["art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "typed.js", "scene.js", "art-infographics.js", "infographic-text.js", "field-guide.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "level-screen.js", "starmap.js"]) assert.ok(scripts.includes(name), name);
 });

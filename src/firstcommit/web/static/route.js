@@ -1,8 +1,8 @@
 "use strict";
 
 /*
- * The page's addresses, in the fragment: #/ (the map), #/level/<id>, #/cards[/<chapter>] and
- * #/notes[/<chapter>]. The link the server prints carries the access key in the fragment too
+ * The page's addresses, in the fragment: #/ (the map), #/level/<id>, #/guide (the field guide),
+ * #/cards[/<chapter>] and #/notes[/<chapter>]. The link the server prints carries the access key in the fragment too
  * (#token=...), which client.js removes; anything from "&" on is not part of the address.
  * Defines one global, Route.
  */
@@ -27,6 +27,7 @@ const Route = (function () {
     const malformed = rawName !== "" && name === null;
     let route = HOME;
     if (view === "level" && name) route = { view, id: name };
+    else if (view === "guide") route = { view };
     else if ((view === "cards" || view === "notes") && !malformed) route = { view, chapter: name };
     return route;
   }

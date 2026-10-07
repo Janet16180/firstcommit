@@ -477,95 +477,31 @@ pre.code code {
   padding: 10px 18px;
 }
 
-/* The command collection and its cards; a card takes its sector's zone colour. */
-.collection {
-  width: min(760px, calc(100% - 32px));
-  max-height: calc(100% - 32px);
-  overflow: auto;
-  padding: 22px;
-  color: var(--ink);
+/* The field guide: a head with the way back, then the artist's three infographics. */
+.field-guide {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 28px 16px 60px;
+  display: flex;
+  flex-direction: column;
+  gap: 36px;
 }
 
-.collection::backdrop {
-  background: rgba(4, 3, 15, 0.66);
+.guide-head {
+  display: flex;
+  gap: 18px;
+  align-items: flex-start;
 }
 
-.collection h2 {
-  margin: 0 0 4px;
-  font-family: var(--f-px);
+.guide-head h1 {
+  margin: 0;
+  font: 400 clamp(2rem, 6vw, 3rem)/1 var(--f-px);
+  text-shadow: 3px 3px 0 var(--z-va), 6px 6px 0 var(--edge);
 }
 
-.collection > p {
-  margin: 0 0 16px;
+.guide-head p {
+  margin: 8px 0 0;
   color: var(--ink-soft);
-}
-
-.coll-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 14px;
-  margin-bottom: 18px;
-}
-
-.cmdcard {
-  --cc: var(--z-wd);
-  display: block;
-  text-align: left;
-  background: var(--crt);
-  color: var(--night-ink);
-  border: 3px solid var(--cc);
-  box-shadow: 4px 4px 0 var(--edge);
-  padding: 12px 14px;
-}
-
-.cmdcard[data-sector="1"],
-.cmdcard[data-sector="5"],
-.cmdcard[data-sector="9"] {
-  --cc: var(--z-st);
-}
-
-.cmdcard[data-sector="2"],
-.cmdcard[data-sector="6"],
-.cmdcard[data-sector="10"] {
-  --cc: var(--z-va);
-}
-
-.cmdcard[data-sector="3"],
-.cmdcard[data-sector="7"],
-.cmdcard[data-sector="11"] {
-  --cc: var(--z-re);
-}
-
-.cmdcard code {
-  display: block;
-  background: none;
-  padding: 0;
-  color: var(--crt-cmd);
-  font-size: 1.45rem;
-  line-height: 1.1;
-  white-space: normal;
-}
-
-.cmdcard p {
-  margin: 6px 0 0;
-  font-size: 0.88rem;
-  line-height: 1.4;
-  color: var(--night-soft);
-}
-
-.cmdcard p code {
-  display: inline;
-  font-size: 1em;
-  color: var(--night-ink);
-}
-
-.cmdcard.is-locked {
-  border-style: dashed;
-  border-color: var(--night-mute);
-}
-
-.cmdcard.is-locked code {
-  color: var(--s-clean);
 }
 
 .map-foot {

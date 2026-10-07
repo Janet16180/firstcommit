@@ -30,3 +30,7 @@ test("the access key a link may carry after the address is not part of it", () =
 test("a broken escape in the address is the map, not an error", () => {
   assert.deepEqual(Route.parse("#/level/%E0%A4%A"), { view: "home" });
 });
+
+test("the field guide has its own address", () => {
+  assert.deepEqual(Route.parse("#/guide"), { view: "guide" });
+});

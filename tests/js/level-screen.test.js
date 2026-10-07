@@ -7,7 +7,7 @@ const { createClock, fakeServer, httpError, installBrowser, load, record, settle
 
 const document = installBrowser({ reducedMotion: true });
 const { LevelScreen, createGameApi } = load(
-  ["dom.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "collection.js", "scene.js", "level-screen.js"],
+  ["dom.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "level-screen.js"],
   ["LevelScreen", "createGameApi"],
 );
 
