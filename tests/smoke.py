@@ -116,17 +116,25 @@ def play_the_template_level(port: int, token: str) -> dict[str, Any]:
     assert status == 200, level
     status, active = call(port, "POST", "/api/start", token, {"level": TEMPLATE_LEVEL})
     assert status == 200, active
+    status, _ = call(port, "GET", "/api/observe", token)
+    assert status == 200
     page = open_page_terminal(port, token)
     type_and_expect(page, "", PROMPT)
+    typed = []
     for step in level["steps"]:
-        type_and_expect(page, player_command(step["command"]) + "\r", PROMPT)
+        typed.append(player_command(step["command"]))
+        type_and_expect(page, typed[-1] + "\r", PROMPT)
         answer = None
         if step["kind"] == "answer":
-            shown = re.search(ANSWER, type_and_expect(page, READ_ANSWER[step["id"]] + "\r", ANSWER))
+            typed.append(READ_ANSWER[step["id"]])
+            shown = re.search(ANSWER, type_and_expect(page, typed[-1] + "\r", ANSWER))
             answer = shown[1] if shown else None
         status, result = call(port, "POST", "/api/step", token, {"answer": answer})
         assert status == 200 and result["correct"], (step["id"], result)
     page.close()
+    status, observed = call(port, "GET", "/api/observe", token)
+    assert status == 200, observed
+    assert observed["commands"] == [{"line": line, "status": 0} for line in typed]
     status, checked = call(port, "POST", "/api/check", token, {"answer": None, "auto": True})
     assert status == 200, checked
     return dict(checked)

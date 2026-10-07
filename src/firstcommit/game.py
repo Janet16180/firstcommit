@@ -43,6 +43,7 @@ from typing import Any, Literal, TypedDict
 from firstcommit import (
     cards,
     changes,
+    commands,
     demos,
     explanations,
     gitcmd,
@@ -62,7 +63,7 @@ from firstcommit.demos import Line
 from firstcommit.lab import Lab
 from firstcommit.markup import Block
 from firstcommit.playground import ButtonOffError as ButtonOffError
-from firstcommit.records import ButtonView, Press, Who
+from firstcommit.records import ButtonView, Command, Press, Who
 from firstcommit.repomap import ObjectInfo, Snapshot
 from firstcommit.save import Payout
 from firstcommit.save import SaveError as SaveError
@@ -244,7 +245,9 @@ class Observation(TypedDict):
     the stand-in GitHub; ``teammate_events`` those in the teammate's clone, kept apart because an
     event's sentence does not say which clone it happened in. ``buttons`` is each person's bar of
     the playground as it stands now (`firstcommit.playground.buttons`), and empty for a level
-    without one.
+    without one. ``commands`` are the lines typed in the game's terminal since the last
+    observation, oldest first (`firstcommit.commands`); like the events, there are none at a
+    level's first observation.
     """
 
     level: str
@@ -254,6 +257,7 @@ class Observation(TypedDict):
     events: list[EventView]
     teammate_events: list[EventView]
     buttons: dict[Who, list[ButtonView]]
+    commands: list[Command]
 
 
 class PressView(TypedDict):
@@ -651,8 +655,8 @@ def observe() -> Observation:
         active, entry = _playing()
         lab = runner.lab_of(entry.id)
         last = save.load_observed()
-        now = _snapshots(entry.id, lab)
-        observation = _observation(last, now, _buttons(lab, now))
+        now, typed = _look(entry.id, lab, last)
+        observation = _observation(last, now, _buttons(lab, now), typed)
         if now != last:
             save.write_observed(now)
     return observation
@@ -703,12 +707,12 @@ def press(person: str, button: str) -> PressView:
         if not lab.teammate.exists():
             raise NoPlaygroundError(f"the level {entry.id!r} has no playground")
         last = save.load_observed()
-        then = _snapshots(entry.id, lab)
-        before = _observation(last, then, _buttons(lab, then))
+        then, typed_before = _look(entry.id, lab, last)
+        before = _observation(last, then, _buttons(lab, then), typed_before)
         facts = playground.facts(lab, who, _clones(then)[who], then["github"])
         pressed = playground.press(lab, who, which)
-        now = _snapshots(entry.id, lab)
-        observation = _observation(then, now, _buttons(lab, now))
+        now, typed_during = _look(entry.id, lab, then)
+        observation = _observation(then, now, _buttons(lab, now), typed_during)
         if now != last:
             save.write_observed(now)
     found = explanations.explain(pressed, _clones(then)[who], _clones(now)[who], facts, playground.BUTTON_IDS)
@@ -868,6 +872,25 @@ def shell_environment(base: Mapping[str, str]) -> dict[str, str]:
     return gitcmd.shell_environment(base, save.home())
 
 
+def shell_command() -> list[str]:
+    """
+    Give the command of the shell the game opens for the player, writing its startup file first.
+
+    Whatever the player's own shell, it is bash with the game's startup file
+    (`firstcommit.commands.startup`): a plain prompt naming the folder, never the user or the
+    machine, and each command line typed logged in the game home for `observe`. The page's
+    terminal and ``firstcommit shell`` both run it.
+
+    Returns
+    -------
+    list[str]
+        The program and its arguments.
+    """
+    home = save.home()
+    startup = save.write_shell_startup(commands.startup(home / save.COMMANDS_FILE, home / save.HISTORY_FILE))
+    return ["bash", "--noprofile", "--rcfile", str(startup), "-i"]
+
+
 def terminal_folder() -> str:
     """
     Give the folder a new terminal opens in: the lab's project, else the lab, else the player's home.
@@ -1004,9 +1027,12 @@ def _playground_id[Name: str](name: str, names: Iterable[Name], what: str) -> Na
     return known[0]
 
 
-def _snapshots(level_id: str, lab: Lab) -> save.Observed:
+def _look(level_id: str, lab: Lab, last: save.Observed | None) -> tuple[save.Observed, list[Command]]:
     """
-    Snapshot every repository of a level's lab; the caller holds the save's lock.
+    Read the commands typed since an observation, then snapshot every repository of a level's lab; the caller holds the save's lock.
+
+    The log is read first, so every command returned had finished before the snapshots were
+    taken, and its changes are in them.
 
     Parameters
     ----------
@@ -1014,18 +1040,30 @@ def _snapshots(level_id: str, lab: Lab) -> save.Observed:
         The level in progress.
     lab : Lab
         Its lab.
+    last : save.Observed | None
+        The observation to go on from. With none, or one of another level, the commands typed
+        so far are skipped: a level's first observation tells none, as it tells no events.
 
     Returns
     -------
-    save.Observed
-        The player's repository, and the stand-in GitHub and the teammate's clone where they exist.
+    tuple[save.Observed, list[Command]]
+        The player's repository, the stand-in GitHub and the teammate's clone where they exist,
+        and where the log has been read to; then the commands typed since ``last``, oldest first.
     """
-    return {
+    log = save.home() / save.COMMANDS_FILE
+    typed: list[Command] = []
+    if last is not None and last["level"] == level_id:
+        typed, offset = commands.since(log, last["log_offset"])
+    else:
+        offset = commands.end(log)
+    now: save.Observed = {
         "level": level_id,
         "project": repomap.snapshot(lab.project),
         "github": repomap.snapshot(lab.github) if lab.github.exists() else None,
         "teammate": repomap.snapshot(lab.teammate) if lab.teammate.exists() else None,
+        "log_offset": offset,
     }
+    return now, typed
 
 
 def _buttons(lab: Lab, now: save.Observed) -> dict[Who, list[ButtonView]]:
@@ -1066,7 +1104,7 @@ def _clones(observed: save.Observed) -> dict[Who, Snapshot]:
     return {"you": observed["project"], "alex": teammate} if teammate is not None else {}
 
 
-def _observation(last: save.Observed | None, now: save.Observed, buttons: dict[Who, list[ButtonView]]) -> Observation:
+def _observation(last: save.Observed | None, now: save.Observed, buttons: dict[Who, list[ButtonView]], typed: list[Command]) -> Observation:
     """
     Tell what changed in a lab between two observations.
 
@@ -1078,6 +1116,8 @@ def _observation(last: save.Observed | None, now: save.Observed, buttons: dict[W
         The lab now.
     buttons : dict[Who, list[ButtonView]]
         The playground's buttons now (`_buttons`).
+    typed : list[Command]
+        The commands typed between the two (`_look`).
 
     Returns
     -------
@@ -1097,6 +1137,7 @@ def _observation(last: save.Observed | None, now: save.Observed, buttons: dict[W
         "events": _event_views(events),
         "teammate_events": _event_views(teammate_events),
         "buttons": buttons,
+        "commands": typed,
     }
 
 

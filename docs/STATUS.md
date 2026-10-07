@@ -80,9 +80,10 @@ Parked as WIP when the day ended (resume in this order, at most 3 teammates work
    terminal setting, api.js, records.json), then timetravel (wire typed lines into live.js, one
    paragraph in the four-places draft). Done: termlab 01ee4e8 (the shell option) and core
    d053403 (the game's bash with prompt `project $ `, the command log, `Observation.commands`;
-   `firstcommit shell` already uses it). Next: web adds `shell=game.shell_command` to the
-   terminal route, api.js and records.json on d053403; then timetravel wires live.js (its parse
-   is 30b2e11, merged). Until web's link, the page's terminal runs the user's $SHELL.
+   `firstcommit shell` already uses it), and web's link on `p2/typed-commands` (the page's
+   terminal runs `game.shell_command`, api.js checks `commands`, the smoke flow checks that
+   every typed line comes back from `/api/observe`; helper job C is done). Next: timetravel
+   wires live.js (its parse is 30b2e11, merged), waiting for the new frontend's design.
 2. Chapter 1 "Git, GitHub and your first clone" (plan approved; written by the author on
    `p2/start` 6f655bb, with `levels/_start.py` helpers and `docs/verification/start.md`; fast
    tier 1140 passed, 1 skipped (the lesson-frames test, waiting for P1); both levels play to the

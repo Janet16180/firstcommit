@@ -123,6 +123,19 @@ class ObjectInfo(TypedDict):
     size: int
 
 
+
+class Command(TypedDict):
+    """
+    One command line the player typed in the game's terminal (`firstcommit.commands`), and how it ended.
+
+    ``line`` is the whole line as the shell's history keeps it (``git add a.txt && git commit``
+    is one line); ``status`` is the exit status of the last part that ran, 130 when it was
+    stopped with Ctrl-C.
+    """
+
+    line: str
+    status: int
+
 Who = Literal["you", "alex"]
 """The two people of the playground (`firstcommit.playground`), who share one remote."""
 Button = Literal["edit", "add", "commit", "push", "fetch", "pull", "pull-no-rebase", "status", "merge-abort", "keep-ours", "keep-theirs"]

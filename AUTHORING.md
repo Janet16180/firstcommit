@@ -97,7 +97,9 @@ uv run firstcommit --help
 - **A small story, not trivia**: "a teammate pushed while you were working", "the build folder
   made the repository huge", "you committed on the wrong branch".
 - **Real Git only.** The player works on a real repository in a real terminal; the game never
-  fakes what git would do.
+  fakes what git would do. The terminal's prompt is the game's (the folder's name, as in
+  `project $ `), and the commands typed there are logged in the game home only, so the figure
+  shows the command that really ran.
 - **Mistakes are expected.** Wrong answers get a nudge that points at what to look at, never the
   answer and never blame.
 - **The check notices success by itself.** Most levels are checked against the repository as the

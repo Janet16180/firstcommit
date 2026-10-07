@@ -64,7 +64,11 @@ def shell_folder() -> Path:
 
 
 TERMINAL = terminal.TerminalSettings(
-    protocol="firstcommit", notice_prefix="firstcommit", environment=shell_environment, start_folder=shell_folder
+    protocol="firstcommit",
+    notice_prefix="firstcommit",
+    environment=shell_environment,
+    start_folder=shell_folder,
+    shell=game.shell_command,
 )
 
 
