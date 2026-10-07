@@ -1,5 +1,8 @@
 # First Commit: status and handoff
 
+A fresh session on the graphic work starts from `docs/briefs/GRAPHICS_SESSION.md`; this file
+keeps the full history.
+
 Read this first when resuming, then `docs/DESIGN.md` and `AUTHORING.md`.
 
 ## How we work
