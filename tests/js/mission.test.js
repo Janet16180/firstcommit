@@ -166,3 +166,23 @@ test("a prediction offers its choices as buttons under the goal, and sends the o
   buttons[1].click();
   assert.deepEqual(run.seen.chosen, ["vault"]);
 });
+
+const challenge = () => ({ ...record("level"), challenge: true, card: null });
+
+test("a challenge names its goals as an end state, ticks each one met whatever the order, and marks none as current", () => {
+  const run = mission({ level: challenge(), active: { ...record("active"), step: 1, done: ["stage"] } });
+  assert.match(run.q("h3").textContent, /Challenge/);
+  const goals = run.all(".goal");
+  assert.deepEqual(goals.map((item) => item.className), ["goal", "goal", "goal is-done"]);
+  assert.equal(run.q(".goal.is-current"), null);
+  assert.equal(run.q(".goal input, .goal button"), null);
+  run.view.setStep(2, ["look", "stage"]);
+  assert.deepEqual(run.all(".goal").map((item) => item.className), ["goal is-done", "goal", "goal is-done"]);
+});
+
+test("a challenge types nothing when a command is clicked, and has no note saying it would", () => {
+  const run = mission({ level: challenge() });
+  run.all(".goal")[1].querySelector("pre code").click();
+  assert.deepEqual(run.seen.typed, []);
+  assert.equal(run.q(".tapnote"), null);
+});

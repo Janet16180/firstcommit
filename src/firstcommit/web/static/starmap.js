@@ -64,10 +64,10 @@ const StarMap = (function () {
   }
 
   function node(level, point, { number, here, onChoose }) {
-    const label = `Mission ${number}: ${level.title}${level.done ? ", done" : ""}`;
+    const label = `${level.challenge ? "Challenge" : "Mission"} ${number}: ${level.title}${level.done ? ", done" : ""}`;
     return el("button", {
       type: "button",
-      class: level.done ? "node is-done" : "node",
+      class: ["node", level.done && "is-done", level.challenge && "is-boss"].filter(Boolean).join(" "),
       style: `left:${point[0]}%;top:${point[1]}%`,
       "data-level": level.id,
       "aria-label": label,
@@ -111,9 +111,10 @@ const StarMap = (function () {
     const { active } = status;
     const other = active && active.level !== id ? Progress.findLevel(status.chapters, active.level) : null;
     return [
-      el("span", { class: "card-num" }, `Sector ${number}, mission ${mission}`),
+      el("span", { class: "card-num" }, `Sector ${number}, ${level.challenge ? "challenge" : "mission"} ${mission}`),
       el("h2", { class: "card-title" }, level.title),
-      el("div", { class: "card-meta" }, el("code", {}, level.command), ArtSprites.stars(level.stars)),
+      /* A challenge's command stays hidden until it is solved: it would give the answer away. */
+      el("div", { class: "card-meta" }, !(level.challenge && !level.done) && el("code", {}, level.command), ArtSprites.stars(level.stars)),
       el("p", { class: "card-note" }, other ? `Starting it ends “${other.title}”, which is in progress.` : ""),
       el("a", { class: "btn btn-primary", href: levelHref(id) }, playLabel(level, active)),
     ];

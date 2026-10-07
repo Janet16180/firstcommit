@@ -132,10 +132,11 @@ const LevelScreen = (function () {
     }
     if (!result.correct) return;
     state.step = result.step;
+    state.done = result.done;
     state.auto_check = result.quest_done;
     ui.comms.say(result.message, mood);
     ctx.sound.play("goal");
-    screen.mission.setStep(state.step);
+    screen.mission.setStep(state.step, state.done);
   }
 
   /* A check's result. An automatic check that does not solve says nothing: the player did not ask. */
@@ -173,9 +174,10 @@ const LevelScreen = (function () {
     const status = await ctx.refresh();
     const next = Progress.nextLevel(status.chapters, levelId);
     ctx.sound.play("complete");
-    await Completion.band({ title: "Mission complete", subtitle: `Mission ${screen.number}: ${screen.level.title}`, stars, timers: ctx.timers, reducedMotion: ctx.reducedMotion });
+    await Completion.band({ title: screen.level.challenge ? "Challenge complete" : "Mission complete", subtitle: `Mission ${screen.number}: ${screen.level.title}`, stars, timers: ctx.timers, reducedMotion: ctx.reducedMotion });
     const dock = Completion.dock({
-      title: `Mission complete: mission ${screen.number}`,
+      title: `${screen.level.challenge ? "Challenge" : "Mission"} complete: ${screen.level.challenge ? "challenge" : "mission"} ${screen.number}`,
+      challenge: screen.level.challenge,
       stars,
       lesson: debrief,
       reward: rewardLine(payout, screen.state.hints),
@@ -236,7 +238,7 @@ const LevelScreen = (function () {
   async function tick(screen) {
     const { game } = screen.ctx;
     try {
-      const plan = Polling.plan(screen.level.steps, screen.state);
+      const plan = Polling.plan(screen.level.steps, screen.state, screen.level.challenge);
       const observation = await game.observe();
       screen.ui.zones.update(observation);
       measureTerminal(screen);
@@ -257,9 +259,12 @@ const LevelScreen = (function () {
     const { game } = ctx;
     screen.state = { ...active };
     screen.number = Progress.missionNumber(ctx.status().chapters, screen.levelId)?.number || "";
-    ui.number.textContent = `Mission ${screen.number}`;
+    ui.number.textContent = `${level.challenge ? "Challenge" : "Mission"} ${screen.number}`;
     ui.name.textContent = level.title;
-    ui.command.textContent = level.command;
+    /* A challenge keeps its command hidden until solved once: its card, which names it, is null till then. */
+    ui.command.textContent = level.challenge && !level.card ? "" : level.command;
+    ui.command.hidden = ui.command.textContent === "";
+    screen.element.classList.toggle("is-challenge", level.challenge);
     ui.intro.hidden = level.scene.length === 0;
     ui.restart.disabled = false;
     drawHud(screen);

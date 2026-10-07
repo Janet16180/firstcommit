@@ -79,3 +79,7 @@ test("without a reward line or a new card the dock leaves them out", () => {
   assert.equal(dock.querySelector(".dock-xp"), null);
   assert.equal(dock.querySelector(".dock-card"), null);
 });
+
+test("a challenge's dock is the gold one", () => {
+  assert.ok(Completion.dock({ title: "Done", stars: 3, lesson: null, challenge: true, next: null, onRetry: () => {} }).classList.contains("is-challenge"));
+});

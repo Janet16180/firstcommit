@@ -5,7 +5,8 @@
  * steps, done ones checked, the current one marked), and the hints. A goal the game watches for
  * passes from the terminal; one to read has a Continue button; one with a question has its answer
  * box while it is current; a prediction offers its choices as buttons, and any of them passes. A level that asks a question after its steps adds it as the last goal.
- * Any command in the panel types itself in the terminal when clicked. It only shows the level and
+ * Any command in the panel types itself in the terminal when clicked. A challenge shows its goals
+ * as end states to reach in any order: no goal is current, and nothing types itself. It only shows the level and
  * hands the player's actions to its owner; the server judges everything. Needs dom.js, markup.js
  * and art-sprites.js. Defines one global, Mission.
  */
@@ -54,8 +55,11 @@ const Mission = (function () {
 
   const stateOf = (index, current) => (index < current ? "done" : index === current ? "current" : null);
 
-  function goals(level, current, on) {
-    const steps = level.steps.map((step, index) => goal(step.text, stateOf(index, current), index === current && currentAction(step, on)));
+  /* A guided quest's goals are met in order, so the first `current` are done; a challenge's goals
+     are met in any order, so each is done when its id is in `done`, and none is current. */
+  function goals(level, current, done, on) {
+    const state = (step, index) => (level.challenge ? (done.includes(step.id) ? "done" : null) : stateOf(index, current));
+    const steps = level.steps.map((step, index) => goal(step.text, state(step, index), !level.challenge && index === current && currentAction(step, on)));
     const asks = level.question.length > 0;
     const last = asks && goal(level.question, stateOf(level.steps.length, current), current === level.steps.length && answerForm([], level.placeholder, on.onCheck, "Check"));
     return [steps, last];
@@ -68,6 +72,7 @@ const Mission = (function () {
      onCheck(answer), onHint(), onType(command). */
   function create({ level, active, ...on }) {
     let current = active.step;
+    let done = active.done;
     let used = active.hints;
     const total = active.hints_total;
     const list = el("ol", { class: "goals" });
@@ -77,19 +82,19 @@ const Mission = (function () {
     let cost = null;
     const element = el("aside", { class: "mission px", "aria-label": "Mission" },
       el("div", { class: "brief" }, Markup.render(level.briefing)),
-      el("h3", {}, "Goals"),
+      el("h3", {}, level.challenge ? "Challenge: the end state" : "Goals"),
       list,
       hintList,
       el("div", { class: "hint-row" }, hintButton, hintNote),
-      el("p", { class: "tapnote" }, "Click any highlighted command to type it in the terminal."),
+      !level.challenge && el("p", { class: "tapnote" }, "Click any highlighted command to type it in the terminal."),
     );
     element.addEventListener("click", (event) => {
       const code = event.target.closest && event.target.closest("code");
-      if (code && !event.target.closest("button")) on.onType(command(code.textContent));
+      if (code && !level.challenge && !event.target.closest("button")) on.onType(command(code.textContent));
     });
 
     function drawGoals() {
-      list.replaceChildren(...goals(level, current, on).flat().filter(Boolean));
+      list.replaceChildren(...goals(level, current, done, on).flat().filter(Boolean));
     }
 
     function drawHints() {
@@ -104,8 +109,10 @@ const Mission = (function () {
     return {
       element,
 
-      setStep(step) {
+      /* The quest's place: the step it is at, and the ids of the goals met (StepResult.done). */
+      setStep(step, met = done) {
         current = step;
+        done = met;
         drawGoals();
       },
 
@@ -124,6 +131,7 @@ const Mission = (function () {
       /* Every goal checked: the level is solved. */
       solved() {
         current = Infinity;
+        done = level.steps.map((step) => step.id);
         drawGoals();
       },
 

@@ -8,7 +8,8 @@
  *
  * band({title, subtitle, stars, timers, reducedMotion}) plays the band and resolves when it has
  *   gone (after BAND_MS, or at once on a click); with reduced motion it shows nothing.
- * dock({title, stars, lesson, reward, card, next, onRetry}) builds the dock: `lesson` is the
+ * dock({title, stars, lesson, reward, card, challenge, next, onRetry}) builds the dock (gold for a
+ *   challenge): `lesson` is the
  *   game's blocks or null, `reward` a line on what this play paid or null, `card` the new command card
  *   (CommandCard) or null, `next` {href, title} or null.
  */
@@ -39,8 +40,8 @@ const Completion = (function () {
     });
   }
 
-  function dock({ title, stars, lesson, reward = null, card = null, next, onRetry }) {
-    return el("div", { class: "dock px", role: "status", "aria-live": "polite" },
+  function dock({ title, stars, lesson, reward = null, card = null, challenge = false, next, onRetry }) {
+    return el("div", { class: challenge ? "dock px is-challenge" : "dock px", role: "status", "aria-live": "polite" },
       el("div", { class: "dock-stars" }, ArtSprites.stars(stars)),
       el("div", { class: "dock-info" },
         el("b", { class: "dock-title" }, title),

@@ -388,3 +388,32 @@ test("a prediction sends the choice, shows the reveal on Rama's line in a neutra
   assert.equal(run.seen.sounds.includes("correct"), false);
   run.view.dispose();
 });
+
+test("a challenge says so in the head, hides its command until solved, watches every goal, and docks in gold", async () => {
+  const level = { ...seenLevel(), challenge: true, card: null };
+  const run = screen({ active: { ...record("active"), step: 0, done: [] }, replies: { "/api/level": level, "/api/step": { ...record("step"), step: 0, done: [] } } });
+  await settle();
+  assert.equal(run.q(".hud-num").textContent, "Challenge 2.2");
+  assert.equal(run.q(".hud-command").hidden, true);
+  assert.ok(run.view.element.classList.contains("is-challenge"));
+  assert.deepEqual(run.routes(), ["/api/level", "/api/observe", "/api/step"]);
+  run.view.dispose();
+});
+
+test("a challenge's goals tick in the order they are met", async () => {
+  const level = { ...seenLevel(), challenge: true, card: null };
+  const run = screen({ active: { ...record("active"), step: 0, done: [] }, replies: { "/api/level": level, "/api/step": { ...correct(1), done: ["stage"] } } });
+  await settle();
+  assert.deepEqual(run.all(".goal").map((goal) => goal.classList.contains("is-done")), [false, false, true]);
+  run.view.dispose();
+});
+
+test("a solved challenge docks in gold", async () => {
+  const level = { ...seenLevel(), challenge: true, card: null };
+  const run = screen({ active: { ...record("active"), step: 3, auto_check: true }, replies: { "/api/level": level, "/api/check": record("check_solved") } });
+  await settle();
+  await settle();
+  assert.ok(run.q(".dock").classList.contains("is-challenge"));
+  assert.match(run.q(".dock-title").textContent, /^Challenge complete/);
+  run.view.dispose();
+});
