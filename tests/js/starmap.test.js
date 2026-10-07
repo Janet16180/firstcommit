@@ -5,7 +5,7 @@ const test = require("node:test");
 const { fakeServer, installBrowser, load, record, settle } = require("./load");
 
 const document = installBrowser();
-const { StarMap, createGameApi, Dom } = load(["dom.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "api.js", "progress.js", "dialog.js", "starmap.js"], ["StarMap", "createGameApi", "Dom"]);
+const { StarMap, createGameApi, Dom } = load(["dom.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "api.js", "progress.js", "dialog.js", "collection.js", "starmap.js"], ["StarMap", "createGameApi", "Dom"]);
 
 function starMap(status = record("status")) {
   const server = fakeServer({ "/api/reset": {} });
@@ -28,7 +28,7 @@ test("the head shows Rama, the game's name and what it is", () => {
 
 test("the bar counts the missions done, offers the cards due and holds the look and sound buttons", () => {
   const run = starMap();
-  assert.equal(run.q(".counter").textContent, "Missions 1/2");
+  assert.equal(run.all(".counter")[1].textContent, "Missions 1/2");
   assert.equal(run.q('.map-bar a[href="#/cards"]').textContent, "Review 4 cards");
   assert.ok(run.q(".map-bar .pref-theme"));
 });
@@ -123,4 +123,32 @@ test("erasing all progress asks first, then resets and shows the fresh map", asy
   assert.deepEqual(run.server.calls.map((call) => [call.path, call.body]), [["/api/reset", { confirm: true }]]);
   assert.equal(run.seen.refreshed, 1);
   assert.equal(run.seen.shown, 1);
+});
+
+test("the bar counts the stars won out of three per mission, with a drawn star", () => {
+  const run = starMap();
+  const counter = run.q(".stars-won");
+  assert.equal(counter.getAttribute("aria-label"), "2 of 6 stars");
+  assert.ok(counter.querySelector("svg.art-star"));
+  assert.equal(counter.querySelector("b").textContent, "2/6");
+});
+
+test("each sector says in one line what it teaches", () => {
+  const run = starMap();
+  assert.equal(run.all(".sector-blurb")[0].textContent, "What Git and GitHub are, and your first clone.");
+});
+
+test("the card shows the mission's command and its best stars", () => {
+  const run = starMap();
+  run.all(".node")[0].click();
+  assert.equal(run.q(".card-meta code").textContent, "git init");
+  assert.equal(run.q(".card-meta .art-stars").getAttribute("aria-label"), "2 of 3 stars");
+});
+
+test("the collection button opens the command collection", () => {
+  const run = starMap();
+  run.q(".collection-open").click();
+  const dialog = document.body.querySelector("dialog.collection");
+  assert.ok(dialog.open);
+  dialog.close();
 });
