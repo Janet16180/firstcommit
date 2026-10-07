@@ -713,9 +713,8 @@ def test_each_slide_changes_exactly_the_place_it_is_about() -> None:
         assert changed_places(before["map"], after["map"]) == expected, slide_id
 
 
-def test_every_slide_draws_the_places_or_the_timeline() -> None:
-    views = [slide.view for slide in level.LESSON]
-    assert views == ["places"] * 8 + ["map"]
+def test_every_slide_draws_the_places_so_a_commit_is_one_picture_throughout() -> None:
+    assert [slide.view for slide in level.LESSON] == ["places"] * len(level.LESSON)
 
 
 def test_every_slide_reads_its_picture_in_at_most_three_short_sentences() -> None:

@@ -20,7 +20,7 @@ What is Git?, 1.6 First-Time Git Setup, 2.2 Recording Changes to the Repository)
 ### Lesson
 
 Picture-first since 2026-10-06 (AUTHORING.md section 3.5): each slide shows one change in the
-places figure (the map for the last one), its `text` reads the picture in at most three
+places figure (the last one too, so a commit is one picture throughout: mapcheck's fix), its `text` reads the picture in at most three
 sentences, and details sit in its folded `more`. *Re-checked* by
 `test_each_slide_changes_exactly_the_place_it_is_about` (on the real `demos.frames`) and the
 level's other lesson tests. The figure's words (working folder, staging area as the open box,
@@ -255,7 +255,7 @@ into the folded `more`. New or reworded claims, each with its row above:
 | V11 | slide `edit` | Editing changes the page in the working folder (new id and colour); the open box and the closed box keep the old version | four-places P2; experiment |
 | V12 | slide `edit`, more | A plain `git commit` now would make no commit | experiment (exit 1) |
 | V13 | slide `add-again` | `git add` drops the new version into the open box in place of the old one; the closed box keeps the old version | experiment |
-| V14 | slide `second-commit` | Each closed box is a saved version; the new one sits on top of the first, its parent; `git log --oneline` lists them newest first | git-commit(1); the map; the slide's real output |
+| V14 | slide `second-commit` | Each closed box is a saved version; the new one sits on top of the first, its parent; `git log --oneline` lists them newest first | git-commit(1); the places view's timeline of closed boxes; the slide's real output |
 | V15 | slide `second-commit`, more | `git show HEAD~1:README.md` prints the README as the first commit saved it | experiment |
 | V16 | quest `file` | The new file's page appears in the working folder (the live figure) | four-places Part 1 |
 | V17 | quest `stage` | `git add` drops a copy of the page into the open box | four-places A1 |

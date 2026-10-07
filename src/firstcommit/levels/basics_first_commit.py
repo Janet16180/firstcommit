@@ -167,7 +167,7 @@ commit, and you are on it. Any saved version can come back: `git show HEAD~1:REA
 the README as the first commit saved it.
 """,
         run='git commit -m "Add the first rule"\ngit log --oneline',
-        view="map",
+        view="places",
     ),
 ]
 
