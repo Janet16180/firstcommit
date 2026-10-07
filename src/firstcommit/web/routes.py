@@ -122,12 +122,15 @@ def playing(action: Callable[[], Mapping[str, Any]]) -> Reply:
     -------
     Reply
         200 and the reply; 404 for an unknown id; 409 when no level is in progress, or when it
-        has no playground for a press.
+        has no playground for a press; and 409 ``{"error": reason, "kind": "off"}`` for a
+        playground button that is off, so the page can tell it from a level that ended.
     """
     try:
         reply = found(action)
     except (game.NotPlayingError, game.NoPlaygroundError) as error:
         reply = HTTPStatus.CONFLICT, {"error": str(error) or "no level is in progress"}
+    except game.ButtonOffError as error:
+        reply = HTTPStatus.CONFLICT, {"error": str(error), "kind": "off"}
     return reply
 
 
@@ -469,7 +472,8 @@ def api_press(body: dict[str, Any]) -> Reply:
     Reply
         200 and `game.PressView`, a git command that failed included (its status says so); 400
         for a malformed body, 404 for a person or button the playground does not have, 409 when
-        no level is in progress or it has no playground.
+        no level is in progress or it has no playground, and 409 with ``"kind": "off"`` for a
+        button that is off.
     """
     person = body.get("person")
     button = body.get("button")
