@@ -27,7 +27,7 @@ BLURBS: dict[str, str] = {
     "history": "Read the history: what changed, when, and who changed it.",
     "undo": "Take a change back without losing work.",
     "branch": "Branches are names for commits: make them and switch between them.",
-    "conflict": "When two changes touch the same lines, and how to settle it.",
+    "conflict": "When two changes touch the same part of a file, and how to settle it.",
     "remote": "Fetch, pull and push: share your history with a remote.",
     "rebase": "Merge or rebase to keep your work up to date.",
     "github": "Branches, pull requests and reviews: the GitHub flow.",

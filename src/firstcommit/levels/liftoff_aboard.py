@@ -49,8 +49,8 @@ HINTS = [
 ]
 
 DEBRIEF = """
-Git works only inside a repository, a folder it keeps the history of. Your folder is not one
-yet, so `git status` stopped with an error and changed nothing. The next mission makes this
+`git status`, like most Git commands, works only inside a repository: a folder whose history
+Git keeps. Your folder is not one yet, so `git status` stopped with an error and changed nothing. The next mission makes this
 folder a repository with `git init`.
 
 Commands to keep:
@@ -65,7 +65,7 @@ REFUSED = "Git refused: this folder is not a repository yet. The next mission ma
 ANSWERED = "Git answered: this folder is a repository, so `git status` can tell how things stand."
 NOT_ASKED = "Now ask Git how things stand: type `git status`."
 NO_REPOSITORY_YET = (
-    "Git found no repository here, so it has nothing to report. That is the lesson: Git works only inside a repository. "
+    "Git found no repository here, so it has nothing to report. That is the lesson: `git status` works only inside a repository. "
     "The next mission makes this folder one."
 )
 
