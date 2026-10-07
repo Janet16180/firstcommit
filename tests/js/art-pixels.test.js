@@ -69,3 +69,14 @@ test("a planet fits its reported size, and only a palette with a ring draws one"
   assert.ok(ringed.rects.some((rect) => rect.getAttribute("fill") === "var(--art-hull)"));
   assert.ok(!plain.rects.some((rect) => rect.getAttribute("fill") === "var(--art-hull)"));
 });
+
+test("the shared sprites draw in art tokens, and a palette letter can be recoloured", () => {
+  for (const name of ArtPixels.SPRITES) {
+    const rects = ArtPixels.sprite(name);
+    assert.ok(rects.length > 0, name);
+    assertPalette(Dom.svg("g", {}, rects));
+  }
+  const tinted = ArtPixels.sprite("file", { p: "var(--s-new)" }).map((rect) => rect.getAttribute("fill"));
+  assert.ok(tinted.includes("var(--s-new)") && !tinted.includes("var(--star)"));
+  assert.throws(() => ArtPixels.sprite("moon"), RangeError);
+});
