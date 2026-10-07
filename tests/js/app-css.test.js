@@ -21,8 +21,8 @@ function matches(selector, kind) {
 function feedColour(kind) {
   let colour = null;
   for (const [, selectors, body] of CSS.matchAll(/([^{}]+)\{([^}]*)\}/g)) {
-    const declared = body.match(/border-left-color:\s*([^;]+);/);
-    if (declared && selectors.split(",").some((selector) => matches(selector, kind))) colour = declared[1].trim();
+    const border = body.match(/border-left-color:\s*([^;]+);/);
+    if (border && selectors.split(",").some((selector) => matches(selector, kind))) colour = border[1].trim();
   }
   return colour;
 }
