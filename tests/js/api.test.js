@@ -141,6 +141,11 @@ test("an observation without the typed lines, or with a line missing its status,
   await assert.rejects(gameApi({ "/api/observe": noStatus }).game.observe(), /commands\[0\]\.status should be/);
 });
 
+test("the game's language is English or Spanish", async () => {
+  const status = { ...record("status"), language: "fr" };
+  await assert.rejects(gameApi({ "/api/status": status }).game.status(), /\/api\/status.*language should be one of en, es/);
+});
+
 test("a field of the wrong type is refused", async () => {
   const observation = record("observation");
   observation.project.commits[1].parents = "abc";

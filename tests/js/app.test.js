@@ -258,37 +258,40 @@ test("the field guide's address shows the guide under its own head", async () =>
   assert.equal(page.document.querySelector(".topbar").hidden, true);
 });
 
-test("the page speaks the browser's language until the player picks one", async () => {
-  const page = await boot({ browserLanguage: "es-MX" });
+test("before the game answers, the page speaks the browser's language", async () => {
+  const page = await boot({ token: null, browserLanguage: "es-MX" });
+  assert.equal(page.document.documentElement.lang, "es");
+  assert.match(page.main.querySelector("h1").textContent, /enlace/);
+});
+
+test("once the game answers, the page speaks the game's language, whatever the browser's", async () => {
+  const page = await boot({ browserLanguage: "en-US", replies: { "/api/status": { ...record("status"), active: null, language: "es" } } });
   assert.equal(page.document.documentElement.lang, "es");
   assert.equal(page.document.querySelector(".nav a").textContent, "Mapa");
   assert.equal(page.main.querySelector(".map-bar .pref-language").textContent, "English");
-  const chosen = await boot({ browserLanguage: "es-MX", stored: { "firstcommit.language": "en" } });
-  assert.equal(chosen.document.documentElement.lang, "en");
-  assert.equal(chosen.document.querySelector(".nav a").textContent, "Map");
 });
 
-test("the map bar's language button switches the page, keeps the choice, tells the server and reloads the records", async () => {
-  const page = await boot({ replies: { "/api/language": {} } });
+test("the map bar's language button tells the game, then reloads the records in the new language", async () => {
+  let language = "en";
+  const page = await boot({
+    replies: {
+      "/api/status": () => ({ ...record("status"), active: null, language }),
+      "/api/language": (body) => {
+        language = body.language;
+        return {};
+      },
+    },
+  });
   page.main.querySelector(".map-bar .pref-language").click();
   await settle();
   await settle();
-  assert.equal(page.storage.get("firstcommit.language"), "es");
-  assert.equal(page.document.documentElement.lang, "es");
-  assert.equal(page.document.querySelector(".nav a").textContent, "Mapa");
-  assert.equal(page.document.querySelector(".topbar .pref-language").textContent, "English");
   const paths = page.server.calls.map((call) => call.path);
   const told = paths.indexOf("/api/language");
   assert.deepEqual(page.server.calls[told].body, { language: "es" });
   assert.ok(paths.lastIndexOf("/api/status") > told);
-  assert.equal(page.main.querySelector(".map-bar .pref-language").textContent, "English");
-});
-
-test("a server without the language route still switches the page's own words", async () => {
-  const page = await boot();
-  page.main.querySelector(".map-bar .pref-language").click();
-  await settle();
-  await settle();
   assert.equal(page.document.documentElement.lang, "es");
-  assert.equal(page.document.querySelectorAll(".toast").length, 0);
+  assert.equal(page.document.querySelector(".nav a").textContent, "Mapa");
+  assert.equal(page.document.querySelector(".topbar .pref-language").textContent, "English");
+  assert.equal(page.main.querySelector(".map-bar .pref-language").textContent, "English");
+  assert.equal(page.storage.size, 0);
 });

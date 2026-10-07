@@ -16,7 +16,6 @@
   const { el } = Dom;
   const { t } = Strings;
   const THEME_KEY = "firstcommit.theme";
-  const LANGUAGE_KEY = "firstcommit.language";
   const THEMES = ["auto", "light", "dark"];
   const TOAST_MS = 9000;
   const MONO = "\"Cascadia Mono\", \"DejaVu Sans Mono\", \"Liberation Mono\", Menlo, Consolas, monospace";
@@ -110,7 +109,8 @@
     renderSound();
   }
 
-  /* The page's own words; the records the server sends switch when it is told the language. */
+  /* The page's own words, in the game's language (Status.language); the browser's until the
+     game first answers. */
   function applyLanguage(language) {
     Strings.use(language);
     document.documentElement.lang = Strings.language();
@@ -127,14 +127,7 @@
 
   async function switchLanguage() {
     const language = Strings.language() === "es" ? "en" : "es";
-    store(LANGUAGE_KEY, language);
-    applyLanguage(language);
-    try {
-      await game.language(language);
-    } catch (error) {
-      /* ORBIT-GAP: until engine's route lands, only the page's own words switch. */
-      if (error.status !== 404) throw error;
-    }
+    await game.language(language);
     show(Route.parse(location.hash));
   }
 
@@ -263,6 +256,7 @@
 
   async function refresh() {
     app.status = await game.status();
+    if (app.status.language !== Strings.language()) applyLanguage(app.status.language);
     renderHeader();
     return app.status;
   }
@@ -313,7 +307,7 @@
 
   function boot() {
     document.body.prepend(ArtSky.dust("first-commit"));
-    applyLanguage(readStored(LANGUAGE_KEY) || Strings.guess(navigator.language));
+    applyLanguage(Strings.guess(navigator.language));
     darkScheme.addEventListener("change", applyTheme);
     document.querySelector(".pref-theme").addEventListener("click", cycleTheme);
     document.querySelector(".pref-sound").addEventListener("click", toggleSound);

@@ -92,6 +92,7 @@ const createGameApi = (function () {
     cards_due: number,
     max_difficulty: number,
     collection: list(CARD),
+    language: oneOf("en", "es"),
   });
   const LEVEL = record({
     id: text,
@@ -207,7 +208,7 @@ const createGameApi = (function () {
       press: (person, button) => checked(PRESSED, "/api/press", { person, button }),
       /* Marks a level's scene seen, so it does not play by itself again. */
       scene: (level) => checked(NOTHING, "/api/scene", { level }),
-      /* ORBIT-GAP: engine is adding POST /api/language; the records come back in this language. */
+      /* Makes the game speak `language`; the records that follow come in it. */
       language: (language) => checked(NOTHING, "/api/language", { language }),
     };
   };
