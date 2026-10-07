@@ -13,8 +13,14 @@ const { Polling, Practice, TimeShare, createGameApi } = load(
 
 const correct = (step, questDone = false) => ({ correct: true, message: [{ kind: "para", spans: [{ text: "Right.", code: false }] }], step, quest_done: questDone });
 
+/* A stand-in for localStorage. */
+function memoryStorage(entries = {}) {
+  const map = new Map(Object.entries(entries));
+  return { getItem: (key) => (map.has(key) ? map.get(key) : null), setItem: (key, value) => map.set(key, String(value)) };
+}
+
 /* A practice view on step `step`; `done` is a finished quest (step 3 of 3), which the server lets the page check by itself. */
-function practice({ step = 1, done = false, replies = {}, level = record("level"), playMap, places, share, wrap = (api) => api } = {}) {
+function practice({ step = 1, done = false, replies = {}, level = record("level"), playMap, places, share, storage = memoryStorage(), wrap = (api) => api } = {}) {
   const clock = createClock();
   const server = fakeServer({ "/api/observe": record("observation"), "/api/step": record("step"), "/api/check": record("check_unsolved"), "/api/hint": record("hint"), "/api/abort": { level: "x" }, ...replies });
   const seen = { solved: [], ended: 0, left: 0, sounds: [], attached: 0, detached: 0, typed: [] };
@@ -27,6 +33,7 @@ function practice({ step = 1, done = false, replies = {}, level = record("level"
     playMap,
     places,
     share,
+    storage,
   };
   const view = Practice.create(ctx, {
     level,
@@ -352,5 +359,100 @@ test("your press's line can be typed in the terminal from its result", async () 
   await settle();
   run.q(".pg-result button.type-command").click();
   assert.deepEqual(run.seen.typed, ["git push"]);
+  run.view.dispose();
+});
+
+test("the instructions fold into a small card with the current step, and open again", async () => {
+  const run = practice({ step: 2 });
+  await settle();
+  assert.equal(run.q(".task-card").hidden, true);
+  assert.equal(run.q(".side-toggle").getAttribute("aria-expanded"), "true");
+  run.q(".side-toggle").click();
+  assert.ok(run.view.element.classList.contains("is-folded"));
+  assert.equal(run.q(".side-toggle").getAttribute("aria-expanded"), "false");
+  assert.equal(run.q(".task-card").hidden, false);
+  assert.match(run.q(".task-card .task-kicker").textContent, /Step 3 of 3/);
+  assert.match(run.q(".task-card .task-text").textContent, /Stage the change with git add\./);
+  assert.equal(document.activeElement, run.q(".task-open"));
+  run.q(".task-open").click();
+  assert.ok(!run.view.element.classList.contains("is-folded"));
+  assert.equal(run.q(".task-card").hidden, true);
+  assert.equal(document.activeElement, run.q(".side-toggle"));
+  run.view.dispose();
+});
+
+test("an answer step's card opens the instructions on the answer box", async () => {
+  const run = practice({ step: 1 });
+  await settle();
+  run.q(".side-toggle").click();
+  assert.match(run.q(".task-card .task-text").textContent, /Ask Git what changed since the last commit\./);
+  assert.doesNotMatch(run.q(".task-card .task-text").textContent, /git status/, "only the step's first paragraph");
+  assert.match(run.q(".task-open").textContent, /Answer/);
+  run.q(".task-open").click();
+  assert.equal(document.activeElement, run.q(".step.is-current input"));
+  run.view.dispose();
+});
+
+test("a read step's card continues without opening the instructions", async () => {
+  const run = practice({ step: 0, replies: { "/api/step": correct(1) } });
+  await settle();
+  run.q(".side-toggle").click();
+  run.q(".task-card .task-continue").click();
+  await settle();
+  assert.deepEqual(run.server.calls.at(-1), { path: "/api/step", body: { answer: null } });
+  assert.ok(run.view.element.classList.contains("is-folded"));
+  run.view.dispose();
+});
+
+test("while folded, the next step flashes on the card; open, the card stays quiet", async () => {
+  const run = practice({ step: 0, replies: { "/api/step": correct(1) } });
+  await settle();
+  run.q(".side-toggle").click();
+  assert.ok(!run.q(".task-card").classList.contains("is-new"), "folding by hand is not news");
+  run.q(".task-card .task-continue").click();
+  await settle();
+  await run.clock.advance(Practice.ADVANCE_MS);
+  assert.match(run.q(".task-card .task-kicker").textContent, /Step 2 of 3/);
+  assert.ok(run.q(".task-card").classList.contains("is-new"));
+  assert.equal(run.q(".task-card").getAttribute("role"), "status");
+  await run.clock.advance(Practice.FLASH_MS);
+  assert.ok(!run.q(".task-card").classList.contains("is-new"));
+  run.view.dispose();
+});
+
+test("the folded card names the challenge once the quest is done", async () => {
+  const run = practice({ done: true });
+  await settle();
+  run.q(".side-toggle").click();
+  assert.match(run.q(".task-card .task-kicker").textContent, /The challenge/);
+  assert.match(run.q(".task-card .task-text").textContent, /A teammate asked you to record the change to notes\.txt/);
+  assert.equal(run.q(".task-card .task-continue"), null);
+  run.view.dispose();
+});
+
+test("the folded choice is remembered for the next level", async () => {
+  const storage = memoryStorage();
+  const first = practice({ storage });
+  await settle();
+  first.q(".side-toggle").click();
+  first.view.dispose();
+  assert.equal(storage.getItem(Practice.FOLD_KEY), "folded");
+  const second = practice({ storage });
+  await settle();
+  assert.ok(second.view.element.classList.contains("is-folded"));
+  assert.equal(second.q(".task-card").hidden, false);
+  assert.ok(!second.q(".task-card").classList.contains("is-new"));
+  second.q(".task-open").click();
+  assert.equal(storage.getItem(Practice.FOLD_KEY), "open");
+  second.view.dispose();
+});
+
+test("blocked storage leaves the instructions open and folding still works", async () => {
+  const blocked = { getItem: () => { throw new Error("blocked"); }, setItem: () => { throw new Error("blocked"); } };
+  const run = practice({ storage: blocked });
+  await settle();
+  assert.ok(!run.view.element.classList.contains("is-folded"));
+  run.q(".side-toggle").click();
+  assert.ok(run.view.element.classList.contains("is-folded"));
   run.view.dispose();
 });

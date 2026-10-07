@@ -945,6 +945,29 @@ input[type="text"]::placeholder {
   margin-bottom: 1rem;
 }
 
+.practice-head-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.side-toggle {
+  flex: none;
+}
+
+/* Folded: the instructions give their width to the map and the terminal; a card over the map's
+   top-left corner keeps the current step in view. */
+
+.practice.is-folded {
+  --task-row: 2.3rem;
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.practice.is-folded .practice-side {
+  display: none;
+}
+
 .practice-body {
   flex: 1;
 }
@@ -967,12 +990,89 @@ input[type="text"]::placeholder {
 }
 
 .practice-main {
+  position: relative;
   display: flex;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
   padding: 0.9rem 1rem 0.75rem;
   gap: 0.25rem;
+}
+
+/* The card is one line on the right of the live panel's first heading row, which grows a little
+   while folded so the card covers no part of the map. */
+.task-card {
+  position: absolute;
+  top: calc(0.9rem + 0.8rem + 1px);
+  right: calc(1rem + 0.95rem + 1px);
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: calc(100% - 2rem - 2rem - 15rem);
+  height: var(--task-row);
+  padding: 0 0.3rem 0 0.85rem;
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.task-card[hidden] {
+  display: none;
+}
+
+.task-card .task-kicker {
+  flex: none;
+  margin: 0;
+  color: var(--accent-strong);
+}
+
+.task-card .task-text {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.task-card .task-text p {
+  display: inline;
+  margin: 0;
+}
+
+.task-actions {
+  display: flex;
+  flex: none;
+  gap: 0.35rem;
+}
+
+.task-actions .btn {
+  padding-block: 0.2rem;
+}
+
+.practice.is-folded .live-three > h3,
+.practice.is-folded .live-project > h3 {
+  min-height: var(--task-row);
+  margin-bottom: 0.2rem;
+}
+
+.task-card.is-new {
+  background: var(--accent-soft);
+  animation: task-flash 0.8s ease-out 3;
+}
+
+@keyframes task-flash {
+  0% {
+    background: var(--accent-soft);
+    box-shadow: 0 0 0 0 var(--accent), var(--shadow);
+  }
+
+  100% {
+    background: var(--surface);
+    box-shadow: 0 0 0 10px transparent, var(--shadow);
+  }
 }
 
 .practice-live {
