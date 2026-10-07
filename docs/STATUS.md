@@ -80,7 +80,10 @@ Parked as WIP when the day ended (resume in this order, at most 3 teammates work
    `firstcommit shell` already uses it). Next: web adds `shell=game.shell_command` to the
    terminal route, api.js and records.json on d053403; then timetravel wires live.js (its parse
    is 30b2e11, merged). Until web's link, the page's terminal runs the user's $SHELL.
-2. Chapter 1 "Git, GitHub and your first clone" (plan approved): `start-git-and-github` (guided:
+2. Chapter 1 "Git, GitHub and your first clone" (plan approved; written by the author on
+   `p2/start` ee5ef25, with `levels/_start.py` helpers and `docs/verification/start.md`; do not
+   merge before P1 and P2; the one-line test_routes fix that skips `_` helper modules is
+   approved; then mapcheck checks the claims list at the end of the log): `start-git-and-github` (guided:
    a 5-slide lesson in the four places with a practice GitHub, then clone, cd, count files and
    commits, name the remote) and `start-first-clone` (challenge: who added the checklist, from
    `git log`). Needs insight's P1 (a lesson's practice GitHub: `p2/insight` f115816, done;
