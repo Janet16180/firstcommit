@@ -500,3 +500,59 @@ def test_a_command_on_a_terminal_that_runs_too_long_is_stopped_with_everything_i
     while not ended(pid) and time.monotonic() < deadline:
         time.sleep(0.05)
     assert ended(pid)
+
+
+def players_line(folder: Path, line: str, editor: str) -> int:
+    """
+    Run a line in the player's shell environment, with an editor of the player's own set.
+
+    Parameters
+    ----------
+    folder : Path
+        Where to run it.
+    line : str
+        The command line.
+    editor : str
+        The player's ``EDITOR`` and ``VISUAL``.
+
+    Returns
+    -------
+    int
+        The line's exit status.
+    """
+    env = {**gitcmd.shell_environment(os.environ, save.home()), "HOME": str(save.home()), "EDITOR": editor, "VISUAL": editor}
+    return subprocess.run(["bash", "--norc", "-c", line], cwd=folder, env=env, capture_output=True, stdin=subprocess.DEVNULL, timeout=30, check=False).returncode
+
+
+def test_in_the_players_shell_a_bare_commit_stops_instead_of_opening_any_editor(game_home: Path) -> None:
+    save.ensure_gitconfig(gitcmd.BASE_CONFIG)
+    project = game_home / "labs" / "editor" / "project"
+    project.mkdir(parents=True)
+    trap = game_home / "editor-ran"
+    setup = 'git init -q && git config user.name Robin && git config user.email robin@example.com && echo a > map.txt && git add map.txt'
+    assert players_line(project, setup, f"touch {trap};false") == 0
+    assert players_line(project, "git commit", f"touch {trap};false") == 1
+    assert not trap.exists()
+    assert gitcmd.run(project, "rev-parse", "-q", "--verify", "HEAD").returncode != 0
+
+
+def test_in_the_players_shell_merge_revert_and_commit_no_edit_keep_gits_message(game_home: Path) -> None:
+    save.ensure_gitconfig(gitcmd.BASE_CONFIG)
+    project = game_home / "labs" / "editor" / "project"
+    project.mkdir(parents=True)
+    lines = [
+        "git init -q && git config user.name Robin && git config user.email robin@example.com",
+        "echo a > map.txt && git add map.txt && git commit -q -m 'Add the map'",
+        "git switch -q -c other && echo b > b.txt && git add b.txt && git commit -q -m 'Add b' && git switch -q main",
+        "echo c > c.txt && git add c.txt && git commit -q -m 'Add c'",
+        "git merge -q other",
+        "git revert HEAD~1",
+        "git switch -q -c side HEAD~1 && echo x > map.txt && git commit -q -am Side && git switch -q main",
+        "echo y > map.txt && git commit -q -am Main",
+    ]
+    assert [players_line(project, line, "false") for line in lines] == [0] * len(lines)
+    assert players_line(project, "git merge side", "false") == 1
+    assert players_line(project, "echo z > map.txt && git add map.txt && git commit --no-edit", "false") == 0
+    subjects = gitcmd.output(project, "log", "--format=%s").splitlines()
+    assert subjects[0] == "Merge branch 'side'"
+    assert {"Merge branch 'other'", 'Revert "Add c"'} <= set(subjects)

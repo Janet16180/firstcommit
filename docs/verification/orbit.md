@@ -217,3 +217,33 @@ git-lfs. *Re-checked*: `tests/test_reactions.py` fails every known command with 
 and 129 and expects another reaction or none. It also checks that every command this machine's
 `git --list-cmds=main` lists is known, which caught `gui` on WSL. An alias the player defines
 would count as unknown when it fails. The game's configuration defines none.
+
+## No editor: `core.editor = true` (added 2026-10-08)
+
+The game's base configuration (`gitcmd.BASE_CONFIG`) sets `core.editor = true`. git-var(1),
+`GIT_EDITOR`: "The order of preference is the $GIT_EDITOR environment variable, then core.editor
+configuration, then $VISUAL, then $EDITOR". The player's shell drops every inherited `GIT_*`
+variable, so `core.editor` wins over the player's own `VISUAL` and `EDITOR`. Run in the image
+(`firstcommit:latest`, git 2.43.0) with the game's configuration plus `core.editor = true`:
+
+| What ran | Result |
+|---|---|
+| bare `git commit`, no name or email set (with or without anything staged) | status 128, identity error, before any editor |
+| bare `git commit`, nothing staged | status 1, nothing to commit, no editor |
+| bare `git commit`, `map.txt` staged | status 1, aborted for an empty message; no commit, `map.txt` still staged |
+| `git commit --amend` with no message option | status 0, the subject kept |
+| `git merge other` (not a fast-forward) | status 0, a merge commit with two parents and git's message |
+| `git revert HEAD~1` | status 0, `Revert "Add c"` |
+| `git pull` with diverged branches, `pull.rebase` unset | status 128, git asks how to reconcile (unchanged by the editor) |
+| `git pull --no-rebase` with diverged branches | status 0, a merge commit with two parents and git's message |
+| `git merge side` with a conflict, then `git add` and `git commit --no-edit` | merge status 1; the commit status 0, `Merge branch 'side'` |
+| `git tag -a v1` without `-m` | status 128: an annotated tag needs `-m` |
+
+*Re-checked*: `tests/test_gitcmd.py` runs the bare commit (an `EDITOR`/`VISUAL` that would leave a
+trace never runs, no commit) and the merge, revert and `--no-edit` commit in the player's shell
+environment. Lessons keep failing on an editor (`GIT_EDITOR=false` in `demos.environment`), so a
+lesson still has to write `--no-edit`.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| `NO_MESSAGE` (bare `git commit`, failed, in a repository, something staged) | No commit was made; every commit needs a message; in the game no editor opens; `-m` gives it | the table above. The rule needs something staged afterwards, since a bare commit with nothing staged fails the same way (status 1) for another reason and keeps `NOT_COMMITTED`. Lines with `-m`, `-F`, `-C`, `-c`, `--no-edit`, `--amend` and the like never get it (*re-checked*) |

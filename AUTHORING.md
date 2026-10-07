@@ -100,6 +100,10 @@ uv run firstcommit --help
   fakes what git would do. The terminal's prompt is the game's (the folder's name, as in
   `project $ `), and the commands typed there are logged in the game home only, so the figure
   shows the command that really ran.
+- **No editor ever opens.** The game's configuration sets `core.editor = true`: a bare
+  `git commit` stops and commits nothing (Rama then teaches `-m`), while `git merge`, a merging
+  `git pull`, `git revert` and `git commit --no-edit` keep git's prepared message. Write `-m` and
+  `--no-edit` in levels and cards; `git tag -a` needs `-m` too.
 - **Mistakes are expected.** Wrong answers get a nudge that points at what to look at, never the
   answer and never blame.
 - **The check notices success by itself.** Most levels are checked against the repository as the

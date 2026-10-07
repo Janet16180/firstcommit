@@ -2,8 +2,8 @@
 What Rama says about a line the player typed: one shared set of rules, written as data, plus a level's own.
 
 A rule reads three things: the typed line, how it ended (its exit status) and what changed in the
-player's repository (the event kinds of `firstcommit.changes`, and whether a repository is there
-afterwards). The first rule that fits a line speaks for it; the game puts a level's rules before
+player's repository (the event kinds of `firstcommit.changes`, whether a repository is there
+afterwards, and whether anything is staged then). The first rule that fits a line speaks for it; the game puts a level's rules before
 the shared `RULES`, so a level can say something more precise. A line no rule fits gets no
 reaction. Lines read in one observation share that observation's changes.
 
@@ -58,6 +58,8 @@ OPTIONAL_COMMANDS: tuple[str, ...] = (
 """Commands a machine may have besides: git's own that git(1) lists but Ubuntu installs apart (git-gui, git-svn, git-email, git-cvs...), and git-lfs."""
 MISSPELLED_COMMAND = rf"git (?!(?:{'|'.join(re.escape(name) for name in GIT_COMMANDS + OPTIONAL_COMMANDS)})(?: |$))[a-z][\w-]*(?: |$)"
 """A ``git`` line whose first word after ``git`` is a name git does not know (not an option)."""
+BARE_COMMIT = r"git commit(?!.* (?:-[a-zA-Z]*[mFCc]|--message|--file|--reuse-message|--reedit-message|--no-edit|--amend|--fixup|--squash|--allow-empty-message))( |$)"
+"""A ``git commit`` that brings no message of its own, so git asks the editor for one."""
 LIST_HIDDEN = r"ls( \S+)* (-[^-\s]*[aA]\S*|--all|--almost-all)( |$)"
 """An ``ls`` that lists hidden names too (``-a``, ``-A``, ``-la``...), such as ``.git``."""
 
@@ -71,7 +73,8 @@ class ReactionRule:
     made single (so ``git status\b`` fits ``git  status --short``). ``outcome`` is how the
     line must have ended. ``event`` is an event kind that must be among the changes, or empty
     for none. ``repository`` says whether the player's folder must hold a repository afterwards
-    (True or False), or None for either. ``text`` is markup, as every game text.
+    (True or False), or None for either; ``staged``, likewise, whether its staging area must then
+    differ from the last commit. ``text`` is markup, as every game text.
     """
 
     line: str
@@ -80,6 +83,7 @@ class ReactionRule:
     outcome: Outcome = "any"
     event: str = ""
     repository: bool | None = None
+    staged: bool | None = None
 
 
 NEW_REPOSITORY = "A new repository: Git made the hidden `.git` folder, where it keeps this project's history. `ls -a` shows it."
@@ -95,6 +99,10 @@ NOTHING_NEW = "Nothing new to stage: the staging area already matched."
 ADD_WHAT = "`git add` needs to know what to stage: a file name, or `.` for everything in this folder and the folders inside it."
 NOT_STAGED = "Nothing was staged. Read Git's message: a name it does not find is the usual cause. `ls` lists the folder, and Tab completes names."
 COMMITTED = "Committed: a new closed box in your repository, with its own hash and your message. `git log --oneline` lists it."
+NO_MESSAGE = (
+    "No commit was made: every commit needs a message, and in the game no editor opens to write one. "
+    'Give it on the line: `git commit -m "Add the map"`.'
+)
 NOT_COMMITTED = "No commit was made. Read Git's message: nothing new in the staging area, or no name and email set yet, are the usual causes."
 LOG = "Your history, newest commit first. Each commit records its author, its date and its message, and Git names it by its hash."
 HIDDEN_GIT = "See `.git`? That hidden folder is the repository: Git keeps the whole history in it. A plain `ls` hides names that start with a dot."
@@ -119,6 +127,7 @@ RULES: tuple[ReactionRule, ...] = (
     ReactionRule(line=r"git add\b", mood="info", text=NOTHING_NEW, outcome="ok"),
     ReactionRule(line=r"git add\b", mood="err", text=NOT_STAGED, outcome="failed", repository=True),
     ReactionRule(line=r"git commit\b", mood="ok", text=COMMITTED, event="commit-created"),
+    ReactionRule(line=BARE_COMMIT, mood="err", text=NO_MESSAGE, outcome="failed", repository=True, staged=True),
     ReactionRule(line=r"git commit\b", mood="err", text=NOT_COMMITTED, outcome="failed", repository=True),
     ReactionRule(line=r"git log\b", mood="info", text=LOG, outcome="ok"),
     ReactionRule(line=LIST_HIDDEN, mood="info", text=HIDDEN_GIT, outcome="ok", repository=True),
@@ -132,7 +141,7 @@ RULES: tuple[ReactionRule, ...] = (
 """The rules every level shares, in the order they are tried."""
 
 
-def react(command: Command, kinds: Collection[str], repository: bool, rules: Sequence[ReactionRule]) -> ReactionRule | None:
+def react(command: Command, kinds: Collection[str], repository: bool, staged: bool, rules: Sequence[ReactionRule]) -> ReactionRule | None:
     """
     Find the rule that speaks for one typed line.
 
@@ -144,6 +153,8 @@ def react(command: Command, kinds: Collection[str], repository: bool, rules: Seq
         The kinds of the events that tell what changed (`firstcommit.changes`).
     repository : bool
         Whether the player's folder holds a repository afterwards.
+    staged : bool
+        Whether its staging area then differs from the last commit (`firstcommit.repomap.staged`).
     rules : Sequence[ReactionRule]
         The rules to try, in order: a level's own first, then `RULES`.
 
@@ -152,7 +163,7 @@ def react(command: Command, kinds: Collection[str], repository: bool, rules: Seq
     ReactionRule | None
         The first rule that fits, or None.
     """
-    return next((rule for rule in rules if _fits(rule, command, kinds, repository)), None)
+    return next((rule for rule in rules if _fits(rule, command, kinds, repository, staged)), None)
 
 
 def matches(command: Command, pattern: str, outcome: Outcome) -> bool:
@@ -183,7 +194,7 @@ def matches(command: Command, pattern: str, outcome: Outcome) -> bool:
     return re.match(pattern, " ".join(command["line"].split())) is not None and ended[outcome]
 
 
-def _fits(rule: ReactionRule, command: Command, kinds: Collection[str], repository: bool) -> bool:
+def _fits(rule: ReactionRule, command: Command, kinds: Collection[str], repository: bool, staged: bool) -> bool:
     """
     Tell whether a rule fits a typed line.
 
@@ -197,14 +208,17 @@ def _fits(rule: ReactionRule, command: Command, kinds: Collection[str], reposito
         The event kinds of what changed.
     repository : bool
         Whether a repository is there afterwards.
+    staged : bool
+        Whether anything is staged afterwards.
 
     Returns
     -------
     bool
-        True when the line, its outcome, the change and the repository all fit.
+        True when the line, its outcome, the change, the repository and the staging area all fit.
     """
     return (
         matches(command, rule.line, rule.outcome)
         and (not rule.event or rule.event in kinds)
         and (rule.repository is None or rule.repository == repository)
+        and (rule.staged is None or rule.staged == staged)
     )

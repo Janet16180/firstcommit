@@ -1295,7 +1295,8 @@ def _observation(
         events = changes.describe(last["project"], now["project"]) + _changes(last["github"], now["github"])
         teammate_events = _changes(last["teammate"], now["teammate"])
     kinds = {event["kind"] for event in events}
-    said = [(command, reactions.react(command, kinds, now["project"]["exists"], rules)) for command in typed]
+    staged = bool(repomap.staged(now["project"]))
+    said = [(command, reactions.react(command, kinds, now["project"]["exists"], staged, rules)) for command in typed]
     return {
         "level": now["level"],
         "project": now["project"],
