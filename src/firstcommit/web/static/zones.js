@@ -12,8 +12,10 @@
  *   "none" (no repository), "new", "edited", "deleted", "staged" or "saved";
  * - dock: [{path, change, version}] for every staged change (version: the staged content's hash,
  *   null for a deletion), or null without a repository;
- * - vault: the commits HEAD reaches, newest first, [{hash, short, subject, author, labels}], each
- *   label {text, kind} with kind "head", "branch", "remote" or "tag"; null without a repository;
+ * - vault: every commit of every branch, children before parents, [{hash, short, subject, author,
+ *   parents, lane, labels}]: `lane` is its column in the drawn graph (0 for the first line of
+ *   history; a branch that splits off takes the next free one), each label {text, kind} with
+ *   kind "head", "branch", "remote" or "tag"; null without a repository;
  * - remote: the same for the level's GitHub, or null when the level has none.
  *
  * moves(before, after, typed) says how to animate the change between two such readings: the
@@ -38,18 +40,41 @@ const Zones = (function () {
 
   const inWorkshop = (file) => !file.ignored && (file.folder !== null || file.folder_change === "deleted");
 
-  /* The commits HEAD reaches, in the snapshot's order (newest first). */
-  function history(snapshot) {
-    const byHash = new Map(snapshot.commits.map((commit) => [commit.hash, commit]));
-    const reached = new Set();
-    const waiting = snapshot.head ? [snapshot.head] : [];
-    while (waiting.length) {
-      const hash = waiting.pop();
-      if (reached.has(hash) || !byHash.has(hash)) continue;
-      reached.add(hash);
-      waiting.push(...byHash.get(hash).parents);
+  /* The commits with every child before its parents, otherwise in the snapshot's order. */
+  function topological(list) {
+    const known = new Set(list.map((commit) => commit.hash));
+    const children = new Map(list.map((commit) => [commit.hash, 0]));
+    for (const commit of list) for (const parent of commit.parents) if (known.has(parent)) children.set(parent, children.get(parent) + 1);
+    const ordered = [];
+    const left = [...list];
+    while (left.length) {
+      const next = left.findIndex((commit) => children.get(commit.hash) === 0);
+      const [commit] = left.splice(next < 0 ? 0 : next, 1);
+      ordered.push(commit);
+      for (const parent of commit.parents) if (known.has(parent)) children.set(parent, children.get(parent) - 1);
     }
-    return snapshot.commits.filter((commit) => reached.has(commit.hash));
+    return ordered;
+  }
+
+  /* Each commit's lane: it takes the lane that waits for it (the leftmost), else the first free
+     one; its first parent then waits in that lane, and any other parent in a free one. */
+  function lanes(ordered) {
+    const waiting = [];
+    return ordered.map((commit) => {
+      let lane = waiting.indexOf(commit.hash);
+      if (lane < 0) lane = waiting.includes(null) ? waiting.indexOf(null) : waiting.length;
+      waiting.forEach((hash, index) => {
+        if (hash === commit.hash) waiting[index] = null;
+      });
+      const [first = null, ...others] = commit.parents;
+      waiting[lane] = first;
+      for (const parent of others.filter((hash) => !waiting.includes(hash))) {
+        const free = waiting.indexOf(null);
+        waiting[free < 0 ? waiting.length : free] = parent;
+      }
+      while (waiting.length && waiting[waiting.length - 1] === null) waiting.pop();
+      return lane;
+    });
   }
 
   /* The labels on one commit: HEAD (with its branch) first, then the other refs in the snapshot's order. */
@@ -62,13 +87,19 @@ const Zones = (function () {
     return [...head, ...refs];
   }
 
-  const commits = (snapshot, showHead) => history(snapshot).map((commit) => ({
-    hash: commit.hash,
-    short: commit.short,
-    subject: commit.subject,
-    author: commit.author,
-    labels: labels(snapshot, commit.hash, showHead),
-  }));
+  function commits(snapshot, showHead) {
+    const ordered = topological(snapshot.commits);
+    const placed = lanes(ordered);
+    return ordered.map((commit, index) => ({
+      hash: commit.hash,
+      short: commit.short,
+      subject: commit.subject,
+      author: commit.author,
+      parents: commit.parents,
+      lane: placed[index],
+      labels: labels(snapshot, commit.hash, showHead),
+    }));
+  }
 
   function read({ project, github }) {
     const repository = project.exists;
