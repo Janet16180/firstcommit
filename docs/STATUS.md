@@ -110,9 +110,12 @@ boxes, one picture of a commit everywhere), and security L3.
 
 - With eight agents, parallel full suites (each building the Docker image) and Playwright
   browsers overloaded the machine; the user noticed. Rule since 2026-10-06: every browser run
-  under `flock .scratch/locks/browser.lock`, the Docker suite only before reporting and under
-  `flock .scratch/locks/docker.lock`, `pytest -m "not docker"` while iterating. Give this rule in
-  the first brief.
+  under `flock .scratch/locks/browser.lock`. Tests in two tiers (the user's call, 2026-10-07):
+  agents run only the fast tier, `uv run pytest -m "not slow and not docker"` (about 20 s, node
+  tests included), plus ruff and mypy; the slow tier (`slow` and `docker` markers: property
+  tests over real git, the Docker image) runs once, by the lead, when merging into
+  `phase-2-engine`, under `flock .scratch/locks/docker.lock`. A test that takes 0.5 s or more
+  gets the `slow` marker. Give this rule in the first brief.
 - Merge the hash an agent reports, never its branch name: a branch moves while its agent keeps
   working. The lead once merged `p2/core` mid-step and pulled in an unfinished records change
   (4 red tests); the merge was redone from the reported hash. When one change needs edits in
