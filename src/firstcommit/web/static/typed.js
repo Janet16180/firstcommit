@@ -6,7 +6,7 @@
  * imitates them. Defines one global, Typed.
  *
  * gitCommands(lines) names the git subcommands of the lines that succeeded, in order ("add",
- * "commit", ...). Whether a chained line's single commands each succeeded is not known, so a
+ * "commit", ...); failedGitCommands(lines) those of the lines that failed. Whether a chained line's single commands each succeeded is not known, so a
  * line that ended well counts whole.
  */
 
@@ -40,7 +40,9 @@ const Typed = (function () {
     return words[at] || null;
   }
 
-  const gitCommands = (lines) => lines.filter((typed) => typed.status === 0).flatMap((typed) => shellCommands(typed.line).map(gitSubcommand).filter(Boolean));
+  const named = (lines) => lines.flatMap((typed) => shellCommands(typed.line).map(gitSubcommand).filter(Boolean));
+  const gitCommands = (lines) => named(lines.filter((typed) => typed.status === 0));
+  const failedGitCommands = (lines) => named(lines.filter((typed) => typed.status !== 0));
 
-  return { gitCommands };
+  return { gitCommands, failedGitCommands };
 })();

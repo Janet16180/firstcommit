@@ -152,3 +152,25 @@ test("the mothership draws what the stand-in GitHub holds, every branch included
   assert.equal(zone(panel, "remote").querySelectorAll(".cap").length, 3);
   assert.ok(keyed(zone(panel, "remote"), "remote:t1"));
 });
+
+test("labels carry the key they slide by: HEAD for the head, else the branch's name", () => {
+  const panel = ZonePanel.create();
+  panel.update(observe(record("observation").project));
+  const keys = [...zone(panel, "vault").querySelectorAll(".ref")].map((ref) => ref.dataset.key);
+  assert.ok(keys.includes("vault-ref:HEAD"));
+  assert.ok(keys.includes("vault-ref:main"));
+  assert.ok(keys.includes("vault-ref:origin/main"));
+});
+
+test("a refused push still asks for the bounce though nothing changed, and leaves the zones' nodes in place", () => {
+  const thrown = [];
+  const panel = ZonePanel.create({ reducedMotion: false, timers: createClock() });
+  const project = record("observation").project;
+  const github = record("snapshots").one;
+  panel.update(observe(project, github));
+  const first = zone(panel, "vault").querySelector(".cap");
+  first.animate = (frames) => thrown.push(frames);
+  panel.update({ ...observe(project, github), commands: [{ line: "git push", status: 1 }] });
+  assert.equal(zone(panel, "vault").querySelector(".cap"), first);
+  assert.equal(thrown.length, 1);
+});
