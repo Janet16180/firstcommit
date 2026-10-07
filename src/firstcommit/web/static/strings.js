@@ -132,7 +132,7 @@ const Strings = (function () {
       "comms.who": "Rama, ship's computer",
 
       "dock.noLesson": "This mission's lesson is not available.",
-      "dock.newCard": "New card in your collection: ",
+      "dock.newInGuide": "New in your field guide: ",
       "dock.retry": "Retry",
       "dock.map": "Map",
       "dock.next": "Next mission",
@@ -332,7 +332,7 @@ const Strings = (function () {
       "comms.who": "Rama, computadora de a bordo",
 
       "dock.noLesson": "La lección de esta misión no está disponible.",
-      "dock.newCard": "Tarjeta nueva en tu colección: ",
+      "dock.newInGuide": "Nuevo en tu guía de campo: ",
       "dock.retry": "Repetir",
       "dock.map": "Mapa",
       "dock.next": "Siguiente misión",
