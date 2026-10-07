@@ -130,6 +130,80 @@ test("pull lights only where every tracked file ends as git pull's checkout woul
   for (const [what, before, after, lit] of cases) assert.deepEqual(TimePlaces.commands(kinds("branch-moved"), behind(before), pulled(after)), lit, what);
 });
 
+/* Lines typed in the game's terminal since the last observation, each with its exit status. */
+const typed = (...lines) => lines.map((line) => (typeof line === "string" ? { line, status: 0 } : line));
+const typedLights = (...lines) => TimePlaces.commands([], START, START, typed(...lines));
+
+test("the git commands typed in the terminal light their arrows, in the order they ran, each once", () => {
+  assert.deepEqual(typedLights("git add README.md", "git commit -m 'Add the README'", "git push"), ["add", "commit", "push"]);
+  assert.deepEqual(typedLights("git fetch", "git add notes.txt", "git add README.md"), ["fetch", "add"]);
+  assert.deepEqual(typedLights("git clone https://github.com/robin/notes.git"), ["clone"]);
+});
+
+test("a typed git pull lights its fetch half and its merge half", () => {
+  assert.deepEqual(typedLights("git pull"), ["fetch", "pull"]);
+  assert.deepEqual(typedLights("git pull --rebase origin main"), ["fetch", "pull"]);
+});
+
+test("one typed line can run several commands: the shell's && || ; | & and new lines split them, but not inside quotes", () => {
+  assert.deepEqual(typedLights('git add . && git commit -m "Notes; and && more || less | grep & co" ; git push'), ["add", "commit", "push"]);
+  assert.deepEqual(typedLights("git fetch || git status\ngit pull & git log | head"), ["fetch", "pull"]);
+  assert.deepEqual(typedLights("echo 'git push' # git commit"), [], "a quoted word and a comment run nothing");
+});
+
+test("git commit lights add too when it stages files itself: with -a, or with paths to commit", () => {
+  const cases = [
+    ["git commit -a -m 'Fix'", ["add", "commit"]],
+    ["git commit -am 'Fix'", ["add", "commit"]],
+    ["git commit --all --message='Fix'", ["add", "commit"]],
+    ["git commit -m 'Fix' README.md", ["add", "commit"]],
+    ["git commit -- README.md", ["add", "commit"]],
+    ["git commit -mFix README.md", ["add", "commit"]],
+    ["git commit -u README.md", ["add", "commit"]],
+    ["git commit -m 'Fix'", ["commit"]],
+    ["git commit -ma", ["commit"]],
+    ["git commit --amend --no-edit", ["commit"]],
+    ["git commit -C HEAD --author 'Robin Park <robin@example.com>' --date now", ["commit"]],
+    ["git commit -uno -v -m README.md", ["commit"]],
+    ["git commit -m Fix\\ the\\ README", ["commit"]],
+    ['git commit -m "Say \\"hi\\" to the README"', ["commit"]],
+  ];
+  for (const [line, lit] of cases) assert.deepEqual(typedLights(line), lit, line);
+});
+
+test("git's own options and a command's variables come before the command, which still lights", () => {
+  assert.deepEqual(typedLights("git -C project commit -m 'Fix'"), ["commit"]);
+  assert.deepEqual(typedLights("git -c user.name='Robin Park' --no-pager commit -m 'Fix'"), ["commit"]);
+  assert.deepEqual(typedLights("GIT_AUTHOR_NAME=Robin git push"), ["push"]);
+  assert.deepEqual(typedLights("/usr/bin/git fetch"), ["fetch"]);
+});
+
+test("a typed git command with no arrow, or asking for help, lights nothing", () => {
+  for (const line of ["git status", "git log --oneline", "git reset --hard origin/main", "git merge origin/main", "git switch -c topic", "git commit --help", "git help push", "git --version"]) {
+    assert.deepEqual(typedLights(line), [], line);
+  }
+});
+
+test("a typed line that failed lights nothing, while the lines that worked still light", () => {
+  assert.deepEqual(typedLights({ line: "git push", status: 1 }), []);
+  assert.deepEqual(typedLights("git add README.md", { line: "git commit -m 'Fix' && git push", status: 1 }), ["add"]);
+});
+
+test("typed git commands decide over the snapshots: a reset to origin/main is not a pull, a pull is", () => {
+  const batch = (...lines) => TimePlaces.commands(kinds("branch-moved"), FETCHED, PULLED, typed(...lines));
+  assert.deepEqual(TimePlaces.commands(kinds("branch-moved"), FETCHED, PULLED), ["pull"], "the snapshots alone look like a pull");
+  assert.deepEqual(batch("git reset --hard origin/main"), []);
+  assert.deepEqual(batch("git merge origin/main"), []);
+  assert.deepEqual(batch({ line: "git push", status: 1 }, "git pull"), ["fetch", "pull"]);
+});
+
+test("with no git command typed (one run outside the game's terminal), the snapshots decide", () => {
+  const events = kinds("commit-created");
+  assert.deepEqual(TimePlaces.commands(events, START, MINE, []), ["commit"]);
+  assert.deepEqual(TimePlaces.commands(events, START, MINE, typed("ls", "cat README.md")), ["commit"]);
+  assert.deepEqual(TimePlaces.commands(events, START, MINE, typed({ line: "git commit -m 'Fix'", status: 1 })), [], "a failed git command was typed");
+});
+
 test("an add flight carries only what git add copied from the working folder, not a file a pull brought", () => {
   const before = { project: { ...FETCHED, files: [file("README.md", { head: "1", index: "1", folder: "2" }), file("notes.txt", { head: "5", index: "5", folder: "5" })] }, github: hub([C, ...TWO]) };
   const after = { project: { ...PULLED, files: [file("README.md", { head: "1", index: "2", folder: "2" }), file("notes.txt", { head: "6", index: "6", folder: "6" })] }, github: hub([C, ...TWO]) };
@@ -468,6 +542,12 @@ test("without a GitHub a commit still flies from the staging area into your repo
   const { calls } = played(before, after, ["commit"]);
   assert.ok(calls.some(isFlyer), "the commit flies");
   assert.ok(calls.some((call) => call.node.closest('[data-area="repository"] .repo-map')), "your repository's graph moves");
+});
+
+test("without an origin/ branch, the commit sentence says the first commit starts the branch only under the branch's first commit", () => {
+  const caption = (project) => TimePlaces.render({ project, github: null }, { commands: ["commit"] }).querySelector(".tt-places-caption").textContent;
+  assert.match(caption(repo({ commits: ONE })), /Your branch moves onto the new commit \(your first commit starts it\)\.$/);
+  assert.match(caption(repo({ commits: TWO })), /Your branch moves onto the new commit\.$/, "a second commit");
 });
 
 test("a caption names no remote the figure does not show: without a GitHub, or before your repository has an origin/ branch", () => {

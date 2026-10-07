@@ -232,7 +232,8 @@ Titles: **Your computer** (with *Working folder*, *Staging area*, *Your reposito
   its files. Your branch moves onto the new commit, and `origin/main` does not move. **[A2]**
   **(r6, r7)** While your repository has no `origin/` branch (no GitHub, or until your first
   push, or a fetch or clone that brings commits), the sentence ends at "Your branch moves onto
-  the new commit (your first commit starts it)." A caption
+  the new commit." **(r9)** Under the branch's first commit (one with no parent) it ends "Your
+  branch moves onto the new commit (your first commit starts it)." A caption
   names only what the figure shows: without a GitHub only add and commit are drawn, and only
   their sentences are told.
 - **push**: sends the commits GitHub is missing and moves GitHub's branch to your commit; your
