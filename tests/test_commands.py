@@ -98,6 +98,11 @@ def test_the_prompt_shows_the_folder_and_never_the_user_or_the_machine(typist: T
     assert shown.count(b"$ ") == 1 and b"@" not in shown
 
 
+@pytest.mark.skipif(not commands.COMPLETION.exists(), reason="bash-completion is not installed")
+def test_tab_completes_git_commands_where_bash_completion_is_installed(typist: Typist, tmp_path: Path) -> None:
+    typist(logging_shell(tmp_path), terminal.player_env(os.environ), project(tmp_path), [(b"git chec\t", b"git checkout "), (b"\x15", b"")])
+
+
 def test_exit_and_a_shell_started_without_the_startup_file_leave_the_log_whole(typist: Typist, tmp_path: Path) -> None:
     typist(
         logging_shell(tmp_path),

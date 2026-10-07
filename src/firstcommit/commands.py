@@ -21,10 +21,16 @@ from pathlib import Path
 
 from firstcommit.records import Command
 
+COMPLETION = Path("/usr/share/bash-completion/bash_completion")
+"""Tab completion for git and the other commands, as Ubuntu's bash-completion package installs it."""
+
 RECORD = re.compile(rb"\d+\t(\d+)\t(.*)", re.DOTALL)
 """A whole record without its NUL: the history number, the exit status and the line."""
 
 STARTUP = r"""
+if [[ -r {completion} ]]; then
+    . {completion}
+fi
 PS1='\W $ '
 PS2='> '
 HISTFILE={history}
@@ -44,7 +50,10 @@ __firstcommit_log() {{
 PROMPT_COMMAND=__firstcommit_log
 """
 """
-The startup file, with the history file and the log to fill in.
+The startup file, with the history file, the log and the tab completion to fill in.
+
+Bash reads this file instead of the player's ``~/.bashrc``, which is where Ubuntu turns tab
+completion on, so it loads the completion itself when it is installed.
 
 The first prompt only notes the newest history entry, read back from the history file, so a new
 shell never logs what an earlier one typed. After that, a prompt logs the newest entry only when
@@ -70,7 +79,9 @@ def startup(log: Path, history: Path) -> str:
     str
         The startup file's text, the paths quoted for bash.
     """
-    return STARTUP.format(log=shlex.quote(str(log)), history=shlex.quote(str(history)))
+    return STARTUP.format(
+        log=shlex.quote(str(log)), history=shlex.quote(str(history)), completion=shlex.quote(str(COMPLETION))
+    )
 
 
 def since(log: Path, offset: int) -> tuple[list[Command], int]:
