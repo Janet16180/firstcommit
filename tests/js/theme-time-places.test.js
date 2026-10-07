@@ -544,6 +544,12 @@ test("without a GitHub a commit still flies from the staging area into your repo
   assert.ok(calls.some((call) => call.node.closest('[data-area="repository"] .repo-map')), "your repository's graph moves");
 });
 
+test("without an origin/ branch, the commit sentence says the first commit starts the branch only under the branch's first commit", () => {
+  const caption = (project) => TimePlaces.render({ project, github: null }, { commands: ["commit"] }).querySelector(".tt-places-caption").textContent;
+  assert.match(caption(repo({ commits: ONE })), /Your branch moves onto the new commit \(your first commit starts it\)\.$/);
+  assert.match(caption(repo({ commits: TWO })), /Your branch moves onto the new commit\.$/, "a second commit");
+});
+
 test("a caption names no remote the figure does not show: without a GitHub, or before your repository has an origin/ branch", () => {
   const everything = Object.keys(TimePlaces.ARROWS);
   const local = TimePlaces.render({ project: repo({ commits: ONE }), github: null }, { commands: everything });

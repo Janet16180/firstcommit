@@ -44,11 +44,11 @@ const TimePlaces = (function () {
 
   /* Each command's arrow: the places its work passes, first to last, and the checked sentence
      shown when it lights (A1 to A6), with `alone` in its place while your repository has no
-     origin/ branch to name. The pull arrow is pull's merge half: its fetch half is the fetch
+     origin/ branch to name, and `first` under your branch's first commit. The pull arrow is pull's merge half: its fetch half is the fetch
      arrow (`after`), which lights with it and which its spoken route names first. */
   const ARROWS = {
     add: { path: ["folder", "index"], text: "`add` copies a file's current content from the working folder into the staging area; the working folder keeps it." },
-    commit: { path: ["index", "repository"], text: "`commit` saves the staging area as a new commit in your repository; the staging area keeps its files. Your branch moves onto the new commit, and `origin/main` does not move.", alone: "`commit` saves the staging area as a new commit in your repository; the staging area keeps its files. Your branch moves onto the new commit (your first commit starts it)." },
+    commit: { path: ["index", "repository"], text: "`commit` saves the staging area as a new commit in your repository; the staging area keeps its files. Your branch moves onto the new commit, and `origin/main` does not move.", alone: "`commit` saves the staging area as a new commit in your repository; the staging area keeps its files. Your branch moves onto the new commit.", first: "`commit` saves the staging area as a new commit in your repository; the staging area keeps its files. Your branch moves onto the new commit (your first commit starts it)." },
     push: { path: ["repository", "remote"], text: "`push` sends the commits GitHub is missing and moves GitHub's branch to your commit; your `origin/main` moves to match. Git refuses a push that is not a fast-forward unless you force it, and a refused push changes nothing on either side." },
     fetch: { path: ["remote", "repository"], text: "`fetch` downloads the commits you do not have and moves `origin/main` (and the other `origin/` names). It changes no branch of yours, no working file and nothing in the staging area." },
     pull: { path: ["repository", "index", "folder"], label: "pull = fetch + merge", after: "fetch", text: "`pull` is a fetch, then a merge of `origin/main` into your branch (or a rebase, if you ask for one). When your branch has no commits of its own, the merge is a fast-forward: your branch slides forward, and the staging area and working folder update to match. When both sides have new commits, git fetches, then stops with an error that asks you to choose: `git pull --no-rebase` merges, `git pull --rebase` rebases." },
@@ -374,12 +374,19 @@ const TimePlaces = (function () {
   /* Two arrows across one gap between places: the one towards GitHub above, the one back below. */
   const pair = (gap, ...arrows) => el("div", { class: `tt-arrows-pair is-gap-${gap}` }, arrows);
 
-  /* The sentences of the lit arrows; pull's tells its own fetch half. A sentence names
-     origin/main only when `project` has an origin/ branch. */
+  /* An arrow's sentence: one naming origin/main only when your repository has an origin/
+     branch (`linked`), and, without one, the `first` sentence under the branch's first commit
+     (`root`: HEAD's commit has no parent). */
+  const arrowSentence = ({ text, alone, first }, linked, root) => (linked ? text : (root && first) || alone || text);
+
+  /* The sentences of the lit arrows, as `project` stands after them; pull's tells its own fetch
+     half. */
   function told(lit, project) {
     const linked = project.refs.some((ref) => ref.kind === "remote");
+    const head = project.commits.find((commit) => commit.hash === project.head);
+    const root = Boolean(head) && head.parents.length === 0;
     const names = lit.includes("pull") ? lit.filter((name) => name !== "fetch") : lit;
-    return names.map((name) => (!linked && ARROWS[name].alone) || ARROWS[name].text);
+    return names.map((name) => arrowSentence(ARROWS[name], linked, root));
   }
 
   /* The lit arrows a figure draws: every one, or without a GitHub only add and commit. */
