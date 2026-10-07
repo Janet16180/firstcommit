@@ -84,7 +84,9 @@ Parked as WIP when the day ended (resume in this order, at most 3 teammates work
    terminal runs `game.shell_command`, api.js checks `commands`, the smoke flow checks that
    every typed line comes back from `/api/observe`; helper job C is done). Next: timetravel
    wires live.js (its parse is 30b2e11, merged), waiting for the new frontend's design.
-2. Chapter 1 "Git, GitHub and your first clone" (plan approved; written by the author on
+2. Before `p2/start` merges, its levels must add `COMMAND`, `PAR` and `CARD`, and take the typed
+   lines in watch `(lab, state, typed)`, check `(lab, state, answer, typed)`, `solve` and the
+   quest actions (Orbit levels, 3b52dbb). Chapter 1 "Git, GitHub and your first clone" (plan approved; written by the author on
    `p2/start` 6f655bb, with `levels/_start.py` helpers and `docs/verification/start.md`; fast
    tier 1140 passed, 1 skipped (the lesson-frames test, waiting for P1); both levels play to the
    debrief at 1280; do not merge before P1 and P2; the test_routes fix that skips `_` helper

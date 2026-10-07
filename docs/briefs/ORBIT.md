@@ -82,6 +82,18 @@ Guarantees the page relies on:
 - Saves from before Orbit do not load: the error names `firstcommit reset` (or
   `deploy/docker/run reset`). The game is not released, so there is no migration.
 
+## The user's decisions of 2026-10-07 (after the first three levels)
+
+- XP stays, next to stars. A level solved with any hint pays no XP for that play (stars still
+  count as above); the hint's cost shown on the page says so.
+- termlab may change as needed on its `firstcommit` branch (engine does it): a terminal font
+  size option, so the page's terminal can use VT323 at the design's size, and `font/woff2`.
+- Each Orbit chapter gets a flashcard deck.
+- The old version goes: the level `basics-first-commit`, its deck, and the time theme's page
+  modules. Git history keeps them.
+- The headings get another pixel font with a capital C that cannot be read as an O (artist
+  proposes, frontend ships it).
+
 ## Who does what
 
 Two named teammates, engine and frontend, plus the artist subagent they call. Each teammate works in its own worktree on its own
