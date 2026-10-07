@@ -137,6 +137,7 @@ class StepView(TypedDict):
     command: str
     question: list[Block]
     placeholder: str
+    more: list[Block]
 
 
 class LevelView(TypedDict):
@@ -166,16 +167,25 @@ class LevelView(TypedDict):
     debrief: list[Block] | None
 
 
+class EventView(TypedDict):
+    """One "what just happened" event, its text parsed like every other text the page shows."""
+
+    kind: str
+    text: list[Block]
+
+
 class SlideView(TypedDict):
-    """One lesson slide with its figure."""
+    """One lesson slide with its figure, and what its commands changed, told as the live feed tells it."""
 
     id: str
     title: str
     text: list[Block]
-    view: Literal["map", "areas", "objects", "terminal", "none"]
+    view: Literal["map", "areas", "places", "objects", "terminal", "none"]
     transcript: list[Line]
     map: Snapshot
     objects: list[ObjectInfo]
+    events: list[EventView]
+    more: list[Block]
 
 
 class LessonView(TypedDict):
@@ -223,13 +233,6 @@ class HintView(TypedDict):
     used: int
     total: int
     cost: int
-
-
-class EventView(TypedDict):
-    """One "what just happened" event, its text parsed like every other text the page shows."""
-
-    kind: str
-    text: list[Block]
 
 
 class Observation(TypedDict):
@@ -433,7 +436,8 @@ def lesson(level_id: str) -> LessonView:
     Returns
     -------
     LessonView
-        The slides; none for a level without a lesson.
+        The slides; none for a level without a lesson. Each slide's events are what changed
+        from the slide before (the first slide's from the lesson's empty folder).
 
     Raises
     ------
@@ -441,6 +445,8 @@ def lesson(level_id: str) -> LessonView:
         If no level has this id.
     """
     entry = _level(level_id)
+    frames = demos.frames(entry.lesson)
+    befores = [repomap.empty(), *(frame["map"] for frame in frames[:-1])]
     slides: list[SlideView] = [
         {
             "id": slide.id,
@@ -450,8 +456,10 @@ def lesson(level_id: str) -> LessonView:
             "transcript": frame["transcript"],
             "map": frame["map"],
             "objects": frame["objects"],
+            "events": _event_views(changes.describe(before, frame["map"])),
+            "more": markup.parse(slide.more),
         }
-        for slide, frame in zip(entry.lesson, demos.frames(entry.lesson), strict=True)
+        for slide, frame, before in zip(entry.lesson, frames, befores, strict=True)
     ]
     return {"level": entry.id, "title": entry.title, "slides": slides}
 
@@ -1344,6 +1352,7 @@ def _step_view(step: kit.Step, state: kit.State) -> StepView:
         "command": _fill(step.command, state, _shell_word),
         "question": _blocks(question, state),
         "placeholder": _fill(placeholder, state),
+        "more": _blocks(step.more, state),
     }
 
 

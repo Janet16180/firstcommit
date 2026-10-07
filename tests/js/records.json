@@ -128,7 +128,8 @@
     ],
     "command": "",
     "question": [],
-    "placeholder": ""
+    "placeholder": "",
+    "more": []
    },
    {
     "id": "status",
@@ -160,7 +161,8 @@
       ]
      }
     ],
-    "placeholder": "a file name"
+    "placeholder": "a file name",
+    "more": []
    },
    {
     "id": "stage",
@@ -186,7 +188,8 @@
     ],
     "command": "git add notes.txt",
     "question": [],
-    "placeholder": ""
+    "placeholder": "",
+    "more": []
    }
   ],
   "hints_total": 3,
@@ -267,7 +270,32 @@
      "stash": 0,
      "truncated": false
     },
-    "objects": []
+    "objects": [],
+    "events": [
+     {
+      "kind": "repository-created",
+      "text": [
+       {
+        "kind": "para",
+        "spans": [
+         {
+          "text": "A new repository was created in this folder, on branch ",
+          "code": false
+         },
+         {
+          "text": "main",
+          "code": true
+         },
+         {
+          "text": " with no commits yet.",
+          "code": false
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "more": []
    },
    {
     "id": "areas",
@@ -347,7 +375,9 @@
       "type": "blob",
       "size": 6
      }
-    ]
+    ],
+    "events": [],
+    "more": []
    },
    {
     "id": "commit",
@@ -433,7 +463,48 @@
       "type": "commit",
       "size": 172
      }
-    ]
+    ],
+    "events": [
+     {
+      "kind": "commit-created",
+      "text": [
+       {
+        "kind": "para",
+        "spans": [
+         {
+          "text": "Commit ",
+          "code": false
+         },
+         {
+          "text": "ae23b94",
+          "code": true
+         },
+         {
+          "text": " (",
+          "code": false
+         },
+         {
+          "text": "First commit",
+          "code": true
+         },
+         {
+          "text": ") was made on branch ",
+          "code": false
+         },
+         {
+          "text": "main",
+          "code": true
+         },
+         {
+          "text": "; it has no parent, so it starts the history.",
+          "code": false
+         }
+        ]
+       }
+      ]
+     }
+    ],
+    "more": []
    },
    {
     "id": "objects",
@@ -510,7 +581,9 @@
       "type": "commit",
       "size": 172
      }
-    ]
+    ],
+    "events": [],
+    "more": []
    },
    {
     "id": "recap",
@@ -587,7 +660,9 @@
       "type": "commit",
       "size": 172
      }
-    ]
+    ],
+    "events": [],
+    "more": []
    }
   ]
  },

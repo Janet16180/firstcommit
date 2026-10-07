@@ -97,13 +97,14 @@ const createGameApi = (function () {
     briefing: BLOCKS,
     question: BLOCKS,
     placeholder: text,
-    steps: list(record({ id: text, kind: oneOf("answer", "watch", "read"), text: BLOCKS, command: text, question: BLOCKS, placeholder: text })),
+    steps: list(record({ id: text, kind: oneOf("answer", "watch", "read"), text: BLOCKS, command: text, question: BLOCKS, placeholder: text, more: BLOCKS })),
     hints_total: number,
     has_lesson: flag,
     hints: list(BLOCKS),
     debrief: nullable(BLOCKS),
   });
   const TRANSCRIPT = list(record({ command: text, output: text }));
+  const EVENTS = list(record({ kind: text, text: BLOCKS }));
   const LESSON = record({
     level: text,
     title: text,
@@ -111,10 +112,12 @@ const createGameApi = (function () {
       id: text,
       title: text,
       text: BLOCKS,
-      view: oneOf("map", "areas", "objects", "terminal", "none"),
+      view: oneOf("map", "areas", "places", "objects", "terminal", "none"),
       transcript: TRANSCRIPT,
       map: SNAPSHOT,
       objects: OBJECTS,
+      events: EVENTS,
+      more: BLOCKS,
     })),
   });
   const GUIDE = mapping(record({ before: SNAPSHOT, after: SNAPSHOT, transcript: TRANSCRIPT }));
@@ -130,7 +133,6 @@ const createGameApi = (function () {
     mapping(list(record({ id: BUTTON, label: text, line: text, off: text })))(value, where);
     for (const person of Object.keys(value)) WHO(person, `${where}'s key`);
   };
-  const EVENTS = list(record({ kind: text, text: BLOCKS }));
   const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), teammate: nullable(SNAPSHOT), events: EVENTS, teammate_events: EVENTS, buttons: BARS });
   const PRESSED = record({
     press: record({ person: WHO, button: BUTTON, command: text, status: number, output: text }),

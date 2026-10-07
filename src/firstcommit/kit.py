@@ -100,14 +100,17 @@ class Slide:
     ``run`` holds shell lines added to the lesson's demonstration repository. The game runs
     the lesson's ``run`` lines in order, in an empty folder, with a fixed identity and date,
     and shows each of this slide's commands with its real output; ``view`` picks the figure:
-    the repository map, the three areas, the object database, the commands only, or nothing.
+    the repository map, the three areas, your computer's places (working folder, staging area
+    and repository, with the arrows the slide's change lit), the object database, the commands
+    only, or nothing. ``more`` is optional text the page folds under "More", below ``text``.
     """
 
     id: str
     title: str
     text: str
     run: str = ""
-    view: Literal["map", "areas", "objects", "terminal", "none"] = "map"
+    view: Literal["map", "areas", "places", "objects", "terminal", "none"] = "map"
+    more: str = ""
 
 
 @dataclass(frozen=True)
@@ -116,7 +119,8 @@ class AnswerStep:
     A quest step that asks the player a question about what they saw.
 
     ``check`` judges the answer. ``command`` is a suggestion the page can type into the terminal
-    (never with Enter); ``placeholder`` is plain text shown in the empty answer box.
+    (never with Enter); ``placeholder`` is plain text shown in the empty answer box; ``more`` is
+    optional text the page folds under "More", below ``text``.
     """
 
     id: str
@@ -125,6 +129,7 @@ class AnswerStep:
     check: AnswerCheck
     command: str = ""
     placeholder: str = ""
+    more: str = ""
 
 
 @dataclass(frozen=True)
@@ -133,21 +138,24 @@ class WatchStep:
     A quest step that passes once the lab shows the player did it.
 
     ``watch`` is polled while the player works; its message is shown live (AUTHORING 3.3).
+    ``more`` is optional text the page folds under "More", below ``text``.
     """
 
     id: str
     text: str
     watch: Watch
     command: str = ""
+    more: str = ""
 
 
 @dataclass(frozen=True)
 class ReadStep:
-    """A quest step the player reads, then continues when ready."""
+    """A quest step the player reads, then continues when ready; ``more`` is folded under "More"."""
 
     id: str
     text: str
     command: str = ""
+    more: str = ""
 
 
 Step = AnswerStep | WatchStep | ReadStep

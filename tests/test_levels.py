@@ -119,9 +119,9 @@ def texts(level: runner.Level) -> list[str]:
     -------
     list[str]
         Briefing, question, placeholder, hints, debrief, and each quest step's text, command,
-        question and placeholder.
+        more, question and placeholder.
     """
-    steps = [field for step in level.quest for field in (step.text, step.command, *((step.question, step.placeholder) if isinstance(step, kit.AnswerStep) else ()))]
+    steps = [field for step in level.quest for field in (step.text, step.command, step.more, *((step.question, step.placeholder) if isinstance(step, kit.AnswerStep) else ()))]
     return [level.briefing, level.question, level.placeholder, *level.hints, level.debrief, *steps]
 
 

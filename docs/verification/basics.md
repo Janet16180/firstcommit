@@ -19,61 +19,67 @@ What is Git?, 1.6 First-Time Git Setup, 2.2 Recording Changes to the Repository)
 
 ### Lesson
 
+Picture-first since 2026-10-06 (AUTHORING.md section 3.5): each slide shows one change in the
+places figure (the last one too, so a commit is one picture throughout: mapcheck's fix), its `text` reads the picture in at most three
+sentences, and details sit in its folded `more`. *Re-checked* by
+`test_each_slide_changes_exactly_the_place_it_is_about` (on the real `demos.frames`) and the
+level's other lesson tests. The figure's words (working folder, staging area as the open box,
+your repository with its closed boxes, pages with a content id and colour) are the four-places
+draft's (`docs-draft/four-places.md`, P1-P4, B1-B4, A1-A2).
+
 | Slide | Claim | Evidence |
 |---|---|---|
-| history | A version control system records changes over time; you can see what changed, who and when, and get an earlier version back | Pro Git 1.1: "records changes to a file or set of files over time so that you can recall specific versions later"; "revert ... compare changes over time, see who last modified something" |
-| history | Each version you save is called a commit | gitglossary(7), commit: "used ... in the same places other revision control systems use the words 'revision' or 'version'" |
-| init | `git init` creates a hidden `.git` folder where Git keeps the history | git-init(1), DESCRIPTION: "basically a .git directory with subdirectories for objects, refs/heads, refs/tags"; *re-checked*: the slide runs `ls -A` and shows `.git` |
-| init | A new repository has no commits yet, but you are already on its first branch | git-init(1), DESCRIPTION: "An initial branch without any commits will be created"; experiment: `git rev-parse --verify HEAD` fails, `git symbolic-ref HEAD` gives `refs/heads/main` and `git status` names `main`, but `git branch` lists nothing and `git rev-parse --verify -q main` fails until the first commit, so the text no longer says the repository "starts with one branch" (fact-check 2) |
-| init | A branch is a line of development | gitglossary(7), branch: "A 'branch' is a line of development" |
-| init | The game sets `init.defaultBranch` to `main`, so in the game a new repository's first branch is `main` | `gitcmd.BASE_CONFIG` (the game's starting global configuration, written by `game.start` and used by lessons, cards and the player's shell); git-init(1), `--initial-branch` ("the name can be customized via the init.defaultBranch configuration variable"); RelNotes 2.28.0 lines 107-110; experiment: with that file as the global configuration, `git init` gives `refs/heads/main`; *re-checked*: the lesson runs plain `git init`, card `basics-init-command`, test `test_plain_git_init_starts_on_main_with_the_games_starting_settings` |
-| areas | Three areas: working folder (working tree), staging area (index), repository | Pro Git 1.3, "the three main sections of a Git project: the working tree, the staging area, and the Git directory"; gitglossary(7), working tree, index |
-| areas | A new file is untracked: in no commit and not in the staging area | Pro Git 2.2: "Untracked files are everything else ... not in your last snapshot and are not in your staging area"; git-status(1), DESCRIPTION; *re-checked*: the slide shows `git status` |
-| areas | `git status` lists the files that are untracked, staged, or changed but not staged | git-status(1), DESCRIPTION (paths that differ between the index and HEAD, between the working tree and the index, and untracked paths that are not ignored); experiment: an unchanged tracked file and an ignored file are not listed |
-| nothing-staged | With only an untracked file, committing fails; a plain `git commit` takes the staging area, which is empty | git-commit(1), DESCRIPTION: "containing the current contents of the index"; experiment: exit status 1, no commit made; *re-checked*: the slide's `! ` line must fail, card `basics-commit-needs-staging` |
-| add | `git add` copies the file's current content into the staging area; the file stays in the folder | git-add(1), DESCRIPTION: "updates the index using the current content found in the working tree"; experiment: `git show :README.md` gives the staged content, the file is still there; *re-checked*: card `basics-add-copies` |
-| add | After another edit, the staging area keeps the old content; `git add` again stages the new one | git-add(1), DESCRIPTION: "It only adds the content of the specified file(s) at the time the add command is run"; Pro Git 2.2; *re-checked*: card `basics-staged-version` |
-| commit | A plain `git commit` saves the staging area with the author's name and email, the date and the `-m` message | git-commit(1), DESCRIPTION, `-m`, COMMIT INFORMATION; experiment: `git cat-file -p HEAD` shows tree, author, committer with date, message |
-| commit | Git answers with a summary that includes the short hash | experiment (shown, not quoted: the first output line holds the branch, the short hash and the message); Pro Git 2.2; *re-checked*: the slide shows the real output |
-| commit | The short hash is the first characters of the hash | git-log(1), `--abbrev-commit`: "show a prefix that names the object uniquely"; gitrevisions(7), `<sha1>` |
-| commit | After this commit, `git status` lists no files (it still names the branch): the three areas hold the same content | gitglossary(7), clean; experiment; *re-checked*: the slide shows `git status`, test `test_the_quest_leads_to_a_solved_level` |
-| log | A new commit goes on top of the last one, which Git records as its parent | git-commit(1), DESCRIPTION: "The new commit is a direct child of HEAD"; experiment: `git cat-file -p HEAD` shows a `parent` line; gitglossary(7), parent |
-| log | `git log --oneline` lists commits newest first, one per line: short hash, then the message | git-log(1), `--oneline` ("--pretty=oneline --abbrev-commit"), format `oneline` (`<hash> <title-line>`), Commit Ordering ("reverse chronological order"); *re-checked*: the slide's output, card `basics-log-oneline` |
-| log | On a terminal, the newest line also shows `(HEAD -> main)` between the hash and the message | git-log(1), `--decorate`: "If auto is specified, then if the output is going to a terminal, the ref names are shown as if short were given ... Default to configuration value of log.decorate if configured, otherwise, auto"; RelNotes 2.13.0 lines 176-177; experiment on a pseudo-terminal: `fecf61d (HEAD -> main) First`, and through a pipe `fecf61d First`; *re-checked*: lesson transcripts use `log.decorate=short` (`demos.TERMINAL_CONFIG`), and the slide shows `ef6e967 (HEAD -> main) Add the first rule` (fact-check 2, after merging phase-2-engine 2166fc6) |
+| history | The project folder is empty and Git keeps nothing for it yet | the lesson starts in the empty `/home/you/project` (AUTHORING 3.5); *re-checked*: the first frame has no repository and no files |
+| history | Git can save versions of a project as closed boxes, called commits, and you can get any of them back | Pro Git 1.1: "records changes to a file or set of files over time so that you can recall specific versions later"; gitglossary(7), commit; the last slide gets one back (`git show HEAD~1:README.md`) |
+| history (more) | A version control system records changes over time: what changed, who and when; Git is one | Pro Git 1.1: "revert ... compare changes over time, see who last modified something" |
+| init | `git init` turns the folder into a repository; the staging area is empty and there are no commits yet | git-init(1), DESCRIPTION ("An initial branch without any commits will be created"); experiment in `demos.environment`: after `git init`, `git ls-files` lists nothing and `git rev-parse -q --verify HEAD` fails |
+| init (more) | `git init` creates a hidden `.git` folder, which `ls -A` shows; Git keeps the repository there, and the staging area too once you add a file | git-init(1), DESCRIPTION ("basically a .git directory"); experiment: `ls -A .git` after `git init` lists `HEAD branches config description hooks info objects refs` and no `index`; `.git/index` exists after the first `git add` (git treats the missing file as an empty staging area, so the text says "is empty", not that `git init` makes one) |
+| init (more) | A new repository has no commits yet, but you are already on its first branch; a branch is a line of development; the game's `init.defaultBranch` makes it `main` | as before (fact-check 2): git-init(1); gitglossary(7), branch; `gitcmd.BASE_CONFIG`; *re-checked*: test `test_plain_git_init_starts_on_main_with_the_games_starting_settings` |
+| file | A new file appears as a page in the working folder; it is untracked, in neither box | Pro Git 2.2 (untracked); experiment: `git status --short` gives `?? README.md`, `git ls-files` lists nothing; four-places P3 |
+| file (more) | A page shows the name and a short id of the content; the same content always gets the same id and colour, so a page that changes gets a new one | four-places P1 (same text, same blob id: experiment, `git hash-object README.md copy.md` gives `f3860383ad...` twice) and P2; `map.js` `blobHue(blob)` |
+| file (more) | `git status` lists it as untracked; Git's own name for the working folder is the working tree | experiment; gitglossary(7), working tree |
+| nothing-staged | The open box is empty, so `git commit` makes no commit; a page in the working folder is not enough | git-commit(1), DESCRIPTION ("containing the current contents of the index"); experiment: exit status 1, no commit; *re-checked*: the slide's `! ` line must fail, and the frame shows no change |
+| nothing-staged (more) | A plain `git commit` takes the staging area; a new file gets there only with `git add`; Git says why it made no commit | git-commit(1) items 1-4 (paths "must already be known to Git"; `-a` leaves new files alone); experiment: the transcript shows git's explanation (shown, not quoted) |
+| add | `git add` drops a copy of the page into the open box; the working folder keeps its page | four-places A1; git-add(1), DESCRIPTION; experiment: `git status --short` gives `A  README.md`, the file is still there; *re-checked*: the frame changes the staging area only |
+| add (more) | `git add` copies the content at that moment and usually prints nothing; the open box holds a page for every file the next commit will contain; Git's own name is the index | git-add(1), DESCRIPTION ("It only adds the content ... at the time the add command is run"); experiment: no output; four-places B1; gitglossary(7), index |
+| commit | `git commit` closes a copy of the open box and sets it in your repository, labelled with its short hash; the open box keeps its page | four-places A2 and B4 (the staging area keeps its files); experiment: `git ls-files -s` lists `f3860383ad...` before and after the commit, `git status --short` lists nothing; *re-checked*: the frame changes the commits only |
+| commit (more) | A plain `git commit` saves the staging area with name, email, date and `-m` message; `main` points to it; the short hash is the start of the hash Git computes from all of that; `git status` now lists no files | git-commit(1), DESCRIPTION, COMMIT INFORMATION; gitglossary(7), object; git-log(1), `--abbrev-commit`; experiment (`git cat-file -p HEAD`; a one-second date change gives another hash) |
+| edit | Editing the file changes its page in the working folder (new id and colour); the open box and the closed box keep the old version | four-places P2; experiment: after `echo "Be kind to each other." >> README.md`, `git hash-object README.md` gives `b43b4feb76...` while `git ls-files -s` and `git ls-tree HEAD` still give `f3860383ad...`; *re-checked*: the frame changes the working folder only |
+| edit (more) | `>>` adds a line at the end; `git status` lists the file as modified but not staged; a plain `git commit` now would make no commit | bash(1), Appending Redirected Output; experiment: ` M README.md`; `git commit -q -m x` exits 1 and `git rev-list --count HEAD` stays 1 (so the text does not say a commit "would save the old version") |
+| add-again | `git add` drops the new version into the open box in place of the old one; the closed box keeps the old version | experiment: `git ls-files -s` gives `b43b4feb76...`, `git ls-tree HEAD` still `f3860383ad...`; *re-checked*: the frame changes the staging area only |
+| add-again (more) | The staging area keeps a file's content as at the last `git add`; `git status` lists it as modified and staged | git-add(1), DESCRIPTION; experiment: `M  README.md` |
+| second-commit | Each closed box is a saved version (a commit); the new one sits on top of the first, its parent; `git log --oneline` lists them newest first with short hash and message | git-commit(1) ("a direct child of HEAD"); experiment: `git cat-file -p HEAD` shows `parent f862e40...`; git-log(1), Commit Ordering; *re-checked*: the slide's real output `ef6e967 (HEAD -> main) Add the first rule` / `f862e40 Add the README` |
+| second-commit (more) | On a terminal and in the lesson the newest line shows `(HEAD -> main)`; `git show HEAD~1:README.md` prints the README as the first commit saved it | git-log(1), `--decorate`; `demos.TERMINAL_CONFIG` (`log.decorate=short`); experiment: prints `# Team handbook` |
 
-The lesson was run through the real `demos.frames` on the merged branch: every line succeeds
-except `! git commit -m "Add the README"`, the `init` output reads `/home/you/project/.git/`, and
-each slide's map shows the README in the expected areas. Every card snippet also passes in the
-real `demos.environment`.
-
-The quest was played end to end through the real game layer (`game.start`, `game.quest_step`,
-`game.check`), with the player's commands run as plain `git` in `gitcmd.shell_environment` and
-no identity variables, as in the page's terminal: each step refused its answer or action before
-and accepted it after, every nudge read as intended (wrong branch, wrong case, example name,
-message instead of hash, extra untracked file), and the level paid 100 XP once solved.
+The lesson was run through the real `demos.frames`: every line succeeds except
+`! git commit -m "Add the README"`, and each frame changes exactly the place its slide is about
+(none, repository, working folder, none, staging area, commits, working folder, staging area,
+commits).
 
 ### Guided quest
 
+Each step's `text` says what to do in at most two sentences, in the figure's words; the page
+shows its `command` in its own box, and the rest is in its folded `more` (*re-checked* by
+`test_every_quest_step_says_what_to_do_in_two_sentences_and_leaves_the_command_to_its_box` and
+`test_gits_own_terms_and_the_details_are_folded_into_more`).
+
 | Step | Claim | Evidence |
 |---|---|---|
-| init | `git init` creates a hidden `.git` folder where Git keeps the project's commits; its first branch is `main`, the game's default | git-init(1); gitglossary(7), object database ("The objects usually live in $GIT_DIR/objects/"); as the `init` slide; *re-checked*: the harness's quest walk (`QUEST_ACTIONS["init"]` runs plain `git init`) |
-| status | `git status` names the branch and lists the files that are untracked, staged, or changed but not staged | git-status(1), DESCRIPTION; experiment: output starts with the branch; the check compares with the snapshot's `branch`, never with git's text |
-| file | `README.md` is the file that tells people what a project is about | docs.github.com, About READMEs: READMEs "communicate important information about your project" and typically say "What the project does" |
-| file | `echo` prints a line; `>` creates the file, or replaces everything in it if it exists | bash(1), Redirecting Output: "If the file does not exist it is created; if it does exist it is truncated to zero size" |
-| file | Git sees the new file but does not track it yet | experiment (`git status` lists it as untracked); Pro Git 2.2 |
-| stage | A new file gets into a commit only through the staging area | git-commit(1): listed paths "must already be known to Git", `-a`: "new files you have not told Git about are not affected"; experiment: `git commit -m x new.txt` and `git commit -i -m x new.txt` on an untracked file both fail and make no commit |
-| stage | `git add` usually prints nothing | experiment: empty output; git-add(1), `-v` ("Be verbose") |
-| stage | The file is still in the working folder: `git add` copies, it does not move | experiment; git-add(1), DESCRIPTION |
-| name | Every commit records who made it, with a name and an email | git-commit(1), COMMIT INFORMATION; experiment: `git cat-file -p HEAD` |
-| name | Quotes keep a name with spaces one value | bash(1), QUOTING |
-| name | `--global` means for all your repositories on this computer, unless one sets its own | git-config(1), `--global` ("write to global ~/.gitconfig file") and FILES ("User-specific configuration files ... also called 'global'"; "last value found taking precedence", the repository file read last); Pro Git 1.6; experiment: a local `user.name` wins over the global one |
-| name | Inside the game, `--global` writes the game's own settings file, not your real one | git(1), GIT_CONFIG_GLOBAL ("if GIT_CONFIG_GLOBAL is set, neither $HOME/.gitconfig nor $XDG_CONFIG_HOME/git/config will be read"); RelNotes 2.32.0 lines 88-93; DESIGN.md section 6 and `gitcmd.isolation`; experiment: with `GIT_CONFIG_GLOBAL` set, `git config --global` wrote that file and created no `~/.gitconfig` |
-| name | If the name was set earlier in the game, the step passes at once | the game's settings file persists in the game home (`save.ensure_gitconfig` never overwrites it); *re-checked*: the watch reads `git config --get` |
-| name, email | The suggested commands are complete: `git config --global user.name "Your Name"`, `git config --global user.email you@example.com` | AUTHORING section 1, rule 9; experiment: without a value, `git config --global user.name` only reads (exit status 1 when unset); *re-checked*: `test_a_missing_identity_gets_a_complete_command_to_set_it`, and the steps' `command` and the watch messages share `NAME_COMMAND` and `EMAIL_COMMAND` |
-| commit | `-m` gives the message; without it, Git opens a text editor for you to write one | git-commit(1), `-m` and ENVIRONMENT AND CONFIGURATION VARIABLES ("The editor used to edit the commit log message will be chosen from the GIT_EDITOR environment variable, the core.editor configuration variable, the VISUAL environment variable, or the EDITOR environment variable"); experiment: in the game shell's environment with none of them set, `git var GIT_EDITOR` gives `editor` (`/usr/bin/editor`, nano on Ubuntu 24.04; the Docker image installs nano), and with a stub `editor` first on `PATH` a bare `git commit` ran it on `.git/COMMIT_EDITMSG` and used what it wrote |
-| hash | Each line of `git log --oneline` is one commit, newest first: short hash, then message; on the terminal the newest line shows `(HEAD -> main)` | as the `log` slide |
-| hash | The full hash has 40 characters here | gitglossary(7), object name ("usually represented by a 40 character hexadecimal string"); experiment: `git rev-parse HEAD` is 40 characters |
-| hash | Commands such as `git show` accept the short form, as long as no other object's hash starts the same way | gitrevisions(7), `<sha1>`: "a leading substring that is unique within the repository"; experiment: `git show <short hash>` shows the commit, while `git fetch <repository> <short hash>` fails (exit 128) and needs the full hash, so the text gives `git show` as its example instead of saying "wherever" |
+| init | Make the empty `project` folder a repository with `git init`; the terminal opens there | the lab's `project` folder is empty after `setup`, and the game's terminal opens there (`game.terminal_folder`); *re-checked*: `test_setup_leaves_an_empty_folder_with_no_repository` |
+| init (more) | `git init` creates a hidden `.git` folder where Git keeps your repository; its first branch is `main`, the game's default | as the `init` slide; *re-checked*: the harness's quest walk (`QUEST_ACTIONS["init"]` runs plain `git init`) |
+| status | `git status` names the branch you are on | git-status(1); experiment: output starts with the branch; the check compares with the snapshot's `branch`, never with git's text |
+| status (more) | It also lists the files that are untracked, staged, or changed but not staged; the new repository has none | git-status(1), DESCRIPTION; experiment |
+| name | Every commit records who made it | git-commit(1), COMMIT INFORMATION; experiment: `git cat-file -p HEAD` |
+| name (more) | Quotes keep a name with spaces one value; `--global` means for all your repositories on this computer unless one sets its own; inside the game it writes the game's own settings file; a name set earlier passes the step at once | as before: bash(1), QUOTING; git-config(1), `--global` and FILES; git(1), GIT_CONFIG_GLOBAL; RelNotes 2.32.0 lines 88-93; `save.ensure_gitconfig` |
+| name, email | The suggested commands are complete | AUTHORING section 1, rule 9; *re-checked*: `test_a_missing_identity_gets_a_complete_command_to_set_it`; the steps' `command` and messages share `NAME_COMMAND` and `EMAIL_COMMAND` |
+| file | The new file's page appears in the working folder | the live figure draws a page for every file in the working folder (four-places Part 1, P3) |
+| file (more) | `README.md` tells people what a project is about; `echo` prints a line and `>` creates the file or replaces its content; `git status` lists it as untracked | docs.github.com, About READMEs; bash(1), Redirecting Output ("truncated to zero size"); experiment |
+| stage | `git add` drops a copy of the page into the open box | four-places A1 |
+| stage (more) | `git add` usually prints nothing; the working folder keeps its page; a new file gets into a commit only through the staging area | experiment; git-add(1); git-commit(1) (`git commit -m x new.txt` and `git commit -i -m x new.txt` on an untracked file fail) |
+| commit | `git commit` saves the staging area as your first commit | git-commit(1), DESCRIPTION |
+| commit (more) | `-m` gives the message; without it Git opens a text editor; a closed box appears in your repository, on `main` | as before (git-commit(1), ENVIRONMENT AND CONFIGURATION VARIABLES; `git var GIT_EDITOR` experiment); four-places A2 (the live figure) |
+| hash | `git log --oneline` lists the history with each commit's short hash | git-log(1), `--oneline` |
+| hash (more) | One commit per line, newest first, short hash then message, with `(HEAD -> main)` on the terminal's newest line; 40-character full hash; `git show` accepts the short form | as before: git-log(1), `--decorate`; gitglossary(7), object name; gitrevisions(7), `<sha1>`; the `git fetch` experiment |
 
 Watch and answer checks read `kit.snapshot(lab.project)` and `git config --get` (meant for
 scripts) only. Each step's check fails before the player's action and passes after it
@@ -227,6 +233,35 @@ fails for the identity first, but the lessons set one); `git add -N`, `--assume-
   identity steps included; `test_the_reference_solution_plays_every_quest_step_identity_included`.
 - Left for the second basics level ("A message that helps"): teaching the editor itself (write,
   save, quit). This level only warns that a bare `git commit` opens one.
+
+## Picture-first rewrite (2026-10-06): changed claims for mapcheck
+
+The lesson went from 7 slides of paragraphs to 9 slides of one change each, and the quest steps
+from paragraphs to one or two sentences plus the command; everything else moved, unchanged,
+into the folded `more`. New or reworded claims, each with its row above:
+
+| # | Where | New or reworded claim | Kind |
+|---|---|---|---|
+| V1 | slide `history` | The project folder is empty and Git keeps nothing for it yet; Git can save versions as closed boxes, called commits, and you can get any of them back | reads the first frame; Pro Git 1.1 |
+| V2 | slide `history`, more | The picture shows three places on your computer, filled one command at a time by the next slides | the figure (places view) |
+| V3 | slide `init` | The open box, the staging area, is empty, and your repository has no closed boxes yet | experiment; nuance: `.git/index` appears only with the first `git add` |
+| V4 | slide `init`, more | Git keeps the repository in `.git`, and the staging area too once you add a file | experiment (no `.git/index` after `git init`) |
+| V5 | slide `file` | A new file appears as a page in the working folder; untracked, in neither box | four-places P3 |
+| V6 | slide `file`, more | A page shows the name and a short id of its content; same content, same id and colour; a changed page gets a new one | four-places P1, P2 |
+| V7 | slide `nothing-staged` | The open box is empty, so `git commit` has nothing to close; no closed box appears; a page in the folder is not enough | experiment; the frame shows no change |
+| V8 | slide `add` | `git add` drops a copy of the page into the open box; the working folder keeps its page | four-places A1 and its motion |
+| V9 | slide `add`, more | The open box holds a page for every file the next commit will contain, not only the changed ones | four-places B1 |
+| V10 | slide `commit` | `git commit` closes a copy of the open box and sets it in your repository, labelled with its short hash; the open box keeps its page | four-places A2, B4 and the commit motion |
+| V11 | slide `edit` | Editing changes the page in the working folder (new id and colour); the open box and the closed box keep the old version | four-places P2; experiment |
+| V12 | slide `edit`, more | A plain `git commit` now would make no commit | experiment (exit 1) |
+| V13 | slide `add-again` | `git add` drops the new version into the open box in place of the old one; the closed box keeps the old version | experiment |
+| V14 | slide `second-commit` | Each closed box is a saved version; the new one sits on top of the first, its parent; `git log --oneline` lists them newest first | git-commit(1); the places view's timeline of closed boxes; the slide's real output |
+| V15 | slide `second-commit`, more | `git show HEAD~1:README.md` prints the README as the first commit saved it | experiment |
+| V16 | quest `file` | The new file's page appears in the working folder (the live figure) | four-places Part 1 |
+| V17 | quest `stage` | `git add` drops a copy of the page into the open box | four-places A1 |
+| V18 | quest `commit`, more | A closed box appears in your repository, on `main` (was "the map shows your first commit") | four-places A2 |
+
+The briefing, hints, debrief, feedback messages and cards are unchanged by this rewrite.
 
 ## Left out
 

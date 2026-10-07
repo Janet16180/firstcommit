@@ -175,11 +175,14 @@ def solve(lab: kit.Lab, state: kit.State) -> str | None: ...
   the player always reaches the last step; a check the player asks for may still solve it
   early. A step is one of three types (`kit.Step` names the three together), each carrying
   exactly what it needs:
-  - `kit.AnswerStep(id, text, question, check, command="", placeholder="")`: `check(lab, state,
-    answer) -> Verdict` judges the player's answer;
-  - `kit.WatchStep(id, text, watch, command="")`: `watch(lab, state) -> Verdict` passes once the
-    lab shows the step was done (polled like `check`; same rules);
-  - `kit.ReadStep(id, text, command="")`: the player reads, then continues.
+  - `kit.AnswerStep(id, text, question, check, command="", placeholder="", more="")`:
+    `check(lab, state, answer) -> Verdict` judges the player's answer;
+  - `kit.WatchStep(id, text, watch, command="", more="")`: `watch(lab, state) -> Verdict` passes
+    once the lab shows the step was done (polled like `check`; same rules);
+  - `kit.ReadStep(id, text, command="", more="")`: the player reads, then continues.
+
+  Every step, and every lesson slide (`kit.Slide(..., more="")`), may carry `more`: text the page
+  folds under a closed "More" below its text, for detail the step or the picture does not need.
 
   A watch's message is shown live, after every poll, while the player works: write it as the
   next thing to do ("`README.md` is in the working folder; stage it with `git add`"), never as
@@ -220,8 +223,10 @@ lines added to the lesson's demonstration repository. The game runs every slide'
 in order in an empty folder, with a fixed identity, date and locale, and only the game's
 starting global configuration (`gitcmd.BASE_CONFIG`) plus the settings below that make git
 print what a terminal shows. It shows each of the slide's commands with its real output, plus
-a figure (`view`): the repository map, the three areas, the object database, the commands
-only, or nothing. So every hash and line of output a lesson shows is what git really prints.
+a figure (`view`): the repository map, the three areas, your computer's places (`places`: the
+working folder, staging area and repository, with the arrows the slide's change lit, played from
+the slide before), the object database, the commands only, or nothing. So every hash and line
+of output a lesson shows is what git really prints.
 
 - Each non-blank line of `run` is one command. The whole lesson runs in one bash shell, so
   `cd`, variables and `$?` carry over to the next line and the next slide. Keep a command on
@@ -247,9 +252,10 @@ only, or nothing. So every hash and line of output a lesson shows is what git re
 - Write files with plain shell (`echo "hello" > hello.txt`), so the reader can follow along.
 - 4-8 slides; one idea each. Picture first (the user's direction, 2026-10-06): every slide
   shows a figure that makes its idea visible, and its text is at most 3 short sentences that
-  read the picture ("the new save point sits on top of the old one"). Use "commands only" or no
-  figure only when no picture fits the idea, and say why in a comment. An idea that involves
-  another repository (clone, push, fetch, pull) uses a figure that shows both repositories.
+  read the picture ("the new save point sits on top of the old one"); anything more goes in
+  `more`. Use "commands only" or no figure only when no picture fits the idea, and say why in a
+  comment. An idea that involves another repository (clone, push, fetch, pull) uses a figure
+  that shows both repositories.
 
 Lessons run without a terminal, and git prints some things differently then. Checked on git
 2.43 against a real terminal:

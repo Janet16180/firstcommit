@@ -31,6 +31,17 @@ test("done steps fold away, the current step is open, and later steps stay hidde
   assert.match(view.q(".quest-count").textContent, /Step 2 of 3/);
 });
 
+test("the current step's More folds closed under its text, and a step without one shows none", () => {
+  const steps = record("level").steps;
+  steps[1].more = [{ kind: "para", spans: [{ text: "git status compares the three places.", code: false }] }];
+  const made = Quest.create({ steps, step: 1, onAnswer() {}, onContinue() {}, onType() {}, onCheck() {} });
+  const more = made.element.querySelector(".step.is-current .prose details.more");
+  assert.equal(more.open, false);
+  assert.match(more.textContent, /compares the three places/);
+  const next = Quest.create({ steps, step: 2, onAnswer() {}, onContinue() {}, onType() {}, onCheck() {} });
+  assert.equal(next.element.querySelector(".step.is-current details"), null);
+});
+
 test("an answer step asks its question and sends the typed answer, trimmed", () => {
   const view = quest(1);
   assert.match(view.q(".step.is-current .question").textContent, /Which file has changes/);

@@ -6,13 +6,12 @@ const { makeEvent } = require("./fakedom");
 const { createClock, installBrowser, load, record } = require("./load");
 
 installBrowser();
-const { LessonPlayer } = load(["dom.js", "markup.js", "map.js", "lesson.js"], ["LessonPlayer"]);
+const { LessonPlayer, TimePlaces } = load(["dom.js", "markup.js", "map.js", "theme-time.js", "theme-time-motion.js", "theme-time-places.js", "lesson.js"], ["LessonPlayer", "TimePlaces"]);
 
 /* A lesson player, moved on with Next to the slide numbered `slide` (from 1). */
-function player({ reducedMotion = false, onFinish = () => {}, onExit = () => {}, slide = 1, play } = {}) {
+function player({ reducedMotion = false, onFinish = () => {}, onExit = () => {}, slide = 1, play, lesson = record("lesson"), places } = {}) {
   const clock = createClock();
-  const lesson = record("lesson");
-  const made = LessonPlayer.create({ lesson, timers: clock, reducedMotion, onFinish, onExit, play });
+  const made = LessonPlayer.create({ lesson, timers: clock, reducedMotion, onFinish, onExit, play, places });
   const view = { ...made, clock, lesson, q: (selector) => made.element.querySelector(selector), all: (selector) => [...made.element.querySelectorAll(selector)] };
   while (!view.q(".lesson-count").textContent.includes(`${slide} of`)) view.q(".lesson-next").click();
   return view;
@@ -46,6 +45,19 @@ test("the figure shows the repository before the commands, then after them with 
   await view.clock.advance(60000);
   assert.equal(view.all(".map-commit").length, 1);
   assert.equal(view.all(".map-commit.is-new").length, 1);
+});
+
+test("a slide's More folds closed under its text, and a slide without one shows none", () => {
+  const lesson = record("lesson");
+  lesson.slides[0].more = [{ kind: "para", spans: [{ text: "Git keeps its records in .git.", code: false }] }];
+  const view = player({ lesson });
+  const more = view.q(".lesson-text details.more");
+  assert.equal(more.open, false);
+  assert.equal(more.querySelector("summary").textContent, "More");
+  assert.match(more.textContent, /records in \.git/);
+  view.q(".lesson-next").click();
+  view.q(".lesson-next").click();
+  assert.equal(view.q(".lesson-text details"), null);
 });
 
 test("Next first finishes the slide, then moves on", () => {
@@ -154,4 +166,68 @@ test("a slide shown finished at once does not move: Next pressed early, Back, or
   player({ slide: 3, play, reducedMotion: true });
   await early.clock.advance(10000);
   assert.deepEqual(plays, []);
+});
+
+/* The sample lesson with its commit slide (the third) drawn as the places, and the change the
+   server tells for it: the commit of the file the slide before staged. */
+function placesLesson() {
+  const lesson = record("lesson");
+  lesson.slides[2] = { ...lesson.slides[2], view: "places", events: [{ kind: "commit-created", text: [] }] };
+  return lesson;
+}
+
+/* TimePlaces, with every play() recorded instead of run. */
+function recordingPlaces(plays) {
+  return { ...TimePlaces, play: (figure, transition, reduced) => plays.push({ figure, transition, reduced }) };
+}
+
+const finishCommitSlide = async (view) => {
+  await view.clock.advance(LessonPlayer.FIRST_LINE_MS);
+  for (const line of view.lesson.slides[2].transcript) await view.clock.advance(LessonPlayer.lineDelay(line));
+};
+
+test("a places slide draws your computer's places from the slide's repository: before its commands, then as they left it, with no GitHub", async () => {
+  const view = player({ slide: 3, lesson: placesLesson(), places: TimePlaces });
+  assert.ok(view.q(".lesson-figure .tt-places.is-local"));
+  assert.equal(view.q(".tt-frame.is-github"), null);
+  assert.equal(view.all(".tt-places .map-commit").length, 0, "before the commit");
+  await finishCommitSlide(view);
+  assert.equal(view.all(".tt-places .map-commit").length, 1, "after it");
+  const graphs = view.all(".lesson-figure .map-graph");
+  assert.ok(graphs.length > 0 && graphs.every((graph) => graph.closest(".tt-places")), "no map besides the places' own");
+});
+
+test("once its commands have shown, a places slide lights the arrows its change implies and says what they do", async () => {
+  const view = player({ slide: 3, lesson: placesLesson(), places: TimePlaces });
+  assert.equal(view.q(".tt-arrow.is-active"), null);
+  await finishCommitSlide(view);
+  assert.deepEqual(view.all(".tt-arrow.is-active").map((node) => node.getAttribute("data-command")), ["commit"]);
+  assert.match(view.q(".tt-places-caption").textContent, /saves the staging area as a new commit/);
+});
+
+test("a places slide plays its change from the previous slide's repository when its last command shows, and again on Replay", async () => {
+  const plays = [];
+  const view = player({ slide: 3, lesson: placesLesson(), places: recordingPlaces(plays) });
+  await finishCommitSlide(view);
+  assert.equal(plays.length, 1);
+  const [{ figure, transition, reduced }] = plays;
+  assert.equal(figure, view.q(".lesson-figure .tt-places"));
+  assert.deepEqual(transition, { before: { project: view.lesson.slides[1].map, github: null }, after: { project: view.lesson.slides[2].map, github: null }, commands: ["commit"] });
+  assert.equal(reduced, false);
+  view.q(".lesson-pause").click();
+  await finishCommitSlide(view);
+  assert.equal(plays.length, 2, "Replay plays it again");
+});
+
+test("a places slide shown finished at once does not move, but still lights its arrows: Next pressed early, Back, or reduced motion", async () => {
+  const plays = [];
+  const places = recordingPlaces(plays);
+  const early = player({ slide: 3, lesson: placesLesson(), places });
+  early.q(".lesson-next").click();
+  const back = player({ slide: 4, lesson: placesLesson(), places });
+  back.q(".lesson-back").click();
+  const still = player({ slide: 3, lesson: placesLesson(), places, reducedMotion: true });
+  await early.clock.advance(10000);
+  assert.deepEqual(plays, []);
+  for (const view of [early, back, still]) assert.ok(view.q(".tt-arrow.is-commit.is-active"));
 });

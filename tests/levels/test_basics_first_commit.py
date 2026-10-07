@@ -1,3 +1,4 @@
+import re
 import shutil
 from pathlib import Path
 
@@ -5,9 +6,22 @@ import pytest
 from hypothesis import HealthCheck, given, settings
 from hypothesis import strategies as st
 
-from firstcommit import gitcmd, kit
+from firstcommit import demos, gitcmd, kit
 from firstcommit.levels import basics_first_commit as level
 
+CODE_SPAN = re.compile(r"`[^`]*`")
+SENTENCE_END = re.compile(r"[.!?](?=\s|$)")
+LESSON_CHANGES = [
+    ("history", set[str]()),
+    ("init", {"repository"}),
+    ("file", {"working folder"}),
+    ("nothing-staged", set[str]()),
+    ("add", {"staging area"}),
+    ("commit", {"commits"}),
+    ("edit", {"working folder"}),
+    ("add-again", {"staging area"}),
+    ("second-commit", {"commits"}),
+]
 HOSTILE = [
     "",
     " ",
@@ -82,6 +96,77 @@ def play_until(lab: kit.Lab, stop: str | None) -> None:
         if quest_step.id == stop:
             return
         level.QUEST_ACTIONS[quest_step.id](lab, {})
+
+
+def sentences(text: str) -> int:
+    """
+    Count the sentences of a text's prose, leaving out its verbatim lines and code spans.
+
+    A paragraph that ends with a colon, before the command it introduces, counts as a sentence.
+
+    Parameters
+    ----------
+    text : str
+        Text in the game's layout (AUTHORING.md section 6).
+
+    Returns
+    -------
+    int
+        How many sentences end in it.
+    """
+    count = 0
+    for paragraph in text.strip().split("\n\n"):
+        prose = " ".join(
+            line for line in paragraph.splitlines() if line.strip() and not line.startswith((" ", "\t", "$ "))
+        )
+        prose = CODE_SPAN.sub("code", prose).strip()
+        count += len(SENTENCE_END.findall(prose)) + prose.endswith(":")
+    return count
+
+
+def versions(snap: kit.Snapshot, area: level.Area) -> dict[str, str]:
+    """
+    Give the content id of every file one place holds.
+
+    Parameters
+    ----------
+    snap : kit.Snapshot
+        The repository.
+    area : level.Area
+        The place: ``"folder"``, ``"index"`` or ``"head"``.
+
+    Returns
+    -------
+    dict[str, str]
+        Each path the place holds, with its blob id.
+    """
+    return {entry["path"]: blob for entry in snap["files"] if (blob := entry[area]) is not None}
+
+
+def changed_places(before: kit.Snapshot, after: kit.Snapshot) -> set[str]:
+    """
+    Name the places of the picture that changed between two snapshots.
+
+    Parameters
+    ----------
+    before : kit.Snapshot
+        The repository before a slide's commands.
+    after : kit.Snapshot
+        The repository after them.
+
+    Returns
+    -------
+    set[str]
+        Some of "repository" (it appeared or went), "working folder", "staging area" and
+        "commits".
+    """
+    changes = {
+        "repository": before["exists"] != after["exists"],
+        "working folder": versions(before, "folder") != versions(after, "folder"),
+        "staging area": versions(before, "index") != versions(after, "index"),
+        "commits": len(before["commits"]) != len(after["commits"]),
+    }
+    return {place for place, changed in changes.items() if changed}
 
 
 def git(lab: kit.Lab, *args: str) -> str:
@@ -615,3 +700,41 @@ def test_the_questions_answer_any_text_with_a_message(played: kit.Lab, text: str
     for step_id in ["status", "hash"]:
         verdict = answer(played, step_id, text)
         assert verdict.message
+
+
+def test_the_lesson_shows_one_change_per_slide_in_order() -> None:
+    assert [slide.id for slide in level.LESSON] == [slide_id for slide_id, _ in LESSON_CHANGES]
+
+
+def test_each_slide_changes_exactly_the_place_it_is_about() -> None:
+    frames = demos.frames(level.LESSON)
+    assert not frames[0]["map"]["exists"]
+    for (slide_id, expected), before, after in zip(LESSON_CHANGES[1:], frames[:-1], frames[1:], strict=True):
+        assert changed_places(before["map"], after["map"]) == expected, slide_id
+
+
+def test_every_slide_draws_the_places_so_a_commit_is_one_picture_throughout() -> None:
+    assert [slide.view for slide in level.LESSON] == ["places"] * len(level.LESSON)
+
+
+def test_every_slide_reads_its_picture_in_at_most_three_short_sentences() -> None:
+    for slide in level.LESSON:
+        assert 1 <= sentences(slide.text) <= 3, slide.id
+
+
+def test_every_quest_step_says_what_to_do_in_two_sentences_and_leaves_the_command_to_its_box() -> None:
+    for quest_step in level.QUEST:
+        assert 1 <= sentences(quest_step.text) <= 2, quest_step.id
+        assert quest_step.command, quest_step.id
+        assert not any(line.startswith((" ", "\t", "$ ")) for line in quest_step.text.splitlines() if line.strip()), (
+            quest_step.id
+        )
+
+
+def test_gits_own_terms_and_the_details_are_folded_into_more() -> None:
+    shown = " ".join(" ".join(item.text.split()) for item in [*level.LESSON, *level.QUEST])
+    folded = " ".join(" ".join(item.more.split()) for item in [*level.LESSON, *level.QUEST])
+    for term in ["working tree", "index", "init.defaultBranch"]:
+        assert term not in shown, term
+        assert term in folded, term
+    assert all(item.more for item in [*level.LESSON, *level.QUEST])

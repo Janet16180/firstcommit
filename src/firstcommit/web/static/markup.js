@@ -48,5 +48,8 @@ const Markup = (() => {
   /* The blocks as plain text, one line per paragraph or item: for titles and labels. */
   const plain = (blocks) => blocks.map((block) => PLAIN[block.kind](block)).join("\n");
 
-  return { render, spans, plain };
+  /* The blocks folded under a closed "More"; null when there are none. */
+  const more = (blocks) => (blocks.length ? el("details", { class: "more" }, el("summary", {}, "More"), render(blocks)) : null);
+
+  return { render, spans, plain, more };
 })();
