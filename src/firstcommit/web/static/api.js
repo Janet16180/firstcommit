@@ -121,24 +121,23 @@ const createGameApi = (function () {
   const STEP = record({ correct: flag, message: BLOCKS, step: number, quest_done: flag });
   const CHECK = record({ solved: flag, message: BLOCKS, payout: nullable(PAYOUT), debrief: nullable(BLOCKS) });
   const HINT = record({ hint: BLOCKS, used: number, total: number, cost: number });
-  const EVENTS = list(record({ kind: text, text: BLOCKS }));
-  const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), teammate: nullable(SNAPSHOT), events: EVENTS, teammate_events: EVENTS });
-  /* The playground's people and kinds of button (records.Who and records.Button; a Python test
-     keeps them equal). A button's id is its kind, or "<kind>:<file>" for one that acts on a file. */
+  /* The playground's people and every id of its buttons (records.Who and playground.BUTTON_IDS; a
+     Python test keeps them equal). */
   const WHO = oneOf("you", "alex");
-  const KIND = oneOf("edit", "add", "commit", "push", "fetch", "pull", "pull-no-rebase", "status");
-  const BUTTON_ID = (value, where) => {
-    text(value, where);
-    const [kind, ...file] = value.split(":");
-    KIND(kind, where);
-    if (file.length && !file.join(":")) fail(where, "a kind, or a kind and a file");
+  const BUTTON = oneOf("add:README.md", "add:notes.txt", "commit", "edit:README.md", "edit:notes.txt", "fetch", "keep-ours:README.md", "keep-ours:notes.txt", "keep-theirs:README.md", "keep-theirs:notes.txt", "merge-abort", "pull", "pull-no-rebase", "push", "status");
+  /* Each person's bar, in bar order ({} without a playground). */
+  const BARS = (value, where) => {
+    mapping(list(record({ id: BUTTON, label: text, line: text, off: text })))(value, where);
+    for (const person of Object.keys(value)) WHO(person, `${where}'s key`);
   };
+  const EVENTS = list(record({ kind: text, text: BLOCKS }));
+  const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), teammate: nullable(SNAPSHOT), events: EVENTS, teammate_events: EVENTS, buttons: BARS });
   const PRESSED = record({
-    press: record({ person: WHO, button: BUTTON_ID, command: text, status: number, output: text }),
+    press: record({ person: WHO, button: BUTTON, command: text, status: number, output: text }),
     before: OBSERVATION,
     observation: OBSERVATION,
     explanation: nullable(BLOCKS),
-    fix: nullable(text),
+    fix: nullable(BUTTON),
     fix_line: text,
   });
   const CARDS = record({

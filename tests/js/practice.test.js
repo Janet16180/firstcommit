@@ -293,14 +293,14 @@ const barButton = (run, person, label) => [...run.view.element.querySelectorAll(
 const para = (text) => [{ kind: "para", spans: [{ text, code: false }] }];
 
 test("on a playground level, a press goes to the server, the lab is drawn as the press left it, and its result shows", async () => {
-  const after = { ...playgroundObservation(), teammate_events: [{ kind: "file-changed", text: para("alex.txt changed.") }] };
-  const run = playground({ replies: { "/api/press": pressView({ person: "alex", command: "echo 'A line from Alex' >> alex.txt", after }) } });
+  const after = { ...playgroundObservation(), teammate_events: [{ kind: "file-changed", text: para("notes.txt changed.") }] };
+  const run = playground({ replies: { "/api/press": pressView({ person: "alex", command: 'echo "Alex: line 2" >> notes.txt', after }) } });
   await settle();
-  barButton(run, "alex", "Edit alex.txt").click();
+  barButton(run, "alex", "Edit notes.txt").click();
   await settle();
-  assert.deepEqual(run.server.calls.at(-1), { path: "/api/press", body: { person: "alex", button: "edit:alex.txt" } });
+  assert.deepEqual(run.server.calls.at(-1), { path: "/api/press", body: { person: "alex", button: "edit:notes.txt" } });
   assert.match(run.q(".pg-result .pg-ran").textContent, /Alex ran.*done/);
-  assert.match(run.q(".feed").textContent, /On Alex's computer: alex\.txt changed\./);
+  assert.match(run.q(".feed").textContent, /On Alex's computer: notes\.txt changed\./);
   assert.equal(run.q(".playground").getAttribute("aria-busy"), "false");
   run.view.dispose();
 });

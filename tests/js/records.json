@@ -991,7 +991,8 @@
     ]
    }
   ],
-  "teammate_events": []
+  "teammate_events": [],
+  "buttons": {}
  },
  "cards": [
   {
@@ -2727,44 +2728,58 @@
    "button": "push",
    "command": "git push",
    "status": 0,
-   "output": "To ../../github/project.git\n   d412c6b..31071a7  main -> main\n"
+   "output": "Enumerating objects: 5, done.\nCounting objects: 100% (5/5), done.\nDelta compression using up to 8 threads\nCompressing objects: 100% (2/2), done.\nWriting objects: 100% (3/3), 294 bytes | 294.00 KiB/s, done.\nTotal 3 (delta 0), reused 0 (delta 0), pack-reused 0\nTo ../../github/project.git\n   de4c885..21e6785  main -> main\n"
   },
   "before": {
    "level": "basics-sample",
    "project": {
     "exists": true,
     "bare": false,
-    "head": "d412c6bdf2bac0062df873b413cf5f43434dae4e",
+    "head": "de4c8859ba493d31e517c0e8019c8d32625f2426",
     "branch": "main",
     "commits": [
      {
-      "hash": "d412c6bdf2bac0062df873b413cf5f43434dae4e",
-      "short": "d412c6b",
+      "hash": "de4c8859ba493d31e517c0e8019c8d32625f2426",
+      "short": "de4c885",
       "parents": [],
-      "subject": "Add the README",
+      "subject": "Start the project",
       "author": "First Commit",
-      "time": 1791330047
+      "time": 1791331348
      }
     ],
     "refs": [
      {
       "name": "main",
       "kind": "branch",
-      "target": "d412c6bdf2bac0062df873b413cf5f43434dae4e"
+      "target": "de4c8859ba493d31e517c0e8019c8d32625f2426"
      },
      {
       "name": "origin/main",
       "kind": "remote",
-      "target": "d412c6bdf2bac0062df873b413cf5f43434dae4e"
+      "target": "de4c8859ba493d31e517c0e8019c8d32625f2426"
      }
     ],
     "pushed": [],
     "files": [
      {
       "path": "README.md",
-      "head": "3f97d6f343caec3213538d3d92ed335757db5adc",
-      "index": "3f97d6f343caec3213538d3d92ed335757db5adc",
-      "folder": "3f97d6f343caec3213538d3d92ed335757db5adc",
+      "head": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+      "index": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+      "folder": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     },
+     {
+      "path": "notes.txt",
+      "head": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
+      "index": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
+      "folder": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
       "head_mode": "100644",
       "index_mode": "100644",
       "folder_mode": "100644",
@@ -2782,23 +2797,23 @@
    "github": {
     "exists": true,
     "bare": true,
-    "head": "d412c6bdf2bac0062df873b413cf5f43434dae4e",
+    "head": "de4c8859ba493d31e517c0e8019c8d32625f2426",
     "branch": "main",
     "commits": [
      {
-      "hash": "d412c6bdf2bac0062df873b413cf5f43434dae4e",
-      "short": "d412c6b",
+      "hash": "de4c8859ba493d31e517c0e8019c8d32625f2426",
+      "short": "de4c885",
       "parents": [],
-      "subject": "Add the README",
+      "subject": "Start the project",
       "author": "First Commit",
-      "time": 1791330047
+      "time": 1791331348
      }
     ],
     "refs": [
      {
       "name": "main",
       "kind": "branch",
-      "target": "d412c6bdf2bac0062df873b413cf5f43434dae4e"
+      "target": "de4c8859ba493d31e517c0e8019c8d32625f2426"
      }
     ],
     "pushed": [],
@@ -2810,47 +2825,47 @@
    "teammate": {
     "exists": true,
     "bare": false,
-    "head": "31071a7d66f2ea5a0b3a57c618e053c383877a9e",
+    "head": "21e6785eb8ad2419c4ea639216e64d8d6e91f5e5",
     "branch": "main",
     "commits": [
      {
-      "hash": "31071a7d66f2ea5a0b3a57c618e053c383877a9e",
-      "short": "31071a7",
+      "hash": "21e6785eb8ad2419c4ea639216e64d8d6e91f5e5",
+      "short": "21e6785",
       "parents": [
-       "d412c6bdf2bac0062df873b413cf5f43434dae4e"
+       "de4c8859ba493d31e517c0e8019c8d32625f2426"
       ],
-      "subject": "Add a line to alex.txt",
+      "subject": "Update notes.txt",
       "author": "Alex",
-      "time": 1791330048
+      "time": 1791331349
      },
      {
-      "hash": "d412c6bdf2bac0062df873b413cf5f43434dae4e",
-      "short": "d412c6b",
+      "hash": "de4c8859ba493d31e517c0e8019c8d32625f2426",
+      "short": "de4c885",
       "parents": [],
-      "subject": "Add the README",
+      "subject": "Start the project",
       "author": "First Commit",
-      "time": 1791330047
+      "time": 1791331348
      }
     ],
     "refs": [
      {
       "name": "main",
       "kind": "branch",
-      "target": "31071a7d66f2ea5a0b3a57c618e053c383877a9e"
+      "target": "21e6785eb8ad2419c4ea639216e64d8d6e91f5e5"
      },
      {
       "name": "origin/main",
       "kind": "remote",
-      "target": "d412c6bdf2bac0062df873b413cf5f43434dae4e"
+      "target": "de4c8859ba493d31e517c0e8019c8d32625f2426"
      }
     ],
     "pushed": [],
     "files": [
      {
       "path": "README.md",
-      "head": "3f97d6f343caec3213538d3d92ed335757db5adc",
-      "index": "3f97d6f343caec3213538d3d92ed335757db5adc",
-      "folder": "3f97d6f343caec3213538d3d92ed335757db5adc",
+      "head": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+      "index": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+      "folder": "dab306f45e6a154ab0fe50d67298f165cfc75392",
       "head_mode": "100644",
       "index_mode": "100644",
       "folder_mode": "100644",
@@ -2861,10 +2876,10 @@
       "folder_change": null
      },
      {
-      "path": "alex.txt",
-      "head": "d8b832cc9f6d3a2c4ad67d4104c224bcf24d00fb",
-      "index": "d8b832cc9f6d3a2c4ad67d4104c224bcf24d00fb",
-      "folder": "d8b832cc9f6d3a2c4ad67d4104c224bcf24d00fb",
+      "path": "notes.txt",
+      "head": "262d0700ab23da932e59cc7a63b238bf2e3834df",
+      "index": "262d0700ab23da932e59cc7a63b238bf2e3834df",
+      "folder": "262d0700ab23da932e59cc7a63b238bf2e3834df",
       "head_mode": "100644",
       "index_mode": "100644",
       "folder_mode": "100644",
@@ -2880,44 +2895,172 @@
     "truncated": false
    },
    "events": [],
-   "teammate_events": []
+   "teammate_events": [],
+   "buttons": {
+    "you": [
+     {
+      "id": "status",
+      "label": "git status",
+      "line": "git status",
+      "off": ""
+     },
+     {
+      "id": "commit",
+      "label": "git commit",
+      "line": "git commit -m \"Save my work\"",
+      "off": ""
+     },
+     {
+      "id": "push",
+      "label": "git push",
+      "line": "git push",
+      "off": ""
+     },
+     {
+      "id": "fetch",
+      "label": "git fetch",
+      "line": "git fetch",
+      "off": ""
+     },
+     {
+      "id": "pull",
+      "label": "git pull",
+      "line": "git pull",
+      "off": ""
+     },
+     {
+      "id": "edit:README.md",
+      "label": "Edit README.md",
+      "line": "echo \"You: line 2\" >> README.md",
+      "off": ""
+     },
+     {
+      "id": "add:README.md",
+      "label": "git add README.md",
+      "line": "git add README.md",
+      "off": ""
+     },
+     {
+      "id": "edit:notes.txt",
+      "label": "Edit notes.txt",
+      "line": "echo \"You: line 2\" >> notes.txt",
+      "off": ""
+     },
+     {
+      "id": "add:notes.txt",
+      "label": "git add notes.txt",
+      "line": "git add notes.txt",
+      "off": ""
+     }
+    ],
+    "alex": [
+     {
+      "id": "status",
+      "label": "git status",
+      "line": "git status",
+      "off": ""
+     },
+     {
+      "id": "commit",
+      "label": "git commit",
+      "line": "git commit -m \"Save my work\"",
+      "off": ""
+     },
+     {
+      "id": "push",
+      "label": "git push",
+      "line": "git push",
+      "off": ""
+     },
+     {
+      "id": "fetch",
+      "label": "git fetch",
+      "line": "git fetch",
+      "off": ""
+     },
+     {
+      "id": "pull",
+      "label": "git pull",
+      "line": "git pull",
+      "off": ""
+     },
+     {
+      "id": "edit:README.md",
+      "label": "Edit README.md",
+      "line": "echo \"Alex: line 2\" >> README.md",
+      "off": ""
+     },
+     {
+      "id": "add:README.md",
+      "label": "git add README.md",
+      "line": "git add README.md",
+      "off": ""
+     },
+     {
+      "id": "edit:notes.txt",
+      "label": "Edit notes.txt",
+      "line": "echo \"Alex: line 3\" >> notes.txt",
+      "off": ""
+     },
+     {
+      "id": "add:notes.txt",
+      "label": "git add notes.txt",
+      "line": "git add notes.txt",
+      "off": ""
+     }
+    ]
+   }
   },
   "observation": {
    "level": "basics-sample",
    "project": {
     "exists": true,
     "bare": false,
-    "head": "d412c6bdf2bac0062df873b413cf5f43434dae4e",
+    "head": "de4c8859ba493d31e517c0e8019c8d32625f2426",
     "branch": "main",
     "commits": [
      {
-      "hash": "d412c6bdf2bac0062df873b413cf5f43434dae4e",
-      "short": "d412c6b",
+      "hash": "de4c8859ba493d31e517c0e8019c8d32625f2426",
+      "short": "de4c885",
       "parents": [],
-      "subject": "Add the README",
+      "subject": "Start the project",
       "author": "First Commit",
-      "time": 1791330047
+      "time": 1791331348
      }
     ],
     "refs": [
      {
       "name": "main",
       "kind": "branch",
-      "target": "d412c6bdf2bac0062df873b413cf5f43434dae4e"
+      "target": "de4c8859ba493d31e517c0e8019c8d32625f2426"
      },
      {
       "name": "origin/main",
       "kind": "remote",
-      "target": "d412c6bdf2bac0062df873b413cf5f43434dae4e"
+      "target": "de4c8859ba493d31e517c0e8019c8d32625f2426"
      }
     ],
     "pushed": [],
     "files": [
      {
       "path": "README.md",
-      "head": "3f97d6f343caec3213538d3d92ed335757db5adc",
-      "index": "3f97d6f343caec3213538d3d92ed335757db5adc",
-      "folder": "3f97d6f343caec3213538d3d92ed335757db5adc",
+      "head": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+      "index": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+      "folder": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     },
+     {
+      "path": "notes.txt",
+      "head": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
+      "index": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
+      "folder": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
       "head_mode": "100644",
       "index_mode": "100644",
       "folder_mode": "100644",
@@ -2935,33 +3078,33 @@
    "github": {
     "exists": true,
     "bare": true,
-    "head": "31071a7d66f2ea5a0b3a57c618e053c383877a9e",
+    "head": "21e6785eb8ad2419c4ea639216e64d8d6e91f5e5",
     "branch": "main",
     "commits": [
      {
-      "hash": "31071a7d66f2ea5a0b3a57c618e053c383877a9e",
-      "short": "31071a7",
+      "hash": "21e6785eb8ad2419c4ea639216e64d8d6e91f5e5",
+      "short": "21e6785",
       "parents": [
-       "d412c6bdf2bac0062df873b413cf5f43434dae4e"
+       "de4c8859ba493d31e517c0e8019c8d32625f2426"
       ],
-      "subject": "Add a line to alex.txt",
+      "subject": "Update notes.txt",
       "author": "Alex",
-      "time": 1791330048
+      "time": 1791331349
      },
      {
-      "hash": "d412c6bdf2bac0062df873b413cf5f43434dae4e",
-      "short": "d412c6b",
+      "hash": "de4c8859ba493d31e517c0e8019c8d32625f2426",
+      "short": "de4c885",
       "parents": [],
-      "subject": "Add the README",
+      "subject": "Start the project",
       "author": "First Commit",
-      "time": 1791330047
+      "time": 1791331348
      }
     ],
     "refs": [
      {
       "name": "main",
       "kind": "branch",
-      "target": "31071a7d66f2ea5a0b3a57c618e053c383877a9e"
+      "target": "21e6785eb8ad2419c4ea639216e64d8d6e91f5e5"
      }
     ],
     "pushed": [],
@@ -2973,38 +3116,38 @@
    "teammate": {
     "exists": true,
     "bare": false,
-    "head": "31071a7d66f2ea5a0b3a57c618e053c383877a9e",
+    "head": "21e6785eb8ad2419c4ea639216e64d8d6e91f5e5",
     "branch": "main",
     "commits": [
      {
-      "hash": "31071a7d66f2ea5a0b3a57c618e053c383877a9e",
-      "short": "31071a7",
+      "hash": "21e6785eb8ad2419c4ea639216e64d8d6e91f5e5",
+      "short": "21e6785",
       "parents": [
-       "d412c6bdf2bac0062df873b413cf5f43434dae4e"
+       "de4c8859ba493d31e517c0e8019c8d32625f2426"
       ],
-      "subject": "Add a line to alex.txt",
+      "subject": "Update notes.txt",
       "author": "Alex",
-      "time": 1791330048
+      "time": 1791331349
      },
      {
-      "hash": "d412c6bdf2bac0062df873b413cf5f43434dae4e",
-      "short": "d412c6b",
+      "hash": "de4c8859ba493d31e517c0e8019c8d32625f2426",
+      "short": "de4c885",
       "parents": [],
-      "subject": "Add the README",
+      "subject": "Start the project",
       "author": "First Commit",
-      "time": 1791330047
+      "time": 1791331348
      }
     ],
     "refs": [
      {
       "name": "main",
       "kind": "branch",
-      "target": "31071a7d66f2ea5a0b3a57c618e053c383877a9e"
+      "target": "21e6785eb8ad2419c4ea639216e64d8d6e91f5e5"
      },
      {
       "name": "origin/main",
       "kind": "remote",
-      "target": "31071a7d66f2ea5a0b3a57c618e053c383877a9e"
+      "target": "21e6785eb8ad2419c4ea639216e64d8d6e91f5e5"
      }
     ],
     "pushed": [
@@ -3013,9 +3156,9 @@
     "files": [
      {
       "path": "README.md",
-      "head": "3f97d6f343caec3213538d3d92ed335757db5adc",
-      "index": "3f97d6f343caec3213538d3d92ed335757db5adc",
-      "folder": "3f97d6f343caec3213538d3d92ed335757db5adc",
+      "head": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+      "index": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+      "folder": "dab306f45e6a154ab0fe50d67298f165cfc75392",
       "head_mode": "100644",
       "index_mode": "100644",
       "folder_mode": "100644",
@@ -3026,10 +3169,10 @@
       "folder_change": null
      },
      {
-      "path": "alex.txt",
-      "head": "d8b832cc9f6d3a2c4ad67d4104c224bcf24d00fb",
-      "index": "d8b832cc9f6d3a2c4ad67d4104c224bcf24d00fb",
-      "folder": "d8b832cc9f6d3a2c4ad67d4104c224bcf24d00fb",
+      "path": "notes.txt",
+      "head": "262d0700ab23da932e59cc7a63b238bf2e3834df",
+      "index": "262d0700ab23da932e59cc7a63b238bf2e3834df",
+      "folder": "262d0700ab23da932e59cc7a63b238bf2e3834df",
       "head_mode": "100644",
       "index_mode": "100644",
       "folder_mode": "100644",
@@ -3064,7 +3207,7 @@
          "code": false
         },
         {
-         "text": "d412c6b",
+         "text": "de4c885",
          "code": true
         },
         {
@@ -3072,7 +3215,7 @@
          "code": false
         },
         {
-         "text": "31071a7",
+         "text": "21e6785",
          "code": true
         },
         {
@@ -3080,7 +3223,7 @@
          "code": false
         },
         {
-         "text": "Add a line to alex.txt",
+         "text": "Update notes.txt",
          "code": true
         },
         {
@@ -3112,7 +3255,7 @@
          "code": false
         },
         {
-         "text": "d412c6b",
+         "text": "de4c885",
          "code": true
         },
         {
@@ -3120,7 +3263,7 @@
          "code": false
         },
         {
-         "text": "31071a7",
+         "text": "21e6785",
          "code": true
         },
         {
@@ -3128,7 +3271,7 @@
          "code": false
         },
         {
-         "text": "Add a line to alex.txt",
+         "text": "Update notes.txt",
          "code": true
         },
         {
@@ -3139,7 +3282,121 @@
       }
      ]
     }
-   ]
+   ],
+   "buttons": {
+    "you": [
+     {
+      "id": "status",
+      "label": "git status",
+      "line": "git status",
+      "off": ""
+     },
+     {
+      "id": "commit",
+      "label": "git commit",
+      "line": "git commit -m \"Save my work\"",
+      "off": ""
+     },
+     {
+      "id": "push",
+      "label": "git push",
+      "line": "git push",
+      "off": ""
+     },
+     {
+      "id": "fetch",
+      "label": "git fetch",
+      "line": "git fetch",
+      "off": ""
+     },
+     {
+      "id": "pull",
+      "label": "git pull",
+      "line": "git pull",
+      "off": ""
+     },
+     {
+      "id": "edit:README.md",
+      "label": "Edit README.md",
+      "line": "echo \"You: line 2\" >> README.md",
+      "off": ""
+     },
+     {
+      "id": "add:README.md",
+      "label": "git add README.md",
+      "line": "git add README.md",
+      "off": ""
+     },
+     {
+      "id": "edit:notes.txt",
+      "label": "Edit notes.txt",
+      "line": "echo \"You: line 2\" >> notes.txt",
+      "off": ""
+     },
+     {
+      "id": "add:notes.txt",
+      "label": "git add notes.txt",
+      "line": "git add notes.txt",
+      "off": ""
+     }
+    ],
+    "alex": [
+     {
+      "id": "status",
+      "label": "git status",
+      "line": "git status",
+      "off": ""
+     },
+     {
+      "id": "commit",
+      "label": "git commit",
+      "line": "git commit -m \"Save my work\"",
+      "off": ""
+     },
+     {
+      "id": "push",
+      "label": "git push",
+      "line": "git push",
+      "off": ""
+     },
+     {
+      "id": "fetch",
+      "label": "git fetch",
+      "line": "git fetch",
+      "off": ""
+     },
+     {
+      "id": "pull",
+      "label": "git pull",
+      "line": "git pull",
+      "off": ""
+     },
+     {
+      "id": "edit:README.md",
+      "label": "Edit README.md",
+      "line": "echo \"Alex: line 2\" >> README.md",
+      "off": ""
+     },
+     {
+      "id": "add:README.md",
+      "label": "git add README.md",
+      "line": "git add README.md",
+      "off": ""
+     },
+     {
+      "id": "edit:notes.txt",
+      "label": "Edit notes.txt",
+      "line": "echo \"Alex: line 3\" >> notes.txt",
+      "off": ""
+     },
+     {
+      "id": "add:notes.txt",
+      "label": "git add notes.txt",
+      "line": "git add notes.txt",
+      "off": ""
+     }
+    ]
+   }
   },
   "explanation": null,
   "fix": null,

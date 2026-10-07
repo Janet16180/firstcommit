@@ -3,7 +3,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const { makeEvent } = require("./fakedom");
-const { BUTTONS, installBrowser, load, playgroundObservation, pressView } = require("./load");
+const { installBrowser, load, playgroundButtons, playgroundObservation, pressView } = require("./load");
 
 const document = installBrowser({ reducedMotion: true });
 const { PlaygroundPanel, TimeShare } = load(
@@ -11,7 +11,9 @@ const { PlaygroundPanel, TimeShare } = load(
   ["PlaygroundPanel", "TimeShare"],
 );
 
-const observation = playgroundObservation;
+const OFF = { alex: { push: "Alex has no commit GitHub lacks." } };
+const observation = (buttons = playgroundButtons(OFF)) => playgroundObservation(buttons);
+const view = (person, id) => playgroundButtons()[person].find((item) => item.id === id);
 const para = (text) => [{ kind: "para", spans: [{ text, code: false }] }];
 
 /* A panel on the real share figure, its plays and the owner's callbacks recorded. */
@@ -43,8 +45,8 @@ test("each person's buttons are a labelled toolbar in their own slot, each butto
   run.draw(observation());
   assert.equal(run.bar("you").getAttribute("aria-label"), "Your buttons");
   assert.equal(run.bar("alex").getAttribute("aria-label"), "Alex's buttons");
-  assert.deepEqual([...run.bar("you").querySelectorAll("button")].map((item) => item.textContent), ["Edit you.txt", "git add you.txt", "git push"]);
-  assert.equal(run.describedBy(run.find("you", "Edit you.txt")), "echo 'A line from you' >> you.txt");
+  assert.deepEqual([...run.bar("you").querySelectorAll("button")].map((item) => item.textContent), playgroundButtons().you.map((item) => item.label));
+  assert.equal(run.describedBy(run.find("you", "Edit notes.txt")), view("you", "edit:notes.txt").line);
 });
 
 test("an off button stays focusable and says why; pressing it presses nothing", () => {
@@ -61,8 +63,8 @@ test("an off button stays focusable and says why; pressing it presses nothing", 
 test("the line of the focused or hovered button, or why it is off, shows under its bar", () => {
   const run = panel();
   run.draw(observation());
-  run.find("you", "git add you.txt").dispatchEvent(makeEvent("focus"));
-  assert.equal(run.q('[data-slot="you"] .pg-line').textContent, "git add you.txt");
+  run.find("you", "git add notes.txt").dispatchEvent(makeEvent("focus"));
+  assert.equal(run.q('[data-slot="you"] .pg-line').textContent, "git add notes.txt");
   run.find("alex", "git push").dispatchEvent(makeEvent("mouseenter"));
   assert.equal(run.q('[data-slot="alex"] .pg-line').textContent, "Alex has no commit GitHub lacks.");
 });
@@ -70,12 +72,12 @@ test("the line of the focused or hovered button, or why it is off, shows under i
 test("a press goes to the owner, and nothing else is pressed until it is over", () => {
   const run = panel();
   run.draw(observation());
-  run.find("you", "git add you.txt").click();
-  assert.deepEqual(run.seen.presses, [["you", "add:you.txt"]]);
+  run.find("you", "git add notes.txt").click();
+  assert.deepEqual(run.seen.presses, [["you", "add:notes.txt"]]);
   run.busy(true);
   assert.ok([...run.element.querySelectorAll('[role="toolbar"] button')].every((item) => item.getAttribute("aria-disabled") === "true"));
   run.find("you", "git push").click();
-  assert.deepEqual(run.seen.presses, [["you", "add:you.txt"]]);
+  assert.deepEqual(run.seen.presses, [["you", "add:notes.txt"]]);
   run.busy(false);
   assert.equal(run.find("you", "git push").getAttribute("aria-disabled"), null);
   assert.equal(run.find("alex", "git push").getAttribute("aria-disabled"), "true");
@@ -85,7 +87,7 @@ test("a press is played in the pressing person's computer, and focus stays on th
   const run = panel();
   const before = observation();
   run.draw(before);
-  const pressed = run.find("alex", "Edit alex.txt");
+  const pressed = run.find("alex", "Edit notes.txt");
   pressed.focus();
   pressed.click();
   const changed = (files) => files.map((entry, index) => (index === 0 ? { ...entry, folder: "f".repeat(40), folder_change: "modified" } : entry));
@@ -95,7 +97,7 @@ test("a press is played in the pressing person's computer, and focus stays on th
   assert.deepEqual(args.slice(1, 4), [TimeShare.observed(before), TimeShare.observed(after), "alex"]);
   assert.deepEqual(args[4], TimeShare.pressed(before, after, "alex"));
   assert.equal(run.seen.renders.at(-1).person, "alex");
-  assert.equal(document.activeElement, run.find("alex", "Edit alex.txt"));
+  assert.equal(document.activeElement, run.find("alex", "Edit notes.txt"));
 });
 
 test("a new press finishes the animations still running", () => {
@@ -120,7 +122,9 @@ test("whose buttons a narrow screen shows is kept when the figure is drawn again
   const run = panel();
   run.draw(observation());
   [...run.element.querySelectorAll(".ts-switch button")].find((item) => item.getAttribute("data-show") === "alex").click();
-  run.draw(observation({ ...BUTTONS, you: BUTTONS.you.slice(0, 2) }));
+  const fewer = playgroundButtons(OFF);
+  fewer.you = fewer.you.slice(0, 2);
+  run.draw(observation(fewer));
   assert.equal(run.seen.renders.at(-1).shown, "alex");
   assert.equal(run.q("figure").getAttribute("data-shown"), "alex");
 });
@@ -129,13 +133,14 @@ test("arrow keys move between the buttons of one bar, and only one of them is in
   const run = panel();
   run.draw(observation());
   const buttons = [...run.bar("you").querySelectorAll("button")];
-  assert.deepEqual(buttons.map((item) => item.getAttribute("tabindex")), ["0", "-1", "-1"]);
+  const inTabOrder = () => buttons.map((item) => item.getAttribute("tabindex") === "0");
+  assert.deepEqual(inTabOrder(), buttons.map((item, index) => index === 0));
   buttons[0].focus();
   buttons[0].dispatchEvent(makeEvent("keydown", { key: "ArrowRight" }));
   assert.equal(document.activeElement, buttons[1]);
   buttons[1].dispatchEvent(makeEvent("keydown", { key: "End" }));
-  assert.equal(document.activeElement, buttons[2]);
-  assert.deepEqual(buttons.map((item) => item.getAttribute("tabindex")), ["-1", "-1", "0"]);
+  assert.equal(document.activeElement, buttons.at(-1));
+  assert.deepEqual(inTabOrder(), buttons.map((item, index) => index === buttons.length - 1));
 });
 
 test("the result says who ran what and the status in words, then git's output, the explanation and its fix button", () => {
