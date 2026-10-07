@@ -9,11 +9,12 @@ from firstcommit import records, save
 PAYOUT: save.Payout = {"level": "basics-first-commit", "xp": 85, "first_time": True, "rank_before": "Untracked", "rank_after": "Untracked"}
 PROGRESS: save.Progress = {
     "xp": 95,
-    "levels": {"basics-first-commit": {"finished": "2026-10-06T10:00:00+02:00", "xp": 85, "state": {"branch": "main"}}},
+    "levels": {"basics-first-commit": {"finished": "2026-10-06T10:00:00+02:00", "xp": 85, "stars": 2, "state": {"branch": "main"}}},
     "cards": {"basics-staging-area": {"box": 2, "due": "2026-10-09"}},
     "streak": 1,
     "best_streak": 3,
     "last_payout": PAYOUT,
+    "scenes": ["basics-first-commit"],
 }
 ACTIVE: save.Active = {
     "level": "basics-first-commit",
@@ -22,11 +23,13 @@ ACTIVE: save.Active = {
     "hints": 0,
     "attempts": 2,
     "state": {"answer": "abc", "nested": {"list": [1, 2]}},
+    "log_offset": 40,
+    "typed": [{"line": "git status", "status": 128}, {"line": "ls", "status": 0}],
 }
 
 
 def test_a_new_player_has_no_progress(game_home: Path) -> None:
-    assert save.load_progress() == {"xp": 0, "levels": {}, "cards": {}, "streak": 0, "best_streak": 0, "last_payout": None}
+    assert save.load_progress() == {"xp": 0, "levels": {}, "cards": {}, "streak": 0, "best_streak": 0, "last_payout": None, "scenes": []}
     assert not (game_home / "progress.json").exists()
 
 
@@ -78,7 +81,7 @@ SNAPSHOT: records.Snapshot = {
     "stash": 0,
     "truncated": False,
 }
-OBSERVED: save.Observed = {"level": "basics-first-commit", "project": SNAPSHOT, "github": {**SNAPSHOT, "bare": True, "files": []}, "teammate": SNAPSHOT, "log_offset": 120}
+OBSERVED: save.Observed = {"level": "basics-first-commit", "project": SNAPSHOT, "github": {**SNAPSHOT, "bare": True, "files": []}, "teammate": SNAPSHOT, "told": 2}
 
 
 @pytest.mark.parametrize("observed", [OBSERVED, {**OBSERVED, "github": None, "teammate": None}], ids=["playground", "project only"])
@@ -133,6 +136,11 @@ PROGRESS_DAMAGE = [
     ("levels.basics-first-commit.bonus", 1),
     ("levels.basics-first-commit.state", ["main"]),
     ("levels.basics-first-commit.state", ...),
+    ("levels.basics-first-commit.stars", ...),
+    ("levels.basics-first-commit.stars", "3"),
+    ("scenes", ...),
+    ("scenes", "basics-first-commit"),
+    ("scenes.0", 3),
     ("cards.basics-staging-area.box", ...),
     ("cards.basics-staging-area.due", 20261009),
     ("cards.basics-staging-area.due", "tomorrow"),
@@ -163,6 +171,10 @@ ACTIVE_DAMAGE = [
     ("hints", False),
     ("attempts", -2),
     ("state", []),
+    ("log_offset", -1),
+    ("typed", ...),
+    ("typed.0.line", None),
+    ("typed.0.status", "128"),
     ("extra", "x"),
 ]
 
@@ -218,9 +230,9 @@ OBSERVATION_DAMAGE = [
     ("teammate", ...),
     ("teammate.branch", 3),
     ("teammate", []),
-    ("log_offset", ...),
-    ("log_offset", -1),
-    ("log_offset", "120"),
+    ("told", ...),
+    ("told", -1),
+    ("told", "2"),
 ]
 
 

@@ -27,7 +27,7 @@ from typing import Annotated, Any, Literal, TypedDict, cast
 
 from termlab import store
 
-from firstcommit.records import Snapshot
+from firstcommit.records import Command, Snapshot
 
 HOME_VARIABLE = "FIRSTCOMMIT_HOME"
 DEFAULT_HOME = "~/.firstcommit"
@@ -54,14 +54,16 @@ class SaveError(ValueError):
 
 class LevelRecord(TypedDict):
     """
-    A level the player has finished: when and the XP paid, both the first time, and the state of the last play.
+    A level the player has finished: when and the XP paid, both the first time, the best stars, and the state of the last play.
 
+    ``stars`` is the most any solve of the level earned (`firstcommit.score.stars`), 1 to 3.
     ``state`` is the level state of the most recent solve (replays included), so its debrief can
     be filled in after the level in progress is gone.
     """
 
     finished: IsoTime
     xp: int
+    stars: int
     state: dict[str, Any]
 
 
@@ -83,7 +85,7 @@ class Payout(TypedDict):
 
 
 class Progress(TypedDict):
-    """Everything the player has earned."""
+    """Everything the player has earned, and the ids of the levels whose scene the player has seen, in the order seen."""
 
     xp: int
     levels: dict[str, LevelRecord]
@@ -91,6 +93,7 @@ class Progress(TypedDict):
     streak: int
     best_streak: int
     last_payout: Payout | None
+    scenes: list[str]
 
 
 class Active(TypedDict):
@@ -98,7 +101,9 @@ class Active(TypedDict):
     The level being played.
 
     ``step`` is the index of the current guided-quest step; it equals the number of steps once
-    the quest is done (and is 0 for a level without a quest).
+    the quest is done (and is 0 for a level without a quest). ``typed`` holds every line typed
+    in the game's terminal since the level started, oldest first, read from the log of typed
+    commands (`COMMANDS_FILE`, `firstcommit.commands`) up to ``log_offset``.
     """
 
     level: str
@@ -107,6 +112,8 @@ class Active(TypedDict):
     hints: int
     attempts: int
     state: dict[str, Any]
+    log_offset: int
+    typed: list[Command]
 
 
 class Observed(TypedDict):
@@ -114,8 +121,8 @@ class Observed(TypedDict):
     The lab of the level in progress as last observed.
 
     ``github`` is None when the level has no stand-in GitHub, and ``teammate`` when it has no
-    teammate's clone (`firstcommit.playground`). ``log_offset`` is where the log of typed
-    commands (`COMMANDS_FILE`, `firstcommit.commands`) had been read to. The snapshots are
+    teammate's clone (`firstcommit.playground`). ``told`` counts the lines of the level's
+    ``Active.typed`` that observations have told already. The snapshots are
     checked field by field like every record, so one of another shape (written by another
     version of the game) is dropped on load (`load_observed`).
     """
@@ -124,7 +131,7 @@ class Observed(TypedDict):
     project: Snapshot
     github: Snapshot | None
     teammate: Snapshot | None
-    log_offset: int
+    told: int
 
 
 def home() -> Path:
@@ -167,9 +174,9 @@ def new_progress() -> Progress:
     Returns
     -------
     Progress
-        No XP, no levels, no cards, no streak and no payout.
+        No XP, no levels, no cards, no streak, no payout and no scene seen.
     """
-    return {"xp": 0, "levels": {}, "cards": {}, "streak": 0, "best_streak": 0, "last_payout": None}
+    return {"xp": 0, "levels": {}, "cards": {}, "streak": 0, "best_streak": 0, "last_payout": None, "scenes": []}
 
 
 def load_progress() -> Progress:

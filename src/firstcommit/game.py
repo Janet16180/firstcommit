@@ -50,6 +50,7 @@ from firstcommit import (
     kit,
     markup,
     playground,
+    reactions,
     repomap,
     runner,
     save,
@@ -58,12 +59,13 @@ from firstcommit import (
 from firstcommit import guide as map_guide
 from firstcommit.cards import CardKind
 from firstcommit.changes import Event
-from firstcommit.chapters import CHAPTERS
+from firstcommit.chapters import BLURBS, CHAPTERS
 from firstcommit.demos import Line
 from firstcommit.lab import Lab
 from firstcommit.markup import Block
 from firstcommit.playground import ButtonOffError as ButtonOffError
-from firstcommit.records import ButtonView, Command, Press, Who
+from firstcommit.reactions import ReactionRule
+from firstcommit.records import Art, ButtonView, Command, Mood, Press, Who
 from firstcommit.repomap import ObjectInfo, Snapshot
 from firstcommit.save import Payout
 from firstcommit.save import SaveError as SaveError
@@ -79,32 +81,67 @@ QUEST_FIRST = "The guided quest is not finished yet: step {step} of {steps} is n
 
 
 class LevelSummary(TypedDict):
-    """A level as the map of chapters lists it."""
+    """A level as the map of chapters lists it; ``stars`` is its best result, 0 while it is not done, else 1 to 3."""
 
     id: str
     title: str
     difficulty: int
     xp: int
+    command: str
+    stars: int
     done: bool
     has_lesson: bool
     has_quest: bool
 
 
 class ChapterSummary(TypedDict):
-    """A chapter and its levels, in play order."""
+    """A chapter and its levels, in play order; ``blurb`` is one line under its name."""
 
     id: str
     title: str
+    blurb: str
     levels: list[LevelSummary]
     cards: int
 
 
+class CommandCard(TypedDict):
+    """The card a level adds to the player's collection once solved: its command as written, and what it does."""
+
+    level: str
+    command: str
+    text: list[Block]
+
+
+class ComingChapter(TypedDict):
+    """A chapter the map shows as coming soon, because it has no level yet."""
+
+    title: str
+    blurb: str
+
+
+class SceneFrameView(TypedDict):
+    """One picture of a level's scene and what Rama says under it."""
+
+    art: Art
+    text: list[Block]
+
+
+class Reaction(TypedDict):
+    """What Rama says about one typed line (`firstcommit.reactions`)."""
+
+    line: str
+    mood: Mood
+    text: list[Block]
+
+
 class ActiveView(TypedDict):
     """
-    The level being played: how far the quest is, and the hints and attempts used.
+    The level being played: how far the quest is, and the hints, attempts and lines typed so far.
 
     ``auto_check`` says whether the page may check the level by itself: only once the quest is
-    done (`check` refuses an automatic check before that anyway).
+    done (`check` refuses an automatic check before that anyway). ``commands`` counts the lines
+    typed in the game's terminal since the level started, and ``stars`` the stars still in play
+    (`firstcommit.score.stars`).
     """
 
     level: str
@@ -115,10 +152,17 @@ class ActiveView(TypedDict):
     attempts: int
     started: str
     auto_check: bool
+    commands: int
+    stars: int
 
 
 class Status(TypedDict):
-    """The dashboard; ``max_difficulty`` is the highest difficulty a level can have, so the page can show the scale."""
+    """
+    The dashboard; ``max_difficulty`` is the highest difficulty a level can have, so the page can show the scale.
+
+    ``chapters`` lists every chapter; ``coming`` names again those that have no level yet.
+    ``collection`` holds the card of each finished level, in play order.
+    """
 
     xp: int
     rank: Rank
@@ -127,6 +171,8 @@ class Status(TypedDict):
     last_payout: Payout | None
     cards_due: int
     max_difficulty: int
+    coming: list[ComingChapter]
+    collection: list[CommandCard]
 
 
 class StepView(TypedDict):
@@ -149,7 +195,8 @@ class LevelView(TypedDict):
     ``hints`` are the hints already revealed while this level is in progress (empty otherwise),
     so a reloaded page can show what the player paid for. ``debrief`` is set once the player has
     finished the level, filled from its last play, so it shows even when the level was solved
-    from the terminal.
+    from the terminal. ``scene`` is empty for a level without one; ``scene_seen`` says whether
+    the player has seen it (`see_scene`).
     """
 
     id: str
@@ -158,6 +205,11 @@ class LevelView(TypedDict):
     title: str
     difficulty: int
     xp: int
+    command: str
+    par: int
+    scene: list[SceneFrameView]
+    scene_seen: bool
+    card: CommandCard
     briefing: list[Block]
     question: list[Block]
     placeholder: str
@@ -219,12 +271,19 @@ class StepResult(TypedDict):
 
 
 class CheckResult(TypedDict):
-    """The result of checking the level; ``payout`` and ``debrief`` are set once it is solved."""
+    """
+    The result of checking the level; ``payout`` and ``debrief`` are set once it is solved.
+
+    ``stars`` are the stars the solve earned, 0 while unsolved; ``new_card`` is the level's card
+    the first time it is solved, else None.
+    """
 
     solved: bool
     message: list[Block]
     payout: Payout | None
     debrief: list[Block] | None
+    stars: int
+    new_card: CommandCard | None
 
 
 class HintView(TypedDict):
@@ -247,7 +306,8 @@ class Observation(TypedDict):
     the playground as it stands now (`firstcommit.playground.buttons`), and empty for a level
     without one. ``commands`` are the lines typed in the game's terminal since the last
     observation, oldest first (`firstcommit.commands`); like the events, there are none at a
-    level's first observation.
+    level's first observation. ``reactions`` are what Rama says about those lines, one per line
+    a rule fits, oldest first (`firstcommit.reactions`, the level's own rules first).
     """
 
     level: str
@@ -258,6 +318,7 @@ class Observation(TypedDict):
     teammate_events: list[EventView]
     buttons: dict[Who, list[ButtonView]]
     commands: list[Command]
+    reactions: list[Reaction]
 
 
 class PressView(TypedDict):
@@ -353,8 +414,9 @@ def status() -> Status:
     Returns
     -------
     Status
-        XP and rank, every chapter with its levels, the level in progress, the last payout and
-        how many cards wait for review (see `due_cards`).
+        XP and rank, every chapter with its levels, the level in progress (its typed lines
+        counted up to now), the last payout, how many cards wait for review (see `due_cards`),
+        the chapters still to come and the collected command cards.
 
     Raises
     ------
@@ -368,7 +430,8 @@ def status() -> Status:
         {
             "id": chapter,
             "title": title,
-            "levels": [_level_summary(entry, entry.id in progress["levels"]) for entry in levels.values() if entry.chapter == chapter],
+            "blurb": BLURBS[chapter],
+            "levels": [_level_summary(entry, progress["levels"].get(entry.id)) for entry in levels.values() if entry.chapter == chapter],
             "cards": len(cards.deck(chapter).cards),
         }
         for chapter, title in CHAPTERS.items()
@@ -377,10 +440,12 @@ def status() -> Status:
         "xp": progress["xp"],
         "rank": score.rank(progress["xp"]),
         "chapters": chapters,
-        "active": _active_view(active, levels[active["level"]]) if active is not None and active["level"] in levels else None,
+        "active": _active_view(_caught_up(active), levels[active["level"]]) if active is not None and active["level"] in levels else None,
         "last_payout": progress["last_payout"],
         "cards_due": len(_cards_to_review(None, progress, sys.maxsize)),
         "max_difficulty": max(runner.DIFFICULTIES),
+        "coming": [{"title": chapter["title"], "blurb": chapter["blurb"]} for chapter in chapters if not chapter["levels"]],
+        "collection": [_command_card(entry) for entry in levels.values() if entry.id in progress["levels"]],
     }
 
 
@@ -405,7 +470,8 @@ def level(level_id: str) -> LevelView:
         If no level has this id.
     """
     entry = _level(level_id)
-    finished = save.load_progress()["levels"].get(level_id)
+    progress = save.load_progress()
+    finished = progress["levels"].get(level_id)
     active = save.load_active()
     playing = active if active is not None and active["level"] == level_id else None
     state = playing["state"] if playing is not None else {}
@@ -417,6 +483,11 @@ def level(level_id: str) -> LevelView:
         "title": entry.title,
         "difficulty": entry.difficulty,
         "xp": entry.xp,
+        "command": entry.command,
+        "par": entry.par,
+        "scene": [{"art": frame.art, "text": markup.parse(frame.text)} for frame in entry.scene],
+        "scene_seen": entry.id in progress["scenes"],
+        "card": _command_card(entry),
         "briefing": _blocks(entry.briefing, state),
         "question": _blocks(entry.question, state),
         "placeholder": _fill(entry.placeholder, state),
@@ -426,6 +497,28 @@ def level(level_id: str) -> LevelView:
         "hints": [_blocks(hint_text, state) for hint_text in revealed],
         "debrief": _blocks(entry.debrief, finished["state"]) if finished is not None else None,
     }
+
+
+def see_scene(level_id: str) -> None:
+    """
+    Remember that the player has seen a level's scene, so the page plays it by itself only once; `reset` forgets it.
+
+    Parameters
+    ----------
+    level_id : str
+        The level's id.
+
+    Raises
+    ------
+    UnknownIdError
+        If no level has this id.
+    """
+    entry = _level(level_id)
+    with save.lock():
+        progress = save.load_progress()
+        if entry.id not in progress["scenes"]:
+            progress["scenes"].append(entry.id)
+            save.write_progress(progress)
 
 
 def lesson(level_id: str) -> LessonView:
@@ -501,7 +594,7 @@ def start(level_id: str) -> ActiveView:
     Returns
     -------
     ActiveView
-        The new level in progress, at the first quest step.
+        The new level in progress, at the first quest step; only lines typed from now on count for it.
 
     Raises
     ------
@@ -513,7 +606,16 @@ def start(level_id: str) -> ActiveView:
         save.clear_active()
         save.clear_observed()
         state = runner.start_lab(entry)
-        active: save.Active = {"level": entry.id, "started": _now(), "step": 0, "hints": 0, "attempts": 0, "state": state}
+        active: save.Active = {
+            "level": entry.id,
+            "started": _now(),
+            "step": 0,
+            "hints": 0,
+            "attempts": 0,
+            "state": state,
+            "log_offset": commands.end(save.home() / save.COMMANDS_FILE),
+            "typed": [],
+        }
         save.write_active(active)
     return _active_view(active, entry)
 
@@ -565,8 +667,9 @@ def check(answer: str | None, auto: bool) -> CheckResult:
     sees the end of the lesson. A check the player asks for runs the level's check at any time,
     so the level may be solved before its quest is finished. A blank answer counts as no
     answer. A check the player asks for that fails counts as an attempt; an automatic one never
-    does. Solving ends the level: the payout is kept in the progress (so any view can celebrate
-    it) and the lab stays until another level starts.
+    does. Solving ends the level: the payout and the best stars are kept in the progress (so any
+    view can celebrate them) and the lab stays until another level starts. The stars count every
+    line typed since the level started, read from the log first.
 
     Parameters
     ----------
@@ -578,7 +681,8 @@ def check(answer: str | None, auto: bool) -> CheckResult:
     Returns
     -------
     CheckResult
-        Whether the level is solved, the check's feedback, and once solved the payout and the debrief.
+        Whether the level is solved, the check's feedback, and once solved the payout, the
+        debrief, the stars and, the first time, the level's card.
 
     Raises
     ------
@@ -588,13 +692,16 @@ def check(answer: str | None, auto: bool) -> CheckResult:
     typed = _typed(answer)
     with save.lock():
         active, entry = _playing()
+        active = _catch_up(active)
         if auto and not _quest_done(active, entry):
             verdict = kit.Verdict(False, QUEST_FIRST.format(step=active["step"] + 1, steps=len(entry.quest)))
         else:
             verdict = entry.check(runner.lab_of(entry.id), active["state"], typed)
         payout = None
+        stars = 0
         if verdict.solved:
-            payout = _pay(entry, active["hints"], active["state"])
+            stars = _stars(active, entry)
+            payout = _pay(entry, active, stars)
         elif not auto:
             active["attempts"] += 1
             save.write_active(active)
@@ -603,6 +710,8 @@ def check(answer: str | None, auto: bool) -> CheckResult:
         "message": markup.parse(verdict.message),
         "payout": payout,
         "debrief": _blocks(entry.debrief, active["state"]) if verdict.solved else None,
+        "stars": stars,
+        "new_card": _command_card(entry) if payout is not None and payout["first_time"] else None,
     }
 
 
@@ -638,7 +747,9 @@ def observe() -> Observation:
     Snapshot the lab of the level in progress and tell what changed since the last observation.
 
     The snapshots are kept in the save (only when they changed), so the events are right
-    whichever process asks; the first observation of a level has no events.
+    whichever process asks; the first observation of a level has no events. The lines typed
+    since the last look are read into the level's record first (`save.Active` ``typed``), so a
+    goal still sees them after this observation has told them.
 
     Returns
     -------
@@ -653,10 +764,11 @@ def observe() -> Observation:
     """
     with save.lock():
         active, entry = _playing()
+        active = _catch_up(active)
         lab = runner.lab_of(entry.id)
         last = save.load_observed()
-        now, typed = _look(entry.id, lab, last)
-        observation = _observation(last, now, _buttons(lab, now), typed)
+        now, typed = _look(entry.id, lab, last, active["typed"])
+        observation = _observation(last, now, _buttons(lab, now), typed, _rules(entry))
         if now != last:
             save.write_observed(now)
     return observation
@@ -707,12 +819,14 @@ def press(person: str, button: str) -> PressView:
         if not lab.teammate.exists():
             raise NoPlaygroundError(f"the level {entry.id!r} has no playground")
         last = save.load_observed()
-        then, typed_before = _look(entry.id, lab, last)
-        before = _observation(last, then, _buttons(lab, then), typed_before)
+        active = _catch_up(active)
+        then, typed_before = _look(entry.id, lab, last, active["typed"])
+        before = _observation(last, then, _buttons(lab, then), typed_before, _rules(entry))
         facts = playground.facts(lab, who, _clones(then)[who], then["github"])
         pressed = playground.press(lab, who, which)
-        now, typed_during = _look(entry.id, lab, then)
-        observation = _observation(then, now, _buttons(lab, now), typed_during)
+        active = _catch_up(active)
+        now, typed_during = _look(entry.id, lab, then, active["typed"])
+        observation = _observation(then, now, _buttons(lab, now), typed_during, _rules(entry))
         if now != last:
             save.write_observed(now)
     found = explanations.explain(pressed, _clones(then)[who], _clones(now)[who], facts, playground.BUTTON_IDS)
@@ -1027,12 +1141,12 @@ def _playground_id[Name: str](name: str, names: Iterable[Name], what: str) -> Na
     return known[0]
 
 
-def _look(level_id: str, lab: Lab, last: save.Observed | None) -> tuple[save.Observed, list[Command]]:
+def _look(level_id: str, lab: Lab, last: save.Observed | None, typed: list[Command]) -> tuple[save.Observed, list[Command]]:
     """
-    Read the commands typed since an observation, then snapshot every repository of a level's lab; the caller holds the save's lock.
+    Snapshot every repository of a level's lab, and pick the typed lines no observation has told yet.
 
-    The log is read first, so every command returned had finished before the snapshots were
-    taken, and its changes are in them.
+    The caller has just read the log into the level's lines (`_catch_up`), so every line
+    returned had finished before the snapshots were taken, and its changes are in them.
 
     Parameters
     ----------
@@ -1041,29 +1155,82 @@ def _look(level_id: str, lab: Lab, last: save.Observed | None) -> tuple[save.Obs
     lab : Lab
         Its lab.
     last : save.Observed | None
-        The observation to go on from. With none, or one of another level, the commands typed
-        so far are skipped: a level's first observation tells none, as it tells no events.
+        The observation to go on from. With none, or one of another level, the lines typed so
+        far are skipped: a level's first observation tells none, as it tells no events.
+    typed : list[Command]
+        Every line typed since the level started (`save.Active` ``typed``).
 
     Returns
     -------
     tuple[save.Observed, list[Command]]
         The player's repository, the stand-in GitHub and the teammate's clone where they exist,
-        and where the log has been read to; then the commands typed since ``last``, oldest first.
+        and how many lines are told; then the lines typed since ``last``, oldest first.
     """
-    log = save.home() / save.COMMANDS_FILE
-    typed: list[Command] = []
-    if last is not None and last["level"] == level_id:
-        typed, offset = commands.since(log, last["log_offset"])
-    else:
-        offset = commands.end(log)
+    told = last["told"] if last is not None and last["level"] == level_id else len(typed)
     now: save.Observed = {
         "level": level_id,
         "project": repomap.snapshot(lab.project),
         "github": repomap.snapshot(lab.github) if lab.github.exists() else None,
         "teammate": repomap.snapshot(lab.teammate) if lab.teammate.exists() else None,
-        "log_offset": offset,
+        "told": len(typed),
     }
-    return now, typed
+    return now, typed[told:]
+
+
+def _caught_up(active: save.Active) -> save.Active:
+    """
+    Read the lines typed since the level's record was last brought up to date, without saving them.
+
+    Parameters
+    ----------
+    active : save.Active
+        The record of the level in progress.
+
+    Returns
+    -------
+    save.Active
+        A copy whose ``typed`` ends with the lines logged after its ``log_offset``, and whose
+        ``log_offset`` is where the log's whole records end now.
+    """
+    new, offset = commands.since(save.home() / save.COMMANDS_FILE, active["log_offset"])
+    return {**active, "typed": [*active["typed"], *new], "log_offset": offset}
+
+
+def _catch_up(active: save.Active) -> save.Active:
+    """
+    Bring the level's record up to date with the log of typed lines, saving it when that changed it; the caller holds the save's lock.
+
+    Parameters
+    ----------
+    active : save.Active
+        The record of the level in progress.
+
+    Returns
+    -------
+    save.Active
+        The record up to date (`_caught_up`).
+    """
+    caught = _caught_up(active)
+    if caught != active:
+        save.write_active(caught)
+    return caught
+
+
+def _rules(entry: runner.Level) -> tuple[ReactionRule, ...]:
+    """
+    Give a level's reaction rules, in the order they are tried.
+
+    Parameters
+    ----------
+    entry : runner.Level
+        The level.
+
+    Returns
+    -------
+    tuple[ReactionRule, ...]
+        The level's own rules, then the shared `firstcommit.reactions.RULES`.
+    """
+    return (*entry.reactions, *reactions.RULES)
 
 
 def _buttons(lab: Lab, now: save.Observed) -> dict[Who, list[ButtonView]]:
@@ -1104,9 +1271,11 @@ def _clones(observed: save.Observed) -> dict[Who, Snapshot]:
     return {"you": observed["project"], "alex": teammate} if teammate is not None else {}
 
 
-def _observation(last: save.Observed | None, now: save.Observed, buttons: dict[Who, list[ButtonView]], typed: list[Command]) -> Observation:
+def _observation(
+    last: save.Observed | None, now: save.Observed, buttons: dict[Who, list[ButtonView]], typed: list[Command], rules: tuple[ReactionRule, ...]
+) -> Observation:
     """
-    Tell what changed in a lab between two observations.
+    Tell what changed in a lab between two observations, and what Rama says about the lines typed in between.
 
     Parameters
     ----------
@@ -1118,17 +1287,22 @@ def _observation(last: save.Observed | None, now: save.Observed, buttons: dict[W
         The playground's buttons now (`_buttons`).
     typed : list[Command]
         The commands typed between the two (`_look`).
+    rules : tuple[ReactionRule, ...]
+        The level's reaction rules (`_rules`).
 
     Returns
     -------
     Observation
         The lab now, with no events when there is no earlier observation of the same level.
+        Each line's reaction reads every change between the two observations.
     """
     events: list[Event] = []
     teammate_events: list[Event] = []
     if last is not None and last["level"] == now["level"]:
         events = changes.describe(last["project"], now["project"]) + _changes(last["github"], now["github"])
         teammate_events = _changes(last["teammate"], now["teammate"])
+    kinds = {event["kind"] for event in events}
+    said = [(command, reactions.react(command, kinds, now["project"]["exists"], rules)) for command in typed]
     return {
         "level": now["level"],
         "project": now["project"],
@@ -1138,6 +1312,7 @@ def _observation(last: save.Observed | None, now: save.Observed, buttons: dict[W
         "teammate_events": _event_views(teammate_events),
         "buttons": buttons,
         "commands": typed,
+        "reactions": [{"line": command["line"], "mood": rule.mood, "text": markup.parse(rule.text)} for command, rule in said if rule is not None],
     }
 
 
@@ -1209,18 +1384,18 @@ def _playing() -> tuple[save.Active, runner.Level]:
     return active, entry
 
 
-def _pay(entry: runner.Level, hints: int, state: kit.State) -> Payout:
+def _pay(entry: runner.Level, active: save.Active, stars: int) -> Payout:
     """
-    Record a solved level: pay it, keep the payout and the play's state, and end the level (its lab stays).
+    Record a solved level: pay it, keep the payout, the best stars and the play's state, and end the level (its lab stays).
 
     Parameters
     ----------
     entry : runner.Level
         The level solved.
-    hints : int
-        Hints revealed while playing it.
-    state : kit.State
-        The state of this play, for its debrief.
+    active : save.Active
+        The record of this play: its hints, and its state for the debrief.
+    stars : int
+        The stars this play earned.
 
     Returns
     -------
@@ -1229,12 +1404,14 @@ def _pay(entry: runner.Level, hints: int, state: kit.State) -> Payout:
     """
     progress = save.load_progress()
     first_time = entry.id not in progress["levels"]
-    xp = score.level_reward(entry.xp, hints, first_time)
+    xp = score.level_reward(entry.xp, active["hints"], first_time)
     rank_before = score.rank(progress["xp"])["title"]
     progress["xp"] += xp
     if first_time:
-        progress["levels"][entry.id] = {"finished": _now(), "xp": xp, "state": state}
-    progress["levels"][entry.id]["state"] = state
+        progress["levels"][entry.id] = {"finished": _now(), "xp": xp, "stars": stars, "state": active["state"]}
+    record = progress["levels"][entry.id]
+    record["state"] = active["state"]
+    record["stars"] = max(record["stars"], stars)
     payout: Payout = {"level": entry.id, "xp": xp, "first_time": first_time, "rank_before": rank_before, "rank_after": score.rank(progress["xp"])["title"]}
     progress["last_payout"] = payout
     save.write_progress(progress)
@@ -1298,7 +1475,7 @@ def _cards_to_review(chapter: str | None, progress: save.Progress, limit: int) -
     return cards.pick(pool, progress["cards"], date.today(), limit, random.Random())
 
 
-def _level_summary(entry: runner.Level, done: bool) -> LevelSummary:
+def _level_summary(entry: runner.Level, finished: save.LevelRecord | None) -> LevelSummary:
     """
     Summarise a level for the map of chapters.
 
@@ -1306,15 +1483,61 @@ def _level_summary(entry: runner.Level, done: bool) -> LevelSummary:
     ----------
     entry : runner.Level
         The level.
-    done : bool
-        Whether the player has finished it.
+    finished : save.LevelRecord | None
+        Its record once the player has finished it, else None.
 
     Returns
     -------
     LevelSummary
         The summary.
     """
-    return {"id": entry.id, "title": entry.title, "difficulty": entry.difficulty, "xp": entry.xp, "done": done, "has_lesson": bool(entry.lesson), "has_quest": bool(entry.quest)}
+    return {
+        "id": entry.id,
+        "title": entry.title,
+        "difficulty": entry.difficulty,
+        "xp": entry.xp,
+        "command": entry.command,
+        "stars": finished["stars"] if finished is not None else 0,
+        "done": finished is not None,
+        "has_lesson": bool(entry.lesson),
+        "has_quest": bool(entry.quest),
+    }
+
+
+def _command_card(entry: runner.Level) -> CommandCard:
+    """
+    Show a level's command card.
+
+    Parameters
+    ----------
+    entry : runner.Level
+        The level.
+
+    Returns
+    -------
+    CommandCard
+        Its card, the text parsed.
+    """
+    return {"level": entry.id, "command": entry.card.command, "text": markup.parse(entry.card.text)}
+
+
+def _stars(active: save.Active, entry: runner.Level) -> int:
+    """
+    Count the stars still in play for the level in progress.
+
+    Parameters
+    ----------
+    active : save.Active
+        Its record, with the lines typed so far.
+    entry : runner.Level
+        The level.
+
+    Returns
+    -------
+    int
+        1 to 3 (`firstcommit.score.stars`).
+    """
+    return score.stars(active["hints"], len(active["typed"]), entry.par)
 
 
 def _active_view(active: save.Active, entry: runner.Level) -> ActiveView:
@@ -1342,6 +1565,8 @@ def _active_view(active: save.Active, entry: runner.Level) -> ActiveView:
         "attempts": active["attempts"],
         "started": active["started"],
         "auto_check": _quest_done(active, entry),
+        "commands": len(active["typed"]),
+        "stars": _stars(active, entry),
     }
 
 

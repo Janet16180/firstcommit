@@ -239,6 +239,33 @@ def test_starting_an_unknown_level_is_not_found(site: Site, monkeypatch: pytest.
     assert api(site, "/api/start", {"level": "nope"})[0] == 404
 
 
+def test_seeing_a_scene_marks_it_seen_for_its_level(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = record(monkeypatch, "see_scene", None)
+    assert api(site, "/api/scene", {"level": "some-level"}) == (200, {})
+    assert calls == [("some-level",)]
+
+
+@pytest.mark.parametrize(
+    "body", [{}, {"level": None}, {"level": 3}, {"level": ""}, {"level": ["a"]}, {"level": "x" * 101}]
+)
+def test_seeing_a_scene_needs_a_level_id(site: Site, monkeypatch: pytest.MonkeyPatch, body: dict[str, Any]) -> None:
+    calls = record(monkeypatch, "see_scene", None)
+    assert api(site, "/api/scene", body)[0] == 400
+    assert calls == []
+
+
+def test_seeing_the_scene_of_an_unknown_level_is_not_found(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
+    record(monkeypatch, "see_scene", error=game.UnknownIdError("nope"))
+    assert api(site, "/api/scene", {"level": "nope"})[0] == 404
+
+
+def test_the_real_game_remembers_a_seen_scene_until_a_reset(site: Site, sample_level: runner.Level) -> None:
+    assert api(site, "/api/scene", {"level": sample_level.id}) == (200, {})
+    assert api(site, f"/api/level?id={sample_level.id}")[1]["scene_seen"] is True
+    assert api(site, "/api/reset", {"confirm": True})[0] == 200
+    assert api(site, f"/api/level?id={sample_level.id}")[1]["scene_seen"] is False
+
+
 @pytest.mark.parametrize("answer", ["abc123", None, ""])
 def test_a_quest_step_is_checked_with_the_answer_or_none(
     site: Site, monkeypatch: pytest.MonkeyPatch, answer: str | None
@@ -640,5 +667,6 @@ def test_every_route_is_a_get_or_post_under_api() -> None:
         ("GET", "/api/notes"),
         ("GET", "/api/guide"),
         ("POST", "/api/press"),
+        ("POST", "/api/scene"),
     }
     assert set(routes.ROUTES) == expected
