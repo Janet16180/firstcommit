@@ -5,7 +5,7 @@ const test = require("node:test");
 const { createClock, installBrowser, load, settle } = require("./load");
 
 const document = installBrowser();
-const { ScenePlayer } = load(["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-scenes.js", "scene.js"], ["ScenePlayer"]);
+const { ScenePlayer, ArtScenes, Strings } = load(["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-scenes.js", "scene.js"], ["ScenePlayer", "ArtScenes", "Strings"]);
 
 const line = (art, ...spans) => ({ art, text: [{ kind: "para", spans: spans.map((span) => (Array.isArray(span) ? { text: span[0], code: true } : { text: span, code: false })) }] });
 const SCENE = [line("space", "I am Rama."), line("flag", "Plant the flag with ", ["git init"], ".")];
@@ -93,4 +93,26 @@ test("the typewriter ticks while a line types, and each new line turns a page", 
   dialog.querySelector(".cs-next").click();
   assert.ok(sounds.includes("page"));
   dialog.querySelector(".cs-skip").click();
+});
+
+test("every scene's label and each caption it draws are written in English and in Spanish", () => {
+  const { en, es } = Strings.TABLES;
+  for (const name of ArtScenes.NAMES) {
+    for (const key of [`sceneLabel.${name}`, ...(ArtScenes.CAPTIONS[name] || []).map((caption) => `sceneCaption.${name}.${caption}`)]) {
+      assert.ok(key in en && key in es, key);
+    }
+  }
+  assert.deepEqual(Object.keys(ArtScenes.CAPTIONS).sort(), [...ArtScenes.NAMES].sort());
+});
+
+test("a picture's words are in the page's language", () => {
+  Strings.use("es");
+  try {
+    const run = play({ scene: [line("planet", "Una carpeta.")] });
+    assert.match(run.q("svg.art-scene").textContent, /una carpeta común/);
+    assert.equal(run.q("svg.art-scene").getAttribute("aria-label"), Strings.t("sceneLabel.planet"));
+    run.q(".cs-skip").click();
+  } finally {
+    Strings.use("en");
+  }
 });

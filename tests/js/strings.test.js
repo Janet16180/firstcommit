@@ -50,3 +50,12 @@ test("an unknown language falls back to English, and an unknown key is a bug", (
   assert.equal(Strings.language(), "en");
   assert.throws(() => Strings.t("no.such.key"), /no string/);
 });
+
+test("a group gathers the strings under a prefix, by the rest of their key", () => {
+  Strings.use("es");
+  const group = Strings.group("sceneCaption.planet.");
+  assert.equal(group.folder, "una carpeta común");
+  assert.equal(group.question, "¿Git la conoce?");
+  assert.deepEqual(Object.keys(group).sort(), ["folder", "question"]);
+  Strings.use("en");
+});
