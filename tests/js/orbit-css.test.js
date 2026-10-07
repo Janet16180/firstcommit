@@ -61,3 +61,9 @@ test("the terminal's column reaches the bottom of the window, with a minimum hei
   assert.match(tokens(css, ":root")["--term-min"], /^\d+px$/);
   assert.match(css, /\.termcol \.term-host,[^{]*{[^}]*flex: 1;[^}]*height: auto !important;/);
 });
+
+test("the dock never cuts its lesson off: it grows up to half the window, then scrolls as a whole", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.match(rule(".dock"), /max-height: 50vh;\s*overflow-y: auto;/);
+  assert.doesNotMatch(rule(".dock-lesson"), /max-height|overflow/);
+});
