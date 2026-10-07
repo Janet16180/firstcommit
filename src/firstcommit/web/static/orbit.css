@@ -85,6 +85,15 @@
   box-sizing: border-box;
 }
 
+/* Pixelify Sans draws its "fi" and "fl" ligatures as one glyph that reads like an "A" (upstream's
+   design, not a broken file). The `font` shorthand resets ligatures to normal on every element
+   that uses it, here and in app.css, so only an important rule keeps them off everywhere. */
+*,
+*::before,
+*::after {
+  font-variant-ligatures: none !important;
+}
+
 body {
   margin: 0;
   min-height: 100vh;

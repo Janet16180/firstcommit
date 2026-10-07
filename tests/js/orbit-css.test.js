@@ -51,3 +51,7 @@ test("the motions stop for players who ask for reduced motion", () => {
   const reduced = css.slice(css.indexOf("@media (prefers-reduced-motion: reduce)"));
   for (const name of [".band-veil", ".band", ".dock"]) assert.ok(reduced.includes(name), name);
 });
+
+test("ligatures are off on every element, so Pixelify Sans never joins fi or fl into one glyph", () => {
+  assert.match(css, /\*,\s*\*::before,\s*\*::after\s*{\s*font-variant-ligatures:\s*none\s*!important;\s*}/);
+});
