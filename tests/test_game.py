@@ -17,6 +17,7 @@ from termlab import sandbox
 from firstcommit import (
     changes,
     demos,
+    explanations,
     game,
     gitcmd,
     guide,
@@ -926,7 +927,26 @@ def test_a_press_gives_the_command_as_the_player_could_type_it_and_what_git_prin
     press = pressed["press"]
     assert (press["person"], press["button"], press["command"], press["status"]) == ("alex", "commit", 'git commit -m "Save my work"', 1)
     assert "nothing to commit" in press["output"]
-    assert (pressed["explanation"], pressed["fix"], pressed["fix_line"]) == (None, None, "")
+    assert (pressed["explanation"], pressed["fix"], pressed["fix_line"]) == (markup.parse(explanations.EXPLANATIONS["E9"]), None, "")
+
+
+def test_a_refused_press_comes_with_its_explanation_and_its_fix(playground_level: runner.Level) -> None:
+    game.start(playground_level.id)
+    game.press("alex", "edit:notes.txt")
+    unstaged = game.press("alex", "commit")
+    assert (unstaged["press"]["status"], unstaged["fix"], unstaged["fix_line"]) == (1, "add:notes.txt", "")
+    assert unstaged["explanation"] == markup.parse(explanations.EXPLANATIONS["E8"])
+    game.press("you", "edit:notes.txt")
+    game.press("you", "add:notes.txt")
+    nameless = game.press("you", "commit")
+    assert (nameless["press"]["status"], nameless["fix"], nameless["fix_line"]) == (128, None, explanations.NAME_LINE)
+    assert nameless["explanation"] == markup.parse(explanations.EXPLANATIONS["E10"])
+
+
+def test_a_press_that_works_needs_no_explanation(playground_level: runner.Level) -> None:
+    game.start(playground_level.id)
+    pressed = game.press("alex", "status")
+    assert (pressed["press"]["status"], pressed["explanation"], pressed["fix"], pressed["fix_line"]) == (0, None, None, "")
 
 
 def test_what_a_press_changed_is_told_once_and_observing_then_sees_the_same_lab(playground_level: runner.Level) -> None:

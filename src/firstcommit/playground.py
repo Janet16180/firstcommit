@@ -185,7 +185,7 @@ def press(lab: Lab, person: Who, button: str) -> Press:
     return {"person": person, "button": button, "command": view["line"], "status": status, "output": output}
 
 
-def facts(lab: Lab, person: Who, snap: Snapshot, github: Snapshot) -> Facts:
+def facts(lab: Lab, person: Who, snap: Snapshot, github: Snapshot | None) -> Facts:
     """
     Read what a press's explanation is chosen from, just before the press.
 
@@ -197,15 +197,16 @@ def facts(lab: Lab, person: Who, snap: Snapshot, github: Snapshot) -> Facts:
         Who is about to press.
     snap : Snapshot
         Their clone, as just read.
-    github : Snapshot
-        The stand-in GitHub, as just read.
+    github : Snapshot | None
+        The stand-in GitHub, as just read, or None when the lab has none.
 
     Returns
     -------
     Facts
         GitHub (None when it holds no repository), the person's folder and configuration.
     """
-    return {"github": github if github["exists"] else None, "folder": folder_facts(lab, person), "config": config_facts(lab, person, snap)}
+    there = github if github is not None and github["exists"] else None
+    return {"github": there, "folder": folder_facts(lab, person), "config": config_facts(lab, person, snap)}
 
 
 def folder_facts(lab: Lab, person: Who) -> FolderFacts:

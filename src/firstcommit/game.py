@@ -40,7 +40,20 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Literal, TypedDict
 
-from firstcommit import cards, changes, demos, gitcmd, kit, markup, playground, repomap, runner, save, score
+from firstcommit import (
+    cards,
+    changes,
+    demos,
+    explanations,
+    gitcmd,
+    kit,
+    markup,
+    playground,
+    repomap,
+    runner,
+    save,
+    score,
+)
 from firstcommit import guide as map_guide
 from firstcommit.cards import CardKind
 from firstcommit.changes import Event
@@ -246,8 +259,9 @@ class PressView(TypedDict):
 
     ``before`` is the lab just before the press: its events are what the terminal changed since
     the last observation. ``observation`` is the lab right after it: its events are the press's
-    own. ``explanation``, ``fix`` (a button id the explanation offers) and ``fix_line`` (a line
-    to type instead, or "") are None, None and "" until the playground's explanations exist.
+    own. ``explanation`` says why the press turned out as it did (`firstcommit.explanations`), or is
+    None when the figure says enough; ``fix`` is a button id it offers, or None, and ``fix_line`` a
+    line to type in the terminal instead, or "".
     """
 
     press: Press
@@ -683,18 +697,20 @@ def press(person: str, button: str) -> PressView:
         last = save.load_observed()
         then = _snapshots(entry.id, lab)
         before = _observation(last, then, _buttons(lab, then))
+        facts = playground.facts(lab, who, _clones(then)[who], then["github"])
         pressed = playground.press(lab, who, which)
         now = _snapshots(entry.id, lab)
         observation = _observation(then, now, _buttons(lab, now))
         if now != last:
             save.write_observed(now)
+    found = explanations.explain(pressed, _clones(then)[who], _clones(now)[who], facts, playground.BUTTON_IDS)
     return {
         "press": pressed,
         "before": before,
         "observation": observation,
-        "explanation": None,
-        "fix": None,
-        "fix_line": "",
+        "explanation": markup.parse(found["text"]) if found["tag"] else None,
+        "fix": found["fix"] or None,
+        "fix_line": found["fix_line"],
     }
 
 
@@ -1020,10 +1036,26 @@ def _buttons(lab: Lab, now: save.Observed) -> dict[Who, list[ButtonView]]:
     dict[Who, list[ButtonView]]
         Each person's bar, or nothing when the lab has no teammate's clone (no playground).
     """
-    bars: dict[Who, list[ButtonView]] = {}
-    if now["teammate"] is not None:
-        bars = playground.buttons(lab, {"you": now["project"], "alex": now["teammate"]})
-    return bars
+    clones = _clones(now)
+    return playground.buttons(lab, clones) if clones else {}
+
+
+def _clones(observed: save.Observed) -> dict[Who, Snapshot]:
+    """
+    Give each person's clone among a lab's snapshots.
+
+    Parameters
+    ----------
+    observed : save.Observed
+        The lab's snapshots.
+
+    Returns
+    -------
+    dict[Who, Snapshot]
+        Your project and Alex's clone, or nothing when the lab has no teammate's clone (no playground).
+    """
+    teammate = observed["teammate"]
+    return {"you": observed["project"], "alex": teammate} if teammate is not None else {}
 
 
 def _observation(last: save.Observed | None, now: save.Observed, buttons: dict[Who, list[ButtonView]]) -> Observation:
