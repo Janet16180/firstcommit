@@ -71,7 +71,7 @@ test("empty zones say what fills them", () => {
 
 test("the legend names every state a file can show", () => {
   const panel = ZonePanel.create();
-  assert.deepEqual(texts(panel.element, ".legend li"), ["no repository", "new (untracked)", "edited (modified)", "on the dock (staged)", "saved (committed)"]);
+  assert.deepEqual(texts(panel.element, ".legend li"), ["no repository", "conflict (both sides changed it)", "new (untracked)", "edited (modified)", "on the dock (staged)", "saved (committed)"]);
 });
 
 test("an observation that changed nothing leaves the zones' nodes in place", () => {
@@ -173,4 +173,45 @@ test("a refused push still asks for the bounce though nothing changed, and leave
   panel.update({ ...observe(project, github), commands: [{ line: "git push", status: 1 }] });
   assert.equal(zone(panel, "vault").querySelector(".cap"), first);
   assert.equal(thrown.length, 1);
+});
+
+test("a conflicted file shows the crack mark and its tag, and a paused merge is said over the vault", () => {
+  const project = { ...record("snapshots").one, operation: "merge", files: [{ ...record("snapshots").one.files[0], conflicted: true, index_change: "modified" }] };
+  const panel = ZonePanel.create();
+  panel.update(observe(project));
+  const chip = zone(panel, "workshop").querySelector(".file");
+  assert.equal(chip.dataset.state, "conflicted");
+  assert.ok(chip.querySelector("svg.art-icon--conflict"));
+  assert.equal(chip.querySelector(".ftag").textContent, "conflict");
+  const paused = zone(panel, "vault").querySelector(".z-op");
+  assert.equal(paused.hidden, false);
+  assert.equal(paused.textContent, "merge paused");
+  assert.ok(paused.querySelector("svg.art-icon--merging"));
+});
+
+test("with no operation in progress nothing is said over the vault", () => {
+  const panel = ZonePanel.create();
+  panel.update(observe(record("snapshots").one));
+  assert.equal(zone(panel, "vault").querySelector(".z-op").hidden, true);
+});
+
+test("a revert capsule's block is the capsule upside down, and a fresh one rises in", () => {
+  const clock = createClock();
+  const panel = ZonePanel.create({ reducedMotion: false, timers: clock });
+  const one = record("snapshots").one;
+  panel.update(observe(one));
+  const revert = { ...capsuleCommit("r1", [one.head]), subject: 'Revert "First commit"' };
+  panel.update({ ...observe({ ...one, head: "r1", commits: [revert, ...one.commits] }), commands: [{ line: "git revert HEAD", status: 0 }] });
+  const row = keyed(zone(panel, "vault"), "vault:r1");
+  assert.ok(row.querySelector(".cblock.is-revert svg.art-icon--inverted"));
+  assert.ok(row.classList.contains("art-rise-inverted"));
+});
+
+test("a file that just became conflicted cracks", () => {
+  const clock = createClock();
+  const panel = ZonePanel.create({ reducedMotion: false, timers: clock });
+  const one = record("snapshots").one;
+  panel.update(observe(one));
+  panel.update({ ...observe({ ...one, operation: "merge", files: [{ ...one.files[0], conflicted: true, index_change: "modified" }] }), commands: [{ line: "git merge topic", status: 1 }] });
+  assert.ok(keyed(zone(panel, "workshop"), `workshop:${one.files[0].path}`).classList.contains("art-crack"));
 });

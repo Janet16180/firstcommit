@@ -693,6 +693,33 @@ pre.code code {
   border: 2px solid var(--edge);
 }
 
+.z-op {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -4px 0 8px;
+  font: 700 0.85rem var(--f-ui);
+  color: var(--s-mod);
+}
+
+.file[data-state="conflicted"] {
+  --fs: var(--s-new);
+  border-color: var(--s-new);
+}
+
+.legend li[data-state="conflicted"] {
+  --lg: var(--s-new);
+}
+
+.cblock.is-revert {
+  width: auto;
+  height: auto;
+  margin-top: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
 .z-body {
   display: flex;
   flex-wrap: wrap;

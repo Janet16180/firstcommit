@@ -31,9 +31,12 @@ const ZonePanel = (function () {
   const FLOWS = [[["add", false]], [["commit", false]], [["push", false], ["pull", true]]];
   const LIT_MS = 1600;
   const FLY_MS = 720;
-  const STATE_TAGS = { none: "", new: "new", edited: "edited", deleted: "deleted", staged: "on the dock", saved: "" };
+  const CRACK_MS = 600;
+  const RISE_MS = 800;
+  const STATE_TAGS = { none: "", conflicted: "conflict", new: "new", edited: "edited", deleted: "deleted", staged: "on the dock", saved: "" };
   const STATE_TIPS = {
     none: "Git does not watch this folder",
+    conflicted: "both sides changed it: choose what stays, then git add it",
     new: "untracked: Git does not follow it yet",
     edited: "modified: changed since it was last loaded",
     deleted: "deleted from the folder",
@@ -41,7 +44,7 @@ const ZonePanel = (function () {
     saved: "saved and unchanged",
   };
   const CHANGE_TAGS = { added: "new", modified: "change", deleted: "deleted", typechange: "type change" };
-  const LEGEND = [["none", "no repository"], ["new", "new (untracked)"], ["edited", "edited (modified)"], ["staged", "on the dock (staged)"], ["saved", "saved (committed)"]];
+  const LEGEND = [["none", "no repository"], ["conflicted", "conflict (both sides changed it)"], ["new", "new (untracked)"], ["edited", "edited (modified)"], ["staged", "on the dock (staged)"], ["saved", "saved (committed)"]];
 
   /* A sentence with commands in it: [text, [command], text, ...]. */
   const say = (...parts) => el("p", { class: "zone-empty" }, parts.map((part) => (Array.isArray(part) ? el("code", {}, part[0]) : part)));
@@ -58,11 +61,17 @@ const ZonePanel = (function () {
   };
 
   function fileChip(path, tag, attributes) {
-    return el("span", { class: "file", ...attributes }, el("span", { class: "fname" }, path), tag && el("span", { class: "ftag" }, tag));
+    const conflicted = attributes["data-state"] === "conflicted";
+    return el("span", { class: "file", ...attributes }, conflicted && ArtSprites.icon("conflict"), el("span", { class: "fname" }, path), tag && el("span", { class: "ftag" }, tag));
   }
 
+  /* A revert capsule's block is the capsule turned upside down. */
+  const block = (commit) => (commit.revert
+    ? el("span", { class: "cblock is-revert", style: `margin-left:${commit.lane * LANE}px` }, ArtSprites.icon("inverted"))
+    : el("span", { class: "cblock", style: `margin-left:${commit.lane * LANE}px` }));
+
   const capsule = (zone) => (commit) => el("div", { class: commit.parents.length > 1 ? "cap is-merge" : "cap", "data-key": `${zone}:${commit.hash}` },
-    el("span", { class: "cgutter", "aria-hidden": "true" }, el("span", { class: "cblock", style: `margin-left:${commit.lane * LANE}px` })),
+    el("span", { class: "cgutter", "aria-hidden": "true" }, block(commit)),
     el("div", { class: "cinfo" },
       el("div", { class: "cline" }, el("span", { class: "chash" }, commit.short), commit.labels.map((label) => el("span", { class: "ref", "data-kind": label.kind, "data-key": `${zone}-ref:${label.kind === "head" ? "HEAD" : label.text}` }, label.text))),
       el("span", { class: "cmsg", title: commit.subject }, commit.subject),
@@ -109,8 +118,10 @@ const ZonePanel = (function () {
 
   function zoneShell({ name, title, git }) {
     const parts = { count: el("span", { class: "z-count" }, "–"), body: el("div", { class: "z-body" }) };
+    parts.operation = el("p", { class: "z-op", hidden: true });
     parts.element = el("article", { class: "zone", "data-zone": name, "aria-label": title },
       el("header", { class: "z-head" }, el("span", { class: "zico", "aria-hidden": "true" }), el("div", {}, el("h3", {}, title), el("small", {}, git)), parts.count),
+      parts.operation,
       parts.body,
     );
     return parts;
@@ -186,11 +197,8 @@ const ZonePanel = (function () {
 
   const find = (element, key) => [...element.querySelectorAll("[data-key]")].find((node) => node.dataset.key === key);
 
-  /* Lights the arrows, wakes the zones and shows what moved. */
-  function animate(element, shells, moves, before, { reducedMotion, timers }) {
-    for (const command of moves.lit) flash(element.querySelector(`.fl[data-arrow="${command}"]`), "is-lit", LIT_MS, timers);
-    for (const name of moves.wake) flash(shells[name].element, "is-waking", LIT_MS, timers);
-    if (reducedMotion) return;
+  /* Shows what moved: flights, fades, appearances, bounces, cracks and rises. */
+  function move(element, shells, moves, before, timers) {
     moves.flights.forEach((flight, index) => {
       const from = before.get(flight.from);
       const to = find(element, flight.to);
@@ -199,6 +207,15 @@ const ZonePanel = (function () {
     for (const key of moves.fades) if (before.has(key)) fade(before.get(key));
     for (const key of moves.appears) if (find(element, key)) appear(find(element, key));
     for (const { from, to } of moves.bounces) if (find(element, from)) bounce(find(element, from), shells[to].element);
+    for (const key of moves.cracks) if (find(element, key)) flash(find(element, key), "art-crack", CRACK_MS, timers);
+    for (const key of moves.rises) if (find(element, key)) flash(find(element, key), "art-rise-inverted", RISE_MS, timers);
+  }
+
+  /* Lights the arrows and wakes the zones, then shows what moved unless motion is reduced. */
+  function animate(element, shells, moves, before, { reducedMotion, timers }) {
+    for (const command of moves.lit) flash(element.querySelector(`.fl[data-arrow="${command}"]`), "is-lit", LIT_MS, timers);
+    for (const name of moves.wake) flash(shells[name].element, "is-waking", LIT_MS, timers);
+    if (!reducedMotion) move(element, shells, moves, before, timers);
   }
 
   /* options: reducedMotion (no flying items; the arrows and zones still light), timers. */
@@ -219,6 +236,10 @@ const ZonePanel = (function () {
         shell.count.textContent = zone ? String(zone.count) : "–";
         shell.body.replaceChildren(...(!zone ? [OFF[name]()] : zone.count ? zone.nodes : [EMPTY[name]()]));
       }
+      /* A merge (or rebase, cherry-pick...) stopped halfway is said over the vault. */
+      const paused = shells.vault.operation;
+      paused.hidden = !zones.operation;
+      paused.replaceChildren(...(zones.operation ? [ArtSprites.icon("merging"), `${zones.operation} paused`] : []));
     }
 
     return {
