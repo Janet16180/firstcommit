@@ -58,9 +58,9 @@ commits).
 
 ### Guided quest
 
-Each step's `text` says what to do in at most two sentences, in the figure's words, with its
-command as a verbatim line; the rest is in its folded `more` (*re-checked* by
-`test_every_quest_step_gives_its_command_and_at_most_two_sentences` and
+Each step's `text` says what to do in at most two sentences, in the figure's words; the page
+shows its `command` in its own box, and the rest is in its folded `more` (*re-checked* by
+`test_every_quest_step_says_what_to_do_in_two_sentences_and_leaves_the_command_to_its_box` and
 `test_gits_own_terms_and_the_details_are_folded_into_more`).
 
 | Step | Claim | Evidence |

@@ -723,10 +723,13 @@ def test_every_slide_reads_its_picture_in_at_most_three_short_sentences() -> Non
         assert 1 <= sentences(slide.text) <= 3, slide.id
 
 
-def test_every_quest_step_gives_its_command_and_at_most_two_sentences() -> None:
+def test_every_quest_step_says_what_to_do_in_two_sentences_and_leaves_the_command_to_its_box() -> None:
     for quest_step in level.QUEST:
         assert 1 <= sentences(quest_step.text) <= 2, quest_step.id
-        assert f"    $ {quest_step.command}" in quest_step.text.splitlines(), quest_step.id
+        assert quest_step.command, quest_step.id
+        assert not any(line.startswith((" ", "\t", "$ ")) for line in quest_step.text.splitlines() if line.strip()), (
+            quest_step.id
+        )
 
 
 def test_gits_own_terms_and_the_details_are_folded_into_more() -> None:

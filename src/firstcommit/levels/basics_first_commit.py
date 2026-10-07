@@ -730,9 +730,7 @@ QUEST: list[kit.Step] = [
     kit.WatchStep(
         id="init",
         text="""
-Make the empty `project` folder a repository:
-
-    $ git init
+Make the empty `project` folder a repository.
 """,
         more="""
 Your terminal is open in the `project` folder. `git init` creates a hidden `.git` folder, where
@@ -746,8 +744,6 @@ default.
         id="status",
         text="""
 Run `git status`: it names the branch you are on.
-
-    $ git status
 """,
         more="""
 `git status` also lists the files that are untracked, staged, or changed but not staged. The
@@ -761,9 +757,7 @@ repository has no files and no commits yet, so it has little to report. You will
     kit.WatchStep(
         id="name",
         text="""
-Every commit records who made it. Set your name, with your own in place of `Your Name`:
-
-    $ git config --global user.name "Your Name"
+Every commit records who made it. Set your name, with your own in place of `Your Name`.
 """,
         more="""
 Keep the quotes, so that a name with spaces stays one value. `--global` means "for all my
@@ -778,9 +772,7 @@ through it. If you already set your name earlier in the game, this step passes a
     kit.WatchStep(
         id="email",
         text="""
-Now your email, with your own address in place of `you@example.com`:
-
-    $ git config --global user.email you@example.com
+Now set your email, with your own address in place of `you@example.com`.
 """,
         more="""
 Use the address you will use for work.
@@ -791,9 +783,7 @@ Use the address you will use for work.
     kit.WatchStep(
         id="file",
         text="""
-Create the project's first file. Its page appears in the working folder:
-
-    $ echo "# My project" > README.md
+Create the project's first file. Its page appears in the working folder.
 """,
         more="""
 A `README.md` is the file that tells people what a project is about. `echo` prints a line of
@@ -806,9 +796,7 @@ file already exists. `git status` lists the new file as untracked.
     kit.WatchStep(
         id="stage",
         text="""
-Drop a copy of the page into the open box:
-
-    $ git add README.md
+Drop a copy of the page into the open box.
 """,
         more="""
 `git add` usually prints nothing. The working folder keeps its page: `git add` copies, it does
@@ -821,8 +809,6 @@ not move. A new file gets into a commit only through the staging area.
         id="commit",
         text="""
 Close the box: save the staging area as your first commit.
-
-    $ git commit -m "Add the README"
 """,
         more="""
 `-m` gives the message; without it, Git opens a text editor for you to write one. Git answers
@@ -835,8 +821,6 @@ with a short summary of the new commit, and a closed box appears in your reposit
         id="hash",
         text="""
 List the history, then type your commit's short hash.
-
-    $ git log --oneline
 """,
         more="""
 Each line is one commit, newest first: a short hash, then the message. On your terminal, the
