@@ -5,7 +5,7 @@ const test = require("node:test");
 const { installBrowser, load } = require("./load");
 
 installBrowser();
-const { Comms } = load(["dom.js", "markup.js", "art-pixels.js", "art-sprites.js", "comms.js"], ["Comms"]);
+const { Comms } = load(["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "comms.js"], ["Comms"]);
 
 const para = (text) => [{ kind: "para", spans: [{ text, code: false }] }];
 

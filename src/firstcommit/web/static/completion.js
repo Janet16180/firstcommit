@@ -3,21 +3,25 @@
 /*
  * A mission's completion, as the design shows it: a short band across the screen with sparks,
  * then the dock at the bottom with the stars won, the lesson, the new command card and the ways
- * on (Retry, Map, Next), so the terminal and the zones stay in view. Needs dom.js, markup.js,
+ * on (Retry, Map, Next), so the terminal and the zones stay in view. Needs dom.js, strings.js, markup.js,
  * art-sprites.js and art-sky.js. Defines one global, Completion.
  *
  * band({title, subtitle, stars, timers, reducedMotion}) plays the band and resolves when it has
  *   gone (after BAND_MS, or at once on a click); with reduced motion it shows nothing.
- * dock({title, stars, lesson, reward, card, next, onRetry}) builds the dock: `lesson` is the
+ * lost({message, onRetry}) builds the failure that takes the dock's place when the player's work
+ *   is gone for good: the game's message, Retry and Map; no stars, no lesson.
+ * dock({title, stars, lesson, reward, card, challenge, next, onRetry}) builds the dock (gold for a
+ *   challenge): `lesson` is the
  *   game's blocks or null, `reward` a line on what this play paid or null, `card` the new command card
  *   (CommandCard) or null, `next` {href, title} or null.
  */
 
-/* global Dom, Markup, ArtSprites, ArtSky */
+/* global Dom, Strings, Markup, ArtSprites, ArtSky */
 /* exported Completion */
 
 const Completion = (function () {
   const { el } = Dom;
+  const { t } = Strings;
   const BAND_MS = 1750;
 
   function band({ title, subtitle, stars, timers, reducedMotion }) {
@@ -39,22 +43,36 @@ const Completion = (function () {
     });
   }
 
-  function dock({ title, stars, lesson, reward = null, card = null, next, onRetry }) {
-    return el("div", { class: "dock px", role: "status", "aria-live": "polite" },
+  function dock({ title, stars, lesson, reward = null, card = null, challenge = false, next, onRetry }) {
+    return el("div", { class: challenge ? "dock px is-challenge" : "dock px", role: "status", "aria-live": "polite" },
       el("div", { class: "dock-stars" }, ArtSprites.stars(stars)),
       el("div", { class: "dock-info" },
         el("b", { class: "dock-title" }, title),
-        el("div", { class: "dock-lesson" }, lesson ? Markup.render(lesson) : el("p", {}, "This mission's lesson is not available.")),
+        el("div", { class: "dock-lesson" }, lesson ? Markup.render(lesson) : el("p", {}, t("dock.noLesson"))),
         reward && el("small", { class: "dock-xp" }, reward),
-        card && el("small", { class: "dock-card" }, "New card in your collection: ", el("code", {}, card.command)),
+        card && el("small", { class: "dock-card" }, t("dock.newCard"), el("code", {}, card.command)),
       ),
       el("div", { class: "dock-actions" },
-        el("button", { type: "button", class: "btn", onclick: () => onRetry() }, "Retry"),
-        el("a", { class: next ? "btn" : "btn btn-primary", href: "#/" }, "Map"),
-        next && el("a", { class: "btn btn-primary", href: next.href, title: next.title }, "Next mission"),
+        el("button", { type: "button", class: "btn", onclick: () => onRetry() }, t("dock.retry")),
+        el("a", { class: next ? "btn" : "btn btn-primary", href: "#/" }, t("dock.map")),
+        next && el("a", { class: "btn btn-primary", href: next.href, title: next.title }, t("dock.next")),
       ),
     );
   }
 
-  return { band, dock, BAND_MS };
+  function lost({ message, onRetry }) {
+    return el("div", { class: "dock px is-lost", role: "alert" },
+      el("div", { class: "dock-stars" }),
+      el("div", { class: "dock-info" },
+        el("b", { class: "dock-title" }, t("dock.lost")),
+        el("div", { class: "dock-lesson" }, Markup.render(message)),
+      ),
+      el("div", { class: "dock-actions" },
+        el("button", { type: "button", class: "btn btn-primary", onclick: () => onRetry() }, t("dock.retry")),
+        el("a", { class: "btn", href: "#/" }, t("dock.map")),
+      ),
+    );
+  }
+
+  return { band, dock, lost, BAND_MS };
 })();

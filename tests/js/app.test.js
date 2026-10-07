@@ -7,19 +7,19 @@ const { fakeServer, httpError, installBrowser, load, record, settle } = require(
 
 installBrowser();
 const { Dom } = load(
-  ["dom.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "api.js", "progress.js", "route.js", "poll.js", "sound.js", "dialog.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "level-screen.js", "starmap.js", "art-infographics.js", "infographic-text.js", "field-guide.js", "cards.js", "notes.js"],
+  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "api.js", "progress.js", "route.js", "poll.js", "sound.js", "dialog.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "level-screen.js", "starmap.js", "art-infographics.js", "infographic-text.js", "field-guide.js", "cards.js", "notes.js"],
   ["Dom"],
 );
 
 /* A fresh page with index.html's header, the given address, key and server; then app.js boots. */
-async function boot({ hash = "#/", token = "KEY", replies = {}, stored = {}, wrap = (api) => api } = {}) {
+async function boot({ hash = "#/", token = "KEY", replies = {}, stored = {}, wrap = (api) => api, browserLanguage = "en-US" } = {}) {
   const document = installBrowser();
   const { el } = Dom;
   document.body.append(
     el("header", { class: "topbar" },
-      el("nav", { class: "nav" }, el("a", { href: "#/", "data-view": "home" }, "Map"), el("a", { href: "#/cards", "data-view": "cards" }, "Cards", el("span", { class: "badge", hidden: true })), el("a", { href: "#/notes", "data-view": "notes" }, "Notes")),
+      el("nav", { class: "nav" }, el("a", { href: "#/", "data-view": "home", "data-text": "nav.map" }, "Map"), el("a", { href: "#/cards", "data-view": "cards" }, el("span", { "data-text": "nav.cards" }, "Cards"), el("span", { class: "badge", hidden: true })), el("a", { href: "#/notes", "data-view": "notes", "data-text": "nav.notes" }, "Notes")),
       el("div", { class: "player", hidden: true }, el("span", { class: "player-rank" }), el("span", { class: "meter small" }, el("i")), el("span", { class: "player-xp" })),
-      el("button", { class: "pref pref-theme" }), el("button", { class: "pref pref-sound" }),
+      el("button", { class: "pref pref-theme" }), el("button", { class: "pref pref-sound" }), el("button", { class: "pref pref-language" }),
     ),
     el("main", { id: "app" }),
     el("div", { class: "toasts" }),
@@ -28,6 +28,7 @@ async function boot({ hash = "#/", token = "KEY", replies = {}, stored = {}, wra
   const windowListeners = new Map();
   const server = fakeServer({ "/api/status": { ...record("status"), active: null }, "/api/cards": { cards: record("cards") }, "/api/notes": record("notes"), ...replies });
   const seen = { locked: 0, terminals: 0 };
+  Object.defineProperty(global, "navigator", { value: { language: browserLanguage }, configurable: true });
   Object.assign(global, {
     location: { hash, pathname: "/", search: "" },
     history: { replaceState: (state, title, address) => (global.location.hash = address.startsWith("#") ? address : "") },
@@ -255,4 +256,42 @@ test("the field guide's address shows the guide under its own head", async () =>
   const page = await boot({ hash: "#/guide" });
   assert.ok(page.main.querySelector(".field-guide"));
   assert.equal(page.document.querySelector(".topbar").hidden, true);
+});
+
+test("before the game answers, the page speaks English, whatever the browser's language", async () => {
+  const page = await boot({ token: null, browserLanguage: "es-MX" });
+  assert.equal(page.document.documentElement.lang, "en");
+  assert.match(page.main.querySelector("h1").textContent, /link/);
+});
+
+test("once the game answers, the page speaks the game's language, whatever the browser's", async () => {
+  const page = await boot({ browserLanguage: "en-US", replies: { "/api/status": { ...record("status"), active: null, language: "es" } } });
+  assert.equal(page.document.documentElement.lang, "es");
+  assert.equal(page.document.querySelector(".nav a").textContent, "Mapa");
+  assert.equal(page.main.querySelector(".map-bar .pref-language").textContent, "English");
+});
+
+test("the map bar's language button tells the game, then reloads the records in the new language", async () => {
+  let language = "en";
+  const page = await boot({
+    replies: {
+      "/api/status": () => ({ ...record("status"), active: null, language }),
+      "/api/language": (body) => {
+        language = body.language;
+        return {};
+      },
+    },
+  });
+  page.main.querySelector(".map-bar .pref-language").click();
+  await settle();
+  await settle();
+  const paths = page.server.calls.map((call) => call.path);
+  const told = paths.indexOf("/api/language");
+  assert.deepEqual(page.server.calls[told].body, { language: "es" });
+  assert.ok(paths.lastIndexOf("/api/status") > told);
+  assert.equal(page.document.documentElement.lang, "es");
+  assert.equal(page.document.querySelector(".nav a").textContent, "Mapa");
+  assert.equal(page.document.querySelector(".topbar .pref-language").textContent, "English");
+  assert.equal(page.main.querySelector(".map-bar .pref-language").textContent, "English");
+  assert.equal(page.storage.size, 0);
 });

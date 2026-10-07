@@ -5,7 +5,7 @@ const test = require("node:test");
 const { fakeServer, installBrowser, load, record, settle } = require("./load");
 
 const document = installBrowser();
-const { StarMap, createGameApi, Dom } = load(["dom.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "api.js", "progress.js", "dialog.js", "starmap.js"], ["StarMap", "createGameApi", "Dom"]);
+const { StarMap, createGameApi, Dom } = load(["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "api.js", "progress.js", "dialog.js", "starmap.js"], ["StarMap", "createGameApi", "Dom"]);
 
 function starMap(status = record("status")) {
   const server = fakeServer({ "/api/reset": {} });
@@ -148,4 +148,15 @@ test("the card shows the mission's command and its best stars", () => {
 test("the bar links the field guide", () => {
   const run = starMap();
   assert.equal(run.q(".field-guide-open").getAttribute("href"), "#/guide");
+});
+
+test("a challenge is a boss node, and its card keeps the command hidden until it is done", () => {
+  const status = record("status");
+  status.chapters[1].levels[1] = { ...status.chapters[1].levels[1], challenge: true };
+  const run = starMap(status);
+  const boss = run.all(".node")[1];
+  assert.ok(boss.classList.contains("is-boss"));
+  assert.match(boss.getAttribute("aria-label"), /^Challenge 2\.2/);
+  assert.equal(run.q(".card-meta code"), null);
+  assert.match(run.q(".card-num").textContent, /challenge 2\.2/);
 });

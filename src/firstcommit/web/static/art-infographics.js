@@ -46,7 +46,7 @@ const ArtInfographics = (function () {
     return picture({ class: className, viewBox: `0 0 ${width} ${height}`, width: width * PIXEL, height: height * PIXEL }, "", rects);
   }
 
-  const heading = (title) => el("h3", { class: "art-ig-title" }, title);
+  const heading = (title) => el("h2", { class: "art-ig-title" }, title);
   const lockNote = (lockedLabel) => el("p", { class: "art-ig-lock" }, ArtSprites.icon("lock"), lockedLabel);
 
   function commandCard({ command, what, locked }, lockedLabel) {
@@ -58,7 +58,7 @@ const ArtInfographics = (function () {
     return el("section", { class: "art-ig art-ig--commands" },
       heading(title),
       groups.map((group) => el("section", { class: "art-ig-group" },
-        el("h4", { class: "art-ig-group-title" }, group.title),
+        el("h3", { class: "art-ig-group-title" }, group.title),
         el("ul", { class: "art-ig-cards", role: "list" }, group.commands.map((entry) => commandCard(entry, lockedLabel))))));
   }
 
@@ -69,7 +69,7 @@ const ArtInfographics = (function () {
     if (locked) return el("div", frame, drawing, lockNote(lockedLabel));
     return el("div", frame,
       drawing,
-      el("h4", { class: "art-ig-name" }, name),
+      el("h3", { class: "art-ig-name" }, name),
       el("p", { class: "art-ig-term" }, term),
       el("p", { class: "art-ig-what" }, what));
   }

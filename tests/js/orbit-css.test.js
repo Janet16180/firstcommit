@@ -88,3 +88,8 @@ test("each rule appears once at the top level, so a later copy cannot silently o
   const repeated = top.filter((selector, index) => top.indexOf(selector) !== index && !selector.startsWith("@"));
   assert.deepEqual([...new Set(repeated)].sort(), ["*,\n*::before,\n*::after", ".termcol"]);
 });
+
+test("a conflicted file shows the crack icon in place of its status square", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.match(rule('.file[data-state="conflicted"]::before'), /display: none;/);
+});

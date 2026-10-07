@@ -7,12 +7,12 @@ const { createClock, fakeServer, httpError, installBrowser, load, record, settle
 
 const document = installBrowser({ reducedMotion: true });
 const { LevelScreen, createGameApi } = load(
-  ["dom.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "level-screen.js"],
+  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "level-screen.js"],
   ["LevelScreen", "createGameApi"],
 );
 
 const para = (text) => [{ kind: "para", spans: [{ text, code: false }] }];
-const correct = (step, questDone = false) => ({ correct: true, message: para("Right."), step, quest_done: questDone });
+const correct = (step, questDone = false, done = []) => ({ correct: true, message: para("Right."), step, quest_done: questDone, done });
 
 /* The sample level, its scene already seen unless the test says otherwise. */
 const seenLevel = () => ({ ...record("level"), scene_seen: true });
@@ -371,4 +371,66 @@ test("a typed line gets a blip, a failed one a buzz, a ticked goal and a lost st
   await settle();
   assert.ok(goal.seen.sounds.includes("goal"));
   goal.view.dispose();
+});
+
+test("a prediction sends the choice, shows the reveal on Rama's line in a neutral mood, and moves on", async () => {
+  const level = seenLevel();
+  level.steps[1] = { ...level.steps[1], kind: "choice", question: para("Where does it go?"), choices: [{ value: "dock", text: para("The dock") }, { value: "vault", text: para("The vault") }] };
+  const reveal = { ...correct(2), message: para("It waits on the dock until you commit.") };
+  const run = screen({ replies: { "/api/level": level, "/api/step": reveal } });
+  await settle();
+  run.all(".goal.is-current .goal-choice")[1].click();
+  await settle();
+  assert.deepEqual(run.server.calls.at(-1).body, { answer: "vault" });
+  assert.equal(run.q(".comms-text").textContent, "It waits on the dock until you commit.");
+  assert.equal(run.q(".comms").dataset.mood, "info");
+  assert.ok(run.all(".goal")[2].classList.contains("is-current"));
+  assert.equal(run.seen.sounds.includes("correct"), false);
+  run.view.dispose();
+});
+
+test("a challenge says so in the head, hides its command until solved, watches every goal, and docks in gold", async () => {
+  const level = { ...seenLevel(), challenge: true, card: null };
+  const run = screen({ active: { ...record("active"), step: 0, done: [] }, replies: { "/api/level": level, "/api/step": { ...record("step"), step: 0, done: [] } } });
+  await settle();
+  assert.equal(run.q(".hud-num").textContent, "Challenge 2.2");
+  assert.equal(run.q(".hud-command").hidden, true);
+  assert.ok(run.view.element.classList.contains("is-challenge"));
+  assert.deepEqual(run.routes(), ["/api/level", "/api/observe", "/api/step"]);
+  run.view.dispose();
+});
+
+test("a challenge's goals tick in the order they are met", async () => {
+  const level = { ...seenLevel(), challenge: true, card: null };
+  const run = screen({ active: { ...record("active"), step: 0, done: [] }, replies: { "/api/level": level, "/api/step": { ...correct(1), done: ["stage"] } } });
+  await settle();
+  assert.deepEqual(run.all(".goal").map((goal) => goal.classList.contains("is-done")), [false, false, true]);
+  run.view.dispose();
+});
+
+test("a solved challenge docks in gold", async () => {
+  const level = { ...seenLevel(), challenge: true, card: null };
+  const run = screen({ active: { ...record("active"), step: 3, auto_check: true }, replies: { "/api/level": level, "/api/check": record("check_solved") } });
+  await settle();
+  await settle();
+  assert.ok(run.q(".dock").classList.contains("is-challenge"));
+  assert.match(run.q(".dock-title").textContent, /^Challenge complete/);
+  run.view.dispose();
+});
+
+test("work lost for good stops the level and shows the failure with Retry, even from an automatic check", async () => {
+  const lost = { ...record("check_unsolved"), lost: true, message: para("The edit is gone for good.") };
+  const run = screen({ active: { ...record("active"), step: 3, auto_check: true }, replies: { "/api/check": lost } });
+  await settle();
+  await settle();
+  assert.ok(run.q(".dock.is-lost"));
+  assert.equal(run.q(".dock.is-lost .art-stars"), null);
+  assert.ok(run.seen.sounds.includes("wrong"));
+  const calls = run.server.calls.length;
+  await run.clock.advance(10000);
+  assert.equal(run.server.calls.length, calls);
+  run.q(".dock.is-lost .btn-primary").click();
+  await settle();
+  assert.equal(run.routes().at(-1), "/api/start");
+  run.view.dispose();
 });

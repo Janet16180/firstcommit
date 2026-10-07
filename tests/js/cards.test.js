@@ -6,7 +6,7 @@ const { makeEvent } = require("./fakedom");
 const { fakeServer, httpError, installBrowser, load, record, settle } = require("./load");
 
 const document = installBrowser();
-const { CardsView, createGameApi } = load(["dom.js", "markup.js", "api.js", "cards.js"], ["CardsView", "createGameApi"]);
+const { CardsView, createGameApi } = load(["dom.js", "strings.js", "markup.js", "api.js", "cards.js"], ["CardsView", "createGameApi"]);
 
 const wrong = { ...record("card_result"), correct: false, xp: 0, streak: 0 };
 

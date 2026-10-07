@@ -3,9 +3,9 @@
 /*
  * Watching the lab while the player works. Defines one global, Polling.
  *
- * plan(steps, active) says what to ask the server on each tick: always the live lab (observe);
- * the current quest step while it is a watch step (it passes by itself once the lab shows the
- * step was done); and the level itself, as an automatic check, when the server says it may be
+ * plan(steps, active, challenge) says what to ask the server on each tick: always the live lab
+ * (observe); the current quest step while it is a watch step (it passes by itself once the lab
+ * shows the step was done), or, in a challenge, the goals not met yet, whatever their order; and the level itself, as an automatic check, when the server says it may be
  * (ActiveView's auto_check). Which step is current and whether anything passed is the server's
  * to say.
  *
@@ -18,9 +18,10 @@
 /* exported Polling */
 
 const Polling = (function () {
-  function plan(steps, active) {
+  function plan(steps, active, challenge = false) {
     const current = active.step < active.steps ? steps[active.step] : null;
-    return { observe: true, watchStep: Boolean(current && current.kind === "watch"), autoCheck: active.auto_check };
+    const watching = challenge ? current !== null : Boolean(current && current.kind === "watch");
+    return { observe: true, watchStep: watching, autoCheck: active.auto_check };
   }
 
   function start({ tick, intervalMs = 1500, timers = window, page = document }) {

@@ -87,3 +87,9 @@ test("a page shown again in the middle of a tick starts no second tick", async (
   poller.stop();
   assert.deepEqual(ticks, [0, 1900, 3800]);
 });
+
+test("in a challenge every goal not met yet is watched, whatever its kind, until all are met", () => {
+  assert.equal(Polling.plan(steps, active(0), true).watchStep, true);
+  assert.equal(Polling.plan(steps, active(1), true).watchStep, true);
+  assert.equal(Polling.plan(steps, active(3), true).watchStep, false);
+});

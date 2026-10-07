@@ -12,24 +12,19 @@
  * observation's reactions). Expected failures are handled here, by HTTP status: 404 means there
  * is no such level, 409 that it is no longer in progress (solved or ended from the command line
  * or another tab), 0 that the server did not answer. Anything else is a bug and is left to
- * surface. Needs dom.js, markup.js, art-sprites.js, progress.js, poll.js, zone-panel.js,
+ * surface. Needs dom.js, strings.js, markup.js, art-sprites.js, progress.js, poll.js, zone-panel.js,
  * mission.js, comms.js, completion.js and scene.js. Defines one global,
  * LevelScreen.
  */
 
-/* global Dom, ArtSprites, Progress, Polling, ZonePanel, Mission, Comms, Completion, ScenePlayer */
+/* global Dom, Strings, ArtSprites, Progress, Polling, ZonePanel, Mission, Comms, Completion, ScenePlayer */
 /* exported LevelScreen */
 
 const LevelScreen = (function () {
   const { el } = Dom;
-  const SAY = {
-    preparing: "Preparing your practice repository…",
-    start: "Read the goals and type your first command in the terminal.",
-    down: "The game server is not answering. Is it still running in your terminal?",
-    back: "The game server is answering again.",
-    hint: "I left a hint in the mission panel.",
-    ended: "This mission is no longer in progress: it was ended from the command line or in another tab. Restart it to play again.",
-  };
+  const { t } = Strings;
+  const SAY = { preparing: "level.preparing", start: "level.start", down: "level.down", back: "level.back", hint: "level.hint", ended: "level.ended" };
+
 
   function hud(screen) {
     const { ui } = screen;
@@ -38,10 +33,10 @@ const LevelScreen = (function () {
     ui.command = el("code", { class: "hud-command" });
     ui.commands = el("span", { class: "hud-cmds" });
     ui.stars = el("span", { class: "hud-stars" });
-    ui.intro = el("button", { type: "button", class: "btn intro", hidden: true, "aria-label": "Replay the introduction", onclick: () => scene(screen) }, ArtSprites.icon("replay"), el("span", { class: "lbl" }, "Intro"));
-    ui.restart = el("button", { type: "button", class: "btn restart", disabled: true, onclick: () => restart(screen) }, ArtSprites.icon("restart"), el("span", { class: "lbl" }, "Restart"));
+    ui.intro = el("button", { type: "button", class: "btn intro", hidden: true, "aria-label": t("level.introTip"), onclick: () => scene(screen) }, ArtSprites.icon("replay"), el("span", { class: "lbl" }, t("level.intro")));
+    ui.restart = el("button", { type: "button", class: "btn restart", disabled: true, onclick: () => restart(screen) }, ArtSprites.icon("restart"), el("span", { class: "lbl" }, t("level.restart")));
     return el("header", { class: "hud" },
-      el("a", { class: "btn", href: "#/", "aria-label": "Back to the map" }, ArtSprites.icon("back"), el("span", { class: "lbl" }, "Map")),
+      el("a", { class: "btn", href: "#/", "aria-label": t("level.mapTip") }, ArtSprites.icon("back"), el("span", { class: "lbl" }, t("level.map"))),
       el("div", { class: "hud-title" }, ui.number, ui.name, ui.command),
       ui.commands,
       ui.stars,
@@ -53,10 +48,10 @@ const LevelScreen = (function () {
   /* The commands typed against the par plus three, and the stars still in play; a lost star shakes. */
   function drawHud(screen) {
     const { ui, state, level } = screen;
-    ui.commands.textContent = `${state.commands} / ${level.par + 3} commands`;
+    ui.commands.textContent = t("level.commands", { count: state.commands, limit: level.par + 3 });
     const lost = screen.shownStars !== null && state.stars < screen.shownStars;
     screen.shownStars = state.stars;
-    ui.stars.replaceChildren(ArtSprites.stars(state.stars, { label: `${state.stars} ${state.stars === 1 ? "star" : "stars"} in play` }));
+    ui.stars.replaceChildren(ArtSprites.stars(state.stars, { label: t("level.stars", { count: state.stars }) }));
     ui.stars.classList.toggle("is-lost", lost);
     if (lost) screen.ctx.sound.play("starlost");
   }
@@ -84,14 +79,14 @@ const LevelScreen = (function () {
     const { ui } = screen;
     ui.zones = ZonePanel.create({ reducedMotion: screen.ctx.reducedMotion, timers: screen.ctx.timers });
     ui.comms = Comms.create();
-    ui.mission = el("aside", { class: "mission px", "aria-label": "Mission" }, el("p", {}, "Loading the mission…"));
+    ui.mission = el("aside", { class: "mission px", "aria-label": t("mission.label") }, el("p", {}, t("level.loading")));
     ui.termcol = el("div", { class: "termcol" }, ui.comms.element);
     ui.stage = el("main", { class: "stage" }, ui.zones.element, ui.mission, ui.termcol);
     screen.element.replaceChildren(hud(screen), ui.stage);
   }
 
   function missing(screen) {
-    screen.element.replaceChildren(el("section", { class: "panel narrow" }, el("h1", {}, "There is no mission here"), el("p", {}, "There is no mission with this address. ", el("a", { href: "#/" }, "Back to the map"))));
+    screen.element.replaceChildren(el("section", { class: "panel narrow" }, el("h1", {}, t("level.missingTitle")), el("p", {}, `${t("level.missing")} `, el("a", { href: "#/" }, t("level.backToMap")))));
   }
 
   function stop(screen) {
@@ -104,7 +99,7 @@ const LevelScreen = (function () {
     if (error.status === 409 && !screen.finished) endedElsewhere(screen);
     if (error.status === 0) {
       screen.offline = true;
-      screen.ui.comms.say(SAY.down, "err");
+      screen.ui.comms.say(t(SAY.down), "err");
     }
     return error.status === 409 || error.status === 0;
   }
@@ -121,8 +116,9 @@ const LevelScreen = (function () {
   }
 
   /* A quest step's result. A watch step polled without the player shows its message quietly: it
-     says what to do next, it is not the player's mistake. */
-  function stepped(screen, result, watched = false) {
+     says what to do next, it is not the player's mistake. A passed step's message is said in
+     `mood`: pleased for a goal met, neutral for a prediction's reveal (any answer passes). */
+  function stepped(screen, result, watched = false, mood = "ok") {
     const { ui, state, ctx } = screen;
     if (!result.correct && watched) screen.mission.note(result.message);
     if (!result.correct && !watched) {
@@ -131,15 +127,20 @@ const LevelScreen = (function () {
     }
     if (!result.correct) return;
     state.step = result.step;
+    state.done = result.done;
     state.auto_check = result.quest_done;
-    ui.comms.say(result.message, "ok");
+    ui.comms.say(result.message, mood);
     ctx.sound.play("goal");
-    screen.mission.setStep(state.step);
+    screen.mission.setStep(state.step, state.done);
   }
 
   /* A check's result. An automatic check that does not solve says nothing: the player did not ask. */
   function checked(screen, result, auto = false) {
-    if (result.solved) {
+    if (result.lost) {
+      if (screen.finished) return;
+      stop(screen);
+      lostWork(screen, result.message);
+    } else if (result.solved) {
       if (screen.finished) return;
       stop(screen);
       won(screen, { debrief: result.debrief, stars: result.stars, card: result.new_card, payout: result.payout });
@@ -152,16 +153,25 @@ const LevelScreen = (function () {
   function hinted(screen, hint) {
     screen.state.hints = hint.used;
     screen.mission.addHint(hint);
-    screen.ui.comms.say(SAY.hint, "info");
+    screen.ui.comms.say(t(SAY.hint), "info");
     screen.ctx.sound.play("hint");
     return recount(screen);
   }
 
+  /* The player's work is gone for good: the game says why, in the dock's place, with Retry. */
+  function lostWork(screen, message) {
+    screen.ctx.sound.play("wrong");
+    const panel = Completion.lost({ message, onRetry: () => restart(screen) });
+    screen.element.append(panel);
+    screen.element.classList.add("is-docked");
+    screen.element.style.setProperty("--dock-h", `${panel.offsetHeight || 120}px`);
+  }
+
   /* What a solved play paid, in a line for the dock. */
   function rewardLine(payout, hints) {
-    let line = "No XP this time.";
-    if (payout && payout.xp > 0) line = `+${payout.xp} XP`;
-    else if (hints > 0) line = "No XP this time: a hint was used.";
+    let line = t("level.noXp");
+    if (payout && payout.xp > 0) line = t("level.xp", { xp: payout.xp });
+    else if (hints > 0) line = t("level.noXpHint");
     return line;
   }
 
@@ -172,9 +182,10 @@ const LevelScreen = (function () {
     const status = await ctx.refresh();
     const next = Progress.nextLevel(status.chapters, levelId);
     ctx.sound.play("complete");
-    await Completion.band({ title: "Mission complete", subtitle: `Mission ${screen.number}: ${screen.level.title}`, stars, timers: ctx.timers, reducedMotion: ctx.reducedMotion });
+    await Completion.band({ title: t(screen.level.challenge ? "level.challengeComplete" : "level.missionComplete"), subtitle: t("level.subtitle", { number: screen.number, title: screen.level.title }), stars, timers: ctx.timers, reducedMotion: ctx.reducedMotion });
     const dock = Completion.dock({
-      title: `Mission complete: mission ${screen.number}`,
+      title: t(screen.level.challenge ? "level.challengeDone" : "level.missionDone", { number: screen.number }),
+      challenge: screen.level.challenge,
       stars,
       lesson: debrief,
       reward: rewardLine(payout, screen.state.hints),
@@ -197,7 +208,7 @@ const LevelScreen = (function () {
       const best = Progress.findLevel(status.chapters, screen.levelId);
       won(screen, { debrief: (await screen.ctx.game.level(screen.levelId)).debrief, stars: best ? best.stars : 0, card: null, payout });
     }
-    else screen.ui.comms.say(SAY.ended, "warn");
+    else screen.ui.comms.say(t(SAY.ended), "warn");
   }
 
   async function restart(screen) {
@@ -207,7 +218,7 @@ const LevelScreen = (function () {
       await screen.ctx.game.start(screen.levelId);
     } catch (error) {
       if (error.status !== 0) throw error;
-      screen.ui.comms.say(SAY.down, "err");
+      screen.ui.comms.say(t(SAY.down), "err");
       return;
     }
     screen.ctx.reload();
@@ -235,11 +246,11 @@ const LevelScreen = (function () {
   async function tick(screen) {
     const { game } = screen.ctx;
     try {
-      const plan = Polling.plan(screen.level.steps, screen.state);
+      const plan = Polling.plan(screen.level.steps, screen.state, screen.level.challenge);
       const observation = await game.observe();
       screen.ui.zones.update(observation);
       measureTerminal(screen);
-      if (screen.offline) screen.ui.comms.say(SAY.back, "info");
+      if (screen.offline) screen.ui.comms.say(t(SAY.back), "info");
       screen.offline = false;
       react(screen, observation.reactions);
       echo(screen, observation.commands);
@@ -256,9 +267,12 @@ const LevelScreen = (function () {
     const { game } = ctx;
     screen.state = { ...active };
     screen.number = Progress.missionNumber(ctx.status().chapters, screen.levelId)?.number || "";
-    ui.number.textContent = `Mission ${screen.number}`;
+    ui.number.textContent = t(level.challenge ? "level.challenge" : "level.mission", { number: screen.number });
     ui.name.textContent = level.title;
-    ui.command.textContent = level.command;
+    /* A challenge keeps its command hidden until solved once: its card, which names it, is null till then. */
+    ui.command.textContent = level.challenge && !level.card ? "" : level.command;
+    ui.command.hidden = ui.command.textContent === "";
+    screen.element.classList.toggle("is-challenge", level.challenge);
     ui.intro.hidden = level.scene.length === 0;
     ui.restart.disabled = false;
     drawHud(screen);
@@ -267,13 +281,14 @@ const LevelScreen = (function () {
       active,
       onAnswer: (answer) => send(screen, () => game.step(answer), stepped),
       onContinue: () => send(screen, () => game.step(null), stepped),
+      onChoose: (value) => send(screen, () => game.step(value), (run, result) => stepped(run, result, false, "info")),
       onCheck: (answer) => send(screen, () => game.check(answer, false), checked),
       onHint: () => send(screen, () => game.hint(), hinted),
       onType: ctx.terminal.type,
     });
     ui.mission.replaceWith(screen.mission.element);
     ui.mission = screen.mission.element;
-    ui.comms.say(SAY.start);
+    ui.comms.say(t(SAY.start));
     ctx.terminal.attach(ui.termcol);
     screen.attached = true;
     measureTerminal(screen);
@@ -287,7 +302,7 @@ const LevelScreen = (function () {
     let active = status.active && status.active.level === levelId ? status.active : null;
     try {
       if (!active) {
-        screen.ui.comms.say(SAY.preparing);
+        screen.ui.comms.say(t(SAY.preparing));
         active = await ctx.game.start(levelId);
         await ctx.refresh();
       }
@@ -295,7 +310,7 @@ const LevelScreen = (function () {
       screen.level = await ctx.game.level(levelId);
     } catch (error) {
       if (error.status === 404) return missing(screen);
-      if (error.status === 0) return screen.ui.comms.say(SAY.down, "err");
+      if (error.status === 0) return screen.ui.comms.say(t(SAY.down), "err");
       throw error;
     }
     if (screen.disposed) return null;

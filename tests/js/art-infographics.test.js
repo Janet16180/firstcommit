@@ -63,7 +63,7 @@ const STATES = {
 };
 
 const textOf = (node) => node.textContent;
-const heading = (node) => [...walk(node)].find((element) => element.localName === "h3");
+const heading = (node) => [...walk(node)].find((element) => element.localName === "h2");
 
 function assertWell(node) {
   assertPalette(node);
@@ -174,4 +174,15 @@ test("the infographics sheet paints only with design tokens, light and dark alik
   assert.doesNotMatch(INFOGRAPHICS_STYLE, /#[0-9a-fA-F]{3,6}\b/);
   for (const [, token] of INFOGRAPHICS_STYLE.matchAll(/var\((--[\w-]+)\)/g)) assert.ok(TOKENS.has(token) || ["--tone", "--columns", "--boxes", "--f-px", "--f-body", "--f-term"].includes(token), token);
   assert.doesNotMatch(INFOGRAPHICS_STYLE, /prefers-color-scheme/);
+});
+
+test("each infographic sits under the page's h1: its title an h2, its group and box names h3", () => {
+  for (const guide of [ArtInfographics.commands(COMMANDS), ArtInfographics.places(PLACES), ArtInfographics.states(STATES)]) {
+    const levels = (className) => [...guide.querySelectorAll(`.${className}`)].map((node) => node.localName);
+    assert.deepEqual(levels("art-ig-title"), ["h2"]);
+    const names = [...levels("art-ig-group-title"), ...levels("art-ig-name")];
+    assert.ok(names.length > 0);
+    assert.ok(names.every((level) => level === "h3"));
+    assert.equal(guide.querySelectorAll("h4").length, 0);
+  }
 });

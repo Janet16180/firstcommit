@@ -13,7 +13,10 @@
  * stars(earned, {label, pop})
  *                         a row of three stars named "<earned> of 3 stars" unless `label` says
  *                         otherwise; with `pop` the earned ones pop in one after another.
- * icon(name, {label})     one of ICONS, drawn in currentColor, 1em.
+ * icon(name, {label})     one of ICONS, drawn in currentColor, 1em. art-style.css gives three a
+ *                         default colour: "conflict" (a cracked file) --s-new, "merging" (two
+ *                         arrows meeting at a blinking pause bar) --s-mod, and "inverted" (a
+ *                         .cblock turned over, outlined in --edge) the zone's --zc.
  * planet(index, {label})  the planet of the sector at 0-based `index`: orange, cyan with a ring,
  *                         violet, pink with a ring, then again. Square; the page sets its size.
  */
@@ -61,21 +64,58 @@ const ArtSprites = (function () {
 
   const INK = "currentColor";
   const FAINT = { fill: INK, "fill-opacity": "0.45" };
+  const PLAIN = { c: INK, d: FAINT };
+  const plain = (rows) => [[rows, PLAIN]];
 
+  /* Each icon is layers of [rows, palette], drawn in order. */
   const ICONS = {
-    lock: ["..ccc..", ".c...c.", ".c...c.", "ccccccc", "cddcddc", "cddcddc", "cdddddc", "ccccccc"],
-    arrow: ARROW.map((row) => row.replaceAll("k", "c")),
-    back: ["....cc..", "...cc...", "..cc....", ".cc.....", "..cc....", "...cc...", "....cc.."],
-    replay: ["ccccccccc", "c.......c", "c..c....c", "c..cc...c", "c..ccc..c", "c..cc...c", "c..c....c", "ccccccccc"],
-    restart: ["...ccc.c.", ".cc...cc.", ".c...ccc.", "c........", "c.......c", "c.......c", ".c.....c.", ".cc...cc.", "...ccc..."],
-    hint: ["..ccc..", ".cdddc.", "cdddddc", "cdddddc", ".cdddc.", "..cdc..", "..ccc..", "..ccc..", "...c..."],
+    lock: plain(["..ccc..", ".c...c.", ".c...c.", "ccccccc", "cddcddc", "cddcddc", "cdddddc", "ccccccc"]),
+    arrow: plain(ARROW.map((row) => row.replaceAll("k", "c"))),
+    back: plain(["....cc..", "...cc...", "..cc....", ".cc.....", "..cc....", "...cc...", "....cc.."]),
+    replay: plain(["ccccccccc", "c.......c", "c..c....c", "c..cc...c", "c..ccc..c", "c..cc...c", "c..c....c", "ccccccccc"]),
+    restart: plain(["...ccc.c.", ".cc...cc.", ".c...ccc.", "c........", "c.......c", "c.......c", ".c.....c.", ".cc...cc.", "...ccc..."]),
+    hint: plain(["..ccc..", ".cdddc.", "cdddddc", "cdddddc", ".cdddc.", "..cdc..", "..ccc..", "..ccc..", "...c..."]),
+    /* A dog-eared sheet split top to bottom by a jagged gap. */
+    conflict: plain([
+      "cccc.cc..",
+      "cccc.cdc.",
+      "ccc.ccddc",
+      "ccc.ccccc",
+      "cccc.cccc",
+      "ccccc.ccc",
+      "ccccc.ccc",
+      "cccc.cccc",
+      "ccc.ccccc",
+      "ccc.ccccc",
+    ]),
+    /* Two arrows meeting at a pause bar (p), which blinks. */
+    merging: [[[
+      "......p.p......",
+      "......p.p......",
+      "..c...p.p...c..",
+      "..cc..p.p..cc..",
+      "ccccc.p.p.ccccc",
+      "..cc..p.p..cc..",
+      "..c...p.p...c..",
+      "......p.p......",
+      "......p.p......",
+    ], { c: INK, p: { fill: INK, class: "art-pause" } }]],
+    /* A capsule block (.cblock) turned over: its shade on the top and left instead of the bottom
+       and right, and a pale chevron pointing down. */
+    inverted: [
+      [["kkkkkkkkk", "kbbbbbbbk", "kbbbbbbbk", "kbbbbbbbk", "kbbbbbbbk", "kbbbbbbbk", "kbbbbbbbk", "kbbbbbbbk", "kkkkkkkkk"], { k: tone("edge"), b: INK }],
+      [[".........", ".sssssss.", ".sssssss.", ".ss......", ".ss......", ".ss......", ".ss......", ".ss......"], { s: { fill: tone("edge"), "fill-opacity": "0.3" } }],
+      [["", "", "", "...h...h", "....h.h.", ".....h.."], { h: tone("panel") }],
+    ],
   };
 
   function icon(name, { label = "" } = {}) {
     if (!(name in ICONS)) throw new RangeError(`unknown icon: ${name}`);
-    const rows = ICONS[name];
+    const layers = ICONS[name];
+    const [rows] = layers[0];
     const width = Math.max(...rows.map((row) => row.length));
-    return picture({ class: `art-icon art-icon--${name}`, viewBox: `0 0 ${width} ${rows.length}`, width: "1em", height: "1em" }, label, draw(rows, { c: INK, d: FAINT }));
+    const shapes = layers.map(([layerRows, palette]) => draw(layerRows, palette));
+    return picture({ class: `art-icon art-icon--${name}`, viewBox: `0 0 ${width} ${rows.length}`, width: "1em", height: "1em" }, label, shapes);
   }
 
   const PLANETS = [

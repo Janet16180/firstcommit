@@ -329,14 +329,100 @@
   to { transform: translate(calc(var(--dx) * var(--reach)), calc(var(--dy) * var(--reach))); opacity: 0; }
 }
 
+.art-icon--conflict {
+  color: var(--s-new);
+}
+
+/* Its grid is wider than tall. */
+.art-icon--merging {
+  width: 1.6em;
+  color: var(--s-mod);
+}
+
+/* Sized like the .cblock it stands in for; --zc is the zone's colour (orbit.css). */
+.art-icon--inverted {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  color: var(--zc, var(--z-va));
+}
+
+.art-pause {
+  animation: art-pause 1.6s steps(2) infinite;
+}
+
+@keyframes art-pause {
+  50% { opacity: 0.2; }
+}
+
+/* Put once on a file chip as it becomes conflicted: it shakes while a jagged crack, three
+   stacked bars in the ::after, flashes across its middle. */
+.art-crack {
+  position: relative;
+  animation: art-crack 0.6s steps(1) both;
+}
+
+@keyframes art-crack {
+  0%, 100% { transform: none; }
+  15% { transform: translateX(-3px); }
+  30% { transform: translateX(3px); }
+  45% { transform: translateX(-2px); }
+  60% { transform: translateX(2px); }
+  75% { transform: translateX(-1px); }
+}
+
+.art-crack::after {
+  content: "";
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  left: calc(50% - 5px);
+  width: 10px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--s-new) 0 0) 5px 0 / 3px 42% no-repeat,
+    linear-gradient(var(--s-new) 0 0) 2px 50% / 4px 30% no-repeat,
+    linear-gradient(var(--s-new) 0 0) 4px 100% / 3px 42% no-repeat;
+  opacity: 0;
+  animation: art-crack-flash 0.6s steps(1) both;
+}
+
+@keyframes art-crack-flash {
+  0%, 10% { opacity: 0; }
+  11%, 30% { opacity: 1; }
+  31%, 40% { opacity: 0; }
+  41%, 85% { opacity: 1; }
+  86%, 100% { opacity: 0; }
+}
+
+/* Put on a revert commit's capsule row (.cap) as it appears. */
+.art-rise-inverted {
+  animation: art-rise-inverted 0.8s steps(4) both;
+}
+
+@keyframes art-rise-inverted {
+  from { transform: translateY(28px) scaleY(-1); opacity: 0; }
+  25% { opacity: 1; }
+  50% { transform: translateY(0) scaleY(-1); }
+  to { transform: translateY(0) scaleY(1); }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .art-rama,
   .art-rama *,
   .art-scene *,
   .art-field *,
   .art-dust *,
-  .art-star {
+  .art-star,
+  .art-pause,
+  .art-crack,
+  .art-crack::after,
+  .art-rise-inverted {
     animation: none !important;
+  }
+
+  .art-crack::after {
+    display: none;
   }
 
   .art-sparks {

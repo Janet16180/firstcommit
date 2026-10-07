@@ -3,11 +3,11 @@
 /*
  * Rama's comms line above the terminal: Rama, and one thing Rama says, with a mood ("info",
  * "ok", "warn" or "err") that colours the line. What Rama says comes from the game (a step's or
- * a check's message, and later the reactions to typed lines); this only shows it. Needs dom.js,
+ * a check's message, and later the reactions to typed lines); this only shows it. Needs dom.js, strings.js,
  * markup.js and art-sprites.js. Defines one global, Comms.
  */
 
-/* global Dom, Markup, ArtSprites */
+/* global Dom, Strings, Markup, ArtSprites */
 /* exported Comms */
 
 const Comms = (function () {
@@ -18,7 +18,7 @@ const Comms = (function () {
     const text = el("div", { class: "comms-text" });
     const element = el("div", { class: "comms px", "data-mood": "info", "aria-live": "polite" },
       ArtSprites.rama({ size: "comms" }),
-      el("div", {}, el("span", { class: "comms-who" }, "Rama, ship's computer"), text),
+      el("div", {}, el("span", { class: "comms-who" }, Strings.t("comms.who")), text),
     );
     let said = null;
 

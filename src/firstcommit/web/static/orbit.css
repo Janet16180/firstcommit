@@ -403,6 +403,19 @@ pre.code code {
   background: var(--gold);
 }
 
+/* A challenge: the design's boss node, pink until it is done. */
+.node.is-boss {
+  background: var(--art-pink);
+}
+
+.node.is-boss.is-done {
+  background: var(--gold);
+}
+
+.level-screen.is-challenge .hud {
+  border-bottom-color: var(--art-pink);
+}
+
 .node.is-selected {
   outline: 3px solid var(--star);
   outline-offset: 4px;
@@ -680,6 +693,33 @@ pre.code code {
   border: 2px solid var(--edge);
 }
 
+.z-op {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: -4px 0 8px;
+  font: 700 0.85rem var(--f-ui);
+  color: var(--s-mod);
+}
+
+.file[data-state="conflicted"] {
+  --fs: var(--s-new);
+  border-color: var(--s-new);
+}
+
+.legend li[data-state="conflicted"] {
+  --lg: var(--s-new);
+}
+
+.cblock.is-revert {
+  width: auto;
+  height: auto;
+  margin-top: 0;
+  background: none;
+  border: 0;
+  box-shadow: none;
+}
+
 .z-body {
   display: flex;
   flex-wrap: wrap;
@@ -784,6 +824,10 @@ pre.code code {
   width: 9px;
   height: 9px;
   background: var(--fs);
+}
+
+.file[data-state="conflicted"]::before {
+  display: none;
 }
 
 .file[data-state="none"]::before {
@@ -1189,7 +1233,7 @@ pre.code code {
   width: 9px;
   height: 9px;
   margin-top: -4px;
-  background: #FF6F98;
+  background: var(--art-pink);
   box-shadow: 13px 0 0 #FFD25A, 26px 0 0 #4FD8EA;
 }
 
@@ -1305,6 +1349,17 @@ pre.code code {
 
 @keyframes dock-in {
   from { transform: translate(-50%, 28px); opacity: 0; }
+}
+
+/* Lost work: the dock's place, as a failure. */
+.dock.is-lost {
+  border-left-color: var(--s-new);
+}
+
+/* A solved challenge: the dock in gold. */
+.dock.is-challenge {
+  background: color-mix(in srgb, var(--gold) 22%, var(--panel));
+  border-color: var(--gold);
 }
 
 .dock-stars {

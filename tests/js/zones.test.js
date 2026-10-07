@@ -127,12 +127,12 @@ test("the authors of the commits are kept, so the page can name a teammate's", (
 
 /* Zones before and after a change, from bare models. */
 const model = (fields = {}) => ({ repository: true, workshop: [], dock: [], vault: [], remote: null, ...fields });
-const capsule = (hash, { parents = [], labels = [] } = {}) => ({ hash, short: hash, subject: hash, author: "You", parents, lane: 0, labels });
+const capsule = (hash, { parents = [], labels = [], revert = false } = {}) => ({ hash, short: hash, subject: hash, author: "You", parents, lane: 0, revert, labels });
 const head = (branch) => ({ text: `HEAD → ${branch}`, kind: "head" });
 const branch = (name) => ({ text: name, kind: "branch" });
 const staged = (path, version = "v1") => ({ path, change: "added", version });
 
-const NOTHING = { lit: [], flights: [], wake: [], fades: [], appears: [], bounces: [] };
+const NOTHING = { lit: [], flights: [], wake: [], fades: [], appears: [], bounces: [], cracks: [], rises: [] };
 
 test("plain typing that changes nothing moves nothing", () => {
   assert.deepEqual(Zones.moves(model(), model(), []), NOTHING);
@@ -228,4 +228,30 @@ test("capsules that left the branches fade off, and capsules that come back appe
   const one = [capsule("c1")];
   assert.deepEqual(Zones.moves(model({ vault: three }), model({ vault: one }), ["reset"]).fades, ["vault:c3", "vault:c2"]);
   assert.deepEqual(Zones.moves(model({ vault: one }), model({ vault: three }), ["reset"]).appears, ["vault:c3", "vault:c2"]);
+});
+
+test("a conflicted file is marked in the workshop, before any other state, and a merge in progress is said", () => {
+  const files = [file("map.txt", { head: "a", index: "b", conflicted: true, index_change: "modified", folder_change: "modified" })];
+  const zones = Zones.read(observe(snapshot({ exists: true, files, operation: "merge" })));
+  assert.deepEqual(zones.workshop, [{ path: "map.txt", state: "conflicted" }]);
+  assert.equal(zones.operation, "merge");
+  assert.equal(Zones.read(observe(snapshot({ exists: true }))).operation, null);
+});
+
+test("a commit with git's revert message is marked as a revert", () => {
+  const project = snapshot({ exists: true, head: "r", branch: "main", commits: [commit("r", ["c1"], 'Revert "Add the bad route"'), commit("c1")], refs: [] });
+  assert.deepEqual(Zones.read(observe(project)).vault.map((item) => item.revert), [true, false]);
+});
+
+test("a file that just became conflicted cracks", () => {
+  const was = model({ workshop: [{ path: "map.txt", state: "staged" }] });
+  const now = model({ workshop: [{ path: "map.txt", state: "conflicted" }] });
+  assert.deepEqual(Zones.moves(was, now, ["merge"]).cracks, ["workshop:map.txt"]);
+  assert.deepEqual(Zones.moves(now, now, ["status"]).cracks, []);
+});
+
+test("a revert capsule rises in instead of simply appearing", () => {
+  const moves = Zones.moves(model({ vault: [capsule("c1")] }), model({ vault: [capsule("r", { revert: true }), capsule("c1")] }), ["revert"]);
+  assert.deepEqual(moves.rises, ["vault:r"]);
+  assert.deepEqual(moves.appears, []);
 });

@@ -74,9 +74,9 @@ const createGameApi = (function () {
     truncated: flag,
   });
   const OBJECTS = list(record({ hash: text, type: text, size: number }));
-  const ACTIVE = record({ level: text, step: number, steps: number, hints: number, hints_total: number, attempts: number, started: text, auto_check: flag, commands: number, stars: number });
+  const ACTIVE = record({ level: text, step: number, steps: number, hints: number, hints_total: number, attempts: number, started: text, auto_check: flag, commands: number, stars: number, done: list(text) });
   const PAYOUT = record({ level: text, xp: number, first_time: flag, rank_before: text, rank_after: text });
-  const LEVEL_SUMMARY = record({ id: text, title: text, difficulty: number, xp: number, command: text, stars: number, done: flag, has_lesson: flag, has_quest: flag });
+  const LEVEL_SUMMARY = record({ id: text, title: text, difficulty: number, xp: number, command: text, stars: number, challenge: flag, done: flag, has_lesson: flag, has_quest: flag });
   /* A finished level's command card (records.CommandCard). */
   const CARD = record({ level: text, command: text, text: BLOCKS });
   /* The scene pictures the artist has drawn and the moods Rama speaks in (records.Art and records.Mood). */
@@ -92,6 +92,7 @@ const createGameApi = (function () {
     cards_due: number,
     max_difficulty: number,
     collection: list(CARD),
+    language: oneOf("en", "es"),
   });
   const LEVEL = record({
     id: text,
@@ -104,11 +105,12 @@ const createGameApi = (function () {
     par: number,
     scene: list(record({ art: ART, text: BLOCKS })),
     scene_seen: flag,
-    card: CARD,
+    card: nullable(CARD),
+    challenge: flag,
     briefing: BLOCKS,
     question: BLOCKS,
     placeholder: text,
-    steps: list(record({ id: text, kind: oneOf("answer", "watch", "read"), text: BLOCKS, command: text, question: BLOCKS, placeholder: text, more: BLOCKS })),
+    steps: list(record({ id: text, kind: oneOf("answer", "watch", "read", "choice"), text: BLOCKS, command: text, question: BLOCKS, placeholder: text, choices: list(record({ value: text, text: BLOCKS })), more: BLOCKS })),
     hints_total: number,
     has_lesson: flag,
     hints: list(BLOCKS),
@@ -132,8 +134,8 @@ const createGameApi = (function () {
     })),
   });
   const GUIDE = mapping(record({ before: SNAPSHOT, after: SNAPSHOT, transcript: TRANSCRIPT }));
-  const STEP = record({ correct: flag, message: BLOCKS, step: number, quest_done: flag });
-  const CHECK = record({ solved: flag, message: BLOCKS, payout: nullable(PAYOUT), debrief: nullable(BLOCKS), stars: number, new_card: nullable(CARD) });
+  const STEP = record({ correct: flag, message: BLOCKS, step: number, quest_done: flag, done: list(text) });
+  const CHECK = record({ solved: flag, message: BLOCKS, payout: nullable(PAYOUT), debrief: nullable(BLOCKS), stars: number, new_card: nullable(CARD), lost: flag });
   const HINT = record({ hint: BLOCKS, used: number, total: number, cost: number });
   /* The playground's people and every id of its buttons (records.Who and playground.BUTTON_IDS; a
      Python test keeps them equal). */
@@ -206,6 +208,8 @@ const createGameApi = (function () {
       press: (person, button) => checked(PRESSED, "/api/press", { person, button }),
       /* Marks a level's scene seen, so it does not play by itself again. */
       scene: (level) => checked(NOTHING, "/api/scene", { level }),
+      /* Makes the game speak `language`; the records that follow come in it. */
+      language: (language) => checked(NOTHING, "/api/language", { language }),
     };
   };
 })();

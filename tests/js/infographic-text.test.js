@@ -7,7 +7,7 @@ const test = require("node:test");
 const { STATIC, installBrowser, load } = require("./load");
 
 installBrowser();
-const { InfographicText } = load(["infographic-text.js"], ["InfographicText"]);
+const { InfographicText, Strings } = load(["strings.js", "infographic-text.js"], ["InfographicText", "Strings"]);
 
 const ROOT = path.join(STATIC, "..", "..", "..", "..");
 const chaptersPy = fs.readFileSync(path.join(ROOT, "src", "firstcommit", "chapters.py"), "utf8");
@@ -31,7 +31,43 @@ test("every item is unlocked by a chapter that exists or is planned, whole or by
 });
 
 test("the places are Git's four, each with its space word and its real Git term", () => {
-  assert.deepEqual(InfographicText.places.places.map((place) => [place.space, place.git]), [["Workshop", "working folder"], ["Cargo dock", "staging area"], ["Vault", "local repository"], ["Mothership", "remote repository"]]);
+  assert.deepEqual(InfographicText.places.places.map((place) => [place.space.en, place.git.en]), [["Workshop", "working folder"], ["Cargo dock", "staging area"], ["Vault", "local repository"], ["Mothership", "remote repository"]]);
+});
+
+test("the places carry the zone panel's words, in both languages", () => {
+  const zones = { workshop: "workshop", dock: "dock", vault: "vault", mothership: "remote" };
+  for (const language of ["en", "es"]) {
+    Strings.use(language);
+    for (const place of InfographicText.places.places) {
+      assert.equal(place.space[language], Strings.t(`zones.${zones[place.id]}`), place.id);
+      assert.equal(place.git[language], Strings.t(`zones.${zones[place.id]}Git`), place.id);
+    }
+  }
+  Strings.use("en");
+});
+
+/* Ids, unlocks and the Git names of things are said once; any other word is said in both languages. */
+const PLAIN = ["id", "from", "to", "chapter", "name"];
+const COMMAND = /^(?:git|ls)\b[\w\-<>".,\s]*$/;
+
+function words(value, key, found) {
+  if (typeof value === "number") return found;
+  if (typeof value === "string") {
+    assert.ok(PLAIN.includes(key) || (["command", "how"].includes(key) && COMMAND.test(value)), `${key}: ${value} is in one language only`);
+  } else if (Array.isArray(value)) {
+    for (const item of value) words(item, key, found);
+  } else if ("en" in value) {
+    assert.deepEqual(Object.keys(value).sort(), ["en", "es"], JSON.stringify(value));
+    assert.ok(value.en.trim() && value.es.trim(), JSON.stringify(value));
+    found.push(value);
+  } else {
+    for (const [name, item] of Object.entries(value)) words(item, name, found);
+  }
+  return found;
+}
+
+test("every word is given in English and in Spanish", () => {
+  assert.ok(words(InfographicText, "", []).length > 50);
 });
 
 test("the states are a file's four, by their Git names", () => {

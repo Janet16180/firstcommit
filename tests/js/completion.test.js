@@ -5,7 +5,7 @@ const test = require("node:test");
 const { createClock, installBrowser, load, settle } = require("./load");
 
 const document = installBrowser();
-const { Completion } = load(["dom.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "completion.js"], ["Completion"]);
+const { Completion } = load(["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "completion.js"], ["Completion"]);
 
 const para = (text) => [{ kind: "para", spans: [{ text, code: false }] }];
 
@@ -78,4 +78,21 @@ test("without a reward line or a new card the dock leaves them out", () => {
   const dock = Completion.dock({ title: "Done", stars: 2, lesson: null, next: null, onRetry: () => {} });
   assert.equal(dock.querySelector(".dock-xp"), null);
   assert.equal(dock.querySelector(".dock-card"), null);
+});
+
+test("a challenge's dock is the gold one", () => {
+  assert.ok(Completion.dock({ title: "Done", stars: 3, lesson: null, challenge: true, next: null, onRetry: () => {} }).classList.contains("is-challenge"));
+});
+
+test("lost work takes the dock's place with the game's message, Retry and Map, and no stars", () => {
+  let retried = 0;
+  const panel = Completion.lost({ message: para("The edit was never saved, so Git cannot bring it back."), onRetry: () => (retried += 1) });
+  assert.ok(panel.classList.contains("is-lost"));
+  assert.equal(panel.getAttribute("role"), "alert");
+  assert.match(panel.querySelector(".dock-lesson").textContent, /never saved/);
+  assert.equal(panel.querySelector(".art-stars"), null);
+  const actions = [...panel.querySelectorAll(".dock-actions .btn")];
+  assert.deepEqual(actions.map((action) => action.textContent), ["Retry", "Map"]);
+  actions[0].click();
+  assert.equal(retried, 1);
 });

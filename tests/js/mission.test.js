@@ -6,17 +6,18 @@ const { makeEvent } = require("./fakedom");
 const { installBrowser, load, record } = require("./load");
 
 const document = installBrowser();
-const { Mission } = load(["dom.js", "markup.js", "art-pixels.js", "art-sprites.js", "mission.js"], ["Mission"]);
+const { Mission } = load(["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "mission.js"], ["Mission"]);
 
 const para = (text) => [{ kind: "para", spans: [{ text, code: false }] }];
 
 function mission({ level = record("level"), active = record("active") } = {}) {
-  const seen = { answers: [], continued: 0, checks: [], hints: 0, typed: [] };
+  const seen = { answers: [], continued: 0, chosen: [], checks: [], hints: 0, typed: [] };
   const view = Mission.create({
     level,
     active,
     onAnswer: (text) => seen.answers.push(text),
     onContinue: () => (seen.continued += 1),
+    onChoose: (value) => seen.chosen.push(value),
     onCheck: (answer) => seen.checks.push(answer),
     onHint: () => (seen.hints += 1),
     onType: (text) => seen.typed.push(text),
@@ -149,4 +150,39 @@ test("a note on the current goal shows under it, and the same note is not drawn 
   assert.equal(run.q(".goal.is-current .goal-note"), note);
   run.view.setStep(3);
   assert.equal(run.q(".goal-note"), null);
+});
+
+const predict = () => {
+  const level = record("level");
+  level.steps[1] = { ...level.steps[1], kind: "choice", question: para("Where does the file go?"), choices: [{ value: "dock", text: para("To the dock") }, { value: "vault", text: para("Straight to the vault") }] };
+  return level;
+};
+
+test("a prediction offers its choices as buttons under the goal, and sends the one clicked", () => {
+  const run = mission({ level: predict() });
+  const buttons = run.all(".goal.is-current .goal-choice");
+  assert.deepEqual(buttons.map((button) => button.textContent), ["To the dock", "Straight to the vault"]);
+  assert.match(run.q(".goal.is-current .goal-question").textContent, /Where does the file go/);
+  buttons[1].click();
+  assert.deepEqual(run.seen.chosen, ["vault"]);
+});
+
+const challenge = () => ({ ...record("level"), challenge: true, card: null });
+
+test("a challenge names its goals as an end state, ticks each one met whatever the order, and marks none as current", () => {
+  const run = mission({ level: challenge(), active: { ...record("active"), step: 1, done: ["stage"] } });
+  assert.match(run.q("h3").textContent, /Challenge/);
+  const goals = run.all(".goal");
+  assert.deepEqual(goals.map((item) => item.className), ["goal", "goal", "goal is-done"]);
+  assert.equal(run.q(".goal.is-current"), null);
+  assert.equal(run.q(".goal input, .goal button"), null);
+  run.view.setStep(2, ["look", "stage"]);
+  assert.deepEqual(run.all(".goal").map((item) => item.className), ["goal is-done", "goal", "goal is-done"]);
+});
+
+test("a challenge types nothing when a command is clicked, and has no note saying it would", () => {
+  const run = mission({ level: challenge() });
+  run.all(".goal")[1].querySelector("pre code").click();
+  assert.deepEqual(run.seen.typed, []);
+  assert.equal(run.q(".tapnote"), null);
 });
