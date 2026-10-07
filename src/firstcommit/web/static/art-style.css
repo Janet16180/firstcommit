@@ -1,0 +1,260 @@
+/*
+ * The art-* scripts' colours, classes and animations, from the approved design
+ * (docs/drafts/orbit-design.html). Link it with app.css, which holds the design's :root tokens.
+ *
+ * The --art-* tokens are the sprite colours the design draws with that have no page token. They
+ * are the same in light and dark mode on purpose: Rama, the planets and the scenes live in space,
+ * which, like --void and the terminal, is always night.
+ *
+ * Every animation runs in steps, as the design's do, and stops under prefers-reduced-motion.
+ */
+
+:root {
+  --art-outline: #0A0820;
+  --art-hull: #E6E0F5;
+  --art-hull-shade: #A99FD0;
+  --art-mint: #5CF2D6;
+  --art-flame-hot: #FFE38A;
+  --art-yellow: #FFD25A;
+  --art-yellow-dk: #D9A21E;
+  --art-orange: #FF9A4A;
+  --art-orange-dk: #C46A22;
+  --art-orange-lt: #FFD2A8;
+  --art-cyan: #4FD8EA;
+  --art-cyan-dk: #2A9BB0;
+  --art-cyan-lt: #C6F6FF;
+  --art-violet: #B08CFF;
+  --art-violet-dk: #7A52D1;
+  --art-violet-lt: #E8DDFF;
+  --art-pink: #FF6F98;
+  --art-pink-dk: #C2456E;
+  --art-pink-lt: #FFC2D4;
+  --art-red: #FF6B5E;
+  --art-red-lt: #FFB3A8;
+  --art-muted: #8E86B8;
+  --art-muted-dk: #5E5683;
+  --art-ground: #231F4D;
+  --art-ground-edge: #3A3470;
+  --art-ground-pit: #1A1640;
+}
+
+.art-sprite,
+.art-scene,
+.art-planet,
+.art-field,
+.art-star,
+.art-icon {
+  display: block;
+  flex: none;
+  shape-rendering: crispEdges;
+}
+
+.art-star,
+.art-icon {
+  display: inline-block;
+  vertical-align: -0.125em;
+}
+
+.art-stars {
+  display: inline-flex;
+  gap: 0.2em;
+  line-height: 1;
+}
+
+.art-scene {
+  width: 100%;
+  height: auto;
+}
+
+.art-text {
+  font-family: var(--f-term, "VT323", ui-monospace, monospace);
+}
+
+.art-rama--header {
+  animation: art-bob 1.2s steps(2) infinite;
+}
+
+.art-rama--here {
+  animation: art-bob 1s steps(2) infinite;
+}
+
+@keyframes art-bob {
+  50% { transform: translateY(-4px); }
+}
+
+.art-eyes {
+  animation: art-eyes 4s steps(1) infinite;
+}
+
+@keyframes art-eyes {
+  0%, 93% { opacity: 1; }
+  94%, 97% { opacity: 0; }
+}
+
+.art-flick {
+  animation: art-flick 0.3s steps(2) infinite;
+}
+
+@keyframes art-flick {
+  50% { opacity: 0.35; }
+}
+
+.art-tw {
+  animation: art-tw 2.2s steps(2) infinite;
+}
+
+.art-dust .art-tw {
+  animation-duration: 2.4s;
+}
+
+@keyframes art-tw {
+  50% { opacity: 0.08; }
+}
+
+.art-dust {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.art-field {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* In the scenes Rama bobs one canvas pixel. */
+.art-bob {
+  animation: art-bob-small 1.2s steps(2) infinite;
+}
+
+@keyframes art-bob-small {
+  50% { transform: translateY(-1px); }
+}
+
+.art-pop {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: art-pop 0.45s steps(3) both;
+}
+
+@keyframes art-pop {
+  from { transform: scale(0); }
+  60% { transform: scale(1.25); }
+}
+
+.art-fade {
+  animation: art-fade 0.6s steps(4) both;
+}
+
+@keyframes art-fade {
+  from { opacity: 0; }
+}
+
+.art-rise {
+  transform-box: fill-box;
+  transform-origin: bottom;
+  animation: art-rise 0.8s steps(6) both;
+}
+
+@keyframes art-rise {
+  from { transform: scaleY(0); }
+}
+
+.art-wave {
+  animation: art-wave 0.5s steps(2) infinite;
+}
+
+@keyframes art-wave {
+  50% { transform: translateY(1px); }
+}
+
+.art-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: art-ring 1.4s steps(5) infinite;
+}
+
+@keyframes art-ring {
+  from { transform: scale(0.5); opacity: 1; }
+  to { transform: scale(2); opacity: 0; }
+}
+
+.art-hop-a {
+  animation: art-hop-a 4.5s steps(18) infinite;
+}
+
+.art-hop-b {
+  animation: art-hop-b 4.5s steps(18) 0.6s infinite;
+}
+
+@keyframes art-hop-a {
+  0%, 12% { transform: translate(0, 0); }
+  40% { transform: translate(42px, -22px); }
+  62%, 100% { transform: translate(84px, 2px); }
+}
+
+@keyframes art-hop-b {
+  0%, 12% { transform: translate(0, 0); }
+  40% { transform: translate(36px, -24px); }
+  62%, 100% { transform: translate(72px, 2px); }
+}
+
+.art-shake {
+  animation: art-shake 1.5s steps(1) 1.8s infinite;
+}
+
+@keyframes art-shake {
+  0%, 70%, 100% { transform: none; }
+  76% { transform: translateX(-1px); }
+  84% { transform: translateX(1px); }
+  92% { transform: translateX(-1px); }
+}
+
+.art-alarm {
+  animation: art-alarm 0.9s steps(2) infinite;
+}
+
+@keyframes art-alarm {
+  50% { opacity: 0; }
+}
+
+.art-sparks {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.art-spark {
+  --reach: calc(140px + var(--far) * 55vmax);
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: var(--size);
+  height: var(--size);
+  margin: calc(var(--size) / -2) 0 0 calc(var(--size) / -2);
+  animation: art-spark 1.1s steps(10) both;
+}
+
+@keyframes art-spark {
+  from { transform: translate(0, 0); opacity: 1; }
+  to { transform: translate(calc(var(--dx) * var(--reach)), calc(var(--dy) * var(--reach))); opacity: 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .art-rama,
+  .art-rama *,
+  .art-scene *,
+  .art-field *,
+  .art-dust *,
+  .art-star {
+    animation: none !important;
+  }
+
+  .art-sparks {
+    display: none;
+  }
+}
