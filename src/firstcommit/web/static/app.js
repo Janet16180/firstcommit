@@ -4,10 +4,12 @@
  * The page's composition root: it builds the API client, the views and the terminal, routes
  * the address to a view, keeps the header and the view preferences (light or dark, sound), and
  * shows what goes wrong. It holds no game rule and no game state beyond the last dashboard the
- * server sent (refreshed on every view change). Loads last; defines no global.
+ * server sent (refreshed on every view change). The map and the level screen have their own
+ * heads, so the header bar shows only over the cards and the notes; the look and sound buttons
+ * also sit in the map's bar. Loads last; defines no global.
  */
 
-/* global createClient, createTerminal, createGameApi, Dom, Route, Sound, Celebrate, Dialog, TimeTheme, TimeMotion, TimePlaces, TimeShare, TimeGuide, Progress, HomeView, LevelPage, CardsView, NotesView */
+/* global createClient, createTerminal, createGameApi, Dom, Route, Sound, Dialog, ArtSky, Progress, StarMap, LevelScreen, CardsView, NotesView */
 
 (function () {
   const { el } = Dom;
@@ -15,24 +17,50 @@
   const THEMES = ["auto", "light", "dark"];
   const TOAST_MS = 9000;
   const MONO = "\"Cascadia Mono\", \"DejaVu Sans Mono\", \"Liberation Mono\", Menlo, Consolas, monospace";
+  /* The design's terminal is always night, in both looks. termlab draws at 14 px, too small for
+     the design's VT323, so the terminal keeps a plain monospace font. */
+  const CRT = {
+    background: "#120F2C",
+    foreground: "#FFE6B0",
+    cursor: "#FFD25A",
+    cursorAccent: "#120F2C",
+    selectionBackground: "#3A3470",
+    black: "#1B1740",
+    red: "#FF8A78",
+    green: "#9EF0A0",
+    yellow: "#FFD25A",
+    blue: "#8ADBFF",
+    magenta: "#FF6F98",
+    cyan: "#4FD8EA",
+    white: "#F2EAD3",
+    brightBlack: "#9F95C8",
+    brightRed: "#FF8A78",
+    brightGreen: "#9EF0A0",
+    brightYellow: "#FFE6B0",
+    brightBlue: "#8ADBFF",
+    brightMagenta: "#FF6F98",
+    brightCyan: "#4FD8EA",
+    brightWhite: "#FFFFFF",
+  };
   const TERMINAL_LOOKS = {
-    light: { fontFamily: MONO, theme: TimeTheme.terminal.light },
-    dark: { fontFamily: MONO, theme: TimeTheme.terminal.dark },
+    light: { fontFamily: MONO, theme: CRT },
+    dark: { fontFamily: MONO, theme: CRT },
   };
   const VIEWS = {
-    home: (ctx) => HomeView.create(ctx),
-    level: (ctx, route) => LevelPage.create(ctx, route.id),
+    home: (ctx) => StarMap.create(ctx),
+    level: (ctx, route) => LevelScreen.create(ctx, route.id),
     cards: (ctx, route) => CardsView.create(ctx, route.chapter),
     notes: (ctx, route) => NotesView.create(ctx, route.chapter),
   };
-  const TITLES = { home: "Map", level: "Level", cards: "Cards", notes: "Notes" };
+  const TITLES = { home: "Map", level: "Mission", cards: "Cards", notes: "Notes" };
+  const OWN_HEAD = ["home", "level"];
+  const THEME_LABELS = { auto: "Look: system", light: "Look: light", dark: "Look: dark" };
 
   /* client.js removes the fragment when it carries the access key; keep the address part first. */
   const firstAddress = location.hash.split("&")[0];
   const app = { status: null, view: null, turn: 0, terminal: null, terminalFor: null, locked: false };
   const client = createClient({ header: "X-FirstCommit-Token", storageKey: "firstcommit.token", command: "firstcommit", onLocked: () => showLocked() });
   const game = createGameApi(client.api);
-  const mapGuide = TimeGuide.create({ figures: game.guide });
   const main = document.getElementById("app");
   const darkScheme = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -49,8 +77,7 @@
 
   function applyTheme() {
     document.documentElement.dataset.theme = shownTheme();
-    const button = document.querySelector(".pref-theme");
-    button.textContent = { auto: "Look: system", light: "Look: light", dark: "Look: dark" }[themeChoice];
+    for (const button of document.querySelectorAll(".pref-theme")) button.textContent = THEME_LABELS[themeChoice];
     if (app.terminal) app.terminal.setLook(shownTheme(), "Terminal");
   }
 
@@ -65,10 +92,22 @@
   }
 
   function renderSound() {
-    const button = document.querySelector(".pref-sound");
-    button.textContent = Sound.isEnabled() ? "Sound: on" : "Sound: off";
-    button.setAttribute("aria-pressed", String(Sound.isEnabled()));
+    for (const button of document.querySelectorAll(".pref-sound")) {
+      button.textContent = Sound.isEnabled() ? "Sound: on" : "Sound: off";
+      button.setAttribute("aria-pressed", String(Sound.isEnabled()));
+    }
   }
+
+  function toggleSound() {
+    Sound.setEnabled(!Sound.isEnabled());
+    renderSound();
+  }
+
+  /* New look and sound buttons, for a view's own bar. */
+  const prefButtons = () => [
+    el("button", { type: "button", class: "btn btn-quiet pref pref-theme", title: "Light, dark, or as your system is set", onclick: cycleTheme }, THEME_LABELS[themeChoice]),
+    el("button", { type: "button", class: "btn btn-quiet pref pref-sound", title: "Soft sound effects, made in your browser", "aria-pressed": String(Sound.isEnabled()), onclick: toggleSound }, Sound.isEnabled() ? "Sound: on" : "Sound: off"),
+  ];
 
   function renderHeader() {
     const { status } = app;
@@ -190,26 +229,15 @@
     return app.status;
   }
 
-  async function celebrate(options) {
-    Sound.play("celebrate");
-    if (options.rankBefore !== options.rankAfter) setTimeout(() => Sound.play("rankup"), 1500);
-    await Celebrate.show(options);
-  }
-
   const ctx = {
     game,
     status: () => app.status,
     refresh,
     reload: () => show(Route.parse(location.hash)),
-    celebrate,
     sound: Sound,
     timers: window,
     page: document,
-    theme: TimeTheme.withGuide(mapGuide),
-    panelWords: TimeTheme.panel,
-    playMap: TimeMotion.playMap,
-    places: TimePlaces.withTheme(TimeTheme.withGuide(mapGuide, TimeTheme.live)),
-    share: TimeShare,
+    prefButtons,
     reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     terminal,
   };
@@ -233,6 +261,7 @@
     if (turn !== app.turn) return;
     app.view = VIEWS[route.view](ctx, route);
     main.replaceChildren(app.view.element);
+    document.querySelector(".topbar").hidden = OWN_HEAD.includes(route.view);
     document.title = `${TITLES[route.view]} · First Commit`;
     for (const link of document.querySelectorAll(".nav a")) link.toggleAttribute("aria-current", link.dataset.view === route.view);
     main.focus({ preventScroll: true });
@@ -245,14 +274,12 @@
   }
 
   function boot() {
+    document.body.prepend(ArtSky.dust("first-commit"));
     applyTheme();
     renderSound();
     darkScheme.addEventListener("change", applyTheme);
     document.querySelector(".pref-theme").addEventListener("click", cycleTheme);
-    document.querySelector(".pref-sound").addEventListener("click", () => {
-      Sound.setEnabled(!Sound.isEnabled());
-      renderSound();
-    });
+    document.querySelector(".pref-sound").addEventListener("click", toggleSound);
     for (const type of ["pointerdown", "keydown"]) document.addEventListener(type, Sound.unlock);
     document.addEventListener("keydown", releaseTerminalFocus, true);
     document.addEventListener("keydown", (event) => app.view && app.view.keydown && app.view.keydown(event));
