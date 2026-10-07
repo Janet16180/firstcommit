@@ -1067,7 +1067,13 @@
    }
   ],
   "teammate_events": [],
-  "buttons": {}
+  "buttons": {},
+  "commands": [
+   {
+    "line": "git add README.md",
+    "status": 0
+   }
+  ]
  },
  "cards": [
   {
@@ -3112,7 +3118,8 @@
       "off": ""
      }
     ]
-   }
+   },
+   "commands": []
   },
   "observation": {
    "level": "basics-sample",
@@ -3499,7 +3506,8 @@
       "off": ""
      }
     ]
-   }
+   },
+   "commands": []
   },
   "explanation": null,
   "fix": null,

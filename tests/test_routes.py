@@ -443,6 +443,11 @@ def test_the_terminal_opens_in_the_folder_the_game_names(monkeypatch: pytest.Mon
     assert routes.TERMINAL.start_folder() == tmp_path
 
 
+def test_the_terminal_runs_the_games_shell_so_typed_commands_are_logged(game_home: Path) -> None:
+    assert routes.TERMINAL.shell is not None
+    assert list(routes.TERMINAL.shell()) == game.shell_command()
+
+
 def test_serving_on_a_busy_port_fails_with_a_hint(site: Site, capsys: pytest.CaptureFixture[str]) -> None:
     port = int(site.url.rsplit(":", 1)[1])
     assert routes.serve(port) == 1

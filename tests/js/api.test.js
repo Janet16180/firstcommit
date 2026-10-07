@@ -121,6 +121,20 @@ test("a reply missing a field is refused with the route and the field named", as
   await assert.rejects(game.status(), /\/api\/status.*rank\.next_at/);
 });
 
+test("an observation tells the lines typed in the game's terminal and how each ended", async () => {
+  const { game } = gameApi({ "/api/observe": record("observation") });
+  assert.deepEqual((await game.observe()).commands, [{ line: "git add README.md", status: 0 }]);
+});
+
+test("an observation without the typed lines, or with a line missing its status, is refused", async () => {
+  const missing = record("observation");
+  delete missing.commands;
+  await assert.rejects(gameApi({ "/api/observe": missing }).game.observe(), /\/api\/observe\.commands should be a list/);
+  const noStatus = record("observation");
+  delete noStatus.commands[0].status;
+  await assert.rejects(gameApi({ "/api/observe": noStatus }).game.observe(), /commands\[0\]\.status should be/);
+});
+
 test("a field of the wrong type is refused", async () => {
   const observation = record("observation");
   observation.project.commits[1].parents = "abc";

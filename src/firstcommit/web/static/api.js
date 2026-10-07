@@ -133,7 +133,7 @@ const createGameApi = (function () {
     mapping(list(record({ id: BUTTON, label: text, line: text, off: text })))(value, where);
     for (const person of Object.keys(value)) WHO(person, `${where}'s key`);
   };
-  const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), teammate: nullable(SNAPSHOT), events: EVENTS, teammate_events: EVENTS, buttons: BARS });
+  const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), teammate: nullable(SNAPSHOT), events: EVENTS, teammate_events: EVENTS, buttons: BARS, commands: list(record({ line: text, status: number })) });
   const PRESSED = record({
     press: record({ person: WHO, button: BUTTON, command: text, status: number, output: text }),
     before: OBSERVATION,
