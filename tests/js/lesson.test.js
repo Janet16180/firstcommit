@@ -47,6 +47,19 @@ test("the figure shows the repository before the commands, then after them with 
   assert.equal(view.all(".map-commit.is-new").length, 1);
 });
 
+test("a slide's More folds closed under its text, and a slide without one shows none", () => {
+  const lesson = record("lesson");
+  lesson.slides[0].more = [{ kind: "para", spans: [{ text: "Git keeps its records in .git.", code: false }] }];
+  const view = player({ lesson });
+  const more = view.q(".lesson-text details.more");
+  assert.equal(more.open, false);
+  assert.equal(more.querySelector("summary").textContent, "More");
+  assert.match(more.textContent, /records in \.git/);
+  view.q(".lesson-next").click();
+  view.q(".lesson-next").click();
+  assert.equal(view.q(".lesson-text details"), null);
+});
+
 test("Next first finishes the slide, then moves on", () => {
   const view = player();
   view.q(".lesson-next").click();

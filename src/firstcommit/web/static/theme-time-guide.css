@@ -161,18 +161,6 @@
   font-size: 1.02rem;
 }
 
-.tt-guide-more summary {
-  width: fit-content;
-  color: var(--link);
-  font-size: 0.88rem;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.tt-guide-more[open] summary {
-  margin-bottom: 0.35rem;
-}
-
 .tt-guide-picture {
   margin: 0 0 0.35rem;
   color: var(--muted);

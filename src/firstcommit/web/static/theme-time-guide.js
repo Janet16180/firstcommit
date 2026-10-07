@@ -240,7 +240,7 @@ const TimeGuide = (function () {
       el("h3", {}, part.mark && TimeTheme.mark(part.mark), part.title),
       slot,
       el("p", { class: "tt-guide-caption" }, inline(part.caption)),
-      el("details", { class: "tt-guide-more" },
+      el("details", { class: "more" },
         el("summary", {}, "More"),
         part.picture && el("p", { class: "tt-guide-picture" }, inline(part.picture)),
         el("ul", {}, part.points.map((point) => el("li", {}, inline(point)))),

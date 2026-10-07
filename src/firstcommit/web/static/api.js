@@ -97,7 +97,7 @@ const createGameApi = (function () {
     briefing: BLOCKS,
     question: BLOCKS,
     placeholder: text,
-    steps: list(record({ id: text, kind: oneOf("answer", "watch", "read"), text: BLOCKS, command: text, question: BLOCKS, placeholder: text })),
+    steps: list(record({ id: text, kind: oneOf("answer", "watch", "read"), text: BLOCKS, command: text, question: BLOCKS, placeholder: text, more: BLOCKS })),
     hints_total: number,
     has_lesson: flag,
     hints: list(BLOCKS),
@@ -117,6 +117,7 @@ const createGameApi = (function () {
       map: SNAPSHOT,
       objects: OBJECTS,
       events: EVENTS,
+      more: BLOCKS,
     })),
   });
   const GUIDE = mapping(record({ before: SNAPSHOT, after: SNAPSHOT, transcript: TRANSCRIPT }));

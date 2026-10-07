@@ -128,7 +128,8 @@
     ],
     "command": "",
     "question": [],
-    "placeholder": ""
+    "placeholder": "",
+    "more": []
    },
    {
     "id": "status",
@@ -160,7 +161,8 @@
       ]
      }
     ],
-    "placeholder": "a file name"
+    "placeholder": "a file name",
+    "more": []
    },
    {
     "id": "stage",
@@ -186,7 +188,8 @@
     ],
     "command": "git add notes.txt",
     "question": [],
-    "placeholder": ""
+    "placeholder": "",
+    "more": []
    }
   ],
   "hints_total": 3,
@@ -291,7 +294,8 @@
        }
       ]
      }
-    ]
+    ],
+    "more": []
    },
    {
     "id": "areas",
@@ -372,7 +376,8 @@
       "size": 6
      }
     ],
-    "events": []
+    "events": [],
+    "more": []
    },
    {
     "id": "commit",
@@ -498,7 +503,8 @@
        }
       ]
      }
-    ]
+    ],
+    "more": []
    },
    {
     "id": "objects",
@@ -576,7 +582,8 @@
       "size": 172
      }
     ],
-    "events": []
+    "events": [],
+    "more": []
    },
    {
     "id": "recap",
@@ -654,7 +661,8 @@
       "size": 172
      }
     ],
-    "events": []
+    "events": [],
+    "more": []
    }
   ]
  },

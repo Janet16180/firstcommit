@@ -97,6 +97,16 @@ test("a lesson slide must tell what its commands changed, as the feed does", asy
   await assert.rejects(game.lesson("x"), /slides\[0\]\.events should be a list/);
 });
 
+test("a lesson slide and a quest step must carry their More as text blocks", async () => {
+  const lesson = record("lesson");
+  delete lesson.slides[1].more;
+  const level = record("level");
+  level.steps[0].more = "plain";
+  const { game } = gameApi({ ...REPLIES, "/api/lesson": lesson, "/api/level": level });
+  await assert.rejects(game.lesson("x"), /slides\[1\]\.more should be a list/);
+  await assert.rejects(game.level("x"), /steps\[0\]\.more should be a list/);
+});
+
 test("an unsolved check and an empty observation are accepted", async () => {
   const observation = { ...record("observation"), github: null, events: [], project: record("snapshots").empty };
   const { game } = gameApi({ "/api/check": record("check_unsolved"), "/api/observe": observation });

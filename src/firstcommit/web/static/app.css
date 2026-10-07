@@ -375,6 +375,19 @@ main:focus,
   margin-top: 0.25rem;
 }
 
+/* "More": text folded under a text, closed until asked for (Markup.more, the map guide). */
+.more summary {
+  width: fit-content;
+  color: var(--link);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.more[open] summary {
+  margin-bottom: 0.35rem;
+}
+
 .prose code,
 .verdict code {
   padding: 0.08em 0.35em;

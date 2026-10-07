@@ -133,7 +133,7 @@ const LessonPlayer = (function () {
       shown = complete ? lines().length : 0;
       count.textContent = `Lesson · ${index + 1} of ${slides.length}`;
       title.textContent = slide().title;
-      text.replaceChildren(...Markup.render(slide().text));
+      text.replaceChildren(...Markup.render(slide().text), Markup.more(slide().more) || "");
       dots.replaceChildren(...slides.map((_, dot) => el("li", { class: dot === index ? "is-on" : dot < index ? "is-done" : null })));
       drawFigure();
       drawControls();

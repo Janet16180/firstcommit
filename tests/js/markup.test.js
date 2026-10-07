@@ -19,6 +19,12 @@ test("a paragraph shows its spans, with code spans as code", () => {
   assert.equal(rendered(blocks), "<p>Open <code>README.md</code> now.</p>");
 });
 
+test("blocks fold under a closed More, and no blocks fold nothing", () => {
+  const blocks = [{ kind: "para", spans: [span("Git keeps it in "), span(".git/index", true), span(".")] }];
+  assert.equal(html(Markup.more(blocks)), "<details class=\"more\"><summary>More</summary><p>Git keeps it in <code>.git/index</code>.</p></details>");
+  assert.equal(Markup.more([]), null);
+});
+
 test("a command of several words may break only between its words, never inside one", () => {
   const blocks = [{ kind: "para", spans: [span("Run "), span("git config --global user.name", true), span(".")] }];
   assert.equal(rendered(blocks), '<p>Run <code class="words"><span>git</span> <span>config</span> <span>--global</span> <span>user.name</span></code>.</p>');

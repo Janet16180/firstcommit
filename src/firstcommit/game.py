@@ -121,6 +121,7 @@ class StepView(TypedDict):
     command: str
     question: list[Block]
     placeholder: str
+    more: list[Block]
 
 
 class LevelView(TypedDict):
@@ -168,6 +169,7 @@ class SlideView(TypedDict):
     map: Snapshot
     objects: list[ObjectInfo]
     events: list[EventView]
+    more: list[Block]
 
 
 class LessonView(TypedDict):
@@ -430,6 +432,7 @@ def lesson(level_id: str) -> LessonView:
             "map": frame["map"],
             "objects": frame["objects"],
             "events": _event_views(changes.describe(before, frame["map"])),
+            "more": markup.parse(slide.more),
         }
         for slide, frame, before in zip(entry.lesson, frames, befores, strict=True)
     ]
@@ -1242,6 +1245,7 @@ def _step_view(step: kit.Step, state: kit.State) -> StepView:
         "command": _fill(step.command, state, _shell_word),
         "question": _blocks(question, state),
         "placeholder": _fill(placeholder, state),
+        "more": _blocks(step.more, state),
     }
 
 

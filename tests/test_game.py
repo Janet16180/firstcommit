@@ -416,6 +416,20 @@ def test_each_slide_tells_the_change_its_commands_made_as_the_live_feed_would(sa
     assert shown[1]["events"][0]["text"] == markup.parse("`a.txt` was staged as a new file.")
 
 
+def test_a_slide_and_a_step_carry_their_more_parsed_like_their_text(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    slide = kit.Slide(id="init", title="Init", text="x", run="git init -q", more="Why: `git init` makes `.git`.")
+    step = kit.ReadStep(id="look", text="Look.", more="The staging area is the file `.git/index`.")
+    level = dataclasses.replace(sample_level, lesson=(slide,), quest=(step,))
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    assert game.lesson(level.id)["slides"][0]["more"] == markup.parse("Why: `git init` makes `.git`.")
+    assert game.level(level.id)["steps"][0]["more"] == markup.parse("The staging area is the file `.git/index`.")
+
+
+def test_a_slide_or_step_without_more_has_nothing_to_fold(sample_level: runner.Level) -> None:
+    assert [slide["more"] for slide in game.lesson(sample_level.id)["slides"]] == [[], []]
+    assert all(step["more"] == [] for step in game.level(sample_level.id)["steps"])
+
+
 def test_a_lesson_shows_the_real_commands_their_output_and_the_repository_they_leave(sample_level: runner.Level) -> None:
     first, second = game.lesson(sample_level.id)["slides"]
     assert first["transcript"] == [{"command": "git init -q demo", "output": ""}]

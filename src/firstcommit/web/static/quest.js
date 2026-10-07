@@ -67,7 +67,7 @@ const Quest = (function () {
       };
       return el("li", { class: "step is-current" },
         el("h3", { tabindex: "-1" }, `Step ${index + 1}`),
-        el("div", { class: "prose" }, Markup.render(item.text)),
+        el("div", { class: "prose" }, Markup.render(item.text), Markup.more(item.more)),
         item.command && commandLine(item.command, onType),
         actions[item.kind](),
         feedbackLine,
