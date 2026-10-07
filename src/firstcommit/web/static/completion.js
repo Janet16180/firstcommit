@@ -8,6 +8,8 @@
  *
  * band({title, subtitle, stars, timers, reducedMotion}) plays the band and resolves when it has
  *   gone (after BAND_MS, or at once on a click); with reduced motion it shows nothing.
+ * lost({message, onRetry}) builds the failure that takes the dock's place when the player's work
+ *   is gone for good: the game's message, Retry and Map; no stars, no lesson.
  * dock({title, stars, lesson, reward, card, challenge, next, onRetry}) builds the dock (gold for a
  *   challenge): `lesson` is the
  *   game's blocks or null, `reward` a line on what this play paid or null, `card` the new command card
@@ -57,5 +59,19 @@ const Completion = (function () {
     );
   }
 
-  return { band, dock, BAND_MS };
+  function lost({ message, onRetry }) {
+    return el("div", { class: "dock px is-lost", role: "alert" },
+      el("div", { class: "dock-stars" }),
+      el("div", { class: "dock-info" },
+        el("b", { class: "dock-title" }, "This work is lost"),
+        el("div", { class: "dock-lesson" }, Markup.render(message)),
+      ),
+      el("div", { class: "dock-actions" },
+        el("button", { type: "button", class: "btn btn-primary", onclick: () => onRetry() }, "Retry"),
+        el("a", { class: "btn", href: "#/" }, "Map"),
+      ),
+    );
+  }
+
+  return { band, dock, lost, BAND_MS };
 })();

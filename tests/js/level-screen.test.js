@@ -417,3 +417,20 @@ test("a solved challenge docks in gold", async () => {
   assert.match(run.q(".dock-title").textContent, /^Challenge complete/);
   run.view.dispose();
 });
+
+test("work lost for good stops the level and shows the failure with Retry, even from an automatic check", async () => {
+  const lost = { ...record("check_unsolved"), lost: true, message: para("The edit is gone for good.") };
+  const run = screen({ active: { ...record("active"), step: 3, auto_check: true }, replies: { "/api/check": lost } });
+  await settle();
+  await settle();
+  assert.ok(run.q(".dock.is-lost"));
+  assert.equal(run.q(".dock.is-lost .art-stars"), null);
+  assert.ok(run.seen.sounds.includes("wrong"));
+  const calls = run.server.calls.length;
+  await run.clock.advance(10000);
+  assert.equal(run.server.calls.length, calls);
+  run.q(".dock.is-lost .btn-primary").click();
+  await settle();
+  assert.equal(run.routes().at(-1), "/api/start");
+  run.view.dispose();
+});

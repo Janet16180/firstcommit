@@ -141,7 +141,11 @@ const LevelScreen = (function () {
 
   /* A check's result. An automatic check that does not solve says nothing: the player did not ask. */
   function checked(screen, result, auto = false) {
-    if (result.solved) {
+    if (result.lost) {
+      if (screen.finished) return;
+      stop(screen);
+      lostWork(screen, result.message);
+    } else if (result.solved) {
       if (screen.finished) return;
       stop(screen);
       won(screen, { debrief: result.debrief, stars: result.stars, card: result.new_card, payout: result.payout });
@@ -157,6 +161,15 @@ const LevelScreen = (function () {
     screen.ui.comms.say(SAY.hint, "info");
     screen.ctx.sound.play("hint");
     return recount(screen);
+  }
+
+  /* The player's work is gone for good: the game says why, in the dock's place, with Retry. */
+  function lostWork(screen, message) {
+    screen.ctx.sound.play("wrong");
+    const panel = Completion.lost({ message, onRetry: () => restart(screen) });
+    screen.element.append(panel);
+    screen.element.classList.add("is-docked");
+    screen.element.style.setProperty("--dock-h", `${panel.offsetHeight || 120}px`);
   }
 
   /* What a solved play paid, in a line for the dock. */

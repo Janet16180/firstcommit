@@ -83,3 +83,16 @@ test("without a reward line or a new card the dock leaves them out", () => {
 test("a challenge's dock is the gold one", () => {
   assert.ok(Completion.dock({ title: "Done", stars: 3, lesson: null, challenge: true, next: null, onRetry: () => {} }).classList.contains("is-challenge"));
 });
+
+test("lost work takes the dock's place with the game's message, Retry and Map, and no stars", () => {
+  let retried = 0;
+  const panel = Completion.lost({ message: para("The edit was never saved, so Git cannot bring it back."), onRetry: () => (retried += 1) });
+  assert.ok(panel.classList.contains("is-lost"));
+  assert.equal(panel.getAttribute("role"), "alert");
+  assert.match(panel.querySelector(".dock-lesson").textContent, /never saved/);
+  assert.equal(panel.querySelector(".art-stars"), null);
+  const actions = [...panel.querySelectorAll(".dock-actions .btn")];
+  assert.deepEqual(actions.map((action) => action.textContent), ["Retry", "Map"]);
+  actions[0].click();
+  assert.equal(retried, 1);
+});

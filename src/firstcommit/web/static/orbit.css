@@ -1320,6 +1320,11 @@ pre.code code {
   from { transform: translate(-50%, 28px); opacity: 0; }
 }
 
+/* Lost work: the dock's place, as a failure. */
+.dock.is-lost {
+  border-left-color: var(--s-new);
+}
+
 /* A solved challenge: the dock in gold. */
 .dock.is-challenge {
   background: color-mix(in srgb, var(--gold) 22%, var(--panel));
