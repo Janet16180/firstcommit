@@ -148,7 +148,10 @@ The finished ones can be deleted once the user agrees.
   commit" at 1280; `SERVE_FROM=<checkout>` picks the code to serve) and
   `.scratch/visual-start/run_start.sh <out-dir>` (chapter 1, serves `.scratch/wt/start`). Both
   start a server on a throwaway home, reset the prompt and refuse leaky shots.
-- Reviews and fact-checks so far: `.scratch/review/`.
+- Reviews and fact-checks so far: `.scratch/review/`; the scripts they cite as "in my job
+  folder" are saved in `.scratch/factcheck/` (see its README).
+- A newer copy of the four-places demo page sits untracked in
+  `.scratch/wt/theme-time/demo/places-demo.html`.
 - Revert checks (break the code on purpose to see a test fail): run with
   `PYTHONDONTWRITEBYTECODE=1`, or a stale `.pyc` runs the wrong code.
 
