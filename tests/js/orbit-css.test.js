@@ -55,3 +55,9 @@ test("the motions stop for players who ask for reduced motion", () => {
 test("ligatures are off on every element, so Pixelify Sans never joins fi or fl into one glyph", () => {
   assert.match(css, /\*,\s*\*::before,\s*\*::after\s*{\s*font-variant-ligatures:\s*none\s*!important;\s*}/);
 });
+
+test("the terminal's column reaches the bottom of the window, with a minimum height, and its terminal fills it", () => {
+  assert.match(css, /\.termcol {\s*height: max\(var\(--term-min\), calc\(100vh - var\(--term-top/);
+  assert.match(tokens(css, ":root")["--term-min"], /^\d+px$/);
+  assert.match(css, /\.termcol \.term-host,[^{]*{[^}]*flex: 1;[^}]*height: auto !important;/);
+});

@@ -44,6 +44,7 @@
   --f-px: 'Pixelify Sans', 'Courier New', monospace;
   --f-body: 'Atkinson Hyperlegible', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --f-term: 'VT323', ui-monospace, Menlo, Consolas, monospace;
+  --term-min: 420px;
 
   --sans: var(--f-body);
   --surface: var(--panel);
@@ -989,17 +990,33 @@ code {
   line-height: 1.45;
 }
 
+/* The terminal fills its column down to the bottom of the window (--term-top is the column's
+   top on the page, set by level-screen.js), never shorter than a usable minimum. */
+.termcol {
+  height: max(var(--term-min), calc(100vh - var(--term-top, 380px) - 20px));
+}
+
+.level-screen.is-docked .termcol {
+  height: max(var(--term-min), calc(100vh - var(--term-top, 380px) - var(--dock-h, 120px) - 32px));
+}
+
 .termcol .term-dock {
+  flex: 1;
+  min-height: 0;
   display: flex;
   flex-direction: column;
 }
 
-.termcol .term-grip::before {
-  border-radius: 0;
-  background: var(--line);
+/* The column sizes the terminal, so termlab's drag-to-resize grip has nothing to do here. */
+.termcol .term-grip {
+  display: none;
 }
 
 .termcol .term-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   padding: 0;
   background: var(--crt);
   color: var(--crt-ink);
@@ -1045,8 +1062,12 @@ code {
   font: 1rem var(--f-term);
 }
 
+/* termlab sets the host's height inline; the column's flex height must win over it. */
 .termcol .term-host,
 :root[data-theme="dark"] .termcol .term-host {
+  flex: 1;
+  min-height: 0;
+  height: auto !important;
   padding: 8px 0 0 12px;
   background: var(--crt);
   border-radius: 0;

@@ -251,3 +251,10 @@ test("when the server does not answer Rama says so, and the page keeps trying", 
   assert.doesNotMatch(run.q(".comms").textContent, /not answering/);
   run.view.dispose();
 });
+
+test("the page tells the stylesheet where the terminal's column starts, so the terminal reaches the window's bottom", async () => {
+  const run = screen();
+  await settle();
+  assert.equal(run.view.element.style["--term-top"], "0px");
+  run.view.dispose();
+});

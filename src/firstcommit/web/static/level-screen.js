@@ -161,12 +161,20 @@ const LevelScreen = (function () {
     screen.ctx.reload();
   }
 
+  /* Tells the stylesheet where the terminal's column starts on the page, so the terminal can
+     reach the bottom of the window; the zones above it grow as the repository fills. */
+  function measureTerminal(screen) {
+    const top = screen.ui.termcol.getBoundingClientRect().top + (window.scrollY || 0);
+    screen.element.style.setProperty("--term-top", `${Math.round(top)}px`);
+  }
+
   async function tick(screen) {
     const { game } = screen.ctx;
     try {
       const plan = Polling.plan(screen.level.steps, screen.state);
       const observation = await game.observe();
       screen.ui.zones.update(observation);
+      measureTerminal(screen);
       /* ORBIT-GAP(reactions): Rama's reactions to the typed lines (observation.reactions) go on the comms line. */
       if (screen.offline) screen.ui.comms.say(SAY.back, "info");
       screen.offline = false;
@@ -199,6 +207,7 @@ const LevelScreen = (function () {
     ui.comms.say(SAY.start);
     ctx.terminal.attach(ui.termcol);
     screen.attached = true;
+    measureTerminal(screen);
     screen.poller = Polling.start({ tick: () => tick(screen), timers: ctx.timers, page: ctx.page });
   }
 
