@@ -823,7 +823,7 @@ def test_an_automatic_check_never_ends_a_level_before_its_quest_is_done(sample_l
     result = game.check(None, auto=True)
     assert (result["solved"], result["payout"], result["debrief"]) == (False, None, None)
     assert "step 2 of 3" in text_of(result["message"])
-    assert (calls, active_record()["attempts"], save.load_progress()["xp"]) == ([], 0, 0)
+    assert (calls, active_record()["attempts"], save.load_progress()["xp"]) == ([None], 0, 0)
 
 
 def test_once_the_quest_is_done_the_automatic_check_ends_the_level(sample_level: runner.Level, game_home: Path) -> None:
@@ -1843,3 +1843,45 @@ def test_goals_met_that_do_not_match_the_step_are_a_damaged_save(sample_level: r
         save.write_active({**active_record(), "step": 1, "done": done})
         with pytest.raises(game.SaveError, match="done"):
             game.quest_step(None)
+
+
+def lost_for_good(lab: kit.Lab, state: kit.State, answer: str | None, typed: kit.Typed = ()) -> kit.Verdict:
+    """
+    Say the work is gone once ``hello.txt`` is deleted, as a level reads it from the facts setup saved.
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The lab.
+    state : kit.State
+        The level state.
+    answer : str | None
+        Ignored.
+    typed : kit.Typed
+        Ignored.
+
+    Returns
+    -------
+    kit.Verdict
+        Lost when the file is gone, else not solved.
+    """
+    gone = not (lab.project / "hello.txt").exists()
+    return kit.Verdict(False, "Your hello is gone for good." if gone else "Keep going.", lost=gone)
+
+
+def test_a_check_says_when_the_work_is_lost_for_good_so_the_page_offers_retry(sample_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    level = dataclasses.replace(sample_level, check=lost_for_good)
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    game.start(level.id)
+    assert game.check(None, auto=False)["lost"] is False
+    (lab_project(game_home) / "hello.txt").unlink()
+    asked = game.check(None, auto=False)
+    assert (asked["solved"], asked["lost"], asked["payout"], asked["message"]) == (False, True, None, markup.parse("Your hello is gone for good."))
+    polled = game.check(None, auto=True)
+    assert (polled["solved"], polled["lost"], polled["message"]) == (False, True, markup.parse("Your hello is gone for good."))
+
+
+def test_before_the_quest_is_done_an_automatic_check_still_points_to_the_next_step_when_nothing_is_lost(sample_level: runner.Level, game_home: Path) -> None:
+    game.start(sample_level.id)
+    polled = game.check(None, auto=True)
+    assert (polled["lost"], polled["message"]) == (False, markup.parse(game.QUEST_FIRST.format(step=1, steps=3)))

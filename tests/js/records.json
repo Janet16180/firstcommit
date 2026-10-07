@@ -819,7 +819,8 @@
   "payout": null,
   "debrief": null,
   "stars": 0,
-  "new_card": null
+  "new_card": null,
+  "lost": false
  },
  "check_solved": {
   "solved": true,
@@ -880,7 +881,8 @@
      ]
     }
    ]
-  }
+  },
+  "lost": false
  },
  "hint": {
   "hint": [

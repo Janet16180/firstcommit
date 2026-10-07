@@ -98,11 +98,21 @@ State = dict[str, Any]
 
 @dataclass(frozen=True)
 class Verdict:
-    """The result of a check: whether it passed, and what to tell the player."""
+    """
+    The result of a check: whether it passed, and what to tell the player.
+
+    ``lost`` says the player's work is gone for good (read from facts `setup` saved), so the page
+    offers to start the level again; a solved verdict is never lost.
+    """
 
     solved: bool
     message: str
+    lost: bool = False
 
+    def __post_init__(self) -> None:
+        """Refuse a verdict that is both solved and lost: a bug in the level."""
+        if self.solved and self.lost:
+            raise ValueError("a solved verdict cannot say the work is lost")
 
 
 Typed = Sequence[Command]

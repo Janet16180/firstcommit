@@ -151,3 +151,10 @@ def test_a_choice_step_refuses_what_is_not_one_of_its_options() -> None:
 
 def test_a_choice_step_is_a_step() -> None:
     assert isinstance(PREDICT, kit.Step)
+
+
+def test_a_verdict_may_say_the_work_is_lost_for_good_but_never_while_solved() -> None:
+    assert kit.Verdict(False, "Gone.", lost=True).lost is True
+    assert kit.Verdict(False, "Not yet.").lost is False
+    with pytest.raises(ValueError, match="lost"):
+        kit.Verdict(True, "Done.", lost=True)

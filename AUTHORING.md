@@ -206,6 +206,11 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
   stays hidden until it is solved; and Rama says only what has mood `warn` or `err`. Hint 1
   names the chapters to recall, hint 2 the ideas. A challenge combines at least two earlier
   chapters and teaches nothing new.
+- **Lost work is said, not hidden.** When the facts `setup` saved in the state show the player's
+  work is gone for good (a file whose only copy was deleted, commits no ref or reflog reaches),
+  `check` returns `kit.Verdict(False, message, lost=True)`: the message says what was lost, and
+  the page offers to start the level again. The game runs `check` on every automatic poll, so a
+  loss is reported at once, even during a guided quest.
 - **`QUESTION`** is for levels whose goal is something the player finds out ("which commit
   introduced the bug?"). Without it, the page offers no answer box and the level is checked
   against the repository only, with `answer=None`.

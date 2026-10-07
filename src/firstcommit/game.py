@@ -294,7 +294,8 @@ class CheckResult(TypedDict):
     The result of checking the level; ``payout`` and ``debrief`` are set once it is solved.
 
     ``stars`` are the stars the solve earned, 0 while unsolved; ``new_card`` is the level's card
-    the first time it is solved, else None.
+    the first time it is solved, else None. ``lost`` says the player's work is gone for good, so
+    the page offers to start the level again (never while solved).
     """
 
     solved: bool
@@ -303,6 +304,7 @@ class CheckResult(TypedDict):
     debrief: list[Block] | None
     stars: int
     new_card: CommandCard | None
+    lost: bool
 
 
 class HintView(TypedDict):
@@ -684,9 +686,9 @@ def check(answer: str | None, auto: bool) -> CheckResult:
     """
     Check the level in progress, and pay for it once solved.
 
-    While the guided quest is unfinished, an automatic check (the page polling) does not run the
-    level's check: it is not solved, and its message points to the next step, so the player
-    sees the end of the lesson. A check the player asks for runs the level's check at any time,
+    While the guided quest is unfinished, an automatic check (the page polling) never solves the
+    level: its message points to the next step, so the player sees the end of the lesson, unless
+    the level's check says the work is lost for good, which it reports at once. A check the player asks for runs the level's check at any time,
     so the level may be solved before its quest is finished. A blank answer counts as no
     answer. A check the player asks for that fails counts as an attempt; an automatic one never
     does. Solving ends the level: the payout and the best stars are kept in the progress (so any
@@ -715,10 +717,9 @@ def check(answer: str | None, auto: bool) -> CheckResult:
     with save.lock():
         active, entry = _playing()
         active = _catch_up(active)
-        if auto and not _quest_done(active, entry):
+        verdict = entry.check(runner.lab_of(entry.id), active["state"], typed, active["typed"])
+        if auto and not _quest_done(active, entry) and not verdict.lost:
             verdict = kit.Verdict(False, QUEST_FIRST.format(step=active["step"] + 1, steps=len(entry.quest)))
-        else:
-            verdict = entry.check(runner.lab_of(entry.id), active["state"], typed, active["typed"])
         payout = None
         stars = 0
         if verdict.solved:
@@ -734,6 +735,7 @@ def check(answer: str | None, auto: bool) -> CheckResult:
         "debrief": _blocks(entry.debrief, active["state"]) if verdict.solved else None,
         "stars": stars,
         "new_card": _command_card(entry) if payout is not None and payout["first_time"] else None,
+        "lost": verdict.lost,
     }
 
 
