@@ -101,6 +101,12 @@ Parked as WIP when the day ended (resume in this order, at most 3 teammates work
    computer, then guide's full-width four-place slides. P1's slide events must include
    GitHub's changes (as observe does), and a teammate's push belongs on a non-places slide.
 3. The playground in a real level (author phase); then the paused re-record (Backlog).
+4. A "Start again" button while playing a level (user, 2026-10-07; small, web's): the level
+   page has only "Leave this level", yet hints already say "Restart the level". Put it next to
+   Leave, confirm first ("Your practice repository is rebuilt from the start; your progress is
+   kept"), then call `game.start(levelId)`, which already ends the level in progress and builds a
+   fresh lab. The playground inside a level resets with it. The whole-game "Start over" is a
+   different thing and stays on the map page.
 
 Team rules (the user's, 2026-10-07): named teammates, never one-shot subagents, at most 3
 working at once; agents run the fast tier, the lead the slow tier on merge; fact-check only text
