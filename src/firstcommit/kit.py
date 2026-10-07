@@ -20,7 +20,7 @@ from firstcommit.gitcmd import output as git
 from firstcommit.gitcmd import run as git_run
 from firstcommit.lab import Lab
 from firstcommit.markup import code
-from firstcommit.playground import press
+from firstcommit.playground import press, setup_github
 from firstcommit.playground import setup as setup_playground
 from firstcommit.reactions import LIST_HIDDEN, Outcome, ReactionRule, matches
 from firstcommit.records import Art, Command
@@ -77,6 +77,7 @@ __all__ = [
     "press",
     "type_line",
     "typed",
+    "setup_github",
     "setup_playground",
     "snapshot",
     "staged",

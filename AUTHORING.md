@@ -248,6 +248,7 @@ for people.
 | `kit.parse_int(text)` | a typed number, or None (never `isdigit()` + `int()`) |
 | `kit.is_hash_of(text, full)` | the player typed this object id, whole or abbreviated |
 | `kit.digest(text)`, `kit.answer_is(text, digest)` | store and compare secret answers |
+| `kit.setup_github(lab)` | the stand-in GitHub, empty, on `main`, with a reflog (`kit.setup_playground` makes it too) |
 | `kit.typed(typed, pattern, outcome)`, `kit.after(typed, pattern)` | whether a line was typed and how it ended; the lines after the last one that worked |
 | `kit.type_line(folder, line)` | run a line in bash as the player would, for `solve` and `QUEST_ACTIONS`; returns its `kit.Command` |
 
