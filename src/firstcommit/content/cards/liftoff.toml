@@ -1,0 +1,150 @@
+notes = """
+Git keeps a project's history in a repository. Until a folder is one, Git keeps nothing for it,
+and `git status`, like most Git commands, works only inside a repository: in a plain folder it
+stops with an error and changes nothing.
+
+`git init` makes the current folder a repository: it creates a hidden `.git` folder, and the
+whole history lives there. Names that start with a dot are hidden from a plain `ls`; `ls -a`
+lists them too. Running `git init` again in a repository is safe: it overwrites nothing.
+
+    $ ls            # list the files in this folder
+    $ ls -a         # list every file, the hidden ones too
+    $ git status    # ask Git how things stand (only inside a repository)
+    $ git init      # make this folder a repository
+"""
+
+[[card]]
+id = "liftoff-ls-lists"
+kind = "choice"
+level = 1
+prompt = "What does a plain `ls` show?"
+correct = "The names of the files in the current folder"
+wrong = [
+    "The commits Git has saved for this folder",
+    "The files Git has staged for the next commit",
+    "Every file on the computer, the hidden ones too",
+]
+explain = """
+`ls` lists the entries of the current folder, and a plain `ls` leaves out the hidden ones, whose
+names start with a dot. It knows nothing about Git: commits and the staging area are Git's, and
+`git log` and `git status` show them. To see the hidden names too, such as `.git`, use `ls -a`.
+"""
+source = "ls(1), DESCRIPTION and -a"
+verify = """
+mkdir base
+touch base/map.txt base/.hidden
+test "$(ls base)" = "map.txt"
+"""
+
+[[card]]
+id = "liftoff-status-outside"
+kind = "choice"
+level = 1
+prompt = "In a folder that is not a repository, you run `git status`. What happens?"
+correct = "It fails, and nothing in the folder changes"
+wrong = [
+    "It makes the folder a repository first",
+    "It lists every file in the folder as untracked",
+    "It prints nothing and succeeds",
+]
+explain = """
+`git status` needs a repository to describe. In a plain folder it stops with an error and leaves
+the folder as it was: it does not create `.git`. Only `git init` makes a folder a repository.
+Files are listed as untracked only inside a repository, where Git can compare them with what it
+keeps.
+"""
+source = "git-status(1), DESCRIPTION; git-init(1), DESCRIPTION"
+verify = """
+mkdir base && cd base
+echo "Route: Earth, Moon, Mars" > map.txt
+if git status >/dev/null 2>&1; then exit 1; fi
+test "$(ls -A)" = "map.txt"
+"""
+
+[[card]]
+id = "liftoff-status-exit-code"
+kind = "predict"
+level = 2
+prompt = "What does the last command print?"
+code = """
+mkdir base && cd base
+git status >/dev/null 2>&1
+echo $?
+"""
+correct = "128"
+wrong = ["0", "1", "127"]
+explain = """
+`$?` holds the exit status of the last command. `git status` fails in a folder that is not a
+repository, and git ends with status 128 when it stops with a fatal error. 0 would mean success.
+127 is what the shell gives for a command it cannot find at all, and `git` was found.
+"""
+source = "git-status(1); bash(1), Special Parameters ($?) and EXIT STATUS"
+
+[[card]]
+id = "liftoff-init-creates"
+kind = "choice"
+level = 1
+prompt = "What does `git init` create in the current folder?"
+correct = "A hidden `.git` folder, which holds the repository"
+wrong = [
+    "A first commit holding the folder's files",
+    "A copy of every file, kept safe in `.git`",
+    "A `README.md` that describes the project",
+]
+explain = """
+`git init` creates the `.git` folder: the repository, with no commits yet. It does not commit or
+copy your files: they stay as they are in the working folder until you stage and commit them. It
+creates no `README.md` either; a plain `ls` shows the same files as before, and `ls -a` shows
+`.git` among them.
+"""
+source = "git-init(1), DESCRIPTION"
+verify = """
+echo "Route: Earth, Moon, Mars" > map.txt
+git init -q
+test -d .git && test "$(ls)" = "map.txt" && ! git rev-parse -q --verify HEAD >/dev/null
+"""
+
+[[card]]
+id = "liftoff-hidden-option"
+kind = "text"
+level = 1
+prompt = "Which option makes `ls` list the hidden `.git` folder too? Type only the option."
+accept = ["-a", "-A", "-la", "-al", "-lA", "-Al", "--all", "--almost-all"]
+placeholder = "an option, such as -l"
+explain = """
+Names that start with a dot are hidden from a plain `ls`. `ls -a` lists them too, with `.` and
+`..` (the folder itself and the one above it); `ls -A` lists them without those two. Combined
+with `-l` they also show details, one name per line.
+"""
+source = "ls(1), -a and -A"
+verify = """
+git init -q
+ls -a | grep -qx .git && ls -A | grep -qx .git && ! ls | grep -qx .git
+"""
+
+[[card]]
+id = "liftoff-init-again"
+kind = "choice"
+level = 2
+prompt = "You run `git init` in a folder that is already a repository with commits. What happens?"
+correct = "Nothing is lost: the commits and files stay as they were"
+wrong = [
+    "Git deletes the history and starts a new, empty one",
+    "Git refuses, and the command fails with an error",
+    "Git makes a second `.git` folder beside the first one, empty",
+]
+explain = """
+Running `git init` in an existing repository is safe: it overwrites nothing that is already
+there. The commits, the branch and your files stay as they were, and the command succeeds. A
+folder has one `.git`; `git init` reuses it rather than making another. To start a history over
+you would delete `.git` yourself, which deletes the old history with it.
+"""
+source = "git-init(1), DESCRIPTION (\"Running git init in an existing repository is safe\")"
+verify = """
+git init -q
+echo "Route: Earth, Moon, Mars" > map.txt
+git add map.txt && git commit -q -m "Add the map"
+before=$(git rev-parse HEAD)
+git init -q
+test "$(git rev-parse HEAD)" = "$before" && test "$(git rev-list --count HEAD)" = 1 && test -f map.txt
+"""

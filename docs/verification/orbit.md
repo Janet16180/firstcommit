@@ -169,3 +169,25 @@ file kept), and `git restore --staged` failing with 128 before the first commit.
 | `branch` | Branches are names for commits | gitglossary(7), branch ("The tip of the branch is referenced by a branch head"); DESIGN.md |
 | `conflict` | When two changes touch the same part of a file, and how to settle it | git-merge(1), HOW CONFLICTS ARE PRESENTED; experiment on WSL's git 2.43.0: one branch changes line 2, the other line 3, and `git merge` stops with a conflict (status 1). **Fixed**: "the same lines" was too narrow, since changes to neighbouring lines conflict too |
 | `remote`, `rebase`, `github`, `hygiene`, `setup`, `toolbox` | What each chapter covers | DESIGN.md section 4, the chapters table; promises about chapters, to re-check when they are written |
+
+## Decks `liftoff` and `cargo` (added 2026-10-07)
+
+Every card but one text card has a `verify` snippet or is a `predict` card, so its claim is
+*re-checked* on every test run by `tests/test_decks.py`, in the lessons' fixed environment. The
+snippets were also run in the image (`firstcommit:latest`, git 2.43.0, with the game's
+configuration): every `verify` holds and both `predict` cards print their right option. Each
+`verify` was then inverted (its last line negated) and failed, so none passes by accident. The
+experiments E1-E33 above back the explanations.
+
+| Card | Claim | Evidence |
+|---|---|---|
+| `liftoff-ls-lists` | A plain `ls` lists the folder's names and leaves out the hidden ones | ls(1); E1, E4; `verify` |
+| `liftoff-status-outside` | `git status` fails in a plain folder and creates nothing; only inside a repository are files listed as untracked | E2, E3, E9; `verify` |
+| `liftoff-status-exit-code` | It prints `128`; 127 is the shell's status for a command it cannot find | E2, E8; bash(1); the `predict` code |
+| `liftoff-init-creates` | `git init` creates `.git` and no commit, and leaves the files as they are | git-init(1); E5; `verify` |
+| `liftoff-hidden-option` | `ls -a` lists dot names with `.` and `..`, `ls -A` without them | ls(1); E4, E5; `verify` |
+| `liftoff-init-again` | `git init` again keeps the commits and the files | git-init(1); E29; `verify` |
+| `cargo-add-copies` | After `git add`, the file is in the working folder and the staging area, and no commit is made | git-add(1); E13, E26; `verify` |
+| `cargo-status-short` | `git status --short` prints `A  map.txt` then `?? journal.txt`; the first column is the staging area, the second the working folder | git-status(1), Short Format ("X shows the status of the index, and Y shows the status of the work tree"); E13; the `predict` code |
+| `cargo-add-misspelled` | A name that matches no file stops `git add`, nothing is staged, other names on the line included, and no file is created | E10, E11; `verify` |
+| `cargo-unstage-before-commit` | Before the first commit, `git rm --cached` unstages and keeps the file; `git restore --staged` fails then; `git status` suggests `git rm --cached` | git-rm(1), git-restore(1); E15, E17, E18; `verify`. **Fixed** before it shipped: the explanation said a plain `git rm` would delete the file. On WSL's git 2.43.0, `git rm journal.txt` on a newly staged file refuses (status 1, the file and the staging area unchanged), and only `-f` deletes it |
