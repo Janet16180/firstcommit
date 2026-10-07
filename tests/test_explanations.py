@@ -30,7 +30,7 @@ CATALOGUE = frozenset(
 """Every button of the one-person playgrounds the table was recorded in, by id."""
 TWO_PEOPLE_CATALOGUE = frozenset(button for button in CATALOGUE if button.partition(":")[0] not in ("init", "clone", "delete"))
 """The buttons of the two-person playground the table was recorded in."""
-REWORDED = {"records its author's name and email": "records who made it, with a name and an email"}
+REWORDED = {"records its author's name and email": "records who made it: a name and an email"}
 """Words the game changed after the table was recorded: git names the committer, not the author, when a merge commit has no identity."""
 OWN_FILES = {"you": "you.txt", "alex": "alex.txt"}
 """The file each person's edit and add acted on in the two-person playground the table was recorded in, whose ids named no file."""

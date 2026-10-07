@@ -35,7 +35,7 @@ EXPLANATIONS = {
     "E7": "A commit saves what is in the staging area, and nothing new is staged: your new files are untracked. Fix: `git add` a file, then commit.",
     "E8": "You changed a tracked file (an edit or a deletion), but the change is not staged, and a plain `git commit` saves only what is staged. Fix: `git add` the file, then commit.",
     "E9": "Nothing changed since your last commit: the staging area and the working folder match it, so there is nothing new to save. Fix: change a file and `git add` it first.",
-    "E10": 'Every commit, a merge commit included, records who made it, with a name and an email, and Git does not have both of yours yet. Fix: set what is missing, once, in the terminal: `git config --global user.name "Your Name"` and `git config --global user.email you@example.com`.',
+    "E10": 'Every commit, a merge commit included, records who made it: a name and an email, and Git does not have both of yours yet. Fix: set what is missing, once, in the terminal: `git config --global user.name "Your Name"` and `git config --global user.email you@example.com`.',
     "E12": "Nothing changed: the staging area already holds this exact version of {file}. `git add` stores a new copy only after the file changes.",
     "E13": "The commit saved the version of {file} that you staged, not your later edit: that edit is still in the working folder, not staged. To save it too, `git add` it and commit again.",
     "E14": "Git staged the deletion of {file}: the next commit leaves it out of the project. Earlier commits keep their copy.",
