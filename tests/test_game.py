@@ -13,9 +13,11 @@ from pathlib import Path
 
 import pytest
 from termlab import sandbox
+from termlab.web import terminal
 
 from firstcommit import (
     changes,
+    commands,
     demos,
     explanations,
     game,
@@ -912,6 +914,55 @@ def test_starting_a_level_forgets_the_last_observation(sample_level: runner.Leve
     assert not (game_home / "observed.json").exists()
     assert game.observe()["events"] == []
 
+
+
+
+def test_the_games_shell_is_bash_with_the_games_own_startup_file(game_home: Path) -> None:
+    startup = game_home / save.STARTUP_FILE
+    assert game.shell_command() == ["bash", "--noprofile", "--rcfile", str(startup), "-i"]
+    assert startup.read_text() == commands.startup(game_home / save.COMMANDS_FILE, game_home / save.HISTORY_FILE)
+
+
+def test_observing_tells_the_commands_typed_since_the_last_observation_once(sample_level: runner.Level, typist: Callable[..., bytes]) -> None:
+    game.start(sample_level.id)
+    shell, env, folder = game.shell_command(), game.shell_environment(terminal.player_env(os.environ)), Path(game.terminal_folder())
+    typist(shell, env, folder, [(b"git status --short\n", b"$ ")])
+    assert game.observe()["commands"] == []
+    typist(shell, env, folder, [(b"git add hello.txt\n", b"$ "), (b"git commit -q -m Hello\n", b"$ ")])
+    observed = game.observe()
+    assert observed["commands"] == [{"line": "git add hello.txt", "status": 0}, {"line": "git commit -q -m Hello", "status": 128}]
+    assert [event["kind"] for event in observed["events"]] == ["file-staged"]
+    assert game.observe()["commands"] == []
+
+
+
+def test_observing_reads_the_typed_commands_before_the_snapshots_so_their_changes_are_in_them(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    game.start(sample_level.id)
+    game.observe()
+    calls: list[str] = []
+    real_since, real_snapshot = commands.since, repomap.snapshot
+
+    def reading(log: Path, offset: int) -> tuple[list[records.Command], int]:
+        calls.append("log")
+        return real_since(log, offset)
+
+    def snapshotting(path: Path) -> repomap.Snapshot:
+        calls.append("snapshot")
+        return real_snapshot(path)
+
+    monkeypatch.setattr(commands, "since", reading)
+    monkeypatch.setattr(repomap, "snapshot", snapshotting)
+    game.observe()
+    assert calls == ["log", "snapshot"]
+
+def test_a_press_tells_the_commands_typed_before_it_in_its_before_observation(playground_level: runner.Level, typist: Callable[..., bytes]) -> None:
+    game.start(playground_level.id)
+    game.observe()
+    shell, env, folder = game.shell_command(), game.shell_environment(terminal.player_env(os.environ)), Path(game.terminal_folder())
+    typist(shell, env, folder, [(b"git status --short\n", b"$ ")])
+    pressed = game.press("you", "status")
+    assert (pressed["before"]["commands"], pressed["observation"]["commands"]) == ([{"line": "git status --short", "status": 0}], [])
+    assert game.observe()["commands"] == []
 
 
 def test_observing_a_level_without_a_playground_has_no_teammate(sample_level: runner.Level) -> None:

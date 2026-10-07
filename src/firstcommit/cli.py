@@ -172,7 +172,7 @@ def serve(args: argparse.Namespace) -> int:
 
 def shell(args: argparse.Namespace) -> int:
     """
-    Open the game's shell in the terminal folder, with git kept to the game's settings.
+    Open the game's shell (`firstcommit.game.shell_command`) in the terminal folder, with git kept to the game's settings.
 
     Parameters
     ----------
@@ -187,7 +187,7 @@ def shell(args: argparse.Namespace) -> int:
     folder = game.terminal_folder()
     env = {**game.shell_environment(terminal.player_env(os.environ)), "PWD": folder}
     print("This is the game's shell: git here uses the game's own settings, never yours. Type `exit` to leave.", flush=True)
-    return subprocess.run([terminal.shell_path(env)], cwd=folder, env=env, check=False).returncode
+    return subprocess.run(game.shell_command(), cwd=folder, env=env, check=False).returncode
 
 
 def status(args: argparse.Namespace) -> int:

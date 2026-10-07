@@ -35,6 +35,9 @@ PROGRESS_FILE = "progress.json"
 ACTIVE_FILE = "active.json"
 OBSERVED_FILE = "observed.json"
 GITCONFIG_FILE = "gitconfig"
+STARTUP_FILE = "bashrc"
+COMMANDS_FILE = "commands.log"
+HISTORY_FILE = "history"
 LABS_FOLDER = "labs"
 LESSONS_FOLDER = "lessons"
 
@@ -111,15 +114,17 @@ class Observed(TypedDict):
     The lab of the level in progress as last observed.
 
     ``github`` is None when the level has no stand-in GitHub, and ``teammate`` when it has no
-    teammate's clone (`firstcommit.playground`). The snapshots are checked field by field like
-    every record, so one of another shape (written by another version of the game) is dropped
-    on load (`load_observed`).
+    teammate's clone (`firstcommit.playground`). ``log_offset`` is where the log of typed
+    commands (`COMMANDS_FILE`, `firstcommit.commands`) had been read to. The snapshots are
+    checked field by field like every record, so one of another shape (written by another
+    version of the game) is dropped on load (`load_observed`).
     """
 
     level: str
     project: Snapshot
     github: Snapshot | None
     teammate: Snapshot | None
+    log_offset: int
 
 
 def home() -> Path:
@@ -298,9 +303,29 @@ def ensure_gitconfig(initial: str) -> Path:
     return path
 
 
+def write_shell_startup(text: str) -> Path:
+    """
+    Write the startup file of the game's shell (`firstcommit.commands.startup`), replacing any older one.
+
+    Parameters
+    ----------
+    text : str
+        The file's text.
+
+    Returns
+    -------
+    Path
+        The file, in the game home (created if missing).
+    """
+    path = home() / STARTUP_FILE
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text)
+    return path
+
+
 def erase() -> None:
-    """Delete the progress, the level in progress, the last observation and the game's git configuration, damaged or not."""
-    for name in (PROGRESS_FILE, ACTIVE_FILE, OBSERVED_FILE, GITCONFIG_FILE):
+    """Delete the progress, the level in progress, the last observation, the game's git configuration and its shell's files (startup file, typed-command log, history), damaged or not."""
+    for name in (PROGRESS_FILE, ACTIVE_FILE, OBSERVED_FILE, GITCONFIG_FILE, STARTUP_FILE, COMMANDS_FILE, HISTORY_FILE):
         (home() / name).unlink(missing_ok=True)
 
 

@@ -1,10 +1,14 @@
-"""Shared test setup: every test gets its own game home, so no test touches the player's ~/.firstcommit; plus the sample level (also with a two-person playground) and decks."""
+"""Shared test setup: every test gets its own game home, so no test touches the player's ~/.firstcommit; plus the sample level (also with a two-person playground), decks, and typing into a real shell."""
 
 import dataclasses
-from collections.abc import Iterator
+import os
+import select
+import time
+from collections.abc import Callable, Iterator, Mapping, Sequence
 from pathlib import Path
 
 import pytest
+from termlab.web import terminal
 
 from firstcommit import cards, kit, runner
 from sample_levels import basics_sample
@@ -168,3 +172,62 @@ source = "git-init(1)"
     (folder / "hash.toml").write_text(choice_card("hash-c01"))
     monkeypatch.setattr(cards, "DECKS", folder)
     return folder
+
+
+Typist = Callable[[Sequence[str], Mapping[str, str], Path, Sequence[tuple[bytes, bytes]]], bytes]
+"""Types into a shell: its command, environment and folder, then each input with the output it ends with."""
+
+
+@pytest.fixture
+def typist(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Typist]:
+    """
+    Type into a real interactive shell, started as the page's terminal starts it (`termlab.web.terminal.start_shell`).
+
+    The shell's ``HOME`` is always an empty folder of the test's own, so no shell started here
+    can read or write the user's real home: a bash started without the game's startup file
+    would otherwise save, and cut, the user's ``~/.bash_history``. Afterwards the fixture checks
+    that the user's history file did not change.
+
+    Parameters
+    ----------
+    tmp_path_factory : pytest.TempPathFactory
+        For the shell's home folder.
+
+    Yields
+    ------
+    Typist
+        Starts the shell, waits for its first prompt (output ending in ``"$ "``), types each input
+        and waits until the output since then ends as given, then types ``exit`` and gives
+        everything the terminal showed.
+    """
+    home = tmp_path_factory.mktemp("shell-home")
+    real_history = Path.home() / ".bash_history"
+    untouched = real_history.stat().st_mtime_ns if real_history.exists() else None
+
+    def type_into(command: Sequence[str], env: Mapping[str, str], folder: Path, inputs: Sequence[tuple[bytes, bytes]]) -> bytes:
+        proc, master, slave = terminal.start_shell(command, {**env, "HOME": str(home), "HISTFILE": str(home / ".bash_history")}, folder)
+        shown = bytearray()
+
+        def wait_for(ending: bytes, start: int) -> None:
+            deadline = time.monotonic() + 10
+            while not shown[start:].endswith(ending):
+                assert time.monotonic() < deadline, f"no {ending!r} after {bytes(shown[start:])!r}"
+                ready, _, _ = select.select([master], [], [], 0.1)
+                if ready:
+                    shown.extend(os.read(master, 65536))
+
+        try:
+            wait_for(b"$ ", 0)
+            for keys, ending in inputs:
+                start = len(shown)
+                os.write(master, keys)
+                wait_for(ending, start)
+            os.write(master, b"exit\n")
+            proc.wait(timeout=10)
+        finally:
+            os.close(master)
+            os.close(slave)
+        return bytes(shown)
+
+    yield type_into
+    assert (real_history.stat().st_mtime_ns if real_history.exists() else None) == untouched, f"a test shell wrote {real_history}"
