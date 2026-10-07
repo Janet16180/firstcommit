@@ -23,7 +23,7 @@ CARD = kit.CommandCard(
 SCENE = [
     kit.SceneFrame(art="zones", text="Every Git base has three places on your computer: the working folder, the staging area and the repository."),
     kit.SceneFrame(art="conveyor", text="You work freely in the working folder. When a file is ready, `git add` puts a copy of it in the staging area."),
-    kit.SceneFrame(art="conveyor", text="The staging area is like a shipping box: you choose what goes in. Files with passwords stay out."),
+    kit.SceneFrame(art="conveyor", text="The staging area is the loading dock: you choose what goes on it. Files with passwords stay off."),
 ]
 
 CARGO = "map.txt"

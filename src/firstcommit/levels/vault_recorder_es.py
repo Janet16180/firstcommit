@@ -6,7 +6,7 @@ TITLE = "Registro de vuelo"
 CARD = "Lista los commits que cambiaron el archivo, del más reciente al más antiguo, cada uno con su hash, autor, fecha y mensaje."
 SCENE = [
     "Alarma: el nivel de oxígeno de la base está bajo. Alguien cambió el ajuste hace unos días.",
-    "Cada commit es una página del registro de vuelo de la base: quién cambió qué, y cuándo. Git las guarda todas.",
+    "Cada commit es una entrada del registro de vuelo de la base: quién cambió qué, y cuándo. Git las guarda todas.",
 ]
 
 BRIEFING = """

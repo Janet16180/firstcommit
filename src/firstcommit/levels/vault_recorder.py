@@ -26,7 +26,7 @@ CARD = kit.CommandCard(
 )
 SCENE = [
     kit.SceneFrame(art="alarm", text="Alarm: the oxygen level in the base is low. Someone changed the setting, some days ago."),
-    kit.SceneFrame(art="chain", text="Every commit is a page of the base's flight recorder: who changed what, and when. Git keeps them all."),
+    kit.SceneFrame(art="chain", text="Every commit is an entry in the base's flight recorder: who changed what, and when. Git keeps them all."),
 ]
 
 PEOPLE = [kit.Person("Robin Park", "robin@example.com"), kit.Person("Alex", "alex@example.com"), kit.Person("Sam Ortiz", "sam@example.com"), kit.Person("Kai Moreno", "kai@example.com")]

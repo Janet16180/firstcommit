@@ -99,7 +99,7 @@ STAGED = "Staged: your next commit will take the file as it is now. Change it ag
 NOTHING_NEW = "Nothing new to stage: the staging area already matched."
 ADD_WHAT = "`git add` needs to know what to stage: a file name, or `.` for everything in this folder and the folders inside it."
 NOT_STAGED = "Nothing was staged. Read Git's message: a name it does not find is the usual cause. `ls` lists the folder, and Tab completes names."
-COMMITTED = "Committed: a new closed box in your repository, with its own hash and your message. `git log --oneline` lists it."
+COMMITTED = "Committed: a new capsule sealed in your vault, with its own hash and your message. `git log --oneline` lists it."
 NO_MESSAGE = (
     "No commit was made: every commit needs a message, and in the game no editor opens to write one. "
     'Give it on the line: `git commit -m "Add the map"`.'

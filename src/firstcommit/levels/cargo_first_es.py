@@ -7,7 +7,7 @@ CARD = "Copia un archivo, tal como está ahora, de la carpeta de trabajo al áre
 SCENE = [
     "Cada base de Git tiene tres lugares en tu computadora: la carpeta de trabajo, el área de preparación y el repositorio.",
     "En la carpeta de trabajo trabajas con libertad. Cuando un archivo está listo, `git add` pone una copia suya en el área de preparación.",
-    "El área de preparación es como una caja de envío: tú eliges qué entra. Los archivos con contraseñas se quedan fuera.",
+    "El área de preparación es el muelle de carga: tú eliges qué sube a él. Los archivos con contraseñas se quedan fuera.",
 ]
 
 BRIEFING = """

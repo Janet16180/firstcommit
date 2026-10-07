@@ -17,7 +17,7 @@ STAGED = "Preparado: tu próximo commit se llevará el archivo tal como está ah
 NOTHING_NEW = "Nada nuevo que preparar: el área de preparación ya coincidía."
 ADD_WHAT = "`git add` necesita saber qué preparar: el nombre de un archivo, o `.` para todo lo de esta carpeta y las carpetas que contiene."
 NOT_STAGED = "No se ha preparado nada. Lee el mensaje de Git: lo habitual es un nombre que no encuentra. `ls` lista la carpeta, y el tabulador completa los nombres."
-COMMITTED = "Commit hecho: una caja cerrada nueva en tu repositorio, con su propio hash y tu mensaje. `git log --oneline` la lista."
+COMMITTED = "Commit hecho: una cápsula nueva sellada en tu bóveda, con su propio hash y tu mensaje. `git log --oneline` la lista."
 NO_MESSAGE = (
     "No se ha hecho ningún commit: todo commit necesita un mensaje, y en el juego no se abre ningún editor para escribirlo. "
     'Dalo en la misma línea: `git commit -m "Add the map"`.'
