@@ -317,33 +317,11 @@ def guess(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
     return GUESS.options[1]
 
 
-def typing(line: str) -> Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]:
-    """
-    Make a quest action that types one line in the project folder.
-
-    Parameters
-    ----------
-    line : str
-        The line.
-
-    Returns
-    -------
-    Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]
-        The action; it returns None, as a watch step takes no answer.
-    """
-
-    def act(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
-        typed.append(kit.type_line(lab.project, line))
-        return None
-
-    return act
-
-
 QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]] = {
     "guess": guess,
-    "status": typing("git status"),
-    "fetch": typing("git fetch"),
-    "again": typing("git status"),
-    "pull": typing("git pull"),
+    "status": kit.typing("git status"),
+    "fetch": kit.typing("git fetch"),
+    "again": kit.typing("git status"),
+    "pull": kit.typing("git pull"),
 }
 """The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game never reads it."""

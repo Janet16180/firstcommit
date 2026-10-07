@@ -319,6 +319,7 @@ E33:
 | E52 | GitHub with one commit, two clones; Alex (in one clone) commits a line to `notes.txt` and pushes; in the other, `git status` | `Your branch is up to date with 'origin/main'` |
 | E53 | then `git fetch`, `git status` | fetch 0, `origin/main` moves to Alex's commit; status says behind `origin/main` by 1 commit and can be fast-forwarded, and suggests `git pull` |
 | E54 | then `git pull`, with no name or email set | status 0, a fast-forward: `main` at Alex's commit, Alex's line in `notes.txt`; up to date again. A fast-forward makes no commit, so it needs no identity |
+| E55 | the game's configuration with the Cadet identity; `map.txt` staged, `journal.txt` untracked, an empty bare GitHub no remote names; bare `git commit`, then `git commit -m "Add the map"`, `git log`, `git status --short` | bare commit 1 (empty message aborted); commit 0, a root commit holding only `map.txt`, author `Cadet <cadet@example.com>`; `git log` shows the hash, author, date and message; `?? journal.txt`; GitHub still has no ref |
 | E43 | `git restore --staged .` | status 0; nothing staged; the two files keep their changes in the folder, `keys.txt` untracked |
 
 ### Level `cargo-selective` (Selective cargo, 2-2)
@@ -472,3 +473,20 @@ Wrong or misleading, with the correction sent to frontend:
 | place vault | "Every commit you made, on this computer only, in the hidden .git folder." | it also holds the commits you fetched or cloned | "Every commit of your repository, yours and the ones you fetched, on this computer, in the hidden .git folder." |
 | command `git reset <commit>` | "Moves the current branch's label back to an earlier commit." | the default also resets the staging area (G3); the target need not be earlier | "Moves the current branch's label to another commit, and the staging area with it; the working folder keeps its files." |
 | state move staged to modified | "git restore --staged" | only for a file the last commit holds; a new file becomes untracked (E38) | "git restore --staged (a file the last commit holds)", and a second move staged to untracked: "git restore --staged (a new file, once the repository has a commit)" |
+
+### Level `vault-seal` (Seal the capsule, 3-1)
+
+*Re-checked* by `tests/levels/test_vault_seal.py`: commit and log, the commit by Cadet, the
+journal untracked and GitHub empty afterwards, a bare commit (status 1, the shared `NO_MESSAGE`),
+a log before the commit, the journal sealed too (lost), and a commit without the map.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, scene, debrief | a commit seals what is in the staging area, with message, author and hash; it stays on this computer until you push | E55; git-commit(1); git-push(1) |
+| prediction reveal | a commit goes into your repository; nothing reaches the mothership until you push | E55 (GitHub has no ref) |
+| scene `chain` | each new commit hangs on the one before it | E31 (`parent`) |
+| hints | `git commit` takes the message with `-m`, in quotes | E55; git-commit(1) `-m` |
+| debrief, `SEALED` | the journal was never staged, so it stays untracked | E55 |
+| `LOOKED` | `git log` lists the commit with hash, name, date and message | E55, E45 |
+| `JOURNAL_SEALED` (lost) | a commit cannot be taken back until a later chapter | chapters-3-7 (revert and reset in chapter 7) |
+| `MAP_MISSING` | stage the map, then commit again | E13, E55 |
