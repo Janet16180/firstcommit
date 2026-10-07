@@ -112,13 +112,6 @@ class CommandCard(TypedDict):
     text: list[Block]
 
 
-class ComingChapter(TypedDict):
-    """A chapter the map shows as coming soon, because it has no level yet."""
-
-    title: str
-    blurb: str
-
-
 class SceneFrameView(TypedDict):
     """One picture of a level's scene and what Rama says under it."""
 
@@ -160,7 +153,7 @@ class Status(TypedDict):
     """
     The dashboard; ``max_difficulty`` is the highest difficulty a level can have, so the page can show the scale.
 
-    ``chapters`` lists every chapter; ``coming`` names again those that have no level yet.
+    ``chapters`` lists every chapter; one with no level yet is still to come.
     ``collection`` holds the card of each finished level, in play order.
     """
 
@@ -171,7 +164,6 @@ class Status(TypedDict):
     last_payout: Payout | None
     cards_due: int
     max_difficulty: int
-    coming: list[ComingChapter]
     collection: list[CommandCard]
 
 
@@ -416,7 +408,7 @@ def status() -> Status:
     Status
         XP and rank, every chapter with its levels, the level in progress (its typed lines
         counted up to now), the last payout, how many cards wait for review (see `due_cards`),
-        the chapters still to come and the collected command cards.
+        and the collected command cards.
 
     Raises
     ------
@@ -444,7 +436,6 @@ def status() -> Status:
         "last_payout": progress["last_payout"],
         "cards_due": len(_cards_to_review(None, progress, sys.maxsize)),
         "max_difficulty": max(runner.DIFFICULTIES),
-        "coming": [{"title": chapter["title"], "blurb": chapter["blurb"]} for chapter in chapters if not chapter["levels"]],
         "collection": [_command_card(entry) for entry in levels.values() if entry.id in progress["levels"]],
     }
 
@@ -1379,9 +1370,9 @@ def _playing() -> tuple[save.Active, runner.Level]:
         raise NotPlayingError("no level is in progress")
     entry = levels[active["level"]]
     if active["hints"] > len(entry.hints) or active["step"] > len(entry.quest):
-        raise SaveError(
-            f"{save.home() / save.ACTIVE_FILE} is damaged: `hints` is {active['hints']} and `step` is {active['step']}, "
-            f"but level {entry.id} has {len(entry.hints)} hints and {len(entry.quest)} quest steps"
+        raise save.damaged(
+            save.home() / save.ACTIVE_FILE,
+            f"`hints` is {active['hints']} and `step` is {active['step']}, but level {entry.id} has {len(entry.hints)} hints and {len(entry.quest)} quest steps",
         )
     return active, entry
 

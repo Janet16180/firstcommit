@@ -74,16 +74,6 @@
   },
   "cards_due": 4,
   "max_difficulty": 3,
-  "coming": [
-   {
-    "title": "Git, GitHub and your first clone",
-    "blurb": "What Git and GitHub are, and your first clone."
-   },
-   {
-    "title": "Fingerprints",
-    "blurb": "How Git names every file and commit by its content."
-   }
-  ],
   "collection": [
    {
     "level": "sample-first",

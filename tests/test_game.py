@@ -270,10 +270,8 @@ def test_a_new_player_sees_every_chapter_no_xp_and_nothing_in_progress(sample_le
     assert status["chapters"][0]["levels"] == []
 
 
-def test_each_chapter_has_a_blurb_and_the_chapters_without_levels_are_coming(sample_level: runner.Level) -> None:
-    status = game.status()
-    assert [chapter["blurb"] for chapter in status["chapters"]] == [BLURBS[chapter] for chapter in CHAPTERS]
-    assert status["coming"] == [{"title": CHAPTERS[chapter], "blurb": BLURBS[chapter]} for chapter in CHAPTERS if chapter != "basics"]
+def test_each_chapter_has_its_blurb(sample_level: runner.Level) -> None:
+    assert [chapter["blurb"] for chapter in game.status()["chapters"]] == [BLURBS[chapter] for chapter in CHAPTERS]
 
 
 def test_the_collection_holds_the_card_of_each_finished_level_in_play_order(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
