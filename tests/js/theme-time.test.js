@@ -82,6 +82,12 @@ test("the legend puts each metaphor next to its Git word", () => {
   ]);
 });
 
+test("what the key adds after each picture's words is its own element, so a compact figure can show the words alone", () => {
+  const key = RepoMap.render(record("observation").project, { theme }).querySelector(".tt-key");
+  const meanings = [...key.querySelectorAll(".tt-key-meaning")].map((node) => node.textContent);
+  assert.deepEqual(meanings, [": the commit you are on.", ": a snapshot of every tracked file"]);
+});
+
 test("the legend explains only what the map shows", () => {
   const one = RepoMap.layout(record("snapshots").one, { theme });
   assert.deepEqual(TimeTheme.legend(one), ["commit", "branch"]);
