@@ -31,3 +31,15 @@ test("querySelectorAll has no array methods, as in a browser, so code that needs
   for (const method of ["filter", "map", "find", "some", "every", "reduce", "includes", "indexOf", "slice"]) assert.equal(nodes[method], undefined, method);
   assert.equal(Array.isArray(nodes), false);
 });
+
+test("querySelectorAll and closest take a selector list, as a browser does", () => {
+  const document = createDocument();
+  const form = document.createElement("form");
+  const choice = document.createElement("button");
+  choice.setAttribute("class", "choice");
+  const submit = document.createElement("button");
+  form.append(submit);
+  document.body.append(choice, form);
+  assert.deepEqual([...document.body.querySelectorAll("button.choice, form button")], [choice, submit]);
+  assert.equal(submit.closest("section, form"), form);
+});

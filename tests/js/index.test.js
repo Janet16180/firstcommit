@@ -29,3 +29,7 @@ test("the page loads the time-travel theme's motions, places and map guide, and 
   for (const name of ["theme-time.js", "theme-time-motion.js", "theme-time-places.js", "theme-time-guide.js"]) assert.ok(scripts.includes(name), name);
   for (const name of ["theme-time.css", "theme-time-share.css", "theme-time-guide.css"]) assert.match(page, new RegExp(`href="/static/${name}"`));
 });
+
+test("the page loads the share figure and the playground panel for a playground level", () => {
+  for (const name of ["theme-time-share.js", "playground.js"]) assert.ok(scripts.includes(name), name);
+});

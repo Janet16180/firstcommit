@@ -132,6 +132,12 @@ boxes, one picture of a commit everywhere), and security L3.
 
 ## Backlog (decided later, not now)
 
+- Playground re-record, paused 2026-10-07 at `p2/playground-design` 3378348 (WIP port of the
+  recorder and mock onto `firstcommit.playground` and `firstcommit.explanations`). To resume:
+  merge insight's final tip (0cc86dd or later, never 2a2e9b1 alone: older texts), run
+  `uv run python tools/playground_errors.py docs/drafts/playground-errors.md` and
+  `uv run python tools/playground_mock.py src/firstcommit/web/static docs/drafts/playground-mock.html`,
+  check the mock under the browser lock, then mapcheck re-checks.
 - Playground layout, when it goes into a real level: at 1280 the result box (.pg-result) sits
   below the live pane's fold after a press; scroll it into view or put it beside the bars.
 - At 390 px the top bar (.player, .prefs) makes every page 827 px wide. Left as is: the game
