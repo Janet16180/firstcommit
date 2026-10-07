@@ -74,7 +74,10 @@ const InfographicText = Object.freeze({
           },
           {
             command: "git rm --cached <file>",
-            what: { en: "Takes a file out of the staging area and leaves it in the working folder.", es: "Saca un archivo del staging area y lo deja en el directorio de trabajo." },
+            what: {
+              en: "Takes a file out of the staging area and keeps it in the working folder. For a file the last commit holds, the next commit then deletes it from the repository.",
+              es: "Saca un archivo del staging area y lo deja en la carpeta de trabajo. Si el último commit tiene ese archivo, el próximo commit lo borra del repositorio.",
+            },
             unlock: { chapter: "cargo" },
           },
           {
@@ -109,7 +112,10 @@ const InfographicText = Object.freeze({
           },
           {
             command: "git pull",
-            what: { en: "A fetch, then a merge of the remote's branch into yours: your files update too.", es: "Un fetch y después un merge del branch del remoto en el tuyo: tus archivos también se actualizan." },
+            what: {
+              en: "A fetch, then brings the remote's commits into your branch: a fast-forward when only the remote moved on; when both did, you choose a merge (--no-rebase) or a rebase (--rebase).",
+              es: "Hace fetch y luego trae los commits del remoto a tu branch: un fast-forward si solo avanzó el remoto; si avanzaron los dos, eliges un merge (--no-rebase) o un rebase (--rebase).",
+            },
             unlock: { chapter: "mothership" },
           },
         ],
@@ -154,7 +160,7 @@ const InfographicText = Object.freeze({
           },
           {
             command: "git reset <commit>",
-            what: { en: "Moves the current branch's label back to an earlier commit.", es: "Mueve la etiqueta del branch actual hacia atrás, a un commit anterior." },
+            what: { en: "Moves the current branch's label to another commit, and the staging area with it; the working folder keeps its files.", es: "Mueve la etiqueta del branch actual a otro commit, y el staging area con ella; la carpeta de trabajo conserva sus archivos." },
             unlock: { chapter: "undo" },
           },
           {
@@ -174,7 +180,7 @@ const InfographicText = Object.freeze({
         id: "workshop",
         space: { en: "Workshop", es: "Taller" },
         git: { en: "working folder", es: "directorio de trabajo" },
-        what: { en: "Your files as you edit them. Git watches but does not save them.", es: "Tus archivos mientras los editas. Git los vigila, pero no los guarda." },
+        what: { en: "Your files as you edit them. Git saves nothing here until you add and commit.", es: "Tus archivos mientras los editas. Git no guarda nada aquí hasta que los agregas al staging area y haces un commit." },
         unlock: { chapter: "liftoff", levels: 1 },
       },
       {
@@ -188,7 +194,7 @@ const InfographicText = Object.freeze({
         id: "vault",
         space: { en: "Vault", es: "Bóveda" },
         git: { en: "local repository", es: "repositorio local" },
-        what: { en: "Every commit you made, on this computer only, in the hidden .git folder.", es: "Todos los commits que hiciste, solo en esta computadora, dentro de la carpeta oculta .git." },
+        what: { en: "Every commit of your repository, yours and the ones you fetched, on this computer, in the hidden .git folder.", es: "Todos los commits de tu repositorio, los tuyos y los que trajiste con fetch, en esta computadora, dentro de la carpeta oculta .git." },
         unlock: { chapter: "liftoff", levels: 2 },
       },
       {
@@ -206,7 +212,7 @@ const InfographicText = Object.freeze({
       { from: "vault", to: "workshop", command: "git switch, git restore", unlock: { chapter: "branch" } },
       { from: "vault", to: "mothership", command: "git push", unlock: { chapter: "mothership" } },
       { from: "mothership", to: "vault", command: "git fetch", unlock: { chapter: "mothership" } },
-      { from: "mothership", to: "workshop", command: { en: "git pull (fetch, then merge)", es: "git pull (fetch y luego merge)" }, unlock: { chapter: "mothership" } },
+      { from: "mothership", to: "workshop", command: { en: "git pull (fetch, then merge or rebase)", es: "git pull (fetch y luego merge o rebase)" }, unlock: { chapter: "mothership" } },
     ],
   },
 
@@ -248,7 +254,8 @@ const InfographicText = Object.freeze({
       { from: "staged", to: "committed", how: "git commit", unlock: { chapter: "vault" } },
       { from: "committed", to: "modified", how: { en: "edit the file", es: "editar el archivo" }, unlock: { chapter: "vault" } },
       { from: "modified", to: "staged", how: "git add", unlock: { chapter: "vault" } },
-      { from: "staged", to: "modified", how: "git restore --staged", unlock: { chapter: "cargo" } },
+      { from: "staged", to: "modified", how: { en: "git restore --staged (a file the last commit holds)", es: "git restore --staged (un archivo que tiene el último commit)" }, unlock: { chapter: "cargo" } },
+      { from: "staged", to: "untracked", how: { en: "git restore --staged (a new file, once the repository has a commit)", es: "git restore --staged (un archivo nuevo, cuando el repositorio ya tiene un commit)" }, unlock: { chapter: "cargo" } },
       { from: "modified", to: "committed", how: { en: "git restore (drops the edit)", es: "git restore (descarta la edición)" }, unlock: { chapter: "undo" } },
     ],
   },
