@@ -31,6 +31,8 @@ MODULE_NAME = re.compile(r"([a-z]+)_[a-z0-9_]+")
 DIFFICULTIES = (1, 2, 3)
 MIN_HINTS = 2
 MAX_HINTS = 4
+MIN_OPTIONS = 2
+MAX_OPTIONS = 3
 
 Setup = Callable[[kit.Lab], kit.State]
 Check = Callable[[kit.Lab, kit.State, str | None, kit.Typed], kit.Verdict]
@@ -45,7 +47,8 @@ class Level:
     ``id`` is the module name with ``_`` turned into ``-``; ``chapter`` is the part before the
     first ``_``. The other fields are the module's names of AUTHORING.md section 3.3;
     ``question`` and ``placeholder`` are empty for a level checked against the repository only;
-    ``scene`` and ``reactions`` are empty for a level without them.
+    ``scene``, ``reactions`` and ``events`` are empty for a level without them. ``challenge``
+    marks a level whose quest is goals met in any order, with no guidance.
     """
 
     id: str
@@ -58,6 +61,8 @@ class Level:
     card: kit.CommandCard
     scene: tuple[kit.SceneFrame, ...]
     reactions: tuple[kit.ReactionRule, ...]
+    events: tuple[kit.LevelEvent, ...]
+    challenge: bool
     lesson: tuple[kit.Slide, ...]
     quest: tuple[kit.Step, ...]
     briefing: str
@@ -96,6 +101,8 @@ def load(module: ModuleType) -> Level:
     }
     scene = getattr(module, "SCENE", [])
     level_reactions = getattr(module, "REACTIONS", [])
+    events = getattr(module, "EVENTS", [])
+    challenge = getattr(module, "CHALLENGE", False)
     lesson = getattr(module, "LESSON", [])
     quest = getattr(module, "QUEST", [])
     question = getattr(module, "QUESTION", "")
@@ -113,6 +120,8 @@ def load(module: ModuleType) -> Level:
             or _reactions_problem(level_reactions)
             or _lesson_problem(lesson)
             or _quest_problem(quest)
+            or _events_problem(events, quest)
+            or _challenge_problem(challenge, quest)
         )
     if problem is not None:
         raise ValueError(f"level module {module.__name__}: {problem}")
@@ -127,6 +136,8 @@ def load(module: ModuleType) -> Level:
         card=values["CARD"],
         scene=tuple(scene),
         reactions=tuple(level_reactions),
+        events=tuple(events),
+        challenge=challenge,
         lesson=tuple(lesson),
         quest=tuple(quest),
         briefing=values["BRIEFING"],
@@ -360,7 +371,7 @@ def _lesson_problem(lesson: Any) -> str | None:
 
 def _quest_problem(quest: Any) -> str | None:
     """
-    Check a level's quest: a list of steps, each of one kind (answer, watch or read).
+    Check a level's quest: a list of steps, each of one kind (answer, watch, read or choice).
 
     Parameters
     ----------
@@ -373,11 +384,90 @@ def _quest_problem(quest: Any) -> str | None:
         What is wrong, or None.
     """
     if not isinstance(quest, list) or not all(isinstance(step, kit.Step) for step in quest):
-        return "QUEST must be a list of kit.AnswerStep, kit.WatchStep and kit.ReadStep"
+        return "QUEST must be a list of kit.AnswerStep, kit.WatchStep, kit.ReadStep and kit.ChoiceStep"
     marked = [step.id for step in quest if isinstance(step, kit.AnswerStep) and "`" in step.placeholder]
+    choices = [step for step in quest if isinstance(step, kit.ChoiceStep)]
     problem = _duplicate_problem("step", [step.id for step in quest])
     if problem is None and marked:
         problem = f"step {marked[0]!r}: its placeholder is plain text: no backticks"
+    if problem is None:
+        problem = next((found for step in choices if (found := _choice_problem(step)) is not None), None)
+    return problem
+
+
+def _challenge_problem(challenge: Any, quest: list[kit.Step]) -> str | None:
+    """
+    Check a level's challenge flag: a boolean, and for a challenge a quest of goals to watch only.
+
+    Parameters
+    ----------
+    challenge : Any
+        The module's ``CHALLENGE``.
+    quest : list[kit.Step]
+        The module's quest, already checked.
+
+    Returns
+    -------
+    str | None
+        What is wrong, or None.
+    """
+    problem = None
+    if not isinstance(challenge, bool):
+        problem = "CHALLENGE must be True or False"
+    elif challenge and not all(isinstance(step, kit.WatchStep) for step in quest):
+        problem = "CHALLENGE: a challenge's quest holds only goals to watch (kit.WatchStep), met in any order"
+    return problem
+
+
+def _choice_problem(step: kit.ChoiceStep) -> str | None:
+    """
+    Check a prediction: two or three different options that are not blank, and a reveal.
+
+    Parameters
+    ----------
+    step : kit.ChoiceStep
+        The step.
+
+    Returns
+    -------
+    str | None
+        What is wrong, naming the step, or None.
+    """
+    options = step.options
+    problem = None
+    if not MIN_OPTIONS <= len(options) <= MAX_OPTIONS or len(set(options)) != len(options) or not all(_is_text(option) for option in options):
+        problem = f"step {step.id!r}: a choice step needs {MIN_OPTIONS} to {MAX_OPTIONS} different options that are not blank"
+    elif not _is_text(step.reveal):
+        problem = f"step {step.id!r}: a choice step needs a reveal, said whichever option is chosen"
+    return problem
+
+
+def _events_problem(events: Any, quest: list[kit.Step]) -> str | None:
+    """
+    Check a level's events: each with its own id, a function to run, and no goal or one of the quest's step ids.
+
+    Parameters
+    ----------
+    events : Any
+        The module's ``EVENTS``.
+    quest : list[kit.Step]
+        The module's quest, already checked.
+
+    Returns
+    -------
+    str | None
+        What is wrong, or None.
+    """
+    goals = {"", *(step.id for step in quest)}
+    problem = None
+    if not isinstance(events, list) or not all(isinstance(event, kit.LevelEvent) for event in events):
+        problem = "EVENTS must be a list of kit.LevelEvent"
+    elif not all(callable(event.run) for event in events):
+        problem = "EVENTS: each event's run must be a function"
+    elif any(event.goal not in goals for event in events):
+        problem = "EVENTS: an event's goal must be empty or the id of a quest step"
+    else:
+        problem = _duplicate_problem("EVENTS: event", [event.id for event in events])
     return problem
 
 

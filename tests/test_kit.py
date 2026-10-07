@@ -128,3 +128,37 @@ def test_a_level_knows_a_line_that_lists_hidden_files() -> None:
     shown: list[kit.Command] = [{"line": line, "status": 0} for line in ("ls", "ls -l", "lsa")]
     assert all(kit.typed([line], kit.LIST_HIDDEN, "ok") for line in hidden)
     assert not kit.typed(shown, kit.LIST_HIDDEN)
+
+
+PREDICT = kit.ChoiceStep(
+    id="guess",
+    text="Before you push, guess.",
+    question="Does the uncommitted edit travel?",
+    options=("Yes", "No"),
+    reveal="Only commits travel: the edit stays in your working folder.",
+)
+
+
+def test_any_option_of_a_choice_step_passes_with_the_reveal() -> None:
+    assert kit.choose(PREDICT, "Yes") == kit.Verdict(True, PREDICT.reveal)
+    assert kit.choose(PREDICT, "No") == kit.Verdict(True, PREDICT.reveal)
+
+
+def test_a_choice_step_refuses_what_is_not_one_of_its_options() -> None:
+    for answer in ("", "yes", "Maybe", " Yes"):
+        assert kit.choose(PREDICT, answer).solved is False
+
+
+def test_a_choice_step_is_a_step() -> None:
+    assert isinstance(PREDICT, kit.Step)
+
+
+def test_a_verdict_may_say_the_work_is_lost_for_good_but_never_while_solved() -> None:
+    assert kit.Verdict(False, "Gone.", lost=True).lost is True
+    assert kit.Verdict(False, "Not yet.").lost is False
+    with pytest.raises(ValueError, match="lost"):
+        kit.Verdict(True, "Done.", lost=True)
+
+
+def test_a_level_reads_history_and_ancestry_through_the_toolkit() -> None:
+    assert (kit.in_history, kit.is_ancestor, kit.reachable) == (repomap.in_history, repomap.is_ancestor, repomap.reachable)

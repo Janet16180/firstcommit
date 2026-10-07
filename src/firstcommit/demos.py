@@ -93,8 +93,9 @@ def environment(home: Path) -> dict[str, str]:
     looks for a repository in or above the folder that holds ``home``.
 
     ``GIT_MERGE_AUTOEDIT=yes`` makes ``git merge`` and ``git pull`` want an editor for a merge
-    commit, as they do on a terminal; with no editor they fail, so a lesson has to write
-    ``--no-edit`` or ``-m`` and cannot hide the editor the player will meet.
+    commit, as they do on a terminal, and ``GIT_EDITOR=false`` (which comes before the base
+    configuration's ``core.editor``) makes that editor fail, so a lesson has to write
+    ``--no-edit`` or ``-m``, the way levels and cards are written.
 
     Run the code in a new folder next to ``home`` or inside it, never in ``home`` itself, where
     the configuration file would show up as an untracked file.
@@ -126,6 +127,7 @@ def environment(home: Path) -> dict[str, str]:
         "GIT_CONFIG_NOSYSTEM": "1",
         "GIT_CEILING_DIRECTORIES": str(home.parent),
         "GIT_MERGE_AUTOEDIT": "yes",
+        "GIT_EDITOR": "false",
         "GIT_AUTHOR_NAME": AUTHOR.name,
         "GIT_AUTHOR_EMAIL": AUTHOR.email,
         "GIT_AUTHOR_DATE": DATE,

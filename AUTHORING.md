@@ -100,6 +100,10 @@ uv run firstcommit --help
   fakes what git would do. The terminal's prompt is the game's (the folder's name, as in
   `project $ `), and the commands typed there are logged in the game home only, so the figure
   shows the command that really ran.
+- **No editor ever opens.** The game's configuration sets `core.editor = true`: a bare
+  `git commit` stops and commits nothing (Rama then teaches `-m`), while `git merge`, a merging
+  `git pull`, `git revert` and `git commit --no-edit` keep git's prepared message. Write `-m` and
+  `--no-edit` in levels and cards; `git tag -a` needs `-m` too.
 - **Mistakes are expected.** Wrong answers get a nudge that points at what to look at, never the
   answer and never blame.
 - **The check notices success by itself.** Most levels are checked against the repository as the
@@ -147,12 +151,14 @@ PAR: int                      # lines a good play types; more than PAR + 3 costs
 CARD: kit.CommandCard         # the command card the player collects: command and what it does
 SCENE: list[kit.SceneFrame] = []        # optional; Rama's scene the first time the level opens
 REACTIONS: list[kit.ReactionRule] = []  # optional; tried before the shared ones
+EVENTS: list[kit.LevelEvent] = []       # optional; changes the level makes during the play
+CHALLENGE: bool = False                 # optional; True for a challenge (any order, no guidance)
 LESSON: list[kit.Slide] = []  # optional; the first level of a chapter has one
 QUEST: list[kit.Step] = []    # optional; the first level of a chapter has one
 BRIEFING: str                 # the situation and what counts as success
 QUESTION: str = ""            # optional; set it when the level is solved by a typed answer
 PLACEHOLDER: str = ""         # optional; example shape of that answer ("a short hash")
-HINTS: list[str]              # 2-4, from a nudge to almost the answer; any hint costs the play's XP and a star
+HINTS: list[str]              # 2-4, from a nudge to almost the answer; each lowers the XP (score.py)
 DEBRIEF: str                  # shown once solved
 
 def setup(lab: kit.Lab) -> kit.State: ...
@@ -179,6 +185,9 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
 - **Stars.** A solved play earns 3 stars, one less once a hint is used and one less once the
   lines typed in the game's terminal since the level started pass `PAR + 3`, never below 1
   (`score.stars`). Set `PAR` to the lines a player following the level types.
+- **XP.** A first solve pays the level's `XP`, less 15% of it for each hint revealed, but never
+  less than half (`score.level_reward`); the hint view shows what each hint took off. A replay
+  pays nothing.
 - **`SCENE`** frames each name a picture the page draws (`kit.Art`) and say one or two short
   sentences. **`CARD`** says what its command does, scoped like any claim. Neither is filled
   from the state: both are shown before the level starts.
@@ -187,6 +196,21 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
   changed (`event`) and whether a repository is there afterwards (`repository`). The first rule
   that fits speaks; a level's rules come before the shared `reactions.RULES`, so add one only
   when the level can say something more precise.
+- **`EVENTS`**: `kit.LevelEvent(id, run, goal="")`. `run(lab, state)` makes a real change with
+  `kit.git` or `kit.press` (Alex pushes, a build folder floods the workshop). With no `goal` it
+  runs right after the page's first look at the lab; with a quest step's id, right after the
+  player reaches that goal. The page then animates the change like any other. Each runs once per
+  play, and `check` must hold whatever moment the player reaches.
+- **`CHALLENGE = True`** makes the level a challenge: its `QUEST` holds only watch steps, the
+  goals, written as end states and met in any order; the map shows it as a boss node; its card
+  stays hidden until it is solved; and Rama says only what has mood `warn` or `err`. Hint 1
+  names the chapters to recall, hint 2 the ideas. A challenge combines at least two earlier
+  chapters and teaches nothing new.
+- **Lost work is said, not hidden.** When the facts `setup` saved in the state show the player's
+  work is gone for good (a file whose only copy was deleted, commits no ref or reflog reaches),
+  `check` returns `kit.Verdict(False, message, lost=True)`: the message says what was lost, and
+  the page offers to start the level again. The game runs `check` on every automatic poll, so a
+  loss is reported at once, even during a guided quest.
 - **`QUESTION`** is for levels whose goal is something the player finds out ("which commit
   introduced the bug?"). Without it, the page offers no answer box and the level is checked
   against the repository only, with `answer=None`.
@@ -206,6 +230,10 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
   - `kit.WatchStep(id, text, watch, command="", more="")`: `watch(lab, state, typed) -> Verdict` passes
     once the lab shows the step was done (polled like `check`; same rules);
   - `kit.ReadStep(id, text, command="", more="")`: the player reads, then continues.
+  - `kit.ChoiceStep(id, text, question, options, reveal, command="", more="")`: a prediction,
+    two or three `options` the page shows as buttons; any option passes at no cost, and `reveal`
+    says what really happens. At most one per guided level, where a named myth breaks; a checked
+    answer (a hash, an author) is an answer step. Its `QUEST_ACTIONS` entry returns one option.
 
   Every step, and every lesson slide (`kit.Slide(..., more="")`), may carry `more`: text the page
   folds under a closed "More" below its text, for detail the step or the picture does not need.
@@ -241,6 +269,9 @@ for people.
 | `kit.parse_int(text)` | a typed number, or None (never `isdigit()` + `int()`) |
 | `kit.is_hash_of(text, full)` | the player typed this object id, whole or abbreviated |
 | `kit.digest(text)`, `kit.answer_is(text, digest)` | store and compare secret answers |
+| `kit.in_history(folder, path)` | whether any commit a ref reaches (branches, remote-tracking branches, tags, the stash) holds `path`; read it in `lab.project` and `lab.github` for "the secret is in no capsule, here or on the mothership" |
+| `kit.is_ancestor(folder, a, b)`, `kit.reachable(folder, commit)` | whether commit `a` leads to `b`; whether some ref still leads to a commit |
+| `kit.setup_github(lab)` | the stand-in GitHub, empty, on `main`, with a reflog (`kit.setup_playground` makes it too) |
 | `kit.typed(typed, pattern, outcome)`, `kit.after(typed, pattern)` | whether a line was typed and how it ended; the lines after the last one that worked |
 | `kit.type_line(folder, line)` | run a line in bash as the player would, for `solve` and `QUEST_ACTIONS`; returns its `kit.Command` |
 

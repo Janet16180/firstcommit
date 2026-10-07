@@ -9,7 +9,9 @@ from firstcommit.reactions import ReactionRule
 from firstcommit.records import Command
 
 
-def said(line: str, status: int = 0, kinds: Collection[str] = (), repository: bool = True, rules: tuple[ReactionRule, ...] = reactions.RULES) -> str | None:
+def said(
+    line: str, status: int = 0, kinds: Collection[str] = (), repository: bool = True, rules: tuple[ReactionRule, ...] = reactions.RULES, staged: bool = False
+) -> str | None:
     """
     Give the mood and text of the rule that speaks for one typed line, or None.
 
@@ -25,6 +27,8 @@ def said(line: str, status: int = 0, kinds: Collection[str] = (), repository: bo
         Whether the player's folder holds a repository after it.
     rules : tuple[ReactionRule, ...]
         The rules to read, the shared ones by default.
+    staged : bool
+        Whether the staging area differs from the last commit after it.
 
     Returns
     -------
@@ -32,7 +36,7 @@ def said(line: str, status: int = 0, kinds: Collection[str] = (), repository: bo
         ``"<mood>: <text>"``, or None when no rule fits.
     """
     command: Command = {"line": line, "status": status}
-    rule = reactions.react(command, kinds, repository, rules)
+    rule = reactions.react(command, kinds, repository, staged, rules)
     return None if rule is None else f"{rule.mood}: {rule.text}"
 
 
@@ -170,3 +174,23 @@ def test_the_known_git_commands_include_the_ones_beginners_type() -> None:
 def test_every_command_this_machines_git_knows_is_in_the_known_list() -> None:
     listed = subprocess.run(["git", "--list-cmds=main"], capture_output=True, text=True, check=True).stdout.split()
     assert set(listed) <= {*reactions.GIT_COMMANDS, *reactions.OPTIONAL_COMMANDS}
+
+
+def test_a_rule_may_ask_whether_something_is_staged_after_the_line() -> None:
+    rule = ReactionRule(line=r"git commit\b", mood="err", text="Staged.", staged=True)
+    assert said("git commit", 1, rules=(rule,), staged=True) == "err: Staged."
+    assert said("git commit", 1, rules=(rule,), staged=False) is None
+
+
+def test_a_bare_commit_that_stopped_with_changes_staged_teaches_the_message_option() -> None:
+    assert said("git commit", 1, staged=True) == f"err: {reactions.NO_MESSAGE}"
+    assert said("git commit -a", 1, staged=True) == f"err: {reactions.NO_MESSAGE}"
+
+
+@pytest.mark.parametrize("line", ['git commit -m "Add the map"', 'git commit -am "Add the map"', "git commit --no-edit", "git commit --amend", "git commit -F notes.txt"])
+def test_a_commit_that_brings_its_own_message_never_gets_the_message_lesson(line: str) -> None:
+    assert said(line, 128, staged=True) == f"err: {reactions.NOT_COMMITTED}"
+
+
+def test_a_bare_commit_with_nothing_staged_is_the_usual_failed_commit() -> None:
+    assert said("git commit", 1, staged=False) == f"err: {reactions.NOT_COMMITTED}"

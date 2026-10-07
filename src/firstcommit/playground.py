@@ -88,6 +88,29 @@ class ButtonOffError(Exception):
     """A button pressed while it is off; the message is the reason the button shows."""
 
 
+def setup_github(lab: Lab) -> None:
+    """
+    Create a lab's stand-in GitHub: an empty bare repository on ``main``, keeping a reflog.
+
+    A bare repository keeps no reflog unless asked (git-config(1), ``core.logAllRefUpdates``), so
+    this one sets it: a forced push can then be seen and undone there, as on a real host's
+    records.
+
+    Parameters
+    ----------
+    lab : Lab
+        The lab; its root exists, and its GitHub folder does not.
+
+    Raises
+    ------
+    subprocess.CalledProcessError
+        If git fails, for example because GitHub already exists.
+    """
+    lab.github.parent.mkdir(exist_ok=True)
+    gitcmd.output(lab.github.parent, "init", "--quiet", "--bare", "--initial-branch=main", lab.github.name)
+    gitcmd.output(lab.github, "config", "core.logAllRefUpdates", "true")
+
+
 def setup(lab: Lab) -> None:
     """
     Create the playground: GitHub with one commit of `FILES`, and a clone of it for each person.
@@ -106,8 +129,7 @@ def setup(lab: Lab) -> None:
     subprocess.CalledProcessError
         If git fails, for example because GitHub or the project already exists.
     """
-    lab.github.parent.mkdir(exist_ok=True)
-    gitcmd.output(lab.github.parent, "init", "--quiet", "--bare", "--initial-branch=main", lab.github.name)
+    setup_github(lab)
     entries = [f"{FILE_MODE} blob {_blob(lab, FIRST_LINES[name] + "\n")}\t{name}\n" for name in FILES]
     tree = gitcmd.output(lab.github, "mktree", stdin="".join(entries)).strip()
     commit = gitcmd.output(lab.github, "commit-tree", tree, "-m", "Start the project").strip()

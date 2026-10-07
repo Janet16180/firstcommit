@@ -173,6 +173,8 @@ def test_hostile_answers_never_crash_or_pass_a_quest_step(package: ModuleType, l
         if isinstance(step, kit.AnswerStep):
             verdicts = [step.check(lab, state, answer) for answer in HOSTILE]
             assert all(isinstance(verdict, kit.Verdict) and not verdict.solved for verdict in verdicts), step.id
+        if isinstance(step, kit.ChoiceStep):
+            assert not any(kit.choose(step, answer).solved for answer in HOSTILE if answer not in step.options), step.id
 
 
 @pytest.mark.parametrize(("package", "level"), CASES, ids=IDS)
@@ -187,6 +189,8 @@ def test_each_quest_step_passes_only_after_the_players_action(package: ModuleTyp
         answer = actions[step.id](lab, state, typed) if step.id in actions else None
         if isinstance(step, kit.WatchStep):
             assert step.watch(lab, state, typed).solved, f"step {step.id} did not pass after the player acted"
+        if isinstance(step, kit.ChoiceStep):
+            assert answer in step.options and all(kit.choose(step, option).solved for option in step.options), f"step {step.id} refused an option"
         if isinstance(step, kit.AnswerStep):
             assert not step.check(lab, state, "").solved, f"step {step.id} passed with an empty answer"
             assert answer is not None and step.check(lab, state, answer).solved, f"step {step.id} refused the player's answer {answer!r}"

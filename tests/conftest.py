@@ -11,7 +11,7 @@ import pytest
 from termlab.web import terminal
 
 from firstcommit import cards, kit, runner
-from sample_levels import basics_sample
+from sample_levels import cargo_sample
 
 
 @pytest.fixture(autouse=True)
@@ -49,9 +49,9 @@ def sample_level(monkeypatch: pytest.MonkeyPatch) -> runner.Level:
     Returns
     -------
     runner.Level
-        The sample level, ``basics-sample``.
+        The sample level, ``cargo-sample``.
     """
-    level = runner.load(basics_sample)
+    level = runner.load(cargo_sample)
     monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
     return level
 
@@ -130,7 +130,7 @@ source = "test"
 @pytest.fixture
 def sample_decks(tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.MonkeyPatch) -> Path:
     """
-    Point the decks at test decks: ``basics`` with `CHOICE_CARDS` choice cards, a predict and a text card, and ``hash`` with one card.
+    Point the decks at test decks: ``cargo`` with `CHOICE_CARDS` choice cards, a predict and a text card, and ``vault`` with one card.
 
     Parameters
     ----------
@@ -145,10 +145,10 @@ def sample_decks(tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.M
         The deck folder.
     """
     folder = tmp_path_factory.mktemp("decks")
-    basics = 'notes = """\nThe `three` areas.\n"""\n' + "".join(choice_card(f"basics-c{number:02}") for number in range(1, CHOICE_CARDS + 1))
+    basics = 'notes = """\nThe `three` areas.\n"""\n' + "".join(choice_card(f"cargo-c{number:02}") for number in range(1, CHOICE_CARDS + 1))
     basics += """
 [[card]]
-id = "basics-predict"
+id = "cargo-predict"
 kind = "predict"
 level = 2
 prompt = "What does it print?"
@@ -159,7 +159,7 @@ explain = "It echoes."
 source = "bash(1)"
 
 [[card]]
-id = "basics-text"
+id = "cargo-text"
 kind = "text"
 level = 3
 prompt = "Name the default branch."
@@ -168,8 +168,8 @@ placeholder = "a branch"
 explain = "The game sets it."
 source = "git-init(1)"
 """
-    (folder / "basics.toml").write_text(basics)
-    (folder / "hash.toml").write_text(choice_card("hash-c01"))
+    (folder / "cargo.toml").write_text(basics)
+    (folder / "vault.toml").write_text(choice_card("vault-c01"))
     monkeypatch.setattr(cards, "DECKS", folder)
     return folder
 

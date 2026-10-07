@@ -10,6 +10,7 @@ from hypothesis import example, given, settings
 from hypothesis import strategies as st
 
 from firstcommit import changes, gitcmd, playground, records, repomap, save
+from firstcommit.lab import Lab
 from playground_helpers import (
     COMMIT_NOTES,
     NOTES,
@@ -448,3 +449,24 @@ def test_any_sequence_of_presses_keeps_the_facts_the_figure_draws(steps: list[St
             assert ("merge-abort" in shown) == (now[person]["operation"] == "merge"), context
             assert all("\n" not in view["line"] and view["off"] == "" for view in shown.values()), context
             seen = now
+
+
+def test_the_stand_in_github_keeps_a_reflog_so_a_forced_push_can_be_seen_and_undone() -> None:
+    with new_lab() as lab:
+        assert gitcmd.output(lab.github, "config", "core.logAllRefUpdates").strip() == "true"
+        before = gitcmd.output(lab.github, "rev-parse", "main").strip()
+        you = clone(lab, "you")
+        gitcmd.output(you, "commit", "--quiet", "--allow-empty", "-m", "Empty")
+        gitcmd.output(you, "push", "--quiet")
+        gitcmd.output(you, "push", "--quiet", "--force", "origin", f"{before}:main")
+        assert gitcmd.output(lab.github, "rev-parse", "main@{1}").strip() != before
+        assert gitcmd.output(lab.github, "rev-parse", "main@{2}").strip() == before
+
+
+def test_a_level_without_the_playground_builds_the_same_stand_in_github(game_home: Path) -> None:
+    lab = Lab(game_home / "labs" / "solo")
+    lab.root.mkdir(parents=True)
+    playground.setup_github(lab)
+    assert gitcmd.output(lab.github, "config", "core.logAllRefUpdates").strip() == "true"
+    assert gitcmd.output(lab.github, "symbolic-ref", "HEAD").strip() == "refs/heads/main"
+    assert gitcmd.output(lab.github, "rev-parse", "--is-bare-repository").strip() == "true"

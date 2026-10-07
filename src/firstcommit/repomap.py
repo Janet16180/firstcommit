@@ -1202,3 +1202,67 @@ def _display(key: str) -> str:
         The path as text, with bytes that are not UTF-8 replaced.
     """
     return _unquote(key).decode("utf-8", errors="replace")
+
+
+def in_history(folder: Path, path: str) -> bool:
+    """
+    Tell whether any commit that a ref reaches holds a path, or ever changed it.
+
+    Every ref counts: branches, remote-tracking branches, tags and the stash. A commit that only
+    the reflog still reaches does not. The path is read literally, so ``*`` is just a character.
+
+    Parameters
+    ----------
+    folder : Path
+        A repository, possibly bare; it may not exist.
+    path : str
+        A path from the repository's top folder, such as ``keys.txt``.
+
+    Returns
+    -------
+    bool
+        True if one such commit holds it; False with no repository or no commit.
+    """
+    found = gitcmd.run(folder, "--literal-pathspecs", "rev-list", "--all", "-n", "1", "--", path)
+    return found.returncode == 0 and found.stdout.strip() != ""
+
+
+def is_ancestor(folder: Path, ancestor: str, descendant: str) -> bool:
+    """
+    Tell whether one commit leads to another: following parents from ``descendant`` reaches ``ancestor``.
+
+    Parameters
+    ----------
+    folder : Path
+        A repository; it may not exist.
+    ancestor : str
+        A commit, by hash or name (``main``, ``origin/main``).
+    descendant : str
+        Another commit; a commit counts as its own ancestor.
+
+    Returns
+    -------
+    bool
+        True if it does; False when either name is unknown or there is no repository.
+    """
+    return gitcmd.run(folder, "merge-base", "--is-ancestor", ancestor, descendant).returncode == 0
+
+
+def reachable(folder: Path, commit: str) -> bool:
+    """
+    Tell whether some ref leads to a commit: a branch, a remote-tracking branch, a tag or the stash.
+
+    Parameters
+    ----------
+    folder : Path
+        A repository; it may not exist.
+    commit : str
+        A commit, by hash or name.
+
+    Returns
+    -------
+    bool
+        True if a ref's history holds it; False for an unknown commit, or with no repository.
+    """
+    found = gitcmd.run(folder, "for-each-ref", "--count=1", "--contains", commit)
+    return found.returncode == 0 and found.stdout.strip() != ""

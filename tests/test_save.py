@@ -10,7 +10,7 @@ PAYOUT: save.Payout = {"level": "liftoff-aboard", "xp": 85, "first_time": True, 
 PROGRESS: save.Progress = {
     "xp": 95,
     "levels": {"liftoff-aboard": {"finished": "2026-10-06T10:00:00+02:00", "xp": 85, "stars": 2, "state": {"branch": "main"}}},
-    "cards": {"basics-staging-area": {"box": 2, "due": "2026-10-09"}},
+    "cards": {"cargo-staging-area": {"box": 2, "due": "2026-10-09"}},
     "streak": 1,
     "best_streak": 3,
     "last_payout": PAYOUT,
@@ -25,6 +25,8 @@ ACTIVE: save.Active = {
     "state": {"answer": "abc", "nested": {"list": [1, 2]}},
     "log_offset": 40,
     "typed": [{"line": "git status", "status": 128}, {"line": "ls", "status": 0}],
+    "events": ["alex-pushes"],
+    "done": ["init"],
 }
 
 
@@ -141,10 +143,10 @@ PROGRESS_DAMAGE = [
     ("scenes", ...),
     ("scenes", "liftoff-aboard"),
     ("scenes.0", 3),
-    ("cards.basics-staging-area.box", ...),
-    ("cards.basics-staging-area.due", 20261009),
-    ("cards.basics-staging-area.due", "tomorrow"),
-    ("cards.basics-staging-area.due", "2026-02-30"),
+    ("cards.cargo-staging-area.box", ...),
+    ("cards.cargo-staging-area.due", 20261009),
+    ("cards.cargo-staging-area.due", "tomorrow"),
+    ("cards.cargo-staging-area.due", "2026-02-30"),
     ("levels.liftoff-aboard.finished", "yesterday"),
     ("streak", None),
     ("best_streak", -3),
@@ -175,6 +177,10 @@ ACTIVE_DAMAGE = [
     ("typed", ...),
     ("typed.0.line", None),
     ("typed.0.status", "128"),
+    ("events", ...),
+    ("events.0", 3),
+    ("done", ...),
+    ("done", "init"),
     ("extra", "x"),
 ]
 

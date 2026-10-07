@@ -19,6 +19,8 @@ RANKS: tuple[tuple[int, str], ...] = (
 )
 """XP floor and title of each rank, lowest first: the path of a change through Git, then the people who keep a project."""
 
+HINT_PENALTY_PERCENT = 15
+REWARD_FLOOR_PERCENT = 50
 CARD_XP = {1: 10, 2: 20, 3: 30}
 STREAK_LENGTH = 5
 STREAK_BONUS = 25
@@ -76,8 +78,8 @@ def level_reward(xp: int, hints: int, first_time: bool) -> int:
     """
     Compute what solving a level pays.
 
-    A first solve without hints pays the level's XP; a play that used any hint pays nothing,
-    though its stars still count (`stars`). Solving a level again pays nothing.
+    Each hint takes `HINT_PENALTY_PERCENT` of the level's XP off, but a first solve always pays
+    at least `REWARD_FLOOR_PERCENT` of it. Solving a level again pays nothing.
 
     Parameters
     ----------
@@ -100,12 +102,16 @@ def level_reward(xp: int, hints: int, first_time: bool) -> int:
     """
     if xp < 0 or hints < 0:
         raise ValueError(f"xp and hints must not be negative, got xp={xp}, hints={hints}")
-    return xp if first_time and hints == 0 else 0
+    reward = 0
+    if first_time:
+        penalised = xp * (100 - HINT_PENALTY_PERCENT * hints) // 100
+        reward = max(penalised, xp * REWARD_FLOOR_PERCENT // 100)
+    return reward
 
 
 def hint_cost(xp: int, used: int, first_time: bool) -> int:
     """
-    Compute what revealing a hint took off a level's reward: all of it for the first hint of a first solve, nothing after.
+    Compute what revealing a hint took off a level's reward.
 
     Parameters
     ----------

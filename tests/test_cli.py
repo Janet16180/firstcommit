@@ -101,7 +101,7 @@ def test_the_shell_starts_in_the_lab_with_the_games_git_settings(sample_level: r
     monkeypatch.setenv("GIT_DIR", "/somewhere/else/.git")
     monkeypatch.setenv("EDITOR", "nano")
     status, printed = run(capsys, "shell")
-    lab = str(game_home / "labs" / "basics-sample" / "project")
+    lab = str(game_home / "labs" / "cargo-sample" / "project")
     (call,) = calls
     assert (status, call["args"], call["cwd"]) == (3, ["bash", "--noprofile", "--rcfile", str(game_home / save.STARTUP_FILE), "-i"], lab)
     assert {key: call["env"][key] for key in gitcmd.isolation(game_home)} == gitcmd.isolation(game_home)
@@ -163,7 +163,7 @@ def test_a_hint_shows_its_text_and_its_cost(sample_level: runner.Level, capsys: 
     game.start(sample_level.id)
     status, printed = run(capsys, "hint")
     assert status == 0
-    assert "Hint 1 of 3" in printed and "100 XP" in printed and sample_level.hints[0] in printed
+    assert "Hint 1 of 3" in printed and "15 XP" in printed and sample_level.hints[0] in printed
 
 
 def test_reset_needs_yes(sample_level: runner.Level, capsys: pytest.CaptureFixture[str]) -> None:

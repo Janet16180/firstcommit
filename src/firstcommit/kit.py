@@ -20,7 +20,7 @@ from firstcommit.gitcmd import output as git
 from firstcommit.gitcmd import run as git_run
 from firstcommit.lab import Lab
 from firstcommit.markup import code
-from firstcommit.playground import press
+from firstcommit.playground import press, setup_github
 from firstcommit.playground import setup as setup_playground
 from firstcommit.reactions import LIST_HIDDEN, Outcome, ReactionRule, matches
 from firstcommit.records import Art, Command
@@ -30,8 +30,11 @@ from firstcommit.repomap import (
     Ref,
     Snapshot,
     conflicted,
+    in_history,
+    is_ancestor,
     mode_changed,
     nested,
+    reachable,
     snapshot,
     staged,
     unstaged,
@@ -44,12 +47,14 @@ __all__ = [
     "LIST_HIDDEN",
     "AnswerCheck",
     "AnswerStep",
+    "ChoiceStep",
     "Art",
     "Command",
     "CommandCard",
     "Commit",
     "FileEntry",
     "Lab",
+    "LevelEvent",
     "Person",
     "ReactionRule",
     "ReadStep",
@@ -65,18 +70,23 @@ __all__ = [
     "WatchStep",
     "after",
     "answer_is",
+    "choose",
     "code",
     "conflicted",
     "digest",
     "git",
     "git_run",
+    "in_history",
+    "is_ancestor",
     "is_hash_of",
     "mode_changed",
     "nested",
     "parse_int",
     "press",
+    "reachable",
     "type_line",
     "typed",
+    "setup_github",
     "setup_playground",
     "snapshot",
     "staged",
@@ -94,11 +104,21 @@ State = dict[str, Any]
 
 @dataclass(frozen=True)
 class Verdict:
-    """The result of a check: whether it passed, and what to tell the player."""
+    """
+    The result of a check: whether it passed, and what to tell the player.
+
+    ``lost`` says the player's work is gone for good (read from facts `setup` saved), so the page
+    offers to start the level again; a solved verdict is never lost.
+    """
 
     solved: bool
     message: str
+    lost: bool = False
 
+    def __post_init__(self) -> None:
+        """Refuse a verdict that is both solved and lost: a bug in the level."""
+        if self.solved and self.lost:
+            raise ValueError("a solved verdict cannot say the work is lost")
 
 
 Typed = Sequence[Command]
@@ -200,7 +220,42 @@ class ReadStep:
     more: str = ""
 
 
-Step = AnswerStep | WatchStep | ReadStep
+@dataclass(frozen=True)
+class ChoiceStep:
+    """
+    A quest step that asks the player to predict, from two or three options, before they see.
+
+    Any option passes and nothing is lost for a wrong guess: ``reveal`` then says what really
+    happens, whichever was chosen (`choose`). ``options`` are both the text the page shows and
+    the value it sends back. ``more`` is folded under "More", as on every step.
+    """
+
+    id: str
+    text: str
+    question: str
+    options: tuple[str, ...]
+    reveal: str
+    command: str = ""
+    more: str = ""
+
+
+@dataclass(frozen=True)
+class LevelEvent:
+    """
+    Something a level makes happen in its lab at a moment of the play: Alex pushing, a staged scenario.
+
+    ``run(lab, state)`` makes the change with real git (`git`, `press`), like `setup`. With no
+    ``goal`` it runs right after the level's first observation; with a quest step's id, right
+    after the player reaches that goal. Either way the page's next observation tells the change,
+    so it animates what really happened. Each event runs once per play.
+    """
+
+    id: str
+    run: Callable[[Lab, State], None]
+    goal: str = ""
+
+
+Step = AnswerStep | WatchStep | ReadStep | ChoiceStep
 """One step of a guided quest: each kind carries exactly what it needs, so no other shape exists."""
 
 
@@ -245,6 +300,26 @@ def after(lines: Typed, pattern: str) -> list[Command]:
     """
     worked = [index for index, line in enumerate(lines) if matches(line, pattern, "ok")]
     return list(lines[worked[-1] + 1 :] if worked else lines)
+
+
+def choose(step: ChoiceStep, answer: str) -> Verdict:
+    """
+    Judge a prediction: any of the step's options passes, with its reveal.
+
+    Parameters
+    ----------
+    step : ChoiceStep
+        The step.
+    answer : str
+        What the page sent back.
+
+    Returns
+    -------
+    Verdict
+        Passed with ``step.reveal`` for an option, exactly as written; else not passed.
+    """
+    chosen = answer in step.options
+    return Verdict(chosen, step.reveal if chosen else "Pick one of the options.")
 
 
 def parse_int(text: str | None) -> int | None:

@@ -976,3 +976,67 @@ def test_the_classification_matches_git_status_on_any_history(steps: list[str]) 
 
 def test_the_empty_snapshot_is_what_an_empty_folder_with_no_repository_gives(tmp_path: Path) -> None:
     assert repomap.empty() == repomap.snapshot(tmp_path)
+
+
+def history_repo(tmp_path: Path) -> Path:
+    """
+    Build a repository whose history once held ``keys.txt``, a branch holding ``plan*.txt``, and a stash.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        Where to build it.
+
+    Returns
+    -------
+    Path
+        The repository, on ``main`` with ``map.txt`` only in its last commit.
+    """
+    shell(tmp_path, """
+git init -q -b main repo && cd repo
+echo route > map.txt && echo secret > keys.txt && git add . && git commit -q -m one
+git rm -q keys.txt && git commit -q -m two
+git switch -q -c side && echo p > 'plan*.txt' && git add . && git commit -q -m side && git switch -q main
+echo wip > notes.txt && git add notes.txt && git stash -q
+""")
+    return tmp_path / "repo"
+
+
+def test_a_path_is_in_the_history_when_any_commit_any_ref_reaches_holds_it(tmp_path: Path) -> None:
+    repo = history_repo(tmp_path)
+    assert repomap.in_history(repo, "keys.txt")
+    assert repomap.in_history(repo, "plan*.txt")
+    assert repomap.in_history(repo, "notes.txt")
+    assert not repomap.in_history(repo, "plan.txt")
+    assert not repomap.in_history(repo, "nowhere.txt")
+
+
+def test_a_path_only_in_commits_no_ref_reaches_is_not_in_the_history(tmp_path: Path) -> None:
+    repo = history_repo(tmp_path)
+    shell(repo, "git stash drop -q && git branch -q -D side && git reset -q --hard HEAD~1 && git rm -q keys.txt && git commit -q -m again")
+    assert not repomap.in_history(repo, "notes.txt") and not repomap.in_history(repo, "plan*.txt")
+
+
+def test_history_reads_nothing_where_there_is_no_repository_or_no_commit(tmp_path: Path) -> None:
+    assert not repomap.in_history(tmp_path / "missing", "keys.txt")
+    shell(tmp_path, "git init -q empty")
+    assert not repomap.in_history(tmp_path / "empty", "keys.txt")
+    assert not repomap.reachable(tmp_path / "empty", "HEAD")
+    assert not repomap.is_ancestor(tmp_path / "missing", "HEAD", "HEAD")
+
+
+def test_ancestry_says_whether_one_commit_leads_to_another(tmp_path: Path) -> None:
+    repo = history_repo(tmp_path)
+    first = gitcmd.output(repo, "rev-parse", "HEAD~1").strip()
+    assert repomap.is_ancestor(repo, first, "main") and repomap.is_ancestor(repo, "main", "side")
+    assert not repomap.is_ancestor(repo, "side", "main")
+    assert not repomap.is_ancestor(repo, "nonsense", "main")
+
+
+def test_a_commit_is_reachable_while_some_ref_leads_to_it(tmp_path: Path) -> None:
+    repo = history_repo(tmp_path)
+    side = gitcmd.output(repo, "rev-parse", "side").strip()
+    assert repomap.reachable(repo, side)
+    shell(repo, "git branch -q -D side")
+    assert not repomap.reachable(repo, side)
+    assert not repomap.reachable(repo, "0" * 40)

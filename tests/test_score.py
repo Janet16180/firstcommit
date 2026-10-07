@@ -51,9 +51,14 @@ def test_a_level_solved_without_hints_pays_its_full_xp() -> None:
     assert score.level_reward(200, hints=0, first_time=True) == 200
 
 
-def test_a_level_solved_with_any_hint_pays_no_xp() -> None:
-    assert score.level_reward(100, hints=1, first_time=True) == 0
-    assert score.level_reward(300, hints=4, first_time=True) == 0
+def test_each_hint_costs_fifteen_percent_of_the_level_xp() -> None:
+    assert score.level_reward(100, hints=1, first_time=True) == 85
+    assert score.level_reward(200, hints=2, first_time=True) == 140
+
+
+def test_a_first_solve_never_pays_less_than_half_the_level_xp() -> None:
+    assert score.level_reward(100, hints=4, first_time=True) == 50
+    assert score.level_reward(300, hints=10, first_time=True) == 150
 
 
 def test_a_replay_pays_nothing() -> None:
@@ -65,15 +70,15 @@ def test_more_hints_never_pay_more(xp: int, hints: int) -> None:
     assert score.level_reward(xp, hints + 1, first_time=True) <= score.level_reward(xp, hints, first_time=True)
 
 
-@given(level_xps, hint_counts, st.booleans())
-def test_a_solve_pays_all_of_the_level_xp_or_nothing(xp: int, hints: int, first_time: bool) -> None:
-    assert score.level_reward(xp, hints, first_time) in (0, xp)
+@given(level_xps, hint_counts)
+def test_a_first_solve_pays_between_half_and_all_of_the_level_xp(xp: int, hints: int) -> None:
+    assert xp // 2 <= score.level_reward(xp, hints, first_time=True) <= xp
 
 
-def test_the_first_hint_costs_the_whole_reward_and_later_ones_nothing_more() -> None:
-    assert score.hint_cost(200, used=1, first_time=True) == 200
-    assert score.hint_cost(200, used=2, first_time=True) == 0
-    assert score.hint_cost(100, used=4, first_time=True) == 0
+def test_a_hint_costs_what_it_takes_off_the_reward() -> None:
+    assert score.hint_cost(200, used=1, first_time=True) == 30
+    assert score.hint_cost(100, used=4, first_time=True) == 5
+    assert score.hint_cost(100, used=5, first_time=True) == 0
 
 
 def test_a_hint_costs_nothing_on_a_replay() -> None:

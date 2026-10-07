@@ -18,7 +18,7 @@ The three areas.
 """
 
 [[card]]
-id = "basics-staging-area"
+id = "cargo-staging-area"
 kind = "choice"
 level = 1
 prompt = "What does `git add` change?"
@@ -28,7 +28,7 @@ explain = "It stages."
 source = "git-add(1)"
 
 [[card]]
-id = "basics-hello-blob"
+id = "cargo-hello-blob"
 kind = "predict"
 level = 2
 prompt = "What does the last command print?"
@@ -40,7 +40,7 @@ source = "git-hash-object(1)"
 verify = "true"
 
 [[card]]
-id = "basics-default-branch"
+id = "cargo-default-branch"
 kind = "text"
 level = 3
 prompt = "Which branch does the game start you on?"
@@ -51,7 +51,7 @@ source = "git-init(1)"
 '''
 
 
-def write_deck(folder: Path, text: str, chapter: str = "basics") -> Path:
+def write_deck(folder: Path, text: str, chapter: str = "cargo") -> Path:
     """
     Write a deck file for a chapter.
 
@@ -74,7 +74,7 @@ def write_deck(folder: Path, text: str, chapter: str = "basics") -> Path:
     return path
 
 
-def card(card_id: str = "basics-x", kind: cards.CardKind = "choice", level: int = 1) -> cards.Card:
+def card(card_id: str = "cargo-x", kind: cards.CardKind = "choice", level: int = 1) -> cards.Card:
     """
     Make a valid card of a kind, for schedule and judging tests.
 
@@ -93,18 +93,18 @@ def card(card_id: str = "basics-x", kind: cards.CardKind = "choice", level: int 
         A card with a right answer ``"right"`` and three distractors (text cards accept ``"Main Branch"``).
     """
     if kind == "text":
-        return cards.Card(card_id, "basics", kind, level, "Prompt?", "Why.", "src", accept=("Main Branch", "main"))
-    return cards.Card(card_id, "basics", kind, level, "Prompt?", "Why.", "src", correct="right", wrong=("wrong", "worse", "worst"))
+        return cards.Card(card_id, "cargo", kind, level, "Prompt?", "Why.", "src", accept=("Main Branch", "main"))
+    return cards.Card(card_id, "cargo", kind, level, "Prompt?", "Why.", "src", correct="right", wrong=("wrong", "worse", "worst"))
 
 
 def test_a_deck_file_loads_into_cards_of_its_chapter(tmp_path: Path) -> None:
     deck = cards.load_deck(write_deck(tmp_path, DECK))
-    assert deck.chapter == "basics"
+    assert deck.chapter == "cargo"
     assert deck.notes == "The three areas.\n"
     assert [(entry.id, entry.kind, entry.level, entry.chapter) for entry in deck.cards] == [
-        ("basics-staging-area", "choice", 1, "basics"),
-        ("basics-hello-blob", "predict", 2, "basics"),
-        ("basics-default-branch", "text", 3, "basics"),
+        ("cargo-staging-area", "choice", 1, "cargo"),
+        ("cargo-hello-blob", "predict", 2, "cargo"),
+        ("cargo-default-branch", "text", 3, "cargo"),
     ]
     choice, predict, text = deck.cards
     assert choice.wrong == ("The last commit", "The remote")
@@ -117,7 +117,7 @@ def test_a_deck_file_loads_into_cards_of_its_chapter(tmp_path: Path) -> None:
 def test_a_chapters_deck_is_read_from_the_deck_folder(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(cards, "DECKS", tmp_path)
     write_deck(tmp_path, DECK)
-    assert cards.deck("basics") == cards.load_deck(tmp_path / "basics.toml")
+    assert cards.deck("cargo") == cards.load_deck(tmp_path / "cargo.toml")
 
 
 def test_a_chapter_without_a_deck_file_has_an_empty_deck(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -133,10 +133,10 @@ def test_an_unknown_chapter_has_no_deck() -> None:
 def test_a_card_is_found_by_its_id(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(cards, "DECKS", tmp_path)
     write_deck(tmp_path, DECK)
-    assert cards.find("basics-hello-blob").kind == "predict"
+    assert cards.find("cargo-hello-blob").kind == "predict"
 
 
-@pytest.mark.parametrize("card_id", ["basics-nothing", "nowhere-card", "basics", ""])
+@pytest.mark.parametrize("card_id", ["cargo-nothing", "nowhere-card", "cargo", ""])
 def test_an_unknown_card_id_is_not_found(tmp_path: Path, monkeypatch: pytest.MonkeyPatch, card_id: str) -> None:
     monkeypatch.setattr(cards, "DECKS", tmp_path)
     write_deck(tmp_path, DECK)
@@ -166,7 +166,7 @@ def deck_with(card_text: str) -> str:
     return "[[card]]\n" + card_text
 
 
-VALID_CHOICE = """id = "basics-one"
+VALID_CHOICE = """id = "cargo-one"
 kind = "choice"
 level = 1
 prompt = "P?"
@@ -177,8 +177,8 @@ source = "S"
 """
 
 BROKEN = {
-    "an id outside its chapter": (VALID_CHOICE.replace('"basics-one"', '"hash-one"'), "basics-"),
-    "an id that is only the chapter": (VALID_CHOICE.replace('"basics-one"', '"basics-"'), "basics-"),
+    "an id outside its chapter": (VALID_CHOICE.replace('"cargo-one"', '"hash-one"'), "cargo-"),
+    "an id that is only the chapter": (VALID_CHOICE.replace('"cargo-one"', '"cargo-"'), "cargo-"),
     "an unknown kind": (VALID_CHOICE.replace('"choice"', '"essay"'), "kind"),
     "a level above 3": (VALID_CHOICE.replace("level = 1", "level = 4"), "level"),
     "a level that is not a number": (VALID_CHOICE.replace("level = 1", "level = true"), "level"),
@@ -192,27 +192,27 @@ BROKEN = {
     "a distractor that is not text": (VALID_CHOICE.replace('["wrong", "worse"]', '["wrong", 3]'), "wrong"),
     "a predict card without code": (VALID_CHOICE.replace('"choice"', '"predict"'), "code"),
     "a text card with a right option": (VALID_CHOICE.replace('"choice"', '"text"'), "correct"),
-    "a text card that accepts nothing": ('id = "basics-t"\nkind = "text"\nlevel = 1\nprompt = "P?"\naccept = []\nexplain = "E."\nsource = "S"\n', "accept"),
+    "a text card that accepts nothing": ('id = "cargo-t"\nkind = "text"\nlevel = 1\nprompt = "P?"\naccept = []\nexplain = "E."\nsource = "S"\n', "accept"),
     "an empty verify snippet": (VALID_CHOICE + 'verify = ""\n', "verify"),
-    "a placeholder with backticks": ('id = "basics-t"\nkind = "text"\nlevel = 1\nprompt = "P?"\naccept = ["main"]\nplaceholder = "a `branch`"\nexplain = "E."\nsource = "S"\n', "placeholder"),
+    "a placeholder with backticks": ('id = "cargo-t"\nkind = "text"\nlevel = 1\nprompt = "P?"\naccept = ["main"]\nplaceholder = "a `branch`"\nexplain = "E."\nsource = "S"\n', "placeholder"),
 }
 
 
 @pytest.mark.parametrize("case", BROKEN.values(), ids=list(BROKEN))
 def test_a_broken_card_is_refused_with_the_file_the_card_and_the_field(tmp_path: Path, case: tuple[str, str]) -> None:
     text, field = case
-    with pytest.raises(ValueError, match=rf"basics\.toml.*card 1.*{re.escape(field)}"):
+    with pytest.raises(ValueError, match=rf"cargo\.toml.*card 1.*{re.escape(field)}"):
         cards.load_deck(write_deck(tmp_path, deck_with(text)))
 
 
 def test_two_cards_may_not_share_an_id(tmp_path: Path) -> None:
-    with pytest.raises(ValueError, match=r"basics-one.*twice"):
+    with pytest.raises(ValueError, match=r"cargo-one.*twice"):
         cards.load_deck(write_deck(tmp_path, deck_with(VALID_CHOICE) + deck_with(VALID_CHOICE)))
 
 
 @pytest.mark.parametrize(("text", "problem"), [("[[card\n", "TOML"), ("notes = 3\n", "notes"), ("title = 'x'\n", "title"), ("card = 3\n", "card")])
 def test_a_broken_deck_file_is_refused_with_its_name(tmp_path: Path, text: str, problem: str) -> None:
-    with pytest.raises(ValueError, match=rf"basics\.toml.*{problem}"):
+    with pytest.raises(ValueError, match=rf"cargo\.toml.*{problem}"):
         cards.load_deck(write_deck(tmp_path, text))
 
 
@@ -253,18 +253,18 @@ def test_a_rescheduled_card_is_due_after_its_box_interval(entry: CardEntry | Non
 
 
 def test_cards_due_for_review_come_first_oldest_first_then_new_cards_easiest_first() -> None:
-    deck = [card("basics-a-new", level=3), card("basics-b-later"), card("basics-c-due-recent"), card("basics-d-new", level=1), card("basics-e-due-old")]
+    deck = [card("cargo-a-new", level=3), card("cargo-b-later"), card("cargo-c-due-recent"), card("cargo-d-new", level=1), card("cargo-e-due-old")]
     entries: dict[str, CardEntry] = {
-        "basics-b-later": {"box": 3, "due": "2026-10-10"},
-        "basics-c-due-recent": {"box": 1, "due": "2026-10-06"},
-        "basics-e-due-old": {"box": 2, "due": "2026-10-01"},
+        "cargo-b-later": {"box": 3, "due": "2026-10-10"},
+        "cargo-c-due-recent": {"box": 1, "due": "2026-10-06"},
+        "cargo-e-due-old": {"box": 2, "due": "2026-10-01"},
     }
     picked = cards.pick(deck, entries, TODAY, limit=10, rng=random.Random(1))
-    assert [entry.id for entry in picked] == ["basics-e-due-old", "basics-c-due-recent", "basics-d-new", "basics-a-new"]
+    assert [entry.id for entry in picked] == ["cargo-e-due-old", "cargo-c-due-recent", "cargo-d-new", "cargo-a-new"]
 
 
 def test_picking_stops_at_the_limit() -> None:
-    deck = [card(f"basics-{number}") for number in range(5)]
+    deck = [card(f"cargo-{number}") for number in range(5)]
     assert len(cards.pick(deck, {}, TODAY, limit=3, rng=random.Random(1))) == 3
     assert cards.pick(deck, {}, TODAY, limit=0, rng=random.Random(1)) == []
 
@@ -272,9 +272,9 @@ def test_picking_stops_at_the_limit() -> None:
 @settings(deadline=None)
 @given(st.lists(st.tuples(st.integers(1, 3), st.none() | st.integers(-40, 40)), max_size=12), st.integers(0, 15), st.randoms())
 def test_picked_cards_are_distinct_new_or_due_and_as_many_as_allowed(specs: list[tuple[int, int | None]], limit: int, rng: random.Random) -> None:
-    deck = [card(f"basics-{number}", level=level) for number, (level, _) in enumerate(specs)]
+    deck = [card(f"cargo-{number}", level=level) for number, (level, _) in enumerate(specs)]
     entries: dict[str, CardEntry] = {
-        f"basics-{number}": {"box": 1, "due": (TODAY + timedelta(days=offset)).isoformat()}
+        f"cargo-{number}": {"box": 1, "due": (TODAY + timedelta(days=offset)).isoformat()}
         for number, (_, offset) in enumerate(specs)
         if offset is not None
     }
@@ -287,9 +287,9 @@ def test_picked_cards_are_distinct_new_or_due_and_as_many_as_allowed(specs: list
 @settings(deadline=None)
 @given(st.lists(st.tuples(st.integers(1, 3), st.none() | st.integers(-40, 0)), max_size=12), st.randoms())
 def test_due_cards_come_oldest_first_then_new_cards_easiest_first(specs: list[tuple[int, int | None]], rng: random.Random) -> None:
-    deck = [card(f"basics-{number:02}", level=level) for number, (level, _) in enumerate(specs)]
+    deck = [card(f"cargo-{number:02}", level=level) for number, (level, _) in enumerate(specs)]
     entries: dict[str, CardEntry] = {
-        f"basics-{number:02}": {"box": 1, "due": (TODAY + timedelta(days=offset)).isoformat()}
+        f"cargo-{number:02}": {"box": 1, "due": (TODAY + timedelta(days=offset)).isoformat()}
         for number, (_, offset) in enumerate(specs)
         if offset is not None
     }
@@ -360,7 +360,7 @@ def test_every_card_level_pays_xp() -> None:
 def test_a_deck_is_read_once_per_file(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(cards, "DECKS", tmp_path)
     write_deck(tmp_path, DECK)
-    assert cards.deck("basics") is cards.deck("basics")
+    assert cards.deck("cargo") is cards.deck("cargo")
 
 
 def test_decks_from_another_folder_are_never_mixed_up(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -369,4 +369,4 @@ def test_decks_from_another_folder_are_never_mixed_up(tmp_path: Path, monkeypatc
         folder.mkdir()
         write_deck(folder, deck_with(VALID_CHOICE.replace('"P?"', f'"{prompt}"')))
         monkeypatch.setattr(cards, "DECKS", folder)
-        assert cards.deck("basics").cards[0].prompt == prompt
+        assert cards.deck("cargo").cards[0].prompt == prompt

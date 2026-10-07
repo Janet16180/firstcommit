@@ -47,7 +47,7 @@ the snapshot polled every 1.5 s never starts a file system monitor, a hook or a 
 program from a lab's ``.git/config``. The player's shell keeps the repository's settings.
 """
 
-BASE_CONFIG = "[init]\n\tdefaultBranch = main\n[core]\n\tpager = less -FRX\n\texcludesFile =\n\tattributesFile =\n[user]\n\tuseConfigOnly = true\n"
+BASE_CONFIG = "[init]\n\tdefaultBranch = main\n[core]\n\tpager = less -FRX\n\teditor = true\n\texcludesFile =\n\tattributesFile =\n[user]\n\tuseConfigOnly = true\n"
 """
 The game's global git configuration when it starts: the player's shell and the lessons share it.
 
@@ -57,6 +57,10 @@ is printed without stopping in the pager, whatever ``LESS`` the player's shell s
 personal ignore and attributes files (``~/.config/git/ignore`` and ``attributes``, which it reads
 by default even when ``GIT_CONFIG_GLOBAL`` names another file): a lab shows the same files on
 every machine. A chapter that teaches a global ignore file sets ``core.excludesFile`` itself.
+``core.editor = true`` means no editor ever opens for the player, whatever their ``EDITOR`` or
+``VISUAL`` (git-var(1): ``core.editor`` comes before both): a bare ``git commit`` stops with an
+empty message and commits nothing, while ``git merge``, a merging ``git pull``, ``git revert`` and
+``git commit --no-edit`` keep the message git prepared.
 ``user.useConfigOnly`` makes a commit without a configured name or email stop with the same
 message on every machine, ``EMAIL`` ignored, instead of using a guessed address built from the
 login and host names: no machine-dependent identity, and no login or host name in a pushed
@@ -95,7 +99,8 @@ def shell_environment(base: Mapping[str, str], home: Path) -> dict[str, str]:
 
     Every inherited ``GIT_*`` variable is dropped first, so a ``GIT_DIR`` or ``GIT_INDEX_FILE``
     set around the server cannot redirect the player's commands; then git is kept to the game's
-    configuration and labs. Everything else, such as the player's editor, is kept.
+    configuration and labs. Everything else is kept; the player's ``EDITOR`` and ``VISUAL`` stay
+    too, though the game's ``core.editor`` comes first (`BASE_CONFIG`).
 
     Parameters
     ----------

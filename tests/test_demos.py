@@ -65,6 +65,7 @@ def test_the_environment_is_complete_and_inherits_nothing(tmp_path: Path, monkey
         "GIT_CONFIG_NOSYSTEM": "1",
         "GIT_CEILING_DIRECTORIES": str(tmp_path),
         "GIT_MERGE_AUTOEDIT": "yes",
+        "GIT_EDITOR": "false",
         "GIT_AUTHOR_NAME": demos.AUTHOR.name,
         "GIT_AUTHOR_EMAIL": demos.AUTHOR.email,
         "GIT_AUTHOR_DATE": demos.DATE,
