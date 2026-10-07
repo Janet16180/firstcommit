@@ -290,3 +290,31 @@ Where the Spanish words it differently from a word-for-word translation:
 Words, as AUTHORING section 7 lists them: área de preparación (staging area; git's own `index`
 is named once in the cargo notes, as in English), carpeta de trabajo, repositorio, commit (noun)
 and hacer un commit (verb), preparar (stage), sin seguimiento (untracked), rama, hash.
+
+## Wave 1 of chapters 3 to 7 (added 2026-10-07)
+
+Experiments run in the image (`firstcommit:latest`, git 2.43.0) with the game's configuration
+(`init.defaultBranch = main`, `core.editor = true`, `user.useConfigOnly = true`), numbered on from
+E33:
+
+| Tag | What ran | Result |
+|---|---|---|
+| E34 | a new repository with `engine.cfg`, `route.txt` and `keys.txt`; `git add engine.cfg route.txt` | status 0; `A  engine.cfg`, `A  route.txt`, `?? keys.txt` |
+| E35 | `git add .` there, then `git rm --cached keys.txt` | both 0; all three staged, then `keys.txt` untracked again and still in the folder |
+| E36 | `git add engine.cfg nosuch.txt` | status 128; nothing new staged |
+
+### Level `cargo-selective` (Selective cargo, 2-2)
+
+*Re-checked* by `tests/levels/test_cargo_selective.py`: naming the two files, one at a time,
+`git add .` and `git rm --cached keys.txt`, `git restore --staged` failing with 128 before the
+first commit, and keys that reach a commit.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card | `git add <file> <file>` stages the files named, and only those; the others stay as they are | E34; git-add(1) `<pathspec>...` |
+| hints | `git add` takes several names on one line, separated by spaces | E34 |
+| debrief, `LOADED`, `LOOKED` | the two files staged by name; `keys.txt` untracked in the working folder; `git add .` would have taken the keys too | E34, E35 |
+| `KEYS_STAGED`, `EVERYTHING_STAGED` | `git add .` stages every file, `keys.txt` too; `git rm --cached keys.txt` takes it out and the file stays | E16, E35; git-rm(1) `--cached` |
+| `NOTHING_TO_RESTORE` | as cargo-first's: `git restore --staged` fails before the first commit | E15 |
+| `KEYS_COMMITTED` (lost) | a committed `keys.txt` is in the history; taking a commit back is taught later | `kit.in_history` (every ref); chapters-3-7 puts revert and reset in chapter 7 |
+| `NO_REPOSITORY` | as cargo-first's | E32 |
