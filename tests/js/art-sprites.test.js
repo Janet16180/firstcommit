@@ -52,19 +52,49 @@ test("a row of stars is named by what was earned, its stars hidden, and earned o
   assert.throws(() => ArtSprites.stars(4), RangeError);
 });
 
-test("every icon is drawn in currentColor, 1em, hidden unless labelled", () => {
-  assert.deepEqual(ArtSprites.ICONS, ["lock", "arrow", "back", "replay", "restart", "hint"]);
+test("every plain icon is drawn in currentColor, 1em, hidden unless labelled", () => {
+  assert.deepEqual(ArtSprites.ICONS, ["lock", "arrow", "back", "replay", "restart", "hint", "conflict", "merging", "inverted"]);
   for (const name of ArtSprites.ICONS) {
     const icon = ArtSprites.icon(name);
-    const fills = new Set([...icon.querySelectorAll("rect")].map((rect) => rect.getAttribute("fill")));
-    assert.deepEqual(fills, new Set(["currentColor"]), name);
     assert.equal(icon.getAttribute("height"), "1em");
+    assert.ok(icon.classList.contains(`art-icon--${name}`));
     assert.ok(isHidden(icon));
+    assertPalette(icon);
     assertStyled(icon);
     assert.equal(labelOf(ArtSprites.icon(name, { label: "Map" })), "Map");
   }
+  for (const name of ["lock", "arrow", "back", "replay", "restart", "hint", "conflict", "merging"]) {
+    const fills = new Set([...ArtSprites.icon(name).querySelectorAll("rect")].map((rect) => rect.getAttribute("fill")));
+    assert.deepEqual(fills, new Set(["currentColor"]), name);
+  }
   assert.equal(ArtSprites.icon("arrow").getAttribute("viewBox"), "0 0 8 7");
   assert.throws(() => ArtSprites.icon("rocket"), RangeError);
+});
+
+test("the conflict icon is a file with a crack running clean through it", () => {
+  const conflict = ArtSprites.icon("conflict");
+  const [, , width, height] = conflict.getAttribute("viewBox").split(" ").map(Number);
+  const painted = new Set([...conflict.querySelectorAll("rect")].flatMap((rect) => {
+    const x = Number(rect.getAttribute("x"));
+    return Array.from({ length: Number(rect.getAttribute("width")) }, (_, step) => `${x + step},${rect.getAttribute("y")}`);
+  }));
+  const gaps = Array.from({ length: height }, (_, y) => Array.from({ length: width }, (_cell, x) => x).filter((x) => x > 0 && x < width - 1 && !painted.has(`${x},${y}`)));
+  assert.ok(gaps[0].length > 0 && gaps[height - 1].length > 0, "the crack breaks the top and bottom edges");
+  assert.ok(gaps.every((row) => row.length > 0), "and every row between");
+});
+
+test("the paused merge marker has two arrows meeting at a pause bar that blinks", () => {
+  const merging = ArtSprites.icon("merging");
+  const bars = merging.querySelectorAll("rect.art-pause");
+  assert.ok(bars.length >= 2);
+  assert.ok(merging.querySelectorAll("rect:not(.art-pause)").length >= 6);
+});
+
+test("the inverted capsule is a block outlined and shaded in tokens, its body in the zone's colour", () => {
+  const inverted = ArtSprites.icon("inverted");
+  const fills = new Set([...inverted.querySelectorAll("rect")].map((rect) => rect.getAttribute("fill")));
+  assert.ok(fills.has("currentColor") && fills.has("var(--edge)"));
+  assert.equal(inverted.getAttribute("viewBox"), "0 0 9 9");
 });
 
 test("the sector planets cycle orange, ringed cyan, violet, ringed pink, in a square box", () => {
