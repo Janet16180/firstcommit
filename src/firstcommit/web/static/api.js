@@ -74,18 +74,24 @@ const createGameApi = (function () {
     truncated: flag,
   });
   const OBJECTS = list(record({ hash: text, type: text, size: number }));
-  const ACTIVE = record({ level: text, step: number, steps: number, hints: number, hints_total: number, attempts: number, started: text, auto_check: flag });
+  const ACTIVE = record({ level: text, step: number, steps: number, hints: number, hints_total: number, attempts: number, started: text, auto_check: flag, commands: number, stars: number });
   const PAYOUT = record({ level: text, xp: number, first_time: flag, rank_before: text, rank_after: text });
-  const LEVEL_SUMMARY = record({ id: text, title: text, difficulty: number, xp: number, done: flag, has_lesson: flag, has_quest: flag });
+  const LEVEL_SUMMARY = record({ id: text, title: text, difficulty: number, xp: number, command: text, stars: number, done: flag, has_lesson: flag, has_quest: flag });
+  /* A finished level's command card (records.CommandCard). */
+  const CARD = record({ level: text, command: text, text: BLOCKS });
+  /* The scene pictures the artist has drawn and the moods Rama speaks in (records.Art and records.Mood). */
+  const ART = oneOf("space", "timeline", "terminal", "planet", "flag", "zones", "conveyor");
+  const MOOD = oneOf("info", "ok", "warn", "err");
 
   const STATUS = record({
     xp: number,
     rank: record({ title: text, floor: number, next_title: nullable(text), next_at: nullable(number) }),
-    chapters: list(record({ id: text, title: text, levels: list(LEVEL_SUMMARY), cards: number })),
+    chapters: list(record({ id: text, title: text, blurb: text, levels: list(LEVEL_SUMMARY), cards: number })),
     active: nullable(ACTIVE),
     last_payout: nullable(PAYOUT),
     cards_due: number,
     max_difficulty: number,
+    collection: list(CARD),
   });
   const LEVEL = record({
     id: text,
@@ -94,6 +100,11 @@ const createGameApi = (function () {
     title: text,
     difficulty: number,
     xp: number,
+    command: text,
+    par: number,
+    scene: list(record({ art: ART, text: BLOCKS })),
+    scene_seen: flag,
+    card: CARD,
     briefing: BLOCKS,
     question: BLOCKS,
     placeholder: text,
@@ -122,7 +133,7 @@ const createGameApi = (function () {
   });
   const GUIDE = mapping(record({ before: SNAPSHOT, after: SNAPSHOT, transcript: TRANSCRIPT }));
   const STEP = record({ correct: flag, message: BLOCKS, step: number, quest_done: flag });
-  const CHECK = record({ solved: flag, message: BLOCKS, payout: nullable(PAYOUT), debrief: nullable(BLOCKS) });
+  const CHECK = record({ solved: flag, message: BLOCKS, payout: nullable(PAYOUT), debrief: nullable(BLOCKS), stars: number, new_card: nullable(CARD) });
   const HINT = record({ hint: BLOCKS, used: number, total: number, cost: number });
   /* The playground's people and every id of its buttons (records.Who and playground.BUTTON_IDS; a
      Python test keeps them equal). */
@@ -133,7 +144,7 @@ const createGameApi = (function () {
     mapping(list(record({ id: BUTTON, label: text, line: text, off: text })))(value, where);
     for (const person of Object.keys(value)) WHO(person, `${where}'s key`);
   };
-  const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), teammate: nullable(SNAPSHOT), events: EVENTS, teammate_events: EVENTS, buttons: BARS, commands: list(record({ line: text, status: number })) });
+  const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), teammate: nullable(SNAPSHOT), events: EVENTS, teammate_events: EVENTS, buttons: BARS, commands: list(record({ line: text, status: number })), reactions: list(record({ line: text, mood: MOOD, text: BLOCKS })) });
   const PRESSED = record({
     press: record({ person: WHO, button: BUTTON, command: text, status: number, output: text }),
     before: OBSERVATION,
@@ -193,6 +204,8 @@ const createGameApi = (function () {
       guide: () => checked(GUIDE, "/api/guide"),
       /* One person's playground button: the press, its explanation and the lab right after it. */
       press: (person, button) => checked(PRESSED, "/api/press", { person, button }),
+      /* Marks a level's scene seen, so it does not play by itself again. */
+      scene: (level) => checked(NOTHING, "/api/scene", { level }),
     };
   };
 })();
