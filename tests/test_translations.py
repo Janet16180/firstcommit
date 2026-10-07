@@ -5,6 +5,7 @@ A translation may reorder a sentence, so code spans are compared as a sorted lis
 block keeps its commands and may translate the comments after ``#``.
 """
 
+import importlib.util
 import re
 from typing import Any
 
@@ -144,6 +145,13 @@ def test_the_chapters_names_and_blurbs_have_the_same_shape_in_spanish() -> None:
 @pytest.mark.parametrize("level", LEVELS, ids=[level.id for level in LEVELS])
 def test_a_levels_spanish_texts_have_the_shape_of_its_english_ones(level: runner.Level) -> None:
     assert_same_shape(level_pairs(level))
+
+
+def test_every_level_and_every_deck_of_the_game_has_its_spanish() -> None:
+    for level in runner.catalogue().values():
+        assert importlib.util.find_spec(f"firstcommit.levels.{level.id.replace('-', '_')}_es") is not None, level.id
+    english_decks = sorted(path.stem for path in cards.DECKS.glob("*.toml") if not path.name.endswith(".es.toml"))
+    assert english_decks == SPANISH_DECKS
 
 
 @pytest.mark.parametrize("chapter", SPANISH_DECKS)

@@ -1,0 +1,81 @@
+notes = """
+El área de preparación (Git la llama index) contiene lo que llevará tu próximo commit, y tú eliges
+qué entra. `git add` copia un archivo, tal como está en ese momento, de la carpeta de trabajo al
+área de preparación; la carpeta de trabajo conserva su propia copia. Un `git commit` a secas se
+lleva lo preparado y deja el resto.
+
+`git status` lista lo que está preparado para el próximo commit, lo que ha cambiado después en la
+carpeta de trabajo y los archivos que Git aún no sigue. Si `git add` no encuentra un nombre, se
+detiene con un error y no prepara nada. `git add .` prepara todo lo que hay en la carpeta actual y
+en las carpetas que contiene.
+
+Para sacar un archivo del área de preparación y dejarlo en la carpeta de trabajo:
+`git rm --cached <file>` antes del primer commit del repositorio, y `git restore --staged <file>`
+cuando ya tiene uno.
+
+    $ git add map.txt                  # prepara un archivo
+    $ git status                       # mira qué está preparado y qué no
+    $ git rm --cached journal.txt      # saca del área de preparación, antes del primer commit
+    $ git restore --staged map.txt     # saca del área de preparación, cuando ya hay un commit
+"""
+
+[[card]]
+id = "cargo-add-copies"
+prompt = "En un repositorio nuevo, ejecutas `git add map.txt`. ¿Dónde está `map.txt` ahora?"
+correct = "En la carpeta de trabajo y en el área de preparación"
+wrong = [
+    "Solo en el área de preparación: salió de la carpeta",
+    "En un commit nuevo del repositorio",
+    "Solo en la carpeta de trabajo, marcado para un commit posterior",
+]
+explain = """
+`git add` copia el contenido actual del archivo al área de preparación, y la carpeta de trabajo
+conserva su archivo: nada se mueve. No se hace ningún commit: un commit solo ocurre con
+`git commit`. El área de preparación guarda de verdad el contenido, no una marca: si vuelves a
+cambiar el archivo, el área de preparación sigue teniendo la versión que añadiste.
+"""
+
+[[card]]
+id = "cargo-status-short"
+prompt = "¿Qué imprime el último comando?"
+explain = """
+`git status --short` da una línea por archivo con dos columnas: el área de preparación y después
+la carpeta de trabajo. `A ` significa añadido al área de preparación, un archivo nuevo para el
+próximo commit; `??` significa sin seguimiento. Solo se añadió `map.txt`, así que `journal.txt`
+sigue sin seguimiento. `M` indicaría un cambio en un archivo que ya está en el último commit, y
+este repositorio todavía no tiene ningún commit.
+"""
+
+[[card]]
+id = "cargo-add-misspelled"
+prompt = "El archivo es `map.txt`, pero escribes `git add mapa.txt`. ¿Qué pasa?"
+correct = "Git se detiene con un error y no prepara nada"
+wrong = [
+    "Git prepara `map.txt`, el nombre más parecido",
+    "Git crea un `mapa.txt` vacío y lo prepara",
+    "Git prepara en su lugar todos los archivos de la carpeta",
+]
+explain = """
+`git add` prepara las rutas que encuentra; un nombre que no corresponde a ningún archivo lo
+detiene con un error, y no se prepara nada, ni siquiera los otros nombres de la misma línea. Git
+no adivina el nombre que querías ni crea archivos. Comprueba el nombre con `ls`, o deja que el
+tabulador lo complete.
+"""
+
+[[card]]
+id = "cargo-unstage-before-commit"
+prompt = "El repositorio todavía no tiene ningún commit, y `git add .` preparó `journal.txt` por error. ¿Qué comando lo saca del área de preparación y conserva el archivo?"
+correct = "`git rm --cached journal.txt`"
+wrong = [
+    "`git rm journal.txt`",
+    "`git restore --staged journal.txt`",
+    "`git commit journal.txt`",
+]
+explain = """
+`git rm --cached` quita una ruta solo del área de preparación y no toca la carpeta de trabajo;
+`git status` lo sugiere cuando todavía no hay ningún commit. `git restore --staged` vuelve a poner
+la versión del último commit, así que falla mientras no haya ninguno; cuando el repositorio ya
+tiene un commit, es la forma habitual de sacar algo del área de preparación. Un `git rm` a secas se
+niega aquí, porque el archivo tiene cambios preparados, y con `-f` borraría el archivo también de
+la carpeta de trabajo. `git commit journal.txt` haría un commit con él.
+"""

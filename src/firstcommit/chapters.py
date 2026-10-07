@@ -66,7 +66,7 @@ BLURBS: dict[str, dict[Language, str]] = {
     },
     "setup": {
         "en": "Git on your own computer, ready for real work.",
-        "es": "Git en tu propio ordenador, listo para trabajar de verdad.",
+        "es": "Git en tu propia computadora, listo para trabajar de verdad.",
     },
     "toolbox": {
         "en": "Tags, cherry-pick, bisect and other handy tools.",

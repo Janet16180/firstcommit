@@ -131,7 +131,7 @@ def texts(level: runner.Level) -> list[str]:
 
 def assert_spoken(level: runner.Level, verdicts: list[kit.Verdict]) -> None:
     """
-    Check that every message a level gave has its Spanish, once the level has a Spanish sibling.
+    Check that every message a level gave has its Spanish.
 
     Parameters
     ----------
@@ -140,9 +140,8 @@ def assert_spoken(level: runner.Level, verdicts: list[kit.Verdict]) -> None:
     verdicts : list[kit.Verdict]
         What its checks and watches answered.
     """
-    spanish = level.texts["es"]
-    unspoken = {verdict.message for verdict in verdicts if verdict.message} - set(spanish.messages)
-    assert spanish == level.texts["en"] or not unspoken, f"no Spanish for {sorted(unspoken)}"
+    unspoken = {verdict.message for verdict in verdicts if verdict.message} - set(level.texts["es"].messages)
+    assert not unspoken, f"no Spanish for {sorted(unspoken)}"
 
 
 @pytest.mark.parametrize(("package", "level"), CASES, ids=IDS)
@@ -254,5 +253,5 @@ def test_checks_survive_a_lab_the_player_wrecked(package: ModuleType, level: run
 
 
 @pytest.mark.parametrize(("package", "level"), CASES, ids=IDS)
-def test_every_reaction_of_a_level_with_a_spanish_sibling_has_its_spanish(package: ModuleType, level: runner.Level) -> None:
+def test_every_reaction_of_a_level_has_its_spanish(package: ModuleType, level: runner.Level) -> None:
     assert_spoken(level, [kit.Verdict(False, rule.text) for rule in level.reactions])

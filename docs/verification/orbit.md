@@ -256,3 +256,37 @@ a repository that has a working directory associated with it, and false by defau
 repository." In the image, a fresh `git init --bare` repository has no such setting (`git config
 core.logAllRefUpdates` exits 1). *Re-checked* by `tests/test_playground.py`: after a push and a
 forced push back, `main@{1}` and `main@{2}` on the stand-in GitHub name the commits before.
+
+## Spanish texts (added 2026-10-07)
+
+The Spanish of `liftoff-aboard`, `liftoff-flag` and `cargo-first` (`levels/*_es.py`), the shared
+reactions (`reactions_es.py`), the `liftoff` and `cargo` decks (`content/cards/*.es.toml`), the
+game's own messages (`game.SPANISH`) and the chapters' names and blurbs (`chapters.py`).
+
+Each Spanish text was read against its English one, claim by claim. No Spanish text makes a claim
+its English text does not make, and none drops a scope ("solo dentro de un repositorio" for "only
+inside a repository", "antes del primer commit" for "before the first commit"), so the evidence
+recorded above for each English text covers its Spanish too. Commands, file names, options, code
+spans, placeholders and verbatim commands are kept exactly; only the comments after `#` in a
+verbatim block are translated. `tests/test_translations.py` checks this for every pair (code
+spans, placeholders, verbatim commands, paragraph and bullet counts), and
+`tests/test_levels.py` that every message a level gives on its walk has its Spanish.
+
+Git's output stays in English: the image (`firstcommit:latest`, git 2.43.0) has no Spanish
+messages for git (`/usr/share/locale/es/LC_MESSAGES/` is empty, `locale -a` lists only `C`,
+`C.utf8` and `POSIX`, `LANG=C.UTF-8`). The Spanish texts never quote git, as the English ones
+don't, so they hold whatever language git speaks.
+
+Where the Spanish words it differently from a word-for-word translation:
+
+| Text | English | Spanish | Why it says the same |
+|---|---|---|---|
+| `reactions.NOT_STAGED`, `NOT_COMMITTED` | "... are the usual causes" | "lo habitual es ..." | the same causes, the same hedge |
+| `reactions.UNKNOWN_COMMAND` | "The shell knows no command" | "La terminal no conoce ningún comando" | the player knows the place they type in as the terminal; the claim is about the command not being found (status 127) |
+| `liftoff` deck, `liftoff-status-exit-code` | "127 is what the shell gives for a command it cannot find" | "127 es lo que da la terminal cuando no encuentra el comando" | as above; bash's status 127, recorded for the English card |
+| `cargo` deck, `cargo-unstage-before-commit` | "`git commit journal.txt` would commit it" | "`git commit journal.txt` haría un commit con él" | the same claim |
+| `chapters.CHAPTERS["rebase"]` | "Keeping up to date" | "Al día con los demás" | a coming chapter; names the same idea |
+
+Words, as AUTHORING section 7 lists them: área de preparación (staging area; git's own `index`
+is named once in the cargo notes, as in English), carpeta de trabajo, repositorio, commit (noun)
+and hacer un commit (verb), preparar (stage), sin seguimiento (untracked), rama, hash.
