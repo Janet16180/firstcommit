@@ -150,7 +150,7 @@ The finished ones can be deleted once the user agrees.
   start a server on a throwaway home, reset the prompt and refuse leaky shots.
 - Reviews and fact-checks so far: `.scratch/review/`; the scripts they cite as "in my job
   folder" are saved in `.scratch/factcheck/` (see its README).
-- A newer copy of the four-places demo page sits untracked in
+- timetravel's later build of a demo page (never published) sits untracked in
   `.scratch/wt/theme-time/demo/places-demo.html`.
 - Revert checks (break the code on purpose to see a test fail): run with
   `PYTHONDONTWRITEBYTECODE=1`, or a stale `.pyc` runs the wrong code.
