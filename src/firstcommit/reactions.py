@@ -24,6 +24,40 @@ Outcome = Literal["any", "ok", "failed", "unknown-command"]
 UNKNOWN_COMMAND_STATUS = 127
 NEEDS_REPOSITORY = r"git (status|add|commit|log|restore|branch|switch|push|pull|fetch|remote)\b"
 """The git commands a beginner meets that fail in a folder without a repository."""
+GIT_COMMANDS: tuple[str, ...] = (
+    "add", "am", "annotate", "apply", "archive", "bisect", "blame", "branch", "bugreport", "bundle",
+    "cat-file", "check-attr", "check-ignore", "check-mailmap", "check-ref-format", "checkout",
+    "checkout--worker", "checkout-index", "cherry", "cherry-pick", "clean", "clone", "column",
+    "commit", "commit-graph", "commit-tree", "config", "count-objects", "credential",
+    "credential-cache", "credential-cache--daemon", "credential-store", "daemon", "describe",
+    "diagnose", "diff", "diff-files", "diff-index", "diff-tree", "difftool", "difftool--helper",
+    "fast-export", "fast-import", "fetch", "fetch-pack", "filter-branch", "fmt-merge-msg",
+    "for-each-ref", "for-each-repo", "format-patch", "fsck", "fsck-objects", "fsmonitor--daemon",
+    "gc", "get-tar-commit-id", "grep", "hash-object", "help", "hook", "http-backend", "http-fetch",
+    "http-push", "imap-send", "index-pack", "init", "init-db", "instaweb", "interpret-trailers",
+    "log", "ls-files", "ls-remote", "ls-tree", "mailinfo", "mailsplit", "maintenance", "merge",
+    "merge-base", "merge-file", "merge-index", "merge-octopus", "merge-one-file", "merge-ours",
+    "merge-recursive", "merge-recursive-ours", "merge-recursive-theirs", "merge-resolve",
+    "merge-subtree", "merge-tree", "mergetool", "mktag", "mktree", "multi-pack-index", "mv",
+    "name-rev", "notes", "pack-objects", "pack-redundant", "pack-refs", "patch-id", "pickaxe",
+    "prune", "prune-packed", "pull", "push", "quiltimport", "range-diff", "read-tree", "rebase",
+    "receive-pack", "reflog", "remote", "remote-ext", "remote-fd", "remote-ftp", "remote-ftps",
+    "remote-http", "remote-https", "repack", "replace", "request-pull", "rerere", "reset",
+    "restore", "rev-list", "rev-parse", "revert", "rm", "send-pack", "sh-i18n--envsubst", "shell",
+    "shortlog", "show", "show-branch", "show-index", "show-ref", "sparse-checkout", "stage",
+    "stash", "status", "stripspace", "submodule", "submodule--helper", "subtree", "switch",
+    "symbolic-ref", "tag", "unpack-file", "unpack-objects", "update-index", "update-ref",
+    "update-server-info", "upload-archive", "upload-archive--writer", "upload-pack", "var",
+    "verify-commit", "verify-pack", "verify-tag", "version", "web--browse", "whatchanged",
+    "worktree", "write-tree",
+)
+"""The commands git 2.43 knows, as ``git --list-cmds=main`` lists them in the game's image."""
+OPTIONAL_COMMANDS: tuple[str, ...] = (
+    "archimport", "citool", "cvsexportcommit", "cvsimport", "cvsserver", "gui", "gui--askpass", "lfs", "p4", "send-email", "svn",
+)
+"""Commands a machine may have besides: git's own that git(1) lists but Ubuntu installs apart (git-gui, git-svn, git-email, git-cvs...), and git-lfs."""
+MISSPELLED_COMMAND = rf"git (?!(?:{'|'.join(re.escape(name) for name in GIT_COMMANDS + OPTIONAL_COMMANDS)})(?: |$))[a-z][\w-]*(?: |$)"
+"""A ``git`` line whose first word after ``git`` is a name git does not know (not an option)."""
 LIST_HIDDEN = r"ls( \S+)* (-[^-\s]*[aA]\S*|--all|--almost-all)( |$)"
 """An ``ls`` that lists hidden names too (``-a``, ``-A``, ``-la``...), such as ``.git``."""
 
@@ -49,6 +83,7 @@ class ReactionRule:
 
 
 NEW_REPOSITORY = "A new repository: Git made the hidden `.git` folder, where it keeps this project's history. `ls -a` shows it."
+NOT_A_GIT_COMMAND = "Git knows no command by that name. Check its spelling: `git help -a` lists every command Git has."
 INIT_AGAIN = "This folder already was a repository. Running `git init` in it again is safe: it overwrites nothing."
 REPOSITORY_GONE = "The repository is gone, and its history with it: Git kept all of it in the `.git` folder."
 NO_REPOSITORY = "Git found no repository here. This command works only inside a repository, and `git init` makes this folder one."
@@ -74,6 +109,7 @@ RULES: tuple[ReactionRule, ...] = (
     ReactionRule(line=r"", mood="warn", text=REPOSITORY_GONE, event="repository-removed"),
     ReactionRule(line=r"git init\b", mood="ok", text=NEW_REPOSITORY, event="repository-created"),
     ReactionRule(line=r"git init( -\S+)*$", mood="info", text=INIT_AGAIN, outcome="ok", repository=True),
+    ReactionRule(line=MISSPELLED_COMMAND, mood="err", text=NOT_A_GIT_COMMAND, outcome="failed"),
     ReactionRule(line=NEEDS_REPOSITORY, mood="err", text=NO_REPOSITORY, outcome="failed", repository=False),
     ReactionRule(line=r"git status\b", mood="info", text=STATUS, outcome="ok"),
     ReactionRule(line=r"git (restore\b.* --staged|rm\b.* --cached)\b", mood="ok", text=UNSTAGED, event="file-unstaged"),

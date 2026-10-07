@@ -191,3 +191,28 @@ experiments E1-E33 above back the explanations.
 | `cargo-status-short` | `git status --short` prints `A  map.txt` then `?? journal.txt`; the first column is the staging area, the second the working folder | git-status(1), Short Format ("X shows the status of the index, and Y shows the status of the work tree"); E13; the `predict` code |
 | `cargo-add-misspelled` | A name that matches no file stops `git add`, nothing is staged, other names on the line included, and no file is created | E10, E11; `verify` |
 | `cargo-unstage-before-commit` | Before the first commit, `git rm --cached` unstages and keeps the file; `git restore --staged` fails then; `git status` suggests `git rm --cached` | git-rm(1), git-restore(1); E15, E17, E18; `verify`. **Fixed** before it shipped: the explanation said a plain `git rm` would delete the file. On WSL's git 2.43.0, `git rm journal.txt` on a newly staged file refuses (status 1, the file and the staging area unchanged), and only `-f` deletes it |
+
+## A misspelled git command (added 2026-10-08)
+
+Rule `NOT_A_GIT_COMMAND`: a failed `git <word>` whose first word is not a command git knows. Run in
+the image (`firstcommit:latest`, git 2.43.0) with the game's configuration:
+
+| What ran | Result |
+|---|---|
+| `git ad map.txt` in a repository | status 1; git says `ad` is not a git command and suggests similar ones |
+| `git stauts` | status 1; the same, with one suggestion |
+| `git ad map.txt` outside a repository | status 1: the misspelling is found before any repository is looked for |
+| `git help -a` | status 0; git-help(1), `-a`: "Print all the available commands on the standard output." |
+| `git --list-cmds=main` | 163 names, the rule's `GIT_COMMANDS`, compared as a set with the constant |
+
+| Text | Claim | Evidence |
+|---|---|---|
+| `NOT_A_GIT_COMMAND` | Git knows no command by that name; `git help -a` lists every command Git has | the experiments above; git-help(1). The text does not quote git's message or its suggestions (AUTHORING 1, rule 4) |
+
+The rule can only fit a word git does not know: its pattern excludes `GIT_COMMANDS` (git 2.43's
+own list in the image) and `OPTIONAL_COMMANDS`. Those are git's commands that git(1) lists but
+Ubuntu ships in other packages (on WSL, `git-gui` adds `gui`, `gui--askpass` and `citool`), plus
+git-lfs. *Re-checked*: `tests/test_reactions.py` fails every known command with statuses 1, 128
+and 129 and expects another reaction or none. It also checks that every command this machine's
+`git --list-cmds=main` lists is known, which caught `gui` on WSL. An alias the player defines
+would count as unknown when it fails. The game's configuration defines none.
