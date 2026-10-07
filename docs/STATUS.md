@@ -132,6 +132,11 @@ boxes, one picture of a commit everywhere), and security L3.
 
 ## Backlog (decided later, not now)
 
+- Playground layout, when it goes into a real level: at 1280 the result box (.pg-result) sits
+  below the live pane's fold after a press; scroll it into view or put it beside the bars.
+- At 390 px the top bar (.player, .prefs) makes every page 827 px wide. Left as is: the game
+  needs a terminal, so it is for laptops; revisit only if phones become a target.
+
 - repomap `outer` field (path to an enclosing repository, e.g. ".."), proposed by insight, for a
   generic "Git sees a repository one folder up" hint on the map. Deferred: no second use yet.
 - termlab's `snippets.run` decodes output as text with universal newlines, so a `\r` becomes
