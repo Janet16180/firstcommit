@@ -22,7 +22,7 @@ from firstcommit.lab import Lab
 from firstcommit.markup import code
 from firstcommit.playground import press
 from firstcommit.playground import setup as setup_playground
-from firstcommit.reactions import Outcome, ReactionRule, matches
+from firstcommit.reactions import LIST_HIDDEN, Outcome, ReactionRule, matches
 from firstcommit.records import Art, Command
 from firstcommit.repomap import (
     Commit,
@@ -41,6 +41,7 @@ from firstcommit.repomap import (
 
 __all__ = [
     "GAME",
+    "LIST_HIDDEN",
     "AnswerCheck",
     "AnswerStep",
     "Art",

@@ -109,11 +109,12 @@ def test_staging_and_committing_are_told_apart_from_lines_that_changed_nothing()
 
 def test_unstaging_is_told_apart_from_restoring_the_working_folder() -> None:
     assert said("git restore --staged notes.txt", kinds={"file-unstaged"}) == f"ok: {reactions.UNSTAGED}"
+    assert said("git rm --cached notes.txt", kinds={"file-unstaged"}) == f"ok: {reactions.UNSTAGED}"
     assert said("git restore notes.txt", kinds={"file-changed"}) == f"warn: {reactions.RESTORED}"
 
 
 def test_ls_explains_hidden_files_once_a_repository_is_there() -> None:
-    for line in ("ls -a", "ls -la", "ls -al", "ls --all", "ls -l -a ."):
+    for line in ("ls -a", "ls -la", "ls -al", "ls --all", "ls -l -a .", "ls -A", "ls --almost-all"):
         assert said(line) == f"info: {reactions.HIDDEN_GIT}", line
     assert said("ls") == f"info: {reactions.LS_IN_REPOSITORY}"
     assert said("ls", repository=False) == f"info: {reactions.LS_NO_REPOSITORY}"

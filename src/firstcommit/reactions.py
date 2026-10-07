@@ -24,6 +24,8 @@ Outcome = Literal["any", "ok", "failed", "unknown-command"]
 UNKNOWN_COMMAND_STATUS = 127
 NEEDS_REPOSITORY = r"git (status|add|commit|log|restore|branch|switch|push|pull|fetch|remote)\b"
 """The git commands a beginner meets that fail in a folder without a repository."""
+LIST_HIDDEN = r"ls( \S+)* (-[^-\s]*[aA]\S*|--all|--almost-all)( |$)"
+"""An ``ls`` that lists hidden names too (``-a``, ``-A``, ``-la``...), such as ``.git``."""
 
 
 @dataclass(frozen=True)
@@ -74,7 +76,7 @@ RULES: tuple[ReactionRule, ...] = (
     ReactionRule(line=r"git init( -\S+)*$", mood="info", text=INIT_AGAIN, outcome="ok", repository=True),
     ReactionRule(line=NEEDS_REPOSITORY, mood="err", text=NO_REPOSITORY, outcome="failed", repository=False),
     ReactionRule(line=r"git status\b", mood="info", text=STATUS, outcome="ok"),
-    ReactionRule(line=r"git restore\b.* --staged\b", mood="ok", text=UNSTAGED, event="file-unstaged"),
+    ReactionRule(line=r"git (restore\b.* --staged|rm\b.* --cached)\b", mood="ok", text=UNSTAGED, event="file-unstaged"),
     ReactionRule(line=r"git restore\b", mood="warn", text=RESTORED, event="file-changed"),
     ReactionRule(line=r"git add$", mood="info", text=ADD_WHAT),
     ReactionRule(line=r"git add\b", mood="ok", text=STAGED, event="file-staged"),
@@ -83,7 +85,7 @@ RULES: tuple[ReactionRule, ...] = (
     ReactionRule(line=r"git commit\b", mood="ok", text=COMMITTED, event="commit-created"),
     ReactionRule(line=r"git commit\b", mood="err", text=NOT_COMMITTED, outcome="failed", repository=True),
     ReactionRule(line=r"git log\b", mood="info", text=LOG, outcome="ok"),
-    ReactionRule(line=r"ls( \S+)* (-[^-\s]*a\S*|--all)( |$)", mood="info", text=HIDDEN_GIT, outcome="ok", repository=True),
+    ReactionRule(line=LIST_HIDDEN, mood="info", text=HIDDEN_GIT, outcome="ok", repository=True),
     ReactionRule(line=r"ls\b", mood="info", text=LS_IN_REPOSITORY, outcome="ok", repository=True),
     ReactionRule(line=r"ls\b", mood="info", text=LS_NO_REPOSITORY, outcome="ok", repository=False),
     ReactionRule(line=r"(gti|gi|gt|got|tig|igt)\b", mood="info", text=DID_YOU_MEAN_GIT, outcome="unknown-command"),

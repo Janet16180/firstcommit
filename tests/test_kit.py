@@ -121,3 +121,10 @@ def test_a_level_reads_the_lines_typed_after_the_last_one_that_worked() -> None:
     assert kit.after(TYPED, r"git init\b") == TYPED[2:]
     assert kit.after(TYPED, r"git add\b") == TYPED
     assert kit.after(TYPED, r"git status\b") == []
+
+
+def test_a_level_knows_a_line_that_lists_hidden_files() -> None:
+    hidden: list[kit.Command] = [{"line": line, "status": 0} for line in ("ls -a", "ls -lA", "ls --all")]
+    shown: list[kit.Command] = [{"line": line, "status": 0} for line in ("ls", "ls -l", "lsa")]
+    assert all(kit.typed([line], kit.LIST_HIDDEN, "ok") for line in hidden)
+    assert not kit.typed(shown, kit.LIST_HIDDEN)
