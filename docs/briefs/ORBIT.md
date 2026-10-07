@@ -107,6 +107,12 @@ Guarantees the page relies on:
   incidents, gamer) decided by the lead.
 - Later, in this order: playtests with first-time players; accessibility; publishing.
 
+## Chapters 3 to 7
+
+`docs/drafts/chapters-3-7.md` holds the decision from the debate: the rules every level follows,
+the challenges, the 23 essential levels in two waves, and what the engine, the page and the art
+need. Wave 1 (11 levels, through Base 7) is merged first, for the playtests with new players.
+
 ## Who does what
 
 Two named teammates, engine and frontend, plus the artist subagent they call. Each teammate works in its own worktree on its own
