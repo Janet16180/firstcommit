@@ -58,6 +58,7 @@ const LevelScreen = (function () {
     screen.shownStars = state.stars;
     ui.stars.replaceChildren(ArtSprites.stars(state.stars, { label: `${state.stars} ${state.stars === 1 ? "star" : "stars"} in play` }));
     ui.stars.classList.toggle("is-lost", lost);
+    if (lost) screen.ctx.sound.play("starlost");
   }
 
   /* The commands and stars as the game now counts them (the level in progress, from the dashboard). */
@@ -73,7 +74,7 @@ const LevelScreen = (function () {
   /* Plays the level's scene; the first time, the game is told it was seen. */
   async function scene(screen) {
     const { ctx, level } = screen;
-    await ScenePlayer.play({ scene: level.scene, timers: ctx.timers, reducedMotion: ctx.reducedMotion });
+    await ScenePlayer.play({ scene: level.scene, timers: ctx.timers, reducedMotion: ctx.reducedMotion, sound: ctx.sound });
     if (level.scene_seen) return;
     level.scene_seen = true;
     await ctx.game.scene(screen.levelId);
@@ -132,7 +133,7 @@ const LevelScreen = (function () {
     state.step = result.step;
     state.auto_check = result.quest_done;
     ui.comms.say(result.message, "ok");
-    ctx.sound.play(watched ? "step" : "correct");
+    ctx.sound.play("goal");
     screen.mission.setStep(state.step);
   }
 
@@ -170,7 +171,7 @@ const LevelScreen = (function () {
     screen.mission.solved();
     const status = await ctx.refresh();
     const next = Progress.nextLevel(status.chapters, levelId);
-    ctx.sound.play("celebrate");
+    ctx.sound.play("complete");
     await Completion.band({ title: "Mission complete", subtitle: `Mission ${screen.number}: ${screen.level.title}`, stars, timers: ctx.timers, reducedMotion: ctx.reducedMotion });
     const dock = Completion.dock({
       title: `Mission complete: mission ${screen.number}`,
@@ -225,6 +226,12 @@ const LevelScreen = (function () {
     screen.ui.comms.say(reactions.flatMap((reaction) => reaction.text), reactions[reactions.length - 1].mood);
   }
 
+  /* A blip for the lines just typed, or a buzz when one of them failed: the terminal shows both. */
+  function echo(screen, typed) {
+    if (typed.some((line) => line.status !== 0)) screen.ctx.sound.play("failed");
+    else if (typed.length) screen.ctx.sound.play("command");
+  }
+
   async function tick(screen) {
     const { game } = screen.ctx;
     try {
@@ -235,6 +242,7 @@ const LevelScreen = (function () {
       if (screen.offline) screen.ui.comms.say(SAY.back, "info");
       screen.offline = false;
       react(screen, observation.reactions);
+      echo(screen, observation.commands);
       if (observation.commands.length) await recount(screen);
       if (plan.watchStep) stepped(screen, await game.step(null), true);
       if (plan.autoCheck && !screen.finished) checked(screen, await game.check(null, true), true);

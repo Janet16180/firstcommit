@@ -9,7 +9,7 @@
  * also sit in the map's bar. Loads last; defines no global.
  */
 
-/* global createClient, createTerminal, createGameApi, Dom, Route, Sound, Dialog, ArtSky, Progress, StarMap, LevelScreen, CardsView, NotesView */
+/* global createClient, createTerminal, createGameApi, Dom, Route, Sound, Dialog, ArtSky, Progress, StarMap, LevelScreen, FieldGuide, CardsView, NotesView */
 
 (function () {
   const { el } = Dom;
@@ -50,11 +50,12 @@
   const VIEWS = {
     home: (ctx) => StarMap.create(ctx),
     level: (ctx, route) => LevelScreen.create(ctx, route.id),
+    guide: (ctx) => FieldGuide.create(ctx),
     cards: (ctx, route) => CardsView.create(ctx, route.chapter),
     notes: (ctx, route) => NotesView.create(ctx, route.chapter),
   };
-  const TITLES = { home: "Map", level: "Mission", cards: "Cards", notes: "Notes" };
-  const OWN_HEAD = ["home", "level"];
+  const TITLES = { home: "Map", level: "Mission", guide: "Field guide", cards: "Cards", notes: "Notes" };
+  const OWN_HEAD = ["home", "level", "guide"];
   const THEME_LABELS = { auto: "Look: system", light: "Look: light", dark: "Look: dark" };
 
   /* client.js removes the fragment when it carries the access key; keep the address part first. */

@@ -5,8 +5,10 @@
  * cargo dock, the vault and the mothership, filled from each observation (zones.js). A zone that
  * does not exist yet (no repository, no GitHub) is drawn off, saying what switches it on. The
  * panel redraws only when what the zones hold changed; then the arrows of the git commands just
- * typed light up, a zone that switched on flashes, and the files and capsules that moved fly from
- * their old place to their new one (Zones.moves), unless the player asked for reduced motion.
+ * typed light up, a zone that switched on flashes, and what moved is shown moving (Zones.moves):
+ * files and capsules fly from their old place to their new one, labels slide, a refused push
+ * bounces off the mothership, capsules that left every branch fade off and those that came back
+ * fade in; none of the movement plays when the player asked for reduced motion.
  * Needs dom.js, art-sprites.js, typed.js and zones.js. Defines one global, ZonePanel.
  */
 
@@ -14,7 +16,12 @@
 /* exported ZonePanel */
 
 const ZonePanel = (function () {
-  const { el } = Dom;
+  const { el, svg } = Dom;
+  /* The graph's measures, in pixels: a lane's width, a capsule row's height, and where a
+     capsule's block centre sits in its row (orbit.css draws the rows to match). */
+  const LANE = 16;
+  const ROW = 40;
+  const CENTRE = 11;
   const ZONES = [
     { name: "workshop", title: "Workshop", git: "working folder" },
     { name: "dock", title: "Cargo dock", git: "staging area" },
@@ -54,15 +61,39 @@ const ZonePanel = (function () {
     return el("span", { class: "file", ...attributes }, el("span", { class: "fname" }, path), tag && el("span", { class: "ftag" }, tag));
   }
 
-  const capsule = (zone) => (commit) => el("div", { class: "cap", "data-key": `${zone}:${commit.hash}` },
-    el("span", { class: "cblock", "aria-hidden": "true" }),
+  const capsule = (zone) => (commit) => el("div", { class: commit.parents.length > 1 ? "cap is-merge" : "cap", "data-key": `${zone}:${commit.hash}` },
+    el("span", { class: "cgutter", "aria-hidden": "true" }, el("span", { class: "cblock", style: `margin-left:${commit.lane * LANE}px` })),
     el("div", { class: "cinfo" },
-      el("div", { class: "cline" }, el("span", { class: "chash" }, commit.short), commit.labels.map((label) => el("span", { class: "ref", "data-kind": label.kind }, label.text))),
+      el("div", { class: "cline" }, el("span", { class: "chash" }, commit.short), commit.labels.map((label) => el("span", { class: "ref", "data-kind": label.kind, "data-key": `${zone}-ref:${label.kind === "head" ? "HEAD" : label.text}` }, label.text))),
       el("span", { class: "cmsg", title: commit.subject }, commit.subject),
     ),
   );
 
-  const capsules = (zone, commits) => el("div", { class: "caps" }, commits.map(capsule(zone)));
+  /* The line from a commit down to one of its parents (`row` its place in the list; a parent not
+     in the list goes to the bottom). The first parent bends just above itself, so a branch
+     splits off where it starts; another parent bends just below the merge, so a merge reaches
+     out to the branch it joins. */
+  function link(commit, row, parent, parentRow, first) {
+    const x = commit.lane * LANE + 9;
+    const y = row * ROW + CENTRE;
+    const px = parent.lane * LANE + 9;
+    const py = parentRow * ROW + CENTRE;
+    const bend = first ? `L ${x} ${py - ROW} L ${px} ${py}` : `L ${px} ${y + ROW} L ${px} ${py}`;
+    return svg("path", { class: "link", d: `M ${x} ${y} ${px === x ? `L ${px} ${py}` : bend}` });
+  }
+
+  /* The capsules as a graph: each in its lane, with lines from every commit to its parents. */
+  function capsules(zone, commits) {
+    const rows = new Map(commits.map((commit, index) => [commit.hash, index]));
+    const width = (Math.max(...commits.map((commit) => commit.lane)) + 1) * LANE;
+    const links = commits.flatMap((commit, row) => commit.parents.map((hash, index) => {
+      const parentRow = rows.has(hash) ? rows.get(hash) : commits.length;
+      const parent = rows.has(hash) ? commits[parentRow] : commit;
+      return link(commit, row, parent, parentRow, index === 0);
+    }));
+    const lines = svg("svg", { class: "links", width, height: commits.length * ROW, "aria-hidden": "true" }, links);
+    return el("div", { class: "caps", style: `--gutter:${width}px` }, lines, commits.map(capsule(zone)));
+  }
 
   /* Each zone's items, or null when the zone is off. */
   function contents(zones) {
@@ -125,16 +156,49 @@ const ZonePanel = (function () {
     motion.finished.then(land, land);
   }
 
-  /* Lights the arrows, wakes the zones and flies what moved. */
+  /* A copy of an item that left every branch fades off from where it was. */
+  function fade(from) {
+    if (!from.rect.width) return;
+    const ghost = from.node.cloneNode(true);
+    ghost.classList.add("ghost");
+    Object.assign(ghost.style, { left: `${from.rect.left}px`, top: `${from.rect.top}px`, width: `${from.rect.width}px`, height: `${from.rect.height}px` });
+    document.body.append(ghost);
+    const motion = ghost.animate([{ opacity: 1, transform: "translateX(0)" }, { opacity: 0, transform: "translateX(-24px)" }], { duration: FLY_MS, easing: "steps(6)", fill: "both" });
+    motion.finished.then(() => ghost.remove(), () => ghost.remove());
+  }
+
+  /* An item that came back, or was made where it stands, fades in. */
+  const appear = (node) => node.animate([{ opacity: 0, transform: "scale(.6)" }, { opacity: 1, transform: "scale(1.1)", offset: 0.7 }, { opacity: 1, transform: "scale(1)" }], { duration: 480, easing: "steps(4)" });
+
+  /* An item thrown at a zone, which sends it back to where it is. */
+  function bounce(node, zone) {
+    const from = node.getBoundingClientRect();
+    const at = zone.getBoundingClientRect();
+    const dx = at.left + at.width / 2 - (from.left + from.width / 2);
+    const dy = at.top + 30 - from.top;
+    node.animate([
+      { transform: "translate(0, 0)" },
+      { transform: `translate(${dx * 0.85}px, ${dy * 0.85}px)`, offset: 0.45 },
+      { transform: `translate(${dx * 0.7}px, ${dy * 0.7 - 16}px)`, offset: 0.55 },
+      { transform: "translate(0, 0)" },
+    ], { duration: 1100, easing: "cubic-bezier(.45,0,.25,1)" });
+  }
+
+  const find = (element, key) => [...element.querySelectorAll("[data-key]")].find((node) => node.dataset.key === key);
+
+  /* Lights the arrows, wakes the zones and shows what moved. */
   function animate(element, shells, moves, before, { reducedMotion, timers }) {
     for (const command of moves.lit) flash(element.querySelector(`.fl[data-arrow="${command}"]`), "is-lit", LIT_MS, timers);
     for (const name of moves.wake) flash(shells[name].element, "is-waking", LIT_MS, timers);
     if (reducedMotion) return;
     moves.flights.forEach((flight, index) => {
       const from = before.get(flight.from);
-      const to = [...element.querySelectorAll("[data-key]")].find((node) => node.dataset.key === flight.to);
+      const to = find(element, flight.to);
       if (from && to) fly(from, to, index * 120);
     });
+    for (const key of moves.fades) if (before.has(key)) fade(before.get(key));
+    for (const key of moves.appears) if (find(element, key)) appear(find(element, key));
+    for (const { from, to } of moves.bounces) if (find(element, from)) bounce(find(element, from), shells[to].element);
   }
 
   /* options: reducedMotion (no flying items; the arrows and zones still light), timers. */
@@ -146,25 +210,28 @@ const ZonePanel = (function () {
     let drawn = null;
     let last = null;
 
+    function draw(zones) {
+      const filled = contents(zones);
+      for (const { name } of ZONES) {
+        const shell = shells[name];
+        const zone = filled[name];
+        shell.element.classList.toggle("is-dormant", !zone);
+        shell.count.textContent = zone ? String(zone.count) : "–";
+        shell.body.replaceChildren(...(!zone ? [OFF[name]()] : zone.count ? zone.nodes : [EMPTY[name]()]));
+      }
+    }
+
     return {
       element,
 
       update(observation) {
         const zones = Zones.read(observation);
         const text = JSON.stringify(zones);
-        if (text === drawn) return;
-        drawn = text;
         const before = places(element);
-        const moves = last && Zones.moves(last, zones, Typed.gitCommands(observation.commands));
+        const moves = last && Zones.moves(last, zones, Typed.gitCommands(observation.commands), Typed.failedGitCommands(observation.commands));
         last = zones;
-        const filled = contents(zones);
-        for (const { name } of ZONES) {
-          const shell = shells[name];
-          const zone = filled[name];
-          shell.element.classList.toggle("is-dormant", !zone);
-          shell.count.textContent = zone ? String(zone.count) : "–";
-          shell.body.replaceChildren(...(!zone ? [OFF[name]()] : zone.count ? zone.nodes : [EMPTY[name]()]));
-        }
+        if (text !== drawn) draw(zones);
+        drawn = text;
         if (moves) animate(element, shells, moves, before, { reducedMotion, timers });
       },
     };

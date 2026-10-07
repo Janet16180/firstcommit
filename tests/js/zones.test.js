@@ -61,7 +61,7 @@ test("a repository before its first commit has an empty vault, and what was adde
   assert.deepEqual(zones.vault, []);
 });
 
-test("the vault holds the history HEAD reaches, newest first, with HEAD, branches, remote branches and tags on their commits", () => {
+test("the vault holds every commit of every branch, children before parents, with HEAD, branches, remote branches and tags on their commits", () => {
   const project = snapshot({
     exists: true,
     head: "c3",
@@ -70,12 +70,42 @@ test("the vault holds the history HEAD reaches, newest first, with HEAD, branche
     refs: [{ name: "main", kind: "branch", target: "c3" }, { name: "side", kind: "branch", target: "side" }, { name: "origin/main", kind: "remote", target: "c2" }, { name: "v1", kind: "tag", target: "c1" }],
   });
   const vault = Zones.read(observe(project)).vault;
-  assert.deepEqual(vault.map((item) => item.hash), ["c3", "c2", "c1"]);
-  assert.deepEqual(vault[0].labels, [{ text: "HEAD → main", kind: "head" }]);
-  assert.deepEqual(vault[1].labels, [{ text: "origin/main", kind: "remote" }]);
-  assert.deepEqual(vault[2].labels, [{ text: "v1", kind: "tag" }]);
-  assert.equal(vault[0].subject, "commit c3");
-  assert.equal(vault[0].short, "c3");
+  assert.deepEqual(vault.map((item) => item.hash), ["side", "c3", "c2", "c1"]);
+  const by = Object.fromEntries(vault.map((item) => [item.hash, item]));
+  assert.deepEqual(by.c3.labels, [{ text: "HEAD → main", kind: "head" }]);
+  assert.deepEqual(by.side.labels, [{ text: "side", kind: "branch" }]);
+  assert.deepEqual(by.c2.labels, [{ text: "origin/main", kind: "remote" }]);
+  assert.deepEqual(by.c1.labels, [{ text: "v1", kind: "tag" }]);
+  assert.equal(by.c3.subject, "commit c3");
+  assert.equal(by.c3.short, "c3");
+});
+
+test("a single branch is one lane", () => {
+  const project = snapshot({ exists: true, head: "c3", branch: "main", commits: [commit("c3", ["c2"]), commit("c2", ["c1"]), commit("c1")], refs: [] });
+  assert.deepEqual(Zones.read(observe(project)).vault.map((item) => item.lane), [0, 0, 0]);
+});
+
+test("two branches take two lanes, and a merge commit with two parents joins them", () => {
+  const project = snapshot({
+    exists: true,
+    head: "m",
+    branch: "main",
+    commits: [commit("m", ["a2", "b1"]), commit("b1", ["a1"]), commit("a2", ["a1"]), commit("a1")],
+    refs: [{ name: "main", kind: "branch", target: "m" }, { name: "feature", kind: "branch", target: "b1" }],
+  });
+  const vault = Zones.read(observe(project)).vault;
+  const by = Object.fromEntries(vault.map((item) => [item.hash, item]));
+  assert.deepEqual(vault.map((item) => item.hash), ["m", "b1", "a2", "a1"]);
+  assert.equal(by.m.lane, 0);
+  assert.deepEqual(by.m.parents, ["a2", "b1"]);
+  assert.equal(by.a2.lane, 0);
+  assert.equal(by.b1.lane, 1);
+  assert.equal(by.a1.lane, 0);
+});
+
+test("children always come before their parents, whatever order the snapshot lists them in", () => {
+  const project = snapshot({ exists: true, head: "c2", branch: "main", commits: [commit("c1"), commit("c2", ["c1"])], refs: [] });
+  assert.deepEqual(Zones.read(observe(project)).vault.map((item) => item.hash), ["c2", "c1"]);
 });
 
 test("a detached HEAD is labelled on its own", () => {
@@ -97,11 +127,15 @@ test("the authors of the commits are kept, so the page can name a teammate's", (
 
 /* Zones before and after a change, from bare models. */
 const model = (fields = {}) => ({ repository: true, workshop: [], dock: [], vault: [], remote: null, ...fields });
-const capsule = (hash) => ({ hash, short: hash, subject: hash, author: "You", labels: [] });
+const capsule = (hash, { parents = [], labels = [] } = {}) => ({ hash, short: hash, subject: hash, author: "You", parents, lane: 0, labels });
+const head = (branch) => ({ text: `HEAD → ${branch}`, kind: "head" });
+const branch = (name) => ({ text: name, kind: "branch" });
 const staged = (path, version = "v1") => ({ path, change: "added", version });
 
+const NOTHING = { lit: [], flights: [], wake: [], fades: [], appears: [], bounces: [] };
+
 test("plain typing that changes nothing moves nothing", () => {
-  assert.deepEqual(Zones.moves(model(), model(), []), { lit: [], flights: [], wake: [] });
+  assert.deepEqual(Zones.moves(model(), model(), []), NOTHING);
 });
 
 test("git init wakes the dock and the vault", () => {
@@ -142,7 +176,7 @@ test("a push flies the new capsules to the mothership, and a pull brings them do
 
 test("when git commands were typed, only the moves they make are drawn", () => {
   const moves = Zones.moves(model({ dock: [] }), model({ dock: [staged("a.txt")] }), ["status"]);
-  assert.deepEqual(moves, { lit: [], flights: [], wake: [] });
+  assert.deepEqual(moves, NOTHING);
 });
 
 test("a change with no git typed (made outside the game's terminal) is drawn from the change alone", () => {
@@ -152,4 +186,46 @@ test("a change with no git typed (made outside the game's terminal) is drawn fro
 
 test("a mothership that appears wakes", () => {
   assert.deepEqual(Zones.moves(model(), model({ remote: [] }), ["remote"]).wake, ["remote"]);
+});
+
+test("a refused push bounces the HEAD capsule off the mothership and back, and lights nothing", () => {
+  const vault = [capsule("c2", { labels: [head("main")] }), capsule("c1")];
+  const moves = Zones.moves(model({ vault, remote: [capsule("c1")] }), model({ vault, remote: [capsule("c1")] }), [], ["push"]);
+  assert.deepEqual(moves.bounces, [{ from: "vault:c2", to: "remote" }]);
+  assert.deepEqual(moves.lit, []);
+});
+
+test("a clone copies the mothership's chain down into the vault", () => {
+  const remote = [capsule("c2"), capsule("c1")];
+  const moves = Zones.moves(model({ repository: false, vault: null, dock: null, remote }), model({ vault: [capsule("c2"), capsule("c1")], remote }), ["clone"]);
+  assert.deepEqual(moves.flights, [{ from: "remote:c2", to: "vault:c2" }, { from: "remote:c1", to: "vault:c1" }]);
+  assert.deepEqual(moves.appears, []);
+});
+
+test("a branch label that moved to another capsule slides there", () => {
+  const before = model({ vault: [capsule("c2", { labels: [head("main")] }), capsule("c1", { labels: [branch("feature")] })] });
+  const after = model({ vault: [capsule("c2", { labels: [head("main"), branch("feature")] }), capsule("c1")] });
+  assert.deepEqual(Zones.moves(before, after, ["merge"]).flights, [{ from: "vault-ref:feature", to: "vault-ref:feature" }]);
+});
+
+test("a switch slides HEAD to the other branch", () => {
+  const before = model({ vault: [capsule("b1", { labels: [branch("feature")] }), capsule("a1", { labels: [head("main")] })] });
+  const after = model({ vault: [capsule("b1", { labels: [head("feature")] }), capsule("a1", { labels: [branch("main")] })] });
+  const flights = Zones.moves(before, after, ["switch"]).flights;
+  assert.ok(flights.some((flight) => flight.from === "vault-ref:HEAD" && flight.to === "vault-ref:HEAD"));
+});
+
+test("a merge joins both chains into the merge capsule", () => {
+  const before = model({ vault: [capsule("b1", { labels: [branch("feature")] }), capsule("a2", { labels: [head("main")] }), capsule("a1")] });
+  const after = model({ vault: [capsule("m", { parents: ["a2", "b1"], labels: [head("main")] }), capsule("b1"), capsule("a2"), capsule("a1")] });
+  const flights = Zones.moves(before, after, ["merge"]).flights;
+  assert.ok(flights.some((flight) => flight.from === "vault:a2" && flight.to === "vault:m"));
+  assert.ok(flights.some((flight) => flight.from === "vault:b1" && flight.to === "vault:m"));
+});
+
+test("capsules that left the branches fade off, and capsules that come back appear", () => {
+  const three = [capsule("c3"), capsule("c2"), capsule("c1")];
+  const one = [capsule("c1")];
+  assert.deepEqual(Zones.moves(model({ vault: three }), model({ vault: one }), ["reset"]).fades, ["vault:c3", "vault:c2"]);
+  assert.deepEqual(Zones.moves(model({ vault: one }), model({ vault: three }), ["reset"]).appears, ["vault:c3", "vault:c2"]);
 });

@@ -67,3 +67,24 @@ test("the dock never cuts its lesson off: it grows up to half the window, then s
   assert.match(rule(".dock"), /max-height: 50vh;\s*overflow-y: auto;/);
   assert.doesNotMatch(rule(".dock-lesson"), /max-height|overflow/);
 });
+
+test("buttons and small labels use the readable text face in bold, and headings keep the pixel face", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.equal(tokens(css, ":root")["--f-ui"], "var(--f-body)");
+  for (const selector of [".btn", ".counter", ".snum", ".card-num", ".comms-who", ".cs-who"]) assert.match(rule(selector), /font: 700 [^;]*var\(--f-ui\)/, selector);
+  for (const selector of [".map-title", ".sector h2", ".card-title", ".band h2", ".dock-title"]) assert.match(rule(selector), /var\(--f-px\)/, selector);
+});
+
+test("each rule appears once at the top level, so a later copy cannot silently override it", () => {
+  const top = [];
+  let depth = 0;
+  let text = "";
+  for (const char of css.replace(/\/\*[\s\S]*?\*\//g, "")) {
+    if (char === "{" && depth++ === 0) top.push(text.trim());
+    if (char === "{" || char === "}") text = "";
+    else text += char;
+    if (char === "}") depth -= 1;
+  }
+  const repeated = top.filter((selector, index) => top.indexOf(selector) !== index && !selector.startsWith("@"));
+  assert.deepEqual([...new Set(repeated)].sort(), ["*,\n*::before,\n*::after", ".termcol"]);
+});

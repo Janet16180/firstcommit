@@ -1,7 +1,7 @@
 "use strict";
 
 /*
- * Soft sound effects, synthesized with the Web Audio API (no audio files). Browsers allow
+ * Soft 8-bit sound effects, synthesized with the Web Audio API (no audio files). Browsers allow
  * audio only after a user gesture, so nothing plays until `unlock()` runs on the first click
  * or key press; a sound asked for before that is skipped, not queued. The player's on/off
  * choice is a view preference kept in localStorage. Defines one global, Sound.
@@ -56,22 +56,33 @@ const Sound = (function () {
   const note = (semitonesFromA4) => 440 * Math.pow(2, semitonesFromA4 / 12);
   const arpeggio = (at, steps, gap, options) => steps.forEach((step, index) => tone(at + index * gap, { ...options, freq: note(step) }));
 
+  /* 8-bit voices: square and triangle waves, short and quiet. Every sound only echoes something
+     the screen also shows, so a player who hears nothing misses nothing. */
+  const blip = (at, freq, dur, peak = 0.025, type = "square") => tone(at, { type, freq, dur, peak, attack: 0.005 });
   const PATCHES = {
-    click: (at) => tone(at, { type: "triangle", freq: 1200, dur: 0.05, peak: 0.025 }),
-    step: (at) => arpeggio(at, [3, 10], 0.09, { type: "triangle", dur: 0.3, peak: 0.06 }),
-    correct: (at) => arpeggio(at, [3, 7, 10, 15], 0.08, { dur: 0.45, peak: 0.07 }),
-    wrong: (at) => arpeggio(at, [-2, -6], 0.12, { type: "triangle", dur: 0.35, peak: 0.05 }),
-    commit: (at) => {
-      tone(at, { freq: note(15), dur: 0.5, peak: 0.05 });
-      tone(at + 0.07, { freq: note(22), dur: 0.6, peak: 0.035 });
+    /* A line typed in the terminal ran (the terminal shows it). */
+    command: (at) => blip(at, note(15), 0.05, 0.018),
+    /* A line typed in the terminal failed (the terminal shows the error). */
+    failed: (at) => arpeggio(at, [-14, -17], 0.07, { type: "square", dur: 0.09, peak: 0.022, attack: 0.005 }),
+    /* A goal ticked (its box fills). */
+    goal: (at) => arpeggio(at, [7, 12, 19], 0.06, { type: "square", dur: 0.08, peak: 0.025, attack: 0.005 }),
+    /* A star lost (the head's stars shake). */
+    starlost: (at) => arpeggio(at, [12, 7, 0], 0.08, { type: "triangle", dur: 0.12, peak: 0.04, attack: 0.005 }),
+    /* A mission complete (the band and the dock). */
+    complete: (at) => {
+      arpeggio(at, [0, 4, 7, 12, 16, 19], 0.07, { type: "square", dur: 0.1, peak: 0.025, attack: 0.005 });
+      blip(at + 0.45, note(24), 0.4, 0.025, "triangle");
     },
-    hint: (at) => arpeggio(at, [10, 15], 0.1, { dur: 0.6, peak: 0.04 }),
-    card: (at) => tone(at, { type: "triangle", freq: 500, to: 900, dur: 0.12, peak: 0.03 }),
-    celebrate: (at) => {
-      arpeggio(at, [-9, -5, -2, 3, 7, 10, 15], 0.09, { type: "triangle", dur: 0.5, peak: 0.06 });
-      [3, 7, 10, 15].forEach((step) => tone(at + 0.7, { freq: note(step), dur: 1.8, peak: 0.035, attack: 0.08 }));
-    },
-    rankup: (at) => arpeggio(at, [15, 19, 22, 27], 0.11, { type: "triangle", dur: 0.5, peak: 0.05 }),
+    /* Rama's typewriter in a scene (the letters appear). */
+    type: (at) => blip(at, note(27), 0.02, 0.01),
+    /* A scene's next page (the picture and line change). */
+    page: (at) => tone(at, { type: "triangle", freq: note(10), to: note(17), dur: 0.08, peak: 0.025, attack: 0.005 }),
+    /* An answer right or wrong (the feedback line says so). */
+    correct: (at) => arpeggio(at, [12, 19], 0.07, { type: "square", dur: 0.09, peak: 0.025, attack: 0.005 }),
+    wrong: (at) => arpeggio(at, [-2, -6], 0.1, { type: "triangle", dur: 0.14, peak: 0.04, attack: 0.005 }),
+    /* A hint shown, a card turned (both on screen). */
+    hint: (at) => arpeggio(at, [10, 15], 0.08, { type: "triangle", dur: 0.14, peak: 0.035, attack: 0.005 }),
+    card: (at) => blip(at, note(5), 0.05, 0.02, "triangle"),
   };
 
   function play(name) {

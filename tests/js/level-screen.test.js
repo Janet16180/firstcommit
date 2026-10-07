@@ -7,7 +7,7 @@ const { createClock, fakeServer, httpError, installBrowser, load, record, settle
 
 const document = installBrowser({ reducedMotion: true });
 const { LevelScreen, createGameApi } = load(
-  ["dom.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "collection.js", "scene.js", "level-screen.js"],
+  ["dom.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "level-screen.js"],
   ["LevelScreen", "createGameApi"],
 );
 
@@ -171,7 +171,7 @@ test("once the quest is done the mission is checked by itself; a solve stops the
   assert.equal(dock.querySelector(".dock-title").textContent, "Mission complete: mission 2.2");
   assert.match(dock.querySelector(".dock-lesson").textContent, /Git records what is staged/);
   assert.ok(run.view.element.classList.contains("is-docked"));
-  assert.ok(run.seen.sounds.includes("celebrate"));
+  assert.ok(run.seen.sounds.includes("complete"));
   const calls = run.server.calls.length;
   await run.clock.advance(10000);
   assert.equal(run.server.calls.length, calls);
@@ -353,4 +353,22 @@ test("a solve with a hint used and no XP says why", async () => {
   await settle();
   assert.equal(run.q(".dock-xp").textContent, "No XP this time: a hint was used.");
   run.view.dispose();
+});
+
+test("a typed line gets a blip, a failed one a buzz, a ticked goal and a lost star their own sounds", async () => {
+  const typed = (status) => ({ ...quiet(), commands: [{ line: "git status", status }] });
+  const ok = screen({ replies: { "/api/observe": typed(0) } });
+  await settle();
+  assert.ok(ok.seen.sounds.includes("command"));
+  ok.view.dispose();
+  const failed = screen({ replies: { "/api/observe": typed(128) }, recounted: { ...record("active"), stars: 2 } });
+  await settle();
+  await settle();
+  assert.ok(failed.seen.sounds.includes("failed"));
+  assert.ok(failed.seen.sounds.includes("starlost"));
+  failed.view.dispose();
+  const goal = screen({ active: { ...record("active"), step: 2 }, replies: { "/api/step": correct(3, true) } });
+  await settle();
+  assert.ok(goal.seen.sounds.includes("goal"));
+  goal.view.dispose();
 });

@@ -28,3 +28,9 @@ test("git by its path is git, and other programs are not", () => {
 test("a bare git names no command", () => {
   assert.deepEqual(Typed.gitCommands([ok("git")]), []);
 });
+
+test("the git commands of the lines that failed are named apart", () => {
+  const lines = [{ line: "git push", status: 1 }, { line: "git status", status: 0 }];
+  assert.deepEqual(Typed.failedGitCommands(lines), ["push"]);
+  assert.deepEqual(Typed.gitCommands(lines), ["status"]);
+});

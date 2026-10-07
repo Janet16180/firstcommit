@@ -80,3 +80,17 @@ test("an empty scene ends at once and shows nothing", async () => {
   assert.equal(over, true);
   assert.equal(document.body.querySelector("dialog.cutscene"), null);
 });
+
+test("the typewriter ticks while a line types, and each new line turns a page", async () => {
+  const clock = createClock();
+  const sounds = [];
+  ScenePlayer.play({ scene: SCENE, timers: clock, reducedMotion: false, sound: { play: (name) => sounds.push(name) } });
+  const dialog = document.body.querySelector("dialog.cutscene");
+  await clock.advance(22 * 8);
+  assert.ok(sounds.includes("type"));
+  assert.equal(sounds.includes("page"), false);
+  dialog.querySelector(".cs-next").click();
+  dialog.querySelector(".cs-next").click();
+  assert.ok(sounds.includes("page"));
+  dialog.querySelector(".cs-skip").click();
+});

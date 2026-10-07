@@ -2,16 +2,16 @@
 
 /*
  * The map screen: Rama and the game's name, a bar with the stars won, the missions done, the
- * command collection, the cards due and the look and sound buttons, then every chapter as a
+ * field guide, the cards due and the look and sound buttons, then every chapter as a
  * sector in play order. A sector with missions is a strip of space with its planet and its
  * numbered mission nodes along a route; a chapter with none yet is a sector coming soon.
  * Choosing a node shows its mission on the card at the bottom (its command and best stars),
  * whose button opens the level. Everything comes from firstcommit/game.py's Status. Needs
- * dom.js, art-sprites.js, art-sky.js, progress.js, dialog.js and collection.js. Defines one
+ * dom.js, art-sprites.js, art-sky.js, progress.js and dialog.js. Defines one
  * global, StarMap.
  */
 
-/* global Dom, ArtSprites, ArtSky, Progress, Dialog, Collection */
+/* global Dom, ArtSprites, ArtSky, Progress, Dialog */
 /* exported StarMap */
 
 const StarMap = (function () {
@@ -47,7 +47,7 @@ const StarMap = (function () {
       el("span", { class: "counter px stars-won", role: "img", "aria-label": `${stars} of ${levels.length * 3} stars` }, ArtSprites.star(true), " ", el("b", {}, `${stars}/${levels.length * 3}`)),
       el("span", { class: "counter px" }, "Missions ", el("b", {}, `${done}/${levels.length}`)),
       el("span", { class: "spacer" }),
-      el("button", { type: "button", class: "btn collection-open", onclick: () => Collection.open(status) }, "Command collection"),
+      el("a", { class: "btn field-guide-open", href: "#/guide" }, "Field guide"),
       status.cards_due > 0 && el("a", { class: "btn", href: "#/cards" }, `Review ${plural(status.cards_due, "card")}`),
       prefButtons(),
     );

@@ -21,6 +21,10 @@
  * planet(radius, palette)       a round pixel planet, with a ring when the palette has `n`;
  *                               returns {rects, width, height}.
  * ARROW                         the 8x7 flow arrow, pointing right.
+ * SPRITES                       the names of the shared sprites: folder, crate, lid, capsule, flag,
+ *                               cross, file, ship, meteor and probe.
+ * sprite(name, recolour)        a shared sprite's <rect>s; `recolour` swaps palette letters, as
+ *                               {p: tone("s-new")} tints the file's paper.
  */
 
 /* global Dom */
@@ -139,5 +143,52 @@ const ArtPixels = (function () {
 
   const ARROW = ["....k...", "....kk..", "kkkkkkk.", "kkkkkkkk", "kkkkkkk.", "....kk..", "....k..."];
 
-  return { tone, draw, place, picture, random, stars, rama, planet, ARROW };
+  const OUTLINE = tone("art-outline");
+  const SHEET = {
+    folder: {
+      rows: ["kkkkkk........", "kyyyyyk.......", "kyyyyyykkkkkkk", "kyyyyyyyyyyyyk", "kddddddddddddk", "kyyyyyyyyyyyyk", "kyyyyyyyyyyyyk", "kyyyyyyyyyyyyk", "kddddddddddddk", "kkkkkkkkkkkkkk"],
+      palette: { k: OUTLINE, y: tone("art-yellow"), d: tone("art-yellow-dk") },
+    },
+    crate: {
+      rows: ["kkkkkkkkkkkk", "kbbbbbbbbbbk", "kbkkkkkkkkbk", "kbkbbbbbbkbk", "kbkbBBBBbkbk", "kbkbbbbbbkbk", "kbkkkkkkkkbk", "kbbbbbbbbbbk", "kBBBBBBBBBBk", "kkkkkkkkkkkk"],
+      palette: { k: OUTLINE, b: tone("art-cyan"), B: tone("art-cyan-dk") },
+    },
+    lid: { rows: ["kkkkkkkkkkkkkk", "kbbbbbbbbbbbbk", "kkkkkkkkkkkkkk"], palette: { k: OUTLINE, b: tone("art-cyan") } },
+    capsule: {
+      rows: ["..kkkkkkkk..", ".kvhhvvvvvk.", "kvhvvvvvvvvk", "kvvvvvvvvvvk", "kvvvvvvvvvvk", "kVvvvvvvvvVk", ".kVVVVVVVVk.", "..kkkkkkkk.."],
+      palette: { k: OUTLINE, v: tone("art-violet"), V: tone("art-violet-dk"), h: tone("art-violet-lt") },
+    },
+    flag: { rows: ["kkkkkkk..", "krrrrrrk.", "krrwwrrrk", "krrrrrrk.", "kkkkkkk.."], palette: { k: OUTLINE, r: tone("art-pink"), w: tone("star") } },
+    cross: { rows: ["kk...kk", ".kk.kk.", "..kkk..", ".kk.kk.", "kk...kk"], palette: { k: tone("art-red") } },
+    file: {
+      rows: ["kkkkkk..", "kppppkk.", "kppppkpk", "kppppppk", "kplllppk", "kppppppk", "kplllllk", "kppppppk", "kpllllpk", "kkkkkkkk"],
+      palette: { k: OUTLINE, p: tone("star"), l: tone("crt-soft") },
+    },
+    ship: {
+      rows: [
+        ".......kkkkkkkk.......",
+        "......kwwwwwwwwk......",
+        ".....kwwccwwccwwk.....",
+        "..kkkkkkkkkkkkkkkkkk..",
+        ".krrrrrrrrrrrrrrrrrrk.",
+        "krrcrrrcrrrcrrrcrrrcrk",
+        ".kRRRRRRRRRRRRRRRRRRk.",
+        "..kkkkkkkkkkkkkkkkkk..",
+      ],
+      palette: { k: OUTLINE, w: tone("art-hull"), c: tone("art-mint"), r: tone("art-pink"), R: tone("art-pink-dk") },
+    },
+    meteor: {
+      rows: ["..kkk..", ".kmmMk.", "kmmmmMk", "kmMmmMk", "kmmmMMk", ".kMMMk.", "..kkk.."],
+      palette: { k: OUTLINE, m: tone("art-muted"), M: tone("art-muted-dk") },
+    },
+    probe: { rows: ["...kkk..", "okkgggk.", "ookggggk", "okkgggk.", "...kkk.."], palette: { k: OUTLINE, g: tone("art-yellow"), o: tone("art-orange") } },
+  };
+
+  function sprite(name, recolour = {}) {
+    if (!(name in SHEET)) throw new RangeError(`unknown sprite: ${name}`);
+    const { rows, palette } = SHEET[name];
+    return draw(rows, { ...palette, ...recolour });
+  }
+
+  return { tone, draw, place, picture, random, stars, rama, planet, ARROW, SPRITES: Object.freeze(Object.keys(SHEET)), sprite };
 })();

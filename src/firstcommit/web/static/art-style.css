@@ -68,6 +68,7 @@
 
 .art-text {
   font-family: var(--f-term, "VT323", ui-monospace, monospace);
+  font-variant-ligatures: none;
 }
 
 .art-rama--header {
@@ -221,6 +222,90 @@
   50% { opacity: 0; }
 }
 
+.art-lid {
+  animation: art-lid 0.6s steps(4) 0.5s both;
+}
+
+@keyframes art-lid {
+  from { transform: translateY(-10px); }
+}
+
+.art-drop {
+  animation: art-drop 0.8s steps(8) 2s both;
+}
+
+@keyframes art-drop {
+  to { transform: translateY(26px); }
+}
+
+.art-meteor {
+  animation: art-meteor 2.2s steps(14) infinite;
+}
+
+@keyframes art-meteor {
+  0% { transform: translate(0, 0); opacity: 1; }
+  70% { transform: translate(-90px, 62px); opacity: 1; }
+  71%, 100% { transform: translate(-90px, 62px); opacity: 0; }
+}
+
+.art-boom {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: art-boom 2.2s steps(4) infinite;
+}
+
+@keyframes art-boom {
+  0%, 68% { transform: scale(0); opacity: 0; }
+  75% { transform: scale(1.1); opacity: 1; }
+  100% { transform: scale(1.7); opacity: 0; }
+}
+
+.art-push {
+  animation: art-push 2.6s steps(16) infinite;
+}
+
+@keyframes art-push {
+  from { transform: translate(0, 0); }
+  to { transform: translate(96px, -46px); }
+}
+
+.art-pull {
+  animation: art-pull 2.6s steps(16) infinite;
+}
+
+@keyframes art-pull {
+  from { transform: translate(0, 0); }
+  to { transform: translate(-96px, 46px); }
+}
+
+.art-orbit {
+  animation: art-orbit 8s steps(32) infinite;
+}
+
+@keyframes art-orbit {
+  0%, 100% { transform: translate(0, 0); }
+  25% { transform: translate(58px, 14px); }
+  50% { transform: translate(0, 26px); }
+  75% { transform: translate(-58px, 14px); }
+}
+
+/* Drawn where it ends up; --dx and --dy (set on the element) say where it slides in from. */
+.art-slide {
+  animation: art-slide 0.8s steps(6) both;
+}
+
+@keyframes art-slide {
+  from { transform: translate(var(--dx), var(--dy)); }
+}
+
+.art-vanish {
+  animation: art-vanish 0.8s steps(4) both;
+}
+
+@keyframes art-vanish {
+  to { opacity: 0.15; }
+}
+
 .art-sparks {
   position: absolute;
   inset: 0;
@@ -256,5 +341,9 @@
 
   .art-sparks {
     display: none;
+  }
+
+  .art-vanish {
+    opacity: 0.15;
   }
 }

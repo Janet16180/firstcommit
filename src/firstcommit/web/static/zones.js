@@ -12,15 +12,23 @@
  *   "none" (no repository), "new", "edited", "deleted", "staged" or "saved";
  * - dock: [{path, change, version}] for every staged change (version: the staged content's hash,
  *   null for a deletion), or null without a repository;
- * - vault: the commits HEAD reaches, newest first, [{hash, short, subject, author, labels}], each
- *   label {text, kind} with kind "head", "branch", "remote" or "tag"; null without a repository;
+ * - vault: every commit of every branch, children before parents, [{hash, short, subject, author,
+ *   parents, lane, labels}]: `lane` is its column in the drawn graph (0 for the first line of
+ *   history; a branch that splits off takes the next free one), each label {text, kind} with
+ *   kind "head", "branch", "remote" or "tag"; null without a repository;
  * - remote: the same for the level's GitHub, or null when the level has none.
  *
- * moves(before, after, typed) says how to animate the change between two such readings: the
- * arrows to light ("add", "commit", "push", "pull"), the items that fly ({from, to}, each
- * "<zone>:<path or hash>") and the zones that switch on. `typed` names the git commands that
- * succeeded meanwhile (typed.js): when there are any, only the moves they make are drawn; with
- * none, the change was made outside the game's terminal and is drawn as it is.
+ * moves(before, after, typed, refused) says how to animate the change between two such readings:
+ * - lit: the arrows to light ("add", "commit", "push", "pull");
+ * - flights: the items that fly, {from, to}, each a key: "<zone>:<path or hash>" for a file or
+ *   a capsule, "<zone>-ref:<branch, or HEAD>" for a label (a label that moved slides);
+ * - wake: the zones that switched on;
+ * - fades: the capsules that left every branch (a reset); appears: those that came back or were
+ *   made without flying in from anywhere;
+ * - bounces: {from, to}, a capsule thrown at a zone that sends it back (a refused push).
+ * `typed` names the git commands that succeeded meanwhile and `refused` those that failed
+ * (typed.js): when any succeeded, only the flights they make are drawn; with none, the change
+ * was made outside the game's terminal and is drawn as it is.
  */
 
 /* exported Zones */
@@ -38,18 +46,41 @@ const Zones = (function () {
 
   const inWorkshop = (file) => !file.ignored && (file.folder !== null || file.folder_change === "deleted");
 
-  /* The commits HEAD reaches, in the snapshot's order (newest first). */
-  function history(snapshot) {
-    const byHash = new Map(snapshot.commits.map((commit) => [commit.hash, commit]));
-    const reached = new Set();
-    const waiting = snapshot.head ? [snapshot.head] : [];
-    while (waiting.length) {
-      const hash = waiting.pop();
-      if (reached.has(hash) || !byHash.has(hash)) continue;
-      reached.add(hash);
-      waiting.push(...byHash.get(hash).parents);
+  /* The commits with every child before its parents, otherwise in the snapshot's order. */
+  function topological(list) {
+    const known = new Set(list.map((commit) => commit.hash));
+    const children = new Map(list.map((commit) => [commit.hash, 0]));
+    for (const commit of list) for (const parent of commit.parents) if (known.has(parent)) children.set(parent, children.get(parent) + 1);
+    const ordered = [];
+    const left = [...list];
+    while (left.length) {
+      const next = left.findIndex((commit) => children.get(commit.hash) === 0);
+      const [commit] = left.splice(next < 0 ? 0 : next, 1);
+      ordered.push(commit);
+      for (const parent of commit.parents) if (known.has(parent)) children.set(parent, children.get(parent) - 1);
     }
-    return snapshot.commits.filter((commit) => reached.has(commit.hash));
+    return ordered;
+  }
+
+  /* Each commit's lane: it takes the lane that waits for it (the leftmost), else the first free
+     one; its first parent then waits in that lane, and any other parent in a free one. */
+  function lanes(ordered) {
+    const waiting = [];
+    return ordered.map((commit) => {
+      let lane = waiting.indexOf(commit.hash);
+      if (lane < 0) lane = waiting.includes(null) ? waiting.indexOf(null) : waiting.length;
+      waiting.forEach((hash, index) => {
+        if (hash === commit.hash) waiting[index] = null;
+      });
+      const [first = null, ...others] = commit.parents;
+      waiting[lane] = first;
+      for (const parent of others.filter((hash) => !waiting.includes(hash))) {
+        const free = waiting.indexOf(null);
+        waiting[free < 0 ? waiting.length : free] = parent;
+      }
+      while (waiting.length && waiting[waiting.length - 1] === null) waiting.pop();
+      return lane;
+    });
   }
 
   /* The labels on one commit: HEAD (with its branch) first, then the other refs in the snapshot's order. */
@@ -62,13 +93,19 @@ const Zones = (function () {
     return [...head, ...refs];
   }
 
-  const commits = (snapshot, showHead) => history(snapshot).map((commit) => ({
-    hash: commit.hash,
-    short: commit.short,
-    subject: commit.subject,
-    author: commit.author,
-    labels: labels(snapshot, commit.hash, showHead),
-  }));
+  function commits(snapshot, showHead) {
+    const ordered = topological(snapshot.commits);
+    const placed = lanes(ordered);
+    return ordered.map((commit, index) => ({
+      hash: commit.hash,
+      short: commit.short,
+      subject: commit.subject,
+      author: commit.author,
+      parents: commit.parents,
+      lane: placed[index],
+      labels: labels(snapshot, commit.hash, showHead),
+    }));
+  }
 
   function read({ project, github }) {
     const repository = project.exists;
@@ -87,7 +124,9 @@ const Zones = (function () {
     { kind: "unstage", commands: ["restore", "reset", "rm"], arrow: null, flights: (before, after) => leftDock(before, after).map((path) => [`dock:${path}`, `workshop:${path}`]) },
     { kind: "commit", commands: ["commit", "merge", "cherry-pick", "revert"], arrow: "commit", flights: (before, after) => sealed(before, after) },
     { kind: "push", commands: ["push"], arrow: "push", flights: (before, after) => added(after.remote, before.remote).map((hash) => [`vault:${hash}`, `remote:${hash}`]) },
-    { kind: "pull", commands: ["pull", "fetch", "merge"], arrow: "pull", flights: (before, after) => added(after.vault, before.vault).filter((hash) => hashes(before.remote).has(hash)).map((hash) => [`remote:${hash}`, `vault:${hash}`]) },
+    { kind: "pull", commands: ["pull", "fetch", "merge", "clone"], arrow: "pull", flights: (before, after) => added(after.vault, before.vault).filter((hash) => hashes(before.remote).has(hash)).map((hash) => [`remote:${hash}`, `vault:${hash}`]) },
+    { kind: "merge", commands: ["merge", "pull"], arrow: null, flights: (before, after) => joined(before, after) },
+    { kind: "slide", commands: null, arrow: null, flights: (before, after) => [...slid(before, after, "vault"), ...slid(before, after, "remote")] },
   ];
 
   const hashes = (list) => new Set((list || []).map((commit) => commit.hash));
@@ -103,15 +142,47 @@ const Zones = (function () {
     return fresh.length ? (before.dock || []).map((item) => [`dock:${item.path}`, `vault:${fresh[0]}`]) : [];
   }
 
-  function moves(before, after, typed) {
-    const allowed = (move) => typed.length === 0 || move.commands.some((command) => typed.includes(command));
+  /* A new merge capsule draws a line in from each of its parents. */
+  function joined(before, after) {
+    const fresh = new Set(added(after.vault, before.vault));
+    const had = hashes(before.vault);
+    return (after.vault || []).filter((commit) => fresh.has(commit.hash) && commit.parents.length > 1)
+      .flatMap((commit) => commit.parents.filter((parent) => had.has(parent)).map((parent) => [`vault:${parent}`, `vault:${commit.hash}`]));
+  }
+
+  /* Where each label sits in a zone: its key (a branch's name, or HEAD) and its capsule. */
+  function labelled(list) {
+    const at = new Map();
+    for (const commit of list || []) for (const label of commit.labels) at.set(label.kind === "head" ? "HEAD" : label.text, commit.hash);
+    return at;
+  }
+
+  /* The labels of a zone that now sit on another capsule. */
+  function slid(before, after, zone) {
+    const was = labelled(before[zone]);
+    return [...labelled(after[zone])].filter(([key, hash]) => was.has(key) && was.get(key) !== hash).map(([key]) => [`${zone}-ref:${key}`, `${zone}-ref:${key}`]);
+  }
+
+  /* A refused push throws the HEAD capsule at the mothership, which sends it back. */
+  function bounced(after, refused) {
+    const top = (after.vault || []).find((commit) => commit.labels.some((label) => label.kind === "head"));
+    return refused.includes("push") && top && after.remote !== null ? [{ from: `vault:${top.hash}`, to: "remote" }] : [];
+  }
+
+  function moves(before, after, typed, refused = []) {
+    const allowed = (move) => typed.length === 0 || move.commands === null || move.commands.some((command) => typed.includes(command));
     const made = MOVES.filter(allowed).map((move) => ({ ...move, pairs: move.flights(before, after) })).filter((move) => move.pairs.length);
     const flights = made.flatMap((move) => move.pairs.map(([from, to]) => ({ from, to })));
     const lit = [...new Set(made.map((move) => move.arrow).filter(Boolean))];
     const wake = [];
     if (!before.repository && after.repository) wake.push("dock", "vault");
     if (before.remote === null && after.remote !== null) wake.push("remote");
-    return { lit, flights: [...new Map(flights.map((flight) => [`${flight.from}>${flight.to}`, flight])).values()], wake };
+    const landed = new Set(flights.map((flight) => flight.to));
+    const zones = ["vault", "remote"];
+    const fades = zones.flatMap((zone) => added(before[zone], after[zone]).map((hash) => `${zone}:${hash}`));
+    const appears = zones.flatMap((zone) => (before[zone] ? added(after[zone], before[zone]) : []).map((hash) => `${zone}:${hash}`)).filter((key) => !landed.has(key));
+    const unique = [...new Map(flights.map((flight) => [`${flight.from}>${flight.to}`, flight])).values()];
+    return { lit, flights: unique, wake, fades, appears, bounces: bounced(after, refused) };
   }
 
   return { read, moves };
