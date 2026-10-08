@@ -134,7 +134,8 @@ const LevelScreen = (function () {
     screen.mission.setStep(state.step, state.done);
   }
 
-  /* A check's result. An automatic check that does not solve says nothing: the player did not ask. */
+  /* A check's result. A solve says its verdict, so no earlier nudge outlives it; an automatic
+     check that does not solve says nothing: the player did not ask. */
   function checked(screen, result, auto = false) {
     if (result.lost) {
       if (screen.finished) return;
@@ -143,6 +144,7 @@ const LevelScreen = (function () {
     } else if (result.solved) {
       if (screen.finished) return;
       stop(screen);
+      screen.ui.comms.say(result.message, "ok");
       won(screen, { debrief: result.debrief, stars: result.stars, card: result.new_card, payout: result.payout });
     } else if (!auto) {
       screen.ui.comms.say(result.message, "err");

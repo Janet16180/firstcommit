@@ -179,6 +179,15 @@ test("once the quest is done the mission is checked by itself; a solve stops the
   run.view.dispose();
 });
 
+test("a solve says the game's verdict on Rama's line, so an earlier nudge never outlives it", async () => {
+  const run = screen({ active: { ...record("active"), step: 3, auto_check: true }, replies: { "/api/check": record("check_solved") } });
+  await settle();
+  await settle();
+  assert.match(run.q(".comms").textContent, /Solved\./);
+  assert.equal(run.q(".comms").dataset.mood, "ok");
+  run.view.dispose();
+});
+
 test("an automatic check that does not solve stays silent", async () => {
   const run = screen({ active: { ...record("active"), step: 3, auto_check: true } });
   await settle();
