@@ -25,7 +25,7 @@
  *                               returns {rects, width, height}.
  * ARROW                         the 8x7 flow arrow, pointing right.
  * SPRITES                       the names of the shared sprites: folder, crate, lid, capsule, flag,
- *                               cross, file, ship, meteor, probe and station.
+ *                               cross, file, ship, meteor, probe, station and crack.
  * sprite(name, recolour)        a shared sprite's <rect>s; `recolour` swaps palette letters, as
  *                               {p: tone("s-new")} tints the file's paper.
  * shape(name, recolour)         a shared sprite's {rows, palette}, for pictures that draw it in layers.
@@ -194,6 +194,8 @@ const ArtPixels = (function () {
       palette: { k: OUTLINE, m: tone("art-muted"), M: tone("art-muted-dk") },
     },
     probe: { rows: ["...kkk..", "okkgggk.", "ookggggk", "okkgggk.", "...kkk.."], palette: { k: OUTLINE, g: tone("art-yellow"), o: tone("art-orange") } },
+    /* A jagged red crack, the size of the file sprite: a conflict, or a chain breaking. */
+    crack: { rows: ["...c....", "...cc...", "....c...", "...cc...", "...c....", "....c...", "....cc..", "...c....", "...cc...", "....c..."], palette: { c: tone("art-red") } },
     /* A base dome with a flag; recolour a, b and c with a CREW member's colours, and the pole p
        with NIGHT_POLE where the dome stands against the night sky. */
     station: {

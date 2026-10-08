@@ -6,9 +6,15 @@
  * art-style.css animates them. Every part is drawn where it stands in the moment's still frame;
  * the animations, timed by --art-moment, play the states before and after it.
  *
- * NAMES                   "secret-leak" (2-3: the keys sealed in a commit reach every crew
- *                         station, then it rewinds) and "launch" (4-2b: the two halves of the ship
- *                         join and it launches).
+ * NAMES                   "launch" (4-2b: the two halves of the ship join and it launches), which
+ *                         is real, and the what-ifs, which play in greyscale under the `whatIf`
+ *                         heading, then rewind, and never show the real state changed:
+ *                         "secret-leak" (2-3: the keys reach every crew station), "junk-flood"
+ *                         (2-5: `git add .` sends the build crates to every station),
+ *                         "unreviewed-main" (5-5: your capsule lands on main at Alex's),
+ *                         "force-break" (6-4, 7-2: your capsule replaces Alex's on the mothership,
+ *                         which cracks and falls) and "search-beam" (7-1: a beam sweeps the black
+ *                         box, the workshop outside it, and finds nothing).
  * CAPTIONS                {moment: [key, ...]}: the captions each moment draws, in drawing order.
  * play(name, {captions, reducedMotion})
  *                         {element, finished}: a new <svg> named by captions.caption, and a promise
@@ -65,11 +71,23 @@ const ArtMoments = (function () {
   /* A crew station, its dome 22x16 standing on the ground with its left edge at x. */
   const station = (x, colours) => place(x, GROUND - 16, 2, sprite("station", { ...colours, ...NIGHT_POLE }));
 
+  /* A capsule 24x16 at (x, y), its cargo glyph inside. */
+  const capsuleAt = (x, y, recolour = {}) => place(x, y, 2, sprite("capsule", recolour));
   const KEY = ["rrr....", "r.rrrrr", "rrr.r.r"];
-  const keyAt = (x, y) => place(x, y, 1, draw(KEY, { r: tone("art-red") }));
+  const MINI_CRATE = ["kkkkk", "kbbbk", "kbbbk", "kkkkk"];
+  /* The key is starlight: the what-ifs are greyscale, and it must stand out on the capsule. */
+  const keyCapsule = (x, y) => [capsuleAt(x, y), place(x + 9, y + 7, 1, draw(KEY, { r: tone("star") }))];
+  const crateCapsule = (x, y) => [capsuleAt(x, y), place(x + 10, y + 6, 1, draw(MINI_CRATE, { k: tone("art-outline"), b: tone("art-cyan") }))];
+  const MUTED_CAPSULE = { v: tone("art-muted"), V: tone("art-muted-dk"), h: tone("art-hull") };
+  const ALEX_CAPSULE = { v: CREW.alex.a, V: CREW.alex.b, h: CREW.alex.c };
+  /* The 4x2 link from a capsule at (x, y) back to the one before it. */
+  const linkBefore = (x, y) => rect(x - 4, y + 7, 4, 2, tone("star"));
 
-  /* A capsule 24x16 at (x, y) with the keys inside. */
-  const keyCapsule = (x, y) => [place(x, y, 2, sprite("capsule")), keyAt(x + 9, y + 7)];
+  /* The "WHAT IF" heading in the top left corner. */
+  function heading(words) {
+    const width = Math.ceil(words.length * 9 * 0.42) + 10;
+    return [rect(6, 5, width, 13, tone("crt"), { stroke: tone("star"), "stroke-width": 1 }), text(11, 14.5, words, { size: 9, anchor: "start" })];
+  }
 
   const OTHER_CREW = [
     { a: tone("art-cyan"), b: tone("art-cyan-dk"), c: tone("art-cyan-lt") },
@@ -78,30 +96,123 @@ const ArtMoments = (function () {
     { a: tone("art-muted"), b: tone("art-muted-dk"), c: tone("art-hull") },
   ];
 
+  /* Where a commit leaves from (above the dock's crate), docks under the mothership, and the four
+     crew stations its copies land at. */
+  const STAGING = { x: 60, y: 36 };
+  const DOCK = { x: 178, y: 24 };
+  const CREW_STATIONS = [236, 278, 320, 362];
+  const mothership = () => place(168, 4, 2, sprite("ship"));
+
+  /* The ghost capsule, drawn docked, rising there from (from.x, from.y) and back. */
+  const rising = (moving, from, at, children) => part(moving, "art-wi-rise", children, offset(from.x - at.x, from.y - at.y));
+
+  /* A copy drawn landed at (x, y), coming down from the dock and going back up. */
+  const landing = (moving, x, y, children) => part(moving, "art-wi-land", children, offset(DOCK.x - x, DOCK.y - y));
+
+  /* Copies of a capsule with `cargo` inside, landed above the four crew stations. */
+  const crewCopies = (moving, cargo, glow) => CREW_STATIONS.map((x, index) => [
+    station(x, OTHER_CREW[index]),
+    landing(moving, x - 1, 36, [
+      cargo(x - 1, 36),
+      glow && part(moving, "art-wi-glow", part(moving, "art-alarm", rect(x - 3, 34, 28, 20, "none", { stroke: tone("art-red"), "stroke-width": 1 }))),
+    ]),
+  ]);
+
   function secretLeak(c, moving) {
-    const staging = { x: 60, y: 36 };
-    const dock = { x: 178, y: 24 };
-    const home = offset(staging.x - dock.x, staging.y - dock.y);
-    const crew = [236, 278, 320, 362];
     return [
       backdrop("secret-leak"),
+      heading(c.whatIf),
       station(22, CREW.you),
-      place(60, GROUND - 20, 2, sprite("crate")),
-      moving && part(moving, "art-leak-file", place(64, 30, 2, sprite("file", { p: tone("art-red-lt") }))),
-      place(168, 4, 2, sprite("ship")),
-      text(162, 14, c.mothership, { fill: tone("art-pink"), anchor: "end" }),
-      part(moving, "art-leak-ghost", [
-        Dom.svg("g", { opacity: 0.6 }, keyCapsule(dock.x, dock.y)),
-        text(dock.x + 28, dock.y + 11, c.keys, { fill: tone("art-red-lt"), anchor: "start" }),
-      ], home),
-      crew.map((x, index) => [
-        station(x, OTHER_CREW[index]),
-        part(moving, "art-leak-copy", [
-          keyCapsule(x - 1, 36),
-          part(moving, "art-leak-glow", part(moving, "art-alarm", rect(x - 3, 34, 28, 20, "none", { stroke: tone("art-red"), "stroke-width": 1 }))),
-        ], offset(dock.x - (x - 1), dock.y - 36)),
+      place(STAGING.x, GROUND - 20, 2, sprite("crate")),
+      moving && part(moving, "art-wi-sweep", place(64, 30, 2, sprite("file", { p: tone("art-red-lt") })), offset(0, 0)),
+      mothership(),
+      rising(moving, STAGING, DOCK, [
+        Dom.svg("g", { opacity: 0.6 }, keyCapsule(DOCK.x, DOCK.y)),
+        text(DOCK.x + 28, DOCK.y + 11, c.keys, { fill: tone("art-red-lt"), anchor: "start" }),
       ]),
-      captionBand(c.caption, moving, "art-leak-caption"),
+      text(162, 14, c.mothership, { fill: tone("art-pink"), anchor: "end" }),
+      crewCopies(moving, keyCapsule, true),
+      captionBand(c.caption, moving, "art-wi-caption"),
+    ];
+  }
+
+  function junkFlood(c, moving) {
+    const pile = [[0, 10], [16, 10], [8, 0]];
+    return [
+      backdrop("junk-flood"),
+      heading(c.whatIf),
+      rect(6, 34, 38, 38, "none", { stroke: tone("art-orange"), "stroke-width": 1 }),
+      text(25, 30, c.command, { size: 8 }),
+      moving && part(moving, "art-wi-sweep", pile.map(([dx, dy]) => place(STAGING.x + 2 + dx, 30 + dy, 1, sprite("crate"))), offset(-52, 20)),
+      place(STAGING.x, GROUND - 20, 2, sprite("crate")),
+      mothership(),
+      rising(moving, STAGING, DOCK, Dom.svg("g", { opacity: 0.6 }, crateCapsule(DOCK.x, DOCK.y))),
+      crewCopies(moving, crateCapsule, false),
+      captionBand(c.caption, moving, "art-wi-caption"),
+    ];
+  }
+
+  /* The mothership with its main line: two capsules, and the place a third would dock. */
+  const MAIN = [120, 148];
+  const mainLine = () => [mothership(), MAIN.map((x, index) => [capsuleAt(x, 26, MUTED_CAPSULE), index > 0 && linkBefore(x, 26)])];
+  /* Your capsule waiting above your station. */
+  const YOUR_CAPSULE = { x: 23, y: 38 };
+
+  function unreviewedMain(c, moving) {
+    const end = { x: 176, y: 26 };
+    return [
+      backdrop("unreviewed-main"),
+      heading(c.whatIf),
+      station(24, CREW.you),
+      mainLine(),
+      rising(moving, YOUR_CAPSULE, end, [linkBefore(end.x, end.y), capsuleAt(end.x, end.y)]),
+      station(352, CREW.alex),
+      part(moving, "art-wi-land", capsuleAt(351, 38), offset(end.x - 351, end.y - 38)),
+      captionBand(c.caption, moving, "art-wi-caption"),
+    ];
+  }
+
+  function forceBreak(c, moving) {
+    const line = { x: 176, y: 26 };
+    const fallen = { x: 184, y: 58 };
+    const falling = moving ? { class: "art-wi-fall", style: offset(line.x - fallen.x, line.y - fallen.y) } : {};
+    return [
+      backdrop("force-break"),
+      heading(c.whatIf),
+      station(24, CREW.you),
+      text(36, 30, c.command, { size: 8 }),
+      mothership(),
+      capsuleAt(148, 26, MUTED_CAPSULE),
+      Dom.svg("g", { opacity: 0.7, ...falling }, [
+        linkBefore(fallen.x, fallen.y),
+        capsuleAt(fallen.x, fallen.y, ALEX_CAPSULE),
+        /* Starlight, not red: the what-if is greyscale and the crack must still show. */
+        part(moving, "art-wi-crack", place(fallen.x + 8, fallen.y + 3, 1.3, sprite("crack", { c: tone("star") }))),
+      ]),
+      rising(moving, YOUR_CAPSULE, line, [linkBefore(line.x, line.y), capsuleAt(line.x, line.y)]),
+      station(352, CREW.alex),
+      captionBand(c.caption, moving, "art-wi-caption"),
+    ];
+  }
+
+  function searchBeam(c, moving) {
+    const dissolving = [[22, 40], [50, 46], [30, 62], [46, 58]];
+    return [
+      backdrop("search-beam"),
+      heading(c.whatIf),
+      rect(8, 30, 56, 42, "none", { stroke: tone("art-orange"), "stroke-width": 1 }),
+      Dom.svg("g", { opacity: 0.25 }, place(28, 40, 2, sprite("file"))),
+      dissolving.map(([x, y]) => rect(x, y, 2, 2, tone("star"), { opacity: 0.4 })),
+      rect(84, 8, 306, 64, "none", { stroke: tone("art-orange"), "stroke-width": 2 }),
+      [[84, 8], [386, 8], [84, 68], [386, 68]].map(([x, y]) => rect(x, y, 4, 4, tone("art-orange-dk"))),
+      place(104, 46, 2, sprite("crate")),
+      capsuleAt(170, 48),
+      linkBefore(198, 48),
+      capsuleAt(198, 48),
+      place(300, 20, 2, sprite("ship")),
+      moving && part(moving, "art-wi-beam", [rect(88, 10, 10, 60, tone("art-yellow"), { opacity: 0.3 }), rect(97, 10, 1, 60, tone("art-flame-hot"))]),
+      part(moving, "art-wi-mark", place(230, 32, 2, sprite("cross", { k: tone("star") }))),
+      captionBand(c.caption, moving, "art-wi-caption"),
     ];
   }
 
@@ -156,8 +267,12 @@ const ArtMoments = (function () {
   }
 
   const MOMENTS = {
-    "secret-leak": { captions: ["keys", "mothership", "caption"], seconds: 7, draw: secretLeak },
-    launch: { captions: ["nav", "engine", "caption"], seconds: 5, draw: launch },
+    "secret-leak": { captions: ["whatIf", "keys", "mothership", "caption"], seconds: 7, whatIf: true, draw: secretLeak },
+    launch: { captions: ["nav", "engine", "caption"], seconds: 5, whatIf: false, draw: launch },
+    "junk-flood": { captions: ["whatIf", "command", "caption"], seconds: 7, whatIf: true, draw: junkFlood },
+    "unreviewed-main": { captions: ["whatIf", "caption"], seconds: 7, whatIf: true, draw: unreviewedMain },
+    "force-break": { captions: ["whatIf", "command", "caption"], seconds: 7, whatIf: true, draw: forceBreak },
+    "search-beam": { captions: ["whatIf", "caption"], seconds: 7, whatIf: true, draw: searchBeam },
   };
 
   const NAMES = Object.freeze(Object.keys(MOMENTS));
@@ -167,9 +282,9 @@ const ArtMoments = (function () {
     if (!(name in MOMENTS)) throw new RangeError(`unknown moment: ${name}`);
     const missing = CAPTIONS[name].find((key) => typeof captions[key] !== "string");
     if (missing) throw new RangeError(`the ${name} moment needs the caption "${missing}"`);
-    const { seconds, draw: parts } = MOMENTS[name];
+    const { seconds, whatIf, draw: parts } = MOMENTS[name];
     const element = picture({
-      class: `art-moment art-moment--${name}`,
+      class: ["art-moment", `art-moment--${name}`, whatIf && "art-moment--whatif"].filter(Boolean).join(" "),
       viewBox: `0 0 ${WIDTH} ${HEIGHT}`,
       width: "100%",
       height: "100%",

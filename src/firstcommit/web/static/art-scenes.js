@@ -59,7 +59,6 @@ const ArtScenes = (function () {
   const ZONE_TONES = ["art-orange", "art-cyan", "art-violet", "art-pink"];
   const NIGHT_PLANET = { a: tone("art-ground-edge"), b: tone("art-ground"), c: tone("art-muted-dk") };
   const ALEX_CAPSULE = { v: CREW.alex.a, V: CREW.alex.b, h: CREW.alex.c };
-  const CRACK = ["...c....", "...cc...", "....c...", "...cc...", "...c....", "....c...", "....cc..", "...c....", "...cc...", "....c..."];
 
   /* A crew station's dome and flag, 33x24, standing on the ground with its left edge at x. */
   const stationAt = (x, colours = {}) => place(x, 50, 3, sprite("station", { ...colours, ...NIGHT_POLE }));
@@ -315,7 +314,7 @@ const ArtScenes = (function () {
         sky("collision", 20),
         Dom.svg("g", { class: "art-shake" }, [
           place(68, 26, 3, file()),
-          place(68, 26, 3, draw(CRACK, { c: tone("art-red") }), { className: "art-fade", delay: 0.9 }),
+          place(68, 26, 3, sprite("crack"), { className: "art-fade", delay: 0.9 }),
         ]),
         slide(-24, 0, 0.2, capsuleAt(42, 34)),
         slide(24, 0, 0.2, capsuleAt(94, 34, 2, ALEX_CAPSULE)),
