@@ -331,6 +331,17 @@ test("a level's scene plays the first time it opens, and the game is told once i
   run.view.dispose();
 });
 
+test("the lab is watched only once the scene is over, so what a level stages first happens in view", async () => {
+  const run = screen({ replies: { "/api/level": record("level") } });
+  await settle();
+  await run.clock.advance(5000);
+  assert.equal(run.routes().includes("/api/observe"), false);
+  document.body.querySelector("dialog.cutscene .cs-skip").click();
+  await settle();
+  assert.ok(run.routes().includes("/api/observe"));
+  run.view.dispose();
+});
+
 test("a scene already seen does not play by itself; Intro plays it again without telling the game", async () => {
   const run = screen();
   await settle();

@@ -295,8 +295,13 @@ const LevelScreen = (function () {
     ctx.terminal.attach(ui.termcol);
     screen.attached = true;
     measureTerminal(screen);
-    screen.poller = Polling.start({ tick: () => tick(screen), timers: ctx.timers, page: ctx.page });
-    if (level.scene.length && !level.scene_seen) scene(screen);
+    /* A level may stage a change right after the page first looks at the lab; looking only once
+       the scene is over keeps that change, and its motion, in view. */
+    const watch = () => {
+      if (!screen.disposed && !screen.finished) screen.poller = Polling.start({ tick: () => tick(screen), timers: ctx.timers, page: ctx.page });
+    };
+    if (level.scene.length && !level.scene_seen) scene(screen).then(watch);
+    else watch();
   }
 
   async function load(screen) {
