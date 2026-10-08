@@ -306,6 +306,19 @@
   to { opacity: 0.15; }
 }
 
+/* A crate riding the simulator's belt into the workshop: it comes out of the slot and goes in at
+   the door, again and again. */
+.art-belt {
+  animation: art-belt 3s steps(15) infinite;
+}
+
+@keyframes art-belt {
+  0% { transform: translateX(0); opacity: 0; }
+  8% { opacity: 1; }
+  90% { transform: translateX(42px); opacity: 1; }
+  100% { transform: translateX(42px); opacity: 0; }
+}
+
 .art-sparks {
   position: absolute;
   inset: 0;
