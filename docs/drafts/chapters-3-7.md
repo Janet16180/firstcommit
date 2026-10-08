@@ -61,6 +61,7 @@ P = has a prediction.
 | vault | 3-5 | Cargo inspection | cargo and vault: one clean capsule, the secret in none | challenge | alarm; staged: a stowaway arrives | E |
 | mothership | 4-1 | Make contact | a remote is a name for an address; nothing travels | guided, P | scene: orbit; the antenna lights, nothing flies | E |
 | mothership | 4-2 | Launch | push copies commits, only commits | guided, P | scene: rocket; an uncommitted edit stays behind | E |
+| mothership | 4-2b | Two halves of a ship | two people work at once on different parts; Git puts the pieces together | guided | crew view; live: Alex pushes the engine half; launch moment when both halves meet | E |
 | mothership | 4-3 | Incoming transmission | status knows the mothership only as of the last fetch | situation, P | scene: pull; staged: Alex's capsule docks | E |
 | mothership | 4-4 | Push refused | a refused push loses nothing; pull with `--no-rebase` or `--rebase` | situation | live: Alex pushes after your commit; your capsule bounces | E |
 | mothership | 4-5 | Base 7 | liftoff to mothership from a plain folder, the debris left out | boss | scene: alarm with the meteorite; the zones start empty | E |
@@ -116,3 +117,29 @@ Page:
 
 Art: the prototype's capsule, chain, orbit, rocket, pull and alarm pictures, and new ones for
 fork, merge, collision and blackbox.
+
+## The user's playtest decisions (2026-10-08)
+
+- **2-3 Stowaway explains why secrets stay out.** When the keys reach the staging area, Rama
+  says why: whatever is staged goes into the next commit, and a commit is forever. A one-time
+  "what would happen" moment plays: a ghost capsule seals with the keys inside, rises to the
+  mothership, and copies land at other crew stations with the keys glowing, captioned that
+  everyone who can see the repository can read it, in every copy, forever; then it rewinds.
+  Rama adds that deleting the file later does not help, because the old commit still has it.
+  The debrief names passwords, API keys and tokens, and points to `.gitignore` as the tool,
+  taught later. Every claim is fact-checked.
+- **The crew view.** In any level with a teammate, the zones show two stations, yours and
+  Alex's (each with workshop, staging area and vault), with the mothership between them.
+  Capsules rise from one station and land at the other. It is drawn from the real snapshots of
+  both clones (`Observation.teammate`).
+- **New level 4-2b "Two halves of a ship"**, after Launch: you own `nav.cfg`, Alex owns
+  `engine.cfg`; you push your half, Alex pushes theirs live, you pull; both stations hold the
+  whole ship and a launch moment plays. Rama names Git's point: two people, at the same time,
+  on different parts, and Git puts the pieces together.
+- **Hints go to the answer:** every level's last hint gives the exact commands; each hint
+  lowers the XP, never below half.
+- **3-2 is about an accidental change**, never a "typo": a crew note says what was meant to
+  change, and `git diff` shows what else did.
+- **Remote addresses:** any address that reaches the stand-in GitHub passes. A real-looking
+  `https://github.com/...` address through `url.<base>.insteadOf` is being checked in the
+  image before the user decides.
