@@ -1,5 +1,7 @@
 # Sectors 5 to 9 and the visual progression: the lead's decision
 
+> Approved by the user on 2026-10-08. Wave 2 is being built.
+
 Decided on 2026-10-08 from a second debate between mentor (learning science, visual explanation)
 and crew (real situations, story, game feel). Their proposals and rebuttals are in
 `.scratch/debate2/`. This file replaces the sector 5 to 7 rows of `chapters-3-7.md` and adds
