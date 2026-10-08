@@ -85,6 +85,8 @@ const createGameApi = (function () {
   const MOOD = oneOf("info", "ok", "warn", "err");
   const MOMENT = oneOf("secret-leak", "launch", "junk-flood");
   const VIEW = oneOf("station", "crew", "history", "sides", "blackbox", "board", "focus");
+  /* What the save remembers as born: the views, and the crew band, which no level opens on (records.Seen). */
+  const SEEN = oneOf("station", "crew", "history", "sides", "blackbox", "board", "focus", "band");
 
   const STATUS = record({
     xp: number,
@@ -109,7 +111,7 @@ const createGameApi = (function () {
     scene: list(record({ art: ART, text: BLOCKS })),
     scene_seen: flag,
     view: VIEW,
-    views_seen: list(VIEW),
+    views_seen: list(SEEN),
     card: nullable(CARD),
     challenge: flag,
     briefing: BLOCKS,
