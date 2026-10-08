@@ -51,14 +51,14 @@ PLAYER = Person("Cadet", "cadet@example.com")
 """The player's identity until they set their own (the "Your real setup" chapter teaches ``git config``)."""
 
 BASE_CONFIG = (
-    "[init]\n\tdefaultBranch = main\n[core]\n\tpager = less -FRX\n\teditor = true\n\texcludesFile =\n\tattributesFile =\n"
+    "[init]\n\tdefaultBranch = main\n[core]\n\tpager = cat\n\teditor = true\n\texcludesFile =\n\tattributesFile =\n"
     f"[user]\n\tname = {PLAYER.name}\n\temail = {PLAYER.email}\n\tuseConfigOnly = true\n"
 )
 """
 The game's global git configuration when it starts: the player's shell and the lessons share it.
 
-``core.pager`` is what git uses when ``LESS`` is unset (git-config(1), core.pager): short output
-is printed without stopping in the pager, whatever ``LESS`` the player's shell sets.
+``core.pager = cat`` prints every output straight out; `PLAYER_SETTINGS` keeps it so in the
+player's shell whatever the configuration says.
 ``core.excludesFile`` and ``core.attributesFile`` are empty, so git does not read the player's
 personal ignore and attributes files (``~/.config/git/ignore`` and ``attributes``, which it reads
 by default even when ``GIT_CONFIG_GLOBAL`` names another file): a lab shows the same files on
@@ -75,12 +75,14 @@ login and host names: no machine-dependent identity, and no login or host name i
 commit.
 """
 
-PLAYER_SETTINGS = {"core.editor": "true"}
+PLAYER_SETTINGS = {"core.editor": "true", "core.pager": "cat"}
 """
 Settings every git the game starts keeps, the player's shell included, whatever its configuration
-files say: no editor ever opens (`BASE_CONFIG` explains why). As ``GIT_CONFIG_COUNT`` entries
-they reach a game home whose configuration is older than the setting, and outrank a
-``git config --global core.editor`` the player runs.
+files say: no editor ever opens (`BASE_CONFIG` explains why), and no pager: output longer than the
+page's terminal scrolls there, instead of stopping in ``less`` for a key a beginner does not know.
+As ``GIT_CONFIG_COUNT`` entries they reach a game home whose configuration is older than the
+setting, and outrank a ``git config --global core.editor`` or ``core.pager`` the player runs and
+the ``PAGER`` variable (git-config(1), core.pager). Only ``GIT_PAGER`` set in the shell comes first.
 """
 
 TERMINAL_SETTINGS = {**NO_PROGRAMS, "color.ui": "never"}

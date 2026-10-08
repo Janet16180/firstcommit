@@ -170,6 +170,16 @@ def react(command: Command, kinds: Collection[str], repository: bool, staged: bo
     return next((rule for rule in rules if _fits(rule, command, kinds, repository, staged)), None)
 
 
+GLOBAL_OPTIONS = re.compile(
+    r"(?:^|(?<=[;&|] ))git"
+    # git's options before a subcommand: those that take a separate value, then flags (with an
+    # optional =value), up to a word that is not an option.
+    r"(?: (?:-[Cc] \S+|--(?:git-dir|work-tree|namespace|config-env) \S+|-[pP]|--[a-z][a-z-]*(?:=\S+)?))+"
+    r"(?= [^-\s])"
+)
+"""Git's options typed before a subcommand, which `plain` leaves out."""
+
+
 def matches(command: Command, pattern: str, outcome: Outcome) -> bool:
     """
     Tell whether a typed line starts as a pattern says and ended as asked.
@@ -195,7 +205,26 @@ def matches(command: Command, pattern: str, outcome: Outcome) -> bool:
         "failed": status != 0,
         "unknown-command": status == UNKNOWN_COMMAND_STATUS,
     }
-    return re.match(pattern, " ".join(command["line"].split())) is not None and ended[outcome]
+    return re.match(pattern, plain(command["line"])) is not None and ended[outcome]
+
+
+def plain(line: str) -> str:
+    """
+    Give a typed line as patterns read it: runs of spaces made single, git's options before a subcommand left out.
+
+    Parameters
+    ----------
+    line : str
+        The line as typed.
+
+    Returns
+    -------
+    str
+        The line with each ``git`` that starts a command (at the start, or after ``;``, ``&`` or
+        ``|``) followed straight by its subcommand: ``git --no-pager log`` and ``git -C . log``
+        read as ``git log``. Options with no subcommand after them (``git --version``) stay.
+    """
+    return GLOBAL_OPTIONS.sub("git", " ".join(line.split()))
 
 
 def _fits(rule: ReactionRule, command: Command, kinds: Collection[str], repository: bool, staged: bool) -> bool:

@@ -149,6 +149,28 @@ def test_a_typed_line_matches_a_pattern_from_its_start_and_an_outcome() -> None:
     assert not reactions.matches(failed, r"status\b", "any")
 
 
+@pytest.mark.parametrize(
+    "line",
+    [
+        "git --no-pager log --oneline",
+        "git -C . log",
+        "git -C project log",
+        "git -c color.ui=never log",
+        "git --git-dir=.git log",
+        "git -p log",
+        "cd project && git --no-pager log",
+    ],
+)
+def test_options_before_the_subcommand_do_not_hide_it(line: str) -> None:
+    assert reactions.matches({"line": line, "status": 0}, r"(cd project && )?git log\b", "ok")
+
+
+@pytest.mark.parametrize("line", ["git --version", "git --help", "git --no-pager"])
+def test_a_line_with_options_and_no_subcommand_keeps_them(line: str) -> None:
+    assert reactions.matches({"line": line, "status": 0}, line, "ok")
+    assert not reactions.matches({"line": line, "status": 0}, r"git$", "ok")
+
+
 @pytest.mark.parametrize("line", ["git ad map.txt", "git stauts", "git comit -m 'Add the map'", "git int"])
 def test_a_misspelled_git_command_points_at_its_spelling_and_the_list_of_commands(line: str) -> None:
     assert said(line, 1) == f"err: {reactions.NOT_A_GIT_COMMAND}"

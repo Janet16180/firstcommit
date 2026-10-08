@@ -1,5 +1,6 @@
 import http.server
 import os
+import pty
 import subprocess
 import threading
 import time
@@ -126,11 +127,11 @@ def test_game_git_never_finds_a_repository_above_a_lesson(game_home: Path) -> No
     assert gitcmd.run(lesson, "rev-parse", "--git-dir").returncode != 0
 
 
-def test_the_game_pages_like_git_does_when_less_is_unset(game_home: Path, tmp_path: Path) -> None:
+def test_the_games_pager_is_cat_whatever_pager_the_players_environment_names(game_home: Path, tmp_path: Path) -> None:
     (game_home / "gitconfig").write_text(gitcmd.BASE_CONFIG)
-    env = {**gitcmd.shell_environment({"PATH": os.environ["PATH"], "LESS": "-R"}, game_home), "HOME": str(tmp_path)}
+    env = {**gitcmd.shell_environment({"PATH": os.environ["PATH"], "LESS": "-R", "PAGER": "more"}, game_home), "HOME": str(tmp_path)}
     result = subprocess.run(["git", "var", "GIT_PAGER"], env=env, capture_output=True, text=True, check=True)
-    assert result.stdout == "less -FRX\n"
+    assert result.stdout == "cat\n"
 
 
 
@@ -220,9 +221,10 @@ def test_the_games_git_never_runs_a_signature_program_to_show_a_log(tmp_path: Pa
     assert not marker.exists()
 
 
-def test_the_players_shell_keeps_the_repositorys_own_settings_and_only_loses_the_editor(tmp_path: Path) -> None:
+def test_the_players_shell_keeps_the_repositorys_own_settings_and_only_loses_the_editor_and_the_pager(tmp_path: Path) -> None:
     env = gitcmd.shell_environment({"PATH": "/usr/bin"}, tmp_path)
-    assert {key: value for key, value in env.items() if key.startswith(("GIT_CONFIG_COUNT", "GIT_CONFIG_KEY", "GIT_CONFIG_VALUE"))} == gitcmd.config_entries({"core.editor": "true"})
+    expected = gitcmd.config_entries({"core.editor": "true", "core.pager": "cat"})
+    assert {key: value for key, value in env.items() if key.startswith(("GIT_CONFIG_COUNT", "GIT_CONFIG_KEY", "GIT_CONFIG_VALUE"))} == expected
 
 
 def test_the_games_git_never_opens_the_players_editor(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -628,7 +630,22 @@ def test_an_older_game_config_or_the_players_own_editor_setting_never_opens_an_e
     assert not (project / "editor-ran").exists()
 
 
-def test_the_isolation_sets_no_editor_as_a_setting_that_outranks_every_config_file(tmp_path: Path) -> None:
+def test_the_isolation_sets_no_editor_and_no_pager_as_settings_that_outrank_every_config_file(tmp_path: Path) -> None:
     env = gitcmd.isolation(tmp_path)
     entries = {env[f"GIT_CONFIG_KEY_{index}"]: env[f"GIT_CONFIG_VALUE_{index}"] for index in range(int(env["GIT_CONFIG_COUNT"]))}
-    assert entries == gitcmd.PLAYER_SETTINGS == {"core.editor": "true"}
+    assert entries == gitcmd.PLAYER_SETTINGS == {"core.editor": "true", "core.pager": "cat"}
+
+
+def test_in_the_players_shell_git_on_a_terminal_prints_straight_out_whatever_pager_is_set(game_home: Path) -> None:
+    (game_home / "gitconfig").write_text(f"[core]\n\tpager = touch {game_home}/pager-ran; cat\n")
+    project = game_home / "labs" / "pager" / "project"
+    project.mkdir(parents=True)
+    assert players_line(project, "git init -q && git -c user.name=Robin -c user.email=robin@example.com commit -q --allow-empty -m 'Long log'", "false") == 0
+    env = {**gitcmd.shell_environment(os.environ, game_home), "HOME": str(game_home), "PAGER": f"touch {game_home}/pager-ran; cat"}
+    leader, follower = pty.openpty()
+    ran = subprocess.run(["bash", "--norc", "-c", "git log && git --paginate log"], cwd=project, env=env, stdin=subprocess.DEVNULL, stdout=follower, stderr=follower, timeout=30, check=False)
+    os.close(follower)
+    shown = os.read(leader, 65536).decode()
+    os.close(leader)
+    assert ran.returncode == 0 and shown.count("Long log") == 2
+    assert not (game_home / "pager-ran").exists()

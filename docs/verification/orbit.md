@@ -764,3 +764,18 @@ in `tests/test_decks.py`.
 | `conflict-add-solves` | the file stays unmerged until `git add` | `verify`; E88 |
 | `conflict-add-markers` | `git add` takes markers and all, and marks the conflict solved | `verify`; E90 |
 | notes | as the cards above, plus `--no-edit` and the editor | E85 |
+
+## No pager, and git's options before a subcommand (added 2026-10-08)
+
+Run in the image (`firstcommit:latest`, git 2.43.0):
+
+| Tag | What ran | Result |
+|---|---|---|
+| E98 | a global `core.pager = less`, `PAGER=less`, and the game's entries `core.editor=true`, `core.pager=cat` as `GIT_CONFIG_COUNT`; 200 commits; `git var GIT_PAGER`, then `git log` and `git --paginate log --oneline` on a terminal (`script`) | `cat`; both print all 200 commits and end at once, no key needed |
+| E99 | the same with `GIT_PAGER=less` set, then without the entries | `less` both times: only `GIT_PAGER` outranks the entries, and without them the global setting wins |
+| E100 | `git -C project log --oneline`, `git --no-pager -C project log --oneline` from the parent folder, `git -c color.ui=never log --oneline` inside | each lists the commit: the options before the subcommand change where or how, not which command runs |
+
+| Text | Claim | Evidence |
+|---|---|---|
+| `gitcmd.PLAYER_SETTINGS` | `core.pager=cat` as a `GIT_CONFIG_COUNT` entry outranks the configuration files and `PAGER`; only `GIT_PAGER` comes first | E98, E99; git-config(1) core.pager, git(1) `GIT_CONFIG_COUNT`, git-var(1) `GIT_PAGER`; *re-checked* by `tests/test_gitcmd.py` on a pseudo-terminal |
+| `reactions.plain` | `git --no-pager log` and `git -C . log` run `git log` | E100; git(1) OPTIONS (`-C`, `-c`, `--no-pager`, `-p`); *re-checked* by `tests/test_reactions.py` |
