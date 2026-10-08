@@ -14,8 +14,8 @@
  *                        its level opens; the tape, in place, once HEAD has `moved` in the level.
  * play(view, {sky, show, say, reducedMotion, timers})
  *                        a promise that resolves once the birth is over; show(view) puts a view on
- *                        the stage ("fold" is your station with the strip above it, "flatten" the
- *                        crew view with the band above it), say(text) gives Rama the line; a
+ *                        the stage ("flatten" is the crew view with the band above it; history
+ *                        unrolls as the chart alone), say(text) gives Rama the line; a
  *                        stage with no view (the tape's) plays in place. Timed on `timers` (window
  *                        unless given).
  */
@@ -28,10 +28,7 @@ const ViewBirth = (function () {
   const BIRTH_MS = 1400;
   const STILL_MS = 2600;
   const STAGES = {
-    history: [
-      { view: "fold", motion: "art-birth-fold", line: "views.born.strip" },
-      { view: "history", motion: "art-birth-unroll", line: "views.born.history" },
-    ],
+    history: [{ view: "history", motion: "art-birth-unroll", line: "views.born.history" }],
     band: [{ view: "flatten", motion: "art-birth-flatten", line: "views.born.band" }],
     sides: [{ view: "sides", motion: "art-birth-book", line: "views.born.sides" }],
     blackbox: [{ view: "blackbox", motion: "art-birth-boundary", line: "views.born.blackbox" }],

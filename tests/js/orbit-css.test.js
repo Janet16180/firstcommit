@@ -140,9 +140,8 @@ test("history's chart folds your workshop and dock away, and gives the vault and
   assert.match(rule(".viz-op"), /border: 3px solid var\(--s-mod\);/);
 });
 
-test("in history the strip keeps only what folded, except while the vault's card unrolls, and Alex's band runs thin and dashed above", () => {
+test("Alex's band runs thin and dashed", () => {
   const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
-  assert.match(css, /\n\.sky\[data-view="history"\]:not\(\.art-birth-unroll\) > \.strip:not\(\.is-band\) \.strip-card:is\(\[data-zone="vault"\], \[data-zone="remote"\]\) \{\s*display: none;/);
   assert.match(rule(".strip.is-band"), /grid-template-columns: auto repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(rule(".strip.is-band"), /border: 2px dashed/);
   assert.match(rule(".strip.is-band .strip-card"), /padding: 1px 6px;/);

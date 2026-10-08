@@ -6,9 +6,9 @@
  * and Restart; the views across the top, the mission panel, Rama's comms line and the terminal;
  * and, once the mission is solved, the completion band and the dock at the bottom. The views are
  * the view ladder's (docs/drafts/chapters-5-9.md): your station (or the crew view, in a level with
- * a teammate) shows the four zones; history folds your station into the strip and leaves the
- * vault and the mothership on the stage, and in a crew level flattens Alex's station into the
- * band along the top; two sides open each conflicted file like a book under the strip; the black
+ * a teammate) shows the four zones; history shows the chart alone, the vault and the mothership;
+ * two sides open each conflicted file like a book under the strip, and in a crew level flatten
+ * Alex's station into the band along the top; the black
  * box frames the places Git keeps, the workshop outside (in a crew level your row alone, Alex in
  * the band). In a level that shows it, the black
  * box's tape of HEAD's moves runs under history and the black box. A level opens on its main view; a view not born yet is
@@ -39,15 +39,16 @@ const LevelScreen = (function () {
   const DRAWN = ["station", "crew", "history", "sides", "blackbox"];
   /* The views the black box's tape runs under, in a level that shows it. */
   const TAPED = ["history", "blackbox"];
-  /* The views that show your station unfolded, so the strip stays away. */
-  const UNFOLDED = ["station", "crew", "blackbox"];
-  /* How the zones lay out on each view (zone-panel.js): history is the chart, the black box keeps
-     to your row; every other view shows the zones as they are. */
+  /* The views that leave your station's strip out: those that show it unfolded, and history, which
+     shows the chart alone (the tabs lead back to the stations). */
+  const UNSTRIPPED = ["station", "crew", "blackbox", "history"];
   /* The views and pictures that grow downward: on a wide screen they stand in a tall column beside
      the mission and the terminal. A challenge's chart is read against the chain beside it, so that
      pair keeps the width across the top. */
   const COLUMN_VIEWS = ["history"];
   const COLUMN_PICTURES = ["chain", "movelog"];
+  /* How the zones lay out on each view (zone-panel.js): history is the chart, the black box keeps
+     to your row; every other view shows the zones as they are. */
   const ZONE_MODES = { history: "chart", blackbox: "row" };
   /* Solve's pace: how often it looks, and how long a line or a goal may take before it gives up. */
   const POLL_MS = 300;
@@ -116,7 +117,7 @@ const LevelScreen = (function () {
     const { ui } = screen;
     screen.view = view;
     ui.sky.dataset.view = view;
-    const folded = !UNFOLDED.includes(view);
+    const folded = !UNSTRIPPED.includes(view);
     const boxed = view === "blackbox";
     ui.strip.element.hidden = !folded;
     ui.band.element.hidden = !(folded || boxed) || !screen.crew;
@@ -159,13 +160,16 @@ const LevelScreen = (function () {
   /* What the current goal asks to look at. */
   const looked = ({ level, state }) => (state.step < level.steps.length ? level.steps[state.step].look : []);
 
+  /* Whether a view shows Alex's band: the folded views, and the black box. */
+  const showsBand = (view) => !UNSTRIPPED.includes(view) || view === "blackbox";
+
   /* The births the level waits for, in order: its main view's, the crew band the first time a
-     crew level opens on another view (once the crew view was born), and the tape in a level that
+     crew level opens on a view that shows it (once the crew view was born), and the tape in a level that
      shows it. */
   function awaited({ level, seen }, unborn) {
     const births = [];
     if (unborn && ViewBirth.has(level.view)) births.push(level.view);
-    if (level.view !== "crew" && seen.includes("crew") && !seen.includes("band")) births.push("band");
+    if (showsBand(level.view) && seen.includes("crew") && !seen.includes("band")) births.push("band");
     if (level.tape && !seen.includes("tape")) births.push("tape");
     return births;
   }

@@ -24,31 +24,24 @@ function birth(view, { reducedMotion = false } = {}) {
   return { clock, sky, seen, finished };
 }
 
-test("history is born out of your station: the fold, then the unroll, each with Rama's line", async () => {
+test("history is born as the chart alone, unrolling from your vault with Rama's line", async () => {
   const run = birth("history");
-  assert.deepEqual(run.seen, [["show", "fold"], ["say", "You know every room now."]]);
-  assert.ok(run.sky.classList.contains("art-birth-fold"));
+  assert.deepEqual(run.seen, [["show", "history"], ["say", "Here's the chart of every course."]]);
+  assert.ok(run.sky.classList.contains("art-birth-unroll"));
   assert.equal(run.sky.style["--art-birth"], `${ViewBirth.BIRTH_MS}ms`);
   await run.clock.advance(ViewBirth.BIRTH_MS);
-  assert.deepEqual(run.seen.slice(2), [["show", "history"], ["say", "Here's the chart of every course."]]);
-  assert.ok(!run.sky.classList.contains("art-birth-fold"));
-  assert.ok(run.sky.classList.contains("art-birth-unroll"));
-  await run.clock.advance(ViewBirth.BIRTH_MS);
   await run.finished;
+  assert.equal(run.seen.length, 2);
   assert.ok(!run.sky.classList.contains("art-birth-unroll"));
 });
 
-test("under reduced motion a birth is two still frames, each held long enough to read its caption", async () => {
+test("under reduced motion a birth is a still frame, held long enough to read its caption", async () => {
   const run = birth("history", { reducedMotion: true });
-  assert.deepEqual(run.seen, [["show", "fold"], ["say", "You know every room now."]]);
-  assert.ok(!run.sky.classList.contains("art-birth-fold"));
-  await run.clock.advance(ViewBirth.BIRTH_MS);
-  assert.equal(run.seen.length, 2);
-  await run.clock.advance(ViewBirth.STILL_MS - ViewBirth.BIRTH_MS);
-  assert.deepEqual(run.seen.slice(2), [["show", "history"], ["say", "Here's the chart of every course."]]);
+  assert.deepEqual(run.seen, [["show", "history"], ["say", "Here's the chart of every course."]]);
   assert.ok(!run.sky.classList.contains("art-birth-unroll"));
   await run.clock.advance(ViewBirth.STILL_MS);
   await run.finished;
+  assert.equal(run.seen.length, 2);
 });
 
 test("only the views with a birth drawn have one", () => {
@@ -56,7 +49,7 @@ test("only the views with a birth drawn have one", () => {
   for (const view of ["station", "crew", "board"]) assert.equal(ViewBirth.has(view), false, view);
 });
 
-test("history waits to be born until your vault holds commits, so the fold has something to fold", () => {
+test("history waits to be born until your vault holds commits, so the chart has something to unroll", () => {
   assert.equal(ViewBirth.ready("history", reading(null)), false);
   assert.equal(ViewBirth.ready("history", reading([])), false);
   assert.equal(ViewBirth.ready("history", reading([{ hash: "a" }])), true);

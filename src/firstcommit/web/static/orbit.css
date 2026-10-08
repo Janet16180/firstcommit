@@ -998,13 +998,6 @@ pre.code code {
   padding: 12px 12px 0;
 }
 
-/* History: the strip keeps only what folded into it (the workshop and the dock); the vault and
-   the mothership are on the stage as the chart, so their cards leave the strip, except while
-   the vault's card unrolls into the chart (art-style.css). */
-.sky[data-view="history"]:not(.art-birth-unroll) > .strip:not(.is-band) .strip-card:is([data-zone="vault"], [data-zone="remote"]) {
-  display: none;
-}
-
 .strip-who {
   display: flex;
   align-items: center;
@@ -2907,11 +2900,6 @@ pre.code code {
 
   .stage.is-column .viz.is-chart .fl.is-back .art-icon {
     transform: rotate(-90deg);
-  }
-
-  /* Alex's band keeps each place's name and count; the files would crowd them. */
-  .stage.is-column .strip.is-band .strip-items {
-    display: none;
   }
 
   .stage.is-column .viz.is-chart .tethers,
