@@ -16,6 +16,7 @@ from termlab import sandbox
 
 import sample_levels
 from firstcommit import game, kit, levels, runner
+from game_words import unpaired
 
 HOSTILE = [
     "",
@@ -322,12 +323,6 @@ def command_shape(line: str) -> str | None:
     return shape
 
 
-KNOWN_GAPS = {
-    "undo-blackbox": ["branch HEAD@{n}", "reflog"],
-}
-"""Commands a challenge asks for before a guided level teaches them: 8-4 The move log teaches the reflog, once it is built."""
-
-
 def test_a_challenge_only_asks_for_commands_an_earlier_guided_level_taught() -> None:
     taught: set[str] = set()
     untaught = {}
@@ -337,7 +332,7 @@ def test_a_challenge_only_asks_for_commands_an_earlier_guided_level_taught() -> 
             untaught[level.id] = sorted(shapes - taught)
         if not level.challenge:
             taught |= shapes
-    assert untaught == KNOWN_GAPS
+    assert untaught == {}
 
 
 def test_a_commands_shape_keeps_its_options_and_drops_its_names() -> None:
@@ -347,13 +342,37 @@ def test_a_commands_shape_keeps_its_options_and_drops_its_names() -> None:
     assert (command_shape("ls"), command_shape("cd project && git log")) == (None, None)
 
 
+def every_text(level: runner.Level, language: str) -> str:
+    """
+    Join every text a player reads in a level, in one language.
+
+    Parameters
+    ----------
+    level : runner.Level
+        The level.
+    language : str
+        ``"en"`` or ``"es"``.
+
+    Returns
+    -------
+    str
+        Title, card, scene, briefing, question, steps, hints, debrief and messages.
+    """
+    text = level.texts[language]  # type: ignore[index]
+    steps = [field for step in text.steps.values() for field in (step.text, step.more, step.question, step.reveal, *step.options)]
+    messages = list(level.texts["es"].messages.values() if language == "es" else level.texts["es"].messages)
+    return "\n".join([text.title, text.card, *text.scene, text.briefing, text.question, *steps, *text.hints, text.debrief, *messages])
+
+
+@pytest.mark.parametrize("level", runner.catalogue().values(), ids=lambda level: level.id)
+@pytest.mark.parametrize("language", ["en", "es"])
+def test_a_level_that_uses_a_game_word_says_once_what_it_really_is(level: runner.Level, language: str) -> None:
+    assert unpaired(every_text(level, language), language) == []
+
+
 def test_every_level_that_asks_its_own_question_says_how_to_read_the_answer() -> None:
     asking = [level.id for level in runner.catalogue().values() if level.texts["en"].question]
     assert asking and all(runner.catalogue()[level_id].answer is not None for level_id in asking)
-
-
-def test_the_tape_shows_from_wrong_course_on() -> None:
-    assert sorted(level.id for level in runner.catalogue().values() if level.tape) == ["undo-blackbox", "undo-wrong"]
 
 
 def test_the_name_tags_levels_draw_the_chain() -> None:
@@ -383,8 +402,4 @@ def test_each_level_opens_on_the_main_view_of_the_plan() -> None:
         "conflict-abort": "history",
         "conflict-collision": "sides",
         "conflict-docking": "history",
-        "undo-blackbox": "blackbox",
-        "undo-recall": "history",
-        "undo-scrap": "blackbox",
-        "undo-wrong": "history",
     }

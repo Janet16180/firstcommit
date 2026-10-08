@@ -558,6 +558,12 @@ Beginners learn the words with the ideas, so use one word for one thing, everywh
 | hash | SHA, checksum, ID (except to explain it) | object name, object id |
 
 - Define a term the first time it appears in a level; link the idea to what the player just saw.
+- The game's four places always come with what they really are, at least on their first mention
+  in each level, each deck and each shared reaction: "your working folder (the workshop)", "the
+  staging area (the cargo dock)", "your repository (the vault)", "the remote (the mothership)".
+  In Spanish: "tu carpeta de trabajo (el taller)", "el staging area (el muelle de carga)", "tu
+  repositorio (la bóveda)", "el remoto (la nave nodriza)". `tests/game_words.py` holds the pairs;
+  the level, deck and reaction tests check each text that uses a game word pairs it once.
 - Short sentences, active voice. No "simply", "just", "obviously" or "easy".
 - English, and Spanish beside it (section 3.7). No emojis.
 

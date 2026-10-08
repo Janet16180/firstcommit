@@ -25,7 +25,7 @@ CARD = kit.CommandCard(
 )
 SCENE = [
     kit.SceneFrame(art="capsule", text="A commit seals the staging area into a capsule: a snapshot of the files in it, with your message."),
-    kit.SceneFrame(art="chain", text="Each new capsule hangs on the one before it. That chain is your project's history, kept in your vault."),
+    kit.SceneFrame(art="chain", text="Each new capsule hangs on the one before it. That chain is your project's history, kept in your repository (the vault)."),
 ]
 
 CARGO = "map.txt"
@@ -52,7 +52,7 @@ DEBRIEF = """
 `git commit` sealed what was in the staging area, the map, into a capsule with your message, your
 name and a hash. The journal was never staged, so it stays in the working folder, untracked.
 
-The capsule is in your vault, on this computer only: the mothership is still empty. Sending
+The capsule is in your vault, on this computer only: the remote (the mothership) is still empty. Sending
 capsules to it is the next chapter.
 
 Commands to keep:

@@ -34,7 +34,7 @@ salió de él: `main` quedó donde lo dejó tu commit, los dos archivos volviero
 tu nota en `todo.txt` siguió ahí, porque el merge nunca tocó ese archivo.
 
 `git merge --abort` es la puerta segura, y el merge puede esperar al lunes: el commit de Alex sigue
-en la nave nodriza, y `git pull` lo intentará de nuevo. Git puede reconstruir tus cambios sin commit
+en el remoto (la nave nodriza), y `git pull` lo intentará de nuevo. Git puede reconstruir tus cambios sin commit
 solo en algunos casos, así que haz commit o guárdalos en el stash antes de un merge.
 `git reset --hard` también terminaría el merge, pero descarta todo cambio sin commit en archivos
 con seguimiento, también tu nota.

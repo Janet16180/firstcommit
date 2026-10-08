@@ -16,7 +16,6 @@ const ENGLISH = {
   "junk-flood": { ...WHAT_IF, command: "git add .", caption: "The build files would ride along to every copy." },
   "unreviewed-main": { ...WHAT_IF, caption: "Unreviewed work would land on everyone's main." },
   "force-break": { ...WHAT_IF, command: "git push --force", caption: "Alex's commit would be gone from the mothership." },
-  "search-beam": { ...WHAT_IF, caption: "Git never saved that edit, so there is nothing to find." },
 };
 const SI = { whatIf: "¿Y SI…?" };
 const SPANISH = {
@@ -25,17 +24,16 @@ const SPANISH = {
   "junk-flood": { ...ENGLISH["junk-flood"], ...SI, caption: "Los archivos de compilación viajarían a cada copia." },
   "unreviewed-main": { ...SI, caption: "Trabajo sin revisar llegaría al main de todos." },
   "force-break": { ...ENGLISH["force-break"], ...SI, caption: "El commit de Alex desaparecería de la nave nodriza." },
-  "search-beam": { ...SI, caption: "Git nunca guardó esa edición, así que no hay nada que encontrar." },
 };
-const WHAT_IFS = ["secret-leak", "junk-flood", "unreviewed-main", "force-break", "search-beam"];
+const WHAT_IFS = ["secret-leak", "junk-flood", "unreviewed-main", "force-break"];
 
 const wordsOf = (element) => [...walk(element)].filter((node) => node.localName === "text").map((node) => node.textContent);
 const classesOf = (element) => [...walk(element)].flatMap((node) => node.classList.list());
 const moving = (element) => classesOf(element).filter((name) => /^art-(wi|launch)-/.test(name) || name === "art-alarm" || name === "art-flick");
 const play = (name, options = {}) => ArtMoments.play(name, { captions: ENGLISH[name], ...options }).element;
 
-test("the moments are the leak, the launch and the four what-ifs of wave 2, each listing its captions", () => {
-  assert.deepEqual([...ArtMoments.NAMES], ["secret-leak", "launch", "junk-flood", "unreviewed-main", "force-break", "search-beam"]);
+test("the moments are the leak, the launch and three more what-ifs, each listing its captions", () => {
+  assert.deepEqual([...ArtMoments.NAMES], ["secret-leak", "launch", "junk-flood", "unreviewed-main", "force-break"]);
   assert.deepEqual(Object.keys(ArtMoments.CAPTIONS), [...ArtMoments.NAMES]);
   for (const name of ArtMoments.NAMES) assert.deepEqual([...ArtMoments.CAPTIONS[name]], Object.keys(ENGLISH[name]), name);
 });
@@ -103,15 +101,6 @@ test("a forced push replaces Alex's capsule, which cracks and falls off the line
   assert.ok(fallen.querySelector(".art-wi-crack"), "and it is the one that cracks");
 });
 
-test("the search beam sweeps the black box, the workshop outside it, and finds nothing", () => {
-  const element = play("search-beam");
-  for (const part of ["art-wi-beam", "art-wi-mark", "art-wi-caption"]) assert.ok(classesOf(element).includes(part), part);
-  const box = element.querySelector("rect[stroke=\"var(--art-orange)\"][stroke-width=\"2\"]");
-  const workshop = element.querySelector("rect[stroke=\"var(--art-orange)\"][stroke-width=\"1\"]");
-  assert.ok(box && workshop);
-  assert.ok(Number(workshop.getAttribute("x")) + Number(workshop.getAttribute("width")) < Number(box.getAttribute("x")), "the workshop stays outside the box");
-});
-
 test("the launch joins the two halves into one ship and sends it up", () => {
   const element = play("launch");
   for (const part of ["art-launch-join", "art-launch-ship", "art-launch-flame", "art-launch-caption"]) assert.ok(classesOf(element).includes(part), part);
@@ -129,7 +118,7 @@ test("under reduced motion a moment is its still frame: nothing moves, the capti
 });
 
 test("the moments' animations live in the art sheet, timed by --art-moment, and stop under reduced motion", () => {
-  const parts = ["art-wi-sweep", "art-wi-rise", "art-wi-land", "art-wi-glow", "art-wi-crack", "art-wi-fall", "art-wi-beam", "art-wi-mark", "art-wi-caption", "art-launch-join", "art-launch-ship", "art-launch-flame", "art-launch-ring", "art-launch-caption"];
+  const parts = ["art-wi-sweep", "art-wi-rise", "art-wi-land", "art-wi-glow", "art-wi-crack", "art-wi-fall", "art-wi-caption", "art-launch-join", "art-launch-ship", "art-launch-flame", "art-launch-ring", "art-launch-caption"];
   for (const name of parts) assert.match(STYLE, new RegExp(`\\.${name} \\{[^}]*animation: ${name} var\\(--art-moment\\) steps\\(\\d+\\) both;`), name);
   const reduced = STYLE.slice(STYLE.indexOf("@media (prefers-reduced-motion: reduce)"));
   assert.match(reduced, /\.art-moment \*/);
@@ -137,7 +126,7 @@ test("the moments' animations live in the art sheet, timed by --art-moment, and 
 });
 
 test("finished resolves once the moment has played, still or moving, on the timers it is given", async () => {
-  for (const [name, reducedMotion, ms] of [["secret-leak", false, 7000], ["launch", true, 5000], ["search-beam", false, 7000]]) {
+  for (const [name, reducedMotion, ms] of [["secret-leak", false, 7000], ["launch", true, 5000], ["force-break", false, 7000]]) {
     const clock = createClock();
     let done = false;
     ArtMoments.play(name, { captions: ENGLISH[name], reducedMotion, timers: clock }).finished.then(() => { done = true; });

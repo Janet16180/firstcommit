@@ -998,13 +998,6 @@ pre.code code {
   padding: 12px 12px 0;
 }
 
-/* History: the strip keeps only what folded into it (the workshop and the dock); the vault and
-   the mothership are on the stage as the chart, so their cards leave the strip, except while
-   the vault's card unrolls into the chart (art-style.css). */
-.sky[data-view="history"]:not(.art-birth-unroll) > .strip:not(.is-band) .strip-card:is([data-zone="vault"], [data-zone="remote"]) {
-  display: none;
-}
-
 .strip-who {
   display: flex;
   align-items: center;
@@ -1117,6 +1110,33 @@ pre.code code {
 .viz.is-chart .fl span {
   writing-mode: horizontal-tb;
   transform: none;
+}
+
+/* History stacked (zone-panel.js mode "stack": the wide column, a narrow screen): the vault over
+   the mothership, each the whole width and its names whole; push and pull point down and up
+   between them; no tethers across, the shared rows keep their tint. */
+.viz.is-stack .viz-row {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.viz.is-stack .flow {
+  flex-direction: row;
+  justify-content: center;
+  gap: 24px;
+  padding: 4px 0;
+}
+
+.viz.is-stack .fl .art-icon {
+  transform: rotate(90deg);
+}
+
+.viz.is-stack .fl.is-back .art-icon {
+  transform: rotate(-90deg);
+}
+
+.viz.is-stack .tethers,
+.viz.is-stack .chart-key:not([hidden]) {
+  display: none;
 }
 
 /* A gap is a row this side does not hold: the other side has a commit there. */
@@ -2264,7 +2284,7 @@ pre.code code {
 .chain-lanes {
   position: relative;
   flex: none;
-  width: calc(20px + (var(--columns, 1) - 1) * 22px);
+  width: calc(20px + (var(--columns, 1) - 1) * var(--column-width));
 }
 
 .chain-lane {
@@ -2307,7 +2327,7 @@ pre.code code {
 .chain-cap {
   position: absolute;
   top: 50%;
-  left: calc(var(--column, 0) * 22px + 2px);
+  left: calc(var(--column, 0) * var(--column-width) + 2px);
   z-index: 1;
   width: 16px;
   height: 16px;
@@ -2589,11 +2609,13 @@ pre.code code {
 }
 
 .movelog-line {
+  min-width: 0;
   padding: 0;
   background: none;
   color: inherit;
   border: 0;
   font: 1.05rem/1.3 var(--f-term);
+  white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
 
@@ -2886,38 +2908,6 @@ pre.code code {
     overflow-y: auto;
     scrollbar-gutter: stable;
   }
-
-  /* In the column, history's vault and mothership stack so each keeps the column's width and its
-     names whole; push and pull turn to point down and up between them, and the tethers across
-     give way to the shared rows' tint. */
-  .stage.is-column .viz.is-chart .viz-row {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .stage.is-column .viz.is-chart .flow {
-    flex-direction: row;
-    justify-content: center;
-    gap: 24px;
-    padding: 4px 0;
-  }
-
-  .stage.is-column .viz.is-chart .fl .art-icon {
-    transform: rotate(90deg);
-  }
-
-  .stage.is-column .viz.is-chart .fl.is-back .art-icon {
-    transform: rotate(-90deg);
-  }
-
-  /* Alex's band keeps each place's name and count; the files would crowd them. */
-  .stage.is-column .strip.is-band .strip-items {
-    display: none;
-  }
-
-  .stage.is-column .viz.is-chart .tethers,
-  .stage.is-column .viz.is-chart .chart-key:not([hidden]) {
-    display: none;
-  }
 }
 
 @media (max-width: 980px) {
@@ -2972,31 +2962,6 @@ pre.code code {
 }
 
 @media (max-width: 760px) {
-  /* On a narrow screen history's two sides stack too, as in the wide column. */
-  .viz.is-chart .viz-row {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .viz.is-chart .flow {
-    flex-direction: row;
-    justify-content: center;
-    gap: 24px;
-    padding: 4px 0;
-  }
-
-  .viz.is-chart .fl .art-icon {
-    transform: rotate(90deg);
-  }
-
-  .viz.is-chart .fl.is-back .art-icon {
-    transform: rotate(-90deg);
-  }
-
-  .viz.is-chart .tethers,
-  .viz.is-chart .chart-key:not([hidden]) {
-    display: none;
-  }
-
   .pictures-pair {
     grid-template-columns: minmax(0, 1fr);
   }

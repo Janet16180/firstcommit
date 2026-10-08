@@ -2,7 +2,7 @@ from firstcommit import kit
 from firstcommit.levels import undo_blackbox as level
 from level_helpers import reaction, started, typed_in
 
-RESCUE = ["git reflog", "git branch thrusters HEAD@{1}", "git push -u origin thrusters"]
+RESCUE = ["git reflog", "git branch thrusters HEAD@{2}", "git push -u origin thrusters"]
 
 
 def test_the_thrusters_branch_is_gone_and_its_commits_are_ghosts() -> None:
@@ -12,7 +12,19 @@ def test_the_thrusters_branch_is_gone_and_its_commits_are_ghosts() -> None:
     assert level.check(lab, state, None, []).message == level.NOT_RESCUED
 
 
-def test_the_reflog_then_a_label_and_a_push_solve_the_level() -> None:
+def test_this_morning_you_pulled_alexs_note_so_the_last_thruster_commit_is_two_moves_back() -> None:
+    lab, state = started(level)
+    assert kit.git(lab.project, "log", "-1", "--format=%an %s", "main").strip() == "Alex Note the free dock"
+    assert kit.git(lab.project, "rev-parse", "HEAD@{2}").strip() == state["tip"]
+
+
+def test_the_tempting_line_one_move_back_names_where_main_was_and_rescues_nothing() -> None:
+    lab, state = started(level)
+    typed = typed_in(lab, "git reflog", "git branch thrusters HEAD@{1}")
+    assert level.check(lab, state, None, typed).message == level.NOT_RESCUED
+
+
+def test_the_reflog_then_a_name_and_a_push_solve_the_level() -> None:
     lab, state = started(level)
     typed = typed_in(lab, *RESCUE)
     assert [line["status"] for line in typed] == [0, 0, 0]
@@ -29,7 +41,7 @@ def test_the_goals_pass_in_either_order_once_both_are_met() -> None:
     assert level.check(lab, state, None, typed).solved
 
 
-def test_a_label_on_only_the_first_commit_is_not_enough() -> None:
+def test_a_name_on_only_the_first_commit_is_not_enough() -> None:
     lab, state = started(level)
     typed = typed_in(lab, f"git branch thrusters {state['tip']}~1")
     assert level.check(lab, state, None, typed).message == level.NOT_RESCUED
@@ -37,12 +49,12 @@ def test_a_label_on_only_the_first_commit_is_not_enough() -> None:
 
 def test_the_rescued_commits_pushed_to_main_skip_review_and_are_lost_for_this_play() -> None:
     lab, state = started(level)
-    typed = typed_in(lab, "git branch thrusters HEAD@{1}", "git push origin thrusters:main")
+    typed = typed_in(lab, "git branch thrusters HEAD@{2}", "git push -f origin thrusters:main")
     verdict = level.check(lab, state, None, typed)
     assert (verdict.solved, verdict.lost, verdict.message) == (False, True, level.MAIN_TOUCHED)
 
 
-def test_wiping_the_black_box_warns_and_erasing_the_commits_is_lost() -> None:
+def test_wiping_the_move_log_warns_and_erasing_the_commits_is_lost() -> None:
     lab, state = started(level)
     typed = typed_in(lab, "git reflog expire --expire=now --all", "git gc -q --prune=now")
     rule = reaction(level, typed[0], set(), True, False)

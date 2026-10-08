@@ -694,31 +694,30 @@ const shown = (run) => run.q(".sky").dataset.view;
 const yours = (run) => run.all(".strip").find((strip) => !strip.classList.contains("is-band"));
 const chosen = (run) => run.all(".view-tab").find((tab) => tab.getAttribute("aria-selected") === "true").dataset.view;
 
-test("a level that opens on history folds your station into the strip, with a tab back to it", async () => {
+test("a level that opens on history shows the chart alone, no strip of your station, with a tab back to it", async () => {
   const run = viewing("history", ["station", "history"]);
   await settle();
   assert.equal(shown(run), "history");
   assert.deepEqual(tabs(run), ["station", "history"]);
   assert.equal(chosen(run), "history");
-  assert.equal(yours(run).hidden, false);
-  assert.deepEqual([...yours(run).querySelectorAll(".strip-card")].map((card) => card.dataset.zone), ["workshop", "dock", "vault", "remote"]);
+  assert.equal(yours(run).hidden, true);
   run.view.dispose();
 });
 
-test("the station's tab unfolds the strip back into the zones, and the history tab folds it again", async () => {
-  const run = viewing("history", ["station", "history"]);
+test("two sides folds your station into the strip; the station's tab unfolds it", async () => {
+  const run = viewing("sides", ["station", "history", "sides"]);
   await settle();
+  assert.equal(shown(run), "sides");
+  assert.equal(yours(run).hidden, false);
+  assert.deepEqual([...yours(run).querySelectorAll(".strip-card")].map((card) => card.dataset.zone), ["workshop", "dock", "vault", "remote"]);
   run.q('.view-tab[data-view="station"]').click();
   assert.equal(shown(run), "station");
   assert.equal(yours(run).hidden, true);
-  run.q('.view-tab[data-view="history"]').click();
-  assert.equal(shown(run), "history");
-  assert.equal(yours(run).hidden, false);
   run.view.dispose();
 });
 
 test("a tapped card of the strip expands your station again", async () => {
-  const run = viewing("history", ["station", "history"]);
+  const run = viewing("sides", ["station", "history", "sides"]);
   await settle();
   run.q('.strip-card[data-zone="vault"]').click();
   assert.equal(shown(run), "station");
@@ -749,16 +748,13 @@ test("a view not born yet and with no birth to play is marked born when its leve
 const said = (run) => run.q(".comms-text").textContent;
 const marked = (run) => run.server.calls.filter((call) => call.path === "/api/view").map((call) => call.body);
 
-test("history is born once your vault holds commits: the fold and the unroll with Rama's lines, then its tab, and the game is told", async () => {
+test("history is born once your vault holds commits: the chart unrolls alone with Rama's line, then its tab, and the game is told", async () => {
   const run = viewing("history", ["station"]);
   await settle();
-  assert.equal(shown(run), "fold");
-  assert.equal(said(run), "You know every room now.");
-  assert.equal(run.q(".view-tabs").hidden, true);
-  assert.deepEqual(marked(run), []);
-  await run.clock.advance(2600);
   assert.equal(shown(run), "history");
   assert.equal(said(run), "Here's the chart of every course.");
+  assert.equal(run.q(".view-tabs").hidden, true);
+  assert.deepEqual(marked(run), []);
   await run.clock.advance(2600);
   assert.deepEqual(marked(run), [{ view: "history" }]);
   assert.deepEqual(tabs(run), ["station", "history"]);
@@ -773,7 +769,7 @@ test("a goal met as history is born goes under the next goal, and the line typed
   const cloned = { ...record("observation"), commands: [{ line: "git clone x project", status: 0 }], reactions: [{ line: "git clone x project", mood: "ok", text: para("A copy came down."), moment: null }] };
   const run = screen({ active: { ...record("active"), step: 2, steps: 4 }, replies: { "/api/level": level, "/api/step": met, "/api/observe": cloned } });
   await settle();
-  assert.equal(said(run), "You know every room now.");
+  assert.equal(said(run), "Here's the chart of every course.");
   assert.equal(run.q(".goal.is-current .goal-note").textContent, "Cloned.");
   run.view.dispose();
 });
@@ -805,10 +801,12 @@ test("in a level with a teammate the crew view stands in for your station's tab"
   run.view.dispose();
 });
 
-test("in a crew level, history flattens Alex's station into the band along the top; the crew view brings it back", async () => {
-  const run = viewing("history", ["station", "crew", "history", "band"], { "/api/observe": { ...record("press").observation, commands: [], reactions: [] } });
+test("in a crew level, history shows the chart alone and two sides flattens Alex's station into the band; the crew view brings it back", async () => {
+  const run = viewing("history", ["station", "crew", "history", "sides", "band"], { "/api/observe": { ...record("press").observation, commands: [], reactions: [] } });
   await settle();
   const band = run.q(".strip.is-band");
+  assert.equal(band.hidden, true);
+  run.q('.view-tab[data-view="sides"]').click();
   assert.equal(band.hidden, false);
   assert.deepEqual([...band.querySelectorAll(".strip-card")].map((card) => card.dataset.zone), ["workshop", "dock", "vault"]);
   assert.equal(band.querySelector('.strip-card[data-zone="workshop"] .strip-count').textContent, "2");
@@ -826,22 +824,21 @@ test("without a teammate there is no band", async () => {
 
 const crewQuiet = () => ({ ...record("press").observation, commands: [], reactions: [] });
 
-test("the band is born the first time a crew level opens on another view: the crew view flattens, Rama says so, and the game is told", async () => {
-  const run = viewing("history", ["station", "crew", "history"], { "/api/observe": crewQuiet() });
+test("the band is born the first time a crew level opens on a view that shows it: the crew view flattens, Rama says so, and the game is told", async () => {
+  const run = viewing("sides", ["station", "crew", "history", "sides"], { "/api/observe": crewQuiet() });
   await settle();
   assert.equal(shown(run), "flatten");
   assert.equal(said(run), "Alex's station, flattened into a band: it still shows what reaches them.");
   assert.equal(run.q(".strip.is-band").hidden, false);
   assert.deepEqual(marked(run), []);
   await run.clock.advance(2600);
-  assert.equal(shown(run), "history");
+  assert.equal(shown(run), "sides");
   assert.deepEqual(marked(run), [{ view: "band" }]);
-  assert.deepEqual(tabs(run), ["crew", "history"]);
   run.view.dispose();
 });
 
-test("no band is born before the crew view, in a level that opens on the crew view, or once it was", async () => {
-  for (const [view, seen] of [["history", ["station", "history"]], ["crew", ["station", "crew"]], ["history", ["station", "crew", "history", "band"]]]) {
+test("no band is born before the crew view, in a level that opens on the crew view or on history, or once it was", async () => {
+  for (const [view, seen] of [["sides", ["station", "sides"]], ["crew", ["station", "crew"]], ["history", ["station", "crew", "history"]], ["sides", ["station", "crew", "sides", "band"]]]) {
     const run = viewing(view, seen, { "/api/observe": crewQuiet() });
     await settle();
     await run.clock.advance(3000);
@@ -1133,4 +1130,24 @@ test("a challenge's chain and chart stay side by side across the top, since they
   await settle();
   assert.ok(!run.q(".stage").classList.contains("is-column"));
   run.view.dispose();
+});
+
+test("where the chart's two sides stack, on a wide screen's column or a narrow screen, history draws them stacked, each from its top", async () => {
+  const wide = global.matchMedia;
+  global.matchMedia = (query) => ({ matches: query.includes("min-width: 1100px") || query.includes("reduce"), addEventListener() {}, removeEventListener() {} });
+  try {
+    const run = viewing("history", ["station", "history"]);
+    await settle();
+    assert.ok(run.q(".viz").classList.contains("is-stack"));
+    run.q('.view-tab[data-view="station"]').click();
+    assert.ok(!run.q(".viz").classList.contains("is-chart"));
+    run.view.dispose();
+  } finally {
+    global.matchMedia = wide;
+  }
+  const between = viewing("history", ["station", "history"]);
+  await settle();
+  assert.ok(between.q(".viz").classList.contains("is-chart"));
+  assert.ok(!between.q(".viz").classList.contains("is-stack"));
+  between.view.dispose();
 });

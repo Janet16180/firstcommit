@@ -14,12 +14,12 @@ Tu primer ticket: las luces del pasillo están apagadas. Encontraste el arreglo,
 tu carpeta de trabajo ya lo tiene, todavía sin commit. La tripulación nunca hace commit en `main`:
 un arreglo sube en su propio branch para revisión. Alex también está trabajando.
 
-La misión termina cuando la nave nodriza tenga un branch `fix-lights` con tu arreglo y su `main`
+La misión termina cuando el remoto (la nave nodriza) tenga un branch `fix-lights` con tu arreglo y su `main`
 no tenga ningún commit tuyo, y tu `main` sea igual al de la nave nodriza.
 """
 
 HINTS = [
-    "Es la bóveda, la nave nodriza y este capítulo: un commit, un push y un pull, y un branch propio.",
+    "Es tu repositorio (la bóveda), la nave nodriza y este capítulo: un commit, un push y un pull, y un branch propio.",
     "Tu cambio todavía no está en ningún branch: un branch nuevo creado ahora lo lleva consigo. Haz commit allí, envía ese branch por su nombre y luego pon tu `main` al día con el de la nave nodriza.",
     'Cada línea de la misión, en orden:\n\n    $ git switch -c fix-lights\n    $ git commit -am "Fix the hall lights"\n    $ git push -u origin fix-lights\n    $ git switch main\n    $ git pull',
 ]

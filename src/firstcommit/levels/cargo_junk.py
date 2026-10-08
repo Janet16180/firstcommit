@@ -60,7 +60,7 @@ DEBRIEF = """
 by accident.
 
 You staged `.gitignore` too. Once it is in a commit, everyone who works on the project gets the
-same rule, so nobody's simulator output reaches the mothership. Build folders, logs and
+same rule, so nobody's simulator output reaches the remote (the mothership). Build folders, logs and
 downloaded dependencies get the same treatment on real projects.
 
 Commands to keep:

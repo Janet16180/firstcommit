@@ -5,7 +5,7 @@ from firstcommit import kit
 TITLE = "Transmisión entrante"
 CARD = "Pregunta al remoto qué tiene ahora y actualiza `origin/main`, la copia que guarda tu repositorio de sus noticias. Tu `main` y tus archivos se quedan como están."
 SCENE = [
-    "Alex, del turno de noche, acaba de enviar un informe a la nave nodriza.",
+    "Alex, del turno de noche, acaba de enviar un informe al remoto (la nave nodriza).",
     "Tu repositorio no vigila la nave nodriza. Solo sabe lo que oyó la última vez que preguntó.",
 ]
 

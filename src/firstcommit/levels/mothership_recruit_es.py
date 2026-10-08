@@ -5,7 +5,7 @@ from firstcommit import kit
 TITLE = "Recluta nuevo"
 CARD = "Copia un repositorio en una carpeta nueva con su nombre: toda su historia, un remoto llamado `origin` con la dirección y un branch como `main` para trabajar."
 SCENE = [
-    "La Base avanzada 3 llama a un recluta nuevo: tú. Su repositorio te espera en la nave nodriza.",
+    "La Base avanzada 3 llama a un recluta nuevo: tú. Su repositorio te espera en el remoto (la nave nodriza).",
     "Un clone copia toda la cadena de cápsulas, no solo los archivos más recientes.",
 ]
 

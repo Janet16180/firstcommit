@@ -36,7 +36,7 @@ const Chain = (function () {
   /* A lane's geometry, in the units of its viewBox: the first column's x, the step between
      columns, and the row's height, which the lane stretches to fit. */
   const X0 = 10;
-  const COLUMN = 22;
+  const COLUMN = 28;
   const HEIGHT = 100;
 
   function layout(commits, trunk) {
@@ -218,6 +218,7 @@ const Chain = (function () {
       element.setAttribute("aria-label", t("chain.label"));
       element.classList.toggle("is-whatif", Boolean(whatif));
       element.style.setProperty("--columns", String(columns));
+      element.style.setProperty("--column-width", `${COLUMN}px`);
       element.replaceChildren(
         ...(whatif ? [el("span", { class: "chain-whatif" }, t("moment.whatIf"))] : []),
         el("ol", { class: "chain-rows" }, ...rows.map((row, at) => {

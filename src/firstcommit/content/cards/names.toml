@@ -1,7 +1,7 @@
 notes = """
 A branch is a name for one commit. `HEAD` is "you are here": it rides the branch you are on, and
-your next commit moves only that branch. `origin/main` is your bookmark of the mothership's `main`:
-it moves only when you talk to the mothership (push, fetch, pull).
+your next commit moves only that branch. `origin/main` is your bookmark of the `main` of the remote (the
+mothership): it moves only when you talk to the mothership (push, fetch, pull).
 
 Names come and go; commits stay. `git branch scout` writes a new name where `HEAD` is and copies
 no file; `git branch first-route <hash>` puts one on any commit; `git branch -d` takes one off,

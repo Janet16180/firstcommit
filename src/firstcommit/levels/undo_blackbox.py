@@ -1,10 +1,11 @@
 """
-Black box: the boss of the time-travel chapter. A deleted branch, found again in the reflog, labelled and launched.
+Night shift: the boss of Time travel. A deleted branch, found again in the move log, named and pushed.
 
-Wave 2, undo 7-4 (docs/drafts/chapters-5-9.md), a challenge combining the vault (commits),
-branches (a label, a push by name) and this chapter (the reflog finds commits no label holds).
-Setup builds the playground and, in your clone, two commits on a branch ``thrusters``; then you
-switched to ``main`` and deleted the branch, unpushed. The goals are end states, met in any
+Time travel 8-5 (docs/drafts/sector8/8-5-script.md), a challenge combining branches (a name, a
+push by name) and this sector (the move log finds commits no branch leads to). Setup builds the
+playground and, in your clone, two commits on a branch ``thrusters``; then you switched to
+``main`` and deleted the branch, unpushed; this morning Alex pushed a note and you pulled it, so
+the thruster commit is two moves back, not one. The goals are end states, met in any
 order: a branch ``thrusters`` in your repository holding both commits; and the mothership holding
 ``thrusters`` with them, its ``main`` untouched. The commits erased for good (a pruned reflog), or
 pushed onto the mothership's ``main``, are lost for this play.
@@ -15,56 +16,56 @@ from pathlib import Path
 
 from firstcommit import kit
 
-TITLE = "Black box"
+TITLE = "Night shift"
 DIFFICULTY = 3
 XP = 250
 COMMAND = "git reflog"
 PAR = 3
-TAPE = True
-VIEW = "blackbox"
 CHALLENGE = True
+PICTURES = kit.pictures("movelog", small="chain", mothership=True)
 CARD = kit.CommandCard(
     command="git reflog",
-    text="Lists where `HEAD` has been, newest first, as `HEAD@{0}`, `HEAD@{1}` and so on. Commits no label holds any more can be found there and given a label again.",
+    text="Lists where `HEAD` has been, newest first, as `HEAD@{0}`, `HEAD@{1}` and so on. Commits no branch leads to any more can be found there and given a name again.",
 )
 SCENE = [
-    kit.SceneFrame(art="alarm", text="Alarm on the engine deck: two days of thruster work vanished with its branch."),
-    kit.SceneFrame(art="blackbox", text="Nothing was pushed. But the flight recorder was running the whole time."),
+    kit.SceneFrame(
+        art="alarm",
+        text="Alarm on the engine deck: two nights of thruster work vanished with its branch. Nothing was pushed, but `HEAD` keeps a move log. Careful: the move log counts back from now, so its numbers are not the last mission's.",
+    ),
 ]
+ALEX_NOTE = [
+    "printf 'Notes\\nDock 3 is free tonight.\\n' > notes.txt",
+    'GIT_AUTHOR_DATE=2026-08-03T07:00:00+00:00 GIT_COMMITTER_DATE=2026-08-03T07:00:00+00:00 git commit -q -am "Note the free dock"',
+    "git push -q",
+]
+"""Alex's lines in Alex's clone this morning: a note on ``main``, pushed."""
 
 BRANCH = "thrusters"
 THRUSTERS = "thrusters.cfg"
 WIPE_LINE = r"git (gc|prune|reflog (expire|delete))\b"
 
 BRIEFING = """
-Last night you worked two days of thruster tuning into commits on a branch `thrusters`. Then,
-half asleep, you switched to `main` and deleted the branch with `git branch -D`. It was never
-pushed, and the review is this morning.
-
-The mission is done when your repository has a branch `thrusters` holding both commits again, and
-the mothership has `thrusters` too, with its `main` untouched.
+Two nights of thruster tuning went into commits on a branch `thrusters`. Half asleep, you switched
+to `main` and deleted the branch with `git branch -D thrusters`: the name went, the commits stayed
+with no name. This morning you pulled Alex's commit `Note the free dock`. Get `thrusters` back, and
+up to the remote (the mothership), before the review.
 """
 
 HINTS = [
-    "This is the vault, branches and this chapter: commits no label holds, a label, and a push by name.",
-    "The reflog lists where `HEAD` has been: the line before the switch to `main` names the branch's last commit. A label on it brings both commits back.",
-    "Every line of the mission, in order:\n\n    $ git reflog\n    $ git branch thrusters HEAD@{1}\n    $ git push -u origin thrusters",
+    "This is branches and this sector: commits no branch leads to, a name, and a push by name. A branch can be pushed from anywhere, by name: `git push -u origin thrusters` (or `git push origin thrusters`).",
+    "The move log lists where `HEAD` has been. Find your last thruster commit there; a branch on it brings both back. Its `HEAD@{n}` and the hash at the start of its line both work. You can push a branch without switching to it.",
+    "Every line of the mission, in order (the hash of that line works as well as `HEAD@{2}`):\n\n    $ git reflog\n    $ git branch thrusters HEAD@{2}\n    $ git push -u origin thrusters",
 ]
 
 DEBRIEF = """
-`git branch -D` removed a label, not the commits: they stayed in Git as ghosts no label held.
-`git reflog` showed every move of `HEAD`, and `HEAD@{1}`, where it was one move before the switch
-to `main`, was the branch's last commit. `git branch thrusters HEAD@{1}` gave it its label back,
-both commits with it, and `git push -u origin thrusters` sent them up for review.
-
-The reflog lives in your repository only, and by default it keeps entries like these, for commits
-no label holds, for about a month. The mothership and every other clone have recorders of their
-own.
+`git branch -D` removed a name, not the commits. `git reflog` showed every move of `HEAD`, and
+`HEAD@{2}`, two moves back, was the last thruster commit. `git branch thrusters HEAD@{2}` gave it
+its name back, both commits with it, and `git push -u origin thrusters` sent them up for review.
 
 Commands to keep:
 
     $ git reflog                       # where HEAD has been
-    $ git branch thrusters HEAD@{1}    # a label on a commit from the reflog
+    $ git branch thrusters HEAD@{2}    # a name on a commit from the move log
     $ git push -u origin thrusters     # and up it goes
 """
 
@@ -73,12 +74,9 @@ NOT_RESCUED = "Your repository has no branch `thrusters` holding both commits."
 RESCUED = "`thrusters` holds both commits again."
 NOT_LAUNCHED = "The mothership has no `thrusters` holding both commits."
 LAUNCHED = "The mothership has `thrusters` with both commits, and its `main` is untouched."
-ERASED = "The thruster commits are gone for good: the black box was wiped and Git pruned them. Start the mission again."
+ERASED = "The thruster commits are gone for good: the move log was wiped and Git pruned them. Start the mission again."
 MAIN_TOUCHED = "The mothership's `main` holds the thruster commits now, without review. Start the mission again."
-WIPE = (
-    "That cleans Git's black box: commits no label holds can be erased for good once the reflog forgets them. "
-    "Give them a label first."
-)
+WIPE = "That cleans up commits no branch leads to: they can be erased for good once the move log forgets them. Give them a name first."
 
 REACTIONS = [
     kit.ReactionRule(line=WIPE_LINE, mood="warn", text=WIPE, repository=True),
@@ -211,6 +209,9 @@ def setup(lab: kit.Lab) -> kit.State:
     tip = kit.git(lab.project, "rev-parse", "HEAD").strip()
     kit.git(lab.project, "switch", "-q", "main")
     kit.git(lab.project, "branch", "-q", "-D", BRANCH)
+    for line in ALEX_NOTE:
+        kit.type_line(lab.teammate, line)
+    kit.git(lab.project, "pull", "-q")
     return {"tip": tip, "main": kit.git(lab.github, "rev-parse", "main").strip()}
 
 
@@ -263,7 +264,7 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
 
 
 QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]] = {
-    "rescued": kit.typing(f"git branch {BRANCH} HEAD@{{1}}"),
+    "rescued": kit.typing(f"git branch {BRANCH} HEAD@{{2}}"),
     "launched": kit.typing(f"git push -u origin {BRANCH}"),
 }
 """The player's part of each goal, for the level tests (AUTHORING.md section 3.6); the game reads it only in dev mode."""

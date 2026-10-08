@@ -24,6 +24,7 @@ function installBrowser({ reducedMotion = true } = {}) {
   global.matchMedia = (query) => ({
     matches: query.includes("reduce") ? reducedMotion : false,
     addEventListener() {},
+    removeEventListener() {},
   });
   global.requestAnimationFrame = (callback) => setTimeout(() => callback(0), 0);
   return global.document;

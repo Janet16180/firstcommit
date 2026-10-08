@@ -1,89 +1,99 @@
 """
-Wrong course: ``git reset`` moves a label, and the commits it leaves stay in Git.
+Wrong course: ``git reset --hard`` moves the branch you are on back, and the commits it leaves stay in Git.
 
-Wave 2, undo 7-3 (docs/drafts/chapters-5-9.md), a situation with a prediction. Setup builds the
+Time travel 8-3 (docs/drafts/sector8/8-3-script.md), guided, with a prediction. Setup builds the
 playground and makes two commits of a survey on your ``main``, not pushed: they belonged on a
 branch. One reset mode is taught, ``--hard``, on commits nobody else has. The goals: a branch
-``rescue`` holding the two commits; then ``main`` back where the mothership's ``main`` is, with
-the working folder matching it. A reset first is not a loss: the commits become ghosts that the
-reflog still reaches, and ``rescue`` can be put on them afterwards (7-4 pays this off). The two
-commits pushed to the mothership's ``main`` are lost for this play. The black box's tape is born
-here, under history.
+``rescue`` holding the two commits; the prediction (how many commits ``git log`` lists after the
+reset); ``main`` back where the mothership's ``main`` is, with the working folder matching it; and
+``git log --oneline`` read after it. The chain then plays its WHAT IF: the same reset without
+``rescue``, the two commits faded. A reset first is not a loss: the commits are ghosts the reflog
+still reaches, which the next mission teaches to find. The two commits pushed to the mothership's
+``main`` are lost for this play.
 """
 
 from collections.abc import Callable
 from pathlib import Path
 
 from firstcommit import kit
+from firstcommit.levels import _undo_survey as survey
 
 TITLE = "Wrong course"
 DIFFICULTY = 2
 XP = 150
 COMMAND = "git reset --hard"
-PAR = 2
-TAPE = True
-VIEW = "history"
+PAR = 3
+PICTURES = kit.pictures("chain", folder=True, mothership=True, ghosts=True, whatif={"without": ["rescue"], "after": "log"})
 CARD = kit.CommandCard(
     command="git reset --hard <commit>",
-    text="Moves the branch you are on to another commit, and makes the staging area and the working folder match it. The commits it leaves stay in Git; a label keeps them easy to find.",
+    text="Moves the branch you are on to another commit, and makes your folder match it. The commits it leaves stay in Git; a branch on them keeps them easy to find.",
 )
 SCENE = [
-    kit.SceneFrame(art="timeline", text="Two capsules of a survey landed on `main`. They belonged on a course of their own."),
-    kit.SceneFrame(art="blackbox", text="Moving a label leaves a tick on the flight recorder's tape, and the capsules stay where they were."),
+    kit.SceneFrame(
+        art="chain",
+        text="Two survey commits landed on `main` by mistake. The pin of the remote (the mothership) is two commits below: it has not seen them. Your folder has `survey.txt`, from those commits.",
+    ),
 ]
 
-SURVEY = "survey.txt"
+SURVEY = survey.SURVEY
 RESCUE = "rescue"
 RESET_LINE = r"git reset\b"
+LOG = r"git log\b"
 
 BRIEFING = """
-You made two commits of a survey on `main` by mistake: they belong on a branch of their own, and
-the mothership has not seen them. Put a label on them, then move `main` back to where the
+You made two survey commits on `main` by mistake: they belong on a branch of their own, and the
+mothership has not seen them. Keep them on a branch `rescue`, and get `main` back to where the
 mothership's `main` is.
 
-The mission is done when a branch `rescue` holds your two commits, and `main` is back on
-`origin/main` with the working folder matching it.
+The mission is done when `rescue` holds your two commits, `main` is back on `origin/main` with your
+folder matching it, and you have checked the history.
 """
 
 HINTS = [
-    "`git branch rescue` puts a new label on the commit you are on, so the two commits keep a name.",
-    "`git reset --hard origin/main` moves `main` back to the mothership's `main`, files included.",
-    "Every line of the mission, in order:\n\n    $ git branch rescue\n    $ git reset --hard origin/main",
+    "`git branch rescue` puts a new name on the commit you are on, so the two commits keep a name.",
+    "`git reset --hard origin/main` moves the branch you are on, `main`, to where `origin/main` is, and makes your files match.",
+    "Every line of the mission, in order:\n\n    $ git branch rescue\n    $ git reset --hard origin/main\n    $ git log --oneline",
 ]
 
 DEBRIEF = """
-`git reset --hard origin/main` moved the `main` label back down the chain, and made the staging
-area and the working folder match that commit. It deleted no commit: your two commits are still
-there, held by `rescue`, ready to be worked on as a branch.
+`git reset --hard origin/main` moved the branch you were on, `main`, back down the chain, and made
+your folder match that commit. It deleted no commit: your two commits are still there, held by
+`rescue`.
 
-Without a label, they would still exist for a while, as ghosts that no label holds; the reflog,
-Git's flight recorder, remembers where `main` was. Reset only commits nobody else has: on a pushed
-branch, `git revert` is the safe undo.
-
-`--soft` and `--mixed` move the label too, but keep your changes staged or in the working folder;
-`--hard` is the one that rewrites the files.
+Without `--hard`, reset moves the branch and leaves your files as they are. Use reset only on
+commits nobody else has: on a branch others have pulled, `git revert` is the safe undo.
 
 Commands to keep:
 
-    $ git branch rescue              # a label on the commits first
+    $ git branch rescue              # a name on the commits first
     $ git reset --hard origin/main   # then move main back
 """
 
 NO_REPOSITORY = "This folder is no longer a repository: `.git` is gone. Leave the level and start it again to get it back."
-NOT_LABELLED = "Put a label on your two commits first: `git branch rescue`."
-LABELLED = "`rescue` holds your two commits."
+NOT_LABELLED = "Keep your commits on a branch first: `git branch rescue`."
+LABELLED = (
+    "`rescue` is a second name on the same commit. Nothing else changed: no new commit, no file. `HEAD` still rides `main`. "
+    "Next, `git reset --hard origin/main` moves the branch you are on, `main`, to the commit your `origin/main` bookmark is on, "
+    "Start the project. `--hard` also makes your folder match that commit; without it, the branch moves and your files stay as they are."
+)
 GHOSTS = (
-    "`main` moved back and no label holds your two commits now, but Git still has them: the reflog remembers where `main` "
-    "was. `git branch rescue HEAD@{1}` puts the label on them."
+    "No branch leads to your two commits now, but Git still has them. The next mission shows how to find them; for now, "
+    "start again with Restart."
 )
 NOT_RESET = "`main` still holds the two commits. Move it back: `git reset --hard origin/main`."
-DIRTY = "`main` is back, but the working folder does not match it. `git reset --hard origin/main` makes it match."
-RESET = "`main` is back on `origin/main`, and `rescue` holds your two commits."
-SHARED = "The mothership's `main` has your two survey commits now: others can pull them. Start the mission again."
-MOVED_BACK = (
-    "`main` moved back. The commits it left are still in Git: held by a label if you made one, or as ghosts that the "
-    "reflog still reaches."
+DIRTY = "`main` is back, but your folder does not match it. `git reset --hard origin/main` makes it match."
+RESET = (
+    '`main` slid down two commits, and `HEAD` rode it: "HEAD is now at" names where you are. The commits did not move: '
+    "`rescue` still holds them. `survey.txt` left your folder."
 )
+LOGGED = (
+    "One commit, as predicted. `git log` walks down from `HEAD`, and nothing below Start the project leads up to the survey "
+    "commits. They are still in Git: `rescue` leads to them. What if you had not made the branch? No branch would lead to the "
+    "two commits. Git keeps commits no branch leads to for about 30 days, then may delete them, and `git log` would not list them."
+)
+NOT_LOGGED = "Check: `git log --oneline`."
+SHARED = "The mothership's `main` has your two survey commits now: others can pull them. Start the mission again."
+MOVED_BACK = "`main` moved back. The commits it left are still in Git."
 
 REACTIONS = [
     kit.ReactionRule(line=RESET_LINE, mood="info", text=MOVED_BACK, outcome="ok", event="branch-moved"),
@@ -92,9 +102,9 @@ REACTIONS = [
 GUESS = kit.ChoiceStep(
     id="guess",
     text="Predict first.",
-    question="You label your two commits `rescue`, then move `main` back with `git reset --hard origin/main`. Where are the two commits after the reset?",
-    options=("Deleted", "Still there, held by rescue"),
-    reveal="Still there, held by `rescue`. A reset moves a label; it deletes no commit.",
+    question="After the reset, how many commits will `git log --oneline` list?",
+    options=("1", "3"),
+    reveal="1. `git log` starts at `HEAD` and walks down the parents. `HEAD` rides `main`, which will be on Start the project, the oldest commit. The two survey commits sit above it, where only `rescue` leads.",
 )
 
 
@@ -200,10 +210,35 @@ def watch_reset(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict
     return verdict if rescued.solved else rescued
 
 
+def watch_log(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
+    """
+    Pass once ``git log`` worked after the reset.
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The level's lab.
+    state : kit.State
+        The level's state.
+    typed : kit.Typed
+        The lines typed since the level started.
+
+    Returns
+    -------
+    kit.Verdict
+        The step's verdict; the reset comes first.
+    """
+    reset = watch_reset(lab, state, typed)
+    logged = kit.typed(kit.after(typed, RESET_LINE), LOG, "ok")
+    verdict = kit.Verdict(logged, LOGGED if logged else NOT_LOGGED)
+    return verdict if reset.solved else reset
+
+
 QUEST: list[kit.Step] = [
+    kit.WatchStep(id="rescue", text="Keep your commits on a branch.", command=f"git branch {RESCUE}", watch=watch_rescue),
     GUESS,
-    kit.WatchStep(id="rescue", text="Put a label on your two commits.", command=f"git branch {RESCUE}", watch=watch_rescue),
-    kit.WatchStep(id="reset", text="Move `main` back to the mothership's `main`.", command="git reset --hard origin/main", watch=watch_reset),
+    kit.WatchStep(id="reset", text="Move `main` back.", command="git reset --hard origin/main", watch=watch_reset),
+    kit.WatchStep(id="log", text="Check.", command="git log --oneline", watch=watch_log),
 ]
 
 
@@ -221,19 +256,12 @@ def setup(lab: kit.Lab) -> kit.State:
     kit.State
         ``origin``: the mothership's ``main``; ``tip``: the survey's last commit.
     """
-    kit.setup_playground(lab)
-    origin = kit.git(lab.project, "rev-parse", "main").strip()
-    for day, line in enumerate(("Crater A: 4 km wide\n", "Crater B: 9 km wide\n"), start=1):
-        with (lab.project / SURVEY).open("a") as survey:
-            survey.write(line)
-        kit.git(lab.project, "add", SURVEY)
-        kit.git(lab.project, "commit", "-q", "-m", f"Survey day {day}", author=kit.PLAYER, when=f"2026-07-2{day}T09:00:00+00:00")
-    return {"origin": origin, "tip": kit.git(lab.project, "rev-parse", "main").strip()}
+    return survey.survey(lab)
 
 
 def check(lab: kit.Lab, state: kit.State, answer: str | None, typed: kit.Typed) -> kit.Verdict:
     """
-    Solved once ``rescue`` holds the survey and ``main`` is back on ``origin/main``, clean.
+    Solved once ``rescue`` holds the survey, ``main`` is back on ``origin/main``, clean, and the history was read.
 
     Parameters
     ----------
@@ -251,7 +279,7 @@ def check(lab: kit.Lab, state: kit.State, answer: str | None, typed: kit.Typed) 
     kit.Verdict
         The last goal's verdict, which checks the label first.
     """
-    return watch_reset(lab, state, typed)
+    return watch_log(lab, state, typed)
 
 
 def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
@@ -278,8 +306,9 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
 
 
 QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]] = {
-    "guess": kit.picking(GUESS.options[0]),
     "rescue": kit.typing(f"git branch {RESCUE}"),
+    "guess": kit.picking(GUESS.options[1]),
     "reset": kit.typing("git reset --hard origin/main"),
+    "log": kit.typing("git log --oneline"),
 }
 """The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game reads it only in dev mode."""

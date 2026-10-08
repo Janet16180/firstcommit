@@ -25,7 +25,7 @@ CARD = kit.CommandCard(
     text="Copies a repository into a new folder named after it: its whole history, a remote named `origin` for the address, and a branch such as `main` to work on.",
 )
 SCENE = [
-    kit.SceneFrame(art="orbit", text="Outpost 3 is calling a new recruit: you. Its repository waits on the mothership."),
+    kit.SceneFrame(art="orbit", text="Outpost 3 is calling a new recruit: you. Its repository waits on the remote (the mothership)."),
     kit.SceneFrame(art="chain", text="A clone copies the whole chain of capsules down, not only the latest files."),
 ]
 

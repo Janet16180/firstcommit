@@ -967,6 +967,26 @@ commit (lost).
 | `names-checkout-b` | `git checkout -b` is the older form of `git switch -c` | git-checkout(1) `-b`; git-switch(1) `-c` |
 | notes | as the sector's levels and cards | the levels' evidence above |
 
+## Sector 8, Time travel, reworked (added 2026-10-08)
+
+The levels follow docs/drafts/sector8/; every output in their scripts was recorded on real git
+2.43.0 by `.scratch/sector7-design/gen.py`. The claims kept from the 7-1 to 7-4 sections above
+(E106 to E112) still hold; the rows below are what changed. The undo deck's words follow the
+sector (a branch, the move log), and its new card `undo-reflog-shifts` is checked by its `verify`.
+
+| Level | Text | Claim | Evidence |
+|---|---|---|---|
+| `undo-scrap` (8-1) | card, `SCRAPPED`, debrief | `git restore <file>` copies the staged copy over the file when there is one, else the committed one | git-restore(1) ("restored from the index by default"; the index holds the committed version of a file not staged); E107; the level's test |
+| `undo-scrap` | `STATUS_READ` | `git restore` changes only the files it names: the staged notes stay | the level's test |
+| `undo-recall` (8-2) | prediction | a revert adds one commit: 4 become 5 | git-revert(1) DESCRIPTION ("record some new commits that reverse the effect"); the 8-2 script, beat 5 |
+| `undo-recall` | `LOOKED` | `HEAD~1` is one step back along the parents | gitrevisions(7) `<rev>~<n>` |
+| `undo-recall` | debrief | outside the game `git revert` opens an editor; `--no-edit` skips it | git-revert(1) `--edit` (the default when run from a terminal), `--no-edit` |
+| `undo-wrong` (8-3) | prediction, `LOGGED` | after the reset `git log --oneline` lists one commit | the 8-3 script, beat 7 (real output); the level's test |
+| `undo-wrong` | `LOGGED` | Git keeps commits no branch leads to for about 30 days | git-gc(1) and git-config(1) `gc.reflogExpireUnreachable` (default 30 days) |
+| `undo-movelog` (8-4) | `READ`, debrief | `git reflog` lists HEAD's moves newest first, `HEAD@{n}` naming each; `git log` cannot reach commits no branch leads to | git-reflog(1); gitrevisions(7) `<refname>@{<n>}`; the 8-4 script, beats 2 and 3 (real output); the level's test |
+| `undo-movelog` | prediction, `READ_AGAIN` | a switch adds a line, so Survey day 2 goes from `HEAD@{1}` to `HEAD@{2}`; the new line says `checkout` | the 8-4 script, beat 9 (real output); the level's test |
+| `undo-blackbox` (8-5, Night shift) | hint 3, debrief | after the morning's pull, the last thruster commit is `HEAD@{2}`; `HEAD@{1}` is where `main` was | the 8-5 script, beat 3 (real output); the level's tests |
+
 ## No `origin/HEAD` in the playground's clones (added 2026-10-08)
 
 `playground.setup` runs `git remote set-head origin --delete` in each clone, so `git log` shows
@@ -1000,7 +1020,7 @@ back to back, a button push, a push without the navigation, no `remote:` line).
 
 | Claim | Says | Evidence |
 |---|---|---|
-| card, debrief, `GONE` (with the `search-beam` moment), prediction reveal | `git restore <file>` copies the staging area's version over the working folder's; lines never staged or committed have no copy anywhere | E109; git-restore(1) DESCRIPTION (`--worktree` is the default, the source the index) |
+| card, debrief, `GONE` (its `search-beam` moment dropped in the sector 8 rework), prediction reveal | `git restore <file>` copies the staging area's version over the working folder's; lines never staged or committed have no copy anywhere | E109; git-restore(1) DESCRIPTION (`--worktree` is the default, the source the index) |
 | debrief, `LOOKED` | `git diff` shows what is in the working folder and not staged | E109; git-diff(1) |
 | `NOTES_LOST` (lost) | the staged notes restored away are in no commit | the level's test; E109 (only staged and committed versions are stored) |
 

@@ -7,6 +7,7 @@ import pytest
 from termlab import snippets
 
 from firstcommit import cards, gitcmd
+from game_words import unpaired
 
 MAX_EXTRA_LENGTH = 15
 AUTHOR = gitcmd.Person("Sam Lee", "sam@example.com")
@@ -173,3 +174,11 @@ def test_a_verify_snippet_holds(card: cards.Card, tmp_path: Path) -> None:
     if result.returncode == snippets.SKIP_STATUS:
         pytest.skip(f"{card.id} cannot be checked on this machine")
     assert result.returncode == 0, result.stdout + result.stderr
+
+
+@pytest.mark.parametrize("chapter", [path.stem for path in DECK_FILES])
+@pytest.mark.parametrize("language", ["en", "es"])
+def test_a_deck_that_uses_a_game_word_says_once_what_it_really_is(chapter: str, language: str) -> None:
+    deck = cards.deck(chapter, language)  # type: ignore[arg-type]
+    texts = [deck.notes, *(field for card in deck.cards for field in (card.prompt, card.explain, card.correct, *card.wrong))]
+    assert unpaired("\n".join(texts), language) == []

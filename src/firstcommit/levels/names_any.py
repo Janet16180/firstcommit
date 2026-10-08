@@ -26,7 +26,7 @@ CARD = kit.CommandCard(
 SCENE = [
     kit.SceneFrame(
         art="chain",
-        text="After your pull, `main` slid up to Alex's fix, and your bookmark and the mothership's pin are there too. `test-run` is still on Start the project.",
+        text="After your pull, `main` slid up to Alex's fix, and your bookmark and the pin of the remote (the mothership) are there too. `test-run` is still on Start the project.",
     ),
 ]
 

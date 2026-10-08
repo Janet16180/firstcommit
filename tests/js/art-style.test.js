@@ -82,29 +82,6 @@ const BIRTH = "var(--art-birth, 1.4s)";
 const frames = (name) => STYLE.slice(STYLE.indexOf(`@keyframes ${name}`)).match(/^@keyframes[^{]*\{([\s\S]*?\}\s*)\}/)[1];
 const birthAnimation = (selector) => rules(selector).join("").match(/animation: ([\w-]+) (.+?) steps\(\d+\) both;/);
 
-test("the fold folds each zone up toward the strip, small and faded, over the page's birth time", () => {
-  const zone = rules(".sky.art-birth-fold .viz .zone").join("");
-  assert.match(zone, /transform-origin: top/);
-  const [, name, duration] = birthAnimation(".sky.art-birth-fold .viz .zone");
-  assert.equal(duration, BIRTH);
-  assert.match(frames(name), /to \{ transform: translateY\(-\d+px\) scale\(0\.\d+, 0\.\d+\); opacity: 0; \}/);
-});
-
-test("in the fold each strip card lands from below, where its zone was, and stays", () => {
-  assert.match(rules(".sky.art-birth-fold .strip-card").join(""), /transform-origin: bottom/);
-  const [, name, duration] = birthAnimation(".sky.art-birth-fold .strip-card");
-  assert.equal(duration, BIRTH);
-  assert.match(frames(name), /from \{ transform: translateY\(\d+px\) scale\(0\.\d+\); opacity: 0; \}/);
-  assert.match(frames(name), /to \{ transform: none; opacity: 1; \}/);
-});
-
-test("in the fold the flows and the legend fade out", () => {
-  const [, flow, duration] = birthAnimation(".sky.art-birth-fold .viz .flow");
-  assert.equal(duration, BIRTH);
-  assert.deepEqual(birthAnimation(".sky.art-birth-fold .viz .legend").slice(1), [flow, BIRTH]);
-  assert.match(frames(flow), /to \{ opacity: 0; \}/);
-});
-
 test("the unroll reveals every vault from the top down, then the mothership fades in with its tethers", () => {
   const [, unroll, duration] = birthAnimation('.sky.art-birth-unroll .viz .zone[data-zone$="vault"]');
   assert.equal(duration, BIRTH);
@@ -117,22 +94,16 @@ test("the unroll reveals every vault from the top down, then the mothership fade
   assert.deepEqual(birthAnimation(".sky.art-birth-unroll .viz .tethers").slice(1), [mothership, BIRTH]);
 });
 
-test("the unroll starts with the strip's vault card lit in its own colour", () => {
-  const [, name, duration] = birthAnimation('.sky.art-birth-unroll .strip-card[data-zone="vault"]');
-  assert.equal(duration, BIRTH);
-  assert.match(frames(name), /background: color-mix\(in srgb, var\(--zc\) \d+%, var\(--panel\)\)/);
-});
-
 test("the births paint only with the design's tokens", () => {
-  const births = STYLE.slice(STYLE.indexOf(".sky.art-birth-fold"), STYLE.indexOf("@media (prefers-reduced-motion: reduce)"));
+  const births = STYLE.slice(STYLE.indexOf(".sky.art-birth-unroll"), STYLE.indexOf("@media (prefers-reduced-motion: reduce)"));
   assert.ok(births.length > 0);
   for (const [, name] of births.matchAll(/var\((--[\w-]+)/g)) assert.ok(TOKENS.has(name) || ["--art-birth", "--zc"].includes(name), name);
   assert.ok(!/#[0-9A-Fa-f]{3,6}\b|\brgba?\(|\bhsla?\(/.test(births));
 });
 
-test("reduced motion plays neither birth", () => {
+test("reduced motion does not play the unroll", () => {
   const reduced = STYLE.slice(STYLE.indexOf("@media (prefers-reduced-motion: reduce)"));
-  for (const selector of [".sky.art-birth-fold *", ".sky.art-birth-unroll *"]) assert.ok(reduced.includes(selector), selector);
+  assert.ok(reduced.includes(".sky.art-birth-unroll *"));
 });
 
 test("the flatten squashes Alex's mirrored station up into a thin fading line over the page's birth time", () => {
