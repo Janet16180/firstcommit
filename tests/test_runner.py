@@ -299,6 +299,11 @@ def test_levels_are_found_in_chapter_then_difficulty_then_id_order_without_helpe
     assert list(runner.discover(level_package)) == ["cargo-c", "cargo-a", "cargo-b", "start-z"]
 
 
+def test_levels_in_the_play_order_come_in_its_order_before_the_rest_of_their_chapter(level_package: types.ModuleType, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(runner, "PLAY_ORDER", ("cargo-b", "cargo-c"))
+    assert list(runner.discover(level_package)) == ["cargo-b", "cargo-c", "cargo-a", "start-z"]
+
+
 def test_a_spanish_sibling_is_read_with_its_level_and_is_no_level_itself(level_package: types.ModuleType) -> None:
     levels = runner.discover(level_package)
     assert (levels["cargo-a"].texts["es"].title, levels["cargo-b"].texts["es"].title) == ("Di hola", "Say hello")

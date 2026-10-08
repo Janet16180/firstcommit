@@ -1,4 +1,4 @@
-"""A second course in Spanish (`branch_course`), written with docs/i18n-glossary.md."""
+"""A second course in Spanish (`names_experiments`), written with docs/i18n-glossary.md."""
 
 from firstcommit import kit
 

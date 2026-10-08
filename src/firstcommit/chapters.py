@@ -7,6 +7,7 @@ CHAPTERS: dict[str, dict[Language, str]] = {
     "cargo": {"en": "The cargo dock", "es": "El muelle de carga"},
     "vault": {"en": "The time vault", "es": "La bóveda del tiempo"},
     "mothership": {"en": "The mothership", "es": "La nave nodriza"},
+    "names": {"en": "Name tags", "es": "Etiquetas"},
     "branch": {"en": "Parallel universes", "es": "Universos paralelos"},
     "conflict": {"en": "Collisions", "es": "Colisiones"},
     "undo": {"en": "Time travel", "es": "Viajes en el tiempo"},
@@ -35,6 +36,10 @@ BLURBS: dict[str, dict[Language, str]] = {
     "mothership": {
         "en": "Remotes, push and pull: your work safe and shared.",
         "es": "Remotos, push y pull: tu trabajo a salvo y compartido.",
+    },
+    "names": {
+        "en": "A branch names one commit, HEAD is where you are, origin/main a bookmark.",
+        "es": "Un branch nombra un commit, HEAD es donde estás, origin/main un marcador.",
     },
     "branch": {
         "en": "Branches are labels: work on a second course without touching main.",
@@ -74,3 +79,42 @@ BLURBS: dict[str, dict[Language, str]] = {
     },
 }
 """One line under each chapter's name on the map, by chapter id, in the order of `CHAPTERS`, in each language."""
+
+PLAY_ORDER: tuple[str, ...] = (
+    "liftoff-aboard",
+    "liftoff-flag",
+    "cargo-first",
+    "cargo-selective",
+    "cargo-stowaway",
+    "cargo-junk",
+    "vault-seal",
+    "vault-look",
+    "vault-recorder",
+    "vault-inspection",
+    "mothership-contact",
+    "mothership-launch",
+    "mothership-halves",
+    "mothership-incoming",
+    "mothership-refused",
+    "mothership-recruit",
+    "mothership-base7",
+    "names-experiments",
+    "branch-send",
+    "branch-switch",
+    "branch-ticket",
+    "conflict-meet",
+    "conflict-abort",
+    "conflict-collision",
+    "conflict-docking",
+    "undo-scrap",
+    "undo-recall",
+    "undo-wrong",
+    "undo-blackbox",
+)
+"""
+The game's levels by id, in the order the map shows them, chapter by chapter.
+
+The map numbers each level by its place in its chapter, so this order is the levels' numbers. A
+level left out (a test's own level) comes after the listed ones of its chapter, by difficulty,
+then id.
+"""
