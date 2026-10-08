@@ -375,6 +375,7 @@ def test_each_level_opens_on_the_main_view_of_the_plan() -> None:
         "conflict-abort": "history",
         "conflict-collision": "sides",
         "conflict-docking": "history",
+        "undo-blackbox": "blackbox",
         "undo-recall": "history",
         "undo-scrap": "blackbox",
         "undo-wrong": "history",

@@ -922,3 +922,16 @@ deleted side, an add/add with no base) and `tests/levels/test_conflict_collision
 | debrief, `GHOSTS` | with no label, the reflog still reaches the commits; `git branch rescue HEAD@{1}` brings them back | E111; git-reflog(1); `repomap.ghosts` (*re-checked* by `tests/test_repomap.py` and `tests/levels/test_undo_wrong.py`) |
 | debrief | `--soft` and `--mixed` keep the changes staged or in the working folder | git-reset(1) `--soft`, `--mixed` |
 | debrief | they would still exist "for a while" | git-gc(1) `gc.reflogExpireUnreachable` (30 days by default) |
+
+## 7-4 Black box (added 2026-10-08)
+
+| Tag | What ran | Result |
+|---|---|---|
+| E112 | on the host (git 2.43.0): a clone with `base` pushed; two commits on `thrusters`; `git switch main`, `git branch -D thrusters`, `git reflog`, `git branch thrusters HEAD@{1}`, `git log --oneline thrusters`, `git push -u origin thrusters`, then the hub's `thrusters` | `-D` says "Deleted branch thrusters (was 9a0b7e5)"; the reflog's `HEAD@{0}` is "checkout: moving from thrusters to main" and `HEAD@{1}` the branch's last commit; the new label holds both commits; the hub has them |
+
+| Claim | Says | Evidence |
+|---|---|---|
+| card, debrief | `git reflog` lists where `HEAD` has been as `HEAD@{n}`; a label on an entry brings its commits back | E112; git-reflog(1) |
+| debrief | `git branch -D` removes a label, not the commits | E112 |
+| debrief | the reflog lives in your repository only and keeps entries for commits no label holds about a month | git-reflog(1) (local to the repository); git-gc(1) and git-config(1) `gc.reflogExpireUnreachable` (30 days by default) |
+| `WIPE`, `ERASED` (lost) | expiring the reflog and pruning erases commits no label holds | the level's test (`reflog expire --expire=now --all`, then `gc --prune=now`, and the commit is gone); git-gc(1) `--prune` |
