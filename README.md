@@ -13,6 +13,20 @@ practice repositories under `~/.firstcommit`; it never touches your repositories
 
 Work in progress: see [docs/DESIGN.md](docs/DESIGN.md).
 
+## Install
+
+On a fresh WSL Ubuntu 24.04, with termlab's `firstcommit` branch next to this folder as
+`../termlab-firstcommit` (see Develop below), one script installs everything:
+
+```
+./install.sh          # git, bash-completion, Docker Engine, uv, and the game's Python dependencies
+./install.sh --dev    # the same, plus Node and ESLint for the page tests
+```
+
+It asks for your password (sudo) and can be run again: it skips what is already installed. uv
+and Node are pinned by version and SHA-256, Node to the same build as the Docker test image. If
+it adds you to the `docker` group, open a new WSL terminal before `deploy/docker/run`.
+
 ## Play with Docker
 
 The Docker image holds Ubuntu 24.04 with git 2.43 and Python 3.12, the versions every level is
