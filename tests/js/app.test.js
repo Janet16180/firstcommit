@@ -42,7 +42,8 @@ async function boot({ hash = "#/", token = "KEY", replies = {}, stored = {}, wra
     createTerminal: (options) => {
       seen.terminals += 1;
       seen.looks = options.looks;
-      return { element: el("div", { class: "term-dock" }), start() {}, setLook() {}, type() {}, dispose() {} };
+      seen.labels = [options.labels];
+      return { element: el("div", { class: "term-dock" }), start() {}, setLook() {}, setLabels: (labels) => seen.labels.push(labels), type() {}, dispose() {} };
     },
   });
   load(["app.js"], []);
@@ -294,4 +295,35 @@ test("the map bar's language button tells the game, then reloads the records in 
   assert.equal(page.document.querySelector(".topbar .pref-language").textContent, "English");
   assert.equal(page.main.querySelector(".map-bar .pref-language").textContent, "English");
   assert.equal(page.storage.size, 0);
+});
+
+test("the terminal's status and button speak the game's language, and follow a switch", async () => {
+  let language = "es";
+  const active = record("active");
+  const page = await boot({
+    hash: `#/level/${active.level}`,
+    replies: {
+      "/api/status": () => ({ ...record("status"), active, language }),
+      "/api/language": (body) => {
+        language = body.language;
+        return {};
+      },
+      "/api/level": record("level"),
+      "/api/observe": record("observation"),
+      "/api/step": record("step"),
+      "/api/check": record("check_unsolved"),
+    },
+  });
+  await settle();
+  try {
+    assert.deepEqual(page.seen.labels[0], { connecting: "conectando", connected: "conectado", hide: "ocultar", show: "mostrar" });
+  } finally {
+    global.location.hash = "#/";
+    page.fire("hashchange", {});
+    await settle();
+  }
+  page.main.querySelector(".map-bar .pref-language").click();
+  await settle();
+  await settle();
+  assert.deepEqual(page.seen.labels.at(-1), { connecting: "connecting", connected: "connected", hide: "hide", show: "show" });
 });
