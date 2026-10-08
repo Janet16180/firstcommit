@@ -425,6 +425,15 @@ one list of typed lines through the whole walk, as the game does. For each step 
 order, the harness asserts that a watch step fails before its action and passes after it, and
 that an answer step refuses the empty answer and accepts the action's answer. So each watch must
 notice the very thing its step asks for, and not pass early because of an earlier step.
+`kit.typing("git status")` is the action that types one line, the common case.
+
+The harness runs the level's `EVENTS` as the game does: those with no goal before the walk and
+before `solve`, the others right after their goal's step. A challenge's goals are walked in
+quest order too, so order them so that each one is met by its own action: a goal that already
+holds at the start is a constraint, and belongs in another goal's text. Setup commits made "by
+the player" use `author=kit.PLAYER`, the identity the game's configuration gives the player.
+Shared helpers for a level's own tests (start a lab, run its first events, type lines, find a
+step, ask Rama) are in `tests/level_helpers.py`.
 
 Two patterns from the Orbit levels (`levels/liftoff_flag.py`, `levels/cargo_first.py`) keep a
 level short and consistent:
