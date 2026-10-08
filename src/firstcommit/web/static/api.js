@@ -84,7 +84,7 @@ const createGameApi = (function () {
      play and the views of the ladder, in its order (records.Art, Mood, Moment and View). */
   const ART = oneOf("space", "timeline", "terminal", "planet", "flag", "zones", "conveyor", "capsule", "chain", "orbit", "rocket", "pull", "alarm", "fork", "merge", "collision", "blackbox", "meteor", "simulator");
   const MOOD = oneOf("info", "ok", "warn", "err");
-  const MOMENT = oneOf("secret-leak", "launch", "junk-flood", "force-break", "unreviewed-main", "search-beam");
+  const MOMENT = oneOf("secret-leak", "launch", "junk-flood", "force-break", "unreviewed-main");
   const VIEW = oneOf("station", "crew", "history", "sides", "blackbox", "board", "focus");
   /* What the save remembers as born: the views, the crew band and the black box's tape, which no
      level opens on (records.Seen). */
