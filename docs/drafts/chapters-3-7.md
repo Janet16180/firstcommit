@@ -1,5 +1,8 @@
 # Chapters 3 to 7: the lead's decision
 
+> Sectors 5 to 7 are revised, and sectors 8 and 9 added, in `chapters-5-9.md` (2026-10-08).
+> Where the two files differ, `chapters-5-9.md` wins.
+
 Decided on 2026-10-07 from a three-way debate: teacher (learning science), incidents (real
 situations at work) and gamer (game design). Their proposals and rebuttals are in
 `.scratch/debate/`. This file is what gets built; the optional levels are kept for after the
