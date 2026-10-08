@@ -314,9 +314,11 @@ test("an observation must carry Rama's reactions, each with its line, a known mo
 
 test("a reaction may carry a moment the page knows, or none", async () => {
   const observation = record("observation");
-  observation.reactions[0].moment = "secret-leak";
-  const { game } = gameApi({ ...REPLIES, "/api/observe": observation });
-  assert.equal((await game.observe()).reactions[0].moment, "secret-leak");
+  for (const moment of ["secret-leak", "launch", "junk-flood"]) {
+    observation.reactions[0].moment = moment;
+    const { game } = gameApi({ ...REPLIES, "/api/observe": observation });
+    assert.equal((await game.observe()).reactions[0].moment, moment);
+  }
   await refused("/api/observe", (seen) => delete seen.reactions[0].moment, (api) => api.observe());
   await refused("/api/observe", (seen) => (seen.reactions[0].moment = "fireworks"), (api) => api.observe());
 });

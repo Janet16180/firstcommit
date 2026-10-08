@@ -83,7 +83,7 @@ const createGameApi = (function () {
      play and the views of the ladder, in its order (records.Art, Mood, Moment and View). */
   const ART = oneOf("space", "timeline", "terminal", "planet", "flag", "zones", "conveyor", "capsule", "chain", "orbit", "rocket", "pull", "alarm", "fork", "merge", "collision", "blackbox", "meteor");
   const MOOD = oneOf("info", "ok", "warn", "err");
-  const MOMENT = oneOf("secret-leak", "launch");
+  const MOMENT = oneOf("secret-leak", "launch", "junk-flood");
   const VIEW = oneOf("station", "crew", "history", "sides", "blackbox", "board", "focus");
 
   const STATUS = record({
