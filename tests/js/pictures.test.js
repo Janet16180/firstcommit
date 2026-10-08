@@ -60,7 +60,7 @@ test("the move log waits for git reflog, then keeps its rows, and the commits on
 
 test("picking a move rings the commit it landed on, on the chain", () => {
   const pictures = Pictures.create(spec({ large: "movelog", small: "chain" }));
-  const reflog = record("observation").project.commits.map((commit) => ({ old: "", new: commit.hash, message: `commit: ${commit.subject}` }));
+  const reflog = record("observation").project.commits.map((commit, at) => ({ old: "", new: commit.hash, message: `commit: ${commit.subject}`, line: `${commit.short} HEAD@{${at}}: commit: ${commit.subject}` }));
   pictures.update(observed(["git reflog"], { reflog }), { look: [], passed: [] });
   const row = pictures.element.querySelectorAll(".movelog-row")[1];
   row.click();

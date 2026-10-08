@@ -8,9 +8,10 @@ installBrowser();
 const { MoveLog, Strings } = load(["dom.js", "strings.js", "move-log.js"], ["MoveLog", "Strings"]);
 
 const hash = (name) => `${name}`.padEnd(40, "0");
-const entry = (to, message) => ({ old: hash("0"), new: hash(to), message });
-/* HEAD's moves, newest first, as the observation gives them. */
-const reflog = () => [entry("a1", "reset: moving to origin/main"), entry("b2", "commit: Survey day 2"), entry("b1", "commit: Survey day 1"), entry("a1", "clone: from github.com/moonbase/project.git")];
+/* A move as the observation gives it, with the line git printed for it at HEAD@{at}. */
+const entry = (to, message, at, decoration = "") => ({ old: hash("0"), new: hash(to), message, line: `${hash(to).slice(0, 7)}${decoration} HEAD@{${at}}: ${message}` });
+/* HEAD's moves, newest first. */
+const reflog = () => [entry("a1", "reset: moving to origin/main", 0, " (HEAD -> main, origin/main)"), entry("b2", "commit: Survey day 2", 1), entry("b1", "commit: Survey day 1", 2), entry("a1", "clone: from github.com/moonbase/project.git", 3)];
 const ghost = (name) => ({ hash: hash(name), short: hash(name).slice(0, 7), parents: [], subject: name, author: "You", time: 0 });
 const lines = (log) => [...log.element.querySelectorAll(".movelog-row")].map((row) => row.querySelector(".movelog-line").textContent);
 
@@ -22,15 +23,16 @@ test("before git reflog is typed the move log says how to read it, and shows no 
   assert.equal(log.element.querySelector(".movelog-empty code").textContent, "git reflog");
 });
 
-test("once typed, its rows read exactly as git reflog prints them, newest first", () => {
+test("once typed, its rows read exactly as git reflog printed them, newest first, HEAD@{n} picked out", () => {
   const log = MoveLog.create();
   log.update({ reflog: reflog(), ghosts: [], typed: true, marks: true });
   assert.deepEqual(lines(log), [
-    "a100000 HEAD@{0}: reset: moving to origin/main",
+    "a100000 (HEAD -> main, origin/main) HEAD@{0}: reset: moving to origin/main",
     "b200000 HEAD@{1}: commit: Survey day 2",
     "b100000 HEAD@{2}: commit: Survey day 1",
     "a100000 HEAD@{3}: clone: from github.com/moonbase/project.git",
   ]);
+  assert.deepEqual([...log.element.querySelectorAll(".movelog-ref")].map((ref) => ref.textContent), ["HEAD@{0}", "HEAD@{1}", "HEAD@{2}", "HEAD@{3}"]);
 });
 
 test("the rows light up one after another the first time, in step with the terminal's lines", () => {
@@ -55,7 +57,8 @@ test("picking a row tells which commit it landed on, and the pick stays on that 
   log.update({ reflog: reflog(), ghosts: [], typed: true, marks: true });
   log.element.querySelectorAll(".movelog-row")[1].click();
   assert.deepEqual(picks, [hash("b2")]);
-  log.update({ reflog: [entry("b2", "checkout: moving from main to survey"), ...reflog()], ghosts: [], typed: true, marks: true });
+  const renumbered = reflog().map((move, at) => ({ ...move, line: move.line.replace(`HEAD@{${at}}`, `HEAD@{${at + 1}}`) }));
+  log.update({ reflog: [entry("b2", "checkout: moving from main to survey", 0), ...renumbered], ghosts: [], typed: true, marks: true });
   const picked = log.element.querySelector(".movelog-row.is-picked");
   assert.equal(picked.querySelector(".movelog-line").textContent, "b200000 HEAD@{2}: commit: Survey day 2");
   assert.ok(log.element.querySelectorAll(".movelog-row")[0].classList.contains("is-fresh"));
@@ -69,7 +72,7 @@ test("the move log speaks Spanish around git's own words", () => {
     log.update({ reflog: reflog(), ghosts: [ghost("b2")], typed: true, marks: true });
     assert.equal(log.element.getAttribute("aria-label"), "El log de movimientos");
     assert.equal(log.element.querySelector(".movelog-noname").textContent, "sin nombre");
-    assert.equal(lines(log)[0], "a100000 HEAD@{0}: reset: moving to origin/main");
+    assert.equal(lines(log)[0], "a100000 (HEAD -> main, origin/main) HEAD@{0}: reset: moving to origin/main");
   } finally {
     Strings.use("en");
   }

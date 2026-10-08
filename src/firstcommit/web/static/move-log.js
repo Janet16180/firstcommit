@@ -2,7 +2,7 @@
 
 /*
  * The move log (docs/drafts/teaching-pictures.md, idea 8): HEAD's moves, one row per line of
- * `git reflog`, in git's order and git's own words (newest first, `<hash> HEAD@{n}: <message>`).
+ * `git reflog`, in git's order and exactly as git printed it (ReflogEntry.line), newest first.
  * It stays empty until the player types `git reflog`; then its rows light up one after another,
  * in step with the terminal's lines. A later move slides in at the top and every HEAD@{n} below
  * it grows by one. Picking a row names the commit it landed on (the chain rings it); the pick
@@ -21,7 +21,11 @@
 const MoveLog = (function () {
   const { el } = Dom;
   const { t } = Strings;
-  const SHORT = 7;
+  /* git's line with its HEAD@{n} picked out. */
+  const pickedOut = (line) => {
+    const [before, ref, after] = line.split(/(HEAD@\{\d+\})/);
+    return ref ? [before, el("span", { class: "movelog-ref" }, ref), after] : [line];
+  };
 
   function create({ onPick = () => {} } = {}) {
     const element = el("section", { class: "movelog", "aria-label": t("movelog.label") });
@@ -45,9 +49,7 @@ const MoveLog = (function () {
       element.replaceChildren(head, el("ol", { class: "movelog-rows" }, ...reflog.map((move, at) => {
         const kinds = ["movelog-row", lighting && "is-lit", at < fresh && "is-fresh", picked === reflog.length - 1 - at && "is-picked"].filter(Boolean);
         const row = el("button", { type: "button", class: kinds.join(" "), "data-hash": move.new, "aria-pressed": String(picked === reflog.length - 1 - at), onclick: () => pick(reflog.length - 1 - at, move.new) },
-          el("code", { class: "movelog-line" },
-            el("span", { class: "movelog-hash" }, move.new.slice(0, SHORT)), " ",
-            el("span", { class: "movelog-ref" }, `HEAD@{${at}}`), `: ${move.message}`),
+          el("code", { class: "movelog-line" }, pickedOut(move.line)),
           marks && lost.has(move.new) && el("span", { class: "movelog-noname" }, t("movelog.noname")));
         if (lighting) row.style.setProperty("--step", String(at));
         return el("li", {}, row);
