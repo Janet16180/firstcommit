@@ -35,6 +35,7 @@ ACTIVE_FILE = "active.json"
 OBSERVED_FILE = "observed.json"
 GITCONFIG_FILE = "gitconfig"
 STARTUP_FILE = "bashrc"
+HUSHLOGIN_FILE = ".hushlogin"
 COMMANDS_FILE = "commands.log"
 HISTORY_FILE = "history"
 LABS_FOLDER = "labs"
@@ -364,9 +365,24 @@ def write_shell_startup(text: str) -> Path:
     return path
 
 
+def ensure_hushlogin() -> Path:
+    """
+    Create the empty ``.hushlogin`` file that keeps the game's shell quiet (`firstcommit.commands.shell`), if it is missing.
+
+    Returns
+    -------
+    Path
+        The file, in the game home (created if missing).
+    """
+    path = home() / HUSHLOGIN_FILE
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.touch()
+    return path
+
+
 def erase() -> None:
-    """Delete the progress, the level in progress, the last observation, the game's git configuration and its shell's files (startup file, typed-command log, history), damaged or not."""
-    for name in (PROGRESS_FILE, ACTIVE_FILE, OBSERVED_FILE, GITCONFIG_FILE, STARTUP_FILE, COMMANDS_FILE, HISTORY_FILE):
+    """Delete the progress, the level in progress, the last observation, the game's git configuration and its shell's files (startup file, hushlogin, typed-command log, history), damaged or not."""
+    for name in (PROGRESS_FILE, ACTIVE_FILE, OBSERVED_FILE, GITCONFIG_FILE, STARTUP_FILE, HUSHLOGIN_FILE, COMMANDS_FILE, HISTORY_FILE):
         (home() / name).unlink(missing_ok=True)
 
 

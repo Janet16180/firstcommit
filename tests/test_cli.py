@@ -8,7 +8,7 @@ from typing import Any
 import pytest
 
 import firstcommit.web
-from firstcommit import cli, game, gitcmd, markup, runner, save
+from firstcommit import cli, commands, game, gitcmd, markup, runner, save
 
 
 @pytest.fixture
@@ -112,7 +112,7 @@ def test_the_shell_starts_in_the_lab_with_the_games_git_settings(sample_level: r
     status, printed = run(capsys, "shell")
     lab = str(game_home / "labs" / "cargo-sample" / "project")
     (call,) = calls
-    assert (status, call["args"], call["cwd"]) == (3, ["bash", "--noprofile", "--rcfile", str(game_home / save.STARTUP_FILE), "-i"], lab)
+    assert (status, call["args"], call["cwd"]) == (3, commands.shell(game_home / save.STARTUP_FILE, game_home), lab)
     assert {key: call["env"][key] for key in gitcmd.isolation(game_home)} == gitcmd.isolation(game_home)
     assert (call["env"]["PWD"], call["env"]["EDITOR"], "TMUX" in call["env"], "GIT_DIR" in call["env"]) == (lab, "nano", False, False)
     assert "exit" in printed
@@ -136,7 +136,7 @@ def test_the_shell_is_the_games_bash_whatever_shell_the_player_uses(sample_level
         monkeypatch.setenv("SHELL", player_shell)
     run(capsys, "shell")
     assert calls == [game.shell_command()]
-    assert calls[0][:3] == ["bash", "--noprofile", "--rcfile"]
+    assert "zsh" not in " ".join(calls[0])
 
 
 def test_status_shows_xp_rank_the_level_in_progress_and_cards_due(sample_level: runner.Level, sample_decks: Path, capsys: pytest.CaptureFixture[str]) -> None:

@@ -1253,7 +1253,8 @@ def test_starting_a_level_forgets_the_last_observation(sample_level: runner.Leve
 
 def test_the_games_shell_is_bash_with_the_games_own_startup_file(game_home: Path) -> None:
     startup = game_home / save.STARTUP_FILE
-    assert game.shell_command() == ["bash", "--noprofile", "--rcfile", str(startup), "-i"]
+    assert game.shell_command() == commands.shell(startup, game_home)
+    assert (game_home / save.HUSHLOGIN_FILE).read_text() == ""
     assert startup.read_text() == commands.startup(game_home / save.COMMANDS_FILE, game_home / save.HISTORY_FILE)
 
 

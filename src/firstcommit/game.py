@@ -1141,8 +1141,9 @@ def shell_command() -> list[str]:
 
     Whatever the player's own shell, it is bash with the game's startup file
     (`firstcommit.commands.startup`): a plain prompt naming the folder, never the user or the
-    machine, and each command line typed logged in the game home for `observe`. The page's
-    terminal and ``firstcommit shell`` both run it.
+    machine, and each command line typed logged in the game home for `observe`. It starts on the
+    game home, which holds a ``.hushlogin``, so Ubuntu's ``sudo`` notice stays out of it
+    (`firstcommit.commands.shell`). The page's terminal and ``firstcommit shell`` both run it.
 
     Returns
     -------
@@ -1151,7 +1152,7 @@ def shell_command() -> list[str]:
     """
     home = save.home()
     startup = save.write_shell_startup(commands.startup(home / save.COMMANDS_FILE, home / save.HISTORY_FILE))
-    return ["bash", "--noprofile", "--rcfile", str(startup), "-i"]
+    return commands.shell(startup, save.ensure_hushlogin().parent)
 
 
 def terminal_folder() -> str:

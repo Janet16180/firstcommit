@@ -24,11 +24,12 @@ def logging_shell(folder: Path) -> list[str]:
     Returns
     -------
     list[str]
-        ``bash --noprofile --rcfile <startup file> -i``.
+        The game's shell command (`firstcommit.commands.shell`), with the folder as its quiet home.
     """
     startup = folder / "bashrc"
     startup.write_text(commands.startup(folder / "commands.log", folder / "history"))
-    return ["bash", "--noprofile", "--rcfile", str(startup), "-i"]
+    (folder / ".hushlogin").touch()
+    return commands.shell(startup, folder)
 
 
 def project(folder: Path) -> Path:
@@ -104,6 +105,19 @@ def test_the_prompt_shows_the_folder_and_never_the_user_or_the_machine(typist: T
 @pytest.mark.skipif(not commands.COMPLETION.exists(), reason="bash-completion is not installed")
 def test_tab_completes_git_commands_where_bash_completion_is_installed(typist: Typist, tmp_path: Path) -> None:
     typist(logging_shell(tmp_path), terminal.player_env(os.environ), project(tmp_path), [(b"git chec\t", b"git checkout "), (b"\x15", b"")])
+
+
+def test_the_shell_opens_without_the_systems_login_notices_and_on_the_players_own_home(typist: Typist, tmp_path: Path) -> None:
+    shown = typist(logging_shell(tmp_path), terminal.player_env(os.environ), project(tmp_path), [(b'echo "home=$HOME player=${FIRSTCOMMIT_PLAYER_HOME-unset}"\n', b"$ ")])
+    assert b"sudo" not in shown
+    assert b"home=/" in shown and f"home={tmp_path} ".encode() not in shown and b"player=unset" in shown
+
+
+def test_the_startup_file_alone_keeps_the_home_it_is_given(typist: Typist, tmp_path: Path) -> None:
+    startup = tmp_path / "bashrc"
+    startup.write_text(commands.startup(tmp_path / "commands.log", tmp_path / "history"))
+    shown = typist(["bash", "--noprofile", "--rcfile", str(startup), "-i"], terminal.player_env(os.environ), project(tmp_path), [(b'echo "home=$HOME"\n', b"$ ")])
+    assert b"home=/" in shown
 
 
 def test_exit_and_a_shell_started_without_the_startup_file_leave_the_log_whole(typist: Typist, tmp_path: Path) -> None:
