@@ -76,7 +76,8 @@ class Level:
     ``id`` is the module name with ``_`` turned into ``-``; ``chapter`` is the part before the
     first ``_``. The other fields are the module's names of AUTHORING.md section 3.3;
     ``scene``, ``reactions`` and ``events`` are empty for a level without them, and ``view``, the
-    level screen's main view, is your station for a level that names none. ``challenge``
+    level screen's main view, is your station for a level that names none; ``tape`` says whether
+    the level shows the black box's tape of HEAD's moves. ``challenge``
     marks a level whose quest is goals met in any order, with no guidance. ``texts`` holds every
     text the player reads, by language; the cards, scene frames and steps keep the English ones
     the module wrote, with what is not text (the command, the pictures, the checks).
@@ -91,6 +92,7 @@ class Level:
     card: kit.CommandCard
     scene: tuple[kit.SceneFrame, ...]
     view: View
+    tape: bool
     reactions: tuple[kit.ReactionRule, ...]
     events: tuple[kit.LevelEvent, ...]
     challenge: bool
@@ -129,6 +131,7 @@ def load(module: ModuleType, spanish: ModuleType | None = None) -> Level:
     }
     scene = getattr(module, "SCENE", [])
     view: Any = getattr(module, "VIEW", "station")
+    tape = getattr(module, "TAPE", False)
     level_reactions = getattr(module, "REACTIONS", [])
     events = getattr(module, "EVENTS", [])
     challenge = getattr(module, "CHALLENGE", False)
@@ -146,6 +149,7 @@ def load(module: ModuleType, spanish: ModuleType | None = None) -> Level:
             or _orbit_problem(values)
             or _scene_problem(scene)
             or _view_problem(view)
+            or (None if isinstance(tape, bool) else "TAPE must be True or False")
             or _reactions_problem(level_reactions)
             or _quest_problem(quest)
             or _events_problem(events, quest)
@@ -176,6 +180,7 @@ def load(module: ModuleType, spanish: ModuleType | None = None) -> Level:
         card=values["CARD"],
         scene=tuple(scene),
         view=view,
+        tape=tape,
         reactions=tuple(level_reactions),
         events=tuple(events),
         challenge=challenge,

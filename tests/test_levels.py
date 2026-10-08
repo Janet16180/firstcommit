@@ -360,6 +360,10 @@ def test_the_last_hint_shows_commands_that_solve_the_level_typed_as_written(leve
     assert level.check(lab, state, answer, typed).solved
 
 
+def test_the_tape_shows_from_wrong_course_on() -> None:
+    assert sorted(level.id for level in runner.catalogue().values() if level.tape) == ["undo-blackbox", "undo-wrong"]
+
+
 def test_each_level_opens_on_the_main_view_of_the_plan() -> None:
     views = {level.id: level.view for level in runner.catalogue().values() if level.view != "station"}
     assert views == {
