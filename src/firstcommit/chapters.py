@@ -102,6 +102,7 @@ PLAY_ORDER: tuple[str, ...] = (
     "names-any",
     "names-experiments",
     "names-step",
+    "names-chart",
     "branch-send",
     "branch-switch",
     "branch-ticket",

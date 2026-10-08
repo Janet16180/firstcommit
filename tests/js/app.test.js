@@ -7,7 +7,7 @@ const { fakeServer, httpError, installBrowser, load, record, settle } = require(
 
 installBrowser();
 const { Dom } = load(
-  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "route.js", "poll.js", "sound.js", "dialog.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "view-tabs.js", "strip.js", "sides.js", "tape.js", "births.js", "level-screen.js", "starmap.js", "art-infographics.js", "infographic-text.js", "field-guide.js", "cards.js", "notes.js", "dev.js"],
+  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "route.js", "poll.js", "sound.js", "dialog.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "view-tabs.js", "strip.js", "sides.js", "tape.js", "births.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "target-chart.js", "git-graph.js", "pictures.js", "level-screen.js", "starmap.js", "art-infographics.js", "infographic-text.js", "field-guide.js", "cards.js", "notes.js", "dev.js"],
   ["Dom"],
 );
 
@@ -59,12 +59,13 @@ test("without an access key the page asks for the link and calls no route", asyn
   assert.equal(page.server.calls.length, 0);
 });
 
-/* Opens the sample level, in progress, runs `check(page)`, then leaves for the map so its polling stops. */
-async function onLevel(check) {
+/* Opens the sample level, in progress, runs `check(page)`, then leaves for the map so its polling
+   stops. The level keeps today's views unless `level` says otherwise. */
+async function onLevel(check, level = { ...record("level"), pictures: null }) {
   const active = record("active");
   const page = await boot({
     hash: `#/level/${active.level}`,
-    replies: { "/api/status": { ...record("status"), active }, "/api/level": record("level"), "/api/view": {}, "/api/observe": record("observation"), "/api/step": record("step"), "/api/check": record("check_unsolved") },
+    replies: { "/api/status": { ...record("status"), active }, "/api/level": level, "/api/view": {}, "/api/observe": record("observation"), "/api/step": record("step"), "/api/check": record("check_unsolved") },
   });
   try {
     await settle();
@@ -80,7 +81,7 @@ test("in dev mode the level's Solve button runs the solution's lines in the page
   const active = record("active");
   const page = await boot({
     hash: `#/level/${active.level}`,
-    replies: { "/api/status": { ...record("status"), active, dev: true }, "/api/level": record("level"), "/api/view": {}, "/api/observe": record("observation"), "/api/step": record("step"), "/api/check": record("check_unsolved") },
+    replies: { "/api/status": { ...record("status"), active, dev: true }, "/api/level": { ...record("level"), pictures: null }, "/api/view": {}, "/api/observe": record("observation"), "/api/step": record("step"), "/api/check": record("check_unsolved") },
   });
   try {
     await settle();
@@ -100,6 +101,14 @@ test("a level's address opens the level screen, with its zones and the terminal 
   assert.equal(page.seen.terminals, 1);
   assert.ok(page.main.querySelector(".termcol .term-dock"));
 }));
+
+test("a level with teaching pictures opens on its chain, drawn from the lab, with the terminal under Rama's line", () => onLevel(async (page) => {
+  await settle();
+  await settle();
+  const chain = page.main.querySelector(".level-screen .sky .pictures .chain");
+  assert.equal(chain.querySelectorAll(".chain-row").length, record("observation").project.commits.length);
+  assert.ok(page.main.querySelector(".termcol .term-dock"));
+}, { ...record("level"), scene_seen: true }));
 
 test("the terminal wears the design's night colours and VT323 at the design's size, in both looks", () => onLevel((page) => {
   assert.equal(page.seen.looks.light.theme.background, "#120F2C");
@@ -334,7 +343,7 @@ test("the terminal's status and button speak the game's language, and follow a s
         language = body.language;
         return {};
       },
-      "/api/level": record("level"),
+      "/api/level": { ...record("level"), pictures: null },
       "/api/view": {},
       "/api/observe": record("observation"),
       "/api/step": record("step"),

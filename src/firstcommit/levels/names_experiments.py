@@ -1,143 +1,150 @@
 """
-A second course: a branch is a label on a commit, and switching rewrites the working folder.
+Two experiments: two branches off one commit make the chain fork, and ``git switch`` moves between them with the folder following.
 
-Wave 2, branch 5-2 (docs/drafts/chapters-3-7.md), guided, with a prediction. Setup makes a
-repository with three commits on ``main``. The prediction breaks the myth that a branch copies
-the folder. The goals read the repository: a branch ``scout``; ``HEAD`` on it; a commit on
-``scout`` holding ``probe.txt`` that ``main`` does not have; back on ``main`` with ``probe.txt``
-gone from the folder; and, read from the lines typed, an ``ls`` after that switch (looking is
-the lesson).
+Name tags 5-3 (docs/drafts/sector5/5-3-script.md), guided, with a prediction. Setup rebuilds the
+story to 5-2's end with ``bright-lights`` made yesterday and ``engine.txt`` waiting in the folder,
+on ``main`` (`_names_story.experiments`). The goals: ``quiet-engine`` made on ``main``'s commit;
+HEAD on it; ``engine.txt`` committed there, so the chain forks; HEAD on ``bright-lights``, where
+the folder swaps the two files; and the tree drawn with ``git log --oneline --graph --all``. A
+commit that moves ``main`` is lost: the captain wanted ``main`` left as it is.
 """
 
 from collections.abc import Callable
 
 from firstcommit import kit
+from firstcommit.levels import _names_story as story
 
-TITLE = "A second course"
+TITLE = "Two experiments"
 DIFFICULTY = 2
 XP = 150
-COMMAND = "git branch"
-PAR = 5
-VIEW = "history"
+COMMAND = "git switch"
+PAR = 6
+PICTURES = kit.pictures("chain", folder=True, graph=True)
 CARD = kit.CommandCard(
-    command="git branch <name>",
-    text="Makes a new branch: a label on the commit you are on. No file is copied, and you stay on the branch you were on.",
+    command="git switch <branch>",
+    text="Moves `HEAD` onto another branch, and your folder changes to show that branch's commit.",
 )
 SCENE = [
-    kit.SceneFrame(art="fork", text="The base wants to try a new course without touching `main`."),
-    kit.SceneFrame(art="fork", text="A branch is a label on a capsule. `HEAD` is the label you ride: your next capsule moves it on."),
+    kit.SceneFrame(
+        art="fork",
+        text="Yesterday's experiment is the side line on the right: `bright-lights` and its commit, Try bright lights, joined to Fix the route. You are back on `main`. The row under the chain is your working folder: `engine.txt` is waiting there, not in Git yet.",
+    ),
 ]
 
-BRANCH = "scout"
-PROBE = "probe.txt"
-PROBE_LINE = "Probe: launched"
-FILES = {"route.txt": "Route: Earth, Moon\n", "crew.txt": "Robin\nAlex\n", "log.txt": "Day 1: all quiet.\n"}
-BACK = kit.switching("main")
-LIST = r"ls\b"
+QUIET = "quiet-engine"
+BRIGHT = "bright-lights"
+ENGINE = "engine.txt"
+LIGHTS = "lights.txt"
+GRAPH = r"git log\b(?=.* --graph\b)(?=.* --all\b)"
+OLDER_FORM = r"git checkout (?!-)\S+( |$)"
 
 BRIEFING = """
-The base's `main` holds three commits. The captain wants a probe tried on a second course, and
-`main` left as it is.
+Yesterday you started one experiment, `bright-lights`, on its own branch, and came back to `main`.
+Today the captain wants a second one, `quiet-engine`, tried beside it; `engine.txt` is already
+written and waiting in your folder. `main` stays as it is.
 
-The mission is done when a branch `scout` holds a commit with `probe.txt` that `main` does not
-have, you are back on `main`, and you have looked at the folder there with `ls`.
+The mission is done when `quiet-engine` holds a commit with `engine.txt`, you are on
+`bright-lights`, and you have drawn the tree.
 """
 
 HINTS = [
-    "`git branch scout` makes the label; `git switch scout` moves you onto it.",
-    'On `scout`, write the file and commit it: `echo "Probe: launched" > probe.txt && git add probe.txt && git commit -m "Launch the probe"`.',
-    "`git switch main` takes you back; `ls` shows what the folder holds there.",
-    'Every line of the mission, in order:\n\n    $ git branch scout\n    $ git switch scout\n    $ echo "Probe: launched" > probe.txt && git add probe.txt && git commit -m "Launch the probe"\n    $ git switch main\n    $ ls',
+    "`git branch <name>` makes a name where you are; `git switch <name>` moves `HEAD` onto it.",
+    "`git add engine.txt`, then `git commit -m`, while on `quiet-engine`.",
+    'Every line of the mission, in order:\n\n    $ git branch quiet-engine\n    $ git switch quiet-engine\n    $ git add engine.txt\n    $ git commit -m "Try a quiet engine"\n    $ git switch bright-lights\n    $ git log --oneline --graph --all',
 ]
 
 DEBRIEF = """
-`git branch scout` wrote one new label on the commit you were on: no file was copied. `git switch
-scout` moved `HEAD` onto that label, and your commit moved `scout` on, while `main` stayed where it
-was.
+Two branches made from the same commit made the chain fork. `git switch` moved `HEAD` from one
+experiment to the other, and each time your folder changed to show that branch's commit. A commit
+moves only the name `HEAD` is on, so `main` never moved.
 
-Back on `main`, Git rewrote the working folder to match `main`'s last commit, so `probe.txt` left
-it. Nothing was lost: the probe is in `scout`'s commit, and `git switch scout` brings it back.
-
-At work, every task gets its own branch, so `main` stays as the team agreed it.
+`git log --oneline --graph --all` draws the whole tree in the terminal, every branch included.
 
 Commands to keep:
 
-    $ git branch scout   # a new label on the commit you are on
-    $ git switch scout   # move onto it; the folder follows
-    $ git switch main    # and back
+    $ git switch bright-lights            # move HEAD to another branch
+    $ git log --oneline --graph --all     # the whole tree, drawn
 """
 
 NO_REPOSITORY = "This folder is no longer a repository: `.git` is gone. Leave the level and start it again to get it back."
-NO_BRANCH = "There is no branch `scout` yet. Make it: `git branch scout`."
-MADE = "`scout` is a second label on the commit `main` is on. The folder did not change."
-NOT_ON = "You are not on `scout`. Move onto it: `git switch scout`."
-ON = "You are on `scout`: your next commit moves its label on."
-NOT_COMMITTED = 'Commit the probe on `scout`: `echo "Probe: launched" > probe.txt && git add probe.txt && git commit -m "Launch the probe"`.'
-COMMITTED = "`scout` moved on to the probe's commit; `main` stayed where it was."
-PROBE_ON_MAIN = "`main` holds `probe.txt` too: that commit went onto `main`. Start the mission again, and commit the probe on `scout`."
-NOT_BACK = "Go back to `main`: `git switch main`."
-STILL_THERE = "`probe.txt` is still in the folder, outside any commit of `main`. Remove it with `rm probe.txt`: `scout` keeps its copy."
-BACK_ON_MAIN = "You are on `main`, and `probe.txt` left the folder: it lives in `scout`'s commit."
-LOOKED = "`ls` shows `main`'s files only. `git switch scout` would bring the probe back."
-NOT_LOOKED = "Look at the folder: `ls`."
+NOT_NAMED = "Put a name on `main`'s commit: `git branch quiet-engine`."
+NAMED = "A second name on `main`'s commit. `HEAD` is still on `main`."
+NOT_ON_QUIET = "Go there: `git switch quiet-engine`."
+ON_QUIET = "`HEAD` moved to `quiet-engine`. Your folder did not change: both names are on the same commit, and `engine.txt` is not in Git yet, so a switch leaves it alone."
+NOT_COMMITTED = 'Commit `engine.txt` on `quiet-engine`: `git add engine.txt`, then `git commit -m "Try a quiet engine"`.'
+COMMITTED = "`quiet-engine` moved up to the new commit, and `main` stayed. Two side lines off the same commit: the chain forks, like a tree. Each experiment has its own name and its own commit."
+MAIN_MOVED = "`main` moved, and the captain wanted it left as it is. Start the mission again to try again."
+NOT_ON_BRIGHT = "Switch to the other experiment: `git switch bright-lights`."
+ON_BRIGHT = "`HEAD` jumped across the tree to the other experiment, and the folder followed: `lights.txt` in, `engine.txt` out."
+DRAWN = (
+    "The same tree, drawn by git in the terminal. Each `*` is a commit, and `|` and `/` are the lines between them. "
+    "`--all` shows every branch, not just the line you are on. Your two experiments are lit in both pictures."
+)
+NOT_DRAWN = "Draw the tree: `git log --oneline --graph --all`."
+OLDER_FORM_WORKS = "That works too: `git checkout <name>` is the older form of `git switch <name>`."
+
+REACTIONS = [
+    kit.ReactionRule(line=OLDER_FORM, mood="info", text=OLDER_FORM_WORKS, outcome="ok"),
+]
 
 GUESS = kit.ChoiceStep(
     id="guess",
     text="Predict first.",
-    question="You are about to make a branch `scout`. What will the folder hold afterwards?",
-    options=("The same files, once", "A second copy of the files, for scout"),
-    reveal="The same files, once. A branch is a label on a commit: `git branch scout` writes a new label and copies no file.",
+    question="You switch to `bright-lights`. Is `engine.txt` still in your folder?",
+    options=("Yes", "No"),
+    reveal="No. The folder shows `bright-lights`' commit: `lights.txt` comes back and `engine.txt` goes. Both files are safe in their commits.",
 )
 
 
 def _tip(lab: kit.Lab, ref: str) -> str:
     """
-    Give the commit a branch points at.
+    Give the commit a ref points at.
 
     Parameters
     ----------
     lab : kit.Lab
         The level's lab.
     ref : str
-        The branch's full name.
+        The ref's full name.
 
     Returns
     -------
     str
-        Its hash, or empty when there is no such branch.
+        Its hash, or empty when there is no such ref.
     """
     return kit.git_run(lab.project, "rev-parse", "-q", "--verify", f"{ref}^{{commit}}").stdout.strip()
 
 
-def _holds_probe(lab: kit.Lab, ref: str) -> bool:
+def _main_moved(lab: kit.Lab, state: kit.State) -> kit.Verdict:
     """
-    Tell whether a branch's last commit holds the probe.
-
-    Parameters
-    ----------
-    lab : kit.Lab
-        The level's lab.
-    ref : str
-        The branch's full name.
-
-    Returns
-    -------
-    bool
-        True when its tree has ``probe.txt``.
-    """
-    return kit.git_run(lab.project, "rev-parse", "-q", "--verify", f"{ref}:{PROBE}").returncode == 0
-
-
-def watch_branch(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
-    """
-    Pass once the branch ``scout`` exists.
+    Tell whether ``main`` moved off the commit it started on.
 
     Parameters
     ----------
     lab : kit.Lab
         The level's lab.
     state : kit.State
-        The level's state (unused).
+        The level's state: ``main``'s commit at the start.
+
+    Returns
+    -------
+    kit.Verdict
+        Lost when ``main`` moved; else not solved, with no message.
+    """
+    moved = _tip(lab, "refs/heads/main") not in ("", state["main"])
+    return kit.Verdict(False, MAIN_MOVED if moved else "", lost=moved)
+
+
+def watch_named(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
+    """
+    Pass once ``quiet-engine`` exists, made on ``main``'s commit.
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The level's lab.
+    state : kit.State
+        The level's state: ``main``'s commit.
     typed : kit.Typed
         The lines typed since the level started (unused).
 
@@ -146,17 +153,17 @@ def watch_branch(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdic
     kit.Verdict
         The step's verdict.
     """
-    message = MADE
+    at = _tip(lab, f"refs/heads/{QUIET}")
+    named = at != "" and kit.is_ancestor(lab.project, state["main"], at)
+    message = NAMED if named else NOT_NAMED
     if not kit.snapshot(lab.project)["exists"]:
         message = NO_REPOSITORY
-    elif not _tip(lab, f"refs/heads/{BRANCH}"):
-        message = NO_BRANCH
-    return kit.Verdict(message == MADE, message)
+    return kit.Verdict(message == NAMED, message)
 
 
-def watch_switch(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
+def watch_on_quiet(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
     """
-    Pass once ``HEAD`` is on ``scout``.
+    Pass once HEAD is on ``quiet-engine``.
 
     Parameters
     ----------
@@ -170,17 +177,17 @@ def watch_switch(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdic
     Returns
     -------
     kit.Verdict
-        The step's verdict; the branch comes first.
+        The step's verdict; the name comes first.
     """
-    made = watch_branch(lab, state, typed)
-    on = kit.snapshot(lab.project)["branch"] == BRANCH
-    verdict = kit.Verdict(on, ON if on else NOT_ON)
-    return verdict if made.solved else made
+    named = watch_named(lab, state, typed)
+    on = kit.snapshot(lab.project)["branch"] == QUIET
+    verdict = kit.Verdict(on, ON_QUIET if on else NOT_ON_QUIET)
+    return verdict if named.solved else named
 
 
 def _committed(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
     """
-    Tell whether ``scout`` holds the probe in a commit ``main`` lacks, whatever branch you are on.
+    Tell whether ``quiet-engine`` holds ``engine.txt`` in a commit, wherever HEAD is; lost once ``main`` moved.
 
     Parameters
     ----------
@@ -194,21 +201,20 @@ def _committed(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
     Returns
     -------
     kit.Verdict
-        Passed once ``scout`` holds it and ``main`` does not; lost once ``main`` holds it too.
+        The verdict.
     """
-    made = watch_branch(lab, state, typed)
-    on_main = _holds_probe(lab, "refs/heads/main")
-    committed = _holds_probe(lab, f"refs/heads/{BRANCH}")
-    message = COMMITTED if committed else NOT_COMMITTED
-    if on_main:
-        message = PROBE_ON_MAIN
-    verdict = kit.Verdict(message == COMMITTED, message, lost=on_main)
-    return verdict if made.solved else made
+    moved = _main_moved(lab, state)
+    named = watch_named(lab, state, typed)
+    committed = kit.git_run(lab.project, "rev-parse", "-q", "--verify", f"refs/heads/{QUIET}:{ENGINE}").returncode == 0
+    verdict = kit.Verdict(committed, COMMITTED if committed else NOT_COMMITTED)
+    if not named.solved:
+        verdict = named
+    return moved if moved.lost else verdict
 
 
 def watch_commit(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
     """
-    Pass once you are on ``scout`` and it holds the probe in a commit ``main`` lacks.
+    Pass once ``engine.txt`` is committed on ``quiet-engine``; lost once ``main`` moved.
 
     Parameters
     ----------
@@ -222,16 +228,14 @@ def watch_commit(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdic
     Returns
     -------
     kit.Verdict
-        The step's verdict; being on ``scout`` comes first.
+        The step's verdict; the name comes first.
     """
-    on = watch_switch(lab, state, typed)
-    committed = _committed(lab, state, typed)
-    return committed if on.solved or committed.lost else on
+    return _committed(lab, state, typed)
 
 
-def watch_back(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
+def watch_on_bright(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
     """
-    Pass once you are on ``main`` again, with the probe in ``scout`` and gone from the folder.
+    Pass once HEAD is on ``bright-lights``, after the commit on ``quiet-engine``.
 
     Parameters
     ----------
@@ -245,22 +249,17 @@ def watch_back(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
     Returns
     -------
     kit.Verdict
-        The step's verdict; the probe's commit comes first.
+        The step's verdict; the commit comes first.
     """
     committed = _committed(lab, state, typed)
-    snap = kit.snapshot(lab.project)
-    message = BACK_ON_MAIN
-    if snap["branch"] != "main":
-        message = NOT_BACK
-    elif any(entry["path"] == PROBE and entry["folder"] is not None for entry in snap["files"]):
-        message = STILL_THERE
-    verdict = kit.Verdict(message == BACK_ON_MAIN, message)
+    on = kit.snapshot(lab.project)["branch"] == BRIGHT
+    verdict = kit.Verdict(on, ON_BRIGHT if on else NOT_ON_BRIGHT)
     return verdict if committed.solved else committed
 
 
-def watch_look(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
+def watch_graph(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
     """
-    Pass once an ``ls`` worked after the last switch back to ``main``.
+    Pass once the tree was drawn after the switch to ``bright-lights``.
 
     Parameters
     ----------
@@ -274,32 +273,33 @@ def watch_look(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
     Returns
     -------
     kit.Verdict
-        The step's verdict; being back on ``main`` comes first.
+        The step's verdict; HEAD on ``bright-lights`` comes first.
     """
-    back = watch_back(lab, state, typed)
-    looked = kit.typed(kit.after(typed, BACK), LIST, "ok")
-    verdict = kit.Verdict(looked, LOOKED if looked else NOT_LOOKED)
-    return verdict if back.solved else back
+    on = watch_on_bright(lab, state, typed)
+    drawn = kit.typed(kit.after(typed, kit.switching(BRIGHT)), GRAPH, "ok")
+    verdict = kit.Verdict(drawn, DRAWN if drawn else NOT_DRAWN)
+    return verdict if on.solved else on
 
 
 QUEST: list[kit.Step] = [
+    kit.WatchStep(id="branch", text="Put a name on `main`'s commit.", command=f"git branch {QUIET}", watch=watch_named),
+    kit.WatchStep(id="switch", text="Go there.", command=f"git switch {QUIET}", watch=watch_on_quiet),
+    kit.WatchStep(id="commit", text="Commit `engine.txt` there.", command=f'git add {ENGINE} && git commit -m "Try a quiet engine"', watch=watch_commit),
     GUESS,
-    kit.WatchStep(id="branch", text="Make a branch `scout`.", command=f"git branch {BRANCH}", watch=watch_branch),
-    kit.WatchStep(id="switch", text="Move onto `scout`.", command=f"git switch {BRANCH}", watch=watch_switch),
+    kit.WatchStep(id="bright", text="Switch to the other experiment.", command=f"git switch {BRIGHT}", watch=watch_on_bright),
     kit.WatchStep(
-        id="commit",
-        text="Commit a probe on `scout`.",
-        command=f'echo "{PROBE_LINE}" > {PROBE} && git add {PROBE} && git commit -m "Launch the probe"',
-        watch=watch_commit,
+        id="graph",
+        text="Draw the tree.",
+        command="git log --oneline --graph --all",
+        watch=watch_graph,
+        look=("Try a quiet engine", "Try bright lights"),
     ),
-    kit.WatchStep(id="back", text="Go back to `main`.", command="git switch main", watch=watch_back),
-    kit.WatchStep(id="look", text="Look at the folder on `main`.", command="ls", watch=watch_look),
 ]
 
 
 def setup(lab: kit.Lab) -> kit.State:
     """
-    Make a repository with three commits on ``main``.
+    Rebuild the story to 5-2's end, with ``bright-lights`` made yesterday and ``engine.txt`` waiting.
 
     Parameters
     ----------
@@ -309,19 +309,15 @@ def setup(lab: kit.Lab) -> kit.State:
     Returns
     -------
     kit.State
-        An empty state: the goals read the repository.
+        ``main``: its commit, which must not move.
     """
-    kit.git(lab.root, "init", "-q", str(lab.project))
-    for day, (name, text) in enumerate(FILES.items(), start=1):
-        (lab.project / name).write_text(text)
-        kit.git(lab.project, "add", name)
-        kit.git(lab.project, "commit", "-q", "-m", f"Add {name}", author=kit.PLAYER, when=f"2026-05-0{day}T09:00:00+00:00")
-    return {}
+    story.experiments(lab)
+    return {"main": kit.git(lab.project, "rev-parse", "main").strip()}
 
 
 def check(lab: kit.Lab, state: kit.State, answer: str | None, typed: kit.Typed) -> kit.Verdict:
     """
-    Solved once you looked at the folder back on ``main``; lost once ``main`` holds the probe.
+    Solved once the tree was drawn on ``bright-lights``; lost once ``main`` moved.
 
     Parameters
     ----------
@@ -337,9 +333,10 @@ def check(lab: kit.Lab, state: kit.State, answer: str | None, typed: kit.Typed) 
     Returns
     -------
     kit.Verdict
-        The last goal's verdict.
+        The last goal's verdict, or the loss.
     """
-    return watch_look(lab, state, typed)
+    moved = _main_moved(lab, state)
+    return moved if moved.lost else watch_graph(lab, state, typed)
 
 
 def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
@@ -366,11 +363,11 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
 
 
 QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]] = {
-    "guess": kit.picking(GUESS.options[1]),
-    "branch": kit.typing(f"git branch {BRANCH}"),
-    "switch": kit.typing(f"git switch {BRANCH}"),
-    "commit": kit.typing(f'echo "{PROBE_LINE}" > {PROBE} && git add {PROBE} && git commit -m "Launch the probe"'),
-    "back": kit.typing("git switch main"),
-    "look": kit.typing("ls"),
+    "branch": kit.typing(f"git branch {QUIET}"),
+    "switch": kit.typing(f"git switch {QUIET}"),
+    "commit": kit.typing(f'git add {ENGINE} && git commit -m "Try a quiet engine"'),
+    "guess": kit.picking(GUESS.options[0]),
+    "bright": kit.typing(f"git switch {BRIGHT}"),
+    "graph": kit.typing("git log --oneline --graph --all"),
 }
 """The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game reads it only in dev mode."""

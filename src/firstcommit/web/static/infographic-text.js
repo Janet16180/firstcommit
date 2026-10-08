@@ -49,6 +49,11 @@ const InfographicText = Object.freeze({
             what: { en: "Lists the commits, newest first, with their hash, author and message.", es: "Lista los commits, del más reciente al más antiguo, con su hash, su autor y su mensaje." },
             taught: { chapter: "vault" },
           },
+          {
+            command: "git log --oneline --graph --all",
+            what: { en: "Draws every branch's commits as one tree, a line each, with the names on them.", es: "Dibuja los commits de todos los branches como un solo árbol, uno por línea, con sus nombres." },
+            taught: { chapter: "names" },
+          },
         ],
       },
       {
@@ -62,7 +67,7 @@ const InfographicText = Object.freeze({
           {
             command: "git clone <url>",
             what: { en: "Copies a remote repository, its whole history included, into a new folder.", es: "Copia un repositorio remoto, con toda su historia, en una carpeta nueva." },
-            taught: { chapter: "branch" },
+            taught: { chapter: "mothership" },
           },
         ],
       },
@@ -126,14 +131,34 @@ const InfographicText = Object.freeze({
         title: { en: "Branches and merges", es: "Branches y merges" },
         commands: [
           {
+            command: "git branch -v",
+            what: { en: "Lists your branches, each with the commit it names; * marks the one HEAD rides.", es: "Lista tus branches, cada uno con el commit que nombra; * marca aquel en el que va HEAD." },
+            taught: { chapter: "names" },
+          },
+          {
+            command: "git branch <name> <commit>",
+            what: { en: "Puts a new name on a commit, the one you are on when none is given; you stay where you are.", es: "Pone un nombre nuevo en un commit, en el que estás si no das ninguno; tú te quedas donde estás." },
+            taught: { chapter: "names" },
+          },
+          {
+            command: "git branch -d <name>",
+            what: { en: "Takes a name off; the commit stays. Git will not take off the name HEAD rides.", es: "Quita un nombre; el commit se queda. Git no quita el nombre en el que va HEAD." },
+            taught: { chapter: "names" },
+          },
+          {
             command: "git switch -c <branch>",
             what: { en: "Creates a branch, a movable label on a commit, and switches to it.", es: "Crea un branch, una etiqueta que se mueve de commit en commit, y te cambia a él." },
-            taught: { chapter: "branch" },
+            taught: { chapter: "names" },
           },
           {
             command: "git switch <branch>",
             what: { en: "Moves HEAD to another branch; the working folder takes that branch's files.", es: "Mueve HEAD a otro branch; la carpeta de trabajo pasa a tener los archivos de ese branch." },
-            taught: { chapter: "branch" },
+            taught: { chapter: "names" },
+          },
+          {
+            command: "git checkout <branch>, git checkout -b <branch>",
+            what: { en: "The older forms of git switch and git switch -c; they do the same.", es: "Las formas antiguas de git switch y git switch -c; hacen lo mismo." },
+            taught: { chapter: "names" },
           },
           {
             command: "git merge <branch>",
@@ -211,7 +236,7 @@ const InfographicText = Object.freeze({
       { from: "workshop", to: "dock", command: "git add", taught: { chapter: "cargo", levels: 1 } },
       { from: "dock", to: "workshop", command: "git restore --staged", taught: { chapter: "cargo" } },
       { from: "dock", to: "vault", command: "git commit", taught: { chapter: "vault" } },
-      { from: "vault", to: "workshop", command: "git switch, git restore", taught: { chapter: "branch" } },
+      { from: "vault", to: "workshop", command: "git switch, git restore", taught: { chapter: "names" } },
       { from: "vault", to: "mothership", command: "git push", taught: { chapter: "mothership" } },
       { from: "mothership", to: "vault", command: "git fetch", taught: { chapter: "mothership" } },
       { from: "mothership", to: "workshop", command: { en: "git pull (fetch, then merge or rebase)", es: "git pull (fetch y luego merge o rebase)" }, taught: { chapter: "mothership" } },

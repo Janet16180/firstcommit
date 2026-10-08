@@ -7,7 +7,7 @@ const { createClock, fakeServer, httpError, installBrowser, load, record, settle
 
 const document = installBrowser({ reducedMotion: true });
 const { LevelScreen, createGameApi } = load(
-  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "view-tabs.js", "strip.js", "sides.js", "tape.js", "births.js", "art-infographics.js", "infographic-text.js", "field-guide.js", "level-screen.js"],
+  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "view-tabs.js", "strip.js", "sides.js", "tape.js", "births.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "target-chart.js", "git-graph.js", "pictures.js", "art-infographics.js", "infographic-text.js", "field-guide.js", "level-screen.js"],
   ["LevelScreen", "createGameApi"],
 );
 
@@ -15,7 +15,9 @@ const para = (text) => [{ kind: "para", spans: [{ text, code: false }] }];
 const correct = (step, questDone = false, done = []) => ({ correct: true, message: para("Right."), step, quest_done: questDone, done, lost: false });
 
 /* The sample level, its scene and its view already seen unless the test says otherwise. */
-const seenLevel = () => ({ ...record("level"), scene_seen: true, views_seen: ["station", "crew", "history"] });
+const seenLevel = () => ({ ...record("level"), scene_seen: true, views_seen: ["station", "crew", "history"], pictures: null, target: null });
+/* The sample level with its teaching pictures, as a sector 5 or 8 level has them. */
+const pictured = (pictures = {}) => ({ ...seenLevel(), pictures: { ...record("level").pictures, ...pictures }, target: null });
 const quiet = () => ({ ...record("observation"), commands: [], reactions: [] });
 
 /* A level screen for the sample level; `active` is the level in progress as the status first says
@@ -928,7 +930,7 @@ test("in a level that shows it, the tape runs under history and the black box, a
 });
 
 test("the tape is born on the level's first move of HEAD: it appears in place, Rama says so, and the game is told", async () => {
-  const moved = { ...record("observation"), reflog: [{ old: record("observation").reflog[0].new, new: record("observation").reflog[1].new, message: "reset: moving to HEAD~1" }, ...record("observation").reflog] };
+  const moved = { ...record("observation"), reflog: [{ old: record("observation").reflog[0].new, new: record("observation").reflog[1].new, message: "reset: moving to HEAD~1", line: "5941dbe HEAD@{0}: reset: moving to HEAD~1" }, ...record("observation").reflog] };
   let looks = 0;
   const run = taped("history", ["station", "history", "blackbox"], () => ((looks += 1) === 1 ? record("observation") : moved));
   await settle();
@@ -1076,4 +1078,37 @@ test("leaving the level takes an open field guide with it", async () => {
   run.q(".hud .guide-open").click();
   run.view.dispose();
   assert.equal(document.querySelector("dialog.guide-overlay"), null);
+});
+
+test("a level with teaching pictures shows them in place of the zones and the tab row", async () => {
+  const run = screen({ replies: { "/api/level": pictured() } });
+  await settle();
+  assert.ok(run.q(".sky .pictures .pictures-large .chain"));
+  assert.equal(run.q(".sky .viz"), null);
+  assert.ok(run.q(".view-tabs").hidden);
+  assert.equal(run.q(".sky").dataset.view, "pictures");
+  assert.ok(run.q(".sky .moment-layer"));
+  run.view.dispose();
+});
+
+test("the pictures ring what the current goal looks at, and the desk's outline waits for its goal", async () => {
+  const level = pictured({ large: "desk", small: "chain", kept: "status", lines: ["engine.cfg"], whatif: null });
+  level.steps = level.steps.map((step, at) => ({ ...step, look: at === 1 ? ["HEAD"] : [] }));
+  const run = screen({ replies: { "/api/level": level } });
+  await settle();
+  assert.ok(run.q(".pictures-small .chain-head.is-look"));
+  assert.ok(!run.q(".desk-kept").classList.contains("is-on"));
+  run.view.dispose();
+  const after = screen({ active: { ...record("active"), step: 2, done: ["look", "status"] }, replies: { "/api/level": level } });
+  await settle();
+  assert.ok(after.q(".desk-kept").classList.contains("is-on"));
+  assert.equal(after.q(".chain-head.is-look"), null);
+  after.view.dispose();
+});
+
+test("a challenge with a chart shows it beside the chain", async () => {
+  const run = screen({ replies: { "/api/level": { ...pictured({ whatif: null }), target: record("level").target } } });
+  await settle();
+  assert.ok(run.q(".pictures-pair .target .target-check"));
+  run.view.dispose();
 });

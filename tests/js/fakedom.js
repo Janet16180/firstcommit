@@ -207,6 +207,9 @@ class FakeElement extends FakeNode {
       removeProperty(key) {
         delete this[key];
       },
+      getPropertyValue(key) {
+        return this[key] ?? "";
+      },
     };
     const element = this;
     this.classList = {

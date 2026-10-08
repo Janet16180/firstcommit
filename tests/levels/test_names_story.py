@@ -49,7 +49,7 @@ def commits(lab: kit.Lab) -> dict[str, str]:
     return dict(line.split("\t") for line in lines)
 
 
-@pytest.mark.parametrize("build", [story.name_tags, story.any_commit, story.experiments, story.one_step])
+@pytest.mark.parametrize("build", [story.name_tags, story.any_commit, story.experiments, story.one_step, story.match_chart])
 def test_each_level_holds_the_same_commits_as_the_one_before_it_with_the_same_hashes(tmp_path: Path, build: Callable[[kit.Lab], None]) -> None:
     first = commits(built(tmp_path, "first", story.name_tags))
     later = commits(built(tmp_path, "later", build))
@@ -70,3 +70,11 @@ def test_one_step_starts_on_main_with_two_experiments_first_route_and_dim_txt_wa
     assert kit.snapshot(lab.project)["branch"] == "main"
     assert kit.git(lab.project, "log", "-1", "--format=%s", story.FIRST_ROUTE).strip() == "Plot the route"
     assert kit.git(lab.project, "status", "--porcelain").strip() == "?? dim.txt"
+
+
+def test_match_the_chart_starts_with_head_on_fuel_test_on_the_fuel_note_and_no_name_from_one_step(tmp_path: Path) -> None:
+    lab = built(tmp_path, "lab", story.match_chart)
+    assert kit.git(lab.project, "branch", "--format=%(refname:short)").split() == ["bright-lights", story.FIRST_ROUTE, story.FUEL_TEST, "main", "quiet-engine"]
+    assert kit.snapshot(lab.project)["branch"] == story.FUEL_TEST
+    assert kit.git(lab.project, "log", "-1", "--format=%s", story.FUEL_TEST).strip() == story.FUEL_MESSAGE
+    assert kit.git(lab.project, "status", "--porcelain") == ""

@@ -206,3 +206,22 @@ test("Alex wears a green of their own in both looks, and no Alex rule borrows th
     assert.match(alexRules.find((rule) => rule.selector.endsWith(selector)).body, /var\(--alex\)/, selector);
   }
 });
+
+test("the chain's lanes stretch to their rows, its walk rests under reduced motion, and a phone drops the hashes, not the names", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.match(rule(".chain-lane"), /height: 100%;/);
+  assert.match(rule(".chain-row"), /align-items: stretch;/);
+  assert.match(rule(".chain-tag"), /overflow-wrap: anywhere;/);
+  assert.match(rule(".chain-subject"), /overflow-wrap: anywhere;/);
+  assert.ok(css.slice(css.indexOf("@media (prefers-reduced-motion: reduce)")).includes(".chain-wire.is-walk"));
+  const phone = css.slice(css.indexOf("@media (max-width: 600px)"));
+  assert.match(phone.slice(0, phone.indexOf("\n}")), /\.chain-hash {\s*display: none;/);
+});
+
+test("on a phone the level's head wraps, the buttons with no picture keep their words, and the terminal drops its copy hint", () => {
+  const phone = css.slice(css.indexOf("@media (max-width: 600px)"));
+  const block = phone.slice(0, phone.indexOf("\n}"));
+  assert.match(block, /\.hud {[^}]*flex-wrap: wrap;/);
+  assert.match(block, /\.hud \.guide-open \.lbl,\s*\.hud \.solve \.lbl {\s*display: inline;/);
+  assert.match(block, /\.termcol \.term-hint {\s*display: none;/);
+});

@@ -102,6 +102,23 @@ const createGameApi = (function () {
     language: oneOf("en", "es"),
     dev: flag,
   });
+  /* A level's teaching pictures (docs/drafts/teaching-pictures.md): a large one, a small one under
+     it, and the marks they draw. */
+  const PICTURES = record({
+    large: oneOf("chain", "desk", "movelog", "sides"),
+    small: nullable(oneOf("chain", "desk")),
+    folder: flag,
+    mothership: flag,
+    alex: flag,
+    ghosts: flag,
+    kept: nullable(text),
+    lines: list(text),
+    graph: flag,
+    whatif: nullable(record({ without: list(text), after: text })),
+  });
+  /* A challenge's chart: the goal tree by the level's own labels, the names on it and HEAD's. */
+  const TARGET = record({ commits: list(record({ id: text, parents: list(text), subject: text })), names: mapping(text), head: text });
+
   const LEVEL = record({
     id: text,
     chapter: text,
@@ -116,6 +133,8 @@ const createGameApi = (function () {
     view: VIEW,
     views_seen: list(SEEN),
     tape: flag,
+    pictures: nullable(PICTURES),
+    target: nullable(TARGET),
     /* Dev mode only: the last hint's lines and the answers, null where the lab cannot tell yet. */
     solution: nullable(record({ lines: list(text), answers: mapping(nullable(text)), answer: nullable(text) })),
     card: nullable(CARD),
@@ -123,7 +142,7 @@ const createGameApi = (function () {
     briefing: BLOCKS,
     question: BLOCKS,
     placeholder: text,
-    steps: list(record({ id: text, kind: oneOf("answer", "watch", "read", "choice"), text: BLOCKS, command: text, question: BLOCKS, placeholder: text, choices: list(record({ value: text, text: BLOCKS })), more: BLOCKS })),
+    steps: list(record({ id: text, kind: oneOf("answer", "watch", "read", "choice"), text: BLOCKS, command: text, question: BLOCKS, placeholder: text, choices: list(record({ value: text, text: BLOCKS })), more: BLOCKS, look: list(text) })),
     hints_total: number,
     hints: list(BLOCKS),
     debrief: nullable(BLOCKS),
@@ -144,9 +163,10 @@ const createGameApi = (function () {
   /* A conflicted file's two halves, as git's index stages hold them: a side's lines are null when it deleted the file. */
   const CONFLICT_SIDE = record({ label: text, author: text, lines: nullable(list(text)) });
   const CONFLICT = record({ path: text, you: CONFLICT_SIDE, them: CONFLICT_SIDE, base: nullable(list(text)) });
-  /* One move of HEAD: the commit it left ("" for the first), the one it moved to, and git's note. */
-  const REFLOG_ENTRY = record({ old: text, new: text, message: text });
-  const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), teammate: nullable(SNAPSHOT), events: EVENTS, teammate_events: EVENTS, buttons: BARS, commands: list(record({ line: text, status: number })), reactions: list(record({ line: text, mood: MOOD, text: BLOCKS, moment: nullable(MOMENT) })), conflicts: list(CONFLICT), reflog: list(REFLOG_ENTRY), ghosts: list(COMMIT) });
+  /* One move of HEAD: the commit it left ("" for the first), the one it moved to, git's note, and
+     the line `git reflog` prints for it. */
+  const REFLOG_ENTRY = record({ old: text, new: text, message: text, line: text });
+  const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), teammate: nullable(SNAPSHOT), events: EVENTS, teammate_events: EVENTS, buttons: BARS, commands: list(record({ line: text, status: number })), reactions: list(record({ line: text, mood: MOOD, text: BLOCKS, moment: nullable(MOMENT) })), conflicts: list(CONFLICT), reflog: list(REFLOG_ENTRY), ghosts: list(COMMIT), texts: list(record({ path: text, folder: nullable(text), index: nullable(text) })), graph: nullable(list(text)) });
   const PRESSED = record({
     press: record({ person: WHO, button: BUTTON, command: text, status: number, output: text }),
     before: OBSERVATION,
