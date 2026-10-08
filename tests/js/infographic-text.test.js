@@ -48,7 +48,7 @@ test("the places carry the zone panel's words, in both languages", () => {
 
 /* Ids and unlocks are said once; any other word is said in both languages. */
 const PLAIN = ["id", "from", "to", "chapter"];
-const COMMAND = /^(?:git|ls)\b[\w\-<>".,\s]*$/;
+const COMMAND = /^(?:(?:git|ls)\b[\w\-<>".,\s]*|\.gitignore)$/;
 
 function words(value, key, found) {
   if (typeof value === "number") return found;
@@ -115,5 +115,5 @@ test("switching is taught in Name tags, and clone on the mothership, where the n
 
 test("the guide lists what Name tags teaches: naming, listing and removing branches, git's tree, and checkout as the older switch", () => {
   const taughtBy = (command) => (items.find((item) => item.command === command) || { taught: {} }).taught.chapter;
-  for (const command of ["git branch -v", "git branch <name> <commit>", "git branch -d <name>", "git log --oneline --graph --all", "git checkout <branch>, git checkout -b <branch>"]) assert.equal(taughtBy(command), "names", command);
+  for (const command of ["git branch -v", "git branch <name> <commit>", "git branch -d <name>", "git log --oneline --graph --all", "git checkout <branch>", "git checkout -b <branch>", "git branch <name>"]) assert.equal(taughtBy(command), "names", command);
 });
