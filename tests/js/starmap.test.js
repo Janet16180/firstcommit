@@ -5,7 +5,7 @@ const test = require("node:test");
 const { fakeServer, installBrowser, load, record, settle } = require("./load");
 
 const document = installBrowser();
-const { StarMap, createGameApi, Dom } = load(["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "api.js", "progress.js", "dialog.js", "starmap.js"], ["StarMap", "createGameApi", "Dom"]);
+const { StarMap, createGameApi, Dom, Strings } = load(["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "api.js", "progress.js", "dialog.js", "starmap.js"], ["StarMap", "createGameApi", "Dom", "Strings"]);
 
 function starMap(status = record("status")) {
   const server = fakeServer({ "/api/reset": {} });
@@ -170,4 +170,19 @@ test("beside the sectors, the Playground is a landmark of its own, open from the
   assert.equal(landmark.getAttribute("href"), "#/playground");
   assert.equal(landmark.querySelector(".landmark-name").textContent, "Playground");
   assert.match(landmark.querySelector(".landmark-blurb").textContent, /^Free play/);
+});
+
+test("the map's bar has a Playground button beside the field guide, in both languages", () => {
+  const run = starMap();
+  const button = run.q(".map-bar a.playground-open");
+  assert.equal(button.getAttribute("href"), "#/playground");
+  assert.equal(button.textContent, "Playground");
+  const bar = [...run.q(".map-bar").childNodes];
+  assert.equal(bar.indexOf(button), bar.indexOf(run.q(".map-bar .field-guide-open")) + 1);
+  Strings.use("es");
+  try {
+    assert.equal(starMap().q(".map-bar a.playground-open").textContent, "Zona de pruebas");
+  } finally {
+    Strings.use("en");
+  }
 });
