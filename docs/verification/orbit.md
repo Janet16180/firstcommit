@@ -322,9 +322,9 @@ E33:
 | E53 | then `git fetch`, `git status` | fetch 0, `origin/main` moves to Alex's commit; status says behind `origin/main` by 1 commit and can be fast-forwarded, and suggests `git pull` |
 | E54 | then `git pull`, with no name or email set | status 0, a fast-forward: `main` at Alex's commit, Alex's line in `notes.txt`; up to date again. A fast-forward makes no commit, so it needs no identity |
 | E55 | the game's configuration with the Cadet identity; `map.txt` staged, `journal.txt` untracked, an empty bare GitHub no remote names; bare `git commit`, then `git commit -m "Add the map"`, `git log`, `git status --short` | bare commit 1 (empty message aborted); commit 0, a root commit holding only `map.txt`, author `Cadet <cadet@example.com>`; `git log` shows the hash, author, date and message; `?? journal.txt`; GitHub still has no ref |
-| E56 | one commit of `route.txt` and `engine.cfg`; both edited (a new stop; `power=99999`); `git diff` | status 0; both files, each line twice: `-` before, `+` after |
+| E56 | one commit of `route.txt` and `engine.cfg`; both edited (a new stop; `power=85sdfghjkl`); `git diff` | status 0; both files, each line twice: `-` before, `+` after |
 | E57 | then `git add route.txt`; `git diff`; `git diff --staged` | `git diff` shows only `engine.cfg`; `--staged` only `route.txt` |
-| E58 | `git add engine.cfg`, then `git restore --staged engine.cfg` | status 0; ` M engine.cfg`, the file keeps `power=99999` |
+| E58 | `git add engine.cfg`, then `git restore --staged engine.cfg` | status 0; ` M engine.cfg`, the file keeps `power=85sdfghjkl` |
 | E59 | then `git commit -m "Add the Phobos stop"` | the commit changes only `route.txt`; ` M engine.cfg` stays |
 | E60 | two commits, `origin` set, an empty bare GitHub; a plain `git push` | status 128: `main` has no upstream; git suggests `--set-upstream origin main` |
 | E61 | `git push -u origin main` | status 0; GitHub gets `main`; `main@{upstream}` is `origin/main` |
@@ -521,7 +521,7 @@ from the user's playtest: the crew's note says only `route.txt` was meant to cha
 |---|---|---|
 | card, debrief | `git diff` shows changes in the working folder not staged; `git diff --staged` what the next commit takes | E56, E57; git-diff(1) |
 | hint 1, `DIFFED` | each changed line twice, `-` before, `+` after | E56 |
-| `ACCIDENT_FOUND`, `ROUTE_IS_MEANT` | `engine.cfg` changed to `power=99999`; the route gained a stop | setup |
+| `ACCIDENT_FOUND`, `ROUTE_IS_MEANT` | `engine.cfg` changed to `power=85sdfghjkl`; the route gained a stop | setup |
 | `ACCIDENT_STAGED`, `EVERYTHING_STAGED` | `git restore --staged engine.cfg` unstages it, the file keeps the edit | E58 |
 | `CHECKED`, `SEALED`, debrief | after staging the route, `--staged` shows only the new stop; the commit holds the route's change, not the other | E57, E59 |
 | `ACCIDENT_SEALED` (lost) | a commit cannot be taken back until a later chapter | as vault-seal |

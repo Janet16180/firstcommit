@@ -2,6 +2,7 @@ import re
 
 from firstcommit import kit, runner
 from firstcommit.levels import vault_look as level
+from firstcommit.levels import vault_look_es as level_es
 from level_helpers import arrived, reaction, started, typed_in, watch
 
 
@@ -39,7 +40,13 @@ def test_the_accidental_change_is_named_by_its_file_and_the_route_is_told_apart(
     lab, state = arrived(level)
     assert all(answer_step().check(lab, state, name).solved for name in ("engine.cfg", " Engine.cfg ", "`engine.cfg`", "engine"))
     assert answer_step().check(lab, state, "route.txt").message == level.ROUTE_IS_MEANT
-    assert answer_step().check(lab, state, "power=99999").message == level.NOT_A_FILE
+    assert answer_step().check(lab, state, "power=85sdfghjkl").message == level.NOT_A_FILE
+
+
+def test_rama_quotes_the_accidental_line_as_git_diff_shows_it_in_both_languages() -> None:
+    line = level.OVERNIGHT[level.ENGINE].strip()
+    assert f"`{line}`" in level.ACCIDENT_FOUND
+    assert f"`{line}`" in level_es.ACCIDENT_FOUND
 
 
 def test_staging_everything_takes_the_accidental_change_too_and_restore_staged_takes_it_back_out() -> None:
@@ -50,7 +57,7 @@ def test_staging_everything_takes_the_accidental_change_too_and_restore_staged_t
     assert watch(level, "stage").watch(lab, state, typed).message == level.ACCIDENT_STAGED
     typed += typed_in(lab, "git restore --staged engine.cfg")
     assert typed[-1]["status"] == 0 and watch(level, "stage").watch(lab, state, typed).solved
-    assert (lab.project / "engine.cfg").read_text() == "power=99999\n"
+    assert (lab.project / "engine.cfg").read_text() == "power=85sdfghjkl\n"
 
 
 def test_a_staged_check_before_the_add_does_not_count() -> None:

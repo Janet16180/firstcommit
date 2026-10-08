@@ -33,7 +33,7 @@ SCENE = [
 ROUTE = "route.txt"
 ENGINE = "engine.cfg"
 START = {ROUTE: "Route: Earth, Moon, Mars\n", ENGINE: "power=85\n"}
-OVERNIGHT = {ROUTE: "Route: Earth, Moon, Phobos, Mars\n", ENGINE: "power=99999\n"}
+OVERNIGHT = {ROUTE: "Route: Earth, Moon, Phobos, Mars\n", ENGINE: "power=85sdfghjkl\n"}
 ACCIDENT_NAMES = ("engine.cfg", "engine")
 ROUTE_NAMES = ("route.txt", "route")
 DIFF = r"git diff( --no-color)?$"
@@ -73,7 +73,7 @@ NO_REPOSITORY = "This folder is no longer a repository: `.git` is gone. Leave th
 WAITING = "Nothing has changed yet. Wait a moment for the overnight edits."
 DIFFED = "`git diff` shows each changed line: `-` the line before, `+` the line now."
 NOT_DIFFED = "Read the changes first: type `git diff`."
-ACCIDENT_FOUND = "Right: `engine.cfg` changed by accident, to `power=99999`. The note asked only for the route's new stop."
+ACCIDENT_FOUND = "Right: `engine.cfg` changed by accident, to `power=85sdfghjkl`. The note asked only for the route's new stop."
 ROUTE_IS_MEANT = "`route.txt` holds the change the note asks for: a new stop. Look again at the line `git diff` shows for `engine.cfg`."
 NOT_A_FILE = "Type the name of one of the two files `git diff` shows."
 ROUTE_STAGED = "The route's change is staged, and the accidental one stays in the working folder."

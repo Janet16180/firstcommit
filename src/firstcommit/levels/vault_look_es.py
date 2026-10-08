@@ -50,7 +50,7 @@ NO_REPOSITORY = "Esta carpeta ya no es un repositorio: `.git` desapareció. Sal 
 WAITING = "Todavía no cambió nada. Espera un momento a las ediciones de la noche."
 DIFFED = "`git diff` muestra cada línea cambiada: `-` la línea de antes, `+` la de ahora."
 NOT_DIFFED = "Primero lee los cambios: escribe `git diff`."
-ACCIDENT_FOUND = "Correcto: `engine.cfg` cambió por accidente, a `power=99999`. La nota solo pedía la parada nueva de la ruta."
+ACCIDENT_FOUND = "Correcto: `engine.cfg` cambió por accidente, a `power=85sdfghjkl`. La nota solo pedía la parada nueva de la ruta."
 ROUTE_IS_MEANT = "`route.txt` tiene el cambio que pide la nota: una parada nueva. Vuelve a mirar la línea que `git diff` muestra para `engine.cfg`."
 NOT_A_FILE = "Escribe el nombre de uno de los dos archivos que muestra `git diff`."
 ROUTE_STAGED = "El cambio de la ruta está en el staging area, y el accidental se queda en la carpeta de trabajo."
