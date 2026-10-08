@@ -233,10 +233,11 @@ const LevelScreen = (function () {
     screen.element.style.setProperty("--term-top", `${Math.round(top)}px`);
   }
 
-  /* What Rama says about the lines just typed, oldest first, in the mood of the newest. */
+  /* What Rama says about the lines just typed, oldest first, each text once, in the mood of the newest. */
   function react(screen, reactions) {
     if (!reactions.length) return;
-    screen.ui.comms.say(reactions.flatMap((reaction) => reaction.text), reactions[reactions.length - 1].mood);
+    const said = reactions.filter((reaction, index) => reactions.findIndex((other) => JSON.stringify(other.text) === JSON.stringify(reaction.text)) === index);
+    screen.ui.comms.say(said.flatMap((reaction) => reaction.text), reactions[reactions.length - 1].mood);
   }
 
   /* A blip for the lines just typed, or a buzz when one of them failed: the terminal shows both. */

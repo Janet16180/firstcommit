@@ -303,6 +303,14 @@ test("Rama says the game's reactions to the typed lines, oldest first, in the ne
   run.view.dispose();
 });
 
+test("two typed lines with the same reaction have Rama say it once", async () => {
+  const reactions = [{ line: "git log", mood: "info", text: para("Your history.") }, { line: "git log notes.txt", mood: "info", text: para("Your history.") }];
+  const run = screen({ replies: { "/api/observe": { ...quiet(), reactions } } });
+  await settle();
+  assert.equal(run.q(".comms-text").textContent, "Your history.");
+  run.view.dispose();
+});
+
 test("while a watch goal waits, the game's note shows under the goal, not on Rama's line", async () => {
   const run = screen({ active: { ...record("active"), step: 2 } });
   await settle();
