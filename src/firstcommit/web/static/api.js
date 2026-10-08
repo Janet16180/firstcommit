@@ -74,10 +74,9 @@ const createGameApi = (function () {
     stash: number,
     truncated: flag,
   });
-  const OBJECTS = list(record({ hash: text, type: text, size: number }));
   const ACTIVE = record({ level: text, step: number, steps: number, hints: number, hints_total: number, attempts: number, started: text, auto_check: flag, commands: number, stars: number, done: list(text) });
   const PAYOUT = record({ level: text, xp: number, first_time: flag, rank_before: text, rank_after: text });
-  const LEVEL_SUMMARY = record({ id: text, title: text, difficulty: number, xp: number, command: text, stars: number, challenge: flag, done: flag, has_lesson: flag, has_quest: flag });
+  const LEVEL_SUMMARY = record({ id: text, title: text, difficulty: number, xp: number, command: text, stars: number, challenge: flag, done: flag, has_quest: flag });
   /* A finished level's command card (records.CommandCard). */
   const CARD = record({ level: text, command: text, text: BLOCKS });
   /* The scene pictures the artist has drawn, the moods Rama speaks in and the moments a reaction may
@@ -115,28 +114,10 @@ const createGameApi = (function () {
     placeholder: text,
     steps: list(record({ id: text, kind: oneOf("answer", "watch", "read", "choice"), text: BLOCKS, command: text, question: BLOCKS, placeholder: text, choices: list(record({ value: text, text: BLOCKS })), more: BLOCKS })),
     hints_total: number,
-    has_lesson: flag,
     hints: list(BLOCKS),
     debrief: nullable(BLOCKS),
   });
-  const TRANSCRIPT = list(record({ command: text, output: text }));
   const EVENTS = list(record({ kind: text, text: BLOCKS }));
-  const LESSON = record({
-    level: text,
-    title: text,
-    slides: list(record({
-      id: text,
-      title: text,
-      text: BLOCKS,
-      view: oneOf("map", "areas", "places", "objects", "terminal", "none"),
-      transcript: TRANSCRIPT,
-      map: SNAPSHOT,
-      objects: OBJECTS,
-      events: EVENTS,
-      more: BLOCKS,
-    })),
-  });
-  const GUIDE = mapping(record({ before: SNAPSHOT, after: SNAPSHOT, transcript: TRANSCRIPT }));
   const STEP = record({ correct: flag, message: BLOCKS, step: number, quest_done: flag, done: list(text), lost: flag });
   const CHECK = record({ solved: flag, message: BLOCKS, payout: nullable(PAYOUT), debrief: nullable(BLOCKS), stars: number, new_card: nullable(CARD), lost: flag });
   const HINT = record({ hint: BLOCKS, used: number, total: number, cost: number });
@@ -194,7 +175,6 @@ const createGameApi = (function () {
     return {
       status: () => checked(STATUS, "/api/status"),
       level: (id) => checked(LEVEL, query("/api/level", { id })),
-      lesson: (id) => checked(LESSON, query("/api/lesson", { id })),
       start: (level) => checked(ACTIVE, "/api/start", { level }, startTimeoutMs),
       step: (answer) => checked(STEP, "/api/step", { answer }),
       check: (answer, auto) => checked(CHECK, "/api/check", { answer, auto }),
@@ -205,8 +185,6 @@ const createGameApi = (function () {
       cards: async (chapter, limit) => (await checked(CARDS, query("/api/cards", { chapter, limit }))).cards,
       card: (id, reply) => checked(CARD_RESULT, "/api/card", { id, reply }),
       notes: (chapter) => checked(NOTES, query("/api/notes", { chapter })),
-      /* The map guide's figures by section id, in the guide's order. */
-      guide: () => checked(GUIDE, "/api/guide"),
       /* One person's playground button: the press, its explanation and the lab right after it. */
       press: (person, button) => checked(PRESSED, "/api/press", { person, button }),
       /* Marks a level's scene seen, so it does not play by itself again. */

@@ -6,9 +6,19 @@ from pathlib import Path
 import pytest
 from termlab import snippets
 
-from firstcommit import cards, demos
+from firstcommit import cards, gitcmd
 
 MAX_EXTRA_LENGTH = 15
+AUTHOR = gitcmd.Person("Sam Lee", "sam@example.com")
+DATE = "2026-01-15T09:00:00+00:00"
+PATH = "/usr/local/bin:/usr/bin:/bin"
+TERMINAL_CONFIG = "[log]\n\tdecorate = short\n"
+"""
+Git settings that make snippets print what a terminal shows.
+
+``log.decorate`` defaults to ``auto``: ``short`` on a terminal, no decorations otherwise
+(git-config(1)), so without it ``git log --oneline`` would lose its ``(HEAD -> main)``.
+"""
 DECK_FILES = sorted(path for path in cards.DECKS.glob("*.toml") if not path.name.endswith(f"{cards.SPANISH_SUFFIX}.toml"))
 
 
@@ -54,9 +64,65 @@ def ids(entries: list[cards.Card]) -> list[str]:
     return [card.id for card in entries]
 
 
+def environment(home: Path) -> dict[str, str]:
+    """
+    Create the home folder of a snippet and give its whole, fixed environment.
+
+    This is the one definition of the environment "predict" cards and "verify" snippets run
+    in: a minimal ``PATH``, the C locale, a dumb terminal (so git never opens an editor or a
+    pager), UTC, git's global configuration in ``home`` holding
+    `firstcommit.gitcmd.BASE_CONFIG` then `TERMINAL_CONFIG`, no system configuration, and a
+    fixed author, committer and date, so commit hashes are the same on every run. Git never
+    looks for a repository in or above the folder that holds ``home``.
+
+    ``GIT_MERGE_AUTOEDIT=yes`` makes ``git merge`` and ``git pull`` want an editor for a merge
+    commit, as they do on a terminal, and ``GIT_EDITOR=false`` (which comes before the base
+    configuration's ``core.editor``) makes that editor fail, so a snippet has to write
+    ``--no-edit`` or ``-m``, the way levels and cards are written.
+
+    Run the code in a new folder next to ``home`` or inside it, never in ``home`` itself, where
+    the configuration file would show up as an untracked file.
+
+    Parameters
+    ----------
+    home : Path
+        The home folder to create; its parent must exist.
+
+    Returns
+    -------
+    dict[str, str]
+        Every variable of the environment; nothing is meant to be inherited.
+
+    Raises
+    ------
+    FileExistsError
+        If ``home`` already exists.
+    """
+    home.mkdir()
+    (home / ".gitconfig").write_text(gitcmd.BASE_CONFIG + TERMINAL_CONFIG)
+    return {
+        "PATH": PATH,
+        "HOME": str(home),
+        "LC_ALL": "C",
+        "TERM": "dumb",
+        "TZ": "UTC",
+        "GIT_CONFIG_GLOBAL": str(home / ".gitconfig"),
+        "GIT_CONFIG_NOSYSTEM": "1",
+        "GIT_CEILING_DIRECTORIES": str(home.parent),
+        "GIT_MERGE_AUTOEDIT": "yes",
+        "GIT_EDITOR": "false",
+        "GIT_AUTHOR_NAME": AUTHOR.name,
+        "GIT_AUTHOR_EMAIL": AUTHOR.email,
+        "GIT_AUTHOR_DATE": DATE,
+        "GIT_COMMITTER_NAME": AUTHOR.name,
+        "GIT_COMMITTER_EMAIL": AUTHOR.email,
+        "GIT_COMMITTER_DATE": DATE,
+    }
+
+
 def run_snippet(code: str, folder: Path) -> subprocess.CompletedProcess[str]:
     """
-    Run a card's snippet with bash in an empty folder, in the fixed environment of the lessons.
+    Run a card's snippet with bash in an empty folder, in the fixed `environment`.
 
     Parameters
     ----------
@@ -70,7 +136,7 @@ def run_snippet(code: str, folder: Path) -> subprocess.CompletedProcess[str]:
     subprocess.CompletedProcess[str]
         Its exit status and output.
     """
-    env = demos.environment(folder / "home")
+    env = environment(folder / "home")
     work = folder / "work"
     work.mkdir()
     return snippets.run(code, work, env)

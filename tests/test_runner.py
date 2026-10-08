@@ -12,7 +12,7 @@ from firstcommit import gitcmd, kit, runner
 from sample_levels import cargo_sample, cargo_sample_es
 
 SPANISH = ["TITLE", "BRIEFING", "HINTS", "DEBRIEF", "CARD", "SCENE", "STEPS", "HELLO_STAGED", "STAGED", "NOT_STAGED", "RIGHT", "LOOK", "COMMITTED", "NOT_COMMITTED"]
-CONTRACT = ["TITLE", "DIFFICULTY", "XP", "COMMAND", "PAR", "CARD", "SCENE", "LESSON", "QUEST", "BRIEFING", "HINTS", "DEBRIEF", "REACTIONS", "setup", "check", "solve"]
+CONTRACT = ["TITLE", "DIFFICULTY", "XP", "COMMAND", "PAR", "CARD", "SCENE", "QUEST", "BRIEFING", "HINTS", "DEBRIEF", "REACTIONS", "setup", "check", "solve"]
 
 
 def level_module(name: str = "cargo_sample", **changes: Any) -> types.ModuleType:
@@ -89,7 +89,6 @@ def test_a_level_module_is_read_into_a_typed_record() -> None:
     level = runner.load(cargo_sample)
     english = level.texts["en"]
     assert (level.id, level.chapter, english.title, level.difficulty, level.xp) == ("cargo-sample", "cargo", "Say hello", 1, 100)
-    assert level.lesson == tuple(cargo_sample.LESSON)
     assert level.quest == tuple(cargo_sample.QUEST)
     assert english.hints == tuple(cargo_sample.HINTS)
     assert (english.briefing, english.debrief) == (cargo_sample.BRIEFING, cargo_sample.DEBRIEF)
@@ -134,9 +133,9 @@ def test_a_level_record_cannot_be_changed() -> None:
         level.xp = 1_000_000  # type: ignore[misc]
 
 
-def test_a_level_without_a_lesson_or_a_quest_has_empty_ones() -> None:
-    level = runner.load(level_module(LESSON=..., QUEST=...))
-    assert (level.lesson, level.quest) == ((), ())
+def test_a_level_without_a_quest_has_an_empty_one() -> None:
+    level = runner.load(level_module(QUEST=...))
+    assert level.quest == ()
 
 
 def step(step_id: str) -> kit.ReadStep:
@@ -196,11 +195,9 @@ BROKEN: dict[str, tuple[types.ModuleType, str]] = {
     "one hint": (level_module(HINTS=["only"]), "HINTS"),
     "five hints": (level_module(HINTS=["a", "b", "c", "d", "e"]), "HINTS"),
     "an empty hint": (level_module(HINTS=["a", ""]), "HINTS"),
-    "a lesson of strings": (level_module(LESSON=["slide"]), "LESSON"),
-    "two slides with one id": (level_module(LESSON=[cargo_sample.LESSON[0]] * 2), "init"),
     "a quest that is not a list": (level_module(QUEST=step("a")), "QUEST"),
     "two steps with one id": (level_module(QUEST=[step("a"), step("a")]), "a"),
-    "a quest holding a slide": (level_module(QUEST=[cargo_sample.LESSON[0]]), "QUEST"),
+    "a quest holding a scene frame": (level_module(QUEST=[cargo_sample.SCENE[0]]), "QUEST"),
     "a setup that is not a function": (level_module(setup="setup"), "setup"),
     "a missing check": (level_module(check=...), "check"),
     "a question that is not text": (level_module(QUESTION=3), "QUESTION"),

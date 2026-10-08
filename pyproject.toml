@@ -56,6 +56,6 @@ max-complexity = 12
 
 [tool.mypy]
 python_version = "3.12"
-files = ["src", "tests", "tools"]
+files = ["src", "tests"]
 mypy_path = "src"
 strict = true

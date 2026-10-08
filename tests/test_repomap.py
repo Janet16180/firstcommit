@@ -646,7 +646,6 @@ def test_a_nested_repository_added_as_a_submodule_compares_commits(tmp_path: Pat
 def test_a_repository_one_folder_too_high_is_not_the_folders_own(tmp_path: Path) -> None:
     shell(tmp_path, "git init -q -b main && mkdir project")
     assert repomap.snapshot(tmp_path / "project") == NOTHING
-    assert repomap.objects(tmp_path / "project") == []
 
 
 def test_a_subfolder_of_a_repository_holds_no_repository_of_its_own(tmp_path: Path) -> None:
@@ -775,29 +774,6 @@ def test_any_file_shows_the_same_path_and_id_before_and_after_git_init(name: byt
         after = repomap.snapshot(project)
     assert [(file["path"], file["folder"]) for file in before["files"]] == [(file["path"], file["folder"]) for file in after["files"]]
     assert [file["folder"] for file in before["files"]] == [blob_id(content)]
-
-
-def test_objects_lists_every_object_with_its_type_and_size_sorted_by_hash(tmp_path: Path) -> None:
-    repo = new_repo(tmp_path, "printf 'hello\\n' > hello.txt && git add hello.txt && git commit -q -m 'Say hello' && echo loose | git hash-object -w --stdin >/dev/null")
-    found = repomap.objects(repo)
-    assert [obj["hash"] for obj in found] == sorted(obj["hash"] for obj in found)
-    assert {(obj["hash"], obj["type"]) for obj in found} == {
-        (HELLO, "blob"),
-        (blob_id(b"loose\n"), "blob"),
-        (rev(repo, "HEAD^{tree}"), "tree"),
-        (rev(repo, "HEAD"), "commit"),
-    }
-    assert next(obj for obj in found if obj["hash"] == HELLO)["size"] == 6
-
-
-def test_objects_lists_annotated_tags(tmp_path: Path) -> None:
-    repo = new_repo(tmp_path, "git commit -q --allow-empty -m one && git tag -a v1 -m 'Release 1'")
-    assert {obj["type"] for obj in repomap.objects(repo)} == {"commit", "tree", "tag"}
-
-
-def test_objects_of_a_folder_without_a_repository_is_empty(tmp_path: Path) -> None:
-    assert repomap.objects(tmp_path / "missing") == []
-    assert repomap.objects(tmp_path) == []
 
 
 def git_status(repo: Path) -> set[tuple[str, str]]:

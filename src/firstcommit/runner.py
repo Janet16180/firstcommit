@@ -92,7 +92,6 @@ class Level:
     reactions: tuple[kit.ReactionRule, ...]
     events: tuple[kit.LevelEvent, ...]
     challenge: bool
-    lesson: tuple[kit.Slide, ...]
     quest: tuple[kit.Step, ...]
     texts: Mapping[Language, LevelTexts]
     setup: Setup
@@ -130,7 +129,6 @@ def load(module: ModuleType, spanish: ModuleType | None = None) -> Level:
     level_reactions = getattr(module, "REACTIONS", [])
     events = getattr(module, "EVENTS", [])
     challenge = getattr(module, "CHALLENGE", False)
-    lesson = getattr(module, "LESSON", [])
     quest = getattr(module, "QUEST", [])
     question = getattr(module, "QUESTION", "")
     placeholder = getattr(module, "PLACEHOLDER", "")
@@ -145,7 +143,6 @@ def load(module: ModuleType, spanish: ModuleType | None = None) -> Level:
             or _orbit_problem(values)
             or _scene_problem(scene)
             or _reactions_problem(level_reactions)
-            or _lesson_problem(lesson)
             or _quest_problem(quest)
             or _events_problem(events, quest)
             or _challenge_problem(challenge, quest)
@@ -177,7 +174,6 @@ def load(module: ModuleType, spanish: ModuleType | None = None) -> Level:
         reactions=tuple(level_reactions),
         events=tuple(events),
         challenge=challenge,
-        lesson=tuple(lesson),
         quest=tuple(quest),
         texts=MappingProxyType({"en": english, "es": translated}),
         setup=values["setup"],
@@ -512,28 +508,6 @@ def _rule_problem(rule: kit.ReactionRule) -> str | None:
         problem = f"REACTIONS: the rule for {rule.line!r} has an unknown mood or outcome"
     elif not _is_text(rule.text):
         problem = f"REACTIONS: the rule for {rule.line!r} needs text"
-    return problem
-
-
-def _lesson_problem(lesson: Any) -> str | None:
-    """
-    Check a level's lesson.
-
-    Parameters
-    ----------
-    lesson : Any
-        The module's ``LESSON``.
-
-    Returns
-    -------
-    str | None
-        What is wrong, or None.
-    """
-    problem = None
-    if not isinstance(lesson, list) or not all(isinstance(slide, kit.Slide) for slide in lesson):
-        problem = "LESSON must be a list of kit.Slide"
-    else:
-        problem = _duplicate_problem("slide", [slide.id for slide in lesson])
     return problem
 
 

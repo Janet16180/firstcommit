@@ -10,7 +10,6 @@ const { createGameApi } = load(["api.js"], ["createGameApi"]);
 const REPLIES = {
   "/api/status": record("status"),
   "/api/level": record("level"),
-  "/api/lesson": record("lesson"),
   "/api/start": record("active"),
   "/api/step": record("step"),
   "/api/check": record("check_solved"),
@@ -21,7 +20,6 @@ const REPLIES = {
   "/api/cards": { cards: record("cards") },
   "/api/card": record("card_result"),
   "/api/notes": record("notes"),
-  "/api/guide": record("guide"),
   "/api/press": record("press"),
   "/api/scene": {},
   "/api/language": {},
@@ -36,7 +34,6 @@ test("each action calls its route with the body the server expects", async () =>
   const { game, calls } = gameApi();
   await game.status();
   await game.level("a level/x");
-  await game.lesson("lvl");
   await game.start("lvl");
   await game.step("main");
   await game.step(null);
@@ -49,14 +46,12 @@ test("each action calls its route with the body the server expects", async () =>
   await game.cards(null, 5);
   await game.card("card-1", "The staging area");
   await game.notes("basics");
-  await game.guide();
   await game.press("alex", "push");
   await game.scene("lvl");
   await game.language("es");
   assert.deepEqual(calls.map((call) => [call.path, call.body]), [
     ["/api/status", undefined],
     ["/api/level?id=a%20level%2Fx", undefined],
-    ["/api/lesson?id=lvl", undefined],
     ["/api/start", { level: "lvl" }],
     ["/api/step", { answer: "main" }],
     ["/api/step", { answer: null }],
@@ -69,7 +64,6 @@ test("each action calls its route with the body the server expects", async () =>
     ["/api/cards?limit=5", undefined],
     ["/api/card", { id: "card-1", reply: "The staging area" }],
     ["/api/notes?chapter=basics", undefined],
-    ["/api/guide", undefined],
     ["/api/press", { person: "alex", button: "push" }],
     ["/api/scene", { level: "lvl" }],
     ["/api/language", { language: "es" }],
@@ -83,33 +77,15 @@ test("every sample record is accepted as it is", async () => {
   assert.deepEqual(await game.cards(null, 3), record("cards"));
   assert.equal(await game.abort(), "sample-second");
   assert.deepEqual(await game.check(null, false), record("check_solved"));
-  assert.deepEqual(await game.guide(), record("guide"));
   assert.deepEqual(await game.press("alex", "push"), record("press"));
-  for (const action of ["level", "lesson", "start", "step", "hint", "notes"]) await game[action]("x");
+  for (const action of ["level", "start", "step", "hint", "notes"]) await game[action]("x");
   await game.card("x", "y");
 });
 
-test("a lesson slide may show the places", async () => {
-  const lesson = record("lesson");
-  lesson.slides[2].view = "places";
-  const { game } = gameApi({ ...REPLIES, "/api/lesson": lesson });
-  assert.equal((await game.lesson("x")).slides[2].view, "places");
-});
-
-test("a lesson slide must tell what its commands changed, as the feed does", async () => {
-  const lesson = record("lesson");
-  delete lesson.slides[0].events;
-  const { game } = gameApi({ ...REPLIES, "/api/lesson": lesson });
-  await assert.rejects(game.lesson("x"), /slides\[0\]\.events should be a list/);
-});
-
-test("a lesson slide and a quest step must carry their More as text blocks", async () => {
-  const lesson = record("lesson");
-  delete lesson.slides[1].more;
+test("a quest step must carry its More as text blocks", async () => {
   const level = record("level");
   level.steps[0].more = "plain";
-  const { game } = gameApi({ ...REPLIES, "/api/lesson": lesson, "/api/level": level });
-  await assert.rejects(game.lesson("x"), /slides\[1\]\.more should be a list/);
+  const { game } = gameApi({ ...REPLIES, "/api/level": level });
   await assert.rejects(game.level("x"), /steps\[0\]\.more should be a list/);
 });
 
@@ -215,17 +191,6 @@ test("the dashboard must say the difficulty scale, and each card its level's nam
   const cards = record("cards");
   delete cards[0].level_name;
   await assert.rejects(gameApi({ "/api/cards": { cards } }).game.cards(null, 10), /level_name should be/);
-});
-
-test("each guide figure must carry its repository before and after the change, and the change's commands", async () => {
-  for (const field of ["before", "after", "transcript"]) {
-    const guide = record("guide");
-    delete guide.merge[field];
-    const { game } = gameApi({ "/api/guide": guide });
-    await assert.rejects(game.guide(), new RegExp(`/api/guide\\.merge\\.${field} should be`), field);
-  }
-  const { game } = gameApi({ "/api/guide": [record("guide").commit] });
-  await assert.rejects(game.guide(), /\/api\/guide should be an object/);
 });
 
 test("an observation must carry the teammate's clone, or null without a playground, and its events apart", async () => {

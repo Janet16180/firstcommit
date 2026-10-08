@@ -19,16 +19,6 @@ SCENE = [
 ]
 HELLO_STAGED = "Hello is staged."
 REACTIONS = [kit.ReactionRule(line=r"git add hello\.txt\b", mood="ok", text=HELLO_STAGED, event="file-staged")]
-LESSON = [
-    kit.Slide(id="init", title="A repository", text="Make one:\n\n    $ git init -q demo", run="git init -q demo", view="terminal"),
-    kit.Slide(
-        id="areas",
-        title="Three areas",
-        text="A staged file is a blob in the object database.",
-        run="cd demo\nprintf 'hello\\n' > hello.txt\ngit add hello.txt\ngit ls-files --stage",
-        view="objects",
-    ),
-]
 BRIEFING = "Commit `hello.txt` on the branch `{{branch}}`."
 HINTS = [
     "A commit takes what is in the staging area.",

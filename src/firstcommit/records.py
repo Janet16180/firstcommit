@@ -10,7 +10,6 @@ from typing import Literal, TypedDict
 
 RefKind = Literal["branch", "remote", "tag"]
 Operation = Literal["merge", "rebase", "cherry-pick", "revert", "bisect"]
-ObjectType = Literal["blob", "tree", "commit", "tag"]
 Change = Literal["added", "modified", "deleted", "typechange"]
 """How the staging area differs from HEAD, as `git status` letters it: A, M, D, T."""
 FolderChange = Literal["modified", "deleted", "typechange", "untracked", "ignored"]
@@ -124,15 +123,6 @@ class Snapshot(TypedDict):
     operation: Operation | None
     stash: int
     truncated: bool
-
-
-class ObjectInfo(TypedDict):
-    """One object in a repository's object database."""
-
-    hash: str
-    type: ObjectType
-    size: int
-
 
 
 class Command(TypedDict):

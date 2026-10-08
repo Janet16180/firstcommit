@@ -7,7 +7,7 @@ const { installBrowser, load, record } = require("./load");
 installBrowser();
 const { Progress } = load(["progress.js"], ["Progress"]);
 
-const level = (id, done) => ({ id, title: id, difficulty: 1, xp: 100, done, has_lesson: false, has_quest: false });
+const level = (id, done) => ({ id, title: id, difficulty: 1, xp: 100, done, has_quest: false });
 const chapters = [
   { id: "one", title: "One", cards: 0, levels: [level("a", true), level("b", false)] },
   { id: "two", title: "Two", cards: 0, levels: [] },

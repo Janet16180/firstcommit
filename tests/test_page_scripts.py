@@ -20,7 +20,6 @@ NODE = shutil.which("node")
 RECORD_TYPES: dict[str, Any] = {
     "status": game.Status,
     "level": game.LevelView,
-    "lesson": game.LessonView,
     "active": game.ActiveView,
     "step": game.StepResult,
     "check_unsolved": game.CheckResult,
@@ -32,7 +31,6 @@ RECORD_TYPES: dict[str, Any] = {
     "notes": game.Notes,
     "snapshots": dict[str, Snapshot],
     "files": list[records.FileEntry],
-    "guide": game.GuideView,
     "press": game.PressView,
 }
 

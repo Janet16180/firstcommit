@@ -75,7 +75,7 @@ def test_every_step_kind_is_a_step_and_nothing_else_is() -> None:
         kit.ReadStep(id="r", text="t"),
     ]
     assert all(isinstance(step, kit.Step) for step in steps)
-    assert not isinstance(kit.Slide(id="s", title="t", text="x"), kit.Step)
+    assert not isinstance(kit.SceneFrame(art="zones", text="x"), kit.Step)
 
 
 def test_a_level_writes_a_name_the_player_chose_with_the_text_parsers_own_code_helper() -> None:

@@ -86,7 +86,7 @@ test("every sound the page uses exists, and muting silences them", () => {
 });
 
 test("every sound a page script asks for exists", () => {
-  const scripts = fs.readdirSync(STATIC).filter((name) => name.endsWith(".js") && !name.startsWith("theme-time"));
+  const scripts = fs.readdirSync(STATIC).filter((name) => name.endsWith(".js"));
   const calls = scripts.flatMap((name) => [...fs.readFileSync(path.join(STATIC, name), "utf8").matchAll(/sound\.play\(([^)]*)\)/g)].map((match) => match[1]));
   const asked = calls.flatMap((call) => [...call.matchAll(/"(\w+)"/g)].map((match) => match[1]));
   assert.ok(asked.length > 5);

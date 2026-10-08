@@ -1,9 +1,8 @@
 """
 A snapshot of a repository, as the player's map shows it and as level checks read it.
 
-The map, the "what just happened" feed (`firstcommit.changes`), the lesson figures
-(`firstcommit.demos`) and the level checks all read this one snapshot, so what the player sees
-and what a check decides can never disagree. Everything comes from git plumbing, never from
+The map, the "what just happened" feed (`firstcommit.changes`) and the level checks all read
+this one snapshot, so what the player sees and what a check decides can never disagree. Everything comes from git plumbing, never from
 the wording of git's human-readable output.
 
 The three areas of a file are given as blob ids and modes, the way git itself compares them: a
@@ -21,7 +20,7 @@ import stat
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Literal, cast
+from typing import Literal
 
 from firstcommit import gitcmd
 from firstcommit.records import (
@@ -33,8 +32,6 @@ from firstcommit.records import (
     Commit,
     FileEntry,
     FolderChange,
-    ObjectInfo,
-    ObjectType,
     Operation,
     Ref,
     RefKind,
@@ -54,8 +51,6 @@ __all__ = [
     "Commit",
     "FileEntry",
     "FolderChange",
-    "ObjectInfo",
-    "ObjectType",
     "Operation",
     "Ref",
     "RefKind",
@@ -64,7 +59,6 @@ __all__ = [
     "history",
     "mode_changed",
     "nested",
-    "objects",
     "snapshot",
     "staged",
     "unstaged",
@@ -87,7 +81,6 @@ PUSHED = "update by push"
 MAX_REFLOG_ENTRIES = 1000
 """How many reflog entries of the remote-tracking branches a snapshot reads at most, all branches together."""
 COMMIT_FIELDS = 6
-OBJECT_FORMAT = "%(objectname) %(objecttype) %(objectsize)"
 NOWHERE: tuple[None, None] = (None, None)
 KINDS = {FILE_MODE: "file", EXECUTABLE_MODE: "file", LINK_MODE: "link", GITLINK_MODE: "repository"}
 """What a mode makes a path: a change between two of these is a type change, as git calls it."""
@@ -355,37 +348,9 @@ def _remotes(path: Path) -> list[Remote]:
     return sorted(({"name": key.removeprefix("remote.").removesuffix(".url"), "url": url} for key, url in pairs), key=lambda remote: remote["name"])
 
 
-def objects(path: Path) -> list[ObjectInfo]:
-    """
-    List every object in the object database of the repository in a folder.
-
-    Unreachable objects are listed too, such as a blob written by ``git hash-object -w``.
-
-    Parameters
-    ----------
-    path : Path
-        A working folder or a bare repository. It may hold no repository, or not exist.
-
-    Returns
-    -------
-    list[ObjectInfo]
-        The objects, sorted by hash; empty without a repository, or when git cannot read the
-        object database.
-    """
-    repo = _find(path)
-    if repo is None:
-        return []
-    result = gitcmd.run(repo.git_dir, "cat-file", "--batch-all-objects", f"--batch-check={OBJECT_FORMAT}")
-    found: list[ObjectInfo] = []
-    for line in _lines(result):
-        name, kind, size = line.split(" ")
-        found.append({"hash": name, "type": cast(ObjectType, kind), "size": int(size)})
-    return sorted(found, key=lambda info: info["hash"])
-
-
 def empty() -> Snapshot:
     """
-    Give the snapshot of an empty folder that holds no repository, such as a lesson's start.
+    Give the snapshot of an empty folder that holds no repository.
 
     Returns
     -------

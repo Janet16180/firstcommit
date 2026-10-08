@@ -26,7 +26,7 @@ test("each Spanish string takes the same values, plural forms and commands as it
 });
 
 test("every key a page script asks for exists", () => {
-  const scripts = fs.readdirSync(STATIC).filter((name) => name.endsWith(".js") && !name.startsWith("theme-time"));
+  const scripts = fs.readdirSync(STATIC).filter((name) => name.endsWith(".js"));
   const asked = scripts.flatMap((name) => [...fs.readFileSync(path.join(STATIC, name), "utf8").matchAll(/\b(?:t|parts)\("([\w.]+)"/g)].map((match) => match[1]));
   assert.ok(asked.length > 50, `only ${asked.length} keys asked for`);
   for (const key of asked) assert.ok(key in en, key);

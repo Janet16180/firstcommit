@@ -3,7 +3,7 @@ import inspect
 
 from firstcommit import records, repomap
 
-RECORD_NAMES = ["Commit", "Ref", "FileEntry", "Snapshot", "ObjectInfo", "RefKind", "Operation", "ObjectType"]
+RECORD_NAMES = ["Commit", "Ref", "FileEntry", "Snapshot", "RefKind", "Operation"]
 
 
 def test_repomap_hands_out_the_very_records_defined_in_the_data_layer() -> None:

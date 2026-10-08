@@ -11,7 +11,6 @@ from typing import Any
 import pytest
 
 from firstcommit import game, gitcmd, kit, runner, save
-from firstcommit import guide as map_guide
 from firstcommit.web import routes
 
 STATIC = Path(routes.__file__).parent / "static"
@@ -141,14 +140,13 @@ def record(
 LEVEL_VIEW = {
     "id": "some-level",
     "chapter": "cargo",
-    "chapter_title": "The three areas",
+    "chapter_title": "The cargo dock",
     "title": "A level",
     "difficulty": 1,
     "xp": 100,
     "briefing": [{"kind": "para", "spans": [{"text": "Do it.", "code": False}]}],
     "steps": [],
     "hints_total": 2,
-    "has_lesson": False,
 }
 
 
@@ -207,31 +205,20 @@ def test_a_level_is_looked_up_by_its_id(site: Site, monkeypatch: pytest.MonkeyPa
     assert calls == [("some-level",)]
 
 
-@pytest.mark.parametrize("route", ["/api/level", "/api/lesson"])
 @pytest.mark.parametrize("query", ["", "?id=", "?other=x", "?id=" + "a" * 101])
-def test_a_level_or_lesson_without_a_sensible_id_is_refused(
-    site: Site, monkeypatch: pytest.MonkeyPatch, route: str, query: str
-) -> None:
-    calls = record(monkeypatch, route.removeprefix("/api/"), LEVEL_VIEW)
-    status, reply = api(site, route + query)
+def test_a_level_without_a_sensible_id_is_refused(site: Site, monkeypatch: pytest.MonkeyPatch, query: str) -> None:
+    calls = record(monkeypatch, "level", LEVEL_VIEW)
+    status, reply = api(site, "/api/level" + query)
     assert status == 400
     assert reply["error"]
     assert calls == []
 
 
-@pytest.mark.parametrize("route", ["/api/level", "/api/lesson"])
-def test_an_unknown_level_is_not_found(site: Site, monkeypatch: pytest.MonkeyPatch, route: str) -> None:
-    record(monkeypatch, route.removeprefix("/api/"), error=game.UnknownIdError("nope"))
-    status, reply = api(site, route + "?id=nope")
+def test_an_unknown_level_is_not_found(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
+    record(monkeypatch, "level", error=game.UnknownIdError("nope"))
+    status, reply = api(site, "/api/level?id=nope")
     assert status == 404
     assert "nope" in reply["error"]
-
-
-def test_a_lesson_is_looked_up_by_its_level_id(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
-    lesson = {"level": "some-level", "title": "A level", "slides": []}
-    calls = record(monkeypatch, "lesson", lesson)
-    assert api(site, "/api/lesson?id=some-level") == (200, lesson)
-    assert calls == [("some-level",)]
 
 
 def test_starting_a_level_returns_the_active_level(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -591,13 +578,6 @@ def test_a_level_is_played_through_the_routes_from_start_to_payout(site: Site, s
     assert api(site, f"/api/level?id={sample_level.id}")[1]["debrief"]
 
 
-def test_a_lesson_comes_with_its_figures_from_real_git(site: Site, sample_level: runner.Level) -> None:
-    status, lesson = api(site, f"/api/lesson?id={sample_level.id}")
-    assert status == 200
-    assert [slide["view"] for slide in lesson["slides"]] == ["terminal", "objects"]
-    assert lesson["slides"][1]["objects"]
-
-
 def test_cards_and_notes_come_from_the_decks(site: Site, sample_decks: Path) -> None:
     cards = api(site, "/api/cards?chapter=cargo&limit=3")[1]["cards"]
     assert len(cards) == 3
@@ -675,26 +655,10 @@ def test_the_real_playground_refuses_an_off_button_with_its_reason_and_runs_noth
     assert list(notes.iterdir()) == []
 
 
-def test_the_guide_gives_the_games_figures_by_section(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
-    figures = {"commit": {"before": {"exists": False}, "after": {"exists": True}, "transcript": [{"command": "git commit", "output": ""}]}}
-    calls = record(monkeypatch, "guide", figures)
-    assert api(site, "/api/guide") == (200, figures)
-    assert calls == [()]
-
-
-@pytest.mark.slow
-def test_the_real_guide_draws_every_section_in_the_guides_order_from_real_git(site: Site) -> None:
-    status, figures = api(site, "/api/guide")
-    assert status == 200
-    assert list(figures) == [figure.section for figure in map_guide.FIGURES]
-    assert all(figure["transcript"] and figure["after"]["exists"] for figure in figures.values())
-
-
 def test_every_route_is_a_get_or_post_under_api() -> None:
     expected = {
         ("GET", "/api/status"),
         ("GET", "/api/level"),
-        ("GET", "/api/lesson"),
         ("POST", "/api/start"),
         ("POST", "/api/step"),
         ("POST", "/api/check"),
@@ -705,7 +669,6 @@ def test_every_route_is_a_get_or_post_under_api() -> None:
         ("GET", "/api/cards"),
         ("POST", "/api/card"),
         ("GET", "/api/notes"),
-        ("GET", "/api/guide"),
         ("POST", "/api/press"),
         ("POST", "/api/scene"),
         ("POST", "/api/language"),

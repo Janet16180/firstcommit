@@ -35,10 +35,10 @@ test("the page loads nothing from the network", () => {
   assert.doesNotMatch(page, /(src|href)="(https?:)?\/\//);
 });
 
-test("the old level page is gone; the time theme's map guide stays in the tree, unlinked, for the guide's tools", () => {
-  for (const name of ["home.js", "level.js", "practice.js", "live.js", "lesson.js", "quest.js", "challenge.js", "celebrate.js", "playground.js"]) assert.ok(!fs.existsSync(path.join(STATIC, name)), name);
-  for (const name of ["map.js", "theme-time.js", "theme-time-motion.js", "theme-time-places.js", "theme-time-share.js", "theme-time-guide.js"]) assert.ok(!scripts.includes(name), name);
-  for (const name of ["theme-time.css", "theme-time-share.css", "theme-time-guide.css"]) assert.ok(!styles.includes(name), name);
+test("the old level page, its lessons and the time theme are gone", () => {
+  const old = ["home.js", "level.js", "practice.js", "live.js", "lesson.js", "quest.js", "challenge.js", "celebrate.js", "playground.js", "map.js"];
+  const theme = ["theme-time.js", "theme-time-motion.js", "theme-time-places.js", "theme-time-share.js", "theme-time-guide.js", "theme-time.css", "theme-time-share.css", "theme-time-guide.css"];
+  for (const name of [...old, ...theme]) assert.ok(!fs.existsSync(path.join(STATIC, name)), name);
 });
 
 test("the page loads the map screen, the level screen and their parts", () => {

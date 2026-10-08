@@ -6,7 +6,7 @@ import stat
 import subprocess
 import threading
 import time
-from collections.abc import Callable, Sequence
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from datetime import date, datetime, timedelta
 from pathlib import Path
@@ -19,11 +19,9 @@ from termlab.web import terminal
 from firstcommit import (
     changes,
     commands,
-    demos,
     explanations,
     game,
     gitcmd,
-    guide,
     kit,
     markup,
     playground,
@@ -123,26 +121,6 @@ def fake_describe(before: repomap.Snapshot, after: repomap.Snapshot) -> list[cha
     return [{"kind": "file-created", "text": f"`{entry['path']}` appeared."} for entry in after["files"] if entry["path"] not in old]
 
 
-def fake_frames(slides: Sequence[kit.Slide]) -> list[demos.Frame]:
-    """
-    Stand in for `demos.frames`: one frame per slide, echoing its run lines.
-
-    Parameters
-    ----------
-    slides : Sequence[kit.Slide]
-        The lesson.
-
-    Returns
-    -------
-    list[demos.Frame]
-        The frames.
-    """
-    return [
-        {"transcript": [{"command": slide.run, "output": f"ran {slide.id}"}], "map": fake_snapshot(Path("/nonexistent")), "objects": [{"hash": "e" * 40, "type": "blob", "size": number}]}
-        for number, slide in enumerate(slides)
-    ]
-
-
 @pytest.fixture
 def fake_insight(monkeypatch: pytest.MonkeyPatch) -> None:
     """
@@ -155,7 +133,6 @@ def fake_insight(monkeypatch: pytest.MonkeyPatch) -> None:
     """
     monkeypatch.setattr(repomap, "snapshot", fake_snapshot)
     monkeypatch.setattr(changes, "describe", fake_describe)
-    monkeypatch.setattr(demos, "frames", fake_frames)
 
 
 def plain(blocks: list[markup.Block]) -> str:
@@ -293,7 +270,7 @@ def test_a_new_player_sees_every_chapter_no_xp_and_nothing_in_progress(sample_le
     chapters = {chapter["id"]: chapter for chapter in status["chapters"]}
     cargo = chapters["cargo"]
     assert cargo["levels"] == [
-        {"id": "cargo-sample", "title": "Say hello", "difficulty": 1, "xp": 100, "command": "git add", "stars": 0, "challenge": False, "done": False, "has_lesson": True, "has_quest": True}
+        {"id": "cargo-sample", "title": "Say hello", "difficulty": 1, "xp": 100, "command": "git add", "stars": 0, "challenge": False, "done": False, "has_quest": True}
     ]
     assert cargo["cards"] == 12
     assert chapters["start"]["levels"] == []
@@ -363,7 +340,7 @@ def test_the_page_may_check_a_level_without_a_quest_automatically_from_the_start
 
 
 def test_an_unknown_level_id_raises_unknown_id_error(sample_level: runner.Level) -> None:
-    for action in (game.level, game.lesson, game.start, game.see_scene):
+    for action in (game.level, game.start, game.see_scene):
         with pytest.raises(game.UnknownIdError, match="cargo-nothing"):
             action("cargo-nothing")
 
@@ -383,15 +360,6 @@ def test_a_key_error_inside_a_level_setup_is_a_bug_not_an_unknown_id(sample_leve
     monkeypatch.setattr(runner, "catalogue", lambda: {broken.id: broken})
     with pytest.raises(KeyError, match="players_name"):
         game.start(broken.id)
-
-
-def test_a_key_error_while_building_a_lesson_is_a_bug_not_an_unknown_id(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
-    def broken_frames(slides: Sequence[kit.Slide]) -> list[demos.Frame]:
-        raise KeyError("transcript")
-
-    monkeypatch.setattr(demos, "frames", broken_frames)
-    with pytest.raises(KeyError, match="transcript"):
-        game.lesson(sample_level.id)
 
 
 def test_a_key_error_while_scoring_a_card_is_a_bug_not_an_unknown_id(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -414,7 +382,7 @@ def test_starting_an_unknown_level_leaves_the_level_in_progress_alone(sample_lev
 def test_a_level_page_shows_its_briefing_steps_and_hint_count(sample_level: runner.Level) -> None:
     view = game.level(sample_level.id)
     assert (view["id"], view["chapter"], view["chapter_title"], view["title"], view["difficulty"], view["xp"]) == ("cargo-sample", "cargo", CHAPTERS["cargo"]["en"], "Say hello", 1, 100)
-    assert (view["hints_total"], view["has_lesson"], view["hints"]) == (3, True, [])
+    assert (view["hints_total"], view["hints"]) == (3, [])
     assert [(step["id"], step["kind"]) for step in view["steps"]] == [("look", "read"), ("stage", "watch"), ("branch", "answer")]
     assert view["steps"][1]["command"] == "git add hello.txt"
     assert view["steps"][2]["placeholder"] == "a branch name"
@@ -489,70 +457,15 @@ def test_a_level_page_lists_the_hints_already_revealed(sample_level: runner.Leve
     assert game.level(sample_level.id)["hints"] == [markup.parse(hint) for hint in sample_level.texts["en"].hints[:2]]
 
 
-@pytest.mark.usefixtures("fake_insight")
-def test_a_lesson_gives_each_slide_its_figure(sample_level: runner.Level) -> None:
-    lesson = game.lesson(sample_level.id)
-    assert (lesson["level"], lesson["title"]) == ("cargo-sample", "Say hello")
-    first, second = lesson["slides"]
-    assert (first["id"], first["title"], first["view"]) == ("init", "A repository", "terminal")
-    assert first["text"] == markup.parse(sample_level.lesson[0].text)
-    assert first["transcript"] == [{"command": "git init -q demo", "output": "ran init"}]
-    assert second["objects"] == [{"hash": "e" * 40, "type": "blob", "size": 1}]
-    assert second["map"]["exists"] is False
-
-
-def test_a_slide_may_show_the_places_of_its_repository(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
-    level = dataclasses.replace(sample_level, lesson=(kit.Slide(id="init", title="A repository", text="x", run="git init -q", view="places"),))
-    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
-    assert game.lesson(level.id)["slides"][0]["view"] == "places"
-
-
-def test_each_slide_tells_the_change_its_commands_made_as_the_live_feed_would(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
-    slides = (
-        kit.Slide(id="init", title="Init", text="x", run="git init -q", view="places"),
-        kit.Slide(id="add", title="Add", text="x", run="echo hi > a.txt\ngit add a.txt", view="places"),
-        kit.Slide(id="commit", title="Commit", text="x", run="git commit -q -m First", view="places"),
-    )
-    level = dataclasses.replace(sample_level, lesson=slides)
-    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
-    shown = game.lesson(level.id)["slides"]
-    assert [[event["kind"] for event in slide["events"]] for slide in shown] == [["repository-created"], ["file-staged", "file-created"], ["commit-created"]]
-    assert shown[1]["events"][0]["text"] == markup.parse("`a.txt` was staged as a new file.")
-
-
-def test_a_slide_and_a_step_carry_their_more_parsed_like_their_text(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
-    slide = kit.Slide(id="init", title="Init", text="x", run="git init -q", more="Why: `git init` makes `.git`.")
+def test_a_step_carries_its_more_parsed_like_its_text(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
     step = kit.ReadStep(id="look", text="Look.", more="The staging area is the file `.git/index`.")
-    level = replaced(sample_level, lesson=(slide,), quest=(step,))
+    level = replaced(sample_level, quest=(step,))
     monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
-    assert game.lesson(level.id)["slides"][0]["more"] == markup.parse("Why: `git init` makes `.git`.")
     assert game.level(level.id)["steps"][0]["more"] == markup.parse("The staging area is the file `.git/index`.")
 
 
-def test_a_slide_or_step_without_more_has_nothing_to_fold(sample_level: runner.Level) -> None:
-    assert [slide["more"] for slide in game.lesson(sample_level.id)["slides"]] == [[], []]
+def test_a_step_without_more_has_nothing_to_fold(sample_level: runner.Level) -> None:
     assert all(step["more"] == [] for step in game.level(sample_level.id)["steps"])
-
-
-def test_a_lesson_shows_the_real_commands_their_output_and_the_repository_they_leave(sample_level: runner.Level) -> None:
-    first, second = game.lesson(sample_level.id)["slides"]
-    assert first["transcript"] == [{"command": "git init -q demo", "output": ""}]
-    assert [line["command"] for line in second["transcript"]] == ["cd demo", "printf 'hello\\n' > hello.txt", "git add hello.txt", "git ls-files --stage"]
-    assert second["transcript"][-1]["output"] == f"100644 {HELLO_BLOB} 0\thello.txt\n"
-    assert (second["view"], second["map"]["branch"]) == ("objects", "main")
-    assert [(entry["path"], entry["head"], entry["index"]) for entry in second["map"]["files"]] == [("hello.txt", None, HELLO_BLOB)]
-    assert second["objects"] == [{"hash": HELLO_BLOB, "type": "blob", "size": 6}]
-
-
-@pytest.mark.slow
-def test_the_map_guide_shows_each_figure_before_and_after_its_change() -> None:
-    figures = game.guide()
-    assert list(figures) == [figure.section for figure in guide.FIGURES]
-    for figure in guide.FIGURES:
-        view = figures[figure.section]
-        assert view["before"]["exists"] and view["after"] != view["before"], figure.section
-        assert [line["command"] for line in view["transcript"]] == [line for line in figure.change.split("\n") if line.strip()]
-    json.dumps(figures)
 
 
 def test_starting_a_level_builds_its_lab_and_records_it(sample_level: runner.Level, game_home: Path) -> None:
@@ -1855,7 +1768,7 @@ def test_the_doctor_refuses_a_relative_or_unwritable_home(tmp_path: Path, monkey
 
 def test_every_record_is_json(sample_level: runner.Level) -> None:
     game.start(sample_level.id)
-    for record in (game.status(), game.level(sample_level.id), game.lesson(sample_level.id), game.observe(), game.due_cards("cargo", 3), game.check(None, auto=True)):
+    for record in (game.status(), game.level(sample_level.id), game.observe(), game.due_cards("cargo", 3), game.check(None, auto=True)):
         json.dumps(record)
 
 
@@ -1863,11 +1776,8 @@ def test_a_game_home_inside_a_repository_never_shows_that_repository(sample_leve
     outer = tmp_path / "dotfiles"
     kit.git(tmp_path, "init", "-q", str(outer))
     monkeypatch.setenv("FIRSTCOMMIT_HOME", str(outer / "game-home"))
-    without_repository = dataclasses.replace(sample_level, lesson=(kit.Slide(id="empty", title="Nothing yet", text="x", run="mkdir notes"),))
-    monkeypatch.setattr(runner, "catalogue", lambda: {without_repository.id: without_repository})
-    assert game.lesson(without_repository.id)["slides"][0]["map"]["exists"] is False
-    game.start(without_repository.id)
-    sandbox.remove_tree(runner.lab_of(without_repository.id).project / ".git", outer / "game-home")
+    game.start(sample_level.id)
+    sandbox.remove_tree(runner.lab_of(sample_level.id).project / ".git", outer / "game-home")
     assert game.observe()["project"]["exists"] is False
 
 
@@ -1947,7 +1857,6 @@ def test_in_spanish_a_level_page_shows_its_spanish_texts(sample_level: runner.Le
     assert [step["text"] for step in view["steps"]] == [markup.parse(text.text) for text in cargo_sample_es.STEPS.values()]
     assert view["steps"][1]["command"] == "git add hello.txt"
     assert (view["steps"][2]["placeholder"], view["card"]) == ("un nombre de branch", {"level": "cargo-sample", "command": "git add <file>", "text": markup.parse(cargo_sample_es.CARD)})
-    assert game.lesson(sample_level.id)["title"] == "Di hola"
 
 
 def test_in_spanish_the_verdicts_hints_and_debrief_are_spanish(sample_level: runner.Level) -> None:

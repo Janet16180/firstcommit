@@ -2,7 +2,7 @@
 The level authors' toolkit: what a level is made of, and the helpers a level may use.
 
 A level module imports this module and the standard library only (AUTHORING.md section 3):
-the types of its scene, card, lesson, quest and reactions, its lab, git kept to the game's configuration, the snapshot
+the types of its scene, card, quest and reactions, its lab, git kept to the game's configuration, the snapshot
 its checks read, helpers that parse what a player types, and the two-person playground
 (`setup_playground` builds it in a lab; `press` runs one of its buttons, the same real command
 the page's button runs, so a level can prepare a state such as "Alex already pushed").
@@ -13,7 +13,7 @@ import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any
 
 from firstcommit.commands import type_line
 from firstcommit.gitcmd import GAME, PLAYER, Person
@@ -64,7 +64,6 @@ __all__ = [
     "Ref",
     "SceneFrame",
     "StepText",
-    "Slide",
     "Snapshot",
     "State",
     "Step",
@@ -158,27 +157,6 @@ class CommandCard:
 
     command: str
     text: str
-
-
-@dataclass(frozen=True)
-class Slide:
-    """
-    One slide of a lesson.
-
-    ``run`` holds shell lines added to the lesson's demonstration repository. The game runs
-    the lesson's ``run`` lines in order, in an empty folder, with a fixed identity and date,
-    and shows each of this slide's commands with its real output; ``view`` picks the figure:
-    the repository map, the three areas, your computer's places (working folder, staging area
-    and repository, with the arrows the slide's change lit), the object database, the commands
-    only, or nothing. ``more`` is optional text the page folds under "More", below ``text``.
-    """
-
-    id: str
-    title: str
-    text: str
-    run: str = ""
-    view: Literal["map", "areas", "places", "objects", "terminal", "none"] = "map"
-    more: str = ""
 
 
 @dataclass(frozen=True)

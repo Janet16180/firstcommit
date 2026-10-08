@@ -8,7 +8,7 @@ never looks for a repository above the labs folder. A player's credential helper
 level does.
 
 `run_on_terminal` runs a command as the player's terminal would show it, for the playground's
-buttons; `as_on_terminal` applies carriage returns as a terminal does, for it and the lessons.
+buttons; `as_on_terminal` applies carriage returns as a terminal does.
 """
 
 import errno
@@ -55,7 +55,7 @@ BASE_CONFIG = (
     f"[user]\n\tname = {PLAYER.name}\n\temail = {PLAYER.email}\n\tuseConfigOnly = true\n"
 )
 """
-The game's global git configuration when it starts: the player's shell and the lessons share it.
+The game's global git configuration when it starts: the player's shell and the game's own commands share it.
 
 ``core.pager = cat`` prints every output straight out; `PLAYER_SETTINGS` keeps it so in the
 player's shell whatever the configuration says.
@@ -123,13 +123,12 @@ def isolation(home: Path) -> dict[str, str]:
     -------
     dict[str, str]
         ``GIT_CONFIG_GLOBAL``, ``GIT_CONFIG_NOSYSTEM``, ``GIT_CEILING_DIRECTORIES`` (the labs
-        folder and the lessons folder, where `firstcommit.demos` runs lessons), and
-        `PLAYER_SETTINGS` as ``GIT_CONFIG_COUNT`` entries.
+        folder), and `PLAYER_SETTINGS` as ``GIT_CONFIG_COUNT`` entries.
     """
     return {
         "GIT_CONFIG_GLOBAL": str(home / save.GITCONFIG_FILE),
         "GIT_CONFIG_NOSYSTEM": "1",
-        "GIT_CEILING_DIRECTORIES": f"{home / save.LABS_FOLDER}:{home / save.LESSONS_FOLDER}",
+        "GIT_CEILING_DIRECTORIES": str(home / save.LABS_FOLDER),
         **config_entries(PLAYER_SETTINGS),
     }
 

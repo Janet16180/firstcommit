@@ -10,8 +10,8 @@ rules never live in the interfaces (Ring Zero audit ARCH-1).
 
 The game speaks the player's language (`set_language`): a level's, a deck's and a chapter's
 texts are read in it, and a message (a verdict, a reaction, the game's own) is turned into it
-from its English text (`_messages`). Lessons, the changes the page animates and the
-playground's explanations are in English only.
+from its English text (`_messages`). The changes the page animates and the playground's
+explanations are in English only.
 
 Records returned here are the API contract of the web routes: changing a field is a change to
 the page too. Every field the player reads is parsed blocks; every value the page sends back
@@ -21,7 +21,7 @@ cards only ever see a wrong answer. Errors the interfaces handle:
 
 - `UnknownIdError`: an unknown level, chapter or card id, or a playground person or button (the
   routes answer 404). It is raised only by the one lookup of each kind of id, at the top of a
-  function, so a ``KeyError`` from a level's setup, the scoring or a lesson stays what it is: a bug;
+  function, so a ``KeyError`` from a level's setup or the scoring stays what it is: a bug;
 - `NotPlayingError`: an action on the level in progress when there is none (409);
 - `NoPlaygroundError`: a playground button pressed in a level that has no playground (409);
 - `ButtonOffError`: a playground button pressed while it is off (409); its message is the
@@ -50,7 +50,6 @@ from firstcommit import (
     cards,
     changes,
     commands,
-    demos,
     explanations,
     gitcmd,
     kit,
@@ -62,17 +61,15 @@ from firstcommit import (
     save,
     score,
 )
-from firstcommit import guide as map_guide
 from firstcommit.cards import CardKind
 from firstcommit.changes import Event
 from firstcommit.chapters import BLURBS, CHAPTERS
-from firstcommit.demos import Line
 from firstcommit.lab import Lab
 from firstcommit.markup import Block
 from firstcommit.playground import ButtonOffError as ButtonOffError
 from firstcommit.reactions import ReactionRule
 from firstcommit.records import Art, ButtonView, Command, Language, Moment, Mood, Press, Who
-from firstcommit.repomap import ObjectInfo, Snapshot
+from firstcommit.repomap import Snapshot
 from firstcommit.save import Payout
 from firstcommit.save import SaveError as SaveError
 from firstcommit.save import home as home
@@ -110,7 +107,6 @@ class LevelSummary(TypedDict):
     stars: int
     challenge: bool
     done: bool
-    has_lesson: bool
     has_quest: bool
 
 
@@ -248,7 +244,6 @@ class LevelView(TypedDict):
     placeholder: str
     steps: list[StepView]
     hints_total: int
-    has_lesson: bool
     hints: list[list[Block]]
     debrief: list[Block] | None
 
@@ -258,40 +253,6 @@ class EventView(TypedDict):
 
     kind: str
     text: list[Block]
-
-
-class SlideView(TypedDict):
-    """One lesson slide with its figure, and what its commands changed, told as the live feed tells it."""
-
-    id: str
-    title: str
-    text: list[Block]
-    view: Literal["map", "areas", "places", "objects", "terminal", "none"]
-    transcript: list[Line]
-    map: Snapshot
-    objects: list[ObjectInfo]
-    events: list[EventView]
-    more: list[Block]
-
-
-class LessonView(TypedDict):
-    """A level's lesson."""
-
-    level: str
-    title: str
-    slides: list[SlideView]
-
-
-class FigureView(TypedDict):
-    """One figure of the map guide: its repository before and after one change, and that change's real commands and output."""
-
-    before: Snapshot
-    after: Snapshot
-    transcript: list[Line]
-
-
-GuideView = dict[str, FigureView]
-"""The map guide's figures by section id, in the guide's order (`firstcommit.guide.FIGURES`)."""
 
 
 class StepResult(TypedDict):
@@ -554,7 +515,6 @@ def level(level_id: str) -> LevelView:
         "placeholder": _fill(texts.placeholder, state),
         "steps": [_step_view(step, texts.steps[step.id], state) for step in entry.quest],
         "hints_total": len(texts.hints),
-        "has_lesson": bool(entry.lesson),
         "hints": [_blocks(hint_text, state) for hint_text in revealed],
         "debrief": _blocks(texts.debrief, finished["state"]) if finished is not None else None,
     }
@@ -580,67 +540,6 @@ def see_scene(level_id: str) -> None:
         if entry.id not in progress["scenes"]:
             progress["scenes"].append(entry.id)
             save.write_progress(progress)
-
-
-def lesson(level_id: str) -> LessonView:
-    """
-    Give a level's lesson, each slide with the figure its commands really produce.
-
-    Parameters
-    ----------
-    level_id : str
-        The level's id.
-
-    Returns
-    -------
-    LessonView
-        The slides; none for a level without a lesson. Each slide's events are what changed
-        from the slide before (the first slide's from the lesson's empty folder).
-
-    Raises
-    ------
-    UnknownIdError
-        If no level has this id.
-    """
-    entry = _level(level_id)
-    frames = demos.frames(entry.lesson)
-    befores = [repomap.empty(), *(frame["map"] for frame in frames[:-1])]
-    slides: list[SlideView] = [
-        {
-            "id": slide.id,
-            "title": slide.title,
-            "text": markup.parse(slide.text),
-            "view": slide.view,
-            "transcript": frame["transcript"],
-            "map": frame["map"],
-            "objects": frame["objects"],
-            "events": _event_views(changes.describe(before, frame["map"])),
-            "more": markup.parse(slide.more),
-        }
-        for slide, frame, before in zip(entry.lesson, frames, befores, strict=True)
-    ]
-    return {"level": entry.id, "title": entry.texts[_language()].title, "slides": slides}
-
-
-def guide() -> GuideView:
-    """
-    Give the map guide's figures, drawn from real git like a lesson's.
-
-    Each figure runs as a two-slide lesson (`firstcommit.guide.lesson`): the first slide builds
-    its repository, the second makes the change its section is about. `firstcommit.demos`
-    keeps the frames per process, so only the first call runs git.
-
-    Returns
-    -------
-    GuideView
-        Every figure of `firstcommit.guide.FIGURES`, by section id: the first slide's map, the
-        second slide's map, and the second slide's commands with their output.
-    """
-    figures: GuideView = {}
-    for figure in map_guide.FIGURES:
-        before, after = demos.frames(map_guide.lesson(figure))
-        figures[figure.section] = {"before": before["map"], "after": after["map"], "transcript": after["transcript"]}
-    return figures
 
 
 def start(level_id: str) -> ActiveView:
@@ -740,7 +639,7 @@ def check(answer: str | None, auto: bool) -> CheckResult:
     Check the level in progress, and pay for it once solved.
 
     While the guided quest is unfinished, an automatic check (the page polling) never solves the
-    level: its message points to the next step, so the player sees the end of the lesson, unless
+    level: its message points to the next step, so the player sees the end of the quest, unless
     the level's check says the work is lost for good, which it reports at once. A check the player asks for runs the level's check at any time,
     so the level may be solved before its quest is finished. A blank answer counts as no
     answer. A check the player asks for that fails counts as an attempt; an automatic one never
@@ -1120,7 +1019,7 @@ def doctor() -> list[Diagnosis]:
     Returns
     -------
     list[Diagnosis]
-        git (at least `MIN_GIT`; the lessons are checked against `TARGET_GIT`), Python (at least
+        git (at least `MIN_GIT`; the levels are checked against `TARGET_GIT`), Python (at least
         `MIN_PYTHON`), and the game home (absolute and writable), in that order.
     """
     return [_git_diagnosis(), _python_diagnosis(), _home_diagnosis()]
@@ -1696,7 +1595,6 @@ def _level_summary(entry: runner.Level, finished: save.LevelRecord | None, langu
         "stars": finished["stars"] if finished is not None else 0,
         "challenge": entry.challenge,
         "done": finished is not None,
-        "has_lesson": bool(entry.lesson),
         "has_quest": bool(entry.quest),
     }
 
@@ -2080,7 +1978,7 @@ def _git_diagnosis() -> Diagnosis:
         printed = ""
     match = GIT_VERSION.search(printed)
     version = (int(match[1]), int(match[2])) if match else None
-    wanted = f"{MIN_GIT[0]}.{MIN_GIT[1]} or newer is needed, {TARGET_GIT[0]}.{TARGET_GIT[1]} is what the lessons were checked with"
+    wanted = f"{MIN_GIT[0]}.{MIN_GIT[1]} or newer is needed, {TARGET_GIT[0]}.{TARGET_GIT[1]} is what the levels were checked with"
     detail = f"git was not found ({wanted})" if version is None else f"git {version[0]}.{version[1]} ({wanted})"
     return {"check": "git", "ok": version is not None and version >= MIN_GIT, "detail": detail}
 

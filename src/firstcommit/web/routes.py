@@ -245,26 +245,6 @@ def api_level(query: dict[str, Any]) -> Reply:
     return found(lambda: game.level(level_id))
 
 
-def api_lesson(query: dict[str, Any]) -> Reply:
-    """
-    GET /api/lesson?id=: a level's lesson.
-
-    Parameters
-    ----------
-    query : dict[str, Any]
-        ``id``, the level.
-
-    Returns
-    -------
-    Reply
-        200 and `game.LessonView`; 400 without an id, 404 for an unknown one.
-    """
-    level_id = query.get("id")
-    if not is_id(level_id):
-        return bad("send ?id=<level id>")
-    return found(lambda: game.lesson(level_id))
-
-
 def api_start(body: dict[str, Any]) -> Reply:
     """
     POST /api/start {"level": id}: start a level in a fresh lab.
@@ -545,28 +525,11 @@ def api_press(body: dict[str, Any]) -> Reply:
     return playing(lambda: game.press(person, button))
 
 
-def api_guide(query: dict[str, Any]) -> Reply:
-    """
-    GET /api/guide: the map guide's figures.
-
-    Parameters
-    ----------
-    query : dict[str, Any]
-        Unused.
-
-    Returns
-    -------
-    Reply
-        200 and `game.GuideView`, the figures by section id in the guide's order.
-    """
-    return HTTPStatus.OK, dict(game.guide())
-
 ROUTES: dict[tuple[str, str], shell.Route] = {
     key: guarded(route)
     for key, route in {
         ("GET", "/api/status"): api_status,
         ("GET", "/api/level"): api_level,
-        ("GET", "/api/lesson"): api_lesson,
         ("POST", "/api/start"): api_start,
         ("POST", "/api/scene"): api_scene,
         ("POST", "/api/step"): api_step,
@@ -579,7 +542,6 @@ ROUTES: dict[tuple[str, str], shell.Route] = {
         ("GET", "/api/cards"): api_cards,
         ("POST", "/api/card"): api_card,
         ("GET", "/api/notes"): api_notes,
-        ("GET", "/api/guide"): api_guide,
         ("POST", "/api/press"): api_press,
     }.items()
 }
