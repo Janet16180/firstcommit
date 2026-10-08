@@ -125,6 +125,37 @@ class Snapshot(TypedDict):
     truncated: bool
 
 
+class ConflictSide(TypedDict):
+    """
+    One side of a file in conflict: where it came from and the file as that side has it.
+
+    ``label`` is the branch the side came from (the branch HEAD is on, or the merged branch or
+    remote-tracking branch, such as ``scout`` or ``origin/main``), else the commit's short hash,
+    or empty when git records no incoming commit (a rebase, say). ``author`` is the name on that
+    side's commit, empty when there is none. ``lines`` is the file's text as that side has it,
+    one line each without its newline, or None when that side deleted the file.
+    """
+
+    label: str
+    author: str
+    lines: list[str] | None
+
+
+class Conflict(TypedDict):
+    """
+    A file in conflict, read from the staging area's three stages, so it stays true while the player edits the file.
+
+    ``you`` is the side of the branch you are on (stage 2), ``them`` the incoming side (stage 3),
+    and ``base`` the version both started from (stage 1), None when the two sides each added the
+    file.
+    """
+
+    path: str
+    you: ConflictSide
+    them: ConflictSide
+    base: list[str] | None
+
+
 class Command(TypedDict):
     """
     One command line the player typed in the game's terminal (`firstcommit.commands`), and how it ended.

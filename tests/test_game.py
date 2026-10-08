@@ -2015,6 +2015,16 @@ def test_a_status_warns_of_the_junk_until_the_snapshot_shows_ignored_files(game_
     assert [(reaction["mood"], reaction["text"]) for reaction in said] == [("info", markup.parse(reactions.STATUS))]
 
 
+def test_an_observation_gives_both_sides_of_each_file_in_conflict(game_home: Path) -> None:
+    game.start("conflict-collision")
+    assert game.observe()["conflicts"] == []
+    lab = runner.lab_of("conflict-collision")
+    kit.type_line(lab.project, "git merge scout")
+    [conflict] = game.observe()["conflicts"]
+    assert (conflict["path"], conflict["you"]["label"], conflict["them"]["label"]) == ("docking.txt", "main", "scout")
+    assert conflict["you"]["lines"] != conflict["them"]["lines"]
+
+
 def test_a_challenge_poll_that_meets_no_goal_says_the_first_goal_still_unmet(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
     level = as_challenge(sample_level, monkeypatch)
     game.start(level.id)

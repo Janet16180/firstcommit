@@ -68,7 +68,7 @@ from firstcommit.lab import Lab
 from firstcommit.markup import Block
 from firstcommit.playground import ButtonOffError as ButtonOffError
 from firstcommit.reactions import ReactionRule
-from firstcommit.records import Art, ButtonView, Command, Language, Moment, Mood, Press, Seen, View, Who
+from firstcommit.records import Art, ButtonView, Command, Conflict, Language, Moment, Mood, Press, Seen, View, Who
 from firstcommit.repomap import Snapshot
 from firstcommit.save import Payout
 from firstcommit.save import SaveError as SaveError
@@ -316,6 +316,8 @@ class Observation(TypedDict):
     observation, oldest first (`firstcommit.commands`); like the events, there are none at a
     level's first observation. ``reactions`` are what Rama says about those lines, one per line
     a rule fits, oldest first (`firstcommit.reactions`, the level's own rules first).
+    ``conflicts`` gives both sides of each file in conflict in the player's repository
+    (`firstcommit.repomap.conflicts`), empty when there is none.
     """
 
     level: str
@@ -327,6 +329,7 @@ class Observation(TypedDict):
     buttons: dict[Who, list[ButtonView]]
     commands: list[Command]
     reactions: list[Reaction]
+    conflicts: list[Conflict]
 
 
 class PressView(TypedDict):
@@ -784,7 +787,7 @@ def observe() -> Observation:
             active = _fire(entry, active, "")
         now, typed = _look(entry.id, lab, last, active["typed"])
         messages = _messages(entry, _language())
-        observation = _lost_over_pleased(_observation(last, now, _buttons(lab, now), typed, _rules(entry), messages), _loss(entry, active, lab, messages))
+        observation = _lost_over_pleased(_observation(last, now, _buttons(lab, now), repomap.conflicts(lab.project), typed, _rules(entry), messages), _loss(entry, active, lab, messages))
         if now != last:
             save.write_observed(now)
     return observation
@@ -838,12 +841,12 @@ def press(person: str, button: str) -> PressView:
         active = _catch_up(active)
         messages = _messages(entry, _language())
         then, typed_before = _look(entry.id, lab, last, active["typed"])
-        before = _observation(last, then, _buttons(lab, then), typed_before, _rules(entry), messages)
+        before = _observation(last, then, _buttons(lab, then), repomap.conflicts(lab.project), typed_before, _rules(entry), messages)
         facts = playground.facts(lab, who, _clones(then)[who], then["github"])
         pressed = playground.press(lab, who, which)
         active = _catch_up(active)
         now, typed_during = _look(entry.id, lab, then, active["typed"])
-        observation = _observation(then, now, _buttons(lab, now), typed_during, _rules(entry), messages)
+        observation = _observation(then, now, _buttons(lab, now), repomap.conflicts(lab.project), typed_during, _rules(entry), messages)
         if now != last:
             save.write_observed(now)
     found = explanations.explain(pressed, _clones(then)[who], _clones(now)[who], facts, playground.BUTTON_IDS)
@@ -1325,6 +1328,7 @@ def _observation(
     last: save.Observed | None,
     now: save.Observed,
     buttons: dict[Who, list[ButtonView]],
+    conflicts: list[Conflict],
     typed: list[Command],
     rules: tuple[ReactionRule, ...],
     messages: Mapping[str, str],
@@ -1340,6 +1344,8 @@ def _observation(
         The lab now.
     buttons : dict[Who, list[ButtonView]]
         The playground's buttons now (`_buttons`).
+    conflicts : list[Conflict]
+        Both sides of each file in conflict in the player's repository now (`repomap.conflicts`).
     typed : list[Command]
         The commands typed between the two (`_look`).
     rules : tuple[ReactionRule, ...]
@@ -1375,6 +1381,7 @@ def _observation(
         "reactions": [
             {"line": command["line"], "mood": rule.mood, "text": markup.parse(_say(rule.text, messages)), "moment": rule.moment} for command, rule in said if rule is not None
         ],
+        "conflicts": conflicts,
     }
 
 

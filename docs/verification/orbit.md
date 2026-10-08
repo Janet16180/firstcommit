@@ -871,3 +871,16 @@ address looks like https://github.com/moonbase/project.git". E48 to E101 above r
 | Claim | Says | Evidence |
 |---|---|---|
 | `UNREVIEWED` (with the `unreviewed-main` moment) | a plain `git push` on `main`, or `git push origin main` from any branch, puts your commit on the mothership's `main`; Alex's next pull brings it to Alex | E64, E105 (a pull brings the mothership's `main`); git-push(1) (a plain push sends the current branch to its upstream); *re-checked* by `tests/levels/test_branch_ticket.py` (the push of the fix branch never carries the moment) |
+
+## 6-3: two sides, named by person (added 2026-10-08)
+
+`repomap.conflicts` reads each unmerged path's stages with `git ls-files --unmerged` and the blobs
+with `git cat-file blob`, so the halves stay true while the player edits the file; the incoming
+side's name comes from `MERGE_MSG` when a branch or remote-tracking branch of that name is
+`MERGE_HEAD`. *Re-checked* by `tests/test_repomap.py` (a merge, a pull naming `origin/main`, a
+deleted side, an add/add with no base) and `tests/levels/test_conflict_collision.py`.
+
+| Claim | Says | Evidence |
+|---|---|---|
+| 6-3 debrief | git calls your side *ours* and the incoming side *theirs* | git-merge(1) HOW CONFLICTS ARE PRESENTED; git-checkout(1) `--ours, --theirs`; git-restore(1) `--ours, --theirs` |
+| card (unchanged) | during a rebase the two can appear swapped | git-rebase(1) (`--ours`/`--theirs` swap) |

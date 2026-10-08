@@ -30,6 +30,8 @@ from firstcommit.records import (
     LINK_MODE,
     Change,
     Commit,
+    Conflict,
+    ConflictSide,
     FileEntry,
     FolderChange,
     Operation,
@@ -49,6 +51,7 @@ __all__ = [
     "Area",
     "Change",
     "Commit",
+    "Conflict",
     "FileEntry",
     "FolderChange",
     "Operation",
@@ -56,6 +59,7 @@ __all__ = [
     "RefKind",
     "Snapshot",
     "conflicted",
+    "conflicts",
     "history",
     "mode_changed",
     "nested",
@@ -231,6 +235,130 @@ def conflicted(snap: Snapshot) -> list[str]:
         Their paths, in the snapshot's order.
     """
     return [file["path"] for file in snap["files"] if file["conflicted"]]
+
+
+def conflicts(path: Path) -> list[Conflict]:
+    """
+    Give both sides of every file in conflict in a repository, with the version they started from.
+
+    Parameters
+    ----------
+    path : Path
+        A folder of the repository.
+
+    Returns
+    -------
+    list[Conflict]
+        One per unmerged path, sorted by path; empty without a repository or a conflict.
+    """
+    stages: dict[str, dict[str, str]] = {}
+    unmerged = _lines(gitcmd.run(path, "ls-files", "--unmerged")) if _find(path) is not None else []
+    for line in unmerged:
+        info, name = line.split("\t", 1)
+        _, blob, stage = info.split()
+        stages.setdefault(name, {})[stage] = blob
+    found: list[Conflict] = []
+    if stages:
+        incoming = _incoming(path)
+        mine: tuple[str, str] = (_branch(path) or "HEAD", _author(path, "HEAD"))
+        for name in sorted(stages):
+            blobs = stages[name]
+            you: ConflictSide = {"label": mine[0], "author": mine[1], "lines": _blob_lines(path, blobs.get("2"))}
+            them: ConflictSide = {"label": incoming[0], "author": incoming[1], "lines": _blob_lines(path, blobs.get("3"))}
+            found.append({"path": name, "you": you, "them": them, "base": _blob_lines(path, blobs.get("1"))})
+    return found
+
+
+def _incoming(path: Path) -> tuple[str, str]:
+    """
+    Name the commit a merge in progress brings in, and its author.
+
+    The name is the branch ``MERGE_MSG`` names when a branch or remote-tracking branch of that
+    name points at ``MERGE_HEAD`` (git writes "Merge branch 'main' of <url>" for a pull, whose
+    commit ``origin/main`` holds), else the commit's short hash.
+
+    Parameters
+    ----------
+    path : Path
+        A folder of the repository.
+
+    Returns
+    -------
+    tuple[str, str]
+        The name and the author; both empty when no merge is in progress.
+    """
+    merging = gitcmd.run(path, "rev-parse", "-q", "--verify", "MERGE_HEAD")
+    if merging.returncode != 0:
+        return "", ""
+    commit = merging.stdout.strip()
+    message = gitcmd.run(path, "rev-parse", "--git-path", "MERGE_MSG").stdout.strip()
+    message_file = Path(message) if Path(message).is_absolute() else path / message
+    first = message_file.read_text(errors="replace").split("\n", 1)[0] if message_file.is_file() else ""
+    named = re.match(r"Merge (?:remote-tracking )?branch '([^']+)'", first)
+    candidates = [named[1], *(f"{remote}/{named[1]}" for remote in _lines(gitcmd.run(path, "remote")))] if named else []
+    label = next((name for name in candidates if _points_at(path, name, commit)), _lines(gitcmd.run(path, "rev-parse", "--short", commit))[0])
+    return label, _author(path, commit)
+
+
+def _points_at(path: Path, name: str, commit: str) -> bool:
+    """
+    Tell whether a branch or remote-tracking branch of that name points at a commit.
+
+    Parameters
+    ----------
+    path : Path
+        A folder of the repository.
+    name : str
+        A short name, such as ``scout`` or ``origin/main``.
+    commit : str
+        A full hash.
+
+    Returns
+    -------
+    bool
+        True when ``refs/heads/<name>`` or ``refs/remotes/<name>`` is that commit.
+    """
+    targets = (gitcmd.run(path, "rev-parse", "-q", "--verify", f"{prefix}{name}").stdout.strip() for prefix in (BRANCH_PREFIX, "refs/remotes/"))
+    return commit in targets
+
+
+def _author(path: Path, commit: str) -> str:
+    """
+    Give the author name of a commit.
+
+    Parameters
+    ----------
+    path : Path
+        A folder of the repository.
+    commit : str
+        A commit, by any name git reads.
+
+    Returns
+    -------
+    str
+        The name, or empty when there is no such commit.
+    """
+    return "".join(_lines(gitcmd.run(path, "log", "-1", "--format=%an", commit, "--")))
+
+
+def _blob_lines(path: Path, blob: str | None) -> list[str] | None:
+    """
+    Read a blob as lines of text.
+
+    Parameters
+    ----------
+    path : Path
+        A folder of the repository.
+    blob : str | None
+        The blob's hash, or None for no version.
+
+    Returns
+    -------
+    list[str] | None
+        Its lines without their newlines, or None for no version.
+    """
+    text = gitcmd.run(path, "cat-file", "blob", blob).stdout if blob is not None else None
+    return text.splitlines() if text is not None else None
 
 
 @dataclass(frozen=True)
