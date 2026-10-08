@@ -8,9 +8,11 @@
  * guide.css styles it. Defines one global, GuideCard.
  *
  * create(card, words, {onRelated, onConflict}) {element}: card = {command, what, tag, picture:
- *   {before, after}, runs: [[{command, output}]], mistake, where, related, conflict}. A related
- *   command's button calls onRelated(command); with `conflict`, a button calls onConflict().
+ *   {before, after}, runs: [[{command, output}]], mistake, where, related, conflict, playground}.
+ *   A related command's button calls onRelated(command); with `conflict`, a button calls
+ *   onConflict(); with `playground` ({start, view, try}), a link opens that free-play start.
  * terminal(runs, silent) {element}: transcripts [[{command, output}]] as a night terminal.
+ * playgroundHref({start, view, try}) the playground's address for that start, view and command.
  */
 
 /* global Dom, GuidePictures */
@@ -65,6 +67,13 @@ const GuideCard = (function () {
     return [pre, button];
   }
 
+  /* The free playground's address for a start ({start, view, try}): each value URI-encoded,
+     so a command's spaces, quotes, "&" and "=" come back as typed. */
+  function playgroundHref(link) {
+    const fields = ["start", "view", "try"].filter((key) => link[key] !== undefined);
+    return `#/playground?${fields.map((key) => `${key}=${encodeURIComponent(link[key])}`).join("&")}`;
+  }
+
   const part = (title, ...body) => el("section", { class: "gc-part" }, el("h3", {}, title), body);
 
   function create(card, words, { onRelated, onConflict }) {
@@ -76,7 +85,9 @@ const GuideCard = (function () {
         card.tag === null ? null : el("span", { class: "gc-tag" }, card.tag)),
       el("p", { class: "gc-meaning" }, card.what),
       el("p", { class: "gc-where" }, el("strong", {}, `${words.card.taught}: `), card.where),
-      card.conflict ? el("button", { type: "button", class: "btn gc-conflict", onclick: onConflict }, words.card.conflict) : null,
+      card.playground || card.conflict ? el("div", { class: "gc-actions" },
+        card.playground ? el("a", { class: "btn gc-try", href: playgroundHref(card.playground) }, words.card.tryIt) : null,
+        card.conflict ? el("button", { type: "button", class: "btn gc-conflict", onclick: onConflict }, words.card.conflict) : null) : null,
       pictures(card.picture, words),
       card.picture.before.kind === "chain" ? el("p", { class: "gc-key" }, words.card.chainKey) : null,
       part(words.card.prints, printed(card.runs, words)),
@@ -85,5 +96,5 @@ const GuideCard = (function () {
         card.related.map((command) => el("li", {}, el("button", { type: "button", class: "btn", onclick: () => onRelated(command) }, command))))));
   }
 
-  return { create, terminal };
+  return { create, terminal, playgroundHref };
 })();

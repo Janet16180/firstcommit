@@ -5,7 +5,7 @@ const test = require("node:test");
 const { installBrowser, load } = require("./load");
 
 const document = installBrowser();
-const { GuideCard } = load(["dom.js", "guide-pictures.js", "guide-card.js"], ["GuideCard"]);
+const { GuideCard } = load(["dom.js", "strings.js", "places.js", "chain.js", "guide-pictures.js", "guide-card.js"], ["GuideCard"]);
 
 const words = {
   card: {
@@ -21,6 +21,7 @@ const words = {
     chainKey: "HEAD marks where you are; a dashed name is your bookmark of the mothership.",
     showAll: "Show all {count} lines",
     showLess: "Show fewer lines",
+    tryIt: "Try it in the playground",
   },
   pictures: {
     places: { folder: "Working folder (workshop)", staging: "Staging area (cargo dock)", vault: "Repository (vault)", remote: "Remote (mothership)" },
@@ -117,7 +118,8 @@ test("where the game teaches it, and the way to the conflict, come before the pi
   const card = create({ ...ADD, conflict: true });
   const order = [...card.children].map((node) => node.className);
   assert.ok(order.indexOf("gc-where") < order.indexOf("gc-pictures"));
-  assert.ok(order.indexOf("btn gc-conflict") < order.indexOf("gc-pictures"));
+  assert.ok(order.indexOf("gc-actions") < order.indexOf("gc-pictures"));
+  assert.ok(card.querySelector(".gc-actions .gc-conflict"));
 });
 
 test("a chain picture comes with one line that says what HEAD and a dashed name are", () => {
@@ -144,4 +146,29 @@ test("a short transcript has nothing to hide and no Show all", () => {
   const card = create();
   assert.equal(card.querySelector(".gc-show"), null);
   assert.equal(card.querySelectorAll(".gc-more").length, 0);
+});
+
+/* The playground's query, read as its route reads it: pairs split on "&" and "=", each value
+   URI-decoded (docs/drafts/playground/plan.md, "How it is reached"). */
+function query(href) {
+  const [path, search] = href.split("?");
+  return { path, fields: Object.fromEntries(search.split("&").map((pair) => pair.split("=")).map(([name, value]) => [name, decodeURIComponent(value)])) };
+}
+
+test("a card links to its playground start, its view and the command to try, so the route reads them back", () => {
+  const playground = { start: "changes", view: "desk", try: 'git commit -am "Fuel & air = 80%"' };
+  const link = create({ ...ADD, playground }).querySelector("a.gc-try");
+  assert.equal(link.textContent, "Try it in the playground");
+  assert.deepEqual(query(link.getAttribute("href")), { path: "#/playground", fields: playground });
+});
+
+test("a link without a view or a command to try leaves them out", () => {
+  const link = create({ ...ADD, playground: { start: "empty" } }).querySelector("a.gc-try");
+  assert.equal(link.getAttribute("href"), "#/playground?start=empty");
+});
+
+test("the playground link comes before the pictures, beside where the game teaches the command", () => {
+  const card = create({ ...ADD, playground: { start: "empty" } });
+  const order = [...card.children].map((node) => node.className);
+  assert.ok(order.indexOf("gc-actions") < order.indexOf("gc-pictures"));
 });

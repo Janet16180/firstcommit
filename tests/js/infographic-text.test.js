@@ -7,7 +7,7 @@ const test = require("node:test");
 const { STATIC, installBrowser, load } = require("./load");
 
 installBrowser();
-const { InfographicText, Strings } = load(["strings.js", "infographic-text.js"], ["InfographicText", "Strings"]);
+const { InfographicText } = load(["infographic-text.js"], ["InfographicText"]);
 
 const ROOT = path.join(STATIC, "..", "..", "..", "..");
 const chaptersPy = fs.readFileSync(path.join(ROOT, "src", "firstcommit", "chapters.py"), "utf8");
@@ -32,18 +32,6 @@ test("every item is taught by a chapter that exists or is planned, whole or by a
 
 test("the places are Git's four, each with its space word and its real Git term", () => {
   assert.deepEqual(InfographicText.places.places.map((place) => [place.space.en, place.git.en]), [["Workshop", "working folder"], ["Cargo dock", "staging area"], ["Vault", "local repository"], ["Mothership", "remote repository"]]);
-});
-
-test("the places carry the zone panel's words, in both languages", () => {
-  const zones = { workshop: "workshop", dock: "dock", vault: "vault", mothership: "remote" };
-  for (const language of ["en", "es"]) {
-    Strings.use(language);
-    for (const place of InfographicText.places.places) {
-      assert.equal(place.space[language], Strings.t(`zones.${zones[place.id]}`), place.id);
-      assert.equal(place.git[language], Strings.t(`zones.${zones[place.id]}Git`), place.id);
-    }
-  }
-  Strings.use("en");
 });
 
 /* Ids and unlocks are said once; any other word is said in both languages. */

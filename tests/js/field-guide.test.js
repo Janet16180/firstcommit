@@ -6,7 +6,7 @@ const { installBrowser, load, record } = require("./load");
 
 const document = installBrowser();
 const { makeEvent } = require("./fakedom");
-const { FieldGuide, Strings } = load(["dom.js", "strings.js", "art-pixels.js", "art-sprites.js", "art-infographics.js", "infographic-text.js", "guide-git.js", "guide-text.js", "guide-pictures.js", "guide-card.js", "guide-conflict.js", "field-guide.js"], ["FieldGuide", "Strings"]);
+const { FieldGuide, Strings } = load(["dom.js", "strings.js", "places.js", "chain.js", "art-pixels.js", "art-sprites.js", "art-infographics.js", "infographic-text.js", "guide-git.js", "guide-text.js", "guide-pictures.js", "guide-card.js", "guide-conflict.js", "field-guide.js"], ["FieldGuide", "Strings"]);
 
 const level = (id, done) => ({ ...record("status").chapters[1].levels[0], id, title: id, done });
 const status = (chapters) => ({ ...record("status"), chapters });
@@ -167,4 +167,10 @@ test("a jump bar leads to each part of the guide", () => {
   assert.equal(document.activeElement, view.element.querySelector(".art-ig--commands"));
   buttons[3].click();
   assert.equal(document.activeElement, view.element.querySelector("#guide-conflict"));
+});
+
+test("a card opened in the guide links to its playground start", () => {
+  const view = FieldGuide.create({ status: () => two(true, false) });
+  const link = openCard(view, "git switch <branch>").querySelector("a.gc-try");
+  assert.equal(link.getAttribute("href"), "#/playground?start=branches&view=chain&try=git%20switch%20bright-lights");
 });

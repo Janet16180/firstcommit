@@ -275,3 +275,13 @@ test("given the commits that touched a file, the chain dims the others", () => {
   assert.deepEqual(rows(chain).filter((row) => row.classList.contains("is-dim")).map((row) => row.dataset.hash), [hash("d"), hash("b")]);
   assert.equal(drawn(forked()).element.querySelector(".chain-row.is-dim"), null);
 });
+
+test("a row's lane draws its wire pieces, one path each, in the chain's column step, for other pictures to share", () => {
+  const laid = Chain.layout([commit("b", ["a"], 1), commit("a")], [hash("b")]).rows;
+  const pieces = Chain.wires(laid, new Map());
+  const lane = Chain.lane(pieces[0], 1, 0);
+  assert.equal(lane.getAttribute("aria-hidden"), "true");
+  assert.equal(lane.querySelectorAll("path").length, pieces[0].length);
+  const width = (columns) => Number(Chain.lane([], columns, 0).getAttribute("viewBox").split(" ")[2]);
+  assert.equal(width(2) - width(1), Chain.COLUMN, "each column is COLUMN wide, the one width the chain's CSS uses");
+});

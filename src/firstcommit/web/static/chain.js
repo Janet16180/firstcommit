@@ -291,5 +291,5 @@ const Chain = (function () {
     return { element, update };
   }
 
-  return { create, layout, wires };
+  return { create, layout, wires, lane, COLUMN };
 })();

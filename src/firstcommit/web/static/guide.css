@@ -197,8 +197,14 @@
   font: 1.15rem/1.1 var(--f-term);
 }
 
-.gc-conflict {
-  align-self: flex-start;
+.gc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gc-try {
+  text-decoration: none;
 }
 
 /* The small pictures. */
@@ -289,118 +295,10 @@
   outline-offset: 1px;
 }
 
-/* The chain, in chain.js's look (orbit.css .chain-*), so the two can become one renderer. */
-.gp-chain {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 8px;
-  align-items: start;
-  padding: 4px 6px;
-  background: color-mix(in srgb, var(--z-va) 7%, var(--panel));
-}
-
-.gp-lane {
-  display: block;
-  overflow: visible;
-}
-
-.gp-link {
-  fill: none;
-  stroke: var(--z-va);
-  stroke-width: 3;
-}
-
-.gp-link--ghost {
-  stroke-dasharray: 4 3;
-  opacity: 0.6;
-}
-
-.gp-link--mothership {
-  stroke: var(--z-re);
-  stroke-dasharray: 1 3;
-}
-
-.gp-capsule {
-  fill: var(--z-va);
-  stroke: var(--edge);
-  stroke-width: 2;
-}
-
-.gp-capsule--ghost {
-  fill: var(--panel);
-  stroke: var(--z-va);
-  stroke-dasharray: 3 2;
-  opacity: 0.8;
-}
-
-.gp-capsule--mothership {
-  fill: var(--panel);
-  stroke: var(--z-re);
-  stroke-width: 3;
-  stroke-dasharray: 1 2;
-}
-
-.gp-capsule.gp-fresh {
-  outline: none;
-  stroke: var(--gold);
-  stroke-width: 3;
-}
-
-.gp-rows {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.gp-row {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 4px 6px;
-  align-items: center;
-  height: 36px;
-  min-width: 0;
-}
-
-.gp-rides {
-  display: inline-flex;
-  gap: 4px;
-  align-items: center;
-}
-
-.gp-tag {
-  padding: 0 5px;
-  font: 0.95rem/1.2 var(--f-term);
-  white-space: nowrap;
-  color: var(--ink);
-  background: var(--panel);
-  border: 2px solid var(--ink);
-}
-
-.gp-tag--head {
-  color: var(--on-accent);
-  background: var(--z-va);
-}
-
-.gp-tag--remote {
-  border-style: dashed;
-}
-
-.gp-tag--mothership {
-  padding: 1px 7px;
-  font: 700 0.75rem var(--f-body);
-  color: var(--on-accent);
-  background: var(--z-re);
-  border: 0;
-  border-radius: 9px;
-}
-
-.gp-link--fresh {
+/* The chain is chain.js's (orbit.css .chain-*); these are only what the cards add to it. */
+.gp-chain .chain-wire.is-fresh {
   stroke: var(--gold);
   stroke-width: 4;
-}
-
-.gp-place.gp-fresh {
-  outline-offset: 2px;
 }
 
 .gp-mark {
@@ -411,7 +309,7 @@
   padding: 0 5px;
 }
 
-.gp-tag--synced {
+.gp-synced {
   border-color: var(--z-re);
 }
 
@@ -421,21 +319,14 @@
   align-items: center;
 }
 
-.gp-tag--gone {
+.gp-gone .chain-tag {
   color: var(--ink-soft);
   border-color: var(--ink-soft);
-  text-decoration: line-through;
 }
 
 .gp-gone-note {
   font: 700 0.75rem var(--f-body);
   color: var(--ink-soft);
-}
-
-.gp-head {
-  font: 700 0.8rem var(--f-body);
-  white-space: nowrap;
-  color: var(--z-va);
 }
 
 /* The merge conflict. */
