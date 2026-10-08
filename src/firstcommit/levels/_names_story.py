@@ -18,6 +18,7 @@ FIRST_ROUTE = "first-route"
 NOTES_WITH_FUEL = "Notes\nFuel: 80%\n"
 """``notes.txt`` once the fuel level is noted: GitHub's first line, then the note."""
 FUEL_MESSAGE = "Note the fuel level"
+FUEL_TEST = "fuel-test"
 ALEX_FIX = [
     "git pull -q",
     "printf 'Route: Moon, Phobos\\n' > route.txt",
@@ -102,9 +103,9 @@ def experiments(lab: kit.Lab) -> None:
     (lab.project / "engine.txt").write_text("engine=quiet\n")
 
 
-def one_step(lab: kit.Lab) -> None:
+def _two_experiments(lab: kit.Lab) -> None:
     """
-    Build 5-4's start: 5-3's end (``quiet-engine`` with its commit), back on ``main`` with ``dim.txt`` waiting in the folder.
+    Build 5-3's end: ``quiet-engine`` made on ``main``'s commit with ``engine.txt`` committed, HEAD on ``bright-lights``.
 
     Parameters
     ----------
@@ -114,5 +115,31 @@ def one_step(lab: kit.Lab) -> None:
     experiments(lab)
     kit.git(lab.project, "switch", "-q", "-c", "quiet-engine")
     _commit(lab, "engine.txt", "engine=quiet\n", "Try a quiet engine", 6)
+    kit.git(lab.project, "switch", "-q", "bright-lights")
+
+
+def one_step(lab: kit.Lab) -> None:
+    """
+    Build 5-4's start: 5-3's end, back on ``main`` with ``dim.txt`` waiting in the folder.
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The level's lab; its folder exists and is empty.
+    """
+    _two_experiments(lab)
     kit.git(lab.project, "switch", "-q", "main")
     (lab.project / "dim.txt").write_text("lights=dim\n")
+
+
+def match_chart(lab: kit.Lab) -> None:
+    """
+    Build 5-5's start, a new day: 5-3's end with 5-4's names cleared, and ``fuel-test`` on the fuel note with HEAD on it.
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The level's lab; its folder exists and is empty.
+    """
+    _two_experiments(lab)
+    kit.git(lab.project, "switch", "-q", "-c", FUEL_TEST, "main~1")

@@ -358,7 +358,7 @@ def test_the_tape_shows_from_wrong_course_on() -> None:
 
 def test_the_name_tags_levels_draw_the_chain() -> None:
     drawn = {level.id: level.pictures["large"] for level in runner.catalogue().values() if level.chapter == "names" and level.pictures is not None}
-    assert drawn == {"names-tags": "chain", "names-any": "chain", "names-experiments": "chain", "names-step": "chain"}
+    assert drawn == {"names-tags": "chain", "names-any": "chain", "names-experiments": "chain", "names-step": "chain", "names-chart": "chain"}
 
 
 @pytest.mark.parametrize("level", [level for level in runner.catalogue().values() if any(step.look for step in level.quest)], ids=lambda level: level.id)
