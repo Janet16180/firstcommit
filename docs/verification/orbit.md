@@ -885,7 +885,17 @@ deleted side, an add/add with no base) and `tests/levels/test_conflict_collision
 | 6-3 debrief | git calls your side *ours* and the incoming side *theirs* | git-merge(1) HOW CONFLICTS ARE PRESENTED; git-checkout(1) `--ours, --theirs`; git-restore(1) `--ours, --theirs` |
 | card (unchanged) | during a rebase the two can appear swapped | git-rebase(1) (`--ours`/`--theirs` swap) |
 
-## 7-1 Scrap the workshop (added 2026-10-08)
+## 4-3: Alex pushes inside your push (added 2026-10-08)
+
+Alex's pull and push run in the stand-in GitHub's `post-receive` hook, so they are done before the
+player's `git push` returns. githooks(5) `post-receive`: it runs on the remote repository once all
+refs are updated, and its output goes to the pusher (the hook sends it to `/dev/null`). The hook
+runs for a push from the playground's button too, although the game's `GIT_CONFIG_COUNT` settings
+set `core.hooksPath=/dev/null`: on git 2.43.0, `git rev-parse --local-env-vars` lists
+`GIT_CONFIG_COUNT` and `GIT_CONFIG_PARAMETERS`, the variables git clears for the other side of a
+local transport. *Re-checked* by `tests/levels/test_mothership_halves.py` (the hint's lines typed
+back to back, a button push, a push without the navigation, no `remote:` line).
+
 
 | Tag | What ran | Result |
 |---|---|---|

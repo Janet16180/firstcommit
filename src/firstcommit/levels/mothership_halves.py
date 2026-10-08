@@ -4,12 +4,19 @@ Two halves of a ship: you and Alex each finish your own part at the same time, a
 Wave 1b, mothership 4-2b (the user's playtest decisions in docs/drafts/chapters-3-7.md), guided.
 Setup builds the playground with the ship's frame on the mothership: you own ``nav.cfg``, Alex
 owns ``engine.cfg``. Alex has already committed the engines, and your navigation is edited but
-not committed. The goals: your half committed, then pushed; once it is pushed, a level event
-has Alex push too (Alex's push needs a pull first, which joins the two halves in a merge
-commit); and your ``main`` holding Alex's work, with both halves, after a pull. That pull plays
-the launch moment.
+not committed. The goals: your half committed, then pushed; and your ``main`` holding Alex's
+work, with both halves, after a pull. That pull plays the launch moment.
+
+Alex pushes as soon as your navigation reaches the mothership: the stand-in GitHub's
+``post-receive`` hook has Alex pull it in, which joins the two halves in a merge commit, and push,
+silently and before your ``git push`` returns. So your next ``git pull`` always brings the whole
+ship, however fast the hint's lines are typed (a level event ran only when the page next checked
+the goals). The hook runs once, and only for a push that holds your navigation. It runs for a
+push from your playground button too: git clears the game's ``GIT_CONFIG_COUNT`` settings, which
+turn hooks off, for the receiving side of a local push.
 """
 
+import shlex
 from collections.abc import Callable
 from pathlib import Path
 
@@ -87,22 +94,20 @@ REACTIONS = [
 ]
 
 
-def alex_pushes(lab: kit.Lab, state: kit.State) -> None:
-    """
-    Have Alex pull your half in, which joins the two halves in a merge commit, and push, with the playground's buttons.
+ALEX_PUSHES = """#!/bin/sh
+unset $(git rev-parse --local-env-vars)
+[ "$(git --git-dir={github} show main:{nav})" = {your_half} ] || exit 0
+rm -f "$0"
+git -C {teammate} pull -q --no-rebase --no-edit && git -C {teammate} push -q
+"""
+"""
+The stand-in GitHub's ``post-receive`` hook: once main holds your navigation, Alex pulls and pushes.
 
-    Parameters
-    ----------
-    lab : kit.Lab
-        The level's lab.
-    state : kit.State
-        The level's state (unused).
-    """
-    for button in ("pull-no-rebase", "push"):
-        kit.press(lab, "alex", button)
+It runs inside your push, with the hook's ``GIT_DIR`` and the other repository-local variables
+unset first so Alex's git works in Alex's clone; it removes itself before Alex pushes, so Alex's
+push does not run it again.
+"""
 
-
-EVENTS = [kit.LevelEvent(id="alex-pushes", run=alex_pushes, goal="push")]
 
 
 def _file(folder: Path, ref: str, name: str) -> str:
@@ -212,7 +217,7 @@ QUEST: list[kit.Step] = [
 
 def setup(lab: kit.Lab) -> kit.State:
     """
-    Build the playground with the ship's frame, Alex's engines committed in Alex's clone, and your navigation edited.
+    Build the playground with the ship's frame, Alex's engines committed in Alex's clone, your navigation edited, and Alex's hook.
 
     Parameters
     ----------
@@ -234,6 +239,11 @@ def setup(lab: kit.Lab) -> kit.State:
     (lab.teammate / ENGINE).write_text(ALEX_HALF)
     kit.git(lab.teammate, "commit", "-q", "-am", "Set the engines", author=ALEX, when="2026-06-21T09:00:00+00:00")
     (lab.project / NAV).write_text(YOUR_HALF)
+    hook = lab.github / "hooks" / "post-receive"
+    hook.parent.mkdir(exist_ok=True)
+    quoted = {name: shlex.quote(str(path)) for name, path in (("github", lab.github), ("teammate", lab.teammate))}
+    hook.write_text(ALEX_PUSHES.format(**quoted, nav=NAV, your_half=shlex.quote(YOUR_HALF.strip())))
+    hook.chmod(0o755)
     return {"alex": kit.git(lab.teammate, "rev-parse", "HEAD").strip()}
 
 
@@ -262,7 +272,7 @@ def check(lab: kit.Lab, state: kit.State, answer: str | None, typed: kit.Typed) 
 
 def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
     """
-    Play the level like a player: every quest step's action, in order, with Alex's push after yours.
+    Play the level like a player: every quest step's action, in order; Alex pushes inside your push.
 
     Parameters
     ----------
@@ -280,9 +290,6 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
     """
     for quest_step in QUEST:
         QUEST_ACTIONS[quest_step.id](lab, state, typed)
-        for event in EVENTS:
-            if event.goal == quest_step.id:
-                event.run(lab, state)
     return None
 
 
