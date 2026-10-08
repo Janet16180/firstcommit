@@ -1,11 +1,21 @@
 notes = """
-A branch is a label on a commit. `git branch scout` writes a new label on the commit you are on
-and copies no file. `HEAD` says which branch you are on; `git switch scout` moves it there and
-rewrites the working folder to match that branch's last commit. Your next commit moves only the
-branch you are on.
+A branch is a name for one commit. `HEAD` is "you are here": it rides the branch you are on, and
+your next commit moves only that branch. `origin/main` is your bookmark of the mothership's `main`:
+it moves only when you talk to the mothership (push, fetch, pull).
 
-    $ git branch scout                            # a new label on the commit you are on
-    $ git switch scout                            # move onto it; the working folder follows
+Names come and go; commits stay. `git branch scout` writes a new name where `HEAD` is and copies
+no file; `git branch first-route <hash>` puts one on any commit; `git branch -d` takes one off,
+but never the one `HEAD` is on. `git switch scout` moves `HEAD` there and rewrites the working
+folder to match; `git switch -c` makes a name and moves there in one step. `git checkout` and
+`git checkout -b` are the older forms of the same.
+
+    $ git branch -v                     # each branch and the commit it names; * is where HEAD rides
+    $ git branch scout                  # a new name where HEAD is
+    $ git branch first-route <hash>     # a name on any commit
+    $ git branch -d test-run            # take a name off; the commit stays
+    $ git switch scout                  # move HEAD there; the folder follows
+    $ git switch -c lights-v2           # a new name where HEAD is, and go there
+    $ git log --oneline --graph --all   # the whole tree, drawn
 """
 
 [[card]]
@@ -65,3 +75,90 @@ explain = """
 the remote itself, only the last news of it.
 """
 source = "gitglossary(7), remote-tracking branch; git-branch(1), `-a`"
+
+[[card]]
+id = "names-delete-keeps"
+kind = "choice"
+level = 1
+prompt = "You run `git branch -d test-run`. What happens to the commit `test-run` named?"
+correct = "It stays; only the name goes"
+wrong = [
+    "It is deleted along with the name",
+    "It moves onto the branch you are on",
+    "It is kept only on the remote",
+]
+explain = """
+A name points at a commit; it is not the commit. `git branch -d` takes the name off and prints the
+hash it pointed at. The commit stays, and any branch whose history holds it still leads to it.
+"""
+source = "git-branch(1), `-d`"
+verify = """
+git init -q base && cd base
+echo a > a.txt && git add a.txt && git commit -q -m "Start"
+git branch test-run && echo b > b.txt && git add b.txt && git commit -q -m "Next"
+first=$(git rev-parse test-run)
+git branch -q -d test-run
+git cat-file -e "$first" && git merge-base --is-ancestor "$first" HEAD
+"""
+
+[[card]]
+id = "names-new-name-at-head"
+kind = "choice"
+level = 2
+prompt = "You are on `main` and run `git switch -c lights-v2`. Which commit does `lights-v2` name?"
+correct = "The commit `main` is on"
+wrong = [
+    "The newest commit of any branch",
+    "A new, empty commit made for it",
+    "The first commit of the repository",
+]
+explain = """
+A new name lands where `HEAD` is. `git switch -c lights-v2` makes the name on the commit you are
+on, then moves `HEAD` onto it; it makes no commit. To put it on another side line, switch there
+first.
+"""
+source = "git-switch(1), `-c`"
+verify = """
+git init -q base && cd base
+echo a > a.txt && git add a.txt && git commit -q -m "Start"
+git switch -q -c bright && echo b > b.txt && git add b.txt && git commit -q -m "Bright" && git switch -q main
+git switch -q -c lights-v2
+test "$(git rev-parse lights-v2)" = "$(git rev-parse main)"
+"""
+
+[[card]]
+id = "names-delete-head"
+kind = "choice"
+level = 3
+prompt = "`HEAD` is on `fuel-test`. You run `git branch -d fuel-test`. What happens?"
+correct = "Git refuses, and nothing changes"
+wrong = [
+    "The name goes and `HEAD` moves to `main`",
+    "The name and its commit both go",
+    "Git asks which branch to move to",
+]
+explain = """
+Git will not take off the name your folder is showing: it says the branch is used by the
+worktree. Move `HEAD` first, with `git switch main`, then take the name off.
+"""
+source = "git-branch(1), `-d`"
+verify = """
+git init -q base && cd base
+echo a > a.txt && git add a.txt && git commit -q -m "Start"
+git switch -q -c fuel-test
+! git branch -d fuel-test 2> /dev/null
+test "$(git branch --show-current)" = fuel-test
+"""
+
+[[card]]
+id = "names-checkout-b"
+kind = "text"
+level = 2
+prompt = "What is the older form of `git switch -c lights`, which you will meet in tutorials?"
+accept = ["git checkout -b lights"]
+explain = """
+`git checkout -b lights` makes the branch and moves onto it, as `git switch -c lights` does.
+`git checkout` is older and does many jobs, even restoring files; `git switch` does only the
+moving between branches.
+"""
+source = "git-checkout(1), `-b`; git-switch(1), `-c`"

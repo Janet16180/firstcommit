@@ -944,6 +944,29 @@ list read before `night-watch` not counting.
 | `DRAWN` | `git log --oneline --graph --all` draws every branch's line, and each side line closes with `|/` | git-log(1) `--graph`, `--all`; the script, beat 6 (real output) |
 | `LISTED` | `night-watch` and `quiet-engine` name the same commit | the script, beat 10 (real output); the level's test |
 
+### Level `names-chart` (Match the chart, 5-5, challenge)
+
+*Re-checked* by `tests/levels/test_names_chart.py`: the chart's names against the start, the
+refused `git branch -d` on the name HEAD is on (Rama's reaction), the hint's lines matching the
+chart with every commit kept, `lights-v2` made from `main` (named), HEAD left elsewhere, and a new
+commit (lost).
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, `USED_BY_WORKTREE`, debrief | `git branch -d` refuses the branch HEAD is on; git says it is used by the worktree | git-branch(1) `-d`; the 5-5 script, beat 3 (real output on git 2.43); the level's test |
+| `WRONG_SIDE`, debrief | a new name lands where HEAD is | git-switch(1) `-c` (`<start-point>` defaults to HEAD); git-branch(1); the level's test |
+| `MATCHED`, debrief | the hint's lines move only names: every commit stays | the level's test (the same commits before and after) |
+
+### Deck `names` (2026-10-08)
+
+| Card | Claim | Evidence |
+|---|---|---|
+| `names-delete-keeps` | `git branch -d` takes the name off; the commit stays in a branch's history | `verify`; git-branch(1) `-d` |
+| `names-new-name-at-head` | `git switch -c` names the commit HEAD is on and makes no commit | `verify`; git-switch(1) `-c` |
+| `names-delete-head` | `git branch -d` refuses the branch HEAD is on, and HEAD stays | `verify`; git-branch(1) `-d` |
+| `names-checkout-b` | `git checkout -b` is the older form of `git switch -c` | git-checkout(1) `-b`; git-switch(1) `-c` |
+| notes | as the sector's levels and cards | the levels' evidence above |
+
 ## No `origin/HEAD` in the playground's clones (added 2026-10-08)
 
 `playground.setup` runs `git remote set-head origin --delete` in each clone, so `git log` shows
