@@ -133,3 +133,21 @@ test("reduced motion plays neither birth", () => {
   const reduced = STYLE.slice(STYLE.indexOf("@media (prefers-reduced-motion: reduce)"));
   for (const selector of [".sky.art-birth-fold *", ".sky.art-birth-unroll *"]) assert.ok(reduced.includes(selector), selector);
 });
+
+test("an ignored folder's chip sits behind a calm scanline field with emitters at its corners, behind its words", () => {
+  const chip = rules(".art-ignore-field").join("");
+  assert.match(chip, /position: relative/);
+  assert.match(chip, /isolation: isolate/);
+  const field = rules(".art-ignore-field::after").join("");
+  assert.match(field, /content: ""/);
+  assert.match(field, /position: absolute/);
+  assert.match(field, /z-index: -1/);
+  assert.match(field, /pointer-events: none/);
+  assert.match(field, /repeating-linear-gradient\(/);
+  assert.equal((field.match(/no-repeat/g) || []).length, 4, "four corner emitters");
+  for (const [, token] of field.matchAll(/var\((--[\w-]+)/g)) assert.ok(TOKENS.has(token), token);
+  assert.ok(!/#[0-9A-Fa-f]{3,6}\b|\brgba?\(|\bhsla?\(/.test(field));
+  assert.ok(!/::before/.test(STYLE.match(/\.art-ignore-field[^{]*\{/g).join("")), "the chip's ::before is its state dot");
+  const reduced = STYLE.slice(STYLE.indexOf("@media (prefers-reduced-motion: reduce)"));
+  assert.ok(reduced.includes(".art-ignore-field::after"));
+});

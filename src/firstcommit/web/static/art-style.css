@@ -722,6 +722,33 @@
   to { opacity: 1; }
 }
 
+/* Put on an ignored folder's chip (.file.is-ignored, orbit.css): a calm field of scanlines
+   behind its words, with an emitter at each corner, in the workshop's colour. The files are still
+   on the disk, out of Git's sight. ::after, because the chip's ::before is its state dot. */
+.art-ignore-field {
+  position: relative;
+  isolation: isolate;
+}
+
+.art-ignore-field::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--z-wd) 0 0) 0 0 / 3px 3px no-repeat,
+    linear-gradient(var(--z-wd) 0 0) 100% 0 / 3px 3px no-repeat,
+    linear-gradient(var(--z-wd) 0 0) 0 100% / 3px 3px no-repeat,
+    linear-gradient(var(--z-wd) 0 0) 100% 100% / 3px 3px no-repeat,
+    repeating-linear-gradient(to bottom, color-mix(in srgb, var(--z-wd) 20%, transparent) 0 1px, transparent 1px 3px);
+  animation: art-ignore-shimmer 4s steps(2) infinite;
+}
+
+@keyframes art-ignore-shimmer {
+  50% { opacity: 0.6; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .art-rama,
   .art-rama *,
@@ -736,7 +763,8 @@
   .art-crew-flight::after,
   .art-moment *,
   .sky.art-birth-fold *,
-  .sky.art-birth-unroll * {
+  .sky.art-birth-unroll *,
+  .art-ignore-field::after {
     animation: none !important;
   }
 
