@@ -329,3 +329,30 @@ def test_a_save_written_by_an_older_game_names_the_file_and_how_to_start_over(ga
     message = str(raised.value)
     assert name in message and "older version of the game" in message
     assert "`firstcommit reset --yes`" in message and "`reset`" in message
+
+
+PULL: records.PullRequest = {
+    "number": 1,
+    "title": "Fix the lights",
+    "author": "you",
+    "head": "fix-lights",
+    "base": "main",
+    "state": "open",
+    "reviews": [{"reviewer": "Robin", "verdict": "approved", "body": "", "commit": "a" * 40}],
+    "merge_commit": None,
+}
+
+
+def test_pull_requests_read_back_as_written_and_none_before_any(tmp_path: Path) -> None:
+    path = tmp_path / "github.com" / "moonbase" / "pulls.json"
+    assert save.load_pulls(path) == []
+    save.write_pulls(path, [PULL])
+    assert save.load_pulls(path) == [PULL]
+
+
+@pytest.mark.parametrize(("key", "value"), [("number", "1"), ("state", "draft"), ("reviews", [{"verdict": "yes"}]), ("merge_commit", 3)])
+def test_a_damaged_pull_request_file_is_a_save_error(tmp_path: Path, key: str, value: object) -> None:
+    path = tmp_path / "pulls.json"
+    path.write_text(json.dumps({"pulls": [{**PULL, key: value}]}))
+    with pytest.raises(save.SaveError, match=key):
+        save.load_pulls(path)

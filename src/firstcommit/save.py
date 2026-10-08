@@ -26,7 +26,7 @@ from typing import Annotated, Any, Literal, TypedDict, cast
 
 from termlab import store
 
-from firstcommit.records import Command, Language, Seen, Snapshot
+from firstcommit.records import Command, Language, PullRequest, Seen, Snapshot
 
 HOME_VARIABLE = "FIRSTCOMMIT_HOME"
 DEFAULT_HOME = "~/.firstcommit"
@@ -370,6 +370,49 @@ def erase() -> None:
         (home() / name).unlink(missing_ok=True)
 
 
+class Pulls(TypedDict):
+    """The stand-in GitHub's pull requests, as their file holds them (`firstcommit.lab.Lab` ``pulls``)."""
+
+    pulls: list[PullRequest]
+
+
+def load_pulls(path: Path) -> list[PullRequest]:
+    """
+    Read the stand-in GitHub's pull requests.
+
+    Parameters
+    ----------
+    path : Path
+        Their file (`firstcommit.lab.Lab` ``pulls``).
+
+    Returns
+    -------
+    list[PullRequest]
+        The pull requests, or none if the file does not exist yet.
+
+    Raises
+    ------
+    SaveError
+        If the file does not hold a valid `Pulls` record.
+    """
+    data = _read_file(path, Pulls)
+    return [] if data is None else cast(Pulls, data)["pulls"]
+
+
+def write_pulls(path: Path, pulls: list[PullRequest]) -> None:
+    """
+    Replace the stand-in GitHub's pull requests.
+
+    Parameters
+    ----------
+    path : Path
+        Their file; missing folders are made.
+    pulls : list[PullRequest]
+        Every pull request.
+    """
+    store.write_json(path, {"pulls": pulls})
+
+
 def _read(name: str, record: type) -> dict[str, Any] | None:
     """
     Read one save file and check it holds a record of the given type.
@@ -391,7 +434,30 @@ def _read(name: str, record: type) -> dict[str, Any] | None:
     SaveError
         If the file is not a JSON object or does not match the record.
     """
-    path = home() / name
+    return _read_file(home() / name, record)
+
+
+def _read_file(path: Path, record: type) -> dict[str, Any] | None:
+    """
+    Read a JSON file and check it holds a record of the given type.
+
+    Parameters
+    ----------
+    path : Path
+        The file.
+    record : type
+        The `TypedDict` the file must hold.
+
+    Returns
+    -------
+    dict[str, Any] | None
+        The record, or None if the file does not exist.
+
+    Raises
+    ------
+    SaveError
+        If the file is not a JSON object or does not match the record.
+    """
     try:
         data = store.read_json(path)
     except ValueError as error:

@@ -10,12 +10,14 @@ nothing is staged. `git add .` stages everything in the current folder and the f
 
 To take a file back out of the staging area and keep it in the working folder:
 `git rm --cached <file>` before the repository's first commit, and `git restore --staged <file>`
-once it has one.
+once it has one. A file `.gitignore` lists names and patterns Git ignores, such as `sim-output/`:
+`git status` stops listing them and `git add .` skips them, while the files stay on your disk.
 
     $ git add map.txt                  # stage one file
     $ git status                       # see what is staged and what is not
     $ git rm --cached journal.txt      # unstage, before the first commit
     $ git restore --staged map.txt     # unstage, once there is a commit
+    $ echo "sim-output/" > .gitignore  # ignore generated files
 """
 
 [[card]]
@@ -118,4 +120,30 @@ git add .
 if git restore --staged journal.txt >/dev/null 2>&1; then exit 1; fi
 git rm -q --cached journal.txt
 test -f journal.txt && test "$(git diff --cached --name-only)" = "map.txt"
+"""
+
+[[card]]
+id = "cargo-gitignore-skips"
+kind = "choice"
+level = 2
+prompt = "`.gitignore` holds the line `sim-output/`, and `sim-output/` is full of new files. What does `git add .` stage from it?"
+correct = "Nothing: Git skips ignored files"
+wrong = [
+    "Every file in it",
+    "Only the files changed since last time",
+    "Everything, but with a warning",
+]
+explain = """
+Files that `.gitignore` names stay out of `git status` and out of `git add .`. They are still on
+your disk; Git just does not offer them for a commit. Commit `.gitignore` itself so everyone gets
+the same rule.
+"""
+source = "gitignore(5), DESCRIPTION"
+verify = """
+git init -q base && cd base
+echo "heading=Moon" > nav.cfg && git add nav.cfg && git commit -q -m "Set the heading"
+mkdir sim-output && echo 1 > sim-output/run-001.log && echo 2 > sim-output/run-002.log
+echo "sim-output/" > .gitignore
+git add .
+test "$(git diff --cached --name-only)" = ".gitignore" && test -e sim-output/run-001.log
 """

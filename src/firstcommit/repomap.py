@@ -66,6 +66,7 @@ __all__ = [
     "history",
     "mode_changed",
     "nested",
+    "parsed_commits",
     "reflog",
     "snapshot",
     "staged",
@@ -313,7 +314,7 @@ def ghosts(path: Path) -> list[Commit]:
     """
     moved_to = sorted({entry["new"] for entry in reflog(path)})
     result = gitcmd.run(path, "log", "-z", "--topo-order", f"--max-count={MAX_COMMITS}", f"--format={COMMIT_FORMAT}", *moved_to, "--not", "--all", "--") if moved_to else None
-    return _parsed_commits(result) if result is not None else []
+    return parsed_commits(result) if result is not None else []
 
 
 def _incoming(path: Path) -> tuple[str, str]:
@@ -886,11 +887,11 @@ def _commits(cwd: Path, head: str | None) -> tuple[list[Commit], bool]:
     result = gitcmd.run(
         cwd, "log", "-z", "--topo-order", f"--max-count={MAX_COMMITS + 1}", f"--format={COMMIT_FORMAT}", "--branches", "--tags", "--remotes", *tips, "--"
     )
-    commits = _parsed_commits(result)
+    commits = parsed_commits(result)
     return commits[:MAX_COMMITS], len(commits) > MAX_COMMITS
 
 
-def _parsed_commits(result: subprocess.CompletedProcess[str]) -> list[Commit]:
+def parsed_commits(result: subprocess.CompletedProcess[str]) -> list[Commit]:
     """
     Read the commits of a ``git log -z --format=COMMIT_FORMAT``.
 

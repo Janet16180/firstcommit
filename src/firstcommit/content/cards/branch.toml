@@ -154,3 +154,29 @@ printf 'deck=dim\\nhall=on\\n' > lights.cfg
 git switch -q -c fix-lights
 test "$(git branch --show-current)" = fix-lights && test "$(git status --porcelain)" = " M lights.cfg"
 """
+
+[[card]]
+id = "branch-switch-refused"
+kind = "choice"
+level = 3
+prompt = "On `scout` you edited `route.txt`, which is different on `main`, and did not commit. You run `git switch main`. What happens?"
+correct = "Git refuses, and your edit stays"
+wrong = [
+    "Git switches and drops your edit",
+    "Git commits your edit on `scout` first",
+    "Git switches and merges the two versions",
+]
+explain = """
+An edit you have not committed belongs to no branch, so a switch carries it along when it can.
+Here `main` has another version of the file, and switching would overwrite your edit, so Git
+refuses and changes nothing. Commit the edit where it belongs, or throw it away with
+`git restore route.txt`, then switch.
+"""
+source = "git-switch(1), DESCRIPTION"
+verify = """
+git init -q base && cd base
+echo "Earth" > route.txt && git add route.txt && git commit -q -m "Route"
+git switch -q -c scout && echo "Mars" >> route.txt && git commit -q -am "Mars" && echo "Phobos" >> route.txt
+! git switch main 2> /dev/null
+test "$(git branch --show-current)" = scout && grep -q Phobos route.txt
+"""

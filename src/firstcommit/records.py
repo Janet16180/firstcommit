@@ -169,6 +169,80 @@ class ReflogEntry(TypedDict):
     message: str
 
 
+ReviewVerdict = Literal["approved", "changes-requested", "commented"]
+"""What a review says: approved, changes requested, or only a comment."""
+PullState = Literal["open", "merged", "closed"]
+"""Where a pull request stands."""
+
+
+class Review(TypedDict):
+    """
+    A review of a pull request, a game record that git never sees, as on GitHub.
+
+    ``commit`` is the pull request's head commit the reviewer saw; once the branch moves past it,
+    the review is stale.
+    """
+
+    reviewer: str
+    verdict: ReviewVerdict
+    body: str
+    commit: str
+
+
+class PullRequest(TypedDict):
+    """
+    A pull request on the stand-in GitHub: a game record kept beside the bare repository (`firstcommit.pulls`).
+
+    ``number`` counts from 1; ``head`` is the branch asking to be merged and ``base`` the branch it
+    asks to join; ``merge_commit`` is the commit the merge made, None until it is merged.
+    """
+
+    number: int
+    title: str
+    author: str
+    head: str
+    base: str
+    state: PullState
+    reviews: list[Review]
+    merge_commit: str | None
+
+
+class ReviewView(Review):
+    """
+    A review as the board shows it: ``stale`` once the pull request's head has moved past the commit it saw.
+
+    GitHub calls such an approval stale, and a branch protection rule may dismiss it. "Outdated"
+    is GitHub's word for a line comment whose line a later commit changed, which reviews here do
+    not have yet.
+    """
+
+    stale: bool
+
+
+class PullView(TypedDict):
+    """
+    A pull request as the review board (V7) draws it, read from the stand-in GitHub now.
+
+    ``head_commit`` is the head branch's commit (``refs/pull/<n>/head`` once the branch is gone);
+    ``commits`` the pull request's own commits, newest first; ``files`` the paths it changes from
+    where it left ``base``; ``mergeable`` and ``conflicts`` what a merge into ``base`` would do now
+    (a merged one is mergeable, with no conflicts).
+    """
+
+    number: int
+    title: str
+    author: str
+    head: str
+    base: str
+    state: PullState
+    head_commit: str
+    commits: list[Commit]
+    files: list[str]
+    mergeable: bool
+    conflicts: list[str]
+    reviews: list[ReviewView]
+
+
 class Command(TypedDict):
     """
     One command line the player typed in the game's terminal (`firstcommit.commands`), and how it ended.

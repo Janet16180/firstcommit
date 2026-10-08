@@ -951,3 +951,23 @@ result matches the host's, line for line:
 | E110 | `Revert "strobe"` on top of `route`, lights steady, `route.txt` kept; push 0; the other clone pulls steady lights; after the reset the plain push exits 1 |
 | E111 | the reset leaves only `a` in the folder and `--all` lists only `base`; `rescue` at `HEAD@{1}` lists `d2 d1 base` |
 | E112 | "Deleted branch thrusters"; `HEAD@{0}` the checkout to `main`, `HEAD@{1}` `d2`; the label lists `d2 d1`; the push exits 0 and the hub's `thrusters` is `d2` |
+
+## Wave 3 groundwork: pull requests on the stand-in GitHub (added 2026-10-08)
+
+No level uses it yet; the levels of sector 8 will cite these when they are written.
+
+| Tag | What ran | Result |
+|---|---|---|
+| E113 | on the host (git 2.43.0), in a bare hub: `main` with `a.txt` and `d.txt`; `fix` adds a line to `a.txt`; `main` then changes `d.txt`; `git merge-tree --write-tree --name-only main fix`; a `clash` branch adds another line to `a.txt`; `git merge-tree --write-tree --name-only fix clash`, also with `--no-messages` | the clean merge exits 0 and prints only the tree; the clash exits 1 and prints the tree, then `a.txt`, then (without `--no-messages`) a blank line and "CONFLICT (content): Merge conflict in a" |
+
+`firstcommit.pulls` reads mergeability and conflicted paths from that output, makes the merge with
+`commit-tree <tree> -p <base> -p <head>` and moves the base with `update-ref` given the old value,
+so a base that moved meanwhile is not overwritten. *Re-checked* by `tests/test_pulls.py`.
+
+### The board's GitHub claims, checked against docs.github.com (2026-10-08)
+
+| Claim in `firstcommit.pulls` | docs.github.com says | Result |
+|---|---|---|
+| the merge commit's message was "Merge pull request #<n> from moonbase/<head>", then a blank line and the title | "The default message includes the pull request number and title. For example, `Merge pull request #123 from patch-1`." ([Configuring commit merging for pull requests](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/configuring-commit-merging-for-pull-requests)) | **fixed** to the documented form, "Merge pull request #<n> from <head>", then the title. Merge commits on github.com often read "from <owner>/<branch>", but no docs.github.com page I found says so, so the game does not claim it |
+| each open pull request's head mirrored at `refs/pull/<n>/head` | "When you open a pull request, GitHub creates temporary Git references that point to the pull request's head branch" ([Pull requests](https://docs.github.com/en/pull-requests/reference/pull-requests)); the fetch command is `git fetch origin pull/ID/head:BRANCH_NAME`, and "The remote `refs/pull/` namespace is *read-only*." ([Checking out pull requests locally](https://docs.github.com/en/pull-requests/how-tos/review-pull-requests/checking-out-pull-requests-locally)) | kept; the game moves the ref itself (`mirror`), and a level must never let the player push to it |
+| a review whose commit is behind the head was called "outdated" | GitHub uses "outdated" for line comments: "Not using the latest commit SHA may render your comment outdated if a subsequent commit modifies the line" ([REST API endpoints for pull request review comments](https://docs.github.com/en/rest/pulls/comments)); a review approved before new commits is "stale": "Dismiss stale pull request approvals when new commits are pushed", which dismisses "a pull request approval review when a code-modifying commit is pushed to the branch" ([Managing a branch protection rule](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule)) | **fixed**: `ReviewView.outdated` is now `stale`. Line comments, which 8-2's "Robin's pin turns outdated" needs, are not built yet: they need a path, a line and the rule that a later commit changed that line |

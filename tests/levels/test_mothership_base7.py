@@ -57,3 +57,11 @@ def test_origin_by_the_mothership_s_absolute_path_counts() -> None:
 
 def test_the_scene_opens_on_the_meteorite_strike_then_the_challenge_alarm() -> None:
     assert [frame.art for frame in level.SCENE] == ["meteor", "alarm"]
+
+
+def test_ignoring_the_debris_with_a_gitignore_also_solves_it() -> None:
+    lab, state = started(level)
+    lines = ["git init", "echo crash-dump.bin > .gitignore", "git add .", 'git commit -m "Rebuild Base 7"', *REBUILD[3:]]
+    typed = typed_in(lab, *lines)
+    assert [line["status"] for line in typed] == [0] * len(lines)
+    assert level.check(lab, state, None, typed).solved
