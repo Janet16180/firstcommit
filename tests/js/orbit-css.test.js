@@ -98,3 +98,10 @@ test("a prediction's choice reads as one line of text, its commands inline, neve
   const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
   assert.match(rule(".goal-choice"), /display: block;/);
 });
+
+test("Alex's mirrored station draws at about 60 percent and takes no clicks, so your zones keep the room", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.match(rule(".station.is-mirror"), /zoom: 0\.6;/);
+  assert.match(rule(".station.is-mirror"), /pointer-events: none;/);
+  assert.match(rule(".viz-crew"), /grid-template-columns: minmax\(0, 1fr\) minmax\(150px, 200px\) minmax\(0, 0\.6fr\);/);
+});

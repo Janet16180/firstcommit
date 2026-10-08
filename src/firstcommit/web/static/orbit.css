@@ -790,7 +790,7 @@ pre.code code {
    station with its workshop, dock and vault. */
 .viz-crew {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(150px, 200px) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 200px) minmax(0, 0.6fr);
   grid-template-areas: "you sky alex";
   gap: 8px;
   align-items: start;
@@ -820,6 +820,17 @@ pre.code code {
 .station-row {
   display: grid;
   grid-template-columns: minmax(0, 0.8fr) 24px minmax(0, 0.8fr) 24px minmax(0, 1.4fr);
+}
+
+/* Alex's station: a mirror of yours drawn at about 60 percent, laid out at full size inside so
+   its capsules and flights line up, and only looked at. */
+.station.is-mirror {
+  zoom: 0.6;
+  pointer-events: none;
+}
+
+.station.is-mirror .station-row {
+  grid-template-columns: minmax(0, 1.4fr) 24px minmax(0, 0.8fr) 24px minmax(0, 0.8fr);
 }
 
 .viz.is-crew .zone {
@@ -1624,7 +1635,7 @@ pre.code code {
   }
 
   .viz-crew {
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.6fr);
     grid-template-areas: "sky sky" "you alex";
   }
 

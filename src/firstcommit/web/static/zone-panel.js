@@ -102,13 +102,13 @@ const ZonePanel = (function () {
 
   /* A station's three zones' items, keyed with `prefix` ("" for yours, "crew-" for Alex's), its
      capsules `height` pixels a row. */
-  function stationContents(station, prefix, height) {
-    const workshop = station.workshop.map((file) => fileChip(file.path, stateTag(file.state), { "data-state": file.state, "data-key": `${prefix}workshop:${file.path}`, title: t(`zones.tip.${file.state}`) }));
-    const dock = station.dock && station.dock.map((change) => fileChip(change.path, t(`zones.change.${change.change}`), { class: "file is-staged", "data-key": `${prefix}dock:${change.path}` }));
+  function stationContents(reading, prefix, height) {
+    const workshop = reading.workshop.map((file) => fileChip(file.path, stateTag(file.state), { "data-state": file.state, "data-key": `${prefix}workshop:${file.path}`, title: t(`zones.tip.${file.state}`) }));
+    const dock = reading.dock && reading.dock.map((change) => fileChip(change.path, t(`zones.change.${change.change}`), { class: "file is-staged", "data-key": `${prefix}dock:${change.path}` }));
     return {
       [`${prefix}workshop`]: { count: workshop.length, nodes: workshop },
-      [`${prefix}dock`]: station.dock && { count: dock.length, nodes: dock },
-      [`${prefix}vault`]: station.vault && { count: station.vault.length, nodes: station.vault.length ? [capsules(`${prefix}vault`, station.vault, height)] : [] },
+      [`${prefix}dock`]: reading.dock && { count: dock.length, nodes: dock },
+      [`${prefix}vault`]: reading.vault && { count: reading.vault.length, nodes: reading.vault.length ? [capsules(`${prefix}vault`, reading.vault, height)] : [] },
     };
   }
 
@@ -144,17 +144,23 @@ const ZonePanel = (function () {
   /* The four zones in a row, with the arrows between them. */
   const soloRow = (shells) => el("div", { class: "viz-row" }, ZONES.map((name, index) => [shells[name].element, index < FLOWS.length && flow(FLOWS[index])]));
 
-  /* One person's station: their workshop, dock and vault, with the arrows between them. */
-  const station = (shells, who, prefix) => el("section", { class: `station art-station art-station--${who}`, "data-station": who, "aria-label": t(`zones.station.${who}`) },
-    el("p", { class: "art-station-name" }, ArtSprites.icon(`station-${who}`), t(`zones.station.${who}`)),
-    el("div", { class: "station-row" }, shells[`${prefix}workshop`].element, flow([[`${prefix}add`, false]]), shells[`${prefix}dock`].element, flow([[`${prefix}commit`, false]]), shells[`${prefix}vault`].element));
+  /* One person's station: their workshop, dock and vault, with the arrows between them. A
+     mirrored station (Alex's, on the far side) runs the other way, so its vault faces the
+     mothership too. */
+  function station(shells, who, prefix, mirrored = false) {
+    const row = [shells[`${prefix}workshop`].element, flow([[`${prefix}add`, false]], mirrored), shells[`${prefix}dock`].element, flow([[`${prefix}commit`, false]], mirrored), shells[`${prefix}vault`].element];
+    return el("section", { class: `station art-station art-station--${who}${mirrored ? " is-mirror" : ""}`, "data-station": who, "aria-label": t(`zones.station.${who}`) },
+      el("p", { class: "art-station-name" }, ArtSprites.icon(`station-${who}`), t(`zones.station.${who}`)),
+      el("div", { class: "station-row" }, mirrored ? row.reverse() : row));
+  }
 
   /* Your station, the mothership between the two with each station's push and pull under it
-     (Alex's mirrored, as their station is on the other side), and Alex's station. */
+     (Alex's mirrored, as their station is on the other side), and Alex's station as a smaller
+     mirror of yours. */
   const crewRows = (shells) => el("div", { class: "viz-crew" },
     station(shells, "you", ""),
     el("div", { class: "crew-sky" }, shells.remote.element, el("div", { class: "crew-flows" }, flow([["push", false], ["pull", true]]), flow([["crew-push", false], ["crew-pull", true]], true))),
-    station(shells, "alex", "crew-"));
+    station(shells, "alex", "crew-", true));
 
   /* Restarts a class's one-shot animation on a node, and takes the class off after `ms`. */
   function flash(node, name, ms, timers) {

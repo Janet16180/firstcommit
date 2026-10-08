@@ -225,7 +225,7 @@ test("with a teammate the zones show two stations, yours and Alex's, with the mo
   assert.deepEqual(stations.map((node) => node.dataset.station), ["you", "alex"]);
   assert.deepEqual(stations.map((node) => node.querySelector(".art-station-name").textContent), ["Your base", "Alex's base"]);
   assert.deepEqual([...stations[0].querySelectorAll(".zone")].map((node) => node.dataset.zone), ["workshop", "dock", "vault"]);
-  assert.deepEqual([...stations[1].querySelectorAll(".zone")].map((node) => node.dataset.zone), ["crew-workshop", "crew-dock", "crew-vault"]);
+  assert.deepEqual([...stations[1].querySelectorAll(".zone")].map((node) => node.dataset.zone), ["crew-vault", "crew-dock", "crew-workshop"]);
   assert.ok(panel.element.querySelector(".crew-sky .zone[data-zone=remote]"));
   assert.ok(keyed(zone(panel, "crew-vault"), `crew-vault:${observation.teammate.commits[0].hash}`));
   assert.ok(panel.element.querySelector('.fl[data-arrow="crew-push"]'));
@@ -311,4 +311,13 @@ test("a capsule flying up to the mothership, or down from it, in the crew view t
     delete proto.cloneNode;
     for (const ghost of document.body.querySelectorAll(".ghost")) ghost.remove();
   }
+});
+
+test("Alex's station is a smaller mirror of yours: its vault faces the mothership, its arrows point back", () => {
+  const panel = ZonePanel.create();
+  panel.update(record("press").observation);
+  const alex = panel.element.querySelector('.station[data-station="alex"]');
+  assert.ok(alex.classList.contains("is-mirror"));
+  assert.equal(panel.element.querySelector('.station[data-station="you"]').classList.contains("is-mirror"), false);
+  assert.ok([...alex.querySelectorAll(".flow")].every((node) => node.classList.contains("is-mirror")));
 });
