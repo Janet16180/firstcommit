@@ -86,7 +86,7 @@ SNAPSHOT: records.Snapshot = {
     "stash": 0,
     "truncated": False,
 }
-OBSERVED: save.Observed = {"level": "liftoff-aboard", "project": SNAPSHOT, "github": {**SNAPSHOT, "bare": True, "files": []}, "teammate": SNAPSHOT, "told": 2}
+OBSERVED: save.Observed = {"level": "liftoff-aboard", "project": SNAPSHOT, "github": {**SNAPSHOT, "bare": True, "files": []}, "teammate": SNAPSHOT, "told": 2, "fresh": False}
 
 
 @pytest.mark.parametrize("observed", [OBSERVED, {**OBSERVED, "github": None, "teammate": None}], ids=["playground", "project only"])
@@ -246,6 +246,8 @@ OBSERVATION_DAMAGE = [
     ("told", ...),
     ("told", -1),
     ("told", "2"),
+    ("fresh", ...),
+    ("fresh", "no"),
 ]
 
 
@@ -278,6 +280,7 @@ def test_erasing_removes_every_save_file_and_the_git_config(game_home: Path) -> 
     save.write_observed(OBSERVED)
     save.ensure_gitconfig("x\n")
     save.write_shell_startup("PS1='$ '\n")
+    save.ensure_hushlogin()
     for name in (save.COMMANDS_FILE, save.HISTORY_FILE):
         (game_home / name).write_text("typed\n")
     (game_home / "labs").mkdir()
@@ -299,6 +302,12 @@ def test_the_shell_startup_file_is_written_anew_each_time_in_a_new_home_too(tmp_
     save.write_shell_startup("old\n")
     path = save.write_shell_startup("PS1='$ '\n")
     assert (path, path.read_text()) == (tmp_path / "new" / "home" / save.STARTUP_FILE, "PS1='$ '\n")
+
+
+def test_the_hushlogin_file_is_an_empty_file_in_a_new_home_and_stays_put(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("FIRSTCOMMIT_HOME", str(tmp_path / "new" / "home"))
+    path = save.ensure_hushlogin()
+    assert (path, path.read_text(), save.ensure_hushlogin()) == (tmp_path / "new" / "home" / save.HUSHLOGIN_FILE, "", path)
 
 
 def test_the_home_must_be_absolute(monkeypatch: pytest.MonkeyPatch) -> None:

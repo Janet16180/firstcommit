@@ -35,6 +35,7 @@ ACTIVE_FILE = "active.json"
 OBSERVED_FILE = "observed.json"
 GITCONFIG_FILE = "gitconfig"
 STARTUP_FILE = "bashrc"
+HUSHLOGIN_FILE = ".hushlogin"
 COMMANDS_FILE = "commands.log"
 HISTORY_FILE = "history"
 LABS_FOLDER = "labs"
@@ -156,7 +157,8 @@ class Observed(TypedDict):
 
     ``github`` is None when the level has no stand-in GitHub, and ``teammate`` when it has no
     teammate's clone (`firstcommit.playground`). ``told`` counts the lines of the level's
-    ``Active.typed`` that observations have told already. The snapshots are
+    ``Active.typed`` that observations have told already. ``fresh`` marks the lab as it was set
+    up, before the level's events, snapshotted when the level started and not yet shown. The snapshots are
     checked field by field like every record, so one of another shape (written by another
     version of the game) is dropped on load (`load_observed`).
     """
@@ -166,6 +168,7 @@ class Observed(TypedDict):
     github: Snapshot | None
     teammate: Snapshot | None
     told: int
+    fresh: bool
 
 
 def home() -> Path:
@@ -364,9 +367,24 @@ def write_shell_startup(text: str) -> Path:
     return path
 
 
+def ensure_hushlogin() -> Path:
+    """
+    Create the empty ``.hushlogin`` file that keeps the game's shell quiet (`firstcommit.commands.shell`), if it is missing.
+
+    Returns
+    -------
+    Path
+        The file, in the game home (created if missing).
+    """
+    path = home() / HUSHLOGIN_FILE
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.touch()
+    return path
+
+
 def erase() -> None:
-    """Delete the progress, the level in progress, the last observation, the game's git configuration and its shell's files (startup file, typed-command log, history), damaged or not."""
-    for name in (PROGRESS_FILE, ACTIVE_FILE, OBSERVED_FILE, GITCONFIG_FILE, STARTUP_FILE, COMMANDS_FILE, HISTORY_FILE):
+    """Delete the progress, the level in progress, the last observation, the game's git configuration and its shell's files (startup file, hushlogin, typed-command log, history), damaged or not."""
+    for name in (PROGRESS_FILE, ACTIVE_FILE, OBSERVED_FILE, GITCONFIG_FILE, STARTUP_FILE, HUSHLOGIN_FILE, COMMANDS_FILE, HISTORY_FILE):
         (home() / name).unlink(missing_ok=True)
 
 

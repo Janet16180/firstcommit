@@ -33,7 +33,12 @@ COMPLETION = Path("/usr/share/bash-completion/bash_completion")
 RECORD = re.compile(rb"\d+\t(\d+)\t(.*)", re.DOTALL)
 """A whole record without its NUL: the history number, the exit status and the line."""
 
+PLAYER_HOME = "FIRSTCOMMIT_PLAYER_HOME"
+"""Where `shell` keeps the player's ``HOME`` while bash reads the system's startup file."""
+
 STARTUP = r"""
+HOME=${{{player_home}:-$HOME}}
+unset {player_home}
 if [[ -r {completion} ]]; then
     . {completion}
 fi
@@ -61,6 +66,9 @@ The startup file, with the history file, the log and the tab completion to fill 
 Bash reads this file instead of the player's ``~/.bashrc``, which is where Ubuntu turns tab
 completion on, so it loads the completion itself when it is installed.
 
+It first gives the shell back the player's ``HOME``, which `shell` set aside, or keeps the one it
+has when started some other way.
+
 The first prompt only notes the newest history entry, read back from the history file, so a new
 shell never logs what an earlier one typed. After that, a prompt logs the newest entry only when
 its number changed. The history is not filtered (``HISTCONTROL`` and ``HISTIGNORE`` unset), so
@@ -86,8 +94,34 @@ def startup(log: Path, history: Path) -> str:
         The startup file's text, the paths quoted for bash.
     """
     return STARTUP.format(
-        log=shlex.quote(str(log)), history=shlex.quote(str(history)), completion=shlex.quote(str(COMPLETION))
+        log=shlex.quote(str(log)), history=shlex.quote(str(history)), completion=shlex.quote(str(COMPLETION)), player_home=PLAYER_HOME
     )
+
+
+def shell(startup: Path, quiet_home: Path) -> list[str]:
+    """
+    Give the command that starts the game's interactive bash on its startup file.
+
+    Ubuntu's bash reads ``/etc/bash.bashrc`` before any startup file, and that file prints a
+    notice about ``sudo`` unless ``$HOME`` holds ``.sudo_as_admin_successful`` or ``.hushlogin``.
+    So bash starts with a ``HOME`` of the game's that holds ``.hushlogin``, never touching the
+    player's real home, and the startup file (`startup`) gives the player's ``HOME`` back before
+    the first prompt.
+
+    Parameters
+    ----------
+    startup : Path
+        The startup file.
+    quiet_home : Path
+        A folder holding a ``.hushlogin`` file.
+
+    Returns
+    -------
+    list[str]
+        The program and its arguments; the environment's ``HOME`` is read when it runs.
+    """
+    start = f'export {PLAYER_HOME}="$HOME" HOME="$1"; exec bash --noprofile --rcfile "$2" -i'
+    return ["sh", "-c", start, "sh", str(quiet_home), str(startup)]
 
 
 def since(log: Path, offset: int) -> tuple[list[Command], int]:

@@ -215,7 +215,8 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
   when the level can say something more precise.
 - **`EVENTS`**: `kit.LevelEvent(id, run, goal="")`. `run(lab, state)` makes a real change with
   `kit.git` or `kit.press` (Alex pushes, a build folder floods the workshop). With no `goal` it
-  runs once the page's first look at the lab has been answered, as its second look starts; with a quest step's id, right after the
+  runs when the level starts, so no line the player types can meet the lab without it, while the
+  page's first look still shows the lab as it was before it; with a quest step's id, right after the
   player reaches that goal. The page then animates the change like any other. Each runs once per
   play, and `check` must hold whatever moment the player reaches.
 - **`CHALLENGE = True`** makes the level a challenge: its `QUEST` holds only watch steps, the

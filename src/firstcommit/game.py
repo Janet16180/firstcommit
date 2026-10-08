@@ -716,6 +716,8 @@ def start(level_id: str) -> ActiveView:
     -------
     ActiveView
         The new level in progress, at the first quest step; only lines typed from now on count for it.
+        Its events with no goal (`firstcommit.kit.LevelEvent`) have run, so no line typed meets
+        the lab without them; the first `observe` still shows the lab as it was before them.
 
     Raises
     ------
@@ -727,6 +729,7 @@ def start(level_id: str) -> ActiveView:
         save.clear_active()
         save.clear_observed()
         state = runner.start_lab(entry)
+        lab = runner.lab_of(entry.id)
         active: save.Active = {
             "level": entry.id,
             "started": _now(),
@@ -740,6 +743,9 @@ def start(level_id: str) -> ActiveView:
             "done": [],
         }
         save.write_active(active)
+        set_up, _ = _look(entry.id, lab, None, [])
+        save.write_observed({**set_up, "fresh": True})
+        active = _fire(entry, active, "")
     return _active_view(active, entry)
 
 
@@ -889,9 +895,10 @@ def observe() -> Observation:
     Snapshot the lab of the level in progress and tell what changed since the last observation.
 
     The snapshots are kept in the save (only when they changed), so the events are right
-    whichever process asks; the first observation of a level has no events and is returned at
-    once, and the level's events with no goal (`firstcommit.kit.LevelEvent`) run when the next
-    observation starts, so it tells their changes. The lines typed
+    whichever process asks. The first observation of a level shows the lab as `start` snapshotted
+    it, before the level's events with no goal (`firstcommit.kit.LevelEvent`), and has no events
+    and no lines; the next one tells what changed since, the events' changes and the lines typed
+    meanwhile, so the page animates them. The lines typed
     since the last look are read into the level's record first (`save.Active` ``typed``), so a
     goal still sees them after this observation has told them.
 
@@ -911,9 +918,12 @@ def observe() -> Observation:
         active = _catch_up(active)
         lab = runner.lab_of(entry.id)
         last = save.load_observed()
-        if last is not None and last["level"] == entry.id:
-            active = _fire(entry, active, "")
-        now, typed = _look(entry.id, lab, last, active["typed"])
+        typed: list[Command] = []
+        if last is not None and last["fresh"]:
+            now: save.Observed = {**last, "fresh": False}
+            last = None
+        else:
+            now, typed = _look(entry.id, lab, last, active["typed"])
         messages = _messages(entry, _language())
         observation = _lost_over_pleased(_observation(last, now, _buttons(lab, now), lab.project, typed, _rules(entry), messages), _loss(entry, active, lab, messages))
         if now != last:
@@ -1141,8 +1151,9 @@ def shell_command() -> list[str]:
 
     Whatever the player's own shell, it is bash with the game's startup file
     (`firstcommit.commands.startup`): a plain prompt naming the folder, never the user or the
-    machine, and each command line typed logged in the game home for `observe`. The page's
-    terminal and ``firstcommit shell`` both run it.
+    machine, and each command line typed logged in the game home for `observe`. It starts on the
+    game home, which holds a ``.hushlogin``, so Ubuntu's ``sudo`` notice stays out of it
+    (`firstcommit.commands.shell`). The page's terminal and ``firstcommit shell`` both run it.
 
     Returns
     -------
@@ -1151,7 +1162,7 @@ def shell_command() -> list[str]:
     """
     home = save.home()
     startup = save.write_shell_startup(commands.startup(home / save.COMMANDS_FILE, home / save.HISTORY_FILE))
-    return ["bash", "--noprofile", "--rcfile", str(startup), "-i"]
+    return commands.shell(startup, save.ensure_hushlogin().parent)
 
 
 def terminal_folder() -> str:
@@ -1324,6 +1335,7 @@ def _look(level_id: str, lab: Lab, last: save.Observed | None, typed: list[Comma
         "github": repomap.snapshot(lab.github) if lab.github.exists() else None,
         "teammate": repomap.snapshot(lab.teammate) if lab.teammate.exists() else None,
         "told": len(typed),
+        "fresh": False,
     }
     return now, typed[told:]
 
@@ -1378,7 +1390,7 @@ def _fire(entry: runner.Level, active: save.Active, goal: str) -> save.Active:
     active : save.Active
         Its record.
     goal : str
-        The moment: empty for right after the first observation, else the id of the goal just reached.
+        The moment: empty for when the level starts, else the id of the goal just reached.
 
     Returns
     -------
