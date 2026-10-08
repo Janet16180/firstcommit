@@ -2784,6 +2784,37 @@ pre.code code {
   background: color-mix(in srgb, var(--gold) 25%, var(--crt));
 }
 
+/* A level's pictures (pictures.js): the large one, the small one under it; a chain's chart or
+   git's drawing stands beside it, or under it on a narrow screen. */
+.pictures {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.pictures-large,
+.pictures-small {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pictures-small:empty {
+  display: none;
+}
+
+.pictures-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.pictures-pair.is-stack {
+  grid-template-columns: minmax(0, 1fr);
+}
+
 @media (max-width: 980px) {
   .stage {
     grid-template-columns: minmax(0, 1fr);
@@ -2836,6 +2867,10 @@ pre.code code {
 }
 
 @media (max-width: 760px) {
+  .pictures-pair {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .viz-crew {
     grid-template-columns: minmax(0, 1fr);
     grid-template-areas: "sky" "you" "alex";
