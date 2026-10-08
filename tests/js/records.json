@@ -140,6 +140,8 @@
    }
   ],
   "scene_seen": false,
+  "view": "history",
+  "views_seen": ["station", "crew"],
   "card": {
    "level": "sample-second",
    "command": "git commit -m \"Message\"",

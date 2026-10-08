@@ -18,6 +18,7 @@ DIFFICULTY = 2
 XP = 150
 COMMAND = "git push -u origin <branch>"
 PAR = 3
+VIEW = "history"
 CARD = kit.CommandCard(
     command="git push origin <branch>",
     text="Sends that branch to the remote, by name, from whichever branch you are on. A plain `git push` sends only the branch you are on, to its upstream.",

@@ -68,7 +68,7 @@ from firstcommit.lab import Lab
 from firstcommit.markup import Block
 from firstcommit.playground import ButtonOffError as ButtonOffError
 from firstcommit.reactions import ReactionRule
-from firstcommit.records import Art, ButtonView, Command, Language, Moment, Mood, Press, Who
+from firstcommit.records import Art, ButtonView, Command, Language, Moment, Mood, Press, View, Who
 from firstcommit.repomap import Snapshot
 from firstcommit.save import Payout
 from firstcommit.save import SaveError as SaveError
@@ -84,6 +84,7 @@ CHALLENGE_MOODS = ("warn", "err")
 """What Rama still says in a challenge: danger and errors, never guidance."""
 QUEST_FIRST = "The guided quest is not finished yet: step {step} of {steps} is next."
 LANGUAGES: tuple[Language, ...] = get_args(Language)
+VIEWS: tuple[View, ...] = get_args(View)
 SPANISH = {
     QUEST_FIRST: "La misión guiada todavía no termina: el siguiente es el paso {step} de {steps}.",
     kit.PICK_ONE: "Elige una de las opciones.",
@@ -222,7 +223,9 @@ class LevelView(TypedDict):
     so a reloaded page can show what the player paid for. ``debrief`` is set once the player has
     finished the level, filled from its last play, so it shows even when the level was solved
     from the terminal. ``scene`` is empty for a level without one; ``scene_seen`` says whether
-    the player has seen it (`see_scene`). ``challenge`` marks a level whose goals are met in any
+    the player has seen it (`see_scene`). ``view`` is the view the level screen opens on, and
+    ``views_seen`` every view the page has shown being born, in the order seen (`see_view`), the
+    same for every level. ``challenge`` marks a level whose goals are met in any
     order, with no guidance; its ``card`` is None until the player has solved it once, since the
     card names the command.
     """
@@ -237,6 +240,8 @@ class LevelView(TypedDict):
     par: int
     scene: list[SceneFrameView]
     scene_seen: bool
+    view: View
+    views_seen: list[View]
     card: CommandCard | None
     challenge: bool
     briefing: list[Block]
@@ -508,6 +513,8 @@ def level(level_id: str) -> LevelView:
         "par": entry.par,
         "scene": [{"art": frame.art, "text": markup.parse(text)} for frame, text in zip(entry.scene, texts.scene, strict=True)],
         "scene_seen": entry.id in progress["scenes"],
+        "view": entry.view,
+        "views_seen": progress["views"],
         "card": _command_card(entry, language) if finished is not None or not entry.challenge else None,
         "challenge": entry.challenge,
         "briefing": _blocks(texts.briefing, state),
@@ -539,6 +546,29 @@ def see_scene(level_id: str) -> None:
         progress = save.load_progress()
         if entry.id not in progress["scenes"]:
             progress["scenes"].append(entry.id)
+            save.write_progress(progress)
+
+
+def see_view(view: str) -> None:
+    """
+    Remember that the page has shown a view being born, so it plays the birth only once; `reset` forgets it.
+
+    Parameters
+    ----------
+    view : str
+        One of `VIEWS`.
+
+    Raises
+    ------
+    ValueError
+        If the page draws no such view; nothing changes then.
+    """
+    if view not in VIEWS:
+        raise ValueError(f"the level screen's views are {', '.join(VIEWS)}, not {view!r}")
+    with save.lock():
+        progress = save.load_progress()
+        if view not in progress["views"]:
+            progress["views"].append(view)
             save.write_progress(progress)
 
 

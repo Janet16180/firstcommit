@@ -21,6 +21,7 @@ DIFFICULTY = 3
 XP = 250
 COMMAND = "branch, commit, push"
 PAR = 5
+VIEW = "history"
 CHALLENGE = True
 CARD = kit.CommandCard(
     command="git switch -c <branch>",

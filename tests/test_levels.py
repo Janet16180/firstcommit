@@ -358,3 +358,20 @@ def test_the_last_hint_shows_commands_that_solve_the_level_typed_as_written(leve
     answer = level.solve(lab, state, []) if level.texts["en"].question else None
     assert done == [step.id for step in level.quest] or (level.challenge and sorted(done) == sorted(step.id for step in level.quest))
     assert level.check(lab, state, answer, typed).solved
+
+
+def test_each_level_opens_on_the_main_view_of_the_plan() -> None:
+    views = {level.id: level.view for level in runner.catalogue().values() if level.view != "station"}
+    assert views == {
+        "mothership-halves": "crew",
+        "mothership-incoming": "crew",
+        "mothership-refused": "crew",
+        "branch-recruit": "history",
+        "branch-course": "history",
+        "branch-send": "history",
+        "branch-ticket": "history",
+        "conflict-meet": "history",
+        "conflict-abort": "history",
+        "conflict-collision": "sides",
+        "conflict-docking": "history",
+    }

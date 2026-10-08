@@ -18,6 +18,7 @@ DIFFICULTY = 2
 XP = 180
 COMMAND = "git restore --theirs"
 PAR = 5
+VIEW = "sides"
 CARD = kit.CommandCard(
     command="git restore --theirs <file>",
     text="During a merge conflict, puts the incoming branch's version of the file in the working folder; `--ours` puts your branch's. `git add` then marks the conflict solved. During a rebase the two can appear swapped.",

@@ -19,6 +19,7 @@ DIFFICULTY = 2
 XP = 150
 COMMAND = "git merge --abort"
 PAR = 2
+VIEW = "history"
 CARD = kit.CommandCard(
     command="git merge --abort",
     text="Stops a paused merge and puts the branch and its files back as they were before it began. Commit or stash your own changes before a merge, so it never has to rebuild them.",

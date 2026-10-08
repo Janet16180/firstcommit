@@ -22,6 +22,7 @@ DIFFICULTY = 3
 XP = 300
 COMMAND = "pull, answer, push"
 PAR = 8
+VIEW = "history"
 CHALLENGE = True
 CARD = kit.CommandCard(
     command="git commit --no-edit",

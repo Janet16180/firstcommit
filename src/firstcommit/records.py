@@ -143,6 +143,12 @@ Moment = Literal["secret-leak", "launch"]
 """A one-time moment the page plays over the zones when a reaction carries it: a secret leaking into every copy, or a ship launching."""
 Art = Literal["space", "timeline", "terminal", "planet", "flag", "zones", "conveyor", "capsule", "chain", "orbit", "rocket", "pull", "alarm", "fork", "merge", "collision", "blackbox"]
 """The pictures a level's scene can show; the page draws each one (its art files)."""
+View = Literal["station", "crew", "history", "sides", "blackbox", "board", "focus"]
+"""
+The views of the level screen (docs/drafts/chapters-5-9.md, the view ladder): your station's four
+zones, the crew view, history, a conflict's two sides, the black box, the review board, and your
+branch and main.
+"""
 
 Language = Literal["en", "es"]
 """The languages every text the player reads is written in: English and Spanish."""

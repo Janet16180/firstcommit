@@ -20,6 +20,7 @@ DIFFICULTY = 2
 XP = 150
 COMMAND = "git fetch · git pull"
 PAR = 4
+VIEW = "crew"
 CARD = kit.CommandCard(
     command="git fetch",
     text="Asks the remote what it holds now and updates `origin/main`, your repository's copy of its news. Your own `main` and your files stay as they are.",

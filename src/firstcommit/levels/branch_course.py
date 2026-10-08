@@ -18,6 +18,7 @@ DIFFICULTY = 2
 XP = 150
 COMMAND = "git branch"
 PAR = 5
+VIEW = "history"
 CARD = kit.CommandCard(
     command="git branch <name>",
     text="Makes a new branch: a label on the commit you are on. No file is copied, and you stay on the branch you were on.",

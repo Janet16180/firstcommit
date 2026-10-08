@@ -18,6 +18,7 @@ DIFFICULTY = 1
 XP = 120
 COMMAND = "git merge"
 PAR = 3
+VIEW = "history"
 CARD = kit.CommandCard(
     command="git merge <branch>",
     text="Brings a branch's commits into the branch you are on. When yours has nothing new, your label slides up; otherwise Git joins the two histories in a merge commit with two parents.",

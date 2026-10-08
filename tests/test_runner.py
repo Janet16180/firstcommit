@@ -103,6 +103,11 @@ def test_a_level_without_a_scene_or_reactions_has_empty_ones() -> None:
     assert (level.scene, level.reactions) == ((), ())
 
 
+def test_a_level_is_played_in_the_view_it_names_and_in_your_station_without_one() -> None:
+    assert runner.load(level_module()).view == "station"
+    assert runner.load(level_module(VIEW="history")).view == "history"
+
+
 def nothing(lab: kit.Lab, state: kit.State) -> None:
     """
     Do nothing, as a level event's action.
@@ -175,6 +180,7 @@ BROKEN: dict[str, tuple[types.ModuleType, str]] = {
     "a scene of strings": (level_module(SCENE=["frame"]), "SCENE"),
     "a scene frame with a picture nobody drew": (level_module(SCENE=[kit.SceneFrame(art="dragon", text="Hi.")]), "SCENE"),  # type: ignore[arg-type]
     "a scene frame without text": (level_module(SCENE=[kit.SceneFrame(art="space", text="")]), "SCENE"),
+    "a view nobody drew": (level_module(VIEW="map"), "VIEW"),
     "reactions that are not rules": (level_module(REACTIONS=["git add"]), "REACTIONS"),
     "a reaction whose line is not a pattern": (level_module(REACTIONS=[kit.ReactionRule(line="git (add", mood="ok", text="Hi.")]), "REACTIONS"),
     "a reaction with an unknown mood": (level_module(REACTIONS=[kit.ReactionRule(line="git", mood="happy", text="Hi.")]), "REACTIONS"),  # type: ignore[arg-type]

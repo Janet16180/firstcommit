@@ -434,6 +434,27 @@ def api_language(body: dict[str, Any]) -> Reply:
     return HTTPStatus.OK, {}
 
 
+def api_view(body: dict[str, Any]) -> Reply:
+    """
+    POST /api/view {"view": id}: remember that the page has shown a view being born.
+
+    Parameters
+    ----------
+    body : dict[str, Any]
+        The JSON body.
+
+    Returns
+    -------
+    Reply
+        200 and ``{}``; 400 unless ``view`` is one of `game.VIEWS`.
+    """
+    view = body.get("view")
+    if view not in game.VIEWS:
+        return bad(f"send {{\"view\": ...}} with one of {', '.join(game.VIEWS)}")
+    game.see_view(view)
+    return HTTPStatus.OK, {}
+
+
 def api_cards(query: dict[str, Any]) -> Reply:
     """
     GET /api/cards?chapter=&limit=: the cards to review.
@@ -539,6 +560,7 @@ ROUTES: dict[tuple[str, str], shell.Route] = {
         ("POST", "/api/abort"): api_abort,
         ("POST", "/api/reset"): api_reset,
         ("POST", "/api/language"): api_language,
+        ("POST", "/api/view"): api_view,
         ("GET", "/api/cards"): api_cards,
         ("POST", "/api/card"): api_card,
         ("GET", "/api/notes"): api_notes,

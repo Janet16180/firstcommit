@@ -19,6 +19,7 @@ DIFFICULTY = 1
 XP = 100
 COMMAND = "git clone"
 PAR = 3
+VIEW = "history"
 CARD = kit.CommandCard(
     command="git clone <address>",
     text="Copies a repository into a new folder named after it: its whole history, a remote named `origin` for the address, and a branch such as `main` to work on.",

@@ -376,6 +376,22 @@ def test_the_real_game_speaks_the_language_the_page_picked(site: Site, sample_le
     assert api(site, f"/api/level?id={sample_level.id}")[1]["title"] == "Di hola"
 
 
+def test_the_page_marks_a_view_it_draws_as_seen(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
+    calls = record(monkeypatch, "see_view", None)
+    for body in ({}, {"view": "map"}, {"view": "History"}, {"view": ["history"]}, {"view": None}):
+        assert api(site, "/api/view", body)[0] == 400
+    assert calls == []
+    assert api(site, "/api/view", {"view": "history"}) == (200, {})
+    assert calls == [("history",)]
+
+
+def test_the_real_game_remembers_a_seen_view_until_a_reset(site: Site, sample_level: runner.Level) -> None:
+    assert api(site, "/api/view", {"view": "crew"}) == (200, {})
+    assert api(site, f"/api/level?id={sample_level.id}")[1]["views_seen"] == ["crew"]
+    assert api(site, "/api/reset", {"confirm": True})[0] == 200
+    assert api(site, f"/api/level?id={sample_level.id}")[1]["views_seen"] == []
+
+
 def test_cards_are_listed_for_a_chapter_or_all_with_a_limit(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
     card = {"id": "cargo-x", "chapter": "cargo", "kind": "choice", "prompt": [], "choices": ["a", "b"]}
     calls = record(monkeypatch, "due_cards", [card])
@@ -672,5 +688,6 @@ def test_every_route_is_a_get_or_post_under_api() -> None:
         ("POST", "/api/press"),
         ("POST", "/api/scene"),
         ("POST", "/api/language"),
+        ("POST", "/api/view"),
     }
     assert set(routes.ROUTES) == expected

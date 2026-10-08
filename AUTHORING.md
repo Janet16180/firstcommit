@@ -153,6 +153,7 @@ COMMAND: str                  # the short label on the map and the level: "git i
 PAR: int                      # lines a good play types; more than PAR + 3 costs a star
 CARD: kit.CommandCard         # the command card the player collects: command and what it does
 SCENE: list[kit.SceneFrame] = []        # optional; Rama's scene the first time the level opens
+VIEW: View = "station"                  # optional; the level screen's main view (records.View)
 REACTIONS: list[kit.ReactionRule] = []  # optional; tried before the shared ones
 EVENTS: list[kit.LevelEvent] = []       # optional; changes the level makes during the play
 CHALLENGE: bool = False                 # optional; True for a challenge (any order, no guidance)
@@ -193,6 +194,9 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
 - **`SCENE`** frames each name a picture the page draws (`kit.Art`) and say one or two short
   sentences. **`CARD`** says what its command does, scoped like any claim. Neither is filled
   from the state: both are shown before the level starts.
+- **`VIEW`** is the view the level screen opens on (the view ladder of
+  docs/drafts/chapters-5-9.md). The page plays a view's birth the first time a level opens on
+  it; the game remembers the views seen (`game.see_view`).
 - **`REACTIONS`**: what Rama says about a typed line (`firstcommit.reactions`). A rule matches
   the start of the line (a regular expression), how it ended (`outcome`), an event kind of what
   changed (`event`) and whether a repository is there afterwards (`repository`). The first rule

@@ -20,6 +20,7 @@ DIFFICULTY = 2
 XP = 150
 COMMAND = "git pull"
 PAR = 3
+VIEW = "crew"
 CARD = kit.CommandCard(
     command="git pull",
     text="Brings the remote's new commits into your branch: a fetch, then a merge (or only a slide of your label when you have nothing new).",

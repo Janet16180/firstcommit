@@ -21,6 +21,7 @@ DIFFICULTY = 2
 XP = 180
 COMMAND = "git pull --no-rebase"
 PAR = 3
+VIEW = "crew"
 CARD = kit.CommandCard(
     command="git pull --no-rebase",
     text="Brings the remote's commits into your branch and joins the two histories with a merge commit. `--rebase` replays your commits on top of the remote's instead.",

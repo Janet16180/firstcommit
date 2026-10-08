@@ -26,7 +26,7 @@ from termlab import sandbox
 
 from firstcommit import gitcmd, kit, levels, reactions, save
 from firstcommit.chapters import CHAPTERS
-from firstcommit.records import Art, Language, Mood
+from firstcommit.records import Art, Language, Mood, View
 
 MODULE_NAME = re.compile(r"([a-z]+)_[a-z0-9_]+")
 DIFFICULTIES = (1, 2, 3)
@@ -75,7 +75,8 @@ class Level:
 
     ``id`` is the module name with ``_`` turned into ``-``; ``chapter`` is the part before the
     first ``_``. The other fields are the module's names of AUTHORING.md section 3.3;
-    ``scene``, ``reactions`` and ``events`` are empty for a level without them. ``challenge``
+    ``scene``, ``reactions`` and ``events`` are empty for a level without them, and ``view``, the
+    level screen's main view, is your station for a level that names none. ``challenge``
     marks a level whose quest is goals met in any order, with no guidance. ``texts`` holds every
     text the player reads, by language; the cards, scene frames and steps keep the English ones
     the module wrote, with what is not text (the command, the pictures, the checks).
@@ -89,6 +90,7 @@ class Level:
     par: int
     card: kit.CommandCard
     scene: tuple[kit.SceneFrame, ...]
+    view: View
     reactions: tuple[kit.ReactionRule, ...]
     events: tuple[kit.LevelEvent, ...]
     challenge: bool
@@ -126,6 +128,7 @@ def load(module: ModuleType, spanish: ModuleType | None = None) -> Level:
         key: getattr(module, key, None) for key in ("TITLE", "DIFFICULTY", "XP", "COMMAND", "PAR", "CARD", "BRIEFING", "HINTS", "DEBRIEF", "setup", "check", "solve")
     }
     scene = getattr(module, "SCENE", [])
+    view: Any = getattr(module, "VIEW", "station")
     level_reactions = getattr(module, "REACTIONS", [])
     events = getattr(module, "EVENTS", [])
     challenge = getattr(module, "CHALLENGE", False)
@@ -142,6 +145,7 @@ def load(module: ModuleType, spanish: ModuleType | None = None) -> Level:
             or _numbers_problem(values)
             or _orbit_problem(values)
             or _scene_problem(scene)
+            or _view_problem(view)
             or _reactions_problem(level_reactions)
             or _quest_problem(quest)
             or _events_problem(events, quest)
@@ -171,6 +175,7 @@ def load(module: ModuleType, spanish: ModuleType | None = None) -> Level:
         par=values["PAR"],
         card=values["CARD"],
         scene=tuple(scene),
+        view=view,
         reactions=tuple(level_reactions),
         events=tuple(events),
         challenge=challenge,
@@ -458,6 +463,24 @@ def _scene_problem(scene: Any) -> str | None:
     elif not all(frame.art in pictures and _is_text(frame.text) for frame in scene):
         problem = f"SCENE frames need text and a picture among {', '.join(pictures)}"
     return problem
+
+
+def _view_problem(view: Any) -> str | None:
+    """
+    Check a level's main view: one the page draws.
+
+    Parameters
+    ----------
+    view : Any
+        The module's ``VIEW``.
+
+    Returns
+    -------
+    str | None
+        What is wrong, or None.
+    """
+    views = typing.get_args(View)
+    return None if view in views else f"VIEW must be one of {', '.join(views)}"
 
 
 def _reactions_problem(rules: Any) -> str | None:
