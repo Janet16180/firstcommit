@@ -23,27 +23,25 @@ const quiet = () => ({ ...record("observation"), commands: [], reactions: [] });
 function screen({ active = record("active"), replies = {}, levelId = "sample-second", recounted = null, dev = false } = {}) {
   const clock = createClock();
   let status = { ...record("status"), active, dev };
+  const seen = { sounds: [], attached: 0, detached: 0, typed: [], ran: [], finished: [], reloads: 0 };
   const server = fakeServer({
     "/api/level": seenLevel(),
     "/api/scene": {},
     "/api/view": {},
     "/api/start": { ...record("active"), step: 0 },
-    "/api/observe": quiet(),
+    /* A line the terminal ran is told by the next observation once it has finished, as the game tells it. */
+    "/api/observe": () => ({ ...quiet(), commands: seen.finished.splice(0).map((line) => ({ line, status: 0 })) }),
     "/api/step": record("step"),
     "/api/check": record("check_unsolved"),
     "/api/hint": record("hint"),
     ...replies,
   });
-  const seen = { sounds: [], attached: 0, detached: 0, typed: [], ran: [], finished: 0, reloads: 0, refreshed: 0 };
   const ctx = {
     game: createGameApi(server.api),
     status: () => status,
     refresh: async () => {
-      seen.refreshed += 1;
       if (server.calls.some((call) => call.path === "/api/start")) status = { ...status, active: record("active") };
       if (recounted) status = { ...status, active: recounted };
-      /* Each line the terminal ran counts as typed once it has finished, as the game counts it. */
-      if (seen.finished && status.active) status = { ...status, active: { ...status.active, commands: record("active").commands + seen.finished } };
       return status;
     },
     reload: () => (seen.reloads += 1),
@@ -58,7 +56,7 @@ function screen({ active = record("active"), replies = {}, levelId = "sample-sec
       },
       detach: () => (seen.detached += 1), type: (text) => seen.typed.push(text), run: (line) => {
         seen.ran.push(line);
-        clock.setTimeout(() => (seen.finished += 1), 300);
+        clock.setTimeout(() => seen.finished.push(line), 300);
       } },
     setStatus: (next) => (status = next),
   };
@@ -977,11 +975,32 @@ test("in dev mode, Solve runs the solution's lines in the terminal one at a time
   await settle();
   assert.equal(run.q(".hud .solve").hidden, false);
   run.q(".hud .solve").click();
-  await settle();
+  await run.clock.advance(100);
   assert.deepEqual(run.seen.ran, ["git status"]);
-  await run.clock.advance(400);
-  await settle();
+  await run.clock.advance(1000);
+  assert.deepEqual(run.seen.ran, ["git status"]);
+  await run.clock.advance(2000);
   assert.deepEqual(run.seen.ran, ["git status", "git add notes.txt"]);
+  run.view.dispose();
+});
+
+test("Solve answers a goal that asks before it runs a line, so the goals after it see the lines", async () => {
+  const order = [];
+  const run = solving({ lines: ["git add notes.txt"], answers: { status: "notes.txt" }, answer: null }, {
+    "/api/step": (body) => {
+      order.push(`step ${body.answer}`);
+      return correct(2);
+    },
+  });
+  await settle();
+  const ran = run.ctx.terminal.run;
+  run.ctx.terminal.run = (line) => {
+    order.push(`run ${line}`);
+    ran(line);
+  };
+  run.q(".hud .solve").click();
+  await run.clock.advance(2000);
+  assert.deepEqual(order.filter((item) => item !== "step null"), ["step notes.txt", "run git add notes.txt"]);
   run.view.dispose();
 });
 
@@ -991,12 +1010,10 @@ test("leaving the level stops Solve: no later line runs and the game is asked no
   run.q(".hud .solve").click();
   await settle();
   run.view.dispose();
-  const refreshed = run.seen.refreshed;
   const calls = run.server.calls.length;
   await run.clock.advance(5000);
   await settle();
   assert.deepEqual(run.seen.ran, ["git status"]);
-  assert.equal(run.seen.refreshed, refreshed);
   assert.equal(run.server.calls.length, calls);
 });
 

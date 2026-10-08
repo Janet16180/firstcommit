@@ -383,21 +383,47 @@ const LevelScreen = (function () {
     return false;
   }
 
-  const typedCount = async (ctx) => ((await ctx.refresh()).active || { commands: 0 }).commands;
-
-  /* Runs a line in the terminal and waits until the game has counted it, so the next follows it;
-     false when it never is. */
+  /* Runs a line in the terminal and waits for the tick that is told it, so the goal it meets has
+     passed before the next line runs; false when no tick ever is. */
   async function runLine(screen, line) {
-    const { ctx } = screen;
-    const before = await typedCount(ctx);
-    ctx.terminal.run(line);
-    return until(screen, async () => (await typedCount(ctx)) > before, LINE_MS);
+    const before = screen.toldLines;
+    screen.ctx.terminal.run(line);
+    return until(screen, async () => screen.toldLines > before || screen.finished, LINE_MS);
   }
 
-  /* Runs the lines in order; stops at a line the game never counts, or once the level is left. */
+  async function answerStep(screen, step, solution) {
+    const value = step.kind === "read" ? null : solution.answers[step.id];
+    await send(screen, () => screen.ctx.game.step(value), stepped);
+  }
+
+  /* The current goal when it asks rather than watches, or null. */
+  const asking = ({ level, state, finished, disposed }) => {
+    const step = !finished && !disposed && state.step < level.steps.length ? level.steps[state.step] : null;
+    return step && step.kind !== "watch" ? step : null;
+  };
+
+  /* Meets the goals that ask while one is current and its answer is known, so a prediction comes
+     before the lines it predicts. The answers are read again each time, since some only exist
+     once lines have run (a clone's commit count). False when a goal answered never passes. */
+  async function answerAsked(screen) {
+    const { ctx, levelId, state } = screen;
+    let step = asking(screen);
+    while (step) {
+      const { solution } = await ctx.game.level(levelId);
+      if (step.kind !== "read" && (solution.answers[step.id] ?? null) === null) break;
+      const at = state.step;
+      await answerStep(screen, step, solution);
+      if (!(await until(screen, async () => state.step > at || screen.finished, GOAL_MS))) return false;
+      step = asking(screen);
+    }
+    return true;
+  }
+
+  /* Runs the lines in order, each after the goals that ask before it; stops at a line no tick is
+     told, at a goal that never passes, or once the level is left. */
   async function runLines(screen, lines) {
     for (const line of lines) {
-      if (!(await runLine(screen, line))) return false;
+      if (!(await answerAsked(screen)) || !(await runLine(screen, line))) return false;
     }
     return true;
   }
@@ -406,19 +432,16 @@ const LevelScreen = (function () {
      polling, which passes it once its lines have run. Then the level's own question. */
   async function answerGoals(screen, solution) {
     const { level, state, ctx } = screen;
-    const { game } = ctx;
     while (!screen.finished && !screen.disposed && state.step < level.steps.length) {
       const at = state.step;
       const step = level.steps[at];
-      if (step.kind === "read") await send(screen, () => game.step(null), stepped);
-      if (step.kind === "choice" || step.kind === "answer") await send(screen, () => game.step(solution.answers[step.id]), stepped);
+      if (step.kind !== "watch") await answerStep(screen, step, solution);
       if (!(await until(screen, async () => state.step > at || screen.finished, GOAL_MS))) return;
     }
-    if (level.question.length && !screen.finished && !screen.disposed) await send(screen, () => game.check(solution.answer, false), checked);
+    if (level.question.length && !screen.finished && !screen.disposed) await send(screen, () => ctx.game.check(solution.answer, false), checked);
   }
 
-  /* Dev mode: plays the level from its solution, as a player would. The answers are read again
-     after the lines, since some only exist once the lines have run (a clone's commit count). */
+  /* Dev mode: plays the level from its solution, as a player would. */
   async function solve(screen) {
     const { ctx, levelId, ui } = screen;
     ui.solve.disabled = true;
@@ -523,6 +546,7 @@ const LevelScreen = (function () {
       const keep = keeping(screen, observation, fresh);
       if (plan.watchStep) stepped(screen, await game.step(null), { watched: true, keep });
       if (plan.autoCheck && !screen.finished) checked(screen, await game.check(null, true), { auto: true, keep });
+      screen.toldLines += observation.commands.length;
     } catch (error) {
       if (!expected(screen, error)) throw error;
     }
@@ -593,7 +617,7 @@ const LevelScreen = (function () {
   /* ctx: game, status(), refresh(), reload() (shows this screen again), sound, timers, page,
      reducedMotion, terminal ({attach(host), detach(), type(text), run(line)}). */
   function create(ctx, levelId) {
-    const screen = { ctx, levelId, level: null, state: null, number: "", shownStars: null, view: "station", seen: [], crew: false, births: [], bearing: false, taped: false, firstMove: null, guide: null, held: false, metNote: false, mission: null, poller: null, finished: false, offline: false, attached: false, disposed: false, ui: {} };
+    const screen = { ctx, levelId, level: null, state: null, number: "", shownStars: null, view: "station", seen: [], crew: false, births: [], bearing: false, taped: false, firstMove: null, guide: null, toldLines: 0, held: false, metNote: false, mission: null, poller: null, finished: false, offline: false, attached: false, disposed: false, ui: {} };
     screen.element = el("div", { class: "level-screen" });
     layout(screen);
     load(screen);
