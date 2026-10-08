@@ -154,3 +154,14 @@ test("the panel speaks Spanish", () => {
     Strings.use("en");
   }
 });
+
+test("a file still listed with no blocks left (an editor took the markers out, git add not yet typed) is shown as it is now", () => {
+  const run = panel();
+  run.show();
+  const edited = { path: "checklist.txt", read: "r2", parts: [{ kind: "clean", lines: ["LAUNCH CHECKLIST", "4. Course: the Moon"] }] };
+  run.show({ marked: [edited] });
+  assert.equal(run.q(".keep-head").textContent, "checklist.txt, as it is nowno markers left");
+  assert.deepEqual(words(run.all(".keep-line .keep-text")), ["LAUNCH CHECKLIST", "4. Course: the Moon"]);
+  assert.match(run.q(".keep-message").textContent, /^Next: type git add checklist.txt/);
+  assert.equal(run.q(".keep-write"), null);
+});

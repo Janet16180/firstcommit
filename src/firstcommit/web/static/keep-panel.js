@@ -9,8 +9,8 @@
  * name of the text they were made on, and the server rewrites the marker blocks. A refused Write
  * (409: the file changed) writes nothing, clears the picks and makes Look again the main button.
  * A new read of the file drops picks made on the old text, and so does an editor opening it:
- * while it is open the panel greys and waits. Once the markers are gone it shows the file as it
- * is now and what to type next; the page never runs git. Under it, two chips type `nano <file>`
+ * while it is open the panel greys and waits. Once the markers are gone (a file still unmerged
+ * with no block left, or one git add has taken) it shows the file as it is now and what to type next; the page never runs git. Under it, two chips type `nano <file>`
  * or `vim <file>` at the prompt. Needs dom.js and strings.js. Defines one global, KeepPanel.
  *
  * create({onWrite, onType}) {element, update({person, marked, texts, editing})}: onWrite({file,
@@ -99,14 +99,13 @@ const KeepPanel = (function () {
         chips(file.path, { editing, onType }));
     }
 
-    function resolved(path, texts) {
-      const text = texts.find((entry) => entry.path === path);
-      if (!text || text.folder === null) return null;
+    /* A file with no markers left, as it is now: its lines, and what to type next. */
+    function resolved(path, lines) {
       const written = state.written.has(path) ? `${t("pg.keep.written")} ` : "";
       return el("div", { class: "keep-file" },
         el("div", { class: "keep-box" },
           el("h3", { class: "keep-head" }, el("span", {}, t("pg.keep.now", { file: path })), el("span", { class: "keep-state is-ok" }, t("pg.keep.clean"))),
-          el("ol", { class: "keep-lines" }, textLines(text.folder).map((entry) => line(entry, "same")))),
+          el("ol", { class: "keep-lines" }, lines.map((entry) => line(entry, "same")))),
         el("p", { class: "keep-message is-ok" }, written, said("pg.keep.next", { file: path })));
     }
 
@@ -114,9 +113,13 @@ const KeepPanel = (function () {
       const { person, marked: files, texts, editing } = state.last;
       element.dataset.person = person;
       element.classList.toggle("is-waiting", Boolean(editing));
-      const marking = files.map((file) => file.path);
-      const done = state.seen.filter((path) => !marking.includes(path)).map((path) => resolved(path, texts)).filter(Boolean);
-      const shown = [...files.map((file) => marked(file, { person, editing })), ...done];
+      const blocked = (file) => file.parts.some((part) => part.kind === "block");
+      const listed = files.map((file) => file.path);
+      const folder = (path) => (texts.find((entry) => entry.path === path) || {}).folder;
+      const shown = [
+        ...files.map((file) => (blocked(file) ? marked(file, { person, editing }) : resolved(file.path, file.parts.flatMap((part) => part.lines)))),
+        ...state.seen.filter((path) => !listed.includes(path) && typeof folder(path) === "string").map((path) => resolved(path, textLines(folder(path)))),
+      ];
       element.replaceChildren(...(shown.length ? shown : [el("p", { class: "keep-none" }, t("pg.keep.none"))]));
     }
 

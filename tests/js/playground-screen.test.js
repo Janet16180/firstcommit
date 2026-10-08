@@ -19,7 +19,7 @@ function screen({ playground = Pg.playground(), lab = Pg.observation(), route = 
     "/api/playground": playground,
     "/api/playground/start": (body) => Pg.playground({ start: body.start, started: "s2" }),
     "/api/playground/prefs": () => Pg.playground(),
-    "/api/playground/resolve": { file: null },
+    "/api/playground/resolve": { file: Pg.marked() },
     "/api/playground/observe": typeof lab === "function" ? lab : () => lab,
     ...replies,
   });

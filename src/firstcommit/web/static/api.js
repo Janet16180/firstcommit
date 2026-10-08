@@ -189,7 +189,7 @@ const createGameApi = (function () {
      oldest first; `graph` is null without a repository. */
   const DESK = record({ conflicts: list(CONFLICT), marked: list(MARKED), reflog: list(REFLOG_ENTRY), ghosts: list(COMMIT), texts: list(record({ path: text, folder: nullable(text), index: nullable(text) })), graph: nullable(list(text)), typed: list(record({ line: text, status: number })) });
   const PG_OBSERVATION = record({ start: text, started: text, project: SNAPSHOT, github: nullable(SNAPSHOT), teammate: nullable(SNAPSHOT), you: DESK, alex: nullable(DESK) });
-  const RESOLVED = record({ file: nullable(MARKED) });
+  const RESOLVED = record({ file: MARKED });
   const PRESSED = record({
     press: record({ person: WHO, button: BUTTON, command: text, status: number, output: text }),
     before: OBSERVATION,
