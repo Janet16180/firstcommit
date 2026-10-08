@@ -48,12 +48,13 @@ const createGameApi = (function () {
   };
   const BLOCKS = list(BLOCK);
 
+  const COMMIT = record({ hash: text, short: text, parents: list(text), subject: text, author: text, time: number });
   const SNAPSHOT = record({
     exists: flag,
     bare: flag,
     head: nullable(text),
     branch: nullable(text),
-    commits: list(record({ hash: text, short: text, parents: list(text), subject: text, author: text, time: number })),
+    commits: list(COMMIT),
     refs: list(record({ name: text, kind: oneOf("branch", "remote", "tag"), target: text })),
     remotes: list(record({ name: text, url: text })),
     files: list(record({
@@ -83,10 +84,11 @@ const createGameApi = (function () {
      play and the views of the ladder, in its order (records.Art, Mood, Moment and View). */
   const ART = oneOf("space", "timeline", "terminal", "planet", "flag", "zones", "conveyor", "capsule", "chain", "orbit", "rocket", "pull", "alarm", "fork", "merge", "collision", "blackbox", "meteor");
   const MOOD = oneOf("info", "ok", "warn", "err");
-  const MOMENT = oneOf("secret-leak", "launch", "junk-flood", "force-break", "unreviewed-main");
+  const MOMENT = oneOf("secret-leak", "launch", "junk-flood", "force-break", "unreviewed-main", "search-beam");
   const VIEW = oneOf("station", "crew", "history", "sides", "blackbox", "board", "focus");
-  /* What the save remembers as born: the views, and the crew band, which no level opens on (records.Seen). */
-  const SEEN = oneOf("station", "crew", "history", "sides", "blackbox", "board", "focus", "band");
+  /* What the save remembers as born: the views, the crew band and the black box's tape, which no
+     level opens on (records.Seen). */
+  const SEEN = oneOf("station", "crew", "history", "sides", "blackbox", "board", "focus", "band", "tape");
 
   const STATUS = record({
     xp: number,
@@ -138,7 +140,9 @@ const createGameApi = (function () {
   /* A conflicted file's two halves, as git's index stages hold them: a side's lines are null when it deleted the file. */
   const CONFLICT_SIDE = record({ label: text, author: text, lines: nullable(list(text)) });
   const CONFLICT = record({ path: text, you: CONFLICT_SIDE, them: CONFLICT_SIDE, base: nullable(list(text)) });
-  const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), teammate: nullable(SNAPSHOT), events: EVENTS, teammate_events: EVENTS, buttons: BARS, commands: list(record({ line: text, status: number })), reactions: list(record({ line: text, mood: MOOD, text: BLOCKS, moment: nullable(MOMENT) })), conflicts: list(CONFLICT) });
+  /* One move of HEAD: the commit it left ("" for the first), the one it moved to, and git's note. */
+  const REFLOG_ENTRY = record({ old: text, new: text, message: text });
+  const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), teammate: nullable(SNAPSHOT), events: EVENTS, teammate_events: EVENTS, buttons: BARS, commands: list(record({ line: text, status: number })), reactions: list(record({ line: text, mood: MOOD, text: BLOCKS, moment: nullable(MOMENT) })), conflicts: list(CONFLICT), reflog: list(REFLOG_ENTRY), ghosts: list(COMMIT) });
   const PRESSED = record({
     press: record({ person: WHO, button: BUTTON, command: text, status: number, output: text }),
     before: OBSERVATION,

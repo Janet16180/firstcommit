@@ -281,8 +281,9 @@ test("a level must say the view it opens on and the views already born, from the
   await refused("/api/level", (level) => delete level.views_seen, (game) => game.level("x"));
   await refused("/api/level", (level) => (level.views_seen = ["station", "deck"]), (game) => game.level("x"));
   await refused("/api/level", (level) => (level.view = "band"), (game) => game.level("x"));
-  const banded = gameApi({ ...REPLIES, "/api/level": { ...record("level"), views_seen: ["station", "crew", "band"] } }).game;
-  assert.deepEqual((await banded.level("x")).views_seen, ["station", "crew", "band"]);
+  const banded = gameApi({ ...REPLIES, "/api/level": { ...record("level"), views_seen: ["station", "crew", "band", "tape"] } }).game;
+  assert.deepEqual((await banded.level("x")).views_seen, ["station", "crew", "band", "tape"]);
+  await refused("/api/level", (level) => (level.view = "tape"), (game) => game.level("x"));
   for (const view of ["station", "crew", "history", "sides", "blackbox", "board", "focus"]) {
     const { game } = gameApi({ ...REPLIES, "/api/level": { ...record("level"), view } });
     assert.equal((await game.level("x")).view, view);
@@ -327,9 +328,22 @@ test("an observation gives each conflicted file's two sides, who wrote them and 
   await refused("/api/observe", (seen) => (seen.conflicts[0].base = "Dock at bay 2"), (api) => api.observe());
 });
 
+test("an observation gives HEAD's moves, newest first, and the commits only those moves still hold", async () => {
+  const { game } = gameApi();
+  const seen = await game.observe();
+  assert.equal(seen.reflog[0].message, "commit: Add the route");
+  assert.equal(seen.reflog.at(-1).old, "");
+  const ghost = { ...record("observation").project.commits[0] };
+  const haunted = gameApi({ ...REPLIES, "/api/observe": { ...record("observation"), ghosts: [ghost] } }).game;
+  assert.deepEqual((await haunted.observe()).ghosts, [ghost]);
+  await refused("/api/observe", (obs) => delete obs.reflog, (api) => api.observe());
+  await refused("/api/observe", (obs) => delete obs.reflog[0].message, (api) => api.observe());
+  await refused("/api/observe", (obs) => (obs.ghosts = [{ hash: "a" }]), (api) => api.observe());
+});
+
 test("a reaction may carry a moment the page knows, or none", async () => {
   const observation = record("observation");
-  for (const moment of ["secret-leak", "launch", "junk-flood", "force-break", "unreviewed-main"]) {
+  for (const moment of ["secret-leak", "launch", "junk-flood", "force-break", "unreviewed-main", "search-beam"]) {
     observation.reactions[0].moment = moment;
     const { game } = gameApi({ ...REPLIES, "/api/observe": observation });
     assert.equal((await game.observe()).reactions[0].moment, moment);
