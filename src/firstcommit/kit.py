@@ -79,6 +79,7 @@ __all__ = [
     "code",
     "conflicted",
     "conflicts",
+    "creating",
     "ghosts",
     "digest",
     "git",
@@ -98,6 +99,7 @@ __all__ = [
     "setup_github",
     "setup_playground",
     "snapshot",
+    "switching",
     "staged",
     "unstaged",
     "untracked",
@@ -307,6 +309,46 @@ def after(lines: Typed, pattern: str) -> list[Command]:
     """
     worked = [index for index, line in enumerate(lines) if matches(line, pattern, "ok")]
     return list(lines[worked[-1] + 1 :] if worked else lines)
+
+
+CREATE_OPTIONS = r"(switch (-c|-C|--create|--force-create)|checkout (-b|-B))"
+"""The options that make a branch before moving onto it: ``git switch``'s and their older ``git checkout`` forms."""
+
+
+def switching(branch: str | None = None) -> str:
+    """
+    Give the pattern of a line that moves onto a branch, in either form: ``git switch`` or ``git checkout``.
+
+    Parameters
+    ----------
+    branch : str | None
+        The branch, or None for any.
+
+    Returns
+    -------
+    str
+        A pattern for `typed` and `after`; a line that also makes the branch (`creating`) does not fit.
+    """
+    name = rf"( -\S+)* {re.escape(branch)}( |$)" if branch is not None else r"\b"
+    return rf"git (switch|checkout)(?!.* (-c|-C|-b|-B|--create|--force-create)\b){name}"
+
+
+def creating(branch: str | None = None) -> str:
+    """
+    Give the pattern of a line that makes a branch and moves onto it, in either form: ``git switch -c`` or ``git checkout -b``.
+
+    Parameters
+    ----------
+    branch : str | None
+        The branch, or None for any.
+
+    Returns
+    -------
+    str
+        A pattern for `typed` and `after`.
+    """
+    name = rf" {re.escape(branch)}( |$)" if branch is not None else r"\b"
+    return rf"git {CREATE_OPTIONS}{name}"
 
 
 def typing(line: str) -> Callable[[Lab, State, list[Command]], str | None]:

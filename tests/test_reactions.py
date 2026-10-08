@@ -109,7 +109,7 @@ def test_a_new_repository_is_greeted_and_a_second_init_is_called_safe() -> None:
 
 
 def test_a_git_command_that_fails_where_no_repository_is_says_so() -> None:
-    for line in ("git status", "git add notes.txt", "git log --oneline"):
+    for line in ("git status", "git add notes.txt", "git log --oneline", "git checkout main", "git switch main"):
         assert said(line, 128, repository=False) == f"err: {reactions.NO_REPOSITORY}", line
     assert said("git status", 0, repository=False) != f"err: {reactions.NO_REPOSITORY}"
 

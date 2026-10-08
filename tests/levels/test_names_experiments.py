@@ -40,3 +40,9 @@ def test_an_ls_typed_before_going_back_to_main_does_not_count() -> None:
     lab, state = started(level)
     typed = typed_in(lab, "git switch -c scout", PROBE, "ls", "git switch main")
     assert level.check(lab, state, None, typed).message == level.NOT_LOOKED
+
+
+def test_the_older_forms_checkout_b_and_checkout_play_the_level_too() -> None:
+    lab, state = started(level)
+    typed = typed_in(lab, "git checkout -b scout", PROBE, "git checkout main", "ls")
+    assert level.check(lab, state, None, typed).solved

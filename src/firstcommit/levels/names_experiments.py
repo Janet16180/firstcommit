@@ -32,7 +32,7 @@ BRANCH = "scout"
 PROBE = "probe.txt"
 PROBE_LINE = "Probe: launched"
 FILES = {"route.txt": "Route: Earth, Moon\n", "crew.txt": "Robin\nAlex\n", "log.txt": "Day 1: all quiet.\n"}
-BACK = r"git (switch|checkout) main\b"
+BACK = kit.switching("main")
 LIST = r"ls\b"
 
 BRIEFING = """

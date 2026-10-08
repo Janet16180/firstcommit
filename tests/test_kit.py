@@ -124,6 +124,36 @@ def test_a_level_reads_the_lines_typed_after_the_last_one_that_worked() -> None:
     assert kit.after(TYPED, r"git status\b") == []
 
 
+def lines_of(*lines: str) -> list[kit.Command]:
+    """
+    Make typed lines that all worked.
+
+    Parameters
+    ----------
+    *lines : str
+        The lines.
+
+    Returns
+    -------
+    list[kit.Command]
+        Each line with status 0.
+    """
+    return [{"line": line, "status": 0} for line in lines]
+
+
+def test_moving_onto_a_branch_reads_switch_and_its_older_form_checkout() -> None:
+    assert all(kit.typed([line], kit.switching("scout"), "ok") for line in lines_of("git switch scout", "git checkout scout", "git  switch -q scout"))
+    assert not any(kit.typed([line], kit.switching("scout")) for line in lines_of("git switch scouts", "git switch -c scout", "git checkout -b scout", "git switch main"))
+    assert kit.typed(lines_of("git checkout main"), kit.switching())
+    assert not kit.typed(lines_of("git switch -c x", "git checkout -B x", "git switch --create x"), kit.switching())
+
+
+def test_making_a_branch_and_moving_onto_it_reads_switch_c_and_its_older_form_checkout_b() -> None:
+    assert all(kit.typed([line], kit.creating("lights"), "ok") for line in lines_of("git switch -c lights", "git checkout -b lights", "git switch --create lights", "git switch -C lights", "git checkout -B lights"))
+    assert not any(kit.typed([line], kit.creating("lights")) for line in lines_of("git switch lights", "git checkout lights", "git switch -c lights-v2", "git branch lights"))
+    assert kit.typed(lines_of("git checkout -b x main"), kit.creating())
+
+
 def test_a_level_knows_a_line_that_lists_hidden_files() -> None:
     hidden: list[kit.Command] = [{"line": line, "status": 0} for line in ("ls -a", "ls -lA", "ls --all")]
     shown: list[kit.Command] = [{"line": line, "status": 0} for line in ("ls", "ls -l", "lsa")]

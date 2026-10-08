@@ -36,7 +36,7 @@ LIGHTS_FIRST = "lights=dim\n"
 LIGHTS_EDITED = "lights=bright\n"
 ROUTE_MAIN = "Route: Earth, Moon\n"
 ROUTE_SCOUT = "Route: Earth, Moon, Mars\n"
-SWITCH = r"git (switch|checkout)\b(?!.* (-c|-C|-b|-B|--create|--force-create)\b)"
+SWITCH = kit.switching()
 
 BRIEFING = """
 You are on `main`, and you changed the lights setting in `lights.cfg` without committing it. The

@@ -23,7 +23,7 @@ Outcome = Literal["any", "ok", "failed", "unknown-command"]
 """How a line must have ended: any way, with status 0, with any other status, or with bash's 127 for a command it does not know."""
 
 UNKNOWN_COMMAND_STATUS = 127
-NEEDS_REPOSITORY = r"git (status|add|commit|log|restore|branch|switch|push|pull|fetch|remote)\b"
+NEEDS_REPOSITORY = r"git (status|add|commit|log|restore|branch|switch|checkout|push|pull|fetch|remote)\b"
 """The git commands a beginner meets that fail in a folder without a repository."""
 GIT_COMMANDS: tuple[str, ...] = (
     "add", "am", "annotate", "apply", "archive", "bisect", "blame", "branch", "bugreport", "bundle",
