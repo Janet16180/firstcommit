@@ -99,6 +99,7 @@ PLAY_ORDER: tuple[str, ...] = (
     "mothership-recruit",
     "mothership-base7",
     "names-tags",
+    "names-any",
     "names-experiments",
     "branch-send",
     "branch-switch",

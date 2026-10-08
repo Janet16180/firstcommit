@@ -914,6 +914,19 @@ first, the bookmark on `main`), a commit moving only `main`, Alex's fix pushed i
 | prediction 2, `FETCHED`, debrief | `git fetch` moves `origin/main` and leaves `main` and the folder as they are | git-fetch(1) DESCRIPTION; the level's test |
 | `STATUS_READ` | `git status` says "behind 'origin/main' by 1 commit, and can be fast-forwarded" | the script, beat 14 (real output) |
 
+### Level `names-any` (A name on any commit, 5-2)
+
+*Re-checked* by `tests/levels/test_names_any.py`: the hint's hash is Plot the route, `test-run`
+taken off while its commit stays in `main`'s history, `first-route` put on by hash with HEAD and
+the folder unchanged, a name on the wrong commit named and moved, and a switch onto it allowed.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| prediction 1, `DELETED`, debrief | `git branch -d` takes a name off; the commit stays; git prints "Deleted branch test-run (was <hash>)" | git-branch(1) `-d`; the 5-2 script, beat 5 (real output); the level's test |
+| `LOGGED`, debrief | each commit records its parent, and `git log` walks from a name down through the parents | git-log(1) DESCRIPTION ("commits that are reachable by following the parent links"); gitglossary(7) parent |
+| card, prediction 2, `NAMED` | `git branch <name> <commit>` makes the name there and does not move HEAD or change the folder | git-branch(1) `<start-point>` ("the new branch is not checked out"); the level's test |
+| `MOVED_ONTO` | `git switch first-route` moves HEAD and rewrites the folder to that commit | git-switch(1) DESCRIPTION; the level's test |
+
 ## No `origin/HEAD` in the playground's clones (added 2026-10-08)
 
 `playground.setup` runs `git remote set-head origin --delete` in each clone, so `git log` shows

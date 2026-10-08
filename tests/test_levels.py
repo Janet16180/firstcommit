@@ -365,6 +365,7 @@ def test_each_level_opens_on_the_main_view_of_the_plan() -> None:
         "mothership-refused": "crew",
         "mothership-recruit": "history",
         "names-tags": "history",
+        "names-any": "history",
         "names-experiments": "history",
         "branch-send": "history",
         "branch-switch": "history",
