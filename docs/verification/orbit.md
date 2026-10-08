@@ -324,6 +324,10 @@ E33:
 | E57 | then `git add route.txt`; `git diff`; `git diff --staged` | `git diff` shows only `engine.cfg`; `--staged` only `route.txt` |
 | E58 | `git add engine.cfg`, then `git restore --staged engine.cfg` | status 0; ` M engine.cfg`, the file keeps `power=99999` |
 | E59 | then `git commit -m "Add the Phobos stop"` | the commit changes only `route.txt`; ` M engine.cfg` stays |
+| E60 | two commits, `origin` set, an empty bare GitHub; a plain `git push` | status 128: `main` has no upstream; git suggests `--set-upstream origin main` |
+| E61 | `git push -u origin main` | status 0; GitHub gets `main`; `main@{upstream}` is `origin/main` |
+| E62 | `echo "Stop: Phobos" >> route.txt`, then `git push` | status 0, "Everything up-to-date"; GitHub's `route.txt` unchanged |
+| E63 | `git commit -am "Add the Phobos stop"`, then `git push` | the commit takes the tracked, changed `route.txt`; the push sends it; GitHub's `main` equals yours, up to date again |
 | E43 | `git restore --staged .` | status 0; nothing staged; the two files keep their changes in the folder, `keys.txt` untracked |
 
 ### Level `cargo-selective` (Selective cargo, 2-2)
@@ -523,3 +527,17 @@ a deleted log (asked back, not lost), and the `git add .` warning kept in the ch
 | hints, debrief | unstage the keys and the log, keep the files, then commit | E38, E39, E43 (per file), E59 |
 | `KEYS_DELETED`, `KEYS_LOST`, `LOG_DELETED` | a staged file deleted from the folder is still staged; unstaged then, it is in no area | E41, E42 |
 | `KEYS_SEALED`, `LOG_SEALED` (lost) | a commit cannot be taken back until a later chapter | as vault-seal |
+
+### Level `mothership-launch` (Launch, 4-2)
+
+*Re-checked* by `tests/levels/test_mothership_launch.py`: the whole path, a plain first push
+(128, the level's reaction), a push without `-u`, the empty push leaving GitHub's route as it
+was, and the quest waiting when the edit is committed before the empty push.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, hint 1, debrief | `git push -u origin main` sends `main`'s commits and makes `origin/main` its upstream; a plain push then knows where to go | E61, E63; git-push(1) `-u` |
+| `NO_UPSTREAM` | a plain first push stops because `main` has no upstream | E60 |
+| prediction reveal, `FIZZLED`, scene | a push sends commits; an edit in no commit is not sent | E62 |
+| hint 2 | `git commit -am` commits the edit | E63; git-commit(1) `-a` ("automatically stage files that have been modified and deleted") |
+| `COMMITTED_EDIT` | the commit is ahead of `origin/main` | E63 (status says ahead by 1 before the push) |
