@@ -3,32 +3,37 @@ from firstcommit.levels import conflict_meet as level
 from level_helpers import started, typed_in, watch
 
 
-def test_merging_beacon_first_makes_no_commit_and_only_slides_main() -> None:
+def test_main_and_alexs_scout_have_each_moved_on_since_they_parted() -> None:
     lab, state = started(level)
-    commits = kit.git(lab.project, "rev-list", "--count", "--all")
-    typed_in(lab, "git merge beacon")
-    assert kit.git(lab.project, "rev-list", "--count", "--all") == commits
-    assert kit.git(lab.project, "rev-parse", "main").strip() == state["beacon"]
-    assert watch(level, "forward").watch(lab, state, []).message == level.FORWARDED
+    base = kit.git(lab.project, "merge-base", "main", "scout").strip()
+    assert base not in (kit.git(lab.project, "rev-parse", "main").strip(), state["scout"])
+    assert kit.git(lab.project, "log", "-1", "--format=%an", "scout").strip() == "Alex"
 
 
-def test_merging_scout_makes_a_commit_with_two_parents_that_keeps_both_changes() -> None:
+def test_the_prediction_reveal_recalls_the_fast_forward_of_4_3() -> None:
+    assert len(level.GUESS.options) == 3
+    assert "Incoming transmission" in level.GUESS.reveal
+
+
+def test_merging_scout_makes_one_commit_with_two_parents_that_keeps_both_changes_and_both_labels() -> None:
     lab, state = started(level)
-    typed = typed_in(lab, "git merge beacon", "git merge --no-edit scout", "git log --oneline --graph")
+    commits = int(kit.git(lab.project, "rev-list", "--count", "--all"))
+    typed = typed_in(lab, "git merge --no-edit scout", "git log --oneline --graph")
+    assert int(kit.git(lab.project, "rev-list", "--count", "--all")) == commits + 1
     assert len(kit.git(lab.project, "log", "-1", "--format=%P").split()) == 2
     assert (lab.project / "crew.txt").read_text() == "Robin\nAlex\n"
     assert (lab.project / "route.txt").read_text() == "Route: Earth, Moon, Mars\n"
-    assert level.check(lab, state, None, typed).solved
+    assert kit.git(lab.project, "rev-parse", "scout").strip() == state["scout"]
+    assert level.check(lab, state, None, typed) == kit.Verdict(True, level.LOOKED)
 
 
-def test_merging_scout_first_brings_beacon_in_by_a_merge_commit_and_the_level_offers_to_start_again() -> None:
+def test_a_paused_merge_is_named_with_both_ways_on() -> None:
     lab, state = started(level)
-    typed = typed_in(lab, "git merge --no-edit scout", "git merge --no-edit beacon")
-    verdict = level.check(lab, state, None, typed)
-    assert (verdict.solved, verdict.lost, verdict.message) == (False, True, level.MERGED_BEACON)
+    kit.git(lab.project, "merge", "--no-commit", "--no-ff", "scout")
+    assert watch(level, "merge").watch(lab, state, []).message == level.PAUSED
 
 
 def test_a_graph_drawn_before_the_merge_does_not_count() -> None:
     lab, state = started(level)
-    typed = typed_in(lab, "git merge beacon", "git log --oneline --graph", "git merge --no-edit scout")
+    typed = typed_in(lab, "git log --oneline --graph", "git merge --no-edit scout")
     assert level.check(lab, state, None, typed).message == level.NOT_LOOKED

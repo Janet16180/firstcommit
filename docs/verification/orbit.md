@@ -721,16 +721,17 @@ numbered on from E82:
 
 ### Level `conflict-meet` (Two crews meet, 6-1)
 
-*Re-checked* by `tests/levels/test_conflict_meet.py`: the fast-forward making no commit, the merge
-commit with two parents keeping both changes, `scout` merged first (lost), and a graph drawn before
-the merge.
+Reworked 2026-10-08 to one idea (docs/drafts/chapters-5-9.md): `beacon` and its fast-forward are
+gone. *Re-checked* by `tests/levels/test_conflict_meet.py`: `main` and Alex's `scout` diverged, the
+merge making exactly one commit with two parents and keeping both changes and the `scout` label, a
+paused merge named, and a graph drawn before the merge.
 
 | Text | Claim | Evidence |
 |---|---|---|
-| card, prediction reveal, `FORWARDED`, debrief | with nothing new on your branch, a merge slides the label and makes no commit | E83; git-merge(1) FAST-FORWARD MERGE |
-| card, `MERGED`, debrief | when both moved on, a merge commit with two parents keeps both changes | E84; git-merge(1) TRUE MERGE |
-| debrief, hint 2 | `--no-edit` keeps git's prepared message; without it git opens an editor on a terminal | E85; git-merge(1) `--edit, -e, --no-edit` |
-| `MERGED_BEACON` (lost) | merged after `scout`, `beacon` comes in through a merge commit | the level's test |
+| prediction reveal | with only one side moved, Git slides the label and makes no commit, as in 4-3 | E83; git-merge(1) FAST-FORWARD MERGE; 4-3's pull is a fast-forward (its setup leaves your `main` with nothing new) |
+| card, prediction reveal, `MERGED`, debrief | when both moved on, one merge commit with two parents keeps both changes | E84; git-merge(1) TRUE MERGE |
+| card, debrief | the merged branch stays where it was: a merge removes no branch | E84 (`scout` unmoved, *re-checked*); git-merge(1) DESCRIPTION |
+| debrief, hint 1 | `--no-edit` keeps git's prepared message; without it git opens an editor on a terminal | E85; git-merge(1) `--edit, -e, --no-edit` |
 
 ### Level `conflict-abort` (Abort the docking, 6-2)
 
