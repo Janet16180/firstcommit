@@ -281,3 +281,94 @@ test("reduced motion plays no boundary and leaves the frame drawn", () => {
   const reduced = STYLE.slice(STYLE.indexOf("@media (prefers-reduced-motion: reduce)"));
   for (const selector of [".sky.art-birth-boundary *", ".sky.art-birth-boundary .viz-kept.art-blackbox::before", ".sky.art-birth-boundary .viz-kept.art-blackbox::after"]) assert.ok(reduced.includes(selector), selector);
 });
+
+const TAPE = ".art-tape";
+const tapeArt = () => STYLE.slice(STYLE.indexOf(`${TAPE} .tape-track {`), STYLE.indexOf("@media (prefers-reduced-motion: reduce)"));
+
+test("the tape runs as a strip of recorder tape out of a slot, sprocket holes along both edges, scrolling with its ticks", () => {
+  const track = rules(`${TAPE} .tape-track`).join("");
+  assert.match(track, /border-left: \d+px solid var\(--ink\)/, "the slot it feeds out of");
+  assert.match(track, /border-top: 2px solid var\(--ink\)/);
+  assert.match(track, /border-bottom: 2px solid var\(--ink\)/);
+  assert.equal((track.match(/linear-gradient\(to right, var\(--ink-soft\) 0 4px, transparent 4px 100%\)/g) || []).length, 2, "two rows of holes");
+  assert.equal((track.match(/repeat-x/g) || []).length, 2);
+  assert.match(track, /var\(--panel-2\);/);
+  assert.match(track, /background-attachment: local/, "the holes scroll with the tape");
+});
+
+test("each tick sits on the tape with a mark above it, and a hard shadow unless it is a ghost", () => {
+  const tick = rules(`${TAPE} .tape-tick`).join("");
+  assert.match(tick, /position: relative/);
+  assert.match(tick, /border: 2px solid var\(--ink\)/);
+  assert.match(tick, /box-shadow: 2px 2px 0 var\(--edge\)/);
+  const mark = rules(`${TAPE} .tape-tick::before`).join("");
+  assert.match(mark, /content: ""/);
+  assert.match(mark, /position: absolute/);
+  assert.match(mark, /bottom: 100%/);
+  assert.match(mark, /pointer-events: none/);
+});
+
+test("a playhead points down at the chosen tick, gold over a hard shadow, and the tick lights", () => {
+  const chosen = rules(`${TAPE} .tape-tick[aria-selected="true"]`).join("");
+  assert.match(chosen, /background: color-mix\(in srgb, var\(--gold\) \d+%, var\(--panel\)\)/);
+  const head = rules(`${TAPE} .tape-tick[aria-selected="true"]::before`).join("");
+  assert.equal((head.match(/linear-gradient\(var\(--gold\) 0 0\)/g) || []).length, 4, "four rows of the arrow");
+  assert.equal((head.match(/linear-gradient\(var\(--edge\) 0 0\)/g) || []).length, 4, "four rows of its shadow");
+  assert.ok(head.indexOf("--gold") < head.indexOf("--edge"), "the arrow paints over its shadow");
+});
+
+test("a reset tick is marked as a move back: an edge and a pixel rewind sign in the changed colour", () => {
+  const reset = rules(`${TAPE} .tape-tick[data-kind="reset"]`).join("");
+  assert.match(reset, /border-left: 4px solid var\(--s-mod\)/);
+  const arrow = rules(`${TAPE} .tape-tick[data-kind="reset"]::after`).join("");
+  assert.match(arrow, /content: ""/);
+  assert.match(arrow, /position: absolute/);
+  assert.equal((arrow.match(/linear-gradient\(var\(--s-mod\) 0 0\)/g) || []).length, 10, "two left-pointing heads of five rows each");
+});
+
+test("a ghost tick is hollow and dashed, with no shadow, and dashed in ink when chosen", () => {
+  const ghost = rules(`${TAPE} .tape-tick.is-ghost`).join("");
+  assert.match(ghost, /border-style: dashed/);
+  assert.match(ghost, /background: transparent/);
+  assert.match(ghost, /box-shadow: none/);
+  assert.match(ghost, /color: var\(--ink-soft\)/);
+  const chosen = rules(`${TAPE} .tape-tick.is-ghost[aria-selected="true"]`).join("");
+  assert.match(chosen, /border-color: var\(--ink\)/);
+  assert.match(chosen, /background: transparent/);
+});
+
+test("the readout is the recorder's night display, gone while there is nothing to read", () => {
+  const read = rules(`${TAPE} .tape-read`).join("");
+  assert.match(read, /background: var\(--crt\)/);
+  assert.match(read, /color: var\(--crt-ink\)/);
+  assert.match(read, /box-shadow: 3px 3px 0 var\(--edge\)/);
+  assert.match(rules(`${TAPE} .tape-read:empty`).join(""), /display: none/);
+  assert.match(rules(`${TAPE} .tape-ref`).join(""), /color: var\(--crt-cmd\)/);
+  assert.match(rules(`${TAPE} .tape-ghost`).join(""), /color: var\(--crt-warn\)/);
+  assert.match(rules(`${TAPE} .tape-read code`).join(""), /background: none/, "no page chip on the night display");
+});
+
+test("the tape feeds out of its slot left to right over the page's birth time, its newest tick last with a flash", () => {
+  const [, feed, duration] = birthAnimation(".sky.art-birth-tape .tape-track");
+  assert.equal(duration, BIRTH);
+  assert.match(frames(feed), /0%, \d+% \{ clip-path: inset\(0 100% 0 0\); \}/);
+  assert.match(frames(feed), /to \{ clip-path: inset\(0\); \}/);
+  const [, newest, time] = birthAnimation(".sky.art-birth-tape .tape-tick:last-child");
+  assert.equal(time, BIRTH);
+  assert.match(frames(newest), /0%, \d+% \{ opacity: 0; background: var\(--gold\);/, "hidden, and already gold when it shows");
+  assert.match(frames(newest), /background: var\(--gold\);/);
+  assert.match(frames(newest), /to \{ opacity: 1; \}/, "ends on the tick's own colours");
+  assert.deepEqual(birthAnimation(".sky.art-birth-tape .tape-read").slice(1), ["art-birth-after", BIRTH]);
+});
+
+test("the tape and its birth paint only with the design's tokens", () => {
+  const art = tapeArt();
+  assert.ok(art.includes("art-birth-tape"));
+  for (const [, name] of art.matchAll(/var\((--[\w-]+)/g)) assert.ok(TOKENS.has(name) || name === "--art-birth", name);
+  assert.ok(!/#[0-9A-Fa-f]{3,6}\b|\brgba?\(|\bhsla?\(/.test(art));
+});
+
+test("reduced motion plays no tape birth and leaves the tape whole", () => {
+  const reduced = STYLE.slice(STYLE.indexOf("@media (prefers-reduced-motion: reduce)"));
+  assert.ok(reduced.includes(".sky.art-birth-tape *"));
+});

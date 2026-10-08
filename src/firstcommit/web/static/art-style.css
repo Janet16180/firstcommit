@@ -935,6 +935,167 @@
   50% { opacity: 0.6; }
 }
 
+/* Put on the black box's tape (section.tape, orbit.css), under history and the black box view:
+   HEAD's moves on a strip of recorder tape fed out of a slot at the left, sprocket holes along
+   both edges that scroll with the ticks, a mark over each tick and a gold playhead over the
+   chosen one. A reset moves a label back, so its tick carries an edge and an arrow pointing back;
+   a ghost (a capsule only the reflog reaches) is hollow and dashed. The readout is the recorder's
+   night display, like the terminal. */
+.art-tape .tape-track {
+  gap: 10px;
+  padding: 24px 10px 14px;
+  border-top: 2px solid var(--ink);
+  border-bottom: 2px solid var(--ink);
+  border-left: 6px solid var(--ink);
+  background:
+    linear-gradient(to right, var(--ink-soft) 0 4px, transparent 4px 100%) left 4px top 4px / 12px 4px repeat-x,
+    linear-gradient(to right, var(--ink-soft) 0 4px, transparent 4px 100%) left 4px bottom 4px / 12px 4px repeat-x,
+    var(--panel-2);
+  background-attachment: local;
+}
+
+.art-tape .tape-tick {
+  position: relative;
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--edge);
+}
+
+.art-tape .tape-tick::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: calc(50% - 1px);
+  width: 2px;
+  height: 4px;
+  margin-bottom: 2px;
+  pointer-events: none;
+  background: var(--ink-soft);
+}
+
+.art-tape .tape-tick[aria-selected="true"] {
+  border-color: var(--ink);
+  background: color-mix(in srgb, var(--gold) 24%, var(--panel));
+  box-shadow: 3px 3px 0 var(--edge);
+}
+
+.art-tape .tape-tick[aria-selected="true"]::before {
+  left: calc(50% - 7px);
+  width: 16px;
+  height: 10px;
+  margin-bottom: 1px;
+  background:
+    linear-gradient(var(--gold) 0 0) 0 0 / 14px 2px no-repeat,
+    linear-gradient(var(--gold) 0 0) 2px 2px / 10px 2px no-repeat,
+    linear-gradient(var(--gold) 0 0) 4px 4px / 6px 2px no-repeat,
+    linear-gradient(var(--gold) 0 0) 6px 6px / 2px 2px no-repeat,
+    linear-gradient(var(--edge) 0 0) 2px 2px / 14px 2px no-repeat,
+    linear-gradient(var(--edge) 0 0) 4px 4px / 10px 2px no-repeat,
+    linear-gradient(var(--edge) 0 0) 6px 6px / 6px 2px no-repeat,
+    linear-gradient(var(--edge) 0 0) 8px 8px / 2px 2px no-repeat;
+}
+
+.art-tape .tape-tick[data-kind="reset"] {
+  padding-right: 22px;
+  border-left: 4px solid var(--s-mod);
+}
+
+.art-tape .tape-tick[data-kind="reset"]::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 12px;
+  height: 10px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--s-mod) 0 0) 4px 0 / 2px 2px no-repeat,
+    linear-gradient(var(--s-mod) 0 0) 2px 2px / 4px 2px no-repeat,
+    linear-gradient(var(--s-mod) 0 0) 0 4px / 6px 2px no-repeat,
+    linear-gradient(var(--s-mod) 0 0) 2px 6px / 4px 2px no-repeat,
+    linear-gradient(var(--s-mod) 0 0) 4px 8px / 2px 2px no-repeat,
+    linear-gradient(var(--s-mod) 0 0) 10px 0 / 2px 2px no-repeat,
+    linear-gradient(var(--s-mod) 0 0) 8px 2px / 4px 2px no-repeat,
+    linear-gradient(var(--s-mod) 0 0) 6px 4px / 6px 2px no-repeat,
+    linear-gradient(var(--s-mod) 0 0) 8px 6px / 4px 2px no-repeat,
+    linear-gradient(var(--s-mod) 0 0) 10px 8px / 2px 2px no-repeat;
+}
+
+.art-tape .tape-tick.is-ghost {
+  border-style: dashed;
+  border-color: var(--ink-soft);
+  background: transparent;
+  box-shadow: none;
+  color: var(--ink-soft);
+}
+
+.art-tape .tape-tick.is-ghost[aria-selected="true"] {
+  border-color: var(--ink);
+  background: transparent;
+  color: var(--ink);
+}
+
+.art-tape .tape-read {
+  margin-top: 10px;
+  padding: 4px 10px;
+  background: var(--crt);
+  color: var(--crt-ink);
+  border: 2px solid var(--ink);
+  box-shadow: 3px 3px 0 var(--edge);
+}
+
+.art-tape .tape-read:empty {
+  display: none;
+}
+
+.art-tape .tape-read code {
+  background: none;
+  padding: 0;
+}
+
+.art-tape .tape-ref {
+  color: var(--crt-cmd);
+}
+
+.art-tape .tape-message {
+  color: var(--crt-ink);
+}
+
+.art-tape .tape-at {
+  color: var(--crt-hint);
+}
+
+.art-tape .tape-ghost {
+  color: var(--crt-warn);
+}
+
+/* The tape (once HEAD has moved in 7-3), played in place: the strip feeds out of its slot left to
+   right, so its ticks appear oldest first; the newest shows last with a gold flash and settles on
+   its own colours, then the readout lights. */
+.sky.art-birth-tape .tape-track {
+  animation: art-birth-tape-feed var(--art-birth, 1.4s) steps(8) both;
+}
+
+@keyframes art-birth-tape-feed {
+  0%, 6% { clip-path: inset(0 100% 0 0); }
+  70% { clip-path: inset(0); }
+  to { clip-path: inset(0); }
+}
+
+.sky.art-birth-tape .tape-tick:last-child {
+  animation: art-birth-tape-newest var(--art-birth, 1.4s) steps(4) both;
+}
+
+@keyframes art-birth-tape-newest {
+  0%, 68% { opacity: 0; background: var(--gold); color: var(--edge); box-shadow: 0 0 0 3px var(--gold); }
+  72% { opacity: 1; background: var(--gold); color: var(--edge); box-shadow: 0 0 0 3px var(--gold); }
+  86% { opacity: 1; background: var(--gold); color: var(--edge); box-shadow: 0 0 0 3px var(--gold); }
+  to { opacity: 1; }
+}
+
+.sky.art-birth-tape .tape-read {
+  animation: art-birth-after var(--art-birth, 1.4s) steps(4) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .art-rama,
   .art-rama *,
@@ -956,6 +1117,7 @@
   .sky.art-birth-boundary *,
   .sky.art-birth-boundary .viz-kept.art-blackbox::before,
   .sky.art-birth-boundary .viz-kept.art-blackbox::after,
+  .sky.art-birth-tape *,
   .art-ignore-field::after {
     animation: none !important;
   }
