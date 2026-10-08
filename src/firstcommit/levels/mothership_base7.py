@@ -25,7 +25,7 @@ CARD = kit.CommandCard(
     text="Says what is staged, what changed in the working folder, and how your branch stands against its upstream. Ask it before every commit and push.",
 )
 SCENE = [
-    kit.SceneFrame(art="alarm", text="Meteorite strike on Base 7. Its computer is gone, and its history with it."),
+    kit.SceneFrame(art="meteor", text="Meteorite strike on Base 7. Its computer is gone, and its history with it."),
     kit.SceneFrame(art="alarm", text="The files survived on a backup drive, with debris from the crash. Rebuild the base and get it to the mothership."),
 ]
 

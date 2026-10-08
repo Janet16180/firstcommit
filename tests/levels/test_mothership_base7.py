@@ -53,3 +53,7 @@ def test_origin_by_the_mothership_s_absolute_path_counts() -> None:
     lab, state = started(level)
     typed_in(lab, "git init -q", f"git remote add origin {lab.github}/")
     assert level.watch_contact(lab, state, []).message == level.CONTACT
+
+
+def test_the_scene_opens_on_the_meteorite_strike_then_the_challenge_alarm() -> None:
+    assert [frame.art for frame in level.SCENE] == ["meteor", "alarm"]
