@@ -735,3 +735,17 @@ by hand, markers committed then fixed by a new commit, and bay 3 committed.
 | `SIDE` | after `--ours` or `--theirs` the file stays unmerged until added | E88 |
 | `NOT_BAY_4_COMMITTED`, `BAY_3_COMMITTED` | a commit with markers or the wrong side is fixed by a new commit; `git restore --source=scout` brings `scout`'s version | E90, E97 |
 | debrief | `git commit --no-edit` finishes the merge with two parents; `git merge --abort` was there all along | E89, E91 |
+
+### Level `conflict-docking` (Docking collision, 6-4, boss)
+
+*Re-checked* by `tests/levels/test_conflict_docking.py`: the refused push and the stopped pull,
+both pulls answered with Alex's bay then Alex's second push and one more pull, bay 5 kept, a forced
+push (Rama's error, lost), and a hard reset to the mothership (the checklist lost).
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card | `git commit --no-edit` keeps the prepared message and finishes a merge once conflicts are added | E89; git-commit(1) `--no-edit` |
+| debrief | a merge finishes with `git commit --no-edit`, a rebase with `git rebase --continue`; the checklist comes along either way | E95, E96 |
+| debrief | the second push bounces, one more pull joins Alex's new commit without a conflict | E96 |
+| `ALEX_DROPPED`, `FORCED` (lost) | a forced push drops Alex's commits from the mothership | E68 |
+| `CHECKLIST_LOST` (lost) | `git reset --hard origin/main` leaves the checklist in no commit a ref reaches | the level's test |
