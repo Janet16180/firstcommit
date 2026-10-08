@@ -22,7 +22,9 @@
  *   alex, ghosts}, look: [subject | "HEAD"], walk, placed, legend}. main's line (else origin/main's,
  *   else HEAD's) holds the first column. `walk` lights git log's path
  *   from HEAD; `placed` names get a tick (the captain's chart); `legend: false` leaves the key
- *   out. An update that brings nothing new keeps the drawing, so its motions are not started over.
+ *   out. `whatif` (names) draws the WHAT IF: greyscale under its heading, the chain without those
+ *   names, the commits only they reached as ghosts. An update that brings nothing new keeps the
+ *   drawing, so its motions are not started over.
  */
 
 /* global Dom, Strings */
@@ -156,6 +158,23 @@ const Chain = (function () {
     return path;
   }
 
+  /* The project as it would be without the names `without`: the commits only they reached are
+     then reached by nothing. No names: the project as it is. */
+  function pretend(project, without) {
+    if (!without) return { project, orphaned: [] };
+    const refs = project.refs.filter((ref) => !without.includes(ref.name));
+    const byHash = new Map(project.commits.map((commit) => [commit.hash, commit]));
+    const reached = new Set();
+    const queue = [...refs.map((ref) => ref.target), project.head].filter(Boolean);
+    while (queue.length) {
+      const hash = queue.pop();
+      if (reached.has(hash) || !byHash.has(hash)) continue;
+      reached.add(hash);
+      queue.push(...byHash.get(hash).parents);
+    }
+    return { project: { ...project, refs }, orphaned: project.commits.filter((commit) => !reached.has(commit.hash)) };
+  }
+
   function create() {
     const element = el("section", { class: "chain", "aria-label": t("chain.label") });
     let drawnFrom = null;
@@ -167,21 +186,24 @@ const Chain = (function () {
       draw(view);
     }
 
-    function draw({ project, github, teammate, ghosts, show, look, walk, placed = [], legend: keyed = true }) {
+    function draw({ project: real, github, teammate, ghosts, show, look, walk, placed = [], legend: keyed = true, whatif = null }) {
+      const { project, orphaned } = pretend(real, whatif);
       const mine = new Set(project.commits.map((commit) => commit.hash));
       const motherOnly = show.mothership && github ? github.commits.filter((commit) => !mine.has(commit.hash)) : [];
       const lost = show.ghosts ? ghosts.filter((commit) => !mine.has(commit.hash)) : [];
       const commits = [...project.commits, ...motherOnly, ...lost];
       const byHash = new Map(commits.map((commit) => [commit.hash, commit]));
-      const styles = new Map([...motherOnly.map((commit) => [commit.hash, "mothership"]), ...lost.map((commit) => [commit.hash, "ghost"])]);
+      const styles = new Map([...motherOnly.map((commit) => [commit.hash, "mothership"]), ...[...lost, ...orphaned].map((commit) => [commit.hash, "ghost"])]);
       const tip = (name) => (project.refs.find((ref) => ref.name === name) || {}).target;
       const trunk = tip("main") || tip("origin/main") || project.head;
       const { rows, columns } = layout(commits, trunk ? [trunk] : []);
       const pieces = wires(rows, styles, walk ? walkFrom(project, byHash) : []);
       const looked = new Set(look);
       element.setAttribute("aria-label", t("chain.label"));
+      element.classList.toggle("is-whatif", Boolean(whatif));
       element.style.setProperty("--columns", String(columns));
       element.replaceChildren(
+        ...(whatif ? [el("span", { class: "chain-whatif" }, t("moment.whatIf"))] : []),
         el("ol", { class: "chain-rows" }, ...rows.map((row, at) => {
           const { commit } = row;
           const style = styles.get(commit.hash);
@@ -198,7 +220,7 @@ const Chain = (function () {
               ...(show.mothership ? pins(github, commit.hash, "mothership") : []),
               ...(show.alex ? pins(teammate, commit.hash, "alex") : [])));
         })),
-        ...(keyed ? [legend(project, { mothership: show.mothership && Boolean(github), alex: show.alex && Boolean(teammate), only: motherOnly.length > 0, ghost: lost.length > 0 })] : []));
+        ...(keyed ? [legend(project, { mothership: show.mothership && Boolean(github), alex: show.alex && Boolean(teammate), only: motherOnly.length > 0, ghost: lost.length + orphaned.length > 0 })] : []));
     }
 
     return { element, update };

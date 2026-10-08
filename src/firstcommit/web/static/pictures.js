@@ -10,8 +10,10 @@
  * rings its commit on the chain. Needs dom.js, strings.js, chain.js, folder-row.js, desk.js,
  * move-log.js, target-chart.js, git-graph.js and sides.js. Defines one global, Pictures.
  *
- * create(spec, {challenge}) {element, update(observation, {look, passed})}: spec is
- *   LevelView.pictures; in a challenge the move log marks nothing. `look` lists what the current
+ * create(spec, {challenge, timers}) {element, update(observation, {look, passed})}: spec is
+ *   LevelView.pictures; in a challenge the move log marks nothing. Once the step spec.whatif.after
+ *   has passed, the chain plays its WHAT IF for as long as a what-if moment, timed on `timers`
+ *   (window unless given), then rewinds. `look` lists what the current
  *   goal rings (subjects, or "HEAD"); `passed` the ids of the goals met, for the desk's outline.
  */
 
@@ -23,6 +25,8 @@ const Pictures = (function () {
   const WALK = /^git log\b(?!.*--all)/;
   const DIFF = /^git diff\b/;
   const REFLOG = /^git reflog\b/;
+  /* As long as the what-if moments play. */
+  const WHATIF_MS = 7000;
 
   /* Each picture: its elements in a slot, and how it redraws from a tick (`now`). */
   const BUILD = {
@@ -34,9 +38,10 @@ const Pictures = (function () {
       const beside = chart || graph ? el("div", { class: chart ? "pictures-pair" : "pictures-pair is-stack" }, chain.element, chart && chart.element) : null;
       return {
         elements: [beside || chain.element, folder && folder.element],
-        refresh({ observation, rings, walking, ghosts }) {
+        refresh({ observation, rings, walking, ghosts, whatif, rewound }) {
           const { project } = observation;
-          chain.update({ project, github: observation.github, teammate: observation.teammate, ghosts: observation.ghosts, show: { mothership: spec.mothership, alex: spec.alex, ghosts }, look: rings, walk: walking });
+          chain.update({ project, github: observation.github, teammate: observation.teammate, ghosts: observation.ghosts, show: { mothership: spec.mothership, alex: spec.alex, ghosts }, look: rings, walk: walking, whatif: whatif ? spec.whatif.without : null });
+          chain.element.classList.toggle("is-rewind", rewound);
           if (folder) folder.update(project.files);
           if (chart) chart.update(project, spec.target);
           if (!graph || !observation.graph) return;
@@ -68,8 +73,8 @@ const Pictures = (function () {
     },
   };
 
-  function create(spec, { challenge = false } = {}) {
-    const state = { picked: null, walking: false, blinking: false, reflogRead: false, last: null };
+  function create(spec, { challenge = false, timers = window } = {}) {
+    const state = { picked: null, walking: false, blinking: false, reflogRead: false, whatif: "waiting", last: null };
     const options = { challenge, onPick: (hash) => repick(hash) };
     const large = BUILD[spec.large](spec, options);
     const small = spec.small ? BUILD[spec.small](spec, options) : null;
@@ -89,6 +94,8 @@ const Pictures = (function () {
         blinking: state.blinking,
         reflogRead: state.reflogRead,
         ghosts: spec.ghosts && (!hasMoveLog || state.reflogRead),
+        whatif: state.whatif === "playing",
+        rewound: state.whatif === "rewound",
       };
       for (const picture of [large, small].filter(Boolean)) picture.refresh(now);
     }
@@ -106,7 +113,17 @@ const Pictures = (function () {
         state.blinking = typed.some((line) => DIFF.test(line));
       }
       state.reflogRead = state.reflogRead || typed.some((line) => REFLOG.test(line));
+      if (spec.whatif && state.whatif === "waiting" && passed.includes(spec.whatif.after)) playWhatIf();
       draw();
+    }
+
+    /* The WHAT IF plays once, then rewinds to the real chain. */
+    function playWhatIf() {
+      state.whatif = "playing";
+      timers.setTimeout(() => {
+        state.whatif = "rewound";
+        draw();
+      }, WHATIF_MS);
     }
 
     return { element, update };

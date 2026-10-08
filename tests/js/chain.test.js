@@ -175,3 +175,18 @@ test("main holds the first column even when HEAD rides a side line, and a bookma
   const diverged = snapshot({ commits: [commit("y", ["b"], 5), ...forked().commits], refs: [ref("main", "c"), ref("origin/main", "y", "remote")] });
   assert.equal(rowOf(drawn(diverged), "y").querySelector(".chain-cap").style.getPropertyValue("--column"), "1");
 });
+
+test("a WHAT IF draws the same chain without the given names: in grey, under the heading, the commits only they reached as ghosts", () => {
+  const rescued = snapshot({ commits: forked().commits, refs: [ref("main", "b"), ref("rescue", "c"), ref("scout", "d")] });
+  const chain = drawn(rescued, { whatif: ["rescue"] });
+  assert.ok(chain.element.classList.contains("is-whatif"));
+  assert.equal(chain.element.querySelector(".chain-whatif").textContent, "WHAT IF");
+  assert.ok(rowOf(chain, "c").classList.contains("is-ghost"));
+  assert.ok(!rowOf(chain, "d").classList.contains("is-ghost"));
+  assert.ok(!rowOf(chain, "b").classList.contains("is-ghost"));
+  assert.deepEqual(words(chain.element, ".chain-rows .chain-tag").sort(), ["main", "scout"]);
+  const real = drawn(rescued);
+  assert.ok(!real.element.classList.contains("is-whatif"));
+  assert.equal(real.element.querySelector(".chain-whatif"), null);
+  assert.equal(real.element.querySelector(".chain-row.is-ghost"), null);
+});

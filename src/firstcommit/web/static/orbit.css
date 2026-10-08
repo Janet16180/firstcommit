@@ -2427,6 +2427,34 @@ pre.code code {
   background: var(--z-va);
 }
 
+/* The chain's WHAT IF: greyscale like the what-if moments, under their heading, then a rewind
+   back to colour. */
+.chain.is-whatif {
+  position: relative;
+  filter: grayscale(1);
+}
+
+.chain-whatif {
+  display: inline-block;
+  margin: 0 0 6px;
+  padding: 1px 8px;
+  background: var(--crt);
+  color: var(--star);
+  border: 2px solid var(--star);
+  font: 700 0.9rem var(--f-px);
+  letter-spacing: 0.05em;
+}
+
+.chain.is-rewind {
+  animation: chain-rewind 0.6s steps(4);
+}
+
+@keyframes chain-rewind {
+  from {
+    filter: grayscale(1);
+  }
+}
+
 /* The folder row (folder-row.js): the working folder's files under the chain, in its colour. */
 .folder-row {
   display: flex;
@@ -2947,6 +2975,7 @@ pre.code code {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .chain.is-rewind,
   .desk-line.is-blink,
   .desk-line.is-gone,
   .movelog-row.is-lit,

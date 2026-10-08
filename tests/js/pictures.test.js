@@ -2,13 +2,13 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { installBrowser, load, record } = require("./load");
+const { createClock, installBrowser, load, record } = require("./load");
 
 installBrowser();
 const { Pictures } = load(["dom.js", "strings.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "target-chart.js", "git-graph.js", "sides.js", "pictures.js"], ["Pictures"]);
 
 /* A level's pictures as LevelView.pictures gives them: the chain alone unless a test says more. */
-const spec = (more = {}) => ({ large: "chain", small: null, folder: false, mothership: false, alex: false, ghosts: false, kept: null, lines: [], graph: false, target: null, ...more });
+const spec = (more = {}) => ({ large: "chain", small: null, folder: false, mothership: false, alex: false, ghosts: false, kept: null, lines: [], graph: false, target: null, whatif: null, ...more });
 /* The sample observation, with the fields the pictures read; `typed` are this tick's lines. */
 const observed = (typed = [], more = {}) => ({ ...record("observation"), commands: typed.map((line) => ({ line, status: 0 })), texts: [], graph: null, ...more });
 const shown = (pictures) => [".pictures-large", ".pictures-small"].flatMap((slot) => [...pictures.element.querySelector(slot).children]).map((node) => node.className.split(" ")[0]);
@@ -101,4 +101,20 @@ test("two sides opens the conflicted files as the large picture", () => {
   const pictures = made({ large: "sides", small: "chain" });
   assert.deepEqual(shown(pictures), ["sides", "chain"]);
   assert.ok(pictures.element.querySelector(".pictures-large .sides-half"));
+});
+
+test("once its step has passed, the chain plays the level's WHAT IF for a while, then rewinds to the real chain", async () => {
+  const clock = createClock();
+  const branch = record("observation").project.refs.find((ref) => ref.kind === "branch" && ref.name !== record("observation").project.branch);
+  const pictures = Pictures.create(spec({ whatif: { without: [branch.name], after: "reset" } }), { timers: clock });
+  pictures.update(observed(), { look: [], passed: [] });
+  assert.ok(!pictures.element.querySelector(".chain").classList.contains("is-whatif"));
+  pictures.update(observed(), { look: [], passed: ["reset"] });
+  assert.ok(pictures.element.querySelector(".chain").classList.contains("is-whatif"));
+  await clock.advance(7000);
+  const chain = pictures.element.querySelector(".chain");
+  assert.ok(!chain.classList.contains("is-whatif"));
+  assert.ok(chain.classList.contains("is-rewind"));
+  pictures.update(observed(), { look: [], passed: ["reset"] });
+  assert.ok(!pictures.element.querySelector(".chain").classList.contains("is-whatif"));
 });
