@@ -2427,6 +2427,42 @@ pre.code code {
   background: var(--z-va);
 }
 
+/* The folder row (folder-row.js): the working folder's files under the chain, in its colour. */
+.folder-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 10px;
+  padding: 6px 8px;
+  background: color-mix(in srgb, var(--z-wd) 9%, var(--panel));
+  border: 3px solid var(--z-wd);
+}
+
+.folder-name {
+  margin-right: 4px;
+  color: var(--ink);
+  font: 700 0.9rem var(--f-body);
+}
+
+.folder-file {
+  max-width: 100%;
+  padding: 1px 6px;
+  background: var(--panel);
+  border: 2px solid var(--edge);
+  font: 0.95rem var(--f-term);
+  overflow-wrap: anywhere;
+}
+
+.folder-file.is-new {
+  box-shadow: 0 0 0 2px var(--z-wd);
+}
+
+.folder-file.is-gone {
+  text-decoration: line-through;
+  opacity: 0.45;
+}
+
 @media (max-width: 980px) {
   .stage {
     grid-template-columns: minmax(0, 1fr);
