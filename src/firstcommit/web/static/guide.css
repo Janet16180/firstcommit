@@ -770,6 +770,21 @@
 }
 
 @media (max-width: 760px) {
+  /* One row that scrolls sideways; the fade at the right edge says there is more. */
+  .guide-jump {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-right: 32px;
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 40px), transparent);
+    mask-image: linear-gradient(to right, black calc(100% - 40px), transparent);
+  }
+
+  .guide-jump .btn {
+    flex: none;
+    white-space: nowrap;
+  }
+
   .gx-layout {
     grid-template-columns: minmax(0, 1fr);
   }
