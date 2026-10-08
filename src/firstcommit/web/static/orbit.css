@@ -2758,6 +2758,32 @@ pre.code code {
   font: 700 0.8rem var(--f-body);
 }
 
+/* Git's own drawing (git-graph.js), on the terminal's night; a lit line pairs with a ringed capsule. */
+.graph {
+  min-width: 0;
+}
+
+.graph-title {
+  margin: 0 0 6px;
+  font: 700 0.95rem var(--f-body);
+}
+
+.graph-lines {
+  margin: 0;
+  padding: 8px 10px;
+  background: var(--crt);
+  color: var(--star);
+  border: 3px solid var(--edge);
+  font: 1.05rem/1.4 var(--f-term);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.graph-line.is-look {
+  outline: 2px solid var(--gold);
+  background: color-mix(in srgb, var(--gold) 25%, var(--crt));
+}
+
 @media (max-width: 980px) {
   .stage {
     grid-template-columns: minmax(0, 1fr);
