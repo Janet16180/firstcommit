@@ -13,8 +13,14 @@
  * asks where to start. Needs dom.js, strings.js, art-sprites.js, typed.js, poll.js, playground-summary.js and
  * playground-picture.js (with the pictures it draws). Defines one global, PlaygroundScreen.
  *
- * create(ctx, route) {element, dispose()}: ctx = {game, timers, page, reducedMotion}, route the
- *   playground's address (Route.parse): `picture` names a view to open on.
+ * Your terminal is on the right, and Alex's under it while Alex is shown (Show or Hide Alex's
+ * terminal, absent where there is no mothership); on a phone one shows at a time, chosen by the
+ * same switch that chooses whose repository the picture draws.
+ *
+ * create(ctx, route) {element, dispose()}: ctx = {game, timers, page, reducedMotion,
+ *   playTerminals: {attach(person, host, started), detach()}}, the shells kept by the page for
+ *   the start built at `started`; route the playground's address (Route.parse): `picture` names a
+ *   view to open on.
  */
 
 /* global Dom, Strings, ArtSprites, Typed, Polling, PlaygroundSummary, PlaygroundPicture */
@@ -32,8 +38,9 @@ const PlaygroundScreen = (function () {
 
   const tab = (screen, view) => el("button", { type: "button", role: "tab", class: "pg-tab", "data-view": view, onclick: () => pick(screen, view) }, t(`pg.view.${view}`));
 
-  /* Alex is shown when the player chose it and the lab has Alex's clone. */
-  const alexShown = (screen) => screen.prefs.alex && Boolean(screen.observation && screen.observation.alex);
+  /* Alex is shown when the player chose it and the lab has Alex's clone (a start with a mothership
+     has one; the lab says so once looked at). */
+  const alexShown = (screen) => screen.prefs.alex && screen.start.mothership && (!screen.observation || Boolean(screen.observation.alex));
   const whose = (screen) => (alexShown(screen) ? screen.prefs.whose : "you");
 
   /* The views to offer now: History and Crew need a mothership, Conflict a file with markers or
@@ -64,6 +71,33 @@ const PlaygroundScreen = (function () {
     savePrefs(screen);
   }
 
+  function toggleAlex(screen) {
+    screen.prefs.alex = !screen.prefs.alex;
+    refresh(screen);
+    savePrefs(screen);
+  }
+
+  /* The terminals: yours, and Alex's under it while Alex is shown (its shell opened the first time);
+     on a phone the switch shows one of them, the one whose repository the picture draws. */
+  function drawTerms(screen) {
+    const { ui, ctx } = screen;
+    const shown = alexShown(screen);
+    const person = whose(screen);
+    ui.frames.alex.element.hidden = !shown;
+    ui.terms.classList.toggle("is-two", shown);
+    if (shown && !screen.alexAttached) {
+      screen.alexAttached = true;
+      ctx.playTerminals.attach("alex", ui.frames.alex.host, screen.started);
+    }
+    if (ui.alexToggle) {
+      ui.alexToggle.setAttribute("aria-checked", String(shown));
+      ui.alexLabel.textContent = t(shown ? "pg.alex.hide" : "pg.alex.show");
+    }
+    ui.termSwitch.hidden = !shown;
+    for (const button of ui.termSwitch.querySelectorAll("button")) button.setAttribute("aria-pressed", String(button.dataset.whose === person));
+    ui.terms.dataset.whose = person;
+  }
+
   function drawTabs(screen) {
     const { ui, prefs } = screen;
     const views = offered(screen);
@@ -89,6 +123,7 @@ const PlaygroundScreen = (function () {
   function refresh(screen) {
     const { ui, prefs, observation } = screen;
     drawTabs(screen);
+    drawTerms(screen);
     const person = whose(screen);
     ui.whose.hidden = !alexShown(screen) || !PER_PERSON.includes(prefs.view);
     for (const button of ui.whose.querySelectorAll("button")) button.setAttribute("aria-pressed", String(button.dataset.whose === person));
@@ -144,10 +179,27 @@ const PlaygroundScreen = (function () {
     return el("nav", { class: "pg-views" }, ui.tabs, el("div", { class: "pg-more" }, ui.more, ui.moreList));
   }
 
-  function whoseSwitch(screen) {
-    const button = (person) => el("button", { type: "button", class: "pg-whose-button", "data-whose": person, "aria-pressed": "false", onclick: () => pickWhose(screen, person) }, t(`pg.whose.${person}`));
-    return el("div", { class: "pg-whose", role: "group", "aria-label": t("pg.picture"), hidden: true },
-      el("span", { class: "pg-whose-label" }, t("pg.picture")), button("you"), button("alex"));
+  /* A labelled pair of buttons choosing whose repository: "Picture:" over the picture, "Terminal:"
+     over the terminals on a phone. */
+  function personSwitch(screen, { kind, label, words }) {
+    const button = (person) => el("button", { type: "button", class: "pg-whose-button", "data-whose": person, "aria-pressed": "false", onclick: () => pickWhose(screen, person) }, t(`${words}.${person}`));
+    return el("div", { class: kind, role: "group", "aria-label": t(label), hidden: true },
+      el("span", { class: "pg-whose-label" }, t(label)), button("you"), button("alex"));
+  }
+
+  const frame = (person) => {
+    const host = el("div", { class: "pg-term-host" });
+    return { host, element: el("section", { class: "pg-term termcol", "data-who": person, "aria-label": t(`pg.term.${person}`) }, el("h2", { class: "pg-term-name" }, t(`pg.term.${person}`)), host) };
+  };
+
+  function termColumn(screen) {
+    const { ui, start } = screen;
+    ui.frames = { you: frame("you"), alex: frame("alex") };
+    ui.termSwitch = personSwitch(screen, { kind: "pg-termswitch", label: "pg.terminal", words: "pg.who" });
+    ui.alexLabel = el("span", { class: "pg-alex-label" });
+    ui.alexToggle = start.mothership ? el("button", { type: "button", role: "switch", "aria-checked": "false", class: "pg-alex-toggle", onclick: () => toggleAlex(screen) }, el("span", { class: "pg-switch", "aria-hidden": "true" }), ui.alexLabel) : null;
+    ui.terms = el("div", { class: "pg-terms" }, ui.alexToggle, ui.termSwitch, ui.frames.you.element, ui.frames.alex.element);
+    return ui.terms;
   }
 
   function pictured(screen) {
@@ -171,15 +223,16 @@ const PlaygroundScreen = (function () {
   function build(screen, playground) {
     const { route, ui } = screen;
     screen.start = playground.starts.find((start) => start.id === playground.current.start);
+    screen.started = playground.current.started;
     screen.prefs = { ...playground.prefs };
     if (route.picture && [...MAIN, ...MORE].includes(route.picture)) screen.prefs.view = route.picture;
     ui.down = el("p", { class: "pg-down", role: "alert", hidden: true }, t("pg.down"));
-    ui.whose = whoseSwitch(screen);
-    ui.terms = el("div", { class: "pg-terms" });
+    ui.whose = personSwitch(screen, { kind: "pg-whose", label: "pg.picture", words: "pg.whose" });
     screen.element.replaceChildren(head(screen.start), ui.down,
       el("div", { class: "pg-body" },
         el("div", { class: "pg-left" }, viewRow(screen), ui.whose, pictured(screen)),
-        ui.terms));
+        termColumn(screen)));
+    screen.ctx.playTerminals.attach("you", ui.frames.you.host, screen.started);
     drawPicture(screen);
     screen.poll = Polling.start({ tick: () => tick(screen), intervalMs: POLL_MS, timers: screen.ctx.timers, page: screen.ctx.page });
   }
@@ -219,6 +272,8 @@ const PlaygroundScreen = (function () {
       picture: null,
       poll: null,
       disposed: false,
+      started: null,
+      alexAttached: false,
       conflictKept: false,
       reflogRead: { you: false, alex: false },
       live: { you: "unsaid", alex: "unsaid" },
@@ -229,6 +284,7 @@ const PlaygroundScreen = (function () {
       dispose() {
         screen.disposed = true;
         if (screen.poll) screen.poll.stop();
+        if (screen.started) ctx.playTerminals.detach();
       },
     };
   }

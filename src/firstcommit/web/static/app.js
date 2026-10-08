@@ -91,6 +91,7 @@
     document.documentElement.dataset.theme = shownTheme();
     for (const button of document.querySelectorAll(".pref-theme")) button.textContent = t(`pref.theme.${themeChoice}`);
     if (app.terminal) app.terminal.setLook(shownTheme(), t("terminal.title"));
+    for (const person of ["you", "alex"]) if (play[person]) play[person].setLook(shownTheme(), t(`pg.term.${person}`));
   }
 
   function cycleTheme() {
@@ -128,7 +129,7 @@
     }
     applyTheme();
     renderSound();
-    if (app.terminal) app.terminal.setLabels(terminalLabels());
+    for (const shell of [app.terminal, play.you, play.alex]) if (shell) shell.setLabels(terminalLabels());
   }
 
   async function switchLanguage() {
@@ -255,6 +256,35 @@
     run: (line) => app.terminal && app.terminal.run(line),
   };
 
+  /* The playground's two shells, yours and Alex's, each on its own endpoint: they live while the
+     start they were opened for stands, even while the player is elsewhere, and are replaced when
+     it is built again. */
+  const PLAY_PATHS = { you: "/api/terminal/playground", alex: "/api/terminal/playground-alex" };
+  const play = { you: null, alex: null, started: null };
+
+  function disposePlay() {
+    for (const person of ["you", "alex"]) {
+      if (play[person]) play[person].dispose();
+      play[person] = null;
+    }
+  }
+
+  const playTerminals = {
+    attach(person, host, started) {
+      if (play.started !== started) disposePlay();
+      play.started = started;
+      if (!play[person]) {
+        play[person] = createTerminal({ protocol: "firstcommit", token: client.token, command: "firstcommit", path: PLAY_PATHS[person], looks: TERMINAL_LOOKS, labels: terminalLabels(), storagePrefix: `firstcommit.pg-${person}.`, openFromHeight: 0, onUnreachable: probe });
+        play[person].setLook(shownTheme(), t(`pg.term.${person}`));
+      }
+      host.append(play[person].element);
+      play[person].start();
+    },
+    detach() {
+      for (const person of ["you", "alex"]) if (play[person]) play[person].element.remove();
+    },
+  };
+
   /* A refused WebSocket looks like a network failure; asking the API tells a stale key apart
      (client.js then shows the locked screen). Its own failure is already shown in the terminal. */
   function probe() {
@@ -279,6 +309,7 @@
     prefButtons,
     reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     terminal,
+    playTerminals,
   };
 
   /* Shows the view for an address; a newer navigation that starts while this one waits wins. */

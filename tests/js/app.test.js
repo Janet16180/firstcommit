@@ -7,7 +7,7 @@ const { fakeServer, httpError, installBrowser, load, record, settle } = require(
 
 installBrowser();
 const { Dom } = load(
-  ["dom.js", "strings.js", "places.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "route.js", "poll.js", "sound.js", "dialog.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "view-tabs.js", "strip.js", "sides.js", "tape.js", "births.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "target-chart.js", "git-graph.js", "pictures.js", "level-screen.js", "starmap.js", "art-infographics.js", "infographic-text.js", "guide-git.js", "guide-text.js", "guide-pictures.js", "guide-card.js", "guide-conflict.js", "field-guide.js", "cards.js", "notes.js", "dev.js"],
+  ["dom.js", "strings.js", "places.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "route.js", "poll.js", "sound.js", "dialog.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "view-tabs.js", "strip.js", "sides.js", "tape.js", "births.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "target-chart.js", "git-graph.js", "pictures.js", "level-screen.js", "starmap.js", "art-infographics.js", "infographic-text.js", "guide-git.js", "guide-text.js", "guide-pictures.js", "guide-card.js", "guide-conflict.js", "field-guide.js", "cards.js", "notes.js", "dev.js", "playground-summary.js", "playground-picture.js", "playground-screen.js"],
   ["Dom"],
 );
 
@@ -41,9 +41,10 @@ async function boot({ hash = "#/", token = "KEY", replies = {}, stored = {}, wra
     },
     createTerminal: (options) => {
       seen.terminals += 1;
+      seen.paths = [...(seen.paths || []), options.path];
       seen.looks = options.looks;
       seen.labels = [options.labels];
-      return { element: el("div", { class: "term-dock" }), start() {}, setLook() {}, setLabels: (labels) => seen.labels.push(labels), type() {}, run: (line) => seen.runs.push(line), dispose() {} };
+      return { element: el("div", { class: "term-dock" }), start() {}, setLook() {}, setLabels: (labels) => seen.labels.push(labels), type() {}, run: (line) => seen.runs.push(line), dispose: () => (seen.disposed = (seen.disposed || 0) + 1) };
     },
   });
   load(["app.js"], []);
@@ -362,4 +363,33 @@ test("the terminal's status and button speak the game's language, and follow a s
   await settle();
   await settle();
   assert.deepEqual(page.seen.labels.at(-1), { connecting: "connecting", connected: "connected", hide: "hide", show: "show", hint: "Ctrl+V paste · Ctrl+C copies a selection" });
+});
+
+const Pg = require("./playground-records");
+
+test("the playground's address opens it under its own head, with its two shells on their own endpoints, kept while its start stands", async () => {
+  let built = Pg.playground({ start: "alex-ahead" });
+  const page = await boot({ hash: "#/playground", replies: { "/api/playground": () => built, "/api/playground/observe": () => Pg.observation({ started: built.current.started }), "/api/playground/prefs": {} } });
+  const go = async (hash) => {
+    global.location.hash = hash;
+    page.fire("hashchange", {});
+    await settle();
+    await settle();
+  };
+  try {
+    assert.ok(page.main.querySelector(".pg"));
+    assert.ok(page.document.querySelector(".topbar").hidden);
+    assert.deepEqual(page.seen.paths, ["/api/terminal/playground", "/api/terminal/playground-alex"]);
+    await go("#/");
+    await go("#/playground");
+    assert.equal(page.seen.terminals, 2, "the same shells, put back");
+    assert.equal(page.seen.disposed || 0, 0);
+    built = Pg.playground({ start: "alex-ahead", started: "s2" });
+    await go("#/");
+    await go("#/playground");
+    assert.equal(page.seen.terminals, 4);
+    assert.equal(page.seen.disposed, 2, "a start built again gets new shells");
+  } finally {
+    await go("#/");
+  }
 });

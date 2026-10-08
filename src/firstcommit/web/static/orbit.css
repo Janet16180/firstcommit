@@ -3450,3 +3450,122 @@ pre.code code {
     display: none;
   }
 }
+
+/* The playground's terminals: yours framed violet, Alex's green, each named on its frame's bar. */
+.pg-alex-toggle {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+  background: none;
+  border: 0;
+  color: var(--ink);
+  font: 700 0.9rem var(--f-ui);
+  cursor: pointer;
+}
+
+.pg-switch {
+  position: relative;
+  width: 34px;
+  height: 18px;
+  background: var(--panel);
+  border: 2px solid var(--edge);
+}
+
+.pg-switch::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 12px;
+  height: 12px;
+  background: var(--ink-soft);
+}
+
+.pg-alex-toggle[aria-checked="true"] .pg-switch {
+  background: var(--alex);
+}
+
+.pg-alex-toggle[aria-checked="true"] .pg-switch::after {
+  left: 17px;
+  background: #FFFFFF;
+}
+
+.pg-termswitch {
+  display: none;
+}
+
+.pg-term.termcol {
+  height: max(320px, calc(100vh - 210px));
+  gap: 0;
+}
+
+.pg-terms.is-two .pg-term.termcol {
+  height: max(240px, calc(50vh - 130px));
+}
+
+.pg-term[hidden] {
+  display: none;
+}
+
+.pg-term-name {
+  margin: 0;
+  padding: 3px 10px;
+  background: var(--you);
+  color: var(--on-accent);
+  font: 700 0.85rem var(--f-ui);
+}
+
+.pg-term[data-who="alex"] .pg-term-name {
+  background: var(--alex);
+}
+
+.pg-term-host {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.pg-term .term-panel {
+  border-color: var(--you);
+  border-top: 0;
+}
+
+.pg-term[data-who="alex"] .term-panel {
+  border-color: var(--alex);
+}
+
+.pg-term .term-title,
+.pg-terms.is-two .term-hint {
+  display: none;
+}
+
+/* A phone: one terminal at a time, the one whose repository the picture draws; the terminal
+   switch stands in for the picture's. */
+@media (max-width: 760px) {
+  .pg-whose {
+    display: none;
+  }
+
+  .pg-termswitch:not([hidden]) {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font: 700 0.9rem var(--f-ui);
+  }
+
+  .pg-termswitch .pg-whose-button {
+    flex: 1;
+  }
+
+  .pg-terms[data-whose="you"] .pg-term[data-who="alex"],
+  .pg-terms[data-whose="alex"] .pg-term[data-who="you"] {
+    display: none;
+  }
+
+  .pg-terms.is-two .pg-term.termcol {
+    height: max(320px, calc(100vh - 260px));
+  }
+}

@@ -22,14 +22,22 @@ function screen({ playground = Pg.playground(), lab = Pg.observation(), route = 
     "/api/playground/observe": typeof lab === "function" ? lab : () => lab,
     ...replies,
   });
-  const ctx = { game: createGameApi(server.api), timers: clock, page: document, reducedMotion: true };
+  const shells = { attached: [], detached: 0 };
+  const playTerminals = {
+    attach: (person, host, started) => {
+      shells.attached.push([person, started]);
+      shells[person] = host;
+    },
+    detach: () => (shells.detached += 1),
+  };
+  const ctx = { game: createGameApi(server.api), timers: clock, page: document, reducedMotion: true, playTerminals };
   const view = PlaygroundScreen.create(ctx, { view: "playground", start: null, picture: null, tryLine: null, ...route });
   document.body.replaceChildren(view.element);
   const q = (selector) => view.element.querySelector(selector);
   const all = (selector) => [...view.element.querySelectorAll(selector)];
   const calls = (path) => server.calls.filter((call) => call.path === path);
   const click = (selector) => q(selector).dispatchEvent(makeEvent("click"));
-  return { view, clock, server, q, all, calls, click };
+  return { view, clock, server, shells, q, all, calls, click };
 }
 
 const tabs = (run) => run.all(".pg-tab:not([hidden])").map((tab) => tab.dataset.view);
@@ -208,4 +216,77 @@ test("with no start yet, the playground asks where to start, then opens there", 
   assert.deepEqual(run.calls("/api/playground/start").map((call) => call.body), [{ start: "alex-ahead" }]);
   assert.equal(run.q(".pg-start").textContent, "Start alex-ahead");
   assert.equal(picked(run), "history");
+});
+
+test("your terminal opens in its own frame, named yours, and Alex's stays closed by default", async () => {
+  const run = screen();
+  await settle();
+  const yours = run.q(".pg-term[data-who=\"you\"]");
+  assert.equal(yours.querySelector(".pg-term-name").textContent, "Your terminal");
+  assert.equal(run.shells.you, yours.querySelector(".pg-term-host"));
+  assert.ok(run.q(".pg-term[data-who=\"alex\"]").hidden);
+  assert.deepEqual(run.shells.attached, [["you", "s1"]]);
+});
+
+test("Show Alex's terminal opens Alex's shell in a frame of its own under yours, and the choice is remembered", async () => {
+  const run = screen();
+  await settle();
+  const toggle = run.q(".pg-alex-toggle");
+  assert.equal(toggle.textContent, "Show Alex's terminal");
+  run.click(".pg-alex-toggle");
+  await settle();
+  const alex = run.q(".pg-term[data-who=\"alex\"]");
+  assert.equal(alex.hidden, false);
+  assert.equal(alex.querySelector(".pg-term-name").textContent, "Alex's terminal");
+  assert.deepEqual(run.shells.attached, [["you", "s1"], ["alex", "s1"]]);
+  assert.equal(toggle.textContent, "Hide Alex's terminal");
+  assert.deepEqual(run.calls("/api/playground/prefs").at(-1).body, { view: "chain", alex: true, whose: "you" });
+  run.click(".pg-alex-toggle");
+  await settle();
+  assert.ok(alex.hidden);
+  assert.equal(toggle.textContent, "Show Alex's terminal");
+  assert.deepEqual(run.calls("/api/playground/prefs").at(-1).body, { view: "chain", alex: false, whose: "you" });
+  assert.equal(run.shells.attached.length, 2, "Alex's shell is kept, only hidden");
+});
+
+test("a start about two people opens with Alex's terminal shown", async () => {
+  const run = screen({ playground: Pg.playground({ start: "alex-ahead" }) });
+  await settle();
+  assert.equal(run.q(".pg-term[data-who=\"alex\"]").hidden, false);
+  assert.deepEqual(run.shells.attached.map(([person]) => person), ["you", "alex"]);
+});
+
+test("with no mothership there is no Alex and no toggle for Alex", async () => {
+  const run = screen({ playground: Pg.playground({ start: "empty" }), lab: Pg.observation({ start: "empty", alex: null, github: null }) });
+  await settle();
+  assert.equal(run.q(".pg-alex-toggle"), null);
+  assert.ok(run.q(".pg-term[data-who=\"alex\"]").hidden);
+});
+
+test("on a phone one switch picks the terminal shown, and the picture follows it", async () => {
+  const run = screen({ playground: Pg.playground({ start: "alex-ahead", prefs: { view: "chain" } }) });
+  await run.clock.advance(0);
+  const terms = run.q(".pg-terms");
+  assert.equal(run.q(".pg-termswitch").hidden, false);
+  assert.deepEqual(run.all(".pg-termswitch button").map((button) => button.textContent), ["You", "Alex"]);
+  assert.equal(terms.dataset.whose, "you");
+  run.click(".pg-termswitch button[data-whose=\"alex\"]");
+  await settle();
+  assert.equal(terms.dataset.whose, "alex");
+  assert.equal(run.q(".pg-picture .chain").dataset.owner, "alex");
+  assert.equal(run.q(".pg-termswitch button[data-whose=\"alex\"]").getAttribute("aria-pressed"), "true");
+  assert.deepEqual(run.calls("/api/playground/prefs").at(-1).body, { view: "chain", alex: true, whose: "alex" });
+});
+
+test("with Alex hidden the phone has no terminal switch", async () => {
+  const run = screen();
+  await run.clock.advance(0);
+  assert.ok(run.q(".pg-termswitch").hidden);
+});
+
+test("leaving the playground takes its terminals off the page without closing them", async () => {
+  const run = screen();
+  await settle();
+  run.view.dispose();
+  assert.equal(run.shells.detached, 1);
 });
