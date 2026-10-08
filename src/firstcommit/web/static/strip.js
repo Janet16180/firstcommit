@@ -8,7 +8,7 @@
  * strip is named for whose station it is, with that station's icon. It hides on purpose what the
  * stage shows: hashes, branch names, file contents and older capsules. A tapped card asks to be
  * expanded back into its zone. Alex's strip is the crew band (V3 band), a thin row with their
- * station's three cards. It reads a station as zones.js reads it. Needs dom.js, strings.js and
+ * station's three cards. It reads a station as zones.js reads it. Needs dom.js, strings.js, places.js and
  * art-sprites.js. Defines one global, Strip.
  *
  * create({onExpand, who}) {element, update(reading)}: the strip of `who` ("you", the default, or
@@ -16,7 +16,7 @@
  *                    is called with the tapped card's zone.
  */
 
-/* global Dom, Strings, ArtSprites */
+/* global Dom, Strings, ArtSprites, Places */
 /* exported Strip */
 
 const Strip = (function () {
@@ -37,7 +37,7 @@ const Strip = (function () {
   function card(zone, items, draw, onExpand) {
     const off = items === null;
     return el("button", { type: "button", class: off ? "strip-card is-off" : "strip-card", "data-zone": zone, onclick: () => onExpand(zone) },
-      el("span", { class: "strip-name" }, t(`zones.${zone}`)),
+      el("span", { class: "strip-name" }, Places.label(zone)),
       el("span", { class: "strip-count" }, off ? "–" : String(items.length)),
       el("span", { class: "strip-items" }, off ? [] : fold(items, draw)));
   }

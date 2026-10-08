@@ -225,3 +225,35 @@ test("on a phone the level's head wraps, the buttons with no picture keep their 
   assert.match(block, /\.hud \.guide-open \.lbl,\s*\.hud \.solve \.lbl {\s*display: inline;/);
   assert.match(block, /\.termcol \.term-hint {\s*display: none;/);
 });
+
+test("on a wide screen a column picture stands right of the mission and the terminal, and keeps in view while the page scrolls", () => {
+  const wide = css.slice(css.indexOf("@media (min-width: 1100px)"));
+  const block = wide.slice(0, wide.indexOf("\n}"));
+  assert.match(block, /\.stage\.is-column {[^}]*grid-template-areas: "mission term viz";/);
+  assert.match(block, /\.stage\.is-column \.views {[^}]*position: sticky;/);
+});
+
+test("in the column, history's vault and mothership stack with push pointing down and pull up, and no tether crosses", () => {
+  const wide = css.slice(css.indexOf("@media (min-width: 1100px)"));
+  const block = wide.slice(0, wide.indexOf("\n}"));
+  assert.match(block, /\.stage\.is-column \.viz\.is-chart \.viz-row {\s*grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(block, /\.stage\.is-column \.viz\.is-chart \.fl \.art-icon {\s*transform: rotate\(90deg\);/);
+  assert.match(block, /\.stage\.is-column \.viz\.is-chart \.fl\.is-back \.art-icon {\s*transform: rotate\(-90deg\);/);
+  assert.match(block, /\.stage\.is-column \.viz\.is-chart \.tethers,/);
+});
+
+test("a place's game name is quieter after the real one, and drops on a small card and on a phone", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.match(rule(".place-game"), /color: var\(--ink-soft\);/);
+  assert.match(rule(".strip-name .place-game"), /display: none;/);
+  const phone = css.slice(css.indexOf("@media (max-width: 600px)"));
+  assert.match(phone.slice(0, phone.indexOf("\n}")), /\.place-game {\s*display: none;/);
+});
+
+test("a zone's longer real name wraps inside its heading and never pushes the count out", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.match(rule(".z-head > div"), /min-width: 0;/);
+  assert.match(rule(".z-head h3"), /overflow-wrap: anywhere;/);
+  const phone = css.slice(css.indexOf("@media (max-width: 600px)"));
+  assert.match(phone.slice(0, phone.indexOf("\n}")), /\.z-head \.place-game {\s*display: none;/);
+});

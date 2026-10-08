@@ -5,7 +5,7 @@ const test = require("node:test");
 const { installBrowser, load } = require("./load");
 
 installBrowser();
-const { TargetChart, Strings } = load(["dom.js", "strings.js", "chain.js", "target-chart.js"], ["TargetChart", "Strings"]);
+const { TargetChart, Strings } = load(["dom.js", "strings.js", "places.js", "chain.js", "target-chart.js"], ["TargetChart", "Strings"]);
 
 const hash = (name) => `${name}`.padEnd(40, "0");
 const commit = (name, parents, subject, time) => ({ hash: hash(name), short: hash(name).slice(0, 7), parents: parents.map(hash), subject, author: "You", time });

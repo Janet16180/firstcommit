@@ -6,7 +6,7 @@
  * a drawn file shows its lines, and a line Git has no copy of (in the folder, not in the staging
  * area's copy) is red, "only here". Once the level says so, a dashed outline "Git has a copy"
  * rounds the staging area and the commits, and the red lines stay outside it. `git diff` makes
- * them blink; a restore dissolves them, shown once as gone. Needs dom.js and strings.js. Defines
+ * them blink; a restore dissolves them, shown once as gone. Needs dom.js, strings.js and places.js. Defines
  * one global, Desk.
  *
  * create() {element, update({project, texts, lines, kept, blink})}: project is a snapshot,
@@ -14,7 +14,7 @@
  *   update that brings nothing new keeps the drawing.
  */
 
-/* global Dom, Strings */
+/* global Dom, Strings, Places */
 /* exported Desk */
 
 const Desk = (function () {
@@ -72,16 +72,16 @@ const Desk = (function () {
           status !== "saved" && el("span", { class: "desk-tag" }, t(`desk.tag.${status}`)),
           drawn.has(file.path) && linesOf(drawn.get(file.path), blink));
       };
-      const zone = (kind, title, ...children) => el("div", { class: `desk-zone is-${kind}` }, el("h3", {}, title), ...children);
+      const zone = (kind, place, ...children) => el("div", { class: `desk-zone is-${kind}` }, el("h3", {}, Places.label(place)), ...children);
       element.setAttribute("aria-label", t("desk.label"));
       element.replaceChildren(
-        zone("folder", t("desk.folder"), files.map(card)),
+        zone("folder", "workshop", files.map(card)),
         el("div", { class: kept ? "desk-kept is-on" : "desk-kept" },
           kept && el("span", { class: "desk-kept-name" }, t("desk.kept")),
-          zone("staging", t("desk.staging"), staged.length
+          zone("staging", "dock", staged.length
             ? staged.map((file) => el("div", { class: "desk-file" }, el("span", { class: "desk-name" }, file.path), el("span", { class: "desk-tag" }, t("desk.tag.ready"))))
             : el("p", { class: "desk-empty" }, t("desk.empty"))),
-          zone("commits", t("desk.commits"), project.commits.map((commit) => el("div", { class: "desk-commit" },
+          zone("commits", "vault", project.commits.map((commit) => el("div", { class: "desk-commit" },
             el("span", { class: "desk-cap", "aria-hidden": "true" }),
             el("span", { class: "desk-subject" }, commit.subject),
             commit.hash === project.head && el("span", { class: "desk-head" }, "HEAD ▶ ", el("span", { class: "chain-tag is-head" }, project.branch || commit.short)))))));

@@ -5,7 +5,7 @@ const test = require("node:test");
 const { createClock, installBrowser, load, record } = require("./load");
 
 const document = installBrowser();
-const { ZonePanel } = load(["dom.js", "strings.js", "art-pixels.js", "art-sprites.js", "typed.js", "zones.js", "zone-panel.js"], ["ZonePanel"]);
+const { ZonePanel } = load(["dom.js", "strings.js", "places.js", "art-pixels.js", "art-sprites.js", "typed.js", "zones.js", "zone-panel.js"], ["ZonePanel"]);
 
 const observe = (project, github = null) => ({ ...record("observation"), project, github });
 /* A repository that names the mothership `origin`, as a clone does. */
@@ -20,10 +20,10 @@ const zone = (panel, name) => panel.element.querySelector(`.zone[data-zone="${na
 const keyed = (node, key) => [...node.querySelectorAll("[data-key]")].find((item) => item.dataset.key === key);
 const texts = (node, selector) => [...node.querySelectorAll(selector)].map((item) => item.textContent);
 
-test("the four zones are named in the design's order, with the git name under each", () => {
+test("the four zones are named in the design's order, the real git name first and the game's in brackets", () => {
   const panel = ZonePanel.create();
-  assert.deepEqual(texts(panel.element, ".z-head h3"), ["Workshop", "Cargo dock", "Vault", "Mothership"]);
-  assert.deepEqual(texts(panel.element, ".z-head small"), ["working folder", "staging area", "local repository", "remote repository"]);
+  assert.deepEqual(texts(panel.element, ".z-head h3"), ["Working folder (workshop)", "Staging area (cargo dock)", "Repository (vault)", "Remote (mothership)"]);
+  assert.deepEqual(texts(panel.element, ".z-head small"), []);
   assert.equal(panel.element.getAttribute("aria-label"), "Your repository");
 });
 
@@ -374,7 +374,7 @@ test("the places Git keeps, the dock, the vault and the mothership, are grouped 
   assert.deepEqual([...kept.querySelectorAll(".zone")].map((node) => node.dataset.zone), ["dock", "vault", "remote"]);
   assert.equal(kept.querySelector(".viz-kept-name").textContent, "Black box: what Git keeps");
   assert.equal(zone(panel, "workshop").closest(".viz-kept"), null);
-  assert.deepEqual(texts(panel.element, ".z-head h3"), ["Workshop", "Cargo dock", "Vault", "Mothership"]);
+  assert.deepEqual(texts(panel.element, ".z-head h3"), ["Working folder (workshop)", "Staging area (cargo dock)", "Repository (vault)", "Remote (mothership)"]);
 });
 
 test("with a teammate, the panel can keep to your row of four, the black box group in it, and give the stations back", () => {

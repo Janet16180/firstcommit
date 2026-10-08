@@ -5,7 +5,7 @@ const test = require("node:test");
 const { installBrowser, load } = require("./load");
 
 installBrowser();
-const { Chain, Strings } = load(["dom.js", "strings.js", "chain.js"], ["Chain", "Strings"]);
+const { Chain, Strings } = load(["dom.js", "strings.js", "places.js", "chain.js"], ["Chain", "Strings"]);
 
 const hash = (name) => `${name}`.padEnd(40, "0");
 /* A commit as a snapshot lists it; `time` orders commits of the same generation. */
@@ -88,8 +88,8 @@ test("the mothership's pin marks where its main really is, and its commits you l
   const chain = drawn(forked(), { github, show: { mothership: true, alex: false, ghosts: false } });
   const only = rowOf(chain, "x");
   assert.ok(only.classList.contains("is-mothership-only"));
-  assert.equal(only.querySelector(".chain-only").textContent, "only on the mothership");
-  assert.deepEqual(words(only, ".chain-pin.is-mothership"), ["Mothership: main"]);
+  assert.equal(only.querySelector(".chain-only").textContent, "only on the remote");
+  assert.deepEqual(words(only, ".chain-pin.is-mothership"), ["Remote (mothership): main"]);
   assert.equal(chain.element.querySelectorAll(".chain-rows .chain-pin").length, 1);
 });
 
@@ -150,8 +150,8 @@ test("the chain speaks Spanish when the page does", () => {
   try {
     const github = snapshot({ commits: [commit("x", ["c"], 9), ...forked().commits], refs: [ref("main", "x")] });
     const chain = drawn(forked(), { github, show: { mothership: true, alex: false, ghosts: false } });
-    assert.equal(rowOf(chain, "x").querySelector(".chain-only").textContent, "solo en la nave nodriza");
-    assert.equal(rowOf(chain, "x").querySelector(".chain-pin").textContent, "Nave nodriza: main");
+    assert.equal(rowOf(chain, "x").querySelector(".chain-only").textContent, "solo en el remoto");
+    assert.equal(rowOf(chain, "x").querySelector(".chain-pin").textContent, "Remoto (nave nodriza): main");
     assert.equal(chain.element.getAttribute("aria-label"), "La cadena");
   } finally {
     Strings.use("en");

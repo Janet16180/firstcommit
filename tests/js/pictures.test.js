@@ -5,7 +5,7 @@ const test = require("node:test");
 const { createClock, installBrowser, load, record } = require("./load");
 
 installBrowser();
-const { Pictures } = load(["dom.js", "strings.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "target-chart.js", "git-graph.js", "sides.js", "pictures.js"], ["Pictures"]);
+const { Pictures } = load(["dom.js", "strings.js", "places.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "target-chart.js", "git-graph.js", "sides.js", "pictures.js"], ["Pictures"]);
 
 /* A level's pictures as LevelView.pictures gives them: the chain alone unless a test says more. */
 const spec = (more = {}) => ({ large: "chain", small: null, folder: false, mothership: false, alex: false, ghosts: false, kept: null, lines: [], graph: false, whatif: null, ...more });

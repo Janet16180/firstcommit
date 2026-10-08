@@ -7,7 +7,7 @@
  * the HEAD mark, other branches are outlined, origin/* are dashed (your bookmark of where the
  * mothership was). Pins mark where the mothership's and Alex's branches really are; the
  * mothership's commits you lack are pink dotted, and a commit no name leads to is a faded, dashed
- * ghost. A gold ring means "look here" and nothing else. Needs dom.js and strings.js. Defines one
+ * ghost. A gold ring means "look here" and nothing else. Needs dom.js, strings.js and places.js. Defines one
  * global, Chain.
  *
  * layout(commits, trunk) {rows: [{commit, column}], columns}: the commits, newest generation
@@ -27,7 +27,7 @@
  *   drawing, so its motions are not started over.
  */
 
-/* global Dom, Strings */
+/* global Dom, Strings, Places */
 /* exported Chain */
 
 const Chain = (function () {
@@ -133,7 +133,8 @@ const Chain = (function () {
 
   function pins(snapshot, hash, kind) {
     if (!snapshot) return [];
-    return snapshot.refs.filter((ref) => ref.kind === "branch" && ref.target === hash).map((ref) => el("span", { class: `chain-pin is-${kind}` }, t(`chain.pin.${kind}`, { name: ref.name })));
+    const who = kind === "mothership" ? Places.label("remote") : t("chain.pin.alex");
+    return snapshot.refs.filter((ref) => ref.kind === "branch" && ref.target === hash).map((ref) => el("span", { class: `chain-pin is-${kind}` }, who, `: ${ref.name}`));
   }
 
   function legend(project, marks) {

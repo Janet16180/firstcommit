@@ -7,7 +7,7 @@ const { createClock, fakeServer, httpError, installBrowser, load, record, settle
 
 const document = installBrowser({ reducedMotion: true });
 const { LevelScreen, createGameApi } = load(
-  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "view-tabs.js", "strip.js", "sides.js", "tape.js", "births.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "target-chart.js", "git-graph.js", "pictures.js", "art-infographics.js", "infographic-text.js", "field-guide.js", "level-screen.js"],
+  ["dom.js", "strings.js", "places.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "view-tabs.js", "strip.js", "sides.js", "tape.js", "births.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "target-chart.js", "git-graph.js", "pictures.js", "art-infographics.js", "infographic-text.js", "field-guide.js", "level-screen.js"],
   ["LevelScreen", "createGameApi"],
 );
 
@@ -1110,5 +1110,27 @@ test("a challenge with a chart shows it beside the chain", async () => {
   const run = screen({ replies: { "/api/level": { ...pictured({ whatif: null }), target: record("level").target } } });
   await settle();
   assert.ok(run.q(".pictures-pair .target .target-check"));
+  run.view.dispose();
+});
+
+test("the pictures that grow downward stand in a tall column beside the mission and the terminal: history, the chain, the move log", async () => {
+  const run = viewing("history", ["station", "history"]);
+  await settle();
+  assert.ok(run.q(".stage").classList.contains("is-column"));
+  run.q('.view-tab[data-view="station"]').click();
+  assert.ok(!run.q(".stage").classList.contains("is-column"));
+  run.view.dispose();
+  for (const [large, column] of [["chain", true], ["movelog", true], ["desk", false], ["sides", false]]) {
+    const drawn = screen({ replies: { "/api/level": { ...seenLevel(), pictures: { ...record("level").pictures, large, small: null, whatif: null }, target: null } } });
+    await settle();
+    assert.equal(drawn.q(".stage").classList.contains("is-column"), column, large);
+    drawn.view.dispose();
+  }
+});
+
+test("a challenge's chain and chart stay side by side across the top, since they are read against each other", async () => {
+  const run = screen({ replies: { "/api/level": { ...seenLevel(), pictures: { ...record("level").pictures, whatif: null }, target: record("level").target } } });
+  await settle();
+  assert.ok(!run.q(".stage").classList.contains("is-column"));
   run.view.dispose();
 });
