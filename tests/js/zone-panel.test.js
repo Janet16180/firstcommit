@@ -53,7 +53,7 @@ test("files show their state with a tag, and staged changes sit on the dock", ()
   const workshop = zone(panel, "workshop");
   const newFile = [...workshop.querySelectorAll(".file")].find((item) => item.textContent.startsWith("new.txt"));
   assert.equal(newFile.dataset.state, "new");
-  assert.equal(newFile.querySelector(".ftag").textContent, "new");
+  assert.equal(newFile.querySelector(".ftag").textContent, "untracked");
   assert.deepEqual(texts(zone(panel, "dock"), ".fname"), ["added.txt", "staged.txt", "removed.txt", "staged-link"]);
   assert.equal(zone(panel, "dock").querySelector(".z-count").textContent, "4");
 });
@@ -527,4 +527,21 @@ test("the state legend names git's meaning first and the game's in brackets, in 
   } finally {
     Strings.use("en");
   }
+});
+
+test("a file's tag is git's own word for its state, short enough for the chip, in Spanish too", () => {
+  const tags = (language) => {
+    Strings.use(language);
+    const panel = ZonePanel.create();
+    panel.update(observe({ ...record("snapshots").one, files: record("files") }));
+    const seen = Object.fromEntries([...panel.element.querySelectorAll(".file")].filter((item) => item.querySelector(".ftag")).map((item) => [item.dataset.state, item.querySelector(".ftag").textContent]));
+    Strings.use("en");
+    return seen;
+  };
+  const en = tags("en");
+  const es = tags("es");
+  assert.equal(en.new, "untracked");
+  assert.equal(es.new, "sin seguimiento");
+  if (en.edited) assert.deepEqual([en.edited, es.edited], ["modified", "modificado"]);
+  if (en.staged) assert.deepEqual([en.staged, es.staged], ["staged", "en el staging area"]);
 });

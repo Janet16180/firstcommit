@@ -3031,7 +3031,12 @@ pre.code code {
     font-size: 0.9rem;
   }
 
-  /* A file's name wraps rather than losing its end to an ellipsis. */
+  /* A file's name wraps rather than losing its end to an ellipsis, and its tag goes under it when
+     the two do not fit on one line. */
+  .file {
+    flex-wrap: wrap;
+  }
+
   .fname {
     white-space: normal;
     overflow-wrap: anywhere;
