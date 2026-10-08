@@ -1020,7 +1020,7 @@ back to back, a button push, a push without the navigation, no `remote:` line).
 
 | Claim | Says | Evidence |
 |---|---|---|
-| card, debrief, `GONE` (with the `search-beam` moment), prediction reveal | `git restore <file>` copies the staging area's version over the working folder's; lines never staged or committed have no copy anywhere | E109; git-restore(1) DESCRIPTION (`--worktree` is the default, the source the index) |
+| card, debrief, `GONE` (its `search-beam` moment dropped in the sector 8 rework), prediction reveal | `git restore <file>` copies the staging area's version over the working folder's; lines never staged or committed have no copy anywhere | E109; git-restore(1) DESCRIPTION (`--worktree` is the default, the source the index) |
 | debrief, `LOOKED` | `git diff` shows what is in the working folder and not staged | E109; git-diff(1) |
 | `NOTES_LOST` (lost) | the staged notes restored away are in no commit | the level's test; E109 (only staged and committed versions are stored) |
 
