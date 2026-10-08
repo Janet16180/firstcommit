@@ -60,3 +60,9 @@ def test_staging_everything_again_is_a_danger_rama_still_names_in_the_challenge(
 def test_the_patch_in_the_folder_but_in_no_commit_is_not_saved() -> None:
     lab, state = arrived(level)
     assert watch(level, "reactor").watch(lab, state, []).message == level.REACTOR_NOT_SAVED
+
+
+def test_ignoring_the_stowaways_with_a_gitignore_also_solves_it() -> None:
+    lab, state = arrived(level)
+    typed = typed_in(lab, "git restore --staged keys.txt debug.log", "printf 'keys.txt\\ndebug.log\\n' > .gitignore", "git add .", 'git commit -m "Lower the reactor limit"')
+    assert level.check(lab, state, None, typed).solved

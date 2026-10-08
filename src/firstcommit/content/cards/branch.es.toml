@@ -42,7 +42,7 @@ prompt = "Estás en `main` y ejecutas `git branch scout`. ¿Qué cambia?"
 correct = "Una etiqueta nueva, `scout`, apunta ahora a tu commit"
 wrong = [
     "La carpeta de trabajo se copia en una carpeta nueva para `scout`",
-    "Ahora estás en `scout`, listo para hacer commit allí",
+    "Ahora estás en `scout`, y puedes hacer commit allí",
     "También se crea un branch `scout` en el remoto",
 ]
 explain = """
@@ -98,4 +98,20 @@ explain = """
 Los cambios sin commit no pertenecen a ningún branch: están en la carpeta de trabajo y en el
 staging area. `git switch -c` crea el branch sobre el commit donde estás, así que nada en la
 carpeta tiene que cambiar, y el cambio va contigo. Haz commit allí, y `main` nunca lo ve.
+"""
+
+[[card]]
+id = "branch-switch-refused"
+prompt = "En `scout` cambiaste `route.txt`, que es distinto en `main`, y no hiciste commit. Ejecutas `git switch main`. ¿Qué pasa?"
+correct = "Git se niega, y tu cambio se queda"
+wrong = [
+    "Git cambia de branch y descarta tu cambio",
+    "Git hace commit de tu cambio en `scout` primero",
+    "Git cambia de branch y junta las dos versiones",
+]
+explain = """
+Un cambio sin commit no pertenece a ningún branch, así que un cambio de branch lo lleva consigo
+cuando puede. Aquí `main` tiene otra versión del archivo, y cambiar de branch sobrescribiría tu
+cambio, así que Git se niega y no cambia nada. Haz commit del cambio donde corresponde, o descártalo
+con `git restore route.txt`, y después cambia de branch.
 """

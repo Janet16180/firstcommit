@@ -44,7 +44,7 @@ STEPS = {
         question="`main` y `scout` tienen cada uno un commit que al otro le falta. ¿Cuántos commits nuevos creará `git merge scout`?",
         options=("Ninguno", "Uno", "Dos"),
         reveal=(
-            "Uno: un commit de merge con dos padres, uno en cada línea. Viste el otro caso en Transmisión entrante (4-3): "
+            "Uno: un commit de merge con dos padres, uno en cada línea. Viste el otro caso en Transmisión entrante: "
             "cuando solo un lado avanzó, Git solo mueve la etiqueta y no crea ningún commit."
         ),
     ),

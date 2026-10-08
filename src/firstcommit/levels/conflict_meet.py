@@ -74,7 +74,7 @@ GUESS = kit.ChoiceStep(
     question="`main` and `scout` each have a commit the other lacks. How many new commits will `git merge scout` make?",
     options=("None", "One", "Two"),
     reveal=(
-        "One: a merge commit with two parents, one on each line. You saw the other case in Incoming transmission (4-3): "
+        "One: a merge commit with two parents, one on each line. You saw the other case in Incoming transmission: "
         "when only one side has moved, Git just slides the label up and makes no commit."
     ),
 )
