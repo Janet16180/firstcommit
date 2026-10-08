@@ -26,6 +26,22 @@ RUN rm /etc/dpkg/dpkg.cfg.d/excludes /usr/bin/man \
  && git --version | grep '^git version 2\.43\.' \
  && python3 --version | grep '^Python 3\.12\.'
 
+# While the game's shell runs vim, it hands vim its terminal title in FIRSTCOMMIT_TITLE
+# (firstcommit.commands): vim keeps that title, with " insert" added in insert mode, so the page
+# can show "Leave typing mode: Esc" then. Ubuntu's /etc/vim/vimrc reads this file.
+COPY <<'EOF' /etc/vim/vimrc.local
+if !empty($FIRSTCOMMIT_TITLE)
+  set title titleold=
+  let s:title = escape(substitute($FIRSTCOMMIT_TITLE, '%', '%%', 'g'), ' \')
+  execute 'set titlestring=' . s:title
+  augroup firstcommit_title
+    autocmd!
+    autocmd InsertEnter * execute 'set titlestring=' . s:title . '\ insert'
+    autocmd InsertLeave * execute 'set titlestring=' . s:title
+  augroup END
+endif
+EOF
+
 RUN useradd --create-home --shell /bin/bash player \
  && install --directory --owner=player --group=player /home/player/.firstcommit
 

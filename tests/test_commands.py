@@ -124,7 +124,7 @@ def test_a_shell_can_have_a_prompt_of_its_own_and_print_one_line_before_it(typis
 
 def fake_editors(folder: Path) -> str:
     """
-    Make stand-ins for nano, vim and vi that print what they were asked to open and exit with status 3.
+    Make stand-ins for nano, vim and vi that print what they were asked to open and the title they were given, and exit with status 3.
 
     Parameters
     ----------
@@ -138,7 +138,7 @@ def fake_editors(folder: Path) -> str:
     """
     for name in ("nano", "vim", "vi"):
         program = folder / name
-        program.write_text(f'#!/bin/sh\necho "{name} opened $*"\nexit 3\n')
+        program.write_text(f'#!/bin/sh\necho "{name} opened $* titled $FIRSTCOMMIT_TITLE."\nexit 3\n')
         program.chmod(0o755)
     return f"{folder}:{os.environ['PATH']}"
 
@@ -150,7 +150,8 @@ def test_nano_vim_and_vi_name_themselves_in_the_terminal_title_while_they_run_an
     inputs = [(f"{name} checklist.txt; echo status=$?\n".encode(), b"$ ") for name in ("nano", "vim", "vi")]
     shown = typist(logging_shell(tmp_path), env, project(tmp_path), [*inputs, (b"vim $'a\\033]0;x\\a.txt'\n", b"$ ")])
     for name in ("nano", "vim", "vi"):
-        assert f"\x1b]0;firstcommit-editor {name} checklist.txt\x07{name} opened checklist.txt\r\n\x1b]0;\x07status=3".encode() in shown
+        title = f"firstcommit-editor {name} checklist.txt"
+        assert f"\x1b]0;{title}\x07{name} opened checklist.txt titled {title}.\r\n\x1b]0;\x07status=3".encode() in shown
     assert b"\x1b]0;firstcommit-editor vim a]0;x.txt\x07" in shown
 
 

@@ -45,6 +45,11 @@ EDITOR_TITLE = "firstcommit-editor"
 The first word of the terminal title the shell sets while ``nano``, ``vim`` or ``vi`` runs, such
 as ``firstcommit-editor vim checklist.txt``; the page shows that editor's keys while it does.
 """
+TITLE_VARIABLE = "FIRSTCOMMIT_TITLE"
+"""
+The variable that hands the editor its title: where the game ships its system vimrc, vim keeps it
+as its title, with `` insert`` added while vim is in insert mode.
+"""
 
 STARTUP = r"""
 HOME=${{{player_home}:-$HOME}}
@@ -70,9 +75,10 @@ __firstcommit_log() {{
 }}
 PROMPT_COMMAND=__firstcommit_log
 __firstcommit_editor() {{
-    local status shown="$*"
-    printf '\033]0;{editor_title} %s\007' "${{shown//[[:cntrl:]]/}}"
-    command "$@"
+    local status shown="$*" title
+    title="{editor_title} ${{shown//[[:cntrl:]]/}}"
+    printf '\033]0;%s\007' "$title"
+    {title_variable}="$title" command "$@"
     status=$?
     printf '\033]0;\007'
     return $status
@@ -98,7 +104,8 @@ rather than printing an error at every prompt.
 
 ``nano``, ``vim`` and ``vi`` are wrapped so that, while one runs, the terminal title names it and
 its arguments after `EDITOR_TITLE` (control characters dropped, so a file name cannot end the
-title early), and is cleared when it exits; the wrapper keeps the editor's exit status. Git
+title early), and is cleared when it exits; the wrapper keeps the editor's exit status. The
+editor also gets the title in `TITLE_VARIABLE`, so vim can set the same one itself. Git
 itself never opens an editor (``core.editor`` is ``true``): only the player does.
 """
 
@@ -132,6 +139,7 @@ def startup(log: Path, history: Path, prompt: str = PROMPT, banner: str = "") ->
         prompt=shlex.quote(prompt),
         banner=first_line,
         editor_title=EDITOR_TITLE,
+        title_variable=TITLE_VARIABLE,
     )
 
 
