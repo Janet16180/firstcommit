@@ -120,6 +120,12 @@ test("an unsolved check and an empty observation are accepted", async () => {
   assert.equal((await game.observe()).github, null);
 });
 
+test("a step's reply says whether the player's work is lost", async () => {
+  const step = record("step");
+  delete step.lost;
+  await assert.rejects(gameApi({ "/api/step": step }).game.step(null), /\/api\/step.*lost/);
+});
+
 test("a reply missing a field is refused with the route and the field named", async () => {
   const status = record("status");
   delete status.rank.next_at;

@@ -134,7 +134,7 @@ const createGameApi = (function () {
     })),
   });
   const GUIDE = mapping(record({ before: SNAPSHOT, after: SNAPSHOT, transcript: TRANSCRIPT }));
-  const STEP = record({ correct: flag, message: BLOCKS, step: number, quest_done: flag, done: list(text) });
+  const STEP = record({ correct: flag, message: BLOCKS, step: number, quest_done: flag, done: list(text), lost: flag });
   const CHECK = record({ solved: flag, message: BLOCKS, payout: nullable(PAYOUT), debrief: nullable(BLOCKS), stars: number, new_card: nullable(CARD), lost: flag });
   const HINT = record({ hint: BLOCKS, used: number, total: number, cost: number });
   /* The playground's people and every id of its buttons (records.Who and playground.BUTTON_IDS; a
