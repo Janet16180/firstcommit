@@ -890,6 +890,30 @@ so it silently drops the other side's cleanly merged changes in the same file. 6
 safe because their conflicted files have no other changes; a level whose file has them must teach
 another way (found by the conflicts agent, 2026-10-08).
 
+## Sector 5, Name tags (added 2026-10-08)
+
+The levels follow docs/drafts/sector5/ (the scripts and plan); every output in the scripts was
+recorded on real git 2.43.0 by `.scratch/sector7-design/gen.py`. The story's commits have fixed
+dates (`levels/_names_story.py`, and GitHub's first commit, `playground.START_DATE`), so a commit
+keeps its hash from level to level: `tests/levels/test_names_story.py`. The hashes differ from
+the storyboards', whose first commit was dated when they were recorded.
+
+### Level `names-tags` (Name tags, 5-1)
+
+*Re-checked* by `tests/levels/test_names_tags.py`: the start (three commits, `test-run` on the
+first, the bookmark on `main`), a commit moving only `main`, Alex's fix pushed inside your push
+(`kit.on_push`) with your bookmark left behind, the fetch moving the bookmark and not `main`,
+`git status` one behind, a pull in place of the fetch, and Rama on `git branch -v`.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, `LISTED`, `LISTS_NAMES` | `git branch -v` lists each branch with its commit's hash and subject; `*` marks the current branch | git-branch(1) `-v` ("show sha1 and commit subject line for each head"), DESCRIPTION (the current branch "highlighted with an asterisk"); the 5-1 script, beat 5 |
+| `LOGGED`, `LOGGED_AGAIN` | `git log --oneline` in a terminal shows the names on each commit in brackets, `HEAD -> main` for the branch HEAD is on | git-log(1) `--decorate` (`auto`, the default, decorates on a terminal); the script, beats 3 and 9 |
+| prediction 1, `COMMITTED`, debrief | a commit moves only the branch HEAD is on; other branches and `origin/main` stay | git-commit(1) DESCRIPTION ("the current branch is updated to point to it"); the level's test |
+| `PUSHED`, debrief | a push moves `origin/main` with the mothership's `main` | git-push(1) (remote-tracking branches are updated on a successful push); the script, beat 10; the level's test |
+| prediction 2, `FETCHED`, debrief | `git fetch` moves `origin/main` and leaves `main` and the folder as they are | git-fetch(1) DESCRIPTION; the level's test |
+| `STATUS_READ` | `git status` says "behind 'origin/main' by 1 commit, and can be fast-forwarded" | the script, beat 14 (real output) |
+
 ## No `origin/HEAD` in the playground's clones (added 2026-10-08)
 
 `playground.setup` runs `git remote set-head origin --delete` in each clone, so `git log` shows

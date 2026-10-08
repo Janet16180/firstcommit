@@ -1,7 +1,8 @@
 """
 The level authors' toolkit: what a level is made of, and the helpers a level may use.
 
-A level module imports this module and the standard library only (AUTHORING.md section 3):
+A level module imports this module, the standard library and its chapter's helper modules
+(``levels/_<chapter>_*.py``, such as a sector's shared story) only (AUTHORING.md section 3):
 the types of its scene, card, quest and reactions, its lab, git kept to the game's configuration, the snapshot
 its checks read, helpers that parse what a player types, and the two-person playground
 (`setup_playground` builds it in a lab; `press` runs one of its buttons, the same real command

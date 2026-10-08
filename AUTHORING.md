@@ -138,7 +138,8 @@ uv run firstcommit --help
 - Run git only through `kit.git` / `kit.git_run` (the game's isolation: the player's own
   configuration can never change a level, and a lab never falls through to a repository above
   it). The player's real `~/.gitconfig` and repositories are never read or changed.
-- No hooks, no filters, no aliases that run programs. No root.
+- No hooks, no filters, no aliases that run programs, apart from the stand-in GitHub's one
+  `post-receive` hook that `kit.on_push` writes for Alex. No root.
 - Build every repository with git commands (`init`, `commit`, `clone` from another lab
   repository). Never copy, unpack or download a `.git` folder: its configuration could name
   programs that git runs. The game's own git commands refuse the known ones (`gitcmd.NO_PROGRAMS`),
