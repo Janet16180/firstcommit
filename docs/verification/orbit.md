@@ -92,6 +92,7 @@ exit statuses, the level tests below.
 | `NOT_STAGED` (`git add`, failed, in a repository) | Nothing was staged; a name git does not find is the usual cause | E10, E11 (one bad name stages none of the names) |
 | `COMMITTED` (`git commit`, event `commit-created`) | A new commit with its own hash and the message; `git log --oneline` lists it | E23 |
 | `NOT_COMMITTED` (`git commit`, failed, in a repository) | No commit; nothing new staged or no name and email are the usual causes | E21, E24. **Fixed**: it said "an empty staging area", but after a commit the staging area is not empty (E24), it only holds nothing new |
+| `LOG_FILE` (`git log` given a file, ok; added 2026-10-08) | Only the commits that changed that file, newest first | E44 (`git log oxygen.cfg` and `git log -- oxygen.cfg` list only those); git-log(1) `<path>...`; `LOG_FILE_LINE` matches `name.ext` arguments and never `a..b` (*re-checked*) |
 | `LOG` (`git log`, ok) | Newest commit first; each records its author, date and message, and is named by its hash | E30, E31; git-log(1) |
 | `HIDDEN_GIT` (`LIST_HIDDEN`, ok, in a repository) | `.git` is the repository and holds the whole history; a plain `ls` hides dot names | E5, E33; ls(1). `LIST_HIDDEN` matches `-a`, `-A`, `-la`, `--all`, `--almost-all` (*re-checked*) |
 | `LS_IN_REPOSITORY` (`ls`, ok, in a repository) | `ls` lists the working folder; `git status` tells which files changed and which are untracked | E1, E9, E25. **Fixed**: it said `git status` tells "which of these files Git tracks", but it never lists unchanged tracked files |

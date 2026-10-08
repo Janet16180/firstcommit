@@ -105,6 +105,7 @@ NO_MESSAGE = (
     'Give it on the line: `git commit -m "Add the map"`.'
 )
 NOT_COMMITTED = "No commit was made. Read Git's message: nothing new in the staging area, or no name and email set yet, are the usual causes."
+LOG_FILE = "Only the commits that changed that file, newest first: the history of one file, out of the whole history."
 LOG = "Your history, newest commit first. Each commit records its author, its date and its message, and Git names it by its hash."
 HIDDEN_GIT = "See `.git`? That hidden folder is the repository: Git keeps the whole history in it. A plain `ls` hides names that start with a dot."
 LS_IN_REPOSITORY = "`ls` lists the working folder. To see which of these files changed, and which Git does not track yet, ask `git status`."
@@ -113,6 +114,9 @@ DID_YOU_MEAN_GIT = "Did you mean `git`? It happens to every crew."
 UNKNOWN_COMMAND = "The shell knows no command by that name. Check its spelling: Tab completes command names too."
 NEW_FILE = "A new file in the working folder. Git does not track it yet: `git status` lists it as untracked until you `git add` it."
 CHANGED_FILE = "You changed a file in the working folder. What is staged stays as it was until you `git add` the file again."
+
+LOG_FILE_LINE = r"git log( \S+)* (-- )?[\w./-]*\w\.\w+( |$)"
+"""A ``git log`` given a file: a word with a dot between two letters or digits, such as ``oxygen.cfg`` (never ``a..b``)."""
 
 RULES: tuple[ReactionRule, ...] = (
     ReactionRule(line=r"", mood="warn", text=REPOSITORY_GONE, event="repository-removed"),
@@ -130,6 +134,7 @@ RULES: tuple[ReactionRule, ...] = (
     ReactionRule(line=r"git commit\b", mood="ok", text=COMMITTED, event="commit-created"),
     ReactionRule(line=BARE_COMMIT, mood="err", text=NO_MESSAGE, outcome="failed", repository=True, staged=True),
     ReactionRule(line=r"git commit\b", mood="err", text=NOT_COMMITTED, outcome="failed", repository=True),
+    ReactionRule(line=LOG_FILE_LINE, mood="info", text=LOG_FILE, outcome="ok"),
     ReactionRule(line=r"git log\b", mood="info", text=LOG, outcome="ok"),
     ReactionRule(line=LIST_HIDDEN, mood="info", text=HIDDEN_GIT, outcome="ok", repository=True),
     ReactionRule(line=r"ls\b", mood="info", text=LS_IN_REPOSITORY, outcome="ok", repository=True),

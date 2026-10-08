@@ -23,6 +23,7 @@ NO_MESSAGE = (
     'Dalo en la misma línea: `git commit -m "Add the map"`.'
 )
 NOT_COMMITTED = "No se hizo ningún commit. Lee el mensaje de Git: lo habitual es que no haya nada nuevo en el staging area, o que aún no tengas nombre y correo configurados."
+LOG_FILE = "Solo los commits que cambiaron ese archivo, del más reciente al más antiguo: la historia de un archivo, dentro de toda la historia."
 LOG = "Tu historia, del commit más reciente al más antiguo. Cada commit guarda su autor, su fecha y su mensaje, y Git lo nombra por su hash."
 HIDDEN_GIT = "¿Ves `.git`? Esa carpeta oculta es el repositorio: Git guarda en ella toda la historia. Un `ls` a secas oculta los nombres que empiezan con punto."
 LS_IN_REPOSITORY = "`ls` lista la carpeta de trabajo. Para ver cuáles de estos archivos cambiaron, y cuáles aún no sigue Git, pregúntale a `git status`."

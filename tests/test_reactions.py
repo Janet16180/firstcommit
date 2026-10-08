@@ -141,6 +141,16 @@ def test_reading_the_status_or_the_history_is_explained() -> None:
     assert said("git log --oneline") == f"info: {reactions.LOG}"
 
 
+@pytest.mark.parametrize("line", ["git log oxygen.cfg", "git log -- oxygen.cfg", "git log -p oxygen.cfg", "git log --oneline notes/day1.txt"])
+def test_git_log_on_a_file_says_it_lists_only_the_commits_that_changed_it(line: str) -> None:
+    assert said(line) == f"info: {reactions.LOG_FILE}"
+
+
+@pytest.mark.parametrize("line", ["git log", "git log --oneline", "git log main", "git log origin/main", "git log HEAD~3..HEAD"])
+def test_git_log_without_a_file_keeps_the_history_reaction(line: str) -> None:
+    assert said(line) == f"info: {reactions.LOG}"
+
+
 def test_a_typed_line_matches_a_pattern_from_its_start_and_an_outcome() -> None:
     failed: Command = {"line": "  git   status ", "status": 128}
     assert reactions.matches(failed, r"git status\b", "any")
