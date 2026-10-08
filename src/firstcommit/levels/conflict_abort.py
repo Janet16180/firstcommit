@@ -40,6 +40,9 @@ It is Friday at six. You committed a line in `README.md` and `notes.txt`, Alex p
 their own to both, and your `git pull` stopped halfway, with conflicts. Your note for Monday in
 `todo.txt` is not committed. Go back to where you were before the pull, and keep the note.
 
+Alex, on the comms: "Both files changed on my side too, and only I know why. Don't guess at my
+lines tonight. Call the merge off, and we'll answer it together on Monday."
+
 The mission is done when you have looked with `git status`, no merge is in progress, `main` and
 both files are as your commit left them, and `todo.txt` still holds your note.
 """
