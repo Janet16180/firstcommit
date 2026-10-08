@@ -18,6 +18,13 @@ test("every transcript is commands with what git printed, from one git version",
   }
 });
 
+test("only the refused push fails: every other transcript ran without a git error", () => {
+  for (const [name, run] of Object.entries(GuideGit.runs)) {
+    if (name === "pull-no-rebase") continue;
+    for (const { command, output } of run) assert.doesNotMatch(output, /^(error|fatal):/m, `${name}: ${command}`);
+  }
+});
+
 test("no transcript shows the capture's temporary folder", () => {
   assert.doesNotMatch(JSON.stringify(GuideGit), /\/tmp\//);
   assert.match(GuideGit.runs.init[0].output, /^Initialized empty Git repository in \/home\/you\/ship\/\.git\/$/m);

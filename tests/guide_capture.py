@@ -292,14 +292,17 @@ def crew(story: Story) -> None:
     step("pull-no-rebase", "git pull --no-rebase")
     step("pull-no-rebase", "git log --oneline --graph -4")
 
+    (story.here / "radio.txt").write_text("radio: loud\n")
+    quiet('git add radio.txt && git commit -q -m "Turn the radio up"')
     step("revert", "git revert HEAD")
     step("revert", "git log --oneline -3")
 
     star_map.write_text("Star map: Mars, Jupiter, Saturn, Pluto, Eris\n")
     quiet('git commit -q -am "Add Eris"')
-    step("reset", "git reset HEAD~1")
+    star_map.write_text("Star map: Mars, Jupiter, Saturn, Pluto, Eris, Ceres\n")
     step("reset", "git status --short")
-    quiet("git restore map.txt")
+    step("reset", "git reset --hard HEAD~1")
+    step("reset", "git status --short")
 
     story.here = work
     step("clone", "git clone mothership.git crew")

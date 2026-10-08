@@ -133,31 +133,31 @@ const GuideGit = Object.freeze({
     "conflict-commit-both": [
       {
         "command": "git commit --no-edit",
-        "output": "[main 7973ecd] Merge branch 'alex-route'\n"
+        "output": "[main 47d6e89] Merge branch 'alex-route'\n"
       },
       {
         "command": "git log --graph --oneline",
-        "output": "*   7973ecd Merge branch 'alex-route'\n|\\  \n| * 7ec24fe Head for Jupiter, pack noodles\n* | bcac9ea Fill the tanks, aim for the Moon\n|/  \n* d7eb40d Write the launch checklist\n"
+        "output": "*   47d6e89 Merge branch 'alex-route'\n|\\  \n| * 5f3d6ad Head for Jupiter, pack noodles\n* | 2c7074a Fill the tanks, aim for the Moon\n|/  \n* 048d3a9 Write the launch checklist\n"
       }
     ],
     "conflict-commit-theirs": [
       {
         "command": "git commit --no-edit",
-        "output": "[main 3213da3] Merge branch 'alex-route'\n"
+        "output": "[main 4791f4c] Merge branch 'alex-route'\n"
       },
       {
         "command": "git log --graph --oneline",
-        "output": "*   3213da3 Merge branch 'alex-route'\n|\\  \n| * 7ec24fe Head for Jupiter, pack noodles\n* | bcac9ea Fill the tanks, aim for the Moon\n|/  \n* d7eb40d Write the launch checklist\n"
+        "output": "*   4791f4c Merge branch 'alex-route'\n|\\  \n| * 5f3d6ad Head for Jupiter, pack noodles\n* | 2c7074a Fill the tanks, aim for the Moon\n|/  \n* 048d3a9 Write the launch checklist\n"
       }
     ],
     "conflict-commit-yours": [
       {
         "command": "git commit --no-edit",
-        "output": "[main ca503e4] Merge branch 'alex-route'\n"
+        "output": "[main dcc52e4] Merge branch 'alex-route'\n"
       },
       {
         "command": "git log --graph --oneline",
-        "output": "*   ca503e4 Merge branch 'alex-route'\n|\\  \n| * 7ec24fe Head for Jupiter, pack noodles\n* | bcac9ea Fill the tanks, aim for the Moon\n|/  \n* d7eb40d Write the launch checklist\n"
+        "output": "*   dcc52e4 Merge branch 'alex-route'\n|\\  \n| * 5f3d6ad Head for Jupiter, pack noodles\n* | 2c7074a Fill the tanks, aim for the Moon\n|/  \n* 048d3a9 Write the launch checklist\n"
       }
     ],
     "conflict-merge": [
@@ -303,7 +303,7 @@ const GuideGit = Object.freeze({
     "reflog": [
       {
         "command": "git reflog",
-        "output": "3012782 HEAD@{0}: reset: moving to HEAD~1\ne1b129b HEAD@{1}: commit: Second course\n3012782 HEAD@{2}: commit (initial): First course\n"
+        "output": "eca64a3 HEAD@{0}: reset: moving to HEAD~1\n2914728 HEAD@{1}: commit: Second course\neca64a3 HEAD@{2}: commit (initial): First course\n"
       }
     ],
     "remote-add": [
@@ -318,12 +318,16 @@ const GuideGit = Object.freeze({
     ],
     "reset": [
       {
-        "command": "git reset HEAD~1",
-        "output": "Unstaged changes after reset:\nM\tmap.txt\n"
+        "command": "git status --short",
+        "output": " M map.txt\n"
+      },
+      {
+        "command": "git reset --hard HEAD~1",
+        "output": "HEAD is now at 1fdaa5b Revert \"Turn the radio up\"\n"
       },
       {
         "command": "git status --short",
-        "output": " M map.txt\n"
+        "output": ""
       }
     ],
     "restore": [
@@ -363,11 +367,11 @@ const GuideGit = Object.freeze({
     "revert": [
       {
         "command": "git revert HEAD",
-        "output": "error: commit 4d2714e5d8bb98d642451578a9fb3a14807490f1 is a merge but no -m option was given.\nfatal: revert failed\n"
+        "output": "[main 1fdaa5b] Revert \"Turn the radio up\"\n Date: Thu Oct 9 10:03:20 2025 +0000\n 1 file changed, 1 deletion(-)\n delete mode 100644 radio.txt\n"
       },
       {
         "command": "git log --oneline -3",
-        "output": "4d2714e Merge branch 'main' of ../mothership\n1e1a576 Dim the lights\n72a53d1 Turn the music on\n"
+        "output": "1fdaa5b Revert \"Turn the radio up\"\n0890cde Turn the radio up\n4d2714e Merge branch 'main' of ../mothership\n"
       }
     ],
     "rm-cached": [
@@ -414,18 +418,18 @@ const GuideGit = Object.freeze({
     "ours": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: full\n3. Shields: on\n4. Course: the Moon\n5. Music: off\n6. Snack: crackers\n7. Wave goodbye to base\n",
     "theirs": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Shields: on\n4. Course: Jupiter\n5. Music: off\n6. Snack: space noodles\n7. Wave goodbye to base\n",
     "markers": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: full\n3. Shields: on\n<<<<<<< HEAD\n4. Course: the Moon\n=======\n4. Course: Jupiter\n>>>>>>> alex-route\n5. Music: off\n6. Snack: space noodles\n7. Wave goodbye to base\n",
-    "yourCommit": "bcac9ea",
-    "alexCommit": "7ec24fe",
-    "baseCommit": "d7eb40d",
+    "yourCommit": "2c7074a",
+    "alexCommit": "5f3d6ad",
+    "baseCommit": "048d3a9",
     "resolved": {
       "yours": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: full\n3. Shields: on\n4. Course: the Moon\n5. Music: off\n6. Snack: space noodles\n7. Wave goodbye to base\n",
       "theirs": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: full\n3. Shields: on\n4. Course: Jupiter\n5. Music: off\n6. Snack: space noodles\n7. Wave goodbye to base\n",
       "both": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: full\n3. Shields: on\n4. Course: the Moon\n4. Course: Jupiter\n5. Music: off\n6. Snack: space noodles\n7. Wave goodbye to base\n"
     },
     "head": {
-      "yours": "ca503e4 bcac9ea 7ec24fe",
-      "theirs": "3213da3 bcac9ea 7ec24fe",
-      "both": "7973ecd bcac9ea 7ec24fe"
+      "yours": "dcc52e4 2c7074a 5f3d6ad",
+      "theirs": "4791f4c 2c7074a 5f3d6ad",
+      "both": "47d6e89 2c7074a 5f3d6ad"
     }
   }
 });
