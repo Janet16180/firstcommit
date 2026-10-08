@@ -1,71 +1,68 @@
-"""A second course in Spanish (`names_experiments`), written with docs/i18n-glossary.md."""
+"""Two experiments in Spanish (`names_experiments`), written with docs/i18n-glossary.md."""
 
 from firstcommit import kit
 
-TITLE = "Un segundo rumbo"
-CARD = "Crea un branch nuevo: una etiqueta sobre el commit donde estás. No se copia ningún archivo y sigues en el branch donde estabas."
+TITLE = "Dos experimentos"
+CARD = "Lleva `HEAD` a otro branch, y tu carpeta cambia para mostrar el commit de ese branch."
 SCENE = [
-    "La base quiere probar un rumbo nuevo sin tocar `main`.",
-    "Un branch es una etiqueta sobre una cápsula. `HEAD` es la etiqueta que llevas: tu próxima cápsula la mueve hacia adelante.",
+    "El experimento de ayer es la línea lateral de la derecha: `bright-lights` y su commit, Try bright lights, unido a Fix the route. Volviste a `main`. La fila bajo la cadena es tu carpeta de trabajo: `engine.txt` espera ahí, todavía fuera de Git.",
 ]
 
 BRIEFING = """
-El `main` de la base tiene tres commits. Desde el mando piden probar una sonda en un segundo
-rumbo y dejar `main` como está.
+Ayer empezaste un experimento, `bright-lights`, en su propio branch, y volviste a `main`. Hoy el
+capitán quiere probar un segundo, `quiet-engine`, al lado; `engine.txt` ya está escrito y espera
+en tu carpeta. `main` queda como está.
 
-La misión termina cuando un branch `scout` tenga un commit con `probe.txt` que `main` no tiene,
-estés de vuelta en `main` y hayas mirado la carpeta allí con `ls`.
+La misión termina cuando `quiet-engine` tenga un commit con `engine.txt`, estés en
+`bright-lights` y hayas dibujado el árbol.
 """
 
 HINTS = [
-    "`git branch scout` crea la etiqueta; `git switch scout` te lleva a ella.",
-    'En `scout`, escribe el archivo y haz commit: `echo "Probe: launched" > probe.txt && git add probe.txt && git commit -m "Launch the probe"`.',
-    "`git switch main` te lleva de vuelta; `ls` muestra qué tiene la carpeta allí.",
-    'Cada línea de la misión, en orden:\n\n    $ git branch scout\n    $ git switch scout\n    $ echo "Probe: launched" > probe.txt && git add probe.txt && git commit -m "Launch the probe"\n    $ git switch main\n    $ ls',
+    "`git branch <name>` crea un nombre donde estás; `git switch <name>` lleva `HEAD` a él.",
+    "`git add engine.txt` y después `git commit -m`, estando en `quiet-engine`.",
+    'Cada línea de la misión, en orden:\n\n    $ git branch quiet-engine\n    $ git switch quiet-engine\n    $ git add engine.txt\n    $ git commit -m "Try a quiet engine"\n    $ git switch bright-lights\n    $ git log --oneline --graph --all',
 ]
 
 DEBRIEF = """
-`git branch scout` escribió una etiqueta nueva sobre el commit donde estabas: no se copió ningún
-archivo. `git switch scout` llevó `HEAD` a esa etiqueta, y tu commit movió `scout` hacia adelante,
-mientras `main` se quedó donde estaba.
+Dos branches creados desde el mismo commit hicieron que la cadena se bifurcara. `git switch` llevó
+`HEAD` de un experimento al otro, y cada vez tu carpeta cambió para mostrar el commit de ese
+branch. Un commit mueve solo el nombre donde está `HEAD`, así que `main` nunca se movió.
 
-De vuelta en `main`, Git reescribió la carpeta de trabajo según el último commit de `main`, así
-que `probe.txt` salió de ella. No se perdió nada: la sonda está en el commit de `scout`, y
-`git switch scout` la trae de vuelta.
-
-En el trabajo, cada tarea tiene su propio branch, así `main` queda como el equipo lo acordó.
+`git log --oneline --graph --all` dibuja el árbol completo en la terminal, con todos los branches.
 
 Comandos para recordar:
 
-    $ git branch scout   # una etiqueta nueva sobre el commit donde estás
-    $ git switch scout   # ve a ella; la carpeta la sigue
-    $ git switch main    # y de vuelta
+    $ git switch bright-lights            # lleva HEAD a otro branch
+    $ git log --oneline --graph --all     # el árbol completo, dibujado
 """
 
 STEPS = {
+    "branch": kit.StepText(text="Pon un nombre en el commit de `main`."),
+    "switch": kit.StepText(text="Ve allí."),
+    "commit": kit.StepText(text="Haz commit de `engine.txt` allí."),
     "guess": kit.StepText(
         text="Primero, predice.",
-        question="Estás por crear un branch `scout`. ¿Qué tendrá la carpeta después?",
-        options=("Los mismos archivos, una sola vez", "Una segunda copia de los archivos, para scout"),
-        reveal="Los mismos archivos, una sola vez. Un branch es una etiqueta sobre un commit: `git branch scout` escribe una etiqueta nueva y no copia ningún archivo.",
+        question="Cambias a `bright-lights`. ¿Sigue `engine.txt` en tu carpeta?",
+        options=("Sí", "No"),
+        reveal="No. La carpeta muestra el commit de `bright-lights`: vuelve `lights.txt` y se va `engine.txt`. Los dos archivos están a salvo en sus commits.",
     ),
-    "branch": kit.StepText(text="Crea un branch `scout`."),
-    "switch": kit.StepText(text="Ve a `scout`."),
-    "commit": kit.StepText(text="Haz commit de una sonda en `scout`."),
-    "back": kit.StepText(text="Vuelve a `main`."),
-    "look": kit.StepText(text="Mira la carpeta en `main`."),
+    "bright": kit.StepText(text="Cambia al otro experimento."),
+    "graph": kit.StepText(text="Dibuja el árbol."),
 }
 
 NO_REPOSITORY = "Esta carpeta ya no es un repositorio: `.git` desapareció. Sal del nivel y vuelve a empezarlo para recuperarlo."
-NO_BRANCH = "Todavía no hay un branch `scout`. Créalo: `git branch scout`."
-MADE = "`scout` es una segunda etiqueta sobre el commit donde está `main`. La carpeta no cambió."
-NOT_ON = "No estás en `scout`. Ve a él: `git switch scout`."
-ON = "Estás en `scout`: tu próximo commit mueve su etiqueta hacia adelante."
-NOT_COMMITTED = 'Haz commit de la sonda en `scout`: `echo "Probe: launched" > probe.txt && git add probe.txt && git commit -m "Launch the probe"`.'
-COMMITTED = "`scout` avanzó al commit de la sonda; `main` se quedó donde estaba."
-PROBE_ON_MAIN = "`main` también tiene `probe.txt`: ese commit fue a `main`. Vuelve a empezar la misión y haz commit de la sonda en `scout`."
-NOT_BACK = "Vuelve a `main`: `git switch main`."
-STILL_THERE = "`probe.txt` sigue en la carpeta, fuera de todo commit de `main`. Bórralo con `rm probe.txt`: `scout` guarda su copia."
-BACK_ON_MAIN = "Estás en `main`, y `probe.txt` salió de la carpeta: vive en el commit de `scout`."
-LOOKED = "`ls` muestra solo los archivos de `main`. `git switch scout` traería la sonda de vuelta."
-NOT_LOOKED = "Mira la carpeta: `ls`."
+NOT_NAMED = "Pon un nombre en el commit de `main`: `git branch quiet-engine`."
+NAMED = "Un segundo nombre en el commit de `main`. `HEAD` sigue en `main`."
+NOT_ON_QUIET = "Ve allí: `git switch quiet-engine`."
+ON_QUIET = "`HEAD` pasó a `quiet-engine`. Tu carpeta no cambió: los dos nombres están en el mismo commit, y `engine.txt` todavía no está en Git, así que un switch no lo toca."
+NOT_COMMITTED = 'Haz commit de `engine.txt` en `quiet-engine`: `git add engine.txt` y después `git commit -m "Try a quiet engine"`.'
+COMMITTED = "`quiet-engine` subió al commit nuevo, y `main` se quedó. Dos líneas laterales desde el mismo commit: la cadena se bifurca, como un árbol. Cada experimento tiene su propio nombre y su propio commit."
+MAIN_MOVED = "`main` se movió, y el capitán quería dejarlo como estaba. Vuelve a empezar la misión para intentarlo otra vez."
+NOT_ON_BRIGHT = "Cambia al otro experimento: `git switch bright-lights`."
+ON_BRIGHT = "`HEAD` saltó por el árbol al otro experimento, y la carpeta lo siguió: entra `lights.txt`, sale `engine.txt`."
+DRAWN = (
+    "El mismo árbol, dibujado por git en la terminal. Cada `*` es un commit, y `|` y `/` son las líneas entre ellos. "
+    "`--all` muestra todos los branches, no solo la línea donde estás. Tus dos experimentos están marcados en los dos dibujos."
+)
+NOT_DRAWN = "Dibuja el árbol: `git log --oneline --graph --all`."
+OLDER_FORM_WORKS = "Eso también funciona: `git checkout <name>` es la forma más vieja de `git switch <name>`."
