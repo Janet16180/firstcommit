@@ -25,7 +25,7 @@ import os
 import re
 import shlex
 import stat
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 from firstcommit import gitcmd, repomap
@@ -40,6 +40,21 @@ FILES = ("README.md", "notes.txt")
 """The files the buttons act on, in bar order; both people have both."""
 FIRST_LINES = {"README.md": "# Project", "notes.txt": "Notes"}
 """Each file's content in GitHub's first commit."""
+START_DATE = "2026-05-01T09:00:00+00:00"
+"""The date of GitHub's first commit, fixed so it is the same commit, with the same hash, in every lab."""
+ON_PUSH = """#!/bin/sh
+unset $(git rev-parse --local-env-vars)
+[ "$(git --git-dir={github} show main:{file} 2>/dev/null | git hash-object --stdin)" = {blob} ] || exit 0
+rm -f "$0"
+cd {teammate} && {{ {lines}; }} >/dev/null 2>&1
+"""
+"""
+GitHub's ``post-receive`` hook written by `on_push`.
+
+It runs inside the player's push, after GitHub's branches moved. The hook's ``GIT_DIR`` and the
+other repository-local variables are unset first, so Alex's git works in Alex's clone; the hook
+removes itself before Alex's lines run, so Alex's own push does not run it again.
+"""
 
 LINES = {
     "status": "git status",
@@ -136,7 +151,7 @@ def setup(lab: Lab) -> None:
     setup_github(lab)
     entries = [f"{FILE_MODE} blob {_blob(lab, FIRST_LINES[name] + "\n")}\t{name}\n" for name in FILES]
     tree = gitcmd.output(lab.github, "mktree", stdin="".join(entries)).strip()
-    commit = gitcmd.output(lab.github, "commit-tree", tree, "-m", "Start the project").strip()
+    commit = gitcmd.output(lab.github, "commit-tree", tree, "-m", "Start the project", when=START_DATE).strip()
     gitcmd.output(lab.github, "update-ref", "refs/heads/main", commit)
     lab.teammate.parent.mkdir()
     for person in PEOPLE:
@@ -147,6 +162,38 @@ def setup(lab: Lab) -> None:
         gitcmd.output(folder, "config", "remote.origin.followRemoteHEAD", "never")
     gitcmd.output(lab.teammate, "config", "user.name", ALEX.name)
     gitcmd.output(lab.teammate, "config", "user.email", ALEX.email)
+
+
+def on_push(lab: Lab, file: str, text: str, lines: Sequence[str]) -> None:
+    """
+    Have Alex run shell lines in Alex's clone inside the first push that leaves a file on GitHub's ``main`` as given.
+
+    A level event runs only when the page next checks the goals, so a player who types fast could
+    pull before Alex's push; lines run here are done before the player's ``git push`` returns. They
+    run once, silently (their output is not shown as ``remote:`` lines), with Alex's clone's
+    identity, and for a push from the playground's button too: git clears the game's
+    ``GIT_CONFIG_COUNT`` settings, which turn hooks off, for the receiving side of a local push.
+
+    Parameters
+    ----------
+    lab : Lab
+        The lab, set up by `setup`.
+    file : str
+        The file to wait for, on GitHub's ``main``.
+    text : str
+        Its awaited content.
+    lines : Sequence[str]
+        Shell lines for Alex's clone, run in order while each one works.
+    """
+    blob = gitcmd.output(lab.github, "hash-object", "--stdin", stdin=text).strip()
+    hook = lab.github / "hooks" / "post-receive"
+    hook.parent.mkdir(exist_ok=True)
+    hook.write_text(
+        ON_PUSH.format(
+            github=shlex.quote(str(lab.github)), teammate=shlex.quote(str(lab.teammate)), file=shlex.quote(file), blob=blob, lines=" && ".join(lines)
+        )
+    )
+    hook.chmod(0o755)
 
 
 def buttons(lab: Lab, snapshots: Mapping[Who, Snapshot]) -> dict[Who, list[ButtonView]]:

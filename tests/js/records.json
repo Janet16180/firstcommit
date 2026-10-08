@@ -230,7 +230,10 @@
     "question": [],
     "placeholder": "",
     "choices": [],
-    "more": []
+    "more": [],
+    "look": [
+     "HEAD"
+    ]
    },
    {
     "id": "status",
@@ -264,7 +267,8 @@
     ],
     "placeholder": "a file name",
     "choices": [],
-    "more": []
+    "more": [],
+    "look": []
    },
    {
     "id": "stage",
@@ -292,12 +296,51 @@
     "question": [],
     "placeholder": "",
     "choices": [],
-    "more": []
+    "more": [],
+    "look": []
    }
   ],
   "hints_total": 3,
   "hints": [],
-  "debrief": null
+  "debrief": null,
+  "pictures": {
+   "large": "chain",
+   "small": null,
+   "folder": true,
+   "mothership": true,
+   "alex": false,
+   "ghosts": false,
+   "kept": null,
+   "lines": [],
+   "graph": true,
+   "whatif": {
+    "without": [
+     "rescue"
+    ],
+    "after": "look"
+   }
+  },
+  "target": {
+   "commits": [
+    {
+     "id": "start",
+     "parents": [],
+     "subject": "Start the project"
+    },
+    {
+     "id": "fuel",
+     "parents": [
+      "start"
+     ],
+     "subject": "Note the fuel level"
+    }
+   ],
+   "names": {
+    "main": "fuel",
+    "release": "start"
+   },
+   "head": "main"
+  }
  },
  "active": {
   "level": "sample-second",
@@ -782,15 +825,30 @@
    {
     "old": "5941dbe0000000000000000000000000000000aa",
     "new": "a0c26f80000000000000000000000000000000bb",
-    "message": "commit: Add the route"
+    "message": "commit: Add the route",
+    "line": "a0c26f8 HEAD@{0}: commit: Add the route"
    },
    {
     "old": "",
     "new": "5941dbe0000000000000000000000000000000aa",
-    "message": "commit (initial): Start the project"
+    "message": "commit (initial): Start the project",
+    "line": "5941dbe HEAD@{1}: commit (initial): Start the project"
    }
   ],
-  "ghosts": []
+  "ghosts": [],
+  "texts": [
+   {
+    "path": "engine.cfg",
+    "folder": "thrust=full\n",
+    "index": "thrust=half\n"
+   }
+  ],
+  "graph": [
+   "* 2ea5abc (HEAD -> dim-lights) Try dim lights",
+   "| * f286a29 (quiet-engine) Try a quiet engine",
+   "|/  ",
+   "* 6b6a005 (origin/main, main) Fix the route"
+  ]
  },
  "cards": [
   {
@@ -1595,7 +1653,20 @@
    "reactions": [],
    "conflicts": [],
    "reflog": [],
-   "ghosts": []
+   "ghosts": [],
+   "texts": [
+    {
+     "path": "engine.cfg",
+     "folder": "thrust=full\n",
+     "index": "thrust=half\n"
+    }
+   ],
+   "graph": [
+    "* 2ea5abc (HEAD -> dim-lights) Try dim lights",
+    "| * f286a29 (quiet-engine) Try a quiet engine",
+    "|/  ",
+    "* 6b6a005 (origin/main, main) Fix the route"
+   ]
   },
   "observation": {
    "level": "cargo-sample",
@@ -2000,7 +2071,20 @@
    "reactions": [],
    "conflicts": [],
    "reflog": [],
-   "ghosts": []
+   "ghosts": [],
+   "texts": [
+    {
+     "path": "engine.cfg",
+     "folder": "thrust=full\n",
+     "index": "thrust=half\n"
+    }
+   ],
+   "graph": [
+    "* 2ea5abc (HEAD -> dim-lights) Try dim lights",
+    "| * f286a29 (quiet-engine) Try a quiet engine",
+    "|/  ",
+    "* 6b6a005 (origin/main, main) Fix the route"
+   ]
   },
   "explanation": null,
   "fix": null,

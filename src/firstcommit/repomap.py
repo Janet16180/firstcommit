@@ -33,6 +33,7 @@ from firstcommit.records import (
     Conflict,
     ConflictSide,
     FileEntry,
+    FileTexts,
     FolderChange,
     Operation,
     Ref,
@@ -62,7 +63,9 @@ __all__ = [
     "Snapshot",
     "conflicted",
     "conflicts",
+    "file_texts",
     "ghosts",
+    "graph",
     "history",
     "mode_changed",
     "nested",
@@ -78,6 +81,10 @@ __all__ = [
 MAX_COMMITS = 200
 MAX_FILES = 300
 MAX_REFLOG = 50
+MAX_TEXT = 64 * 1024
+"""The most bytes of a file `file_texts` reads, from the folder or the staging area."""
+REFLOG_LINE = "%h%d %gd: %gs"
+"""The line ``git reflog`` prints for a move on a terminal, its decorations short and without colour."""
 
 Area = Literal["head", "index", "folder"]
 
@@ -290,12 +297,96 @@ def reflog(path: Path) -> list[ReflogEntry]:
         At most `MAX_REFLOG` moves; empty without a repository or before the first commit.
         Each move's ``old`` is the ``new`` of the move that came before it in time.
     """
-    lines = _lines(gitcmd.run(path, "log", "-g", f"--max-count={MAX_REFLOG + 1}", "--format=%H%x01%gs", "HEAD", "--")) if _find(path) is not None else []
-    records = [line.split("\x01", 1) for line in lines if "\x01" in line]
-    news = [new for new, _ in records]
+    found = _find(path) is not None
+    lines = _lines(gitcmd.run(path, "log", "-g", f"--max-count={MAX_REFLOG + 1}", f"--format=%H%x01%gs%x01{REFLOG_LINE}", "HEAD", "--")) if found else []
+    records = [line.split("\x01", 2) for line in lines if line.count("\x01") == 2]
+    news = [new for new, _, _ in records]
     olds = [*news[1:], ""] if news else []
-    moves: list[ReflogEntry] = [{"old": old, "new": new, "message": message} for (new, message), old in zip(records, olds, strict=True)]
+    moves: list[ReflogEntry] = [{"old": old, "new": new, "message": message, "line": printed} for (new, message, printed), old in zip(records, olds, strict=True)]
     return moves[:MAX_REFLOG]
+
+
+def graph(path: Path) -> list[str]:
+    """
+    Give the lines of ``git log --oneline --graph --all`` in a repository, as a terminal shows them without colour.
+
+    Parameters
+    ----------
+    path : Path
+        A folder of the repository.
+
+    Returns
+    -------
+    list[str]
+        The lines, for at most `MAX_COMMITS` commits; empty without a repository or a commit.
+    """
+    found = _find(path) is not None
+    return _lines(gitcmd.run(path, "log", "--oneline", "--graph", "--all", "--decorate=short", "--no-color", f"--max-count={MAX_COMMITS}", "--")) if found else []
+
+
+def file_texts(path: Path, names: list[str]) -> list[FileTexts]:
+    """
+    Read files' texts in a working folder and in its staging area, for the desk's lines.
+
+    Parameters
+    ----------
+    path : Path
+        The top of the working folder.
+    names : list[str]
+        The files, relative to it.
+
+    Returns
+    -------
+    list[FileTexts]
+        One per name, in order: its first `MAX_TEXT` bytes in the folder, None when it is not a
+        plain file there (a link is never followed); and in the staging area, None when it is
+        not staged or there is no repository. Bytes that are not UTF-8 are replaced.
+    """
+    staged = _find(path) is not None
+    return [{"path": name, "folder": _folder_text(path / name), "index": _staged_text(path, name) if staged else None} for name in names]
+
+
+def _folder_text(file: Path) -> str | None:
+    """
+    Read a plain file's first `MAX_TEXT` bytes as text, never through a link.
+
+    Parameters
+    ----------
+    file : Path
+        The file.
+
+    Returns
+    -------
+    str | None
+        Its text, or None when it is missing or not a plain file.
+    """
+    try:
+        descriptor = os.open(file, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
+    except OSError:
+        return None
+    with os.fdopen(descriptor, "rb") as handle:
+        text = handle.read(MAX_TEXT).decode(errors="replace") if stat.S_ISREG(os.fstat(handle.fileno()).st_mode) else None
+    return text
+
+
+def _staged_text(path: Path, name: str) -> str | None:
+    """
+    Read a file's version in the staging area as text.
+
+    Parameters
+    ----------
+    path : Path
+        The top of the working folder.
+    name : str
+        The file, relative to it.
+
+    Returns
+    -------
+    str | None
+        Its first `MAX_TEXT` bytes, or None when it is not staged.
+    """
+    result = gitcmd.run(path, "show", f":{name}")
+    return result.stdout[:MAX_TEXT] if result.returncode == 0 else None
 
 
 def ghosts(path: Path) -> list[Commit]:

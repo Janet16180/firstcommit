@@ -458,6 +458,32 @@ def test_a_level_page_names_its_main_view_and_the_views_the_player_has_seen(samp
     assert (game.level(level.id)["view"], game.level(level.id)["tape"]) == ("history", True)
 
 
+CHART: records.Target = {"commits": [{"id": "a", "parents": [], "subject": "Start"}], "names": {"main": "a"}, "head": "main"}
+
+
+def test_a_level_page_names_its_pictures_its_target_and_each_steps_look(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    page = game.level(sample_level.id)
+    assert (page["pictures"], page["target"], [step["look"] for step in page["steps"]]) == (None, None, [[]] * len(sample_level.quest))
+    pictures = kit.pictures("chain", graph=True)
+    quest = (dataclasses.replace(sample_level.quest[0], look=("HEAD", "Start")), *sample_level.quest[1:])
+    level = replaced(sample_level, pictures=pictures, target=CHART, quest=quest)
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    page = game.level(level.id)
+    assert (page["pictures"], page["target"], page["steps"][0]["look"]) == (pictures, CHART, ["HEAD", "Start"])
+
+
+def test_an_observation_carries_the_desks_texts_and_gits_graph_only_for_a_level_that_draws_them(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch, game_home: Path) -> None:
+    game.start(sample_level.id)
+    observed = game.observe()
+    assert (observed["texts"], observed["graph"]) == ([], None)
+    level = replaced(sample_level, pictures=kit.pictures("desk", small="chain", lines=["hello.txt"], graph=True))
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    observed = game.observe()
+    project = lab_project(game_home)
+    assert observed["texts"] == repomap.file_texts(project, ["hello.txt"])
+    assert observed["graph"] == repomap.graph(project)
+
+
 def test_a_view_stays_seen_in_the_order_seen_until_a_reset(sample_level: runner.Level) -> None:
     game.see_view("crew")
     game.see_view("band")

@@ -1084,6 +1084,28 @@ def test_heads_reflog_lists_each_move_newest_first_with_where_it_came_from(tmp_p
     assert entries[0]["message"].startswith("reset: moving to HEAD~1")
 
 
+def test_each_reflog_entry_carries_its_line_as_git_reflog_prints_it_on_a_terminal(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "echo a > a.txt && git add a.txt && git commit -q -m one && echo b > a.txt && git commit -q -am two && git branch side && git reset -q --hard HEAD~1 && git switch -q side\n")
+    printed = shell(repo, "git -c color.ui=never reflog --decorate=short").splitlines()
+    assert [entry["line"] for entry in repomap.reflog(repo)] == printed
+    assert printed[0].endswith("(HEAD -> side) HEAD@{0}: checkout: moving from main to side")
+
+
+def test_the_graph_is_git_log_oneline_graph_all_as_a_terminal_shows_it(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "echo a > a.txt && git add a.txt && git commit -q -m one && git switch -q -c side && echo b > b.txt && git add b.txt && git commit -q -m two && git switch -q main && echo c > c.txt && git add c.txt && git commit -q -m three\n")
+    assert repomap.graph(repo) == shell(repo, "git -c color.ui=never log --oneline --graph --all --decorate=short").splitlines()
+    assert repomap.graph(tmp_path / "nowhere") == []
+
+
+def test_a_files_texts_are_read_from_the_folder_and_the_staging_area(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "echo one > a.txt && git add a.txt && git commit -q -m one && echo two > a.txt && echo new > b.txt\n")
+    assert repomap.file_texts(repo, ["a.txt", "b.txt", "gone.txt"]) == [
+        {"path": "a.txt", "folder": "two\n", "index": "one\n"},
+        {"path": "b.txt", "folder": "new\n", "index": None},
+        {"path": "gone.txt", "folder": None, "index": None},
+    ]
+
+
 def test_ghosts_are_the_commits_only_the_reflog_still_holds(tmp_path: Path) -> None:
     repo = new_repo(tmp_path, "echo a > a.txt && git add a.txt && git commit -q -m one && echo b > a.txt && git commit -q -am two && echo c > a.txt && git commit -q -am three && git reset -q --hard HEAD~2\n")
     assert [ghost["subject"] for ghost in repomap.ghosts(repo)] == ["three", "two"]

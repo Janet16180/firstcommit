@@ -138,7 +138,8 @@ uv run firstcommit --help
 - Run git only through `kit.git` / `kit.git_run` (the game's isolation: the player's own
   configuration can never change a level, and a lab never falls through to a repository above
   it). The player's real `~/.gitconfig` and repositories are never read or changed.
-- No hooks, no filters, no aliases that run programs. No root.
+- No hooks, no filters, no aliases that run programs, apart from the stand-in GitHub's one
+  `post-receive` hook that `kit.on_push` writes for Alex. No root.
 - Build every repository with git commands (`init`, `commit`, `clone` from another lab
   repository). Never copy, unpack or download a `.git` folder: its configuration could name
   programs that git runs. The game's own git commands refuse the known ones (`gitcmd.NO_PROGRAMS`),
@@ -165,6 +166,8 @@ CARD: kit.CommandCard         # the command card the player collects: command an
 SCENE: list[kit.SceneFrame] = []        # optional; Rama's scene the first time the level opens
 VIEW: View = "station"                  # optional; the level screen's main view (records.View)
 TAPE: bool = False                      # optional; True to show the black box's tape of HEAD's moves
+PICTURES: kit.Pictures | None = None    # optional; kit.pictures("chain", folder=True, ...): the teaching pictures and their marks
+TARGET: kit.Target | None = None        # optional; a challenge's target chart: commits by label, names on them, HEAD's name
 REACTIONS: list[kit.ReactionRule] = []  # optional; tried before the shared ones
 EVENTS: list[kit.LevelEvent] = []       # optional; changes the level makes during the play
 CHALLENGE: bool = False                 # optional; True for a challenge (any order, no guidance)
@@ -262,7 +265,8 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
     answer (a hash, an author) is an answer step. Its `QUEST_ACTIONS` entry returns one option.
 
   Every step may carry `more`: text the page folds under a closed "More" below its text, for
-  detail the step does not need.
+  detail the step does not need, and `look`: commit subjects or `"HEAD"` the page rings in gold
+  while the step is current, in a level with `PICTURES`.
 
   A watch's message is shown live, after every poll, while the player works: write it as the
   next thing to do ("`README.md` is in the working folder; stage it with `git add`"), never as
@@ -338,6 +342,8 @@ for people.
 | `kit.is_ancestor(folder, a, b)`, `kit.reachable(folder, commit)` | whether commit `a` leads to `b`; whether some ref still leads to a commit |
 | `kit.setup_github(lab)` | the stand-in GitHub, empty, on `main`, with a reflog (`kit.setup_playground` makes it too) |
 | `kit.typed(typed, pattern, outcome)`, `kit.after(typed, pattern)` | whether a line was typed and how it ended; the lines after the last one that worked |
+| `kit.on_push(lab, file, text, lines)` | Alex runs shell lines in Alex's clone inside the player's first push that leaves `file` on GitHub's `main` reading `text`: use it instead of a level event when the player's next line must already see Alex's push |
+| `kit.switching(branch)`, `kit.creating(branch)` | patterns for those two that accept both forms: `git switch <branch>` or `git checkout <branch>`; `git switch -c <branch>` or `git checkout -b <branch>`. A goal that reads typed lines about moving between branches uses them, never a pattern of its own |
 | `kit.type_line(folder, line)` | run a line in bash as the player would, for `solve` and `QUEST_ACTIONS`; returns its `kit.Command` |
 
 ### 3.5 Snippets: what git prints outside a terminal
@@ -427,7 +433,8 @@ one list of typed lines through the whole walk, as the game does. For each step 
 order, the harness asserts that a watch step fails before its action and passes after it, and
 that an answer step refuses the empty answer and accepts the action's answer. So each watch must
 notice the very thing its step asks for, and not pass early because of an earlier step.
-`kit.typing("git status")` is the action that types one line, the common case.
+`kit.typing("git status")` is the action that types one line, the common case, and
+`kit.picking(GUESS.options[0])` the one that answers a prediction.
 
 The harness runs the level's `EVENTS` as the game does: those with no goal before the walk and
 before `solve`, the others right after their goal's step. A challenge's goals are walked in

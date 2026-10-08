@@ -32,7 +32,7 @@ BRANCH = "scout"
 PROBE = "probe.txt"
 PROBE_LINE = "Probe: launched"
 FILES = {"route.txt": "Route: Earth, Moon\n", "crew.txt": "Robin\nAlex\n", "log.txt": "Day 1: all quiet.\n"}
-BACK = r"git (switch|checkout) main\b"
+BACK = kit.switching("main")
 LIST = r"ls\b"
 
 BRIEFING = """
@@ -365,29 +365,8 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
     return None
 
 
-def guess(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
-    """
-    Pick the prediction the myth makes.
-
-    Parameters
-    ----------
-    lab : kit.Lab
-        The level's lab (unused).
-    state : kit.State
-        The level's state (unused).
-    typed : list[kit.Command]
-        The lines typed so far (unused).
-
-    Returns
-    -------
-    str | None
-        One of the options.
-    """
-    return GUESS.options[1]
-
-
 QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]] = {
-    "guess": guess,
+    "guess": kit.picking(GUESS.options[1]),
     "branch": kit.typing(f"git branch {BRANCH}"),
     "switch": kit.typing(f"git switch {BRANCH}"),
     "commit": kit.typing(f'echo "{PROBE_LINE}" > {PROBE} && git add {PROBE} && git commit -m "Launch the probe"'),

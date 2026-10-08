@@ -226,27 +226,6 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
     return None
 
 
-def guess(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
-    """
-    Pick the prediction most players make.
-
-    Parameters
-    ----------
-    lab : kit.Lab
-        The level's lab (unused).
-    state : kit.State
-        The level's state (unused).
-    typed : list[kit.Command]
-        The lines typed so far (unused).
-
-    Returns
-    -------
-    str | None
-        One of the options.
-    """
-    return GUESS.options[0]
-
-
 def add_remote(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
     """
     Type ``git remote add origin ../github.com/moonbase/project.git`` in the project folder.
@@ -291,5 +270,5 @@ def list_remotes(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> st
     return None
 
 
-QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]] = {"guess": guess, "remote": add_remote, "list": list_remotes}
+QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]] = {"guess": kit.picking(GUESS.options[0]), "remote": add_remote, "list": list_remotes}
 """The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game reads it only in dev mode."""
