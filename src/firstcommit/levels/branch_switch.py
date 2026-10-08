@@ -304,27 +304,6 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
     return None
 
 
-def guess(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
-    """
-    Pick the prediction most players make.
-
-    Parameters
-    ----------
-    lab : kit.Lab
-        The level's lab (unused).
-    state : kit.State
-        The level's state (unused).
-    typed : list[kit.Command]
-        The lines typed so far (unused).
-
-    Returns
-    -------
-    str | None
-        One of the options.
-    """
-    return GUESS.options[0]
-
-
 def note_and_switch(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
     """
     Type the route note, then ``git switch main``, each on its own line in the project folder.
@@ -349,7 +328,7 @@ def note_and_switch(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) ->
 
 
 QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]] = {
-    "guess": guess,
+    "guess": kit.picking(GUESS.options[0]),
     "carry": kit.typing(f"git switch {BRANCH}"),
     "refused": note_and_switch,
     "keep": kit.typing('git commit -am "Note the survey route"'),

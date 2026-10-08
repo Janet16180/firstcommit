@@ -91,6 +91,7 @@ __all__ = [
     "nested",
     "on_push",
     "parse_int",
+    "picking",
     "press",
     "reachable",
     "reaches_github",
@@ -371,6 +372,27 @@ def typing(line: str) -> Callable[[Lab, State, list[Command]], str | None]:
     def act(lab: Lab, state: State, typed: list[Command]) -> str | None:
         typed.append(type_line(lab.project, line))
         return None
+
+    return act
+
+
+def picking(option: str) -> Callable[[Lab, State, list[Command]], str | None]:
+    """
+    Make a quest action that answers a prediction with one of its options, for a level's ``QUEST_ACTIONS``.
+
+    Parameters
+    ----------
+    option : str
+        One of the choice step's options.
+
+    Returns
+    -------
+    Callable[[Lab, State, list[Command]], str | None]
+        The action: it types nothing and returns the option.
+    """
+
+    def act(lab: Lab, state: State, typed: list[Command]) -> str | None:
+        return option
 
     return act
 

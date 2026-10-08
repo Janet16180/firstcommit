@@ -429,7 +429,8 @@ one list of typed lines through the whole walk, as the game does. For each step 
 order, the harness asserts that a watch step fails before its action and passes after it, and
 that an answer step refuses the empty answer and accepts the action's answer. So each watch must
 notice the very thing its step asks for, and not pass early because of an earlier step.
-`kit.typing("git status")` is the action that types one line, the common case.
+`kit.typing("git status")` is the action that types one line, the common case, and
+`kit.picking(GUESS.options[0])` the one that answers a prediction.
 
 The harness runs the level's `EVENTS` as the game does: those with no goal before the walk and
 before `solve`, the others right after their goal's step. A challenge's goals are walked in

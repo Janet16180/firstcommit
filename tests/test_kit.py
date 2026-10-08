@@ -203,6 +203,12 @@ def test_a_typing_action_types_its_line_in_the_project_and_gives_no_answer(tmp_p
     assert typed == [{"line": "touch made.txt", "status": 0}] and (lab.project / "made.txt").exists()
 
 
+def test_a_picking_action_answers_its_option_and_types_nothing(tmp_path: Path) -> None:
+    typed: list[kit.Command] = []
+    assert kit.picking("Only `main`")(kit.Lab(tmp_path), {}, typed) == "Only `main`"
+    assert typed == []
+
+
 @pytest.mark.parametrize(
     "url",
     ["../github.com/moonbase/project.git", "../github.com/moonbase/project.git/", "./../github.com/moonbase/project.git", "../github.com/./moonbase/project.git", "{github}", "{github}/", "file://{github}"],
