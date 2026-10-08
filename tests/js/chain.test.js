@@ -208,3 +208,42 @@ test("main's column stays empty above main's tip: every branch made from it, eve
   const inMainColumn = above.flatMap((row) => [...row.querySelectorAll("path.chain-wire")].map((path) => path.getAttribute("d"))).filter((d) => d.startsWith("M10 "));
   assert.deepEqual(inMainColumn, []);
 });
+
+/* 8-2: a revert on top of the commit it undoes, one commit between them. */
+const reverted = () => {
+  const strobe = { ...commit("s", ["a"], 2), subject: "Try strobe lights" };
+  const night = { ...commit("n", ["s"], 3), subject: "Add the night route" };
+  const undo = { ...commit("r", ["n"], 4), subject: 'Revert "Try strobe lights"' };
+  return snapshot({ commits: [undo, night, strobe, commit("a", [], 1)], refs: [ref("main", "r")] });
+};
+
+test("a revert draws a gold arc in the lane's margin from its capsule down to the commit it undoes, and both say so", () => {
+  const chain = drawn(reverted());
+  const undoPieces = (name) => [...rowOf(chain, name).querySelectorAll("path.chain-wire.is-undo")].length;
+  assert.ok(undoPieces("r") > 0);
+  assert.ok(undoPieces("n") > 0);
+  assert.ok(undoPieces("s") > 0);
+  assert.equal(undoPieces("a"), 0);
+  assert.equal(rowOf(chain, "r").querySelector(".chain-undo").textContent, 'undoes "Try strobe lights"');
+  assert.equal(rowOf(chain, "s").querySelector(".chain-undo").textContent, "undone by a later commit");
+  assert.match(rowOf(chain, "r").querySelector("svg.chain-lane").getAttribute("viewBox"), /^-\d+ 0 /);
+  assert.ok(chain.element.classList.contains("has-undo"));
+});
+
+test("without a revert there is no arc and no margin", () => {
+  const chain = drawn(forked());
+  assert.equal(chain.element.querySelector(".is-undo, .chain-undo"), null);
+  assert.ok(!chain.element.classList.contains("has-undo"));
+  assert.match(rowOf(chain, "c").querySelector("svg.chain-lane").getAttribute("viewBox"), /^0 0 /);
+});
+
+test("the arc's words speak Spanish when the page does", () => {
+  Strings.use("es");
+  try {
+    const chain = drawn(reverted());
+    assert.equal(rowOf(chain, "r").querySelector(".chain-undo").textContent, 'deshace "Try strobe lights"');
+    assert.equal(rowOf(chain, "s").querySelector(".chain-undo").textContent, "deshecho por un commit posterior");
+  } finally {
+    Strings.use("en");
+  }
+});
