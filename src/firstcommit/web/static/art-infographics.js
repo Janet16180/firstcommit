@@ -2,25 +2,30 @@
 
 /*
  * The field guide's three infographics. Every word comes from the data passed in (the shape of
- * InfographicText, each `unlock` replaced by `locked: true|false`); this module adds only the
- * pictures, the arrows and the layout. A locked item shows `lockedLabel` and none of its own
- * words. Pictures are aria-hidden decoration; all words are real text. Defines one global,
- * ArtInfographics; dom.js, art-pixels.js and art-sprites.js load first, art-infographics.css
- * styles it.
+ * InfographicText, each `unlock` replaced by `tag`); this module adds only the pictures, the
+ * arrows and the layout. Nothing is ever hidden: every item is drawn in full. An item whose `tag`
+ * is a string (the page's localized words, e.g. "Coming up in sector 5") also shows that string
+ * as a small quiet badge (.art-ig-tag) and carries the --upcoming modifier (.art-ig-card--upcoming,
+ * .art-ig-box--upcoming, .art-ig-move--upcoming), slightly muted with its words fully readable.
+ * `tag` must be a non-empty string or null; anything else throws a TypeError. Pictures are
+ * aria-hidden decoration; all words are real text. Defines one global, ArtInfographics; dom.js
+ * and art-pixels.js load first, art-infographics.css styles it.
  *
- * commands({title, groups: [{title, commands: [{command, what, locked}]}], lockedLabel})
+ * commands({title, groups: [{title, commands: [{command, what, tag}]}]})
  *     a grid of night command cards per group.
- * places({title, places: [{id, space, git, what, locked}], moves: [{from, to, command, locked}], lockedLabel})
+ * places({title, places: [{id, space, git, what, tag}], moves: [{from, to, command, tag}]})
  *     the four places (ids workshop, dock, vault, mothership) as zones in their colours.
- * states({title, states: [{id, name, space, what, locked}], moves: [{from, to, how, locked}], lockedLabel})
+ * states({title, states: [{id, name, space, what, tag}], moves: [{from, to, how, tag}]})
  *     a file's states (ids untracked, staged, committed, modified) as pixel boxes.
  *
  * In places and states the boxes stand in a row, in the data's order; each move is an arrow
  * labelled with its command, from the middle of one box to the middle of another, above the row
- * when it points right and below when it points left. Each returns one <section>.
+ * when it points right and below when it points left. A tagged move shows its tag beside its
+ * label, on the side away from the arrow; screen readers hear "from, label, to, tag". Each
+ * returns one <section>.
  */
 
-/* global Dom, ArtPixels, ArtSprites */
+/* global Dom, ArtPixels */
 /* exported ArtInfographics */
 
 const ArtInfographics = (function () {
@@ -47,31 +52,39 @@ const ArtInfographics = (function () {
   }
 
   const heading = (title) => el("h2", { class: "art-ig-title" }, title);
-  const lockNote = (lockedLabel) => el("p", { class: "art-ig-lock" }, ArtSprites.icon("lock"), lockedLabel);
 
-  function commandCard({ command, what, locked }, lockedLabel) {
-    if (locked) return el("li", { class: "art-ig-card art-ig-card--locked" }, lockNote(lockedLabel));
-    return el("li", { class: "art-ig-card" }, el("code", { class: "art-ig-command" }, command), el("p", { class: "art-ig-what" }, what));
+  function checkTag(tag) {
+    if (tag === null || (typeof tag === "string" && tag !== "")) return tag;
+    throw new TypeError(`a tag is a non-empty string or null, not ${JSON.stringify(tag)}`);
   }
 
-  function commands({ title, groups, lockedLabel }) {
+  /* The item's classes, with its --upcoming modifier when tagged, and its badge (or nothing). */
+  const classesOf = (base, tag) => (checkTag(tag) === null ? base : `${base} ${base}--upcoming`);
+  const badge = (tag) => (tag === null ? [] : el("span", { class: "art-ig-tag" }, tag));
+
+  function commandCard({ command, what, tag }) {
+    return el("li", { class: classesOf("art-ig-card", tag) },
+      el("code", { class: "art-ig-command" }, command),
+      el("p", { class: "art-ig-what" }, what),
+      badge(tag));
+  }
+
+  function commands({ title, groups }) {
     return el("section", { class: "art-ig art-ig--commands" },
       heading(title),
       groups.map((group) => el("section", { class: "art-ig-group" },
         el("h3", { class: "art-ig-group-title" }, group.title),
-        el("ul", { class: "art-ig-cards", role: "list" }, group.commands.map((entry) => commandCard(entry, lockedLabel))))));
+        el("ul", { class: "art-ig-cards", role: "list" }, group.commands.map(commandCard)))));
   }
 
-  /* One box of the row: {colour, art, name, term, what, locked}. */
-  function box({ colour, art, name, term, what, locked }, lockedLabel) {
-    const frame = { class: locked ? "art-ig-box art-ig-box--locked" : "art-ig-box", style: `--tone:${tone(colour)}` };
-    const drawing = pixelPicture(art(), "art-ig-pic");
-    if (locked) return el("div", frame, drawing, lockNote(lockedLabel));
-    return el("div", frame,
-      drawing,
+  /* One box of the row: {colour, art, name, term, what, tag}. */
+  function box({ colour, art, name, term, what, tag }) {
+    return el("div", { class: classesOf("art-ig-box", tag), style: `--tone:${tone(colour)}` },
+      pixelPicture(art(), "art-ig-pic"),
       el("h3", { class: "art-ig-name" }, name),
       el("p", { class: "art-ig-term" }, term),
-      el("p", { class: "art-ig-what" }, what));
+      el("p", { class: "art-ig-what" }, what),
+      badge(tag));
   }
 
   function arrow() {
@@ -99,30 +112,29 @@ const ArtInfographics = (function () {
   }
 
   /* The row of boxes with labelled arrows: forward rows above (row 1 nearest), backward below. */
-  function flow(kind, { title, boxes, moves, lockedLabel }) {
+  function flow(kind, { title, boxes, moves }) {
     const ids = boxes.map(({ id }) => id);
     const indexOf = (id) => {
       if (!ids.includes(id)) throw new RangeError(`no ${kind} ${id}`);
       return ids.indexOf(id);
     };
-    const nameOf = (id) => {
-      const end = boxes[indexOf(id)];
-      return end.locked ? lockedLabel : end.name;
-    };
+    const nameOf = (id) => boxes[indexOf(id)].name;
     const placed = packRows(moves, indexOf);
     const above = Math.max(0, ...placed.filter(({ forward }) => forward).map(({ row }) => row));
     const gridRow = ({ forward, row }) => (forward ? above - row + 1 : above + 1 + row);
     return el("section", { class: `art-ig art-ig--${kind}` },
       heading(title),
       el("div", { class: "art-ig-flow", style: `--columns:${boxes.length * 2}` },
-        el("div", { class: "art-ig-boxes", style: `grid-row:${above + 1};--boxes:${boxes.length}` }, boxes.map((entry) => box(entry, lockedLabel))),
+        el("div", { class: "art-ig-boxes", style: `grid-row:${above + 1};--boxes:${boxes.length}` }, boxes.map(box)),
         placed.map((arrowPlace) => {
           const { move, forward, first, last } = arrowPlace;
-          const classes = ["art-ig-move", forward ? "art-ig-move--forward" : "art-ig-move--back", move.locked && "art-ig-move--locked"].filter(Boolean).join(" ");
+          const classes = `${classesOf("art-ig-move", move.tag)} art-ig-move--${forward ? "forward" : "back"}`;
           return el("div", { class: classes, style: `grid-column:${first} / ${last};grid-row:${gridRow(arrowPlace)}` },
-            el("span", { class: "art-ig-sr" }, nameOf(move.from)),
-            el("span", { class: "art-ig-move-label" }, move.locked ? lockedLabel : move.label),
-            el("span", { class: "art-ig-sr" }, nameOf(move.to)),
+            el("span", { class: "art-ig-move-text" },
+              el("span", { class: "art-ig-sr" }, nameOf(move.from)),
+              el("span", { class: "art-ig-move-label" }, move.label),
+              el("span", { class: "art-ig-sr" }, nameOf(move.to)),
+              badge(move.tag)),
             arrow());
         })));
   }
@@ -132,14 +144,14 @@ const ArtInfographics = (function () {
     return table[id];
   }
 
-  function places({ title, places: entries, moves, lockedLabel }) {
-    const boxes = entries.map(({ id, space, git, what, locked }) => ({ id, ...look(PLACE_LOOKS, id, "place"), name: space, term: git, what, locked }));
-    return flow("places", { title, boxes, moves: moves.map((move) => ({ ...move, label: move.command })), lockedLabel });
+  function places({ title, places: entries, moves }) {
+    const boxes = entries.map(({ id, space, git, what, tag }) => ({ id, ...look(PLACE_LOOKS, id, "place"), name: space, term: git, what, tag }));
+    return flow("places", { title, boxes, moves: moves.map((move) => ({ ...move, label: move.command })) });
   }
 
-  function states({ title, states: entries, moves, lockedLabel }) {
-    const boxes = entries.map(({ id, name, space, what, locked }) => ({ id, colour: look(STATE_COLOURS, id, "state"), art: stateArt(id), name, term: space, what, locked }));
-    return flow("states", { title, boxes, moves: moves.map((move) => ({ ...move, label: move.how })), lockedLabel });
+  function states({ title, states: entries, moves }) {
+    const boxes = entries.map(({ id, name, space, what, tag }) => ({ id, colour: look(STATE_COLOURS, id, "state"), art: stateArt(id), name, term: space, what, tag }));
+    return flow("states", { title, boxes, moves: moves.map((move) => ({ ...move, label: move.how })) });
   }
 
   return { commands, places, states };

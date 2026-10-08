@@ -2,7 +2,9 @@
  * The field guide's infographics (art-infographics.js). Link it after art-style.css. Colours are
  * the page's tokens only, so light and dark mode come from the tokens; the command cards are
  * night cards, like the terminal, in both. Headings in --f-px, text in --f-body, commands in
- * --f-term. A box's colour arrives as --tone on the box.
+ * --f-term. A box's colour arrives as --tone on the box. An item still to come (--upcoming) keeps
+ * its words at full strength: only its frame goes dashed and its picture dims, and its .art-ig-tag
+ * badge is a quiet plate in the soft ink, not a warning.
  */
 
 .art-ig {
@@ -60,29 +62,26 @@
   color: var(--crt-soft);
 }
 
-.art-ig-card--locked {
-  display: flex;
-  align-items: center;
+.art-ig-card--upcoming {
   border-style: dashed;
-  border-color: var(--art-muted-dk);
+  border-color: var(--crt-soft);
   box-shadow: none;
 }
 
-.art-ig-lock {
-  display: flex;
-  align-items: center;
-  gap: 0.5em;
-  margin: 0;
-  font-size: 0.95rem;
+.art-ig-tag {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 6px 2px;
+  font: 400 0.8rem/1.15 var(--f-px);
   color: var(--ink-soft);
+  background: var(--panel-2);
+  border: 2px solid var(--ink-soft);
 }
 
-.art-ig-card .art-ig-lock {
-  color: var(--art-muted);
-}
-
-.art-ig-lock .art-icon {
-  font-size: 1.4em;
+.art-ig-card .art-ig-tag {
+  color: var(--crt-soft);
+  background: var(--crt-2);
+  border-color: var(--crt-soft);
 }
 
 .art-ig-flow {
@@ -139,15 +138,17 @@
   color: var(--ink-soft);
 }
 
-.art-ig-box--locked {
-  justify-content: center;
+.art-ig-box .art-ig-tag {
+  margin-top: auto;
+}
+
+.art-ig-box--upcoming {
   border-style: dashed;
-  border-color: var(--line);
   box-shadow: none;
 }
 
-.art-ig-box--locked .art-ig-pic {
-  opacity: 0.35;
+.art-ig-box--upcoming .art-ig-pic {
+  opacity: 0.55;
 }
 
 .art-ig-move {
@@ -160,6 +161,20 @@
 
 .art-ig-move--back {
   flex-direction: column-reverse;
+}
+
+.art-ig-move-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.art-ig-move--forward .art-ig-move-text {
+  flex-direction: column-reverse;
+}
+
+.art-ig-move .art-ig-tag {
+  margin: 2px 0;
 }
 
 .art-ig-move-label {
@@ -192,12 +207,11 @@
   transform: scaleX(-1);
 }
 
-.art-ig-move--locked {
+.art-ig-move--upcoming {
   color: var(--ink-soft);
-  opacity: 0.6;
 }
 
-.art-ig-move--locked .art-ig-shaft {
+.art-ig-move--upcoming .art-ig-shaft {
   border-top-style: dashed;
 }
 
