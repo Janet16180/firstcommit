@@ -297,6 +297,57 @@ def test_the_last_hint_shows_commands_that_solve_the_level_typed_as_written(leve
     assert level.check(lab, state, answer, typed).solved
 
 
+def command_shape(line: str) -> str | None:
+    """
+    Give the shape of a git line a hint shows: its subcommand and its options, its names left out.
+
+    ``HEAD~2`` and ``HEAD@{3}`` keep their kind with the number made ``n``, and ``origin`` stays, so
+    ``git push -u origin scout`` and ``git push -u origin main`` are one shape.
+
+    Parameters
+    ----------
+    line : str
+        A line after ``$ ``, perhaps with a comment.
+
+    Returns
+    -------
+    str | None
+        The shape, or None when the line is not a git command.
+    """
+    words = line.split("#")[0].split()
+    shape = None
+    if words[:1] == ["git"] and len(words) > 1:
+        kept = [word for word in words[2:] if word.startswith(("-", "HEAD")) or word == "origin"]
+        shape = " ".join([words[1], *(re.sub(r"\{\d+\}", "{n}", re.sub(r"~\d+", "~n", word)) for word in kept)])
+    return shape
+
+
+KNOWN_GAPS = {
+    "branch-ticket": ["switch -c"],
+    "undo-blackbox": ["branch HEAD@{n}", "reflog"],
+}
+"""Commands two challenges ask for before a guided level teaches them: 5-4 One step teaches ``switch -c``, and 8-4 The move log the reflog, as they are built."""
+
+
+def test_a_challenge_only_asks_for_commands_an_earlier_guided_level_taught() -> None:
+    taught: set[str] = set()
+    untaught = {}
+    for level in runner.catalogue().values():
+        shapes = {shape for shape in map(command_shape, game.SHOWN_LINE.findall(level.texts["en"].hints[-1])) if shape}
+        if level.challenge and shapes - taught:
+            untaught[level.id] = sorted(shapes - taught)
+        if not level.challenge:
+            taught |= shapes
+    assert untaught == KNOWN_GAPS
+
+
+def test_a_commands_shape_keeps_its_options_and_drops_its_names() -> None:
+    assert command_shape("git push -u origin scout") == command_shape("git push -u origin main") == "push -u origin"
+    assert command_shape("git reset --hard HEAD@{2}   # back") == "reset --hard HEAD@{n}"
+    assert command_shape("git revert HEAD~1") == "revert HEAD~n"
+    assert (command_shape("ls"), command_shape("cd project && git log")) == (None, None)
+
+
 def test_every_level_that_asks_its_own_question_says_how_to_read_the_answer() -> None:
     asking = [level.id for level in runner.catalogue().values() if level.texts["en"].question]
     assert asking and all(runner.catalogue()[level_id].answer is not None for level_id in asking)

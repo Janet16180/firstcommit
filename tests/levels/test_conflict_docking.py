@@ -25,7 +25,7 @@ def test_either_pull_answered_with_alexs_bay_then_alex_moves_again_and_one_more_
     reached(level, lab, state, "joined")
     typed += typed_in(lab, "git push")
     assert typed[-1]["status"] == 1
-    typed += typed_in(lab, "git pull --no-rebase --no-edit", "git push")
+    typed += typed_in(lab, "git pull --no-rebase", "git push")
     assert level.check(lab, state, None, typed).solved
 
 

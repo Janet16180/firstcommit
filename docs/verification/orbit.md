@@ -773,6 +773,7 @@ push (Rama's error, lost), and a hard reset to the mothership (the checklist los
 | card | `git commit --no-edit` keeps the prepared message and finishes a merge once conflicts are added | E89; git-commit(1) `--no-edit` |
 | debrief | a merge finishes with `git commit --no-edit`, a rebase with `git rebase --continue`; the checklist comes along either way | E95, E96 |
 | debrief | the second push bounces, one more pull joins Alex's new commit without a conflict | E96 |
+| hint 3 | the second pull is a plain `git pull --no-rebase`, as 4-5 taught it, with no `--no-edit`: the game's git never opens an editor (`core.editor = true`), so the merge takes git's message (E66). Changed on 2026-10-08 so the challenge asks only for commands a guided level taught (`tests/test_levels.py`) | E66, E96; the level's test |
 | `ALEX_DROPPED`, `FORCED` (lost) | a forced push drops Alex's commits from the mothership | E68 |
 | `CHECKLIST_LOST` (lost) | `git reset --hard origin/main` leaves the checklist in no commit a ref reaches | the level's test |
 
