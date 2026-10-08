@@ -35,6 +35,7 @@ Anything else is a bug.
 """
 
 import dataclasses
+import functools
 import os
 import random
 import re
@@ -239,11 +240,14 @@ class Solution(TypedDict):
 
     ``lines`` are the shell lines of the level's last hint, in order, its placeholders filled
     (`solution_lines`); ``answers`` the answer of each answer or choice step by step id, None
-    while the lab cannot give it yet (a count read from a clone not made yet).
+    while the lab cannot give it yet (a count read from a clone not made yet); ``answer`` the
+    answer to the level's own question (`runner.Level` ``answer``), None for a level without one
+    or while the lab cannot give it yet.
     """
 
     lines: list[str]
     answers: dict[str, str | None]
+    answer: str | None
 
 
 class LevelView(TypedDict):
@@ -647,21 +651,21 @@ def _solution(entry: runner.Level, state: Mapping[str, Any]) -> Solution:
     """
     lab = runner.lab_of(entry.id)
     asking = [step.id for step in entry.quest if isinstance(step, kit.AnswerStep | kit.ChoiceStep) and step.id in entry.actions]
-    return {"lines": solution_lines(entry, state), "answers": {step_id: _answer(entry.actions[step_id], lab, state) for step_id in asking}}
+    return {
+        "lines": solution_lines(entry, state),
+        "answers": {step_id: _answer(functools.partial(entry.actions[step_id], lab, dict(state), [])) for step_id in asking},
+        "answer": _answer(functools.partial(entry.answer, lab, dict(state))) if entry.answer is not None else None,
+    }
 
 
-def _answer(action: runner.QuestAction, lab: kit.Lab, state: Mapping[str, Any]) -> str | None:
+def _answer(read: Callable[[], str | None]) -> str | None:
     """
-    Run a step's action for its answer, without keeping the lines it types.
+    Read an answer from the lab: a step's action, whose typed lines are not kept, or a level's ``ANSWER``.
 
     Parameters
     ----------
-    action : runner.QuestAction
-        The step's action.
-    lab : kit.Lab
-        The level's lab.
-    state : Mapping[str, Any]
-        Its state.
+    read : Callable[[], str | None]
+        Reads it.
 
     Returns
     -------
@@ -670,7 +674,7 @@ def _answer(action: runner.QuestAction, lab: kit.Lab, state: Mapping[str, Any]) 
         fails, such as a log in a clone not made yet.
     """
     try:
-        found = action(lab, dict(state), [])
+        found = read()
     except subprocess.CalledProcessError:
         found = None
     return found

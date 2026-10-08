@@ -439,6 +439,17 @@ def test_in_dev_mode_an_answer_the_lab_cannot_give_yet_is_none_until_it_can(game
     assert solution is not None and solution["answers"]["count"] == str(len(kit.git(lab.project, "log", "--oneline").splitlines()))
 
 
+def test_in_dev_mode_a_level_that_asks_its_own_question_shows_its_answer(game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(game.DEV_VARIABLE, "1")
+    game.start("vault-recorder")
+    solution = game.level("vault-recorder")["solution"]
+    lab = runner.lab_of("vault-recorder")
+    assert solution is not None and solution["answer"] == kit.git(lab.project, "log", "-1", "--format=%an", "--", "oxygen.cfg").strip()
+    game.start("cargo-first")
+    solution = game.level("cargo-first")["solution"]
+    assert solution is not None and solution["answer"] is None
+
+
 def test_a_level_page_names_its_main_view_and_the_views_the_player_has_seen(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
     assert (game.level(sample_level.id)["view"], game.level(sample_level.id)["views_seen"]) == ("station", ["station"])
     assert game.level(sample_level.id)["tape"] is False

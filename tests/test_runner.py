@@ -109,6 +109,12 @@ def test_a_level_keeps_the_players_actions_it_declares_for_its_tests_and_dev_mod
     assert runner.load(level_module(QUEST_ACTIONS=actions)).actions == actions
 
 
+def test_a_level_reads_the_answer_to_its_own_question_only_when_it_declares_how() -> None:
+    assert runner.load(level_module()).answer is None
+    read = lambda lab, state: "Robin"  # noqa: E731
+    assert runner.load(level_module(QUESTION="Who?", ANSWER=read)).answer is read
+
+
 def test_a_level_shows_the_tape_only_when_it_says_so() -> None:
     assert runner.load(level_module()).tape is False
     assert runner.load(level_module(TAPE=True)).tape is True
@@ -193,6 +199,8 @@ BROKEN: dict[str, tuple[types.ModuleType, str]] = {
     "a scene frame without text": (level_module(SCENE=[kit.SceneFrame(art="space", text="")]), "SCENE"),
     "a view nobody drew": (level_module(VIEW="map"), "VIEW"),
     "a tape flag that is not a boolean": (level_module(TAPE="yes"), "TAPE"),
+    "an answer that is not a function": (level_module(QUESTION="Who?", ANSWER="Robin"), "ANSWER"),
+    "an answer with no question": (level_module(ANSWER=lambda lab, state: "Robin"), "ANSWER"),
     "the band, a birth mark and not a view to open on": (level_module(VIEW="band"), "VIEW"),
     "reactions that are not rules": (level_module(REACTIONS=["git add"]), "REACTIONS"),
     "a reaction whose line is not a pattern": (level_module(REACTIONS=[kit.ReactionRule(line="git (add", mood="ok", text="Hi.")]), "REACTIONS"),

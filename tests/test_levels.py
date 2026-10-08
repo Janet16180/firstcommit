@@ -297,6 +297,11 @@ def test_the_last_hint_shows_commands_that_solve_the_level_typed_as_written(leve
     assert level.check(lab, state, answer, typed).solved
 
 
+def test_every_level_that_asks_its_own_question_says_how_to_read_the_answer() -> None:
+    asking = [level.id for level in runner.catalogue().values() if level.texts["en"].question]
+    assert asking and all(runner.catalogue()[level_id].answer is not None for level_id in asking)
+
+
 def test_the_tape_shows_from_wrong_course_on() -> None:
     assert sorted(level.id for level in runner.catalogue().values() if level.tape) == ["undo-blackbox", "undo-wrong"]
 

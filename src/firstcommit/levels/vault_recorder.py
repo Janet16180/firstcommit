@@ -270,7 +270,30 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
     """
     for quest_step in QUEST:
         QUEST_ACTIONS[quest_step.id](lab, state, typed)
+    return read_author(lab, state)
+
+
+def read_author(lab: kit.Lab, state: kit.State) -> str:
+    """
+    Read the answer to the level's question from the lab, changing nothing: the author of the last commit that changed the oxygen settings.
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The level's lab.
+    state : kit.State
+        The level's state (unused).
+
+    Returns
+    -------
+    str
+        The author's name.
+    """
     return kit.git(lab.project, "log", "-1", "--format=%an", "--", OXYGEN).strip()
+
+
+ANSWER = read_author
+"""How dev mode reads the answer to the question (`firstcommit.runner.Answer`)."""
 
 
 def read_history(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:

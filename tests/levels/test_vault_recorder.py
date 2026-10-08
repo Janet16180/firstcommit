@@ -94,3 +94,11 @@ def test_reading_the_history_of_the_file_shows_the_culprit_first() -> None:
     assert typed[0]["status"] == 0
     assert watch(level, "read").watch(lab, state, typed).solved
     assert kit.git(lab.project, "log", "-1", "--format=%H", "oxygen.cfg").strip() == state["culprit"]
+
+
+def test_the_answer_is_read_from_the_lab_without_changing_it() -> None:
+    lab, state = started(level)
+    before = kit.git(lab.project, "status", "--porcelain=v2", "--branch") + kit.git(lab.project, "rev-parse", "HEAD")
+    answer = level.ANSWER(lab, state)
+    assert level.check(lab, state, answer, typed_in(lab, "git log", f"git log {level.OXYGEN}")).solved
+    assert kit.git(lab.project, "status", "--porcelain=v2", "--branch") + kit.git(lab.project, "rev-parse", "HEAD") == before
