@@ -393,7 +393,10 @@ What the harness checks, so you know what it will refuse:
 - `solve` then `check` passes, and the lab can be removed.
 
 The quest is walked step by step, as a player would play it. A level with a quest declares the
-player's part of each step in `QUEST_ACTIONS`, a module-level name the game itself never reads:
+player's part of each step in `QUEST_ACTIONS`, a module-level name the game reads only in dev
+mode (`firstcommit serve --dev`), where a level's page shows its last hint's lines and the answer
+of each answer or choice step. An answer action may only read the lab, since dev mode runs it on
+the player's live lab:
 
 ```python
 def stage_hello(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:

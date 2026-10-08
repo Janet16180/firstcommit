@@ -389,4 +389,4 @@ QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str |
     "review": kit.typing(f'git switch -c {BRANCH} && git commit -am "Fix the hall lights" && git push -u origin {BRANCH}'),
     "level": kit.typing("git switch main && git pull"),
 }
-"""The player's part of each goal, for the level tests (AUTHORING.md section 3.6); the game never reads it."""
+"""The player's part of each goal, for the level tests (AUTHORING.md section 3.6); the game reads it only in dev mode."""

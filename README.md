@@ -51,6 +51,7 @@ prints a link: open it in your Windows browser. Ctrl-C stops the game, and your 
 | `deploy/docker/run build` | build the image without starting the game |
 | `deploy/docker/run update` | rebuild the image now from scratch, with Ubuntu's latest updates |
 | `FIRSTCOMMIT_PORT=8851 deploy/docker/run` | start the game on another port |
+| `deploy/docker/run --dev` | start the game in dev mode, for the people who build it: each level's page shows its solution (`firstcommit serve --dev` without Docker) |
 | `deploy/docker/run test` | for developers: run ruff, mypy and the tests inside the container, offline |
 
 Your progress and practice repositories live in the Docker volume `firstcommit-home`, which the

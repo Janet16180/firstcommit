@@ -65,6 +65,12 @@ def test_no_command_serves_the_page_on_the_default_port(served: list[int]) -> No
     assert served == [8820]
 
 
+def test_serve_dev_turns_dev_mode_on_and_it_is_off_by_default(served: list[int], monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(game.DEV_VARIABLE, "0")
+    assert cli.main(["serve"]) == 7 and not game.dev_mode()
+    assert cli.main(["serve", "--dev"]) == 7 and game.dev_mode()
+
+
 def test_serve_takes_a_port(served: list[int]) -> None:
     assert cli.main(["serve", "--port", "8851"]) == 7
     assert served == [8851]

@@ -301,4 +301,4 @@ def unstage_keys(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> st
 
 
 QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]] = {"look": look, "unstage": unstage_keys}
-"""The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game never reads it."""
+"""The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game reads it only in dev mode."""

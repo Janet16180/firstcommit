@@ -378,4 +378,4 @@ QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str |
     "check": kit.typing("git diff --staged"),
     "commit": kit.typing('git commit -m "Add the Phobos stop"'),
 }
-"""The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game never reads it."""
+"""The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game reads it only in dev mode."""

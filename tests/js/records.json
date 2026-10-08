@@ -76,6 +76,7 @@
    "rank_before": "Newcomer",
    "rank_after": "Committer"
   },
+  "dev": false,
   "cards_due": 4,
   "max_difficulty": 3,
   "collection": [
@@ -146,6 +147,15 @@
    "station",
    "crew"
   ],
+  "solution": {
+   "lines": [
+    "git add map.txt",
+    "git commit -m \"Add the map\""
+   ],
+   "answers": {
+    "guess": "It comes with you"
+   }
+  },
   "card": {
    "level": "sample-second",
    "command": "git commit -m \"Message\"",

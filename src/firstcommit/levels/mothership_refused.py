@@ -327,4 +327,4 @@ QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str |
     "pull": kit.typing("git pull --no-rebase"),
     "send": kit.typing("git push"),
 }
-"""The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game never reads it."""
+"""The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game reads it only in dev mode."""

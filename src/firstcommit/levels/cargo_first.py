@@ -252,4 +252,4 @@ def look(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None
 
 
 QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]] = {"stage": stage_map, "look": look}
-"""The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game never reads it."""
+"""The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game reads it only in dev mode."""

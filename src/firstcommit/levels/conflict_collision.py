@@ -415,4 +415,4 @@ QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str |
     "add": kit.typing(f"git add {DOCKING}"),
     "commit": kit.typing("git commit --no-edit"),
 }
-"""The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game never reads it."""
+"""The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game reads it only in dev mode."""

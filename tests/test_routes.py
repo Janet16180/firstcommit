@@ -376,6 +376,13 @@ def test_the_real_game_speaks_the_language_the_page_picked(site: Site, sample_le
     assert api(site, f"/api/level?id={sample_level.id}")[1]["title"] == "Di hola"
 
 
+def test_outside_dev_mode_the_real_games_level_page_sends_no_solution(site: Site, sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv(game.DEV_VARIABLE, raising=False)
+    assert api(site, "/api/start", {"level": sample_level.id})[0] == 200
+    assert api(site, f"/api/level?id={sample_level.id}")[1]["solution"] is None
+    assert api(site, "/api/status")[1]["dev"] is False
+
+
 def test_the_page_marks_a_view_it_draws_as_seen(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
     calls = record(monkeypatch, "see_view", None)
     for body in ({}, {"view": "map"}, {"view": "History"}, {"view": ["history"]}, {"view": None}):

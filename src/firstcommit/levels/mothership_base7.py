@@ -269,4 +269,4 @@ QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str |
     "contact": kit.typing("git remote add origin ../github.com/moonbase/project.git"),
     "launch": kit.typing("git push -u origin main"),
 }
-"""The player's part of each goal, for the level tests (AUTHORING.md section 3.6); the game never reads it."""
+"""The player's part of each goal, for the level tests (AUTHORING.md section 3.6); the game reads it only in dev mode."""

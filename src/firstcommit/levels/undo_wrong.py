@@ -303,4 +303,4 @@ QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str |
     "rescue": kit.typing(f"git branch {RESCUE}"),
     "reset": kit.typing("git reset --hard origin/main"),
 }
-"""The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game never reads it."""
+"""The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game reads it only in dev mode."""

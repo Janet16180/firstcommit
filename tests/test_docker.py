@@ -636,3 +636,17 @@ def test_playing_in_docker_runs_the_smoke_flow_unprivileged_and_keeps_the_save(i
         in_image(image, "cat ~/.firstcommit/progress.json", "--volume", f"{volume_of(image)}:{GAME_HOME}")
     )
     assert progress["levels"][TEMPLATE_LEVEL]["xp"] > 0
+
+
+def test_run_dev_starts_the_game_in_dev_mode_and_play_alone_does_not(tmp_path: Path) -> None:
+    log = tmp_path / "docker.log"
+    command = tmp_path / "docker"
+    command.write_text(f'#!/bin/sh\necho "$@" >> {log}\n[ "$1 $2" = "container inspect" ] && exit 1\nexit 0\n')
+    command.chmod(0o755)
+    path = f"{tmp_path}:/usr/bin:/bin"
+
+    assert run_script("--dev", name="unused", path=path).returncode == 0
+    assert run_script("play", name="unused", path=path).returncode == 0
+
+    runs = [line for line in log.read_text().splitlines() if line.startswith("run ")]
+    assert [run.endswith("firstcommit serve --dev") for run in runs] == [True, False]

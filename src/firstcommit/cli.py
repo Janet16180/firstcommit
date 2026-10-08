@@ -112,6 +112,7 @@ def build_parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(title="commands", metavar="<command>")
     serve_parser = commands.add_parser("serve", help="play in your browser (the default)")
     serve_parser.add_argument("--port", type=port_number, default=DEFAULT_PORT, help=f"local port of the page (default {DEFAULT_PORT})")
+    serve_parser.add_argument("--dev", action="store_true", help="dev mode: every level open, and each level's solution on its page")
     serve_parser.set_defaults(run=serve)
     commands.add_parser("shell", help="open a shell where git uses the game's settings").set_defaults(run=shell)
     commands.add_parser("status", help="show your XP, rank and progress").set_defaults(run=status)
@@ -158,7 +159,7 @@ def serve(args: argparse.Namespace) -> int:
     Parameters
     ----------
     args : argparse.Namespace
-        ``port``.
+        ``port``, and ``dev`` (missing when no command was given).
 
     Returns
     -------
@@ -167,6 +168,9 @@ def serve(args: argparse.Namespace) -> int:
     """
     # Imported here so the other commands never load the web server.
     from firstcommit.web import routes
+
+    if getattr(args, "dev", False):
+        os.environ[game.DEV_VARIABLE] = "1"
 
     exit_status: int = routes.serve(args.port)
     return exit_status

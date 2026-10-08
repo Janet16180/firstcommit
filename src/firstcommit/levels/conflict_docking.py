@@ -328,4 +328,4 @@ QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str |
     "joined": kit.typing(f"git pull --no-rebase; git restore --theirs {DOCKING} && git add {DOCKING} && git commit --no-edit"),
     "sent": kit.typing("git pull --no-rebase --no-edit && git push"),
 }
-"""The player's part of each goal, for the level tests (AUTHORING.md section 3.6); the game never reads it."""
+"""The player's part of each goal, for the level tests (AUTHORING.md section 3.6); the game reads it only in dev mode."""

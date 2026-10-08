@@ -103,6 +103,12 @@ def test_a_level_without_a_scene_or_reactions_has_empty_ones() -> None:
     assert (level.scene, level.reactions) == ((), ())
 
 
+def test_a_level_keeps_the_players_actions_it_declares_for_its_tests_and_dev_mode() -> None:
+    assert runner.load(level_module()).actions == {}
+    actions = {"look": lambda lab, state, typed: None}
+    assert runner.load(level_module(QUEST_ACTIONS=actions)).actions == actions
+
+
 def test_a_level_shows_the_tape_only_when_it_says_so() -> None:
     assert runner.load(level_module()).tape is False
     assert runner.load(level_module(TAPE=True)).tape is True

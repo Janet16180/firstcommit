@@ -409,6 +409,36 @@ def test_a_scene_stays_seen_once_the_player_saw_it_until_a_reset(sample_level: r
     assert game.level(sample_level.id)["scene_seen"] is False
 
 
+def test_outside_dev_mode_the_status_says_so_and_a_level_page_never_holds_its_solution(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv(game.DEV_VARIABLE, raising=False)
+    game.start(sample_level.id)
+    assert game.status()["dev"] is False
+    assert game.level(sample_level.id)["solution"] is None
+
+
+def test_in_dev_mode_a_level_in_progress_shows_its_last_hints_lines_and_its_answers(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(game.DEV_VARIABLE, "1")
+    assert game.status()["dev"] is True
+    assert game.level(sample_level.id)["solution"] is None
+    game.start(sample_level.id)
+    solution = game.level(sample_level.id)["solution"]
+    assert solution is not None
+    active = save.load_active()
+    assert active is not None and solution["lines"] == game.solution_lines(sample_level, active["state"])
+    assert set(solution["answers"]) == {step.id for step in sample_level.quest if isinstance(step, (kit.AnswerStep, kit.ChoiceStep))}
+
+
+def test_in_dev_mode_an_answer_the_lab_cannot_give_yet_is_none_until_it_can(game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(game.DEV_VARIABLE, "1")
+    game.start("branch-recruit")
+    solution = game.level("branch-recruit")["solution"]
+    assert solution is not None and solution["answers"]["count"] is None and solution["lines"][0] == "git clone github.com/moonbase/project.git"
+    lab = runner.lab_of("branch-recruit")
+    kit.type_line(lab.root, solution["lines"][0])
+    solution = game.level("branch-recruit")["solution"]
+    assert solution is not None and solution["answers"]["count"] == str(len(kit.git(lab.project, "log", "--oneline").splitlines()))
+
+
 def test_a_level_page_names_its_main_view_and_the_views_the_player_has_seen(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
     assert (game.level(sample_level.id)["view"], game.level(sample_level.id)["views_seen"]) == ("station", ["station"])
     assert game.level(sample_level.id)["tape"] is False

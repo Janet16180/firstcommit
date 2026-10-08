@@ -90,6 +90,10 @@ from firstcommit.save import home as home
 from firstcommit.score import Rank
 
 PLACEHOLDER = re.compile(r"\{\{\s*(\w+)\s*\}\}")
+SHOWN_LINE = re.compile(r"^ *\$ (.+)$", re.MULTILINE)
+"""A shell line a hint shows: ``$ `` and the line, in a code block."""
+DEV_VARIABLE = "FIRSTCOMMIT_DEV"
+"""Set to ``1`` (``firstcommit serve --dev``) for dev mode: each level's solution on its page."""
 MIN_GIT = (2, 32)
 TARGET_GIT = (2, 43)
 MIN_PYTHON = (3, 12)
@@ -189,7 +193,7 @@ class Status(TypedDict):
 
     ``chapters`` lists every chapter; one with no level yet is still to come.
     ``collection`` holds the card of each finished level, in play order. ``language`` is the
-    one the game speaks.
+    one the game speaks. ``dev`` says whether dev mode is on (`dev_mode`).
     """
 
     language: Language
@@ -198,6 +202,7 @@ class Status(TypedDict):
     chapters: list[ChapterSummary]
     active: ActiveView | None
     last_payout: Payout | None
+    dev: bool
     cards_due: int
     max_difficulty: int
     collection: list[CommandCard]
@@ -228,6 +233,19 @@ class StepView(TypedDict):
     more: list[Block]
 
 
+class Solution(TypedDict):
+    """
+    How a level in progress is solved, for dev mode only (`dev_mode`).
+
+    ``lines`` are the shell lines of the level's last hint, in order, its placeholders filled
+    (`solution_lines`); ``answers`` the answer of each answer or choice step by step id, None
+    while the lab cannot give it yet (a count read from a clone not made yet).
+    """
+
+    lines: list[str]
+    answers: dict[str, str | None]
+
+
 class LevelView(TypedDict):
     """
     A level's page: what to do, the quest steps and how many hints exist.
@@ -239,6 +257,7 @@ class LevelView(TypedDict):
     from the terminal. ``scene`` is empty for a level without one; ``scene_seen`` says whether
     the player has seen it (`see_scene`). ``view`` is the view the level screen opens on, ``tape`` says whether it shows the black box's
     tape of HEAD's moves (`Observation` ``reflog``), and
+    ``solution`` is None unless dev mode is on and the level is in progress (`Solution`).
     ``views_seen`` every view (and the band) the page has shown being born, in the order seen
     (`see_view`), your station from the start, the same for every level. ``challenge`` marks a level whose goals are met in any
     order, with no guidance; its ``card`` is None until the player has solved it once, since the
@@ -258,6 +277,7 @@ class LevelView(TypedDict):
     view: View
     tape: bool
     views_seen: list[Seen]
+    solution: Solution | None
     card: CommandCard | None
     challenge: bool
     briefing: list[Block]
@@ -468,6 +488,7 @@ def status() -> Status:
         "chapters": chapters,
         "active": _active_view(_caught_up(active), levels[active["level"]]) if active is not None and active["level"] in levels else None,
         "last_payout": progress["last_payout"],
+        "dev": dev_mode(),
         "cards_due": len(_cards_to_review(None, progress, sys.maxsize)),
         "max_difficulty": max(runner.DIFFICULTIES),
         "collection": [_command_card(entry, language) for entry in levels.values() if entry.id in progress["levels"]],
@@ -539,6 +560,7 @@ def level(level_id: str) -> LevelView:
         "view": entry.view,
         "tape": entry.tape,
         "views_seen": progress["views"],
+        "solution": _solution(entry, state) if dev_mode() and playing is not None else None,
         "card": _command_card(entry, language) if finished is not None or not entry.challenge else None,
         "challenge": entry.challenge,
         "briefing": _blocks(texts.briefing, state),
@@ -571,6 +593,87 @@ def see_scene(level_id: str) -> None:
         if entry.id not in progress["scenes"]:
             progress["scenes"].append(entry.id)
             save.write_progress(progress)
+
+
+def dev_mode() -> bool:
+    """
+    Tell whether dev mode is on: `DEV_VARIABLE` is ``1`` (``firstcommit serve --dev``).
+
+    Returns
+    -------
+    bool
+        True in dev mode.
+    """
+    return os.environ.get(DEV_VARIABLE) == "1"
+
+
+def solution_lines(entry: runner.Level, state: Mapping[str, Any]) -> list[str]:
+    """
+    Read the shell lines a level's last hint shows, in order, its placeholders filled as the page fills them.
+
+    The level tests type exactly these lines to solve every level, and dev mode shows them.
+
+    Parameters
+    ----------
+    entry : runner.Level
+        The level.
+    state : Mapping[str, Any]
+        Its state.
+
+    Returns
+    -------
+    list[str]
+        Each ``$ `` line of the last English hint, without the ``$ ``; none for a level without such lines.
+    """
+    return SHOWN_LINE.findall(_fill(entry.texts["en"].hints[-1], state))
+
+
+def _solution(entry: runner.Level, state: Mapping[str, Any]) -> Solution:
+    """
+    Gather how a level in progress is solved, for dev mode.
+
+    Parameters
+    ----------
+    entry : runner.Level
+        The level, in progress.
+    state : Mapping[str, Any]
+        Its state.
+
+    Returns
+    -------
+    Solution
+        The last hint's lines, and each answer or choice step's answer from the level's own
+        actions (`runner.Level` ``actions``), read from the lab as it is now.
+    """
+    lab = runner.lab_of(entry.id)
+    asking = [step.id for step in entry.quest if isinstance(step, kit.AnswerStep | kit.ChoiceStep) and step.id in entry.actions]
+    return {"lines": solution_lines(entry, state), "answers": {step_id: _answer(entry.actions[step_id], lab, state) for step_id in asking}}
+
+
+def _answer(action: runner.QuestAction, lab: kit.Lab, state: Mapping[str, Any]) -> str | None:
+    """
+    Run a step's action for its answer, without keeping the lines it types.
+
+    Parameters
+    ----------
+    action : runner.QuestAction
+        The step's action.
+    lab : kit.Lab
+        The level's lab.
+    state : Mapping[str, Any]
+        Its state.
+
+    Returns
+    -------
+    str | None
+        The answer, or None while the lab cannot give it yet: a git command the action needs
+        fails, such as a log in a clone not made yet.
+    """
+    try:
+        found = action(lab, dict(state), [])
+    except subprocess.CalledProcessError:
+        found = None
+    return found
 
 
 def see_view(view: str) -> None:

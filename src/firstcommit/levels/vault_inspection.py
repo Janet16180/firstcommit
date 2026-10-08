@@ -305,4 +305,4 @@ QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str |
     "log": kit.typing(f"git restore --staged {LOG}"),
     "reactor": kit.typing('git commit -m "Lower the reactor limit"'),
 }
-"""The player's part of each goal, for the level tests (AUTHORING.md section 3.6); the game never reads it."""
+"""The player's part of each goal, for the level tests (AUTHORING.md section 3.6); the game reads it only in dev mode."""

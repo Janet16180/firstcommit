@@ -6,10 +6,8 @@ itself is exercised even before a chapter has levels.
 """
 
 import hashlib
-import importlib
 import json
 import re
-from collections.abc import Callable
 from pathlib import Path
 from types import ModuleType
 
@@ -17,7 +15,7 @@ import pytest
 from termlab import sandbox
 
 import sample_levels
-from firstcommit import kit, levels, runner
+from firstcommit import game, kit, levels, runner
 
 HOSTILE = [
     "",
@@ -40,51 +38,10 @@ HOSTILE = [
     "x" * 60_000,
 ]
 PLACEHOLDER = re.compile(r"\{\{\s*(\w+)\s*\}\}")
-SHOWN_COMMAND = re.compile(r"^ *\$ (.+)$", re.MULTILINE)
-QuestAction = Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]
 HOSTILE_LINES: list[kit.Command] = [{"line": line, "status": status} for line in HOSTILE for status in (0, 1, 127)]
 
 CASES = [(levels, level) for level in runner.catalogue().values()] + [(sample_levels, level) for level in runner.discover(sample_levels).values()]
 IDS = [level.id for _, level in CASES]
-
-
-def module_of(package: ModuleType, level: runner.Level) -> ModuleType:
-    """
-    Import a level's module.
-
-    Parameters
-    ----------
-    package : ModuleType
-        The package it was discovered in.
-    level : runner.Level
-        The level.
-
-    Returns
-    -------
-    ModuleType
-        Its module (named after its id, with ``_`` for ``-``).
-    """
-    return importlib.import_module(f"{package.__name__}.{level.id.replace('-', '_')}")
-
-
-def quest_actions(package: ModuleType, level: runner.Level) -> dict[str, QuestAction]:
-    """
-    Read the player's action for each quest step, declared by the level for these tests.
-
-    Parameters
-    ----------
-    package : ModuleType
-        The package the level was discovered in.
-    level : runner.Level
-        The level.
-
-    Returns
-    -------
-    dict[str, QuestAction]
-        The module's ``QUEST_ACTIONS``, empty when it declares none.
-    """
-    actions: dict[str, QuestAction] = getattr(module_of(package, level), "QUEST_ACTIONS", {})
-    return actions
 
 
 def tree(root: Path) -> dict[str, str]:
@@ -167,7 +124,7 @@ def assert_spoken(level: runner.Level, verdicts: list[kit.Verdict]) -> None:
 
 @pytest.mark.parametrize(("package", "level"), CASES, ids=IDS)
 def test_the_quest_actions_name_every_step_the_player_must_act_on(package: ModuleType, level: runner.Level) -> None:
-    actions = quest_actions(package, level)
+    actions = level.actions
     acting = {step.id for step in level.quest if not isinstance(step, kit.ReadStep)}
     assert set(actions) <= {step.id for step in level.quest}
     assert acting <= set(actions)
@@ -225,7 +182,7 @@ def test_hostile_answers_never_crash_or_pass_a_quest_step(package: ModuleType, l
 def test_each_quest_step_passes_only_after_the_players_action(package: ModuleType, level: runner.Level) -> None:
     state = runner.start_lab(level)
     lab = runner.lab_of(level.id)
-    actions = quest_actions(package, level)
+    actions = level.actions
     typed: list[kit.Command] = []
     verdicts = []
     fire(level, lab, state, "")
@@ -281,26 +238,6 @@ def test_every_reaction_of_a_level_has_its_spanish(package: ModuleType, level: r
     assert_spoken(level, [kit.Verdict(False, rule.text) for rule in level.reactions])
 
 
-def shown_commands(level: runner.Level, state: kit.State) -> list[str]:
-    """
-    Read the commands a level's last hint shows, its placeholders filled as the page fills them.
-
-    Parameters
-    ----------
-    level : runner.Level
-        The level.
-    state : kit.State
-        Its state.
-
-    Returns
-    -------
-    list[str]
-        Each ``$ `` line of the last English hint, without the ``$ ``.
-    """
-    hint = PLACEHOLDER.sub(lambda match: str(state[match[1]]), level.texts["en"].hints[-1])
-    return SHOWN_COMMAND.findall(hint)
-
-
 def type_in_one_shell(lab: kit.Lab, folder: Path, line: str) -> tuple[kit.Command, Path]:
     """
     Type a line in a terminal that is in a folder, and tell where the terminal is afterwards.
@@ -331,8 +268,8 @@ def test_the_last_hint_shows_commands_that_solve_the_level_typed_as_written(leve
     state = runner.start_lab(level)
     lab = runner.lab_of(level.id)
     fire(level, lab, state, "")
-    actions = quest_actions(levels, level)
-    commands = shown_commands(level, state)
+    actions = level.actions
+    commands = game.solution_lines(level, state)
     assert commands, "the last hint shows the commands that solve the level, each on a `$ ` line"
     typed: list[kit.Command] = []
     folder = lab.project if lab.project.is_dir() else lab.root

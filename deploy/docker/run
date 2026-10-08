@@ -36,6 +36,7 @@ Usage: deploy/docker/run [command]
   help    show this text
 
 FIRSTCOMMIT_PORT=8851 deploy/docker/run starts the game on another port.
+deploy/docker/run --dev (or FIRSTCOMMIT_DEV=1 deploy/docker/run) starts it in dev mode.
 EOF
 }
 
@@ -156,6 +157,9 @@ play() {
     if [ -n "${FIRSTCOMMIT_PORT:-}" ]; then
         serve+=(--port "$FIRSTCOMMIT_PORT")
     fi
+    if [ "$dev" = 1 ]; then
+        serve+=(--dev)
+    fi
     exec docker run "${options[@]}" "$name:latest" "${serve[@]}"
 }
 
@@ -196,6 +200,11 @@ reset() {
     echo "Your saved game is deleted. The next deploy/docker/run starts a new game."
 }
 
+dev=${FIRSTCOMMIT_DEV:-0}
+if [ "${1:-}" = --dev ]; then
+    dev=1
+    shift
+fi
 action=${1:-play}
 case $action in
     play | shell | build | update | reset | test) ;;

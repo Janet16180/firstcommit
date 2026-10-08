@@ -244,4 +244,4 @@ def ask_status(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str 
 
 
 QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]] = {"look": list_folder, "ask": ask_status}
-"""The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game never reads it."""
+"""The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game reads it only in dev mode."""

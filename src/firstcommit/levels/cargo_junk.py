@@ -289,4 +289,4 @@ QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str |
     "ignore": kit.typing('echo "sim-output/" > .gitignore'),
     "stage": kit.typing(f"git add {IGNORE_FILE} {NAV}"),
 }
-"""The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game never reads it."""
+"""The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game reads it only in dev mode."""
