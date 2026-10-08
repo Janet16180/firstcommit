@@ -556,7 +556,7 @@ const GuideText = (function () {
       },
       showAll: { en: "Show all {count} lines", es: "Mostrar las {count} líneas" },
       showLess: { en: "Show fewer lines", es: "Mostrar menos líneas" },
-      tryIt: { en: "Try it in the playground", es: "Pruébalo en el playground" },
+      tryIt: { en: "Try it in the playground", es: "Pruébalo en la zona de pruebas" },
     },
     pictures: {
       notYet: { en: "not there yet", es: "todavía no existe" },
@@ -587,7 +587,7 @@ const GuideText = (function () {
         es: "Tú pusiste rumbo a la Luna en main; Alex puso rumbo a Júpiter en alex-route. Los dos cambiaron la línea 4, así que git merge se detuvo. Este es el archivo real que escribió git.",
       },
       playground: { start: "conflict", view: "conflict" },
-      tryIt: { en: "Try a conflict in the playground", es: "Prueba un conflicto en el playground" },
+      tryIt: { en: "Try a conflict in the playground", es: "Prueba un conflicto en la zona de pruebas" },
       steps: [
         { en: "Git stopped the merge and wrote both versions of the course line into the file, between marker lines.", es: "Git detuvo el merge y escribió las dos versiones de la línea del rumbo en el archivo, entre líneas marcadoras." },
         { en: "From <<<<<<< HEAD to =======: your version. HEAD is the branch you are on, main.", es: "De <<<<<<< HEAD a =======: tu versión. HEAD es el branch donde estás, main." },

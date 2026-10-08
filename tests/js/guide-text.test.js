@@ -157,3 +157,8 @@ test("the conflict's words name the real markers git wrote", () => {
 test("the text is frozen data", () => {
   assert.ok(Object.isFrozen(GuideText));
 });
+
+test("the playground has the map's one name for it in Spanish: zona de pruebas", () => {
+  assert.equal(GuideText.card.tryIt.es, "Pruébalo en la zona de pruebas");
+  assert.equal(GuideText.conflict.tryIt.es, "Prueba un conflicto en la zona de pruebas");
+});
