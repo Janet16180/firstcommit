@@ -23,7 +23,7 @@ function panel({ write = async () => ({}) } = {}) {
   const q = (selector) => made.element.querySelector(selector);
   const all = (selector) => [...made.element.querySelectorAll(selector)];
   const click = (selector) => q(selector).dispatchEvent(makeEvent("click"));
-  const show = (more = {}) => made.update({ person: "you", markers: [Pg.marked()], texts: [], editing: null, ...more });
+  const show = (more = {}) => made.update({ person: "you", marked: [Pg.marked()], texts: [], editing: null, ...more });
   return { made, seen, q, all, click, show };
 }
 
@@ -62,7 +62,7 @@ test("Write sends the picks with the text the panel read, and the page then says
   run.click(".keep-write");
   await settle();
   assert.deepEqual(run.seen.writes, [{ file: "checklist.txt", read: "r1", choices: ["both"] }]);
-  run.show({ markers: [], texts: [{ path: "checklist.txt", folder: CLEAN, index: null }] });
+  run.show({ marked: [], texts: [{ path: "checklist.txt", folder: CLEAN, index: null }] });
   assert.equal(run.q(".keep-head").textContent, "checklist.txt, as it is nowno markers left");
   assert.deepEqual(words(run.all(".keep-line .keep-text")), ["LAUNCH CHECKLIST", "1. Seal the hatch", "4. Course: the Moon", "5. Music: off"]);
   assert.equal(run.q(".keep-message").textContent, "Written from your picks. Next: type git add checklist.txt, then git commit. The page never runs git for you.");
@@ -71,7 +71,7 @@ test("Write sends the picks with the text the panel read, and the page then says
 test("a file whose markers went another way (an editor) is shown as it is now, without saying the picks wrote it", () => {
   const run = panel();
   run.show();
-  run.show({ markers: [], texts: [{ path: "checklist.txt", folder: CLEAN, index: null }] });
+  run.show({ marked: [], texts: [{ path: "checklist.txt", folder: CLEAN, index: null }] });
   assert.match(run.q(".keep-message").textContent, /^Next: type git add checklist.txt/);
 });
 
@@ -87,7 +87,7 @@ test("a refused Write (the file changed) clears the picks and makes Look again t
   assert.ok(run.q(".keep-look").classList.contains("btn-primary"));
   assert.ok(run.q(".keep-write").disabled);
   assert.equal(run.q(".keep-pick[aria-pressed=\"true\"]"), null);
-  run.show({ markers: [Pg.marked("r2")] });
+  run.show({ marked: [Pg.marked("r2")] });
   assert.ok(run.q(".keep-look"), "Look again stays until pressed");
   run.click(".keep-look");
   assert.equal(run.q(".keep-look"), null);
@@ -98,10 +98,10 @@ test("a new read of the file drops picks made on the old text", () => {
   const run = panel();
   run.show();
   run.click(".keep-pick[data-choice=\"theirs\"]");
-  run.show({ markers: [Pg.marked("r2")] });
+  run.show({ marked: [Pg.marked("r2")] });
   assert.equal(run.q(".keep-pick[aria-pressed=\"true\"]"), null);
   run.click(".keep-pick[data-choice=\"theirs\"]");
-  run.show({ markers: [Pg.marked("r2")] });
+  run.show({ marked: [Pg.marked("r2")] });
   assert.ok(run.q(".keep-pick[data-choice=\"theirs\"][aria-pressed=\"true\"]"), "the same read keeps them");
 });
 
@@ -139,7 +139,7 @@ test("in Alex's repository Alex's side is the one at HEAD, and the buttons say w
 
 test("with no marked file and none seen yet, the panel says so", () => {
   const run = panel();
-  run.show({ markers: [] });
+  run.show({ marked: [] });
   assert.equal(run.q(".keep-none").textContent, "No file has conflict markers.");
 });
 

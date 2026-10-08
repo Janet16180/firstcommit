@@ -438,7 +438,7 @@ test("an observation carries the desk's texts, git's graph or null, and each ref
 const Pg = require("./playground-records");
 
 test("the playground's calls go to their own routes with the bodies the server expects", async () => {
-  const { game, calls } = gameApi({ ...REPLIES, "/api/playground": Pg.playground(), "/api/playground/start": Pg.playground({ start: "lost" }), "/api/playground/prefs": {}, "/api/playground/observe": Pg.observation() });
+  const { game, calls } = gameApi({ ...REPLIES, "/api/playground": Pg.playground(), "/api/playground/start": Pg.playground({ start: "lost" }), "/api/playground/prefs": Pg.playground({ prefs: { view: "chain", alex: true, whose: "alex" } }), "/api/playground/observe": Pg.observation() });
   assert.deepEqual(await game.playground(), Pg.playground());
   await game.playgroundStart("lost");
   await game.playgroundPrefs({ view: "chain", alex: true, whose: "alex" });
@@ -457,8 +457,8 @@ test("a playground with no start yet, and an observation without Alex, are accep
   assert.equal((await game.playgroundObserve()).alex, null);
 });
 
-test("a start must say the view it opens on, the chapter it uses and whether it shows Alex and has a mothership", async () => {
-  for (const [field, value] of [["view", "station"], ["uses", 3], ["alex", "yes"], ["mothership", null]]) {
+test("a start must say its blurb, its banner, the view it opens on, the chapters it uses and whether it shows Alex and has a mothership", async () => {
+  for (const [field, value] of [["blurb", null], ["banner", 1], ["view", "station"], ["uses", "Collisions"], ["alex", "yes"], ["mothership", null]]) {
     const reply = Pg.playground();
     reply.starts[2][field] = value;
     const { game } = gameApi({ "/api/playground": reply });
@@ -467,18 +467,21 @@ test("a start must say the view it opens on, the chapter it uses and whether it 
 });
 
 test("each person in the playground's observation carries the conflict markers the server parsed, block by block", async () => {
-  const good = Pg.observation({ you: Pg.person({ markers: [Pg.marked()] }) });
+  const good = Pg.observation({ you: Pg.person({ marked: [Pg.marked()] }) });
   const { game } = gameApi({ "/api/playground/observe": good });
-  assert.deepEqual((await game.playgroundObserve()).you.markers, [Pg.marked()]);
+  assert.deepEqual((await game.playgroundObserve()).you.marked, [Pg.marked()]);
   const bad = structuredClone(good);
-  bad.you.markers[0].parts[1].kind = "middle";
-  await assert.rejects(gameApi({ "/api/playground/observe": bad }).game.playgroundObserve(), /you\.markers\[0\]\.parts\[1\]\.kind/);
-  const noGraph = Pg.observation({ you: Pg.person({ graph: null }) });
-  await assert.rejects(gameApi({ "/api/playground/observe": noGraph }).game.playgroundObserve(), /you\.graph/);
+  bad.you.marked[0].parts[1].kind = "middle";
+  await assert.rejects(gameApi({ "/api/playground/observe": bad }).game.playgroundObserve(), /you\.marked\[0\]\.parts\[1\]\.kind/);
+  const noRepository = Pg.observation({ you: Pg.person({ graph: null }) });
+  assert.equal((await gameApi({ "/api/playground/observe": noRepository }).game.playgroundObserve()).you.graph, null);
+  const untyped = Pg.observation();
+  delete untyped.alex.typed;
+  await assert.rejects(gameApi({ "/api/playground/observe": untyped }).game.playgroundObserve(), /alex\.typed/);
 });
 
 test("a click-to-keep write names the person, the file, the text it was read from and a choice per block", async () => {
-  const { game, calls } = gameApi({ "/api/playground/resolve": {} });
-  await game.playgroundResolve({ person: "you", file: "checklist.txt", read: "r1", choices: ["yours", "both"] });
+  const { game, calls } = gameApi({ "/api/playground/resolve": { file: null } });
+  assert.deepEqual(await game.playgroundResolve({ person: "you", file: "checklist.txt", read: "r1", choices: ["yours", "both"] }), { file: null });
   assert.deepEqual(calls.map((call) => [call.path, call.body]), [["/api/playground/resolve", { person: "you", file: "checklist.txt", read: "r1", choices: ["yours", "both"] }]]);
 });

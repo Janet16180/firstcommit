@@ -150,18 +150,31 @@ const PlaygroundScreen = (function () {
     ui.foldLine.textContent = PlaygroundSummary.line({ view: prefs.view, whose: alexShown(screen) ? person : null, project: observation[person].project });
   }
 
-  /* Takes a look at the lab: what it shows, whether git reflog was typed, and whether a conflict
-     is still there to show. */
+  /* The lab by person: each one's repository with their desk, the lines typed since the page last
+     looked (the zones' arrows), and git's drawing, empty without a repository. */
+  function bySide(screen, observation) {
+    const side = (person, project) => {
+      const desk = observation[person];
+      if (!desk) return null;
+      const commands = desk.typed.slice(screen.typedSeen[person]);
+      screen.typedSeen[person] = desk.typed.length;
+      return { ...desk, project, commands, graph: desk.graph || [] };
+    };
+    return { github: observation.github, you: side("you", observation.project), alex: side("alex", observation.teammate) };
+  }
+
+  /* Takes a look at the lab: what it shows, whether git reflog was typed, whether the line to try
+     has run, and whether a conflict is still there to show. */
   function take(screen, observation) {
-    screen.observation = observation;
+    screen.observation = bySide(screen, observation);
     for (const person of ["you", "alex"]) {
       const side = observation[person];
-      if (side && Typed.gitCommands(side.commands).includes("reflog")) screen.reflogRead[person] = true;
+      if (side && Typed.gitCommands(side.typed).includes("reflog")) screen.reflogRead[person] = true;
     }
-    const ran = observation.you.commands.some((command) => command.line.trim() === (screen.tryLine || "").trim());
+    const ran = observation.you.typed.some((command) => command.line.trim() === (screen.tryLine || "").trim());
     if (ran) screen.ui.frames.you.chip.hidden = true;
-    const side = observation[whose(screen)];
-    screen.conflictKept = side.markers.length > 0 || (screen.conflictKept && side.project.operation === "merge");
+    const side = screen.observation[whose(screen)];
+    screen.conflictKept = side.marked.length > 0 || (screen.conflictKept && side.project.operation === "merge");
     if (offered(screen).includes(screen.prefs.view)) refresh(screen);
     else pick(screen, "chain");
   }
@@ -266,6 +279,7 @@ const PlaygroundScreen = (function () {
       alexAttached: false,
       conflictKept: false,
       reflogRead: { you: false, alex: false },
+      typedSeen: { you: 0, alex: 0 },
       editing: { you: null, alex: null },
       live: { you: "unsaid", alex: "unsaid" },
     });
@@ -277,9 +291,10 @@ const PlaygroundScreen = (function () {
     const { route, ui } = screen;
     fresh(screen);
     screen.playground = playground;
-    screen.start = playground.starts.find((start) => start.id === playground.current.start);
-    screen.started = playground.current.started;
-    screen.prefs = { ...playground.prefs };
+    const { start: id, started, view, alex, whose: chosen } = playground.current;
+    screen.start = playground.starts.find((start) => start.id === id);
+    screen.started = started;
+    screen.prefs = { view, alex, whose: chosen };
     const meant = !route.start || route.start === screen.start.id;
     if (meant && [...MAIN, ...MORE].includes(route.picture)) screen.prefs.view = route.picture;
     screen.tryLine = meant ? route.tryLine : null;
@@ -332,7 +347,7 @@ const PlaygroundScreen = (function () {
       el("button", { type: "button", class: "pg-choice", "data-start": start.id, onclick: () => choose(screen, start) },
         el("b", { class: "pg-choice-title" }, start.title),
         el("span", { class: "pg-choice-blurb" }, start.blurb),
-        start.uses && el("span", { class: "pg-choice-uses" }, t("pg.uses", { chapters: start.uses }))));
+        start.uses.length > 0 && el("span", { class: "pg-choice-uses" }, t("pg.uses", { chapters: start.uses.map((chapter) => chapter.title).join(", ") }))));
     ui.picker = el("section", { class: "pg-picker" },
       el("h2", { class: "pg-choose" }, t("pg.choose")),
       el("ul", { class: "pg-choices" }, playground.starts.map(choice)),

@@ -370,7 +370,7 @@ const Pg = require("./playground-records");
 
 test("the playground's address opens it under its own head, with its two shells on their own endpoints, kept while its start stands", async () => {
   let built = Pg.playground({ start: "alex-ahead" });
-  const page = await boot({ hash: "#/playground", replies: { "/api/playground": () => built, "/api/playground/observe": () => Pg.observation({ started: built.current.started }), "/api/playground/prefs": {} } });
+  const page = await boot({ hash: "#/playground", replies: { "/api/playground": () => built, "/api/playground/observe": () => Pg.observation({ started: built.current.started }), "/api/playground/prefs": () => Pg.playground() } });
   const go = async (hash) => {
     global.location.hash = hash;
     page.fire("hashchange", {});
@@ -397,7 +397,7 @@ test("the playground's address opens it under its own head, with its two shells 
 
 test("a playground shell's title reaches the playground, even one set while the player was away", async () => {
   const built = Pg.playground({ start: "branches" });
-  const page = await boot({ hash: "#/playground", replies: { "/api/playground": built, "/api/playground/observe": Pg.observation(), "/api/playground/prefs": {} } });
+  const page = await boot({ hash: "#/playground", replies: { "/api/playground": built, "/api/playground/observe": Pg.observation(), "/api/playground/prefs": () => Pg.playground() } });
   const go = async (hash) => {
     global.location.hash = hash;
     page.fire("hashchange", {});
@@ -422,7 +422,7 @@ test("the playground opened from a mission leads back to it; opened from the map
   const active = record("active");
   const page = await boot({
     hash: `#/level/${active.level}`,
-    replies: { "/api/status": { ...record("status"), active }, "/api/level": { ...record("level"), pictures: null }, "/api/view": {}, "/api/observe": record("observation"), "/api/playground": Pg.playground(), "/api/playground/observe": Pg.observation(), "/api/playground/prefs": {} },
+    replies: { "/api/status": { ...record("status"), active }, "/api/level": { ...record("level"), pictures: null }, "/api/view": {}, "/api/observe": record("observation"), "/api/playground": Pg.playground(), "/api/playground/observe": Pg.observation(), "/api/playground/prefs": () => Pg.playground() },
   });
   const go = async (hash) => {
     global.location.hash = hash;

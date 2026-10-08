@@ -15,7 +15,8 @@
  *                         {element, refresh(now)}: `stacked` says whether History stacks its
  *                         sides; Conflict writes picks with onWrite({person, file, read, choices})
  *                         and types at a prompt with onType(person, line); now = {observation
- *                         (PlaygroundObservation), whose ("you" or "alex"), alexShown, reflogRead
+ *                         ({github, you, alex}: each person's desk with their `project` and the
+ *                         `commands` typed since the last look), whose ("you" or "alex"), alexShown, reflogRead
  *                         (git reflog typed in that repository), editing ({you, alex}: the
  *                         editor each terminal runs, {editor, path}, or null)}.
  */
@@ -120,7 +121,7 @@ const PlaygroundPicture = (function () {
         elements: [keep.element],
         refresh({ observation, whose, editing }) {
           person = whose;
-          keep.update({ person, markers: observation[whose].markers, texts: observation[whose].texts, editing: editing[whose] });
+          keep.update({ person, marked: observation[whose].marked, texts: observation[whose].texts, editing: editing[whose] });
         },
       };
     },

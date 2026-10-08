@@ -29,37 +29,39 @@ function snapshot({ refs = [ref("main", "c"), ref("origin/main", "c", "remote"),
 
 const START_IDS = ["empty", "changes", "branches", "alex-ahead", "both", "conflict", "lost"];
 const OPENS = { empty: "desk", changes: "desk", branches: "chain", "alex-ahead": "history", both: "history", conflict: "conflict", lost: "movelog" };
-const USES = { changes: "Time travel", branches: "Name tags", "alex-ahead": "The mothership", both: "Collisions", conflict: "Collisions", lost: "Time travel" };
+const USES = { changes: [["parallel", "Parallel universes"], ["time", "Time travel"]], branches: [["tags", "Name tags"]], "alex-ahead": [["mothership", "The mothership"]], both: [["collisions", "Collisions"]], conflict: [["collisions", "Collisions"]], lost: [["time", "Time travel"]] };
 
 const starts = () => START_IDS.map((id) => ({
   id,
   title: `Start ${id}`,
   blurb: `What ${id} holds.`,
-  uses: USES[id] || null,
+  banner: `A suggestion for ${id}.`,
   view: OPENS[id],
-  alex: id === "alex-ahead" || id === "conflict",
   mothership: id !== "empty",
+  alex: id === "alex-ahead" || id === "conflict",
+  uses: (USES[id] || []).map(([chapter, title]) => ({ id: chapter, title })),
 }));
 
-/* GET /api/playground: the starts, the current one and its preferences. */
+/* GET /api/playground (PlaygroundStatus): the starts and the current start's preferences. */
 function playground({ start = "branches", started = "s1", prefs = {} } = {}) {
-  const current = start ? { start, started } : null;
   const opening = start ? starts().find((item) => item.id === start) : null;
   return {
     starts: starts(),
-    current,
-    prefs: opening ? { view: opening.view, alex: opening.alex, whose: "you", ...prefs } : null,
+    current: opening ? { start, started, view: opening.view, alex: opening.alex, whose: "you", ...prefs } : null,
   };
 }
 
-/* One person's side of the playground's lab. */
-function person({ project = snapshot(), commands = [], reflog = [], ghosts = [], texts = [], graph = ["* ccccccc (HEAD -> main) Commit c"], conflicts = [], markers = [] } = {}) {
-  return { project, commands, reflog, ghosts, texts, graph, conflicts, markers };
+/* One person's desk in the playground's lab, with their repository's snapshot (which the
+   observation carries apart, as project or teammate). */
+function person({ project = snapshot(), typed = [], reflog = [], ghosts = [], texts = [], graph = ["* ccccccc (HEAD -> main) Commit c"], conflicts = [], marked = [] } = {}) {
+  return { project, typed, reflog, ghosts, texts, graph, conflicts, marked };
 }
 
-/* GET /api/playground/observe. */
+const desk = (side) => Object.fromEntries(Object.entries(side).filter(([name]) => name !== "project"));
+
+/* GET /api/playground/observe (PlaygroundObservation). */
 function observation({ start = "branches", started = "s1", you = person(), alex = person({ project: snapshot({ refs: [ref("main", "c"), ref("origin/main", "c", "remote")] }) }), github = snapshot({ refs: [ref("main", "c")] }) } = {}) {
-  return { start, started, github, you, alex };
+  return { start, started, project: you.project, github, teammate: alex ? alex.project : null, you: desk(you), alex: alex ? desk(alex) : null };
 }
 
 /* checklist.txt with one conflict block, as the server parses it. */
@@ -67,9 +69,9 @@ const marked = (read = "r1") => ({
   path: "checklist.txt",
   read,
   parts: [
-    { kind: "same", lines: ["LAUNCH CHECKLIST", "1. Seal the hatch"] },
-    { kind: "block", you: ["4. Course: the Moon"], them: ["4. Course: Jupiter"], you_label: "HEAD", them_label: "94b6459f310f9ec74b15d5f70e207bdf95b25026" },
-    { kind: "same", lines: ["5. Music: off"] },
+    { kind: "clean", lines: ["LAUNCH CHECKLIST", "1. Seal the hatch"] },
+    { kind: "block", yours: ["4. Course: the Moon"], theirs: ["4. Course: Jupiter"], yours_label: "HEAD", theirs_label: "94b6459f310f9ec74b15d5f70e207bdf95b25026" },
+    { kind: "clean", lines: ["5. Music: off"] },
   ],
 });
 

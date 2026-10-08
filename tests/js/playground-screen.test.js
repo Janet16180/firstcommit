@@ -18,8 +18,8 @@ function screen({ playground = Pg.playground(), lab = Pg.observation(), route = 
   const server = fakeServer({
     "/api/playground": playground,
     "/api/playground/start": (body) => Pg.playground({ start: body.start, started: "s2" }),
-    "/api/playground/prefs": {},
-    "/api/playground/resolve": {},
+    "/api/playground/prefs": () => Pg.playground(),
+    "/api/playground/resolve": { file: null },
     "/api/playground/observe": typeof lab === "function" ? lab : () => lab,
     ...replies,
   });
@@ -129,7 +129,7 @@ test("with Alex hidden there is no choice of whose repository", async () => {
 });
 
 test("the Conflict tab is there while a file has markers, and stays until the merge is committed", async () => {
-  let lab = Pg.observation({ you: Pg.person({ markers: [Pg.marked()], project: Pg.snapshot({ operation: "merge" }) }) });
+  let lab = Pg.observation({ you: Pg.person({ marked: [Pg.marked()], project: Pg.snapshot({ operation: "merge" }) }) });
   const run = screen({ playground: Pg.playground({ start: "conflict" }), lab: () => lab });
   await run.clock.advance(0);
   assert.deepEqual(tabs(run).slice(0, 5), ["chain", "history", "desk", "crew", "conflict"]);
@@ -153,7 +153,7 @@ test("the move log stays empty until git reflog is typed, then fills, says once 
   assert.equal(picked(run), "movelog");
   assert.equal(run.all(".pg-picture .movelog-row").length, 0);
   assert.equal(run.q(".pg-live"), null);
-  lab = Pg.observation({ you: Pg.person({ reflog: [entry], ghosts: [ghost], commands: [{ line: "git reflog", status: 0 }] }) });
+  lab = Pg.observation({ you: Pg.person({ reflog: [entry], ghosts: [ghost], typed: [{ line: "git reflog", status: 0 }] }) });
   await run.clock.advance(1500);
   assert.equal(run.all(".pg-picture .movelog-row").length, 1);
   assert.match(run.q(".pg-live").textContent, /^Live here/);
@@ -181,7 +181,7 @@ test("on a phone the picture starts folded into one line saying what it shows, a
   const fold = run.q(".pg-fold");
   assert.ok(run.q(".pg-pictured").classList.contains("is-folded"));
   assert.equal(fold.getAttribute("aria-expanded"), "false");
-  assert.equal(run.q(".pg-fold-line").textContent, PlaygroundSummary.line({ view: "chain", whose: null, project: Pg.observation().you.project }));
+  assert.equal(run.q(".pg-fold-line").textContent, PlaygroundSummary.line({ view: "chain", whose: null, project: Pg.observation().project }));
   run.click(".pg-fold");
   assert.equal(run.q(".pg-pictured").classList.contains("is-folded"), false);
   assert.equal(fold.getAttribute("aria-expanded"), "true");
@@ -296,7 +296,7 @@ test("leaving the playground takes its terminals off the page without closing th
 });
 
 test("the Conflict view is click to keep: Write goes to the server for your repository and the lab is looked at again at once", async () => {
-  const lab = Pg.observation({ you: Pg.person({ markers: [Pg.marked()], project: Pg.snapshot({ operation: "merge" }) }) });
+  const lab = Pg.observation({ you: Pg.person({ marked: [Pg.marked()], project: Pg.snapshot({ operation: "merge" }) }) });
   const run = screen({ playground: Pg.playground({ start: "conflict" }), lab });
   await run.clock.advance(0);
   assert.ok(run.q(".pg-picture .keep"));
@@ -310,7 +310,7 @@ test("the Conflict view is click to keep: Write goes to the server for your repo
 });
 
 test("the panel's editor chips type their command in the terminal of the repository it shows", async () => {
-  const lab = Pg.observation({ you: Pg.person({ markers: [Pg.marked()] }), alex: Pg.person({ markers: [Pg.marked()] }) });
+  const lab = Pg.observation({ you: Pg.person({ marked: [Pg.marked()] }), alex: Pg.person({ marked: [Pg.marked()] }) });
   const run = screen({ playground: Pg.playground({ start: "conflict", prefs: { whose: "alex" } }), lab });
   await run.clock.advance(0);
   run.click(".keep-chip[data-editor=\"nano\"]");
@@ -318,7 +318,7 @@ test("the panel's editor chips type their command in the terminal of the reposit
 });
 
 test("an editor in a terminal shows its strip above that terminal, and the conflict panel waits for it", async () => {
-  const lab = Pg.observation({ you: Pg.person({ markers: [Pg.marked()] }) });
+  const lab = Pg.observation({ you: Pg.person({ marked: [Pg.marked()] }) });
   const run = screen({ playground: Pg.playground({ start: "conflict" }), lab });
   await run.clock.advance(0);
   const strip = run.q(".pg-term[data-who=\"you\"] .pg-strip");
@@ -435,7 +435,7 @@ test("a line to try is a chip above your prompt: it types the line without runni
   run.click(".pg-try");
   assert.deepEqual(run.shells.typed, [["you", "git switch -c test"]]);
   assert.equal(chip.hidden, false);
-  lab = Pg.observation({ you: Pg.person({ commands: [{ line: "git switch -c test", status: 0 }] }) });
+  lab = Pg.observation({ you: Pg.person({ typed: [{ line: "git switch -c test", status: 0 }] }) });
   await run.clock.advance(1500);
   assert.ok(chip.hidden);
 });

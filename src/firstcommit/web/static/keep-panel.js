@@ -13,9 +13,9 @@
  * is now and what to type next; the page never runs git. Under it, two chips type `nano <file>`
  * or `vim <file>` at the prompt. Needs dom.js and strings.js. Defines one global, KeepPanel.
  *
- * create({onWrite, onType}) {element, update({person, markers, texts, editing})}: onWrite({file,
+ * create({onWrite, onType}) {element, update({person, marked, texts, editing})}: onWrite({file,
  *   read, choices}) writes the picks (a promise; a 409 rejection is the file having changed);
- *   onType(line) types at the prompt. person is whose repository ("you" or "alex"), markers and
+ *   onType(line) types at the prompt. person is whose repository ("you" or "alex"), marked and
  *   texts that person's (PlaygroundObservation), editing {editor, path} while an editor runs in
  *   that person's terminal, else null.
  */
@@ -50,11 +50,11 @@ const KeepPanel = (function () {
       type: "button", class: "keep-pick", "data-choice": value, "data-who": owner[value] || "both", "aria-pressed": String(choice === value), disabled: locked, onclick: () => pick(value),
     }, value === "both" ? t("pg.keep.both") : t(`pg.keep.side.${owner[value]}`));
     return [
-      marker(`<<<<<<< ${part.you_label}`, "ours-start"),
-      ...side(part.you, "ours", person, choice === "theirs"),
+      marker(`<<<<<<< ${part.yours_label}`, "ours-start"),
+      ...side(part.yours, "ours", person, choice === "theirs"),
       marker("=======", "fence"),
-      ...side(part.them, "theirs", other(person), choice === "yours"),
-      marker(`>>>>>>> ${short(part.them_label)}`, "theirs-end", `>>>>>>> ${part.them_label}`),
+      ...side(part.theirs, "theirs", other(person), choice === "yours"),
+      marker(`>>>>>>> ${short(part.theirs_label)}`, "theirs-end", `>>>>>>> ${part.theirs_label}`),
       el("li", { class: "keep-choose" }, el("span", {}, t("pg.keep.keep")), CHOICES.map(button)),
     ];
   }
@@ -80,7 +80,7 @@ const KeepPanel = (function () {
       };
       let at = -1;
       const items = file.parts.flatMap((part) => {
-        if (part.kind === "same") return part.lines.map((text) => line(text, "same"));
+        if (part.kind === "clean") return part.lines.map((text) => line(text, "same"));
         at += 1;
         return block(part, picks[at], { person, locked: Boolean(editing) || stale, pick: pick(at) });
       });
@@ -111,12 +111,12 @@ const KeepPanel = (function () {
     }
 
     function draw() {
-      const { person, markers, texts, editing } = state.last;
+      const { person, marked: files, texts, editing } = state.last;
       element.dataset.person = person;
       element.classList.toggle("is-waiting", Boolean(editing));
-      const marking = markers.map((file) => file.path);
+      const marking = files.map((file) => file.path);
       const done = state.seen.filter((path) => !marking.includes(path)).map((path) => resolved(path, texts)).filter(Boolean);
-      const shown = [...markers.map((file) => marked(file, { person, editing })), ...done];
+      const shown = [...files.map((file) => marked(file, { person, editing })), ...done];
       element.replaceChildren(...(shown.length ? shown : [el("p", { class: "keep-none" }, t("pg.keep.none"))]));
     }
 
@@ -136,14 +136,14 @@ const KeepPanel = (function () {
       draw();
     }
 
-    function update({ person, markers, texts, editing }) {
-      for (const file of markers) {
+    function update({ person, marked: files, texts, editing }) {
+      for (const file of files) {
         if (state.reads.get(file.path) !== file.read || editing) state.picks.delete(file.path);
         state.reads.set(file.path, file.read);
         if (!state.seen.includes(file.path)) state.seen.push(file.path);
       }
-      for (const path of state.stale) if (!markers.some((file) => file.path === path)) state.stale.delete(path);
-      state.last = { person, markers, texts, editing };
+      for (const path of state.stale) if (!files.some((file) => file.path === path)) state.stale.delete(path);
+      state.last = { person, marked: files, texts, editing };
       draw();
     }
 
