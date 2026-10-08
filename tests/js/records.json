@@ -2858,5 +2858,29 @@
    ],
    "typed": []
   }
+ },
+ "resolve": {
+  "file": {
+   "path": "checklist.txt",
+   "read": "323e6796875a4a8ff69abd6fe0d8c9f8cc035738dcf357d4d524e26dfca08fa4",
+   "parts": [
+    {
+     "kind": "clean",
+     "lines": [
+      "LAUNCH CHECKLIST",
+      "1. Seal the hatch",
+      "2. Fuel tanks: half",
+      "3. Check the radio",
+      "4. Course: the Moon",
+      "4. Course: Jupiter",
+      "5. Music: off",
+      "6. Shields: on",
+      "7. Gloves on",
+      "8. Snack: space noodles",
+      "9. Wave goodbye to base"
+     ]
+    }
+   ]
+  }
  }
 }

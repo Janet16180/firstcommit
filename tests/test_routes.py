@@ -706,11 +706,53 @@ def test_an_unknown_start_or_view_is_not_found_and_prefs_before_a_start_or_alex_
     assert api(site, "/api/playground/observe") == (409, {"error": "the playground has no start yet"})
 
 
+def test_a_resolve_sends_whose_file_the_hash_read_and_the_choices(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
+    reply = {"file": {"path": "checklist.txt", "read": "ab" * 32, "parts": []}}
+    calls = record(monkeypatch, "resolve_playground", reply)
+    body = {"person": "you", "file": "checklist.txt", "read": "cd" * 32, "choices": ["yours", "both"]}
+    assert api(site, "/api/playground/resolve", body) == (200, reply)
+    assert calls == [("you", "checklist.txt", "cd" * 32, ["yours", "both"])]
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"person": None},
+        {"file": 3},
+        {"file": ""},
+        {"read": "xyz"},
+        {"read": "AB" * 32},
+        {"choices": "yours"},
+        {"choices": ["mine"]},
+        {"choices": ["yours"] * 1001},
+    ],
+)
+def test_a_resolve_needs_a_person_a_file_a_hash_and_known_choices(site: Site, monkeypatch: pytest.MonkeyPatch, change: dict[str, Any]) -> None:
+    calls = record(monkeypatch, "resolve_playground", {})
+    body = {"person": "you", "file": "checklist.txt", "read": "cd" * 32, "choices": ["yours"], **change}
+    assert api(site, "/api/playground/resolve", body)[0] == 400
+    assert calls == []
+
+
+def test_a_resolve_of_a_changed_file_conflicts_and_a_wrong_number_of_choices_is_refused(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
+    body = {"person": "you", "file": "checklist.txt", "read": "cd" * 32, "choices": ["yours"]}
+    record(monkeypatch, "resolve_playground", error=game.FileChangedError("checklist.txt changed since it was read"))
+    assert api(site, "/api/playground/resolve", body) == (409, {"error": "checklist.txt changed since it was read", "kind": "changed"})
+    record(monkeypatch, "resolve_playground", error=game.WrongChoicesError("1 conflict blocks, 2 choices"))
+    assert api(site, "/api/playground/resolve", body) == (400, {"error": "1 conflict blocks, 2 choices"})
+
+
 def test_the_real_free_playground_starts_and_is_observed(site: Site) -> None:
     status, started = api(site, "/api/playground/start", {"start": "alex-ahead"})
     assert (status, started["current"]) == (200, {"start": "alex-ahead", "view": "history", "alex": True, "whose": "you"})
     status, seen = api(site, "/api/playground/observe")
     assert status == 200 and seen["alex"] is not None
+    api(site, "/api/playground/start", {"start": "conflict"})
+    (marked,) = api(site, "/api/playground/observe")[1]["you"]["marked"]
+    body = {"person": "you", "file": "checklist.txt", "read": marked["read"], "choices": ["theirs"]}
+    status, resolved = api(site, "/api/playground/resolve", body)
+    assert status == 200 and resolved["file"]["parts"][0]["kind"] == "clean"
+    assert api(site, "/api/playground/resolve", body)[0] == 409
 
 
 def test_the_real_playground_runs_each_press_and_a_failed_command_is_an_answer_not_an_error(site: Site, playground_level: runner.Level) -> None:
@@ -767,5 +809,6 @@ def test_every_route_is_a_get_or_post_under_api() -> None:
         ("POST", "/api/playground/start"),
         ("POST", "/api/playground/prefs"),
         ("GET", "/api/playground/observe"),
+        ("POST", "/api/playground/resolve"),
     }
     assert set(routes.ROUTES) == expected

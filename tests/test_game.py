@@ -24,6 +24,7 @@ from firstcommit import (
     game,
     gitcmd,
     kit,
+    markers,
     markup,
     playground,
     reactions,
@@ -1432,6 +1433,74 @@ def test_observing_the_empty_start_has_no_mothership_no_alex_and_no_graph() -> N
     assert (seen["github"], seen["teammate"], seen["alex"], seen["you"]["graph"]) == (None, None, None, None)
     assert seen["project"]["exists"] is False
     assert [text["path"] for text in seen["you"]["texts"]] == ["README.md", "notes.txt"]
+
+
+def marked_checklist() -> records.MarkedFile:
+    """
+    Start the playground's Conflict and read your checklist as the conflict panel shows it.
+
+    Returns
+    -------
+    records.MarkedFile
+        ``checklist.txt``, with its one conflict block.
+    """
+    game.start_playground("conflict")
+    (marked,) = game.observe_playground()["you"]["marked"]
+    return marked
+
+
+def test_resolving_writes_the_chosen_sides_into_the_real_file_and_gives_it_back_with_no_markers_left(game_home: Path) -> None:
+    marked = marked_checklist()
+    resolved = game.resolve_playground("you", "checklist.txt", marked["read"], ["both"])["file"]
+    path = game_home / "playground" / "project" / "checklist.txt"
+    assert "4. Course: the Moon\n4. Course: Jupiter\n" in path.read_text() and "<<<<<<<" not in path.read_text()
+    assert resolved == markers.marked("checklist.txt", path.read_bytes())
+    assert [part["kind"] for part in resolved["parts"]] == ["clean"]
+    gitcmd.output(path.parent, "add", "checklist.txt")
+    assert game.observe_playground()["you"]["marked"] == []
+
+
+def test_resolving_a_file_that_changed_since_the_panel_read_it_writes_nothing(game_home: Path) -> None:
+    marked = marked_checklist()
+    path = game_home / "playground" / "project" / "checklist.txt"
+    path.write_text(path.read_text() + "10. Lock the door\n")
+    before = path.read_bytes()
+    with pytest.raises(game.FileChangedError):
+        game.resolve_playground("you", "checklist.txt", marked["read"], ["yours"])
+    assert path.read_bytes() == before
+
+
+def test_resolving_never_writes_through_a_link(game_home: Path, tmp_path: Path) -> None:
+    marked = marked_checklist()
+    outside = tmp_path / "outside.txt"
+    path = game_home / "playground" / "project" / "checklist.txt"
+    before = path.read_bytes()
+    outside.write_bytes(before)
+    path.unlink()
+    path.symlink_to(outside)
+    with pytest.raises(game.FileChangedError):
+        game.resolve_playground("you", "checklist.txt", marked["read"], ["yours"])
+    assert outside.read_bytes() == before
+
+
+def test_resolving_needs_one_choice_per_block_a_file_in_conflict_and_someone_the_playground_has(game_home: Path) -> None:
+    marked = marked_checklist()
+    path = game_home / "playground" / "project" / "checklist.txt"
+    before = path.read_bytes()
+    with pytest.raises(game.WrongChoicesError, match="1 conflict blocks, 2 choices"):
+        game.resolve_playground("you", "checklist.txt", marked["read"], ["yours", "theirs"])
+    for person, file in [("bob", "checklist.txt"), ("you", "notes.txt"), ("alex", "checklist.txt")]:
+        with pytest.raises(game.UnknownIdError):
+            game.resolve_playground(person, file, marked["read"], ["yours"])
+    assert path.read_bytes() == before
+
+
+def test_resolving_before_any_start_or_for_alex_where_there_is_none_conflicts() -> None:
+    with pytest.raises(game.PlaygroundNotOpenError):
+        game.resolve_playground("you", "checklist.txt", "0" * 64, [])
+    game.start_playground("empty")
+    with pytest.raises(game.NoAlexError):
+        game.resolve_playground("alex", "checklist.txt", "0" * 64, [])
 
 
 def test_observing_tells_the_commands_typed_since_the_last_observation_once(sample_level: runner.Level, typist: Callable[..., bytes]) -> None:

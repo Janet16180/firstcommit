@@ -36,6 +36,7 @@ RECORD_TYPES: dict[str, Any] = {
     "board": list[records.PullView],
     "playground": game.PlaygroundStatus,
     "playground_observation": game.PlaygroundObservation,
+    "resolve": game.ResolveView,
 }
 
 

@@ -42,7 +42,7 @@ import re
 import shlex
 import subprocess
 import sys
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Literal, TypedDict, get_args
@@ -91,6 +91,7 @@ from firstcommit.records import (
     Target,
     View,
 )
+from firstcommit.records import Keep as Keep
 from firstcommit.records import Who as Who
 from firstcommit.repomap import Snapshot
 from firstcommit.save import Payout
@@ -116,6 +117,8 @@ PLAYGROUND_VIEWS: tuple[PlaygroundView, ...] = get_args(PlaygroundView)
 """The free playground's views."""
 PEOPLE: tuple[Who, ...] = get_args(Who)
 """The free playground's two people: you and Alex."""
+KEEPS: tuple[Keep, ...] = get_args(Keep)
+"""What a resolve may keep of a conflict block."""
 SPANISH = {
     QUEST_FIRST: "La misión guiada todavía no termina: el siguiente es el paso {step} de {steps}.",
     kit.PICK_ONE: "Elige una de las opciones.",
@@ -483,6 +486,12 @@ class PlaygroundObservation(TypedDict):
     alex: CloneView | None
 
 
+class ResolveView(TypedDict):
+    """A file of the free playground as a resolve wrote it, read again for the conflict panel."""
+
+    file: MarkedFile
+
+
 class PressView(TypedDict):
     """
     One press of a playground button: the command and what it printed, the lab before and after it, and what it shows.
@@ -564,6 +573,14 @@ class PlaygroundNotOpenError(Exception):
 
 class NoAlexError(Exception):
     """Alex was asked for in a free playground start without a mothership, so without Alex."""
+
+
+class FileChangedError(Exception):
+    """A file to resolve that changed since the page read it, or that is no plain file any more: nothing was written."""
+
+
+class WrongChoicesError(ValueError):
+    """A resolve whose choices are not one per conflict block of the file."""
 
 
 class NoPlaygroundError(Exception):
@@ -1512,6 +1529,65 @@ def observe_playground() -> PlaygroundObservation:
         "you": _clone_view(lab.project, project, "you"),
         "alex": _clone_view(lab.teammate, teammate, "alex") if teammate is not None else None,
     }
+
+
+def resolve_playground(person: str, file: str, read: str, choices: Sequence[Keep]) -> ResolveView:
+    """
+    Write the sides chosen for each conflict block into one person's file in the free playground.
+
+    Only the blocks change (`firstcommit.markers.resolve`); git is never run, so the file stays
+    in conflict until the player types ``git add``. The file is written only if it is still a
+    plain file, inside that person's clone, whose bytes hash to ``read``.
+
+    Parameters
+    ----------
+    person : str
+        Whose file, as the page sent it.
+    file : str
+        The file's path in that person's clone: one of its files in conflict.
+    read : str
+        The SHA-256 of the file as the page read it (`firstcommit.records.MarkedFile`).
+    choices : Sequence[Keep]
+        One per conflict block, in order.
+
+    Returns
+    -------
+    ResolveView
+        The file as written.
+
+    Raises
+    ------
+    UnknownIdError
+        If there is no such person, or the file is not one of that person's files in conflict.
+    PlaygroundNotOpenError
+        If no start was built yet.
+    NoAlexError
+        If Alex is asked for in a start without a mothership.
+    FileChangedError
+        If the file changed since it was read, or is no plain file in the clone; nothing is written.
+    WrongChoicesError
+        If there is not one choice per block; nothing is written.
+    """
+    who = _playground_id(person, PEOPLE, "person")
+    left = save.load_playground()
+    if left is None:
+        raise PlaygroundNotOpenError("the playground has no start yet: start one first")
+    if who == "alex" and not freeplay.STARTS[left["start"]].mothership:
+        raise NoAlexError(f"{freeplay.STARTS[left['start']].title['en']} has no mothership, so no Alex")
+    lab = freeplay.lab()
+    clone = lab.project if who == "you" else lab.teammate
+    path = clone / _playground_id(file, [conflict["path"] for conflict in repomap.conflicts(clone)], "file in conflict")
+    data = repomap.folder_bytes(path)
+    if data is None or not path.resolve().is_relative_to(clone.resolve()) or markers.marked(file, data)["read"] != read:
+        raise FileChangedError(f"{file} changed since it was read: look at it again")
+    try:
+        written = markers.resolve(data, choices)
+    except ValueError as error:
+        raise WrongChoicesError(str(error)) from error
+    descriptor = os.open(path, os.O_WRONLY | os.O_TRUNC | os.O_NOFOLLOW)
+    with os.fdopen(descriptor, "wb") as handle:
+        handle.write(written)
+    return {"file": markers.marked(file, written)}
 
 
 def terminal_folder() -> str:
