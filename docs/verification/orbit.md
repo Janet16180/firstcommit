@@ -865,3 +865,9 @@ address looks like https://github.com/moonbase/project.git". E48 to E101 above r
 | `REFUSED`, `SWITCH_REFUSED`, debrief | Git refuses only when the switch would overwrite an edit; the edit stays | E108; git-switch(1) (the operation is aborted when it would lose local changes) |
 | `SWITCH_REFUSED` | two ways out: commit here, or `git restore route.txt` | E108 (the refusal); the commit route is *re-checked* by `tests/levels/test_branch_switch.py`; git-restore(1) (restores the working file from the staging area) |
 | `watch_refused` | it reads a failed switch while `route.txt` holds an edit; a switch to an unknown branch also fails, so it asks for the edit too | E108; *re-checked* by `tests/levels/test_branch_switch.py` |
+
+## 5-5: the unreviewed-main moment (added 2026-10-08)
+
+| Claim | Says | Evidence |
+|---|---|---|
+| `UNREVIEWED` (with the `unreviewed-main` moment) | a plain `git push` on `main`, or `git push origin main` from any branch, puts your commit on the mothership's `main`; Alex's next pull brings it to Alex | E64, E105 (a pull brings the mothership's `main`); git-push(1) (a plain push sends the current branch to its upstream); *re-checked* by `tests/levels/test_branch_ticket.py` (the push of the fix branch never carries the moment) |

@@ -75,8 +75,9 @@ class ReactionRule:
     line must have ended. ``event`` is an event kind that must be among the changes, or empty
     for none. ``repository`` says whether the player's folder must hold a repository afterwards
     (True or False), or None for either; ``staged``, likewise, whether its staging area must then
-    differ from the last commit; ``remote`` whether the repository must then name a remote; and
-    ``ignored`` whether its working folder must then hold files Git ignores.
+    differ from the last commit; ``remote`` whether the repository must then name a remote;
+    ``ignored`` whether its working folder must then hold files Git ignores; and ``branch`` the
+    branch the player must then be on, or None for any.
     ``text`` is markup, as every game text. ``moment`` names a one-time moment the page plays
     with it, or None.
     """
@@ -90,6 +91,7 @@ class ReactionRule:
     staged: bool | None = None
     remote: bool | None = None
     ignored: bool | None = None
+    branch: str | None = None
     moment: Moment | None = None
 
 
@@ -175,7 +177,15 @@ SPANISH: dict[str, str] = {globals()[name]: text for name, text in vars(reaction
 
 
 def react(
-    command: Command, kinds: Collection[str], repository: bool, staged: bool, rules: Sequence[ReactionRule], *, remote: bool, ignored: bool
+    command: Command,
+    kinds: Collection[str],
+    repository: bool,
+    staged: bool,
+    rules: Sequence[ReactionRule],
+    *,
+    remote: bool,
+    ignored: bool,
+    branch: str | None,
 ) -> ReactionRule | None:
     """
     Find the rule that speaks for one typed line.
@@ -196,13 +206,15 @@ def react(
         Whether the repository then names a remote (`firstcommit.repomap.Snapshot` ``remotes``).
     ignored : bool
         Whether its working folder then holds files Git ignores (`firstcommit.records.FileEntry` ``ignored``).
+    branch : str | None
+        The branch the player is then on (`firstcommit.repomap.Snapshot` ``branch``), or None on no branch.
 
     Returns
     -------
     ReactionRule | None
         The first rule that fits, or None.
     """
-    return next((rule for rule in rules if _fits(rule, command, kinds, repository, staged, remote, ignored)), None)
+    return next((rule for rule in rules if _fits(rule, command, kinds, repository, staged, remote, ignored, branch)), None)
 
 
 GLOBAL_OPTIONS = re.compile(
@@ -262,7 +274,9 @@ def plain(line: str) -> str:
     return GLOBAL_OPTIONS.sub("git", " ".join(line.split()))
 
 
-def _fits(rule: ReactionRule, command: Command, kinds: Collection[str], repository: bool, staged: bool, remote: bool, ignored: bool) -> bool:
+def _fits(
+    rule: ReactionRule, command: Command, kinds: Collection[str], repository: bool, staged: bool, remote: bool, ignored: bool, branch: str | None
+) -> bool:
     """
     Tell whether a rule fits a typed line.
 
@@ -282,11 +296,13 @@ def _fits(rule: ReactionRule, command: Command, kinds: Collection[str], reposito
         Whether the repository names a remote afterwards.
     ignored : bool
         Whether the working folder holds ignored files afterwards.
+    branch : str | None
+        The branch the player is on afterwards.
 
     Returns
     -------
     bool
-        True when the line, its outcome, the change, the repository, the staging area, the remotes and the ignored files all fit.
+        True when the line, its outcome, the change and every fact asked about afterwards fit.
     """
     return (
         matches(command, rule.line, rule.outcome)
@@ -295,4 +311,5 @@ def _fits(rule: ReactionRule, command: Command, kinds: Collection[str], reposito
         and (rule.staged is None or rule.staged == staged)
         and (rule.remote is None or rule.remote == remote)
         and (rule.ignored is None or rule.ignored == ignored)
+        and (rule.branch is None or rule.branch == branch)
     )

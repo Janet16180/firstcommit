@@ -57,3 +57,7 @@ NOT_UP = "La nave nodriza todavía no tiene un `fix-lights` con tu arreglo."
 LEVEL = "Tu `main` es el de la nave nodriza, con el commit de Alex."
 NOT_LEVEL = "Tu `main` todavía no es igual al de la nave nodriza."
 FORCED = "`--force` reemplazó un branch de la nave nodriza por el tuyo. En un equipo, eso puede borrar el trabajo de alguien."
+UNREVIEWED = (
+    "Ese push puso tu arreglo directo en el `main` de la nave nodriza, sin revisión. En un equipo, `main` es lo que todos "
+    "traen con pull: el próximo pull de Alex lleva tu commit sin revisar a la estación de Alex."
+)

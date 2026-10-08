@@ -83,8 +83,17 @@ LEVEL = "Your `main` is the mothership's, Alex's commit included."
 NOT_LEVEL = "Your `main` is not the same as the mothership's yet."
 FORCED = "`--force` replaced a branch on the mothership with yours. On a team, that can erase someone's work."
 
+UNREVIEWED = (
+    "That push put your fix straight on the mothership's `main`, with no review. On a team, `main` is what everyone "
+    "pulls: Alex's next pull brings your unreviewed commit to Alex's station."
+)
+PLAIN_PUSH = r"git push( (-u|--set-upstream))*( origin)?$"
+PUSH_MAIN = r"git push\b.* (origin )?(HEAD:)?main( |$)"
+
 REACTIONS = [
     kit.ReactionRule(line=FORCE, mood="err", text=FORCED, outcome="ok"),
+    kit.ReactionRule(line=PLAIN_PUSH, mood="warn", text=UNREVIEWED, outcome="ok", event="push-received", branch="main", moment="unreviewed-main"),
+    kit.ReactionRule(line=PUSH_MAIN, mood="warn", text=UNREVIEWED, outcome="ok", event="push-received", moment="unreviewed-main"),
 ]
 
 
