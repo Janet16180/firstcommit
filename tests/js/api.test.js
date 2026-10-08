@@ -486,3 +486,10 @@ test("a click-to-keep write names the person, the file, the text it was read fro
   await assert.rejects(gameApi({ "/api/playground/resolve": { file: null } }).game.playgroundResolve({ person: "you", file: "x", read: "r", choices: [] }), /file/);
   assert.deepEqual(calls.map((call) => [call.path, call.body]), [["/api/playground/resolve", { person: "you", file: "checklist.txt", read: "r1", choices: ["yours", "both"] }]]);
 });
+
+test("the game's own playground records are accepted as they are", async () => {
+  const { game } = gameApi({ "/api/playground": record("playground"), "/api/playground/observe": record("playground_observation"), "/api/playground/resolve": record("resolve") });
+  assert.deepEqual(await game.playground(), record("playground"));
+  assert.deepEqual(await game.playgroundObserve(), record("playground_observation"));
+  assert.deepEqual(await game.playgroundResolve({ person: "you", file: "checklist.txt", read: "r", choices: ["yours"] }), record("resolve"));
+});

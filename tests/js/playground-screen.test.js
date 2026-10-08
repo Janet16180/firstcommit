@@ -51,7 +51,7 @@ test("the playground opens on the current start's own view, with its name in the
   const run = screen();
   await settle();
   assert.equal(run.q(".pg-title").textContent, "Playground");
-  assert.equal(run.q(".pg-start").textContent, "Start branches");
+  assert.equal(run.q(".pg-start").textContent, "Two branches");
   assert.equal(picked(run), "chain");
   assert.ok(run.q(".pg-picture .chain"));
 });
@@ -218,7 +218,7 @@ test("with no start yet, the playground asks where to start, then opens there", 
   choices[3].dispatchEvent(makeEvent("click"));
   await settle();
   assert.deepEqual(run.calls("/api/playground/start").map((call) => call.body), [{ start: "alex-ahead" }]);
-  assert.equal(run.q(".pg-start").textContent, "Start alex-ahead");
+  assert.equal(run.q(".pg-start").textContent, "Alex is ahead");
   assert.equal(picked(run), "history");
 });
 
@@ -361,7 +361,7 @@ test("the picker names each start, its blurb and the chapter whose commands it u
   await settle();
   assert.equal(run.q(".pg-choose").textContent, "Choose a starting point");
   const both = run.q(".pg-choice[data-start=\"both\"]");
-  assert.equal(both.querySelector(".pg-choice-title").textContent, "Start both");
+  assert.equal(both.querySelector(".pg-choice-title").textContent, "Both committed");
   assert.equal(both.querySelector(".pg-choice-uses").textContent, "uses Collisions");
   assert.equal(run.q(".pg-choice[data-start=\"empty\"] .pg-choice-uses"), null);
   assert.ok(run.all(".pg-choice").every((choice) => !choice.disabled));
@@ -374,7 +374,7 @@ test("Start over asks first, saying what is erased and what is never touched, th
   await run.clock.advance(0);
   run.click(".pg-over");
   const asked = await answer("cancel");
-  assert.match(asked, /Start over\?.*goes back to how "Start branches" began.*Alex's too.*missions are not touched/);
+  assert.match(asked, /Start over\?.*goes back to how "Two branches" began.*Alex's too.*missions are not touched/);
   assert.equal(run.calls("/api/playground/start").length, 0);
   run.click(".pg-over");
   await answer("confirm");
@@ -395,23 +395,23 @@ test("Other start opens the picker over the playground; Cancel goes back, a choi
   run.click(".pg-other");
   run.click(".pg-choice[data-start=\"lost\"]");
   const asked = await answer("confirm");
-  assert.match(asked, /Start from "Start lost"\?.*erased.*missions are not touched/);
+  assert.match(asked, /Start from "Something lost"\?.*erased.*missions are not touched/);
   assert.deepEqual(run.calls("/api/playground/start").map((call) => call.body), [{ start: "lost" }]);
-  assert.equal(run.q(".pg-start").textContent, "Start lost");
+  assert.equal(run.q(".pg-start").textContent, "Something lost");
 });
 
 test("an address naming the current start keeps its lab", async () => {
   const run = screen({ route: { start: "branches" } });
   await settle();
   assert.equal(run.calls("/api/playground/start").length, 0);
-  assert.equal(run.q(".pg-start").textContent, "Start branches");
+  assert.equal(run.q(".pg-start").textContent, "Two branches");
 });
 
 test("an address naming another start asks before it replaces the lab, and keeps the lab if not", async () => {
   const run = screen({ route: { start: "lost", tryLine: "git reflog" } });
   await answer("cancel");
   assert.equal(run.calls("/api/playground/start").length, 0);
-  assert.equal(run.q(".pg-start").textContent, "Start branches");
+  assert.equal(run.q(".pg-start").textContent, "Two branches");
   assert.equal(run.q(".pg-try"), null, "the line was for the other start");
   const yes = screen({ route: { start: "lost" } });
   await answer("confirm");

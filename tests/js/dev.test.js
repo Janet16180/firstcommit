@@ -61,7 +61,7 @@ test("in dev mode a Playground section links to each starting point", async () =
   const links = run.all(".dev-playground a");
   assert.equal(run.q(".dev-playground h2").textContent, "Playground");
   assert.deepEqual(links.map((link) => link.getAttribute("href")), Pg.START_IDS.map((id) => `#/playground?start=${id}`));
-  assert.match(links[0].textContent, /Start empty/);
+  assert.match(links[0].textContent, /Empty folder/);
 });
 
 test("out of dev mode there is no Playground section", async () => {

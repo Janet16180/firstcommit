@@ -1,8 +1,8 @@
 "use strict";
 
 /*
- * Sample playground records, in the shapes agreed with the engine (docs/drafts/playground/plan.md,
- * E3), built from records.json's snapshots until the game's own records land there.
+ * Sample playground records for the page's tests: the game's own starting points (records.json),
+ * and labs built from records.json's snapshots for each case a test needs.
  */
 
 const { record } = require("./load");
@@ -27,20 +27,9 @@ function snapshot({ refs = [ref("main", "c"), ref("origin/main", "c", "remote"),
   };
 }
 
-const START_IDS = ["empty", "changes", "branches", "alex-ahead", "both", "conflict", "lost"];
-const OPENS = { empty: "desk", changes: "desk", branches: "chain", "alex-ahead": "history", both: "history", conflict: "conflict", lost: "movelog" };
-const USES = { changes: [["parallel", "Parallel universes"], ["time", "Time travel"]], branches: [["tags", "Name tags"]], "alex-ahead": [["mothership", "The mothership"]], both: [["collisions", "Collisions"]], conflict: [["collisions", "Collisions"]], lost: [["time", "Time travel"]] };
-
-const starts = () => START_IDS.map((id) => ({
-  id,
-  title: `Start ${id}`,
-  blurb: `What ${id} holds.`,
-  banner: `A suggestion for ${id}.`,
-  view: OPENS[id],
-  mothership: id !== "empty",
-  alex: id === "alex-ahead" || id === "conflict",
-  uses: (USES[id] || []).map(([chapter, title]) => ({ id: chapter, title })),
-}));
+/* The game's own starting points (records.json's "playground"). */
+const starts = () => record("playground").starts;
+const START_IDS = starts().map((start) => start.id);
 
 /* GET /api/playground (PlaygroundStatus): the starts and the current start's preferences. */
 function playground({ start = "branches", started = "s1", prefs = {} } = {}) {
