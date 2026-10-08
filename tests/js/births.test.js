@@ -101,3 +101,14 @@ test("the black box is born as its level opens: a frame drawn round what Git kee
   await run.clock.advance(ViewBirth.BIRTH_MS);
   await run.finished;
 });
+
+test("the tape is born in place on the level's first move of HEAD, with Rama's line", async () => {
+  assert.equal(ViewBirth.has("tape"), true);
+  assert.equal(ViewBirth.ready("tape", { ...reading([]), moved: false }), false);
+  assert.equal(ViewBirth.ready("tape", { ...reading([]), moved: true }), true);
+  const run = birth("tape");
+  assert.deepEqual(run.seen, [["say", "The flight recorder keeps a tape: every move of HEAD, even to capsules no label holds."]]);
+  assert.ok(run.sky.classList.contains("art-birth-tape"));
+  await run.clock.advance(ViewBirth.BIRTH_MS);
+  await run.finished;
+});

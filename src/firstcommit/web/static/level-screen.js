@@ -9,7 +9,9 @@
  * a teammate) shows the four zones; history folds your station into the strip and leaves the
  * vault and the mothership on the stage, and in a crew level flattens Alex's station into the
  * band along the top; two sides open each conflicted file like a book under the strip; the black
- * box frames the places Git keeps, the workshop outside. A level opens on its main view; a view not born yet is
+ * box frames the places Git keeps, the workshop outside (in a crew level your row alone, Alex in
+ * the band). In a level that shows it, the black
+ * box's tape of HEAD's moves runs under history and the black box. A level opens on its main view; a view not born yet is
  * born first (births.js), once the stage has something to show it with, and then marked born.
  * The tab row holds the views born so far.
  * Opening a mission that is not in progress starts it, and a level's scene plays the first time
@@ -21,11 +23,11 @@
  * ended from the command line or another tab), 0 that the server did not answer. Anything else is a
  * bug and is left to surface. Needs dom.js, strings.js, markup.js, art-sprites.js, progress.js,
  * poll.js, zones.js, zone-panel.js, mission.js, comms.js, completion.js, scene.js, moment-layer.js,
- * view-tabs.js, strip.js, sides.js and births.js.
+ * view-tabs.js, strip.js, sides.js, tape.js and births.js.
  * Defines one global, LevelScreen.
  */
 
-/* global Dom, Strings, ArtSprites, Progress, Polling, Zones, ZonePanel, Mission, Comms, Completion, ScenePlayer, MomentLayer, ViewTabs, Strip, Sides, ViewBirth */
+/* global Dom, Strings, ArtSprites, Progress, Polling, Zones, ZonePanel, Mission, Comms, Completion, ScenePlayer, MomentLayer, ViewTabs, Strip, Sides, Tape, ViewBirth */
 /* exported LevelScreen */
 
 const LevelScreen = (function () {
@@ -33,6 +35,8 @@ const LevelScreen = (function () {
   const { t } = Strings;
   /* The views the page draws so far; a level whose main view is another opens on your station. */
   const DRAWN = ["station", "crew", "history", "sides", "blackbox"];
+  /* The views the black box's tape runs under, in a level that shows it. */
+  const TAPED = ["history", "blackbox"];
   /* The views that show your station unfolded, so the strip stays away. */
   const UNFOLDED = ["station", "crew", "blackbox"];
   const SAY = { preparing: "level.preparing", start: "level.start", down: "level.down", back: "level.back", hint: "level.hint", ended: "level.ended", partMet: "level.partMet", predictFirst: "level.predictFirst" };
@@ -95,9 +99,12 @@ const LevelScreen = (function () {
     screen.view = view;
     ui.sky.dataset.view = view;
     const folded = !UNFOLDED.includes(view);
+    const boxed = view === "blackbox";
     ui.strip.element.hidden = !folded;
-    ui.band.element.hidden = !folded || !screen.crew;
+    ui.band.element.hidden = !(folded || boxed) || !screen.crew;
+    ui.zones.solo(boxed);
     ui.sides.element.hidden = view !== "sides";
+    ui.tape.element.hidden = !screen.taped || !TAPED.includes(view);
     ui.tabs.select(view);
     measureTerminal(screen);
   }
@@ -120,29 +127,41 @@ const LevelScreen = (function () {
   /* The view the level opens on: its main view, or your station when the page does not draw it yet. */
   const opening = (screen) => (DRAWN.includes(screen.level.view) ? screen.level.view : home(screen));
 
+  /* The births the level waits for, in order: its main view's, the crew band the first time a
+     crew level opens on another view (once the crew view was born), and the tape in a level that
+     shows it. */
+  function awaited({ level, seen }, unborn) {
+    const births = [];
+    if (unborn && ViewBirth.has(level.view)) births.push(level.view);
+    if (level.view !== "crew" && seen.includes("crew") && !seen.includes("band")) births.push("band");
+    if (level.tape && !seen.includes("tape")) births.push("tape");
+    return births;
+  }
+
   /* The level's main view. One not born yet with a birth to play waits on your station for it;
-     one the page does not draw yet opens on your station. The crew band is born the first time
-     a crew level opens on another view, once the crew view was. */
+     one the page does not draw yet opens on your station. */
   function openView(screen) {
     const { level } = screen;
     screen.seen = [...level.views_seen];
     const unborn = DRAWN.includes(level.view) && !screen.seen.includes(level.view);
-    screen.births = [];
-    if (unborn && ViewBirth.has(level.view)) screen.births.push(level.view);
-    if (level.view !== "crew" && screen.seen.includes("crew") && !screen.seen.includes("band")) screen.births.push("band");
+    screen.births = awaited(screen, unborn);
+    screen.taped = level.tape && screen.seen.includes("tape");
     drawTabs(screen);
     if (unborn && !screen.births.includes(level.view)) born(screen, level.view);
     show(screen, screen.births.includes(level.view) ? home(screen) : opening(screen));
   }
 
+  /* A birth in place (the tape) leaves the view as it is; the others end on the level's own. */
   async function birth(screen, view) {
     const { ctx, ui } = screen;
+    if (view === "tape") screen.taped = true;
+    show(screen, screen.view);
     screen.bearing = true;
     await ViewBirth.play(view, { sky: ui.sky, show: (shown) => show(screen, shown), say: (line) => ui.comms.say(line, "info"), reducedMotion: ctx.reducedMotion, timers: ctx.timers });
     screen.bearing = false;
     if (screen.disposed) return;
     born(screen, view);
-    show(screen, opening(screen));
+    show(screen, view === "tape" ? screen.view : opening(screen));
   }
 
   /* Starts the next waiting birth once the stage, as `reading` reads it, can show it; says whether one started. */
@@ -171,11 +190,12 @@ const LevelScreen = (function () {
     ui.strip = Strip.create({ onExpand: () => show(screen, home(screen)) });
     ui.band = Strip.create({ onExpand: () => show(screen, "crew"), who: "alex" });
     ui.sides = Sides.create();
+    ui.tape = Tape.create();
     ui.tabs = ViewTabs.create({ tabs: [], current: "station", onPick: () => {} });
     ui.comms = Comms.create();
     ui.mission = el("aside", { class: "mission px", "aria-label": t("mission.label") }, el("p", {}, t("level.loading")));
     ui.termcol = el("div", { class: "termcol" }, ui.comms.element);
-    ui.sky = el("div", { class: "sky" }, ui.band.element, ui.strip.element, ui.sides.element, ui.zones.element, ui.moments.element);
+    ui.sky = el("div", { class: "sky" }, ui.band.element, ui.strip.element, ui.sides.element, ui.zones.element, ui.tape.element, ui.moments.element);
     ui.stage = el("main", { class: "stage" }, el("div", { class: "views" }, ui.tabs.element, ui.sky), ui.mission, ui.termcol);
     screen.element.replaceChildren(hud(screen), ui.stage);
     show(screen, "station");
@@ -369,7 +389,15 @@ const LevelScreen = (function () {
     return screen.held || fresh || (playing && !reactions.length);
   }
 
-  /* The stage drawn from an observation: the zones, the strips and whether a teammate is on it. */
+  /* Whether HEAD has moved since the level was first looked at: its newest move is another. */
+  function moved(screen, reflog) {
+    const newest = reflog.length ? `${reflog[0].new} ${reflog[0].message}` : "";
+    if (screen.firstMove === null) screen.firstMove = newest;
+    return newest !== screen.firstMove;
+  }
+
+  /* The stage drawn from an observation: the zones, the strips, the two sides, the tape and
+     whether a teammate is on it; returns the stage as Zones.read reads it, and whether HEAD moved. */
   function stage(screen, observation) {
     const { ui } = screen;
     ui.zones.update(observation);
@@ -377,8 +405,9 @@ const LevelScreen = (function () {
     ui.strip.update(reading);
     if (reading.crew) ui.band.update(reading.crew);
     ui.sides.update(observation.conflicts);
+    ui.tape.update(observation.reflog, observation.ghosts);
     crewed(screen, observation);
-    return reading;
+    return { ...reading, moved: moved(screen, observation.reflog) };
   }
 
   function moments(screen, reactions) {
@@ -482,7 +511,7 @@ const LevelScreen = (function () {
   /* ctx: game, status(), refresh(), reload() (shows this screen again), sound, timers, page,
      reducedMotion, terminal ({attach(host), detach(), type(text)}). */
   function create(ctx, levelId) {
-    const screen = { ctx, levelId, level: null, state: null, number: "", shownStars: null, view: "station", seen: [], crew: false, births: [], bearing: false, held: false, metNote: false, mission: null, poller: null, finished: false, offline: false, attached: false, disposed: false, ui: {} };
+    const screen = { ctx, levelId, level: null, state: null, number: "", shownStars: null, view: "station", seen: [], crew: false, births: [], bearing: false, taped: false, firstMove: null, held: false, metNote: false, mission: null, poller: null, finished: false, offline: false, attached: false, disposed: false, ui: {} };
     screen.element = el("div", { class: "level-screen" });
     layout(screen);
     load(screen);

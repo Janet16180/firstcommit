@@ -261,7 +261,9 @@ const ZonePanel = (function () {
 
   /* Lights the arrows and wakes the zones, then shows what moved unless motion is reduced. */
   function animate(element, shells, moves, before, { reducedMotion, timers }) {
-    for (const command of moves.lit) flash(element.querySelector(`.fl[data-arrow="${command}"]`), "is-lit", LIT_MS, timers);
+    /* Alex's arrows are not on the page while the panel keeps to your row. */
+    const arrows = moves.lit.map((command) => element.querySelector(`.fl[data-arrow="${command}"]`)).filter(Boolean);
+    for (const arrow of arrows) flash(arrow, "is-lit", LIT_MS, timers);
     for (const name of moves.wake) flash(shells[name].element, "is-waking", LIT_MS, timers);
     if (!reducedMotion) move(element, shells, moves, before, timers);
   }
@@ -275,6 +277,7 @@ const ZonePanel = (function () {
     let drawn = null;
     let last = null;
     let crew = false;
+    let alone = false;
 
     /* Two stations while the level has a teammate, else the row of four. */
     function arrange(withCrew) {
@@ -307,13 +310,23 @@ const ZonePanel = (function () {
     return {
       element,
 
+      /* Keeps to your row of four even with a teammate (the black box view), or gives the two
+         stations back. */
+      solo(on) {
+        alone = on;
+        if (!last) return;
+        arrange(Boolean(last.crew) && !alone);
+        draw(last);
+        drawn = JSON.stringify(last);
+      },
+
       update(observation) {
         const zones = Zones.read(observation);
         const text = JSON.stringify(zones);
         const before = places(element);
         const moves = last && Zones.moves(last, zones, Typed.gitCommands(observation.commands), Typed.failedGitCommands(observation.commands));
         last = zones;
-        arrange(Boolean(zones.crew));
+        arrange(Boolean(zones.crew) && !alone);
         if (text !== drawn) draw(zones);
         drawn = text;
         if (moves) animate(element, shells, moves, before, { reducedMotion, timers });

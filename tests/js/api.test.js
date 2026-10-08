@@ -284,6 +284,7 @@ test("a level must say the view it opens on and the views already born, from the
   const banded = gameApi({ ...REPLIES, "/api/level": { ...record("level"), views_seen: ["station", "crew", "band", "tape"] } }).game;
   assert.deepEqual((await banded.level("x")).views_seen, ["station", "crew", "band", "tape"]);
   await refused("/api/level", (level) => (level.view = "tape"), (game) => game.level("x"));
+  await refused("/api/level", (level) => delete level.tape, (game) => game.level("x"));
   for (const view of ["station", "crew", "history", "sides", "blackbox", "board", "focus"]) {
     const { game } = gameApi({ ...REPLIES, "/api/level": { ...record("level"), view } });
     assert.equal((await game.level("x")).view, view);

@@ -114,6 +114,7 @@ const createGameApi = (function () {
     scene_seen: flag,
     view: VIEW,
     views_seen: list(SEEN),
+    tape: flag,
     card: nullable(CARD),
     challenge: flag,
     briefing: BLOCKS,

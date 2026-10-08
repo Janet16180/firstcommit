@@ -7,7 +7,7 @@ const { createClock, fakeServer, httpError, installBrowser, load, record, settle
 
 const document = installBrowser({ reducedMotion: true });
 const { LevelScreen, createGameApi } = load(
-  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "view-tabs.js", "strip.js", "sides.js", "births.js", "level-screen.js"],
+  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "view-tabs.js", "strip.js", "sides.js", "tape.js", "births.js", "level-screen.js"],
   ["LevelScreen", "createGameApi"],
 );
 
@@ -897,5 +897,60 @@ test("the black box keeps the zones on stage, framing what Git keeps, and is bor
   assert.deepEqual(marked(run), [{ view: "blackbox" }]);
   assert.deepEqual(tabs(run), ["station", "history", "blackbox"]);
   assert.equal(chosen(run), "blackbox");
+  run.view.dispose();
+});
+
+/* A level that shows the tape, opening on `view` with `seen` born; `observe` replies to each look. */
+function taped(view, seen, observe = () => quiet()) {
+  return screen({ replies: { "/api/level": { ...seenLevel(), view, views_seen: seen, tape: true }, "/api/observe": observe } });
+}
+
+test("a level that does not show the tape has none, even on history with the tape born", async () => {
+  const run = viewing("history", ["station", "history", "tape"]);
+  await settle();
+  assert.equal(run.q(".tape").hidden, true);
+  run.view.dispose();
+});
+
+test("in a level that shows it, the tape runs under history and the black box, and leaves with your station", async () => {
+  const run = taped("history", ["station", "history", "blackbox", "tape"], () => record("observation"));
+  await settle();
+  assert.equal(run.q(".tape").hidden, false);
+  assert.equal(run.all(".tape-tick").length, record("observation").reflog.length);
+  run.q('.view-tab[data-view="blackbox"]').click();
+  assert.equal(run.q(".tape").hidden, false);
+  run.q('.view-tab[data-view="station"]').click();
+  assert.equal(run.q(".tape").hidden, true);
+  run.view.dispose();
+});
+
+test("the tape is born on the level's first move of HEAD: it appears in place, Rama says so, and the game is told", async () => {
+  const moved = { ...record("observation"), reflog: [{ old: record("observation").reflog[0].new, new: record("observation").reflog[1].new, message: "reset: moving to HEAD~1" }, ...record("observation").reflog] };
+  let looks = 0;
+  const run = taped("history", ["station", "history", "blackbox"], () => ((looks += 1) === 1 ? record("observation") : moved));
+  await settle();
+  assert.equal(run.q(".tape").hidden, true);
+  await run.clock.advance(1500);
+  assert.equal(run.q(".tape").hidden, false);
+  assert.equal(said(run), "The flight recorder keeps a tape: every move of HEAD, even to capsules no label holds.");
+  assert.equal(shown(run), "history");
+  assert.deepEqual(marked(run), []);
+  await run.clock.advance(2600);
+  assert.deepEqual(marked(run), [{ view: "tape" }]);
+  assert.deepEqual(tabs(run), ["station", "history", "blackbox"]);
+  run.view.dispose();
+});
+
+test("in a crew level the black box keeps to your row, framed, and Alex goes into the band above it", async () => {
+  const run = viewing("blackbox", ["station", "crew", "history", "blackbox", "band"], { "/api/observe": crewQuiet() });
+  await settle();
+  assert.equal(shown(run), "blackbox");
+  assert.equal(run.q(".station"), null);
+  assert.ok(run.q(".viz-kept"));
+  assert.equal(run.q(".strip.is-band").hidden, false);
+  assert.equal(yours(run).hidden, true);
+  run.q('.view-tab[data-view="crew"]').click();
+  assert.ok(run.q(".station.is-mirror"));
+  assert.equal(run.q(".strip.is-band").hidden, true);
   run.view.dispose();
 });

@@ -11,12 +11,13 @@
  * ready(view, reading)   whether the stage, as Zones.read reads it, has something to show the
  *                        birth with: history waits for your vault to hold commits, the band for
  *                        a teammate, two sides for a file in conflict; the black box is born as
- *                        its level opens.
+ *                        its level opens; the tape, in place, once HEAD has `moved` in the level.
  * play(view, {sky, show, say, reducedMotion, timers})
  *                        a promise that resolves once the birth is over; show(view) puts a view on
  *                        the stage ("fold" is your station with the strip above it, "flatten" the
- *                        crew view with the band above it), say(text) gives Rama the line. Timed
- *                        on `timers` (window unless given).
+ *                        crew view with the band above it), say(text) gives Rama the line; a
+ *                        stage with no view (the tape's) plays in place. Timed on `timers` (window
+ *                        unless given).
  */
 
 /* global Strings */
@@ -34,6 +35,7 @@ const ViewBirth = (function () {
     band: [{ view: "flatten", motion: "art-birth-flatten", line: "views.born.band" }],
     sides: [{ view: "sides", motion: "art-birth-book", line: "views.born.sides" }],
     blackbox: [{ view: "blackbox", motion: "art-birth-boundary", line: "views.born.blackbox" }],
+    tape: [{ view: null, motion: "art-birth-tape", line: "views.born.tape" }],
   };
 
   const has = (view) => Object.hasOwn(STAGES, view);
@@ -43,6 +45,7 @@ const ViewBirth = (function () {
     band: (reading) => reading.crew !== null,
     sides: (reading) => reading.workshop.some((file) => file.state === "conflicted"),
     blackbox: () => true,
+    tape: (reading) => reading.moved,
   };
 
   const ready = (view, reading) => READY[view](reading);
@@ -51,7 +54,7 @@ const ViewBirth = (function () {
     const wait = (ms) => new Promise((resolve) => timers.setTimeout(resolve, ms));
     sky.style.setProperty("--art-birth", `${BIRTH_MS}ms`);
     for (const stage of STAGES[view]) {
-      show(stage.view);
+      if (stage.view) show(stage.view);
       say(t(stage.line));
       if (!reducedMotion) sky.classList.add(stage.motion);
       await wait(reducedMotion ? STILL_MS : BIRTH_MS);

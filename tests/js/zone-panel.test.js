@@ -376,3 +376,33 @@ test("the places Git keeps, the dock, the vault and the mothership, are grouped 
   assert.equal(zone(panel, "workshop").closest(".viz-kept"), null);
   assert.deepEqual(texts(panel.element, ".z-head h3"), ["Workshop", "Cargo dock", "Vault", "Mothership"]);
 });
+
+test("with a teammate, the panel can keep to your row of four, the black box group in it, and give the stations back", () => {
+  const panel = ZonePanel.create();
+  panel.update(crewObservation());
+  panel.solo(true);
+  assert.equal(panel.element.querySelector(".station"), null);
+  assert.ok(!panel.element.classList.contains("is-crew"));
+  assert.deepEqual([...panel.element.querySelectorAll(".viz-kept .zone")].map((node) => node.dataset.zone), ["dock", "vault", "remote"]);
+  assert.ok(zone(panel, "vault").querySelector(".cap"));
+  panel.update(crewObservation());
+  assert.equal(panel.element.querySelector(".station"), null);
+  panel.solo(false);
+  assert.deepEqual([...panel.element.querySelectorAll(".station")].map((node) => node.dataset.station), ["you", "alex"]);
+});
+
+test("keeping to your row, the panel lets Alex's push go by without the arrows it does not show", () => {
+  const panel = ZonePanel.create({ reducedMotion: true, timers: createClock() });
+  const before = crewObservation();
+  panel.update(before);
+  panel.solo(true);
+  const tip = before.teammate.commits[0];
+  const pushed = { ...tip, hash: "f".repeat(40), short: "fffffff", parents: [tip.hash], subject: "Alex's fix" };
+  const after = structuredClone(before);
+  after.teammate.commits = [pushed, ...after.teammate.commits];
+  after.teammate.refs = after.teammate.refs.map((ref) => (ref.target === tip.hash ? { ...ref, target: pushed.hash } : ref));
+  after.github.commits = [pushed, ...after.github.commits];
+  after.github.refs = after.github.refs.map((ref) => (ref.target === tip.hash ? { ...ref, target: pushed.hash } : ref));
+  panel.update(after);
+  assert.ok(keyed(zone(panel, "remote"), `remote:${pushed.hash}`));
+});
