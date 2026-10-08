@@ -186,3 +186,11 @@ test("dev mode's list sits padded in its panel, its levels without list numbers,
   assert.match(rule(".dev"), /padding: 20px 24px;/);
   assert.match(rule(".dev-levels"), /list-style: none;/);
 });
+
+test("the field guide over a level is a large dialog that scrolls within itself, over the dimmed level", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.match(rule(".guide-overlay"), /width: min\(1180px, calc\(100vw - 32px\)\);/);
+  assert.match(rule(".guide-overlay"), /max-height: calc\(100vh - 48px\);/);
+  assert.match(rule(".guide-overlay"), /overflow-y: auto;/);
+  assert.match(rule(".guide-overlay::backdrop"), /background:/);
+});

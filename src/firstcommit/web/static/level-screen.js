@@ -23,11 +23,11 @@
  * ended from the command line or another tab), 0 that the server did not answer. Anything else is a
  * bug and is left to surface. Needs dom.js, strings.js, markup.js, art-sprites.js, progress.js,
  * poll.js, zones.js, zone-panel.js, mission.js, comms.js, completion.js, scene.js, moment-layer.js,
- * view-tabs.js, strip.js, sides.js, tape.js and births.js.
+ * view-tabs.js, strip.js, sides.js, tape.js, births.js and field-guide.js (with its art and text).
  * Defines one global, LevelScreen.
  */
 
-/* global Dom, Strings, ArtSprites, Progress, Polling, Zones, ZonePanel, Mission, Comms, Completion, ScenePlayer, MomentLayer, ViewTabs, Strip, Sides, Tape, ViewBirth */
+/* global Dom, Strings, ArtSprites, Progress, Polling, Zones, ZonePanel, Mission, Comms, Completion, ScenePlayer, MomentLayer, ViewTabs, Strip, Sides, Tape, ViewBirth, FieldGuide */
 /* exported LevelScreen */
 
 const LevelScreen = (function () {
@@ -58,6 +58,7 @@ const LevelScreen = (function () {
     ui.stars = el("span", { class: "hud-stars" });
     ui.intro = el("button", { type: "button", class: "btn intro", hidden: true, "aria-label": t("level.introTip"), onclick: () => scene(screen) }, ArtSprites.icon("replay"), el("span", { class: "lbl" }, t("level.intro")));
     ui.restart = el("button", { type: "button", class: "btn restart", disabled: true, onclick: () => restart(screen) }, ArtSprites.icon("restart"), el("span", { class: "lbl" }, t("level.restart")));
+    ui.guide = el("button", { type: "button", class: "btn guide-open", onclick: () => openGuide(screen) }, el("span", { class: "lbl" }, t("level.guide")));
     ui.solve = el("button", { type: "button", class: "btn solve", hidden: true, title: t("level.solveTip"), onclick: () => solve(screen) }, el("span", { class: "lbl" }, t("level.solve")));
     return el("header", { class: "hud" },
       el("a", { class: "btn", href: "#/", "aria-label": t("level.mapTip") }, ArtSprites.icon("back"), el("span", { class: "lbl" }, t("level.map"))),
@@ -65,6 +66,7 @@ const LevelScreen = (function () {
       ui.commands,
       ui.stars,
       ui.intro,
+      ui.guide,
       ui.solve,
       ui.restart,
     );
@@ -355,6 +357,21 @@ const LevelScreen = (function () {
     else screen.ui.comms.say(t(SAY.ended), "warn");
   }
 
+  /* The field guide over the level, in a modal dialog: the level, its watch and its terminal
+     session carry on under it, and Escape or its close button returns to them as they were. */
+  function openGuide(screen) {
+    if (screen.guide) return;
+    const dialog = el("dialog", { class: "guide-overlay", "aria-label": t("level.guide") });
+    dialog.append(FieldGuide.create(screen.ctx, { onClose: () => dialog.close() }).element);
+    dialog.addEventListener("close", () => {
+      dialog.remove();
+      screen.guide = null;
+    });
+    screen.ctx.page.body.append(dialog);
+    dialog.showModal();
+    screen.guide = dialog;
+  }
+
   /* Waits until `done()` holds, looking every POLL_MS on the screen's timers, for at most `ms`;
      says whether it came to hold. */
   async function until(screen, done, ms) {
@@ -567,7 +584,7 @@ const LevelScreen = (function () {
   /* ctx: game, status(), refresh(), reload() (shows this screen again), sound, timers, page,
      reducedMotion, terminal ({attach(host), detach(), type(text), run(line)}). */
   function create(ctx, levelId) {
-    const screen = { ctx, levelId, level: null, state: null, number: "", shownStars: null, view: "station", seen: [], crew: false, births: [], bearing: false, taped: false, firstMove: null, held: false, metNote: false, mission: null, poller: null, finished: false, offline: false, attached: false, disposed: false, ui: {} };
+    const screen = { ctx, levelId, level: null, state: null, number: "", shownStars: null, view: "station", seen: [], crew: false, births: [], bearing: false, taped: false, firstMove: null, guide: null, held: false, metNote: false, mission: null, poller: null, finished: false, offline: false, attached: false, disposed: false, ui: {} };
     screen.element = el("div", { class: "level-screen" });
     layout(screen);
     load(screen);
@@ -577,6 +594,7 @@ const LevelScreen = (function () {
       dispose() {
         screen.disposed = true;
         stop(screen);
+        if (screen.guide) screen.guide.close();
         if (screen.attached) ctx.terminal.detach();
       },
     };

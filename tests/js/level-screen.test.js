@@ -7,7 +7,7 @@ const { createClock, fakeServer, httpError, installBrowser, load, record, settle
 
 const document = installBrowser({ reducedMotion: true });
 const { LevelScreen, createGameApi } = load(
-  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "view-tabs.js", "strip.js", "sides.js", "tape.js", "births.js", "level-screen.js"],
+  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "view-tabs.js", "strip.js", "sides.js", "tape.js", "births.js", "art-infographics.js", "infographic-text.js", "field-guide.js", "level-screen.js"],
   ["LevelScreen", "createGameApi"],
 );
 
@@ -1009,4 +1009,39 @@ test("Solve ends with the level's own question, answered from the solution", asy
   await settle();
   assert.deepEqual(run.server.calls.filter((call) => call.path === "/api/check" && !call.body.auto).map((call) => call.body), [{ answer: "Robin", auto: false }]);
   run.view.dispose();
+});
+
+test("the head opens the field guide over the level, and closing it leaves the level, its terminal and its watch as they were", async () => {
+  const run = screen();
+  await settle();
+  const before = run.routes().length;
+  run.q(".hud .guide-open").click();
+  const overlay = document.querySelector("dialog.guide-overlay");
+  assert.ok(overlay.open);
+  assert.ok(overlay.querySelector(".field-guide h1"));
+  assert.equal(overlay.querySelector('a[href="#/"]'), null);
+  await run.clock.advance(1500);
+  assert.ok(run.routes().length > before);
+  overlay.querySelector(".guide-close").click();
+  assert.equal(document.querySelector("dialog.guide-overlay"), null);
+  assert.equal(run.seen.detached, 0);
+  assert.ok(run.q(".hud"));
+  run.view.dispose();
+});
+
+test("Escape closes the field guide like its close button", async () => {
+  const run = screen();
+  await settle();
+  run.q(".hud .guide-open").click();
+  document.querySelector("dialog.guide-overlay").close();
+  assert.equal(document.querySelector("dialog.guide-overlay"), null);
+  run.view.dispose();
+});
+
+test("leaving the level takes an open field guide with it", async () => {
+  const run = screen();
+  await settle();
+  run.q(".hud .guide-open").click();
+  run.view.dispose();
+  assert.equal(document.querySelector("dialog.guide-overlay"), null);
 });
