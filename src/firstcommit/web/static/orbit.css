@@ -579,6 +579,88 @@ pre.code code {
   white-space: nowrap;
 }
 
+/* The station strip: each zone folded into one card, in the zone's colour. */
+.strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.strip-card {
+  --zc: var(--z-wd);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 8px;
+  padding: 6px 8px;
+  text-align: left;
+  background: color-mix(in srgb, var(--zc) 11%, var(--panel));
+  color: var(--ink);
+  border: 3px solid var(--zc);
+  cursor: pointer;
+}
+
+.strip-card[data-zone="dock"] {
+  --zc: var(--z-st);
+}
+
+.strip-card[data-zone="vault"] {
+  --zc: var(--z-va);
+}
+
+.strip-card[data-zone="remote"] {
+  --zc: var(--z-re);
+}
+
+.strip-card.is-off {
+  opacity: 0.55;
+}
+
+.strip-name {
+  font: 700 0.85rem var(--f-ui);
+}
+
+.strip-count {
+  font: 1rem var(--f-term);
+}
+
+.strip-items {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.strip-file {
+  font: 0.95rem var(--f-term);
+  padding: 0 4px;
+  border: 2px solid var(--edge);
+  background: var(--panel);
+}
+
+.strip-tag {
+  margin-left: 4px;
+  font-size: 0.8rem;
+  color: var(--s-mod);
+}
+
+.strip-capsule {
+  width: 14px;
+  height: 14px;
+  background: var(--z-va);
+  border: 2px solid var(--edge);
+}
+
+.strip-capsule[data-author="alex"] {
+  background: var(--z-re);
+}
+
+.strip-more {
+  font: 0.9rem var(--f-term);
+  color: var(--ink-soft);
+}
+
 /* The row of views over the stage: the chosen view's tab joins the stage below it. */
 .view-tabs {
   display: flex;
