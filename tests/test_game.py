@@ -1188,7 +1188,7 @@ def test_observing_an_unchanged_lab_does_not_rewrite_the_observation(sample_leve
 @pytest.mark.usefixtures("fake_insight")
 def test_observing_a_lab_with_a_stand_in_github_snapshots_it_too(sample_level: runner.Level, game_home: Path) -> None:
     game.start(sample_level.id)
-    github = game_home / "labs" / "cargo-sample" / "github" / "project.git"
+    github = kit.Lab(game_home / "labs" / "cargo-sample").github
     github.mkdir(parents=True)
     first = game.observe()
     assert first["github"] is not None and first["github"]["exists"] is True

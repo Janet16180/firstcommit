@@ -47,7 +47,7 @@ LOG = r"(cd project && )?git log\b"
 BRANCHES = r"(cd project && )?git branch( -a| --all| -r| --remotes)\b"
 
 BRIEFING = """
-You join Outpost 3 today. Its repository is on the mothership, at `github/project.git` from the
+You join Outpost 3 today. Its repository is on the mothership, at `github.com/moonbase/project.git` from the
 folder your terminal opens in. Get your own copy, and find out how much of the outpost's history
 came with it.
 
@@ -56,10 +56,10 @@ counted its commits, and you have listed its branches with `git branch -a`.
 """
 
 HINTS = [
-    "`git clone` takes the address and makes a folder named after it: `git clone github/project.git` makes `project`.",
+    "`git clone` takes the address and makes a folder named after it: `git clone github.com/moonbase/project.git` makes `project`.",
     "Go into the clone first: `cd project && git log --oneline` prints one line per commit.",
     "`git branch -a` lists your branches and the remote's, such as `remotes/origin/main`.",
-    "Every line, in order; the answer is the number of lines the log prints:\n\n    $ git clone github/project.git\n    $ cd project && git log --oneline\n    $ git branch -a",
+    "Every line, in order; the answer is the number of lines the log prints:\n\n    $ git clone github.com/moonbase/project.git\n    $ cd project && git log --oneline\n    $ git branch -a",
 ]
 
 DEBRIEF = """
@@ -75,13 +75,13 @@ At work, the first thing you do on a team is clone its repository, with the addr
 
 Commands to keep:
 
-    $ git clone github/project.git   # copy a repository and its whole history
-    $ git log --oneline              # one line per commit, with its labels
-    $ git branch -a                  # your branches, and the remote's
+    $ git clone github.com/moonbase/project.git   # copy a repository and its whole history
+    $ git log --oneline                           # one line per commit, with its labels
+    $ git branch -a                               # your branches, and the remote's
 """
 
-NOT_CLONED = "There is no clone in `project` yet. Copy the outpost: `git clone github/project.git`."
-NOT_A_CLONE = "`project` is not a clone of the outpost: its `origin` is not `github/project.git`. Leave the level and start it again."
+NOT_CLONED = "There is no clone in `project` yet. Copy the outpost: `git clone github.com/moonbase/project.git`."
+NOT_A_CLONE = "`project` is not a clone of the outpost: its `origin` is not `github.com/moonbase/project.git`. Leave the level and start it again."
 CLONED = "`project` is your clone of the outpost."
 READ = "That is the outpost's whole history, newest commit first, with the labels on it."
 NOT_READ = "Read your clone's history: `cd project && git log --oneline`."
@@ -90,7 +90,7 @@ WRONG_COUNT = "That is not how many commits your clone holds. `git log --oneline
 NOT_A_NUMBER = "Type the number of commits, such as 3."
 LISTED = "`main` is your branch; `remotes/origin/main` is where the mothership's `main` was when you cloned."
 NOT_LISTED = "List the branches, the remote's too: `git branch -a`."
-NOT_CLONED_YET = "There is no repository here yet. Clone the outpost first: `git clone github/project.git`."
+NOT_CLONED_YET = "There is no repository here yet. Clone the outpost first: `git clone github.com/moonbase/project.git`."
 OUTSIDE_THE_CLONE = "Your terminal is not in the clone yet: it is in the folder that holds it. Go into it: `cd project`."
 
 REACTIONS = [
@@ -218,7 +218,7 @@ def watch_branches(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verd
 
 
 QUEST: list[kit.Step] = [
-    kit.WatchStep(id="clone", text="Clone the outpost's repository.", command="git clone github/project.git", watch=watch_clone),
+    kit.WatchStep(id="clone", text="Clone the outpost's repository.", command="git clone github.com/moonbase/project.git", watch=watch_clone),
     kit.WatchStep(id="log", text="Go into your clone and read its history.", command="cd project && git log --oneline", watch=watch_log),
     kit.AnswerStep(id="count", text="Count the commits that came with the clone.", question="How many commits does your clone hold?", placeholder="a number", check=counts_the_commits),
     kit.WatchStep(id="branches", text="List the branches, the remote's too.", command="git branch -a", watch=watch_branches),
@@ -304,7 +304,7 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
 
 def clone(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
     """
-    Type ``git clone github/project.git`` in the lab, where the terminal opens.
+    Type ``git clone github.com/moonbase/project.git`` in the lab, where the terminal opens.
 
     Parameters
     ----------
@@ -320,7 +320,7 @@ def clone(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
     str | None
         None: a watch step takes no answer.
     """
-    typed.append(kit.type_line(lab.root, "git clone github/project.git"))
+    typed.append(kit.type_line(lab.root, "git clone github.com/moonbase/project.git"))
     return None
 
 

@@ -122,7 +122,7 @@ uv run firstcommit --help
 - A clone of `lab.github` reaches it by a relative path: right after cloning, run
   `git remote set-url origin <lab.github_url(clone)>` (`kit.setup_playground` does it for the
   playground's two clones). Otherwise git prints the player's absolute folders in push and pull
-  output and writes them into merge commits. `git remote -v` then shows `../github/project.git`:
+  output and writes them into merge commits. `git remote -v` then shows `../github.com/moonbase/project.git`:
   the game's GitHub is a folder next to the player's, and the remote chapter says so.
 - A level with two people on one remote builds them with `kit.setup_playground(lab)` and
   prepares a state with `kit.press(lab, person, button)`, the same real commands the page's

@@ -32,17 +32,20 @@ LIST = r"git remote( -v| --verbose)\b"
 FILES = {"map.txt": "Route: Earth, Moon, Mars\n", "journal.txt": "Day 1: landed without trouble.\n"}
 
 BRIEFING = """
-Your base has two commits, and the mothership is waiting for them at `../github/project.git`.
+Your base has two commits, and the mothership is waiting for them at `../github.com/moonbase/project.git`.
 First, make contact: give that address the name `origin` in your repository.
 
-The mission is done when `origin` names `../github/project.git` and you have listed the remotes
+The mission is done when `origin` names `../github.com/moonbase/project.git` and you have listed the remotes
 with `git remote -v`.
+
+In this game the mothership is a folder next to your project. At work, the same address looks like
+`https://github.com/moonbase/project.git`.
 """
 
 HINTS = [
-    "`git remote add` takes a name, then the address: `git remote add origin ../github/project.git`.",
+    "`git remote add` takes a name, then the address: `git remote add origin ../github.com/moonbase/project.git`.",
     "`git remote -v` lists each remote's name with its address.",
-    "Every line of the mission, in order:\n\n    $ git remote add origin ../github/project.git\n    $ git remote -v",
+    "Every line of the mission, in order:\n\n    $ git remote add origin ../github.com/moonbase/project.git\n    $ git remote -v",
 ]
 
 DEBRIEF = """
@@ -50,32 +53,35 @@ DEBRIEF = """
 Nothing travelled: the mothership is still empty, and your commits are only here. Sending them
 is the next mission.
 
-At work the address is the one GitHub shows for your project, such as
-`https://github.com/<you>/<project>.git`; `origin` is the name everyone uses for it.
+In this game the mothership is a folder next to your project. At work, the same address looks like
+`https://github.com/moonbase/project.git`, the one GitHub shows for the project; `origin` is the
+name everyone uses for it.
 
 Commands to keep:
 
-    $ git remote add origin ../github/project.git   # name the mothership's address
-    $ git remote -v                                 # list the remotes and their addresses
+    $ git remote add origin ../github.com/moonbase/project.git   # name the mothership's address
+    $ git remote -v                                              # list the remotes and their addresses
 """
 
 NO_REPOSITORY = "This folder is no longer a repository: `.git` is gone. Leave the level and start it again to get it back."
-NO_REMOTE = "Your repository knows no remote yet. Name the mothership's address: `git remote add origin ../github/project.git`."
-OTHER_NAME = "The mothership's address has another name. This mission calls it `origin`: `git remote add origin ../github/project.git`."
-WRONG_URL = "`origin` names another address. The mothership is at `../github/project.git`: `git remote set-url origin ../github/project.git` changes it."
+NO_REMOTE = "Your repository knows no remote yet. Name the mothership's address: `git remote add origin ../github.com/moonbase/project.git`."
+OTHER_NAME = "The mothership's address has another name. This mission calls it `origin`: `git remote add origin ../github.com/moonbase/project.git`."
+WRONG_URL = "`origin` names another address. The mothership is at `../github.com/moonbase/project.git`: `git remote set-url origin ../github.com/moonbase/project.git` changes it."
 CONTACT = "`origin` now names the mothership's address."
 LISTED = "`git remote -v` lists `origin` with its address, once for fetching and once for pushing."
 NOT_LISTED = "Now list the remotes with `git remote -v`."
 REMOTE_EXISTS = "`origin` already exists. To change its address, use `git remote set-url origin` and the new address."
+AT_WORK = "In this game the mothership is a folder next to your project. At work, the same address looks like `https://github.com/moonbase/project.git`."
 HTTPS_URL = (
-    "In this game the mothership is a folder next to your base, `../github/project.git`. At work the address "
-    "would start with `https://`; here, `git remote set-url origin ../github/project.git` points it at the mothership."
+    "In this game the mothership is a folder next to your project, `../github.com/moonbase/project.git`. At work, the same address "
+    "looks like `https://github.com/moonbase/project.git`; here, `git remote set-url origin ../github.com/moonbase/project.git` points it back at the mothership."
 )
 
 REACTIONS = [
     kit.ReactionRule(line=r"git remote add origin\b", mood="err", text=REMOTE_EXISTS, outcome="failed", repository=True),
     kit.ReactionRule(line=r"git remote (add|set-url) \S+ (https?|ssh)://", mood="warn", text=HTTPS_URL, outcome="ok"),
     kit.ReactionRule(line=r"git remote (add|set-url) \S+ git@", mood="warn", text=HTTPS_URL, outcome="ok"),
+    kit.ReactionRule(line=r"git remote add\b", mood="info", text=AT_WORK, outcome="ok"),
 ]
 
 GUESS = kit.ChoiceStep(
@@ -146,7 +152,7 @@ def watch_list(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
 
 QUEST: list[kit.Step] = [
     GUESS,
-    kit.WatchStep(id="remote", text="Name the mothership's address `origin`.", command="git remote add origin ../github/project.git", watch=watch_remote),
+    kit.WatchStep(id="remote", text="Name the mothership's address `origin`.", command="git remote add origin ../github.com/moonbase/project.git", watch=watch_remote),
     kit.WatchStep(id="list", text="List the remotes your repository knows.", command="git remote -v", watch=watch_list),
 ]
 
@@ -243,7 +249,7 @@ def guess(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
 
 def add_remote(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
     """
-    Type ``git remote add origin ../github/project.git`` in the project folder.
+    Type ``git remote add origin ../github.com/moonbase/project.git`` in the project folder.
 
     Parameters
     ----------

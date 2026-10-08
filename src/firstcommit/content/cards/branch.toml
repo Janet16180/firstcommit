@@ -12,12 +12,12 @@ along onto the new branch.
 from it. A plain `git push` sends only the branch you are on, to its upstream; a new branch goes
 up by name, and `-u` makes the remote's copy its upstream.
 
-    $ git clone github/project.git   # copy a repository and its whole history
-    $ git branch scout               # a new label on the commit you are on
-    $ git switch scout               # move onto it; the working folder follows
-    $ git switch -c fix-lights       # make a branch and move onto it, edits and all
-    $ git push -u origin scout       # send a branch by name, and track it
-    $ git branch -a                  # your branches, and the remote's
+    $ git clone github.com/moonbase/project.git   # copy a repository and its whole history
+    $ git branch scout                            # a new label on the commit you are on
+    $ git switch scout                            # move onto it; the working folder follows
+    $ git switch -c fix-lights                    # make a branch and move onto it, edits and all
+    $ git push -u origin scout                    # send a branch by name, and track it
+    $ git branch -a                               # your branches, and the remote's
 """
 
 [[card]]

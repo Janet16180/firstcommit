@@ -12,7 +12,7 @@ SCENE = [
 BRIEFING = """
 Un meteorito destruyó la computadora de la Base 7. Sus archivos sobrevivieron en esta carpeta, y
 también `crash-dump.bin`, restos del choque. La nave nodriza espera, vacía, en
-`../github/project.git`.
+`../github.com/moonbase/project.git`.
 
 La misión termina cuando la carpeta sea un repositorio, una cápsula contenga `blueprint.txt` y
 `reactor.cfg` y ninguna cápsula contenga los restos, `origin` apunte a la nave nodriza y el `main`
@@ -22,7 +22,7 @@ de la nave nodriza sea el mismo que el tuyo.
 HINTS = [
     "Son todos los capítulos hasta ahora, en orden: el despegue, el muelle de carga, la bóveda y la nave nodriza.",
     "Primero un repositorio; luego elige la carga por su nombre, séllala, nombra la nave nodriza y lanza.",
-    'Cada línea de la misión, en orden:\n\n    $ git init\n    $ git add blueprint.txt reactor.cfg\n    $ git commit -m "Rebuild Base 7"\n    $ git remote add origin ../github/project.git\n    $ git push -u origin main',
+    'Cada línea de la misión, en orden:\n\n    $ git init\n    $ git add blueprint.txt reactor.cfg\n    $ git commit -m "Rebuild Base 7"\n    $ git remote add origin ../github.com/moonbase/project.git\n    $ git push -u origin main',
 ]
 
 DEBRIEF = """
@@ -48,7 +48,7 @@ SEALED = "Una cápsula contiene el plano y los ajustes del reactor, y ninguna c�
 NOT_SEALED = "Todavía ninguna cápsula contiene a la vez `blueprint.txt` y `reactor.cfg`."
 DEBRIS_SEALED = "`crash-dump.bin` está sellado en una cápsula. Deshacer un commit llega en un capítulo posterior: vuelve a empezar la misión."
 CONTACT = "`origin` apunta a la nave nodriza."
-NO_CONTACT = "Tu repositorio todavía no conoce la nave nodriza como `origin` en `../github/project.git`."
+NO_CONTACT = "Tu repositorio todavía no conoce la nave nodriza como `origin` en `../github.com/moonbase/project.git`."
 LAUNCHED = "El `main` de la nave nodriza es el mismo que el tuyo."
 NOT_LAUNCHED = "El `main` de la nave nodriza todavía no es el mismo que el tuyo."
 DEBRIS_LAUNCHED = "Los restos están en la nave nodriza, en una cápsula de su `main`. Vuelve a empezar la misión."

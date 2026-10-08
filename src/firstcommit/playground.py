@@ -106,7 +106,7 @@ def setup_github(lab: Lab) -> None:
     subprocess.CalledProcessError
         If git fails, for example because GitHub already exists.
     """
-    lab.github.parent.mkdir(exist_ok=True)
+    lab.github.parent.mkdir(parents=True, exist_ok=True)
     gitcmd.output(lab.github.parent, "init", "--quiet", "--bare", "--initial-branch=main", lab.github.name)
     gitcmd.output(lab.github, "config", "core.logAllRefUpdates", "true")
 

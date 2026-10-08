@@ -815,3 +815,18 @@ Run in the image (`firstcommit:latest`, git 2.43.0):
 `kit.reaches_github` reads an address as git does (a relative path from the clone's top folder,
 `file://` stripped) and is *re-checked* by `tests/test_kit.py`; 4-1, 4-5 and 5-1 use it, with their
 level tests trying the other spellings.
+
+## The mothership at `../github.com/moonbase/project.git` (added 2026-10-08)
+
+The user's decision: the stand-in GitHub lives at `<lab>/github.com/moonbase/project.git`, so the
+address the player types reads like GitHub's, and Rama's line in 4-1 says "At work, the same
+address looks like https://github.com/moonbase/project.git". E48 to E101 above ran with the old
+`../github/project.git`; only the folder's name changed.
+
+| Tag | What ran | Result |
+|---|---|---|
+| E106 | on the host (git 2.43.0): `git init --bare github.com/moonbase/project.git` in an empty folder; from there `git clone github.com/moonbase/project.git`; in a sibling repository `git remote add origin ../github.com/moonbase/project.git`, `git remote -v`, `git push -u origin main`; then `git pull` and `git fetch` in the clone | `init` makes the leading folders; the clone is the folder `project`, its `origin` the absolute path (as with any local clone); `-v` shows `../github.com/moonbase/project.git` as typed; push, pull and fetch exit 0 |
+
+| Claim | Says | Evidence |
+|---|---|---|
+| 4-1 brief, `AT_WORK` reaction, debrief, `HTTPS_URL` | the mothership is a folder next to your project; at work the same address looks like `https://github.com/moonbase/project.git` | E106; GitHub's clone addresses have the form `https://github.com/OWNER/REPOSITORY.git` (docs.github.com, "About remote repositories") |

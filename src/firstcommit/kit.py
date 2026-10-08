@@ -434,8 +434,8 @@ def reaches_github(lab: Lab, clone: Path, url: str) -> bool:
     """
     Tell whether a remote's address leads to the lab's stand-in GitHub, however it is written.
 
-    Git reads a relative path from the clone's top folder, so ``../github/project.git``,
-    ``./../github/project.git``, a trailing slash, the absolute path and a ``file://`` address all
+    Git reads a relative path from the clone's top folder, so ``../github.com/moonbase/project.git``,
+    ``./../github.com/moonbase/project.git``, a trailing slash, the absolute path and a ``file://`` address all
     reach the same repository.
 
     Parameters

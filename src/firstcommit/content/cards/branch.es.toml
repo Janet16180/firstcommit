@@ -12,12 +12,12 @@ commit mueve solo el branch donde estás. Los cambios sin commit no pertenecen a
 noticias de él. Un `git push` simple envía solo el branch donde estás, a su upstream; un branch
 nuevo sube por su nombre, y `-u` convierte la copia del remoto en su upstream.
 
-    $ git clone github/project.git   # copia un repositorio con toda su historia
-    $ git branch scout               # una etiqueta nueva sobre el commit donde estás
-    $ git switch scout               # ve a ella; la carpeta de trabajo la sigue
-    $ git switch -c fix-lights       # crea un branch y ve a él, con tus cambios
-    $ git push -u origin scout       # envía un branch por su nombre y lo sigue
-    $ git branch -a                  # tus branches y los del remoto
+    $ git clone github.com/moonbase/project.git   # copia un repositorio con toda su historia
+    $ git branch scout                            # una etiqueta nueva sobre el commit donde estás
+    $ git switch scout                            # ve a ella; la carpeta de trabajo la sigue
+    $ git switch -c fix-lights                    # crea un branch y ve a él, con tus cambios
+    $ git push -u origin scout                    # envía un branch por su nombre y lo sigue
+    $ git branch -a                               # tus branches y los del remoto
 """
 
 [[card]]

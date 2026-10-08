@@ -7,7 +7,7 @@ PATH = ["git push -u origin main", 'echo "Stop: Phobos" >> route.txt', "git push
 
 def test_the_level_starts_with_origin_set_and_an_empty_mothership() -> None:
     lab, _ = started(level)
-    assert kit.git(lab.project, "remote", "get-url", "origin").strip() == "../github/project.git"
+    assert kit.git(lab.project, "remote", "get-url", "origin").strip() == "../github.com/moonbase/project.git"
     assert kit.snapshot(lab.github)["refs"] == []
 
 

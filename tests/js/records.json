@@ -1246,7 +1246,7 @@
    "button": "push",
    "command": "git push",
    "status": 0,
-   "output": "Enumerating objects: 5, done.\nCounting objects: 100% (5/5), done.\nDelta compression using up to 8 threads\nCompressing objects: 100% (2/2), done.\nWriting objects: 100% (3/3), 294 bytes | 294.00 KiB/s, done.\nTotal 3 (delta 0), reused 0 (delta 0), pack-reused 0\nTo ../../github/project.git\n   de4c885..21e6785  main -> main\n"
+   "output": "Enumerating objects: 5, done.\nCounting objects: 100% (5/5), done.\nDelta compression using up to 8 threads\nCompressing objects: 100% (2/2), done.\nWriting objects: 100% (3/3), 294 bytes | 294.00 KiB/s, done.\nTotal 3 (delta 0), reused 0 (delta 0), pack-reused 0\nTo ../../github.com/moonbase/project.git\n   de4c885..21e6785  main -> main\n"
   },
   "before": {
    "level": "cargo-sample",
@@ -1278,7 +1278,7 @@
      }
     ],
     "pushed": [],
-    "remotes": [],
+    "remotes": [{"name": "origin", "url": "../github.com/moonbase/project.git"}],
     "files": [
      {
       "path": "README.md",
@@ -1380,7 +1380,7 @@
      }
     ],
     "pushed": [],
-    "remotes": [],
+    "remotes": [{"name": "origin", "url": "../../github.com/moonbase/project.git"}],
     "files": [
      {
       "path": "README.md",
@@ -1564,7 +1564,7 @@
      }
     ],
     "pushed": [],
-    "remotes": [],
+    "remotes": [{"name": "origin", "url": "../github.com/moonbase/project.git"}],
     "files": [
      {
       "path": "README.md",
@@ -1678,7 +1678,7 @@
     "pushed": [
      "origin/main"
     ],
-    "remotes": [],
+    "remotes": [{"name": "origin", "url": "../../github.com/moonbase/project.git"}],
     "files": [
      {
       "path": "README.md",

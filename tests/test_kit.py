@@ -175,7 +175,7 @@ def test_a_typing_action_types_its_line_in_the_project_and_gives_no_answer(tmp_p
 
 @pytest.mark.parametrize(
     "url",
-    ["../github/project.git", "../github/project.git/", "./../github/project.git", "../github/./project.git", "{github}", "{github}/", "file://{github}"],
+    ["../github.com/moonbase/project.git", "../github.com/moonbase/project.git/", "./../github.com/moonbase/project.git", "../github.com/./moonbase/project.git", "{github}", "{github}/", "file://{github}"],
 )
 def test_every_address_that_reaches_the_stand_in_github_counts(tmp_path: Path, url: str) -> None:
     room = lab.Lab(tmp_path)
@@ -184,7 +184,7 @@ def test_every_address_that_reaches_the_stand_in_github_counts(tmp_path: Path, u
     assert kit.reaches_github(room, room.project, url.format(github=room.github))
 
 
-@pytest.mark.parametrize("url", ["", "github/project.git", "../github/other.git", "https://github.com/base/project.git", "git@github.com:base/project.git", "../github"])
+@pytest.mark.parametrize("url", ["", "github.com/moonbase/project.git", "../github.com/moonbase/other.git", "https://github.com/moonbase/project.git", "git@github.com:moonbase/project.git", "../github.com"])
 def test_an_address_elsewhere_does_not_count(tmp_path: Path, url: str) -> None:
     room = lab.Lab(tmp_path)
     room.github.mkdir(parents=True)

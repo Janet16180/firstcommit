@@ -28,8 +28,11 @@ CATALOGUE = frozenset(
 """Every button of the one-person playgrounds the table was recorded in, by id."""
 TWO_PEOPLE_CATALOGUE = frozenset(button for button in CATALOGUE if button.partition(":")[0] not in ("init", "clone", "delete"))
 """The buttons of the two-person playground the table was recorded in."""
-REWORDED = {"records its author's name and email": "records who made it: a name and an email"}
-"""Words the game changed after the table was recorded: git names the committer, not the author, when a merge commit has no identity."""
+REWORDED = {"records its author's name and email": "records who made it: a name and an email", "../github/project.git": "../github.com/moonbase/project.git"}
+"""
+Words the game changed after the table was recorded: git names the committer, not the author, when
+a merge commit has no identity; the mothership moved to ``../github.com/moonbase/project.git``.
+"""
 OWN_FILES = {"you": "you.txt", "alex": "alex.txt"}
 """The file each person's edit and add acted on in the two-person playground the table was recorded in, whose ids named no file."""
 
@@ -98,15 +101,15 @@ def explained(case: dict[str, Any], buttons: frozenset[str] | None = None) -> ex
 def test_every_recorded_press_gets_its_recorded_explanation_and_fix(key: str) -> None:
     case = PRESSED[key]
     expected = case["explanation"]
-    text = expected["text"]
+    text, fix_line = expected["text"], case["fix"]["line"]
     for old, new in REWORDED.items():
-        text = text.replace(old, new)
+        text, fix_line = text.replace(old, new), fix_line.replace(old, new)
     assert explained(case) == {
         "tag": expected["tag"],
         "file": expected["file"],
         "text": text,
         "fix": case["fix"]["button"],
-        "fix_line": case["fix"]["line"],
+        "fix_line": fix_line,
     }
 
 

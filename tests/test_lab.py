@@ -8,7 +8,7 @@ from firstcommit.lab import Lab
 def test_a_lab_keeps_the_project_and_the_stand_in_github_under_its_root(tmp_path: Path) -> None:
     lab = Lab(tmp_path)
     assert lab.project == tmp_path / "project"
-    assert lab.github == tmp_path / "github" / "project.git"
+    assert lab.github == tmp_path / "github.com" / "moonbase" / "project.git"
 
 
 def test_a_lab_keeps_the_teammates_clone_apart_from_the_players_project(tmp_path: Path) -> None:
@@ -19,8 +19,8 @@ def test_a_lab_keeps_the_teammates_clone_apart_from_the_players_project(tmp_path
 
 def test_a_clone_reaches_the_stand_in_github_by_a_path_from_its_own_top_folder(tmp_path: Path) -> None:
     lab = Lab(tmp_path)
-    assert lab.github_url(lab.project) == "../github/project.git"
-    assert lab.github_url(lab.teammate) == "../../github/project.git"
+    assert lab.github_url(lab.project) == "../github.com/moonbase/project.git"
+    assert lab.github_url(lab.teammate) == "../../github.com/moonbase/project.git"
 
 
 def test_a_folder_outside_the_lab_has_no_url_for_its_github(tmp_path: Path) -> None:

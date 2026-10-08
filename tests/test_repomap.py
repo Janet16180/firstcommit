@@ -1020,8 +1020,8 @@ def test_a_commit_is_reachable_while_some_ref_leads_to_it(tmp_path: Path) -> Non
 
 
 def test_the_remotes_are_listed_by_name_with_their_addresses_as_configured(tmp_path: Path) -> None:
-    shell(tmp_path, "git init -q && git remote add origin ../github/project.git && git remote add alex.backup /srv/alex.git")
-    assert repomap.snapshot(tmp_path)["remotes"] == [{"name": "alex.backup", "url": "/srv/alex.git"}, {"name": "origin", "url": "../github/project.git"}]
+    shell(tmp_path, "git init -q && git remote add origin ../github.com/moonbase/project.git && git remote add alex.backup /srv/alex.git")
+    assert repomap.snapshot(tmp_path)["remotes"] == [{"name": "alex.backup", "url": "/srv/alex.git"}, {"name": "origin", "url": "../github.com/moonbase/project.git"}]
 
 
 def test_a_repository_with_no_remote_lists_none(tmp_path: Path) -> None:

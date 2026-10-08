@@ -10,17 +10,20 @@ SCENE = [
 ]
 
 BRIEFING = """
-Tu base tiene dos commits, y la nave nodriza los espera en `../github/project.git`. Primero,
+Tu base tiene dos commits, y la nave nodriza los espera en `../github.com/moonbase/project.git`. Primero,
 establece contacto: dale a esa dirección el nombre `origin` en tu repositorio.
 
-La misión termina cuando `origin` apunte a `../github/project.git` y hayas listado los remotos
+La misión termina cuando `origin` apunte a `../github.com/moonbase/project.git` y hayas listado los remotos
 con `git remote -v`.
+
+En este juego la nave nodriza es una carpeta junto a tu proyecto. En el trabajo, la misma dirección se ve
+así: `https://github.com/moonbase/project.git`.
 """
 
 HINTS = [
-    "`git remote add` recibe un nombre y luego la dirección: `git remote add origin ../github/project.git`.",
+    "`git remote add` recibe un nombre y luego la dirección: `git remote add origin ../github.com/moonbase/project.git`.",
     "`git remote -v` lista el nombre de cada remoto con su dirección.",
-    "Cada línea de la misión, en orden:\n\n    $ git remote add origin ../github/project.git\n    $ git remote -v",
+    "Cada línea de la misión, en orden:\n\n    $ git remote add origin ../github.com/moonbase/project.git\n    $ git remote -v",
 ]
 
 DEBRIEF = """
@@ -28,13 +31,14 @@ DEBRIEF = """
 tu repositorio. No viajó nada: la nave nodriza sigue vacía, y tus commits solo están aquí.
 Enviarlos es la próxima misión.
 
-En el trabajo, la dirección es la que GitHub muestra para tu proyecto, como
-`https://github.com/<you>/<project>.git`; `origin` es el nombre que todo el mundo usa para ella.
+En este juego la nave nodriza es una carpeta junto a tu proyecto. En el trabajo, la misma dirección
+se ve así: `https://github.com/moonbase/project.git`, la que GitHub muestra para el proyecto;
+`origin` es el nombre que todo el mundo usa para ella.
 
 Comandos para recordar:
 
-    $ git remote add origin ../github/project.git   # da nombre a la dirección de la nave nodriza
-    $ git remote -v                                 # lista los remotos y sus direcciones
+    $ git remote add origin ../github.com/moonbase/project.git   # da nombre a la dirección de la nave nodriza
+    $ git remote -v                                              # lista los remotos y sus direcciones
 """
 
 STEPS = {
@@ -49,14 +53,15 @@ STEPS = {
 }
 
 NO_REPOSITORY = "Esta carpeta ya no es un repositorio: `.git` desapareció. Sal del nivel y vuelve a empezarlo para recuperarlo."
-NO_REMOTE = "Tu repositorio todavía no conoce ningún remoto. Da nombre a la dirección de la nave nodriza: `git remote add origin ../github/project.git`."
-OTHER_NAME = "La dirección de la nave nodriza tiene otro nombre. En esta misión se llama `origin`: `git remote add origin ../github/project.git`."
-WRONG_URL = "`origin` apunta a otra dirección. La nave nodriza está en `../github/project.git`: `git remote set-url origin ../github/project.git` la cambia."
+NO_REMOTE = "Tu repositorio todavía no conoce ningún remoto. Da nombre a la dirección de la nave nodriza: `git remote add origin ../github.com/moonbase/project.git`."
+OTHER_NAME = "La dirección de la nave nodriza tiene otro nombre. En esta misión se llama `origin`: `git remote add origin ../github.com/moonbase/project.git`."
+WRONG_URL = "`origin` apunta a otra dirección. La nave nodriza está en `../github.com/moonbase/project.git`: `git remote set-url origin ../github.com/moonbase/project.git` la cambia."
 CONTACT = "`origin` ya es el nombre de la dirección de la nave nodriza."
 LISTED = "`git remote -v` lista `origin` con su dirección, una vez para traer y otra para enviar."
 NOT_LISTED = "Ahora lista los remotos con `git remote -v`."
 REMOTE_EXISTS = "`origin` ya existe. Para cambiar su dirección, usa `git remote set-url origin` con la nueva dirección."
+AT_WORK = "En este juego la nave nodriza es una carpeta junto a tu proyecto. En el trabajo, la misma dirección se ve así: `https://github.com/moonbase/project.git`."
 HTTPS_URL = (
-    "En este juego la nave nodriza es una carpeta junto a tu base, `../github/project.git`. En el trabajo la dirección "
-    "empezaría por `https://`; aquí, `git remote set-url origin ../github/project.git` la apunta a la nave nodriza."
+    "En este juego la nave nodriza es una carpeta junto a tu proyecto, `../github.com/moonbase/project.git`. En el trabajo, la misma dirección "
+    "se ve así: `https://github.com/moonbase/project.git`; aquí, `git remote set-url origin ../github.com/moonbase/project.git` la vuelve a apuntar a la nave nodriza."
 )

@@ -31,7 +31,7 @@ class Lab:
     @property
     def github(self) -> Path:
         """The bare repository that plays GitHub."""
-        return self.root / "github" / "project.git"
+        return self.root / "github.com" / "moonbase" / "project.git"
 
     @property
     def teammate(self) -> Path:
@@ -57,7 +57,7 @@ class Lab:
         Returns
         -------
         str
-            The relative path, such as ``../github/project.git``.
+            The relative path, such as ``../github.com/moonbase/project.git``.
 
         Raises
         ------

@@ -2,7 +2,7 @@ from firstcommit import kit, runner
 from firstcommit.levels import mothership_base7 as level
 from level_helpers import started, typed_in, watch
 
-REBUILD = ["git init", "git add blueprint.txt reactor.cfg", 'git commit -m "Rebuild Base 7"', "git remote add origin ../github/project.git", "git push -u origin main"]
+REBUILD = ["git init", "git add blueprint.txt reactor.cfg", 'git commit -m "Rebuild Base 7"', "git remote add origin ../github.com/moonbase/project.git", "git push -u origin main"]
 
 
 def test_base_7_starts_as_a_plain_folder_with_the_debris_next_to_an_empty_mothership() -> None:
@@ -38,7 +38,7 @@ def test_sealing_the_debris_is_lost_here_and_on_the_mothership() -> None:
 
 def test_the_goals_tick_in_any_order() -> None:
     lab, state = started(level)
-    typed = typed_in(lab, "git init", "git remote add origin ../github/project.git")
+    typed = typed_in(lab, "git init", "git remote add origin ../github.com/moonbase/project.git")
     assert watch(level, "contact").watch(lab, state, typed).solved
     assert not watch(level, "capsule").watch(lab, state, typed).solved
 

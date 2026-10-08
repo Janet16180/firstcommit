@@ -13,16 +13,16 @@ traído con fetch. `git fetch` pregunta al remoto y mueve `origin/main`; `git pu
 luego trae las noticias a tu branch. Un push se rechaza cuando el remoto tiene commits que tu
 branch no tiene; no se pierde nada, y un pull junta primero las dos historias.
 
-    $ git remote add origin ../github/project.git   # da nombre a la dirección del remoto
-    $ git remote -v                                 # lista los remotos
-    $ git push -u origin main                       # primer push de main, con su upstream
-    $ git fetch                                     # pide noticias al remoto
-    $ git pull                                      # hace fetch y trae las noticias a tu branch
+    $ git remote add origin ../github.com/moonbase/project.git   # da nombre a la dirección del remoto
+    $ git remote -v                                              # lista los remotos
+    $ git push -u origin main                                    # primer push de main, con su upstream
+    $ git fetch                                                  # pide noticias al remoto
+    $ git pull                                                   # hace fetch y trae las noticias a tu branch
 """
 
 [[card]]
 id = "mothership-remote-add"
-prompt = "Ejecutas `git remote add origin ../github/project.git`. ¿Qué llega al remoto?"
+prompt = "Ejecutas `git remote add origin ../github.com/moonbase/project.git`. ¿Qué llega al remoto?"
 correct = "Nada: solo da nombre a la dirección"
 wrong = [
     "Todos los commits de tu repositorio, de golpe",

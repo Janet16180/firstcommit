@@ -13,18 +13,18 @@ here. The first push of a branch with `-u` also makes `origin/main` its upstream
 your branch. A push is refused when the remote has commits your branch does not have; nothing is
 lost, and a pull joins the two histories first.
 
-    $ git remote add origin ../github/project.git   # name the remote's address
-    $ git remote -v                                 # list the remotes
-    $ git push -u origin main                       # first push of main, with its upstream
-    $ git fetch                                     # ask the remote for news
-    $ git pull                                      # fetch, then bring the news into your branch
+    $ git remote add origin ../github.com/moonbase/project.git   # name the remote's address
+    $ git remote -v                                              # list the remotes
+    $ git push -u origin main                                    # first push of main, with its upstream
+    $ git fetch                                                  # ask the remote for news
+    $ git pull                                                   # fetch, then bring the news into your branch
 """
 
 [[card]]
 id = "mothership-remote-add"
 kind = "choice"
 level = 1
-prompt = "You run `git remote add origin ../github/project.git`. What reaches the remote?"
+prompt = "You run `git remote add origin ../github.com/moonbase/project.git`. What reaches the remote?"
 correct = "Nothing: it only names the address"
 wrong = [
     "Every commit of your repository, at once",

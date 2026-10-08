@@ -174,7 +174,7 @@ def test_a_push_after_the_other_persons_push_is_refused_in_gits_words_and_moves_
         [press] = presses(lab, "you", "push")
         assert press["status"] == 1
         assert " ! [rejected]        main -> main (fetch first)\n" in press["output"]
-        assert "error: failed to push some refs to '../github/project.git'\n" in press["output"]
+        assert "error: failed to push some refs to '../github.com/moonbase/project.git'\n" in press["output"]
         assert views(lab) == before
 
 
@@ -200,7 +200,7 @@ def test_pull_without_rebase_shows_only_while_the_branches_have_diverged() -> No
         assert bar(lab, "you")["pull-no-rebase"]["line"] == "git pull --no-rebase --no-edit"
         [merge, push] = presses(lab, "you", "pull-no-rebase", "push")
         assert (merge["status"], push["status"]) == (0, 0), merge["output"] + push["output"]
-        assert repomap.snapshot(lab.project)["commits"][0]["subject"] == "Merge branch 'main' of ../github/project"
+        assert repomap.snapshot(lab.project)["commits"][0]["subject"] == "Merge branch 'main' of ../github.com/moonbase/project"
         assert "pull-no-rebase" not in bar(lab, "you")
 
 
@@ -236,7 +236,7 @@ def test_keeping_one_side_adding_it_and_committing_finishes_the_merge_with_gits_
         assert [keep["status"], add["status"], commit["status"], push["status"]] == [0, 0, 0, 0], commit["output"]
         assert (lab.project / NOTES).read_text() == "Notes\nAlex: line 2\n"
         head = repomap.snapshot(lab.project)["commits"][0]
-        assert (head["subject"], len(head["parents"])) == ("Merge branch 'main' of ../github/project", 2)
+        assert (head["subject"], len(head["parents"])) == ("Merge branch 'main' of ../github.com/moonbase/project", 2)
         assert "merge-abort" not in bar(lab, "you")
 
 

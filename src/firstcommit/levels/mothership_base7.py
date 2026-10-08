@@ -35,7 +35,7 @@ DEBRIS_BYTES = bytes(range(256)) * 16
 
 BRIEFING = """
 A meteorite destroyed Base 7's computer. Its files survived in this folder, and so did
-`crash-dump.bin`, debris from the crash. The mothership waits, empty, at `../github/project.git`.
+`crash-dump.bin`, debris from the crash. The mothership waits, empty, at `../github.com/moonbase/project.git`.
 
 The mission is done when the folder is a repository, a capsule holds `blueprint.txt` and
 `reactor.cfg` and no capsule holds the debris, `origin` names the mothership, and the mothership's
@@ -45,7 +45,7 @@ The mission is done when the folder is a repository, a capsule holds `blueprint.
 HINTS = [
     "This is every chapter so far, in order: lift-off, the cargo dock, the vault and the mothership.",
     "A repository first; then choose the cargo by name, seal it, name the mothership and launch.",
-    'Every line of the mission, in order:\n\n    $ git init\n    $ git add blueprint.txt reactor.cfg\n    $ git commit -m "Rebuild Base 7"\n    $ git remote add origin ../github/project.git\n    $ git push -u origin main',
+    'Every line of the mission, in order:\n\n    $ git init\n    $ git add blueprint.txt reactor.cfg\n    $ git commit -m "Rebuild Base 7"\n    $ git remote add origin ../github.com/moonbase/project.git\n    $ git push -u origin main',
 ]
 
 DEBRIEF = """
@@ -62,7 +62,7 @@ SEALED = "A capsule holds the blueprint and the reactor settings, and no capsule
 NOT_SEALED = "No capsule holds both `blueprint.txt` and `reactor.cfg` yet."
 DEBRIS_SEALED = "`crash-dump.bin` is sealed in a capsule. Taking a commit back comes in a later chapter: start the mission again."
 CONTACT = "`origin` names the mothership."
-NO_CONTACT = "Your repository does not know the mothership as `origin` at `../github/project.git` yet."
+NO_CONTACT = "Your repository does not know the mothership as `origin` at `../github.com/moonbase/project.git` yet."
 LAUNCHED = "The mothership's `main` is the same as yours."
 NOT_LAUNCHED = "The mothership's `main` is not the same as yours yet."
 DEBRIS_LAUNCHED = "The debris is on the mothership, in a capsule of its `main`. Start the mission again."
@@ -266,7 +266,7 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
 QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]] = {
     "repository": kit.typing("git init"),
     "capsule": kit.typing(f"git add {' '.join(CARGO)} && git commit -m 'Rebuild Base 7'"),
-    "contact": kit.typing("git remote add origin ../github/project.git"),
+    "contact": kit.typing("git remote add origin ../github.com/moonbase/project.git"),
     "launch": kit.typing("git push -u origin main"),
 }
 """The player's part of each goal, for the level tests (AUTHORING.md section 3.6); the game never reads it."""
