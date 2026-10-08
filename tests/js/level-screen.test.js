@@ -480,6 +480,25 @@ test("work lost while a goal is watched stops the level and shows the failure wi
   run.view.dispose();
 });
 
+test("when the work is lost, the goal's note goes: the lost panel and Rama say what happened", async () => {
+  let ticks = 0;
+  const reply = () => {
+    ticks += 1;
+    return ticks === 1 ? { ...record("step"), step: 2, correct: false, message: para("Unstage the keys.") } : { ...record("step"), step: 2, correct: false, lost: true, message: para("The keys are in a commit now.") };
+  };
+  const run = screen({ active: { ...record("active"), step: 2 }, replies: { "/api/step": reply } });
+  try {
+    await settle();
+    assert.match(run.q(".goal.is-current .goal-note").textContent, /Unstage the keys/);
+    await run.clock.advance(2000);
+    await settle();
+    assert.ok(run.q(".dock.is-lost"));
+    assert.equal(Boolean(run.q(".goal-note")), false);
+  } finally {
+    run.view.dispose();
+  }
+});
+
 test("work lost for good stops the level and shows the failure with Retry, even from an automatic check", async () => {
   const lost = { ...record("check_unsolved"), lost: true, message: para("The edit is gone for good.") };
   const run = screen({ active: { ...record("active"), step: 3, auto_check: true }, replies: { "/api/check": lost } });

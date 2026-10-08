@@ -166,10 +166,11 @@ const LevelScreen = (function () {
   }
 
   /* The player's work is gone for good: the play stops and the game says why, in the dock's
-     place, with Retry. */
+     place, with Retry; a goal's note from before the loss would only contradict it. */
   function lostWork(screen, message) {
     if (screen.finished) return;
     stop(screen);
+    screen.mission.clearNote();
     screen.ctx.sound.play("wrong");
     const panel = Completion.lost({ message, onRetry: () => restart(screen) });
     screen.element.append(panel);
