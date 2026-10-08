@@ -7,7 +7,7 @@ const { installBrowser, load } = require("./load");
 installBrowser();
 const { PastPanel, Strings } = load(["dom.js", "strings.js", "past-panel.js"], ["PastPanel", "Strings"]);
 
-const read = (more = {}) => ({ rev: "ccf9485", hash: "ccf94851a5a48045b27ccbc2005bd27b840515f7", subject: "Log the fuel after Phobos", path: "fuel.txt", printed: "fuel: 60%\n", ...more });
+const read = (more = {}) => ({ rev: "ccf9485", commit: "ccf94851a5a48045b27ccbc2005bd27b840515f7", subject: "Log the fuel after Phobos", text: "fuel: 60%\n", ...more });
 
 function panel(file, past) {
   const made = PastPanel.create();
@@ -31,7 +31,7 @@ test("a read file shows exactly what git printed, titled with its commit, and sa
 });
 
 test("a commit without the file says the file is not there", () => {
-  const run = panel("keys.txt", read({ rev: "HEAD", subject: "Remove the keys", path: "keys.txt", printed: null }));
+  const run = panel("keys.txt", read({ rev: "HEAD", subject: "Remove the keys", text: null }));
   assert.equal(run.q(".past-title").textContent, "keys.txt as it was in \"Remove the keys\"");
   assert.equal(run.q(".past-missing").textContent, "Not there: this commit has no keys.txt.");
   assert.equal(run.q(".past-text"), null);
@@ -39,7 +39,7 @@ test("a commit without the file says the file is not there", () => {
 });
 
 test("a commit git does not know is named as typed", () => {
-  const run = panel("fuel.txt", read({ rev: "zzz", hash: null, subject: null, printed: null }));
+  const run = panel("fuel.txt", read({ rev: "zzz", commit: null, subject: null, text: null }));
   assert.equal(run.q(".past-title").textContent, "fuel.txt as it was then");
   assert.equal(run.q(".past-missing").textContent, "Git knows no commit called zzz.");
 });
