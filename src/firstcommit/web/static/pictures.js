@@ -10,8 +10,9 @@
  * rings its commit on the chain. Needs dom.js, strings.js, chain.js, folder-row.js, desk.js,
  * move-log.js, target-chart.js, git-graph.js and sides.js. Defines one global, Pictures.
  *
- * create(spec, {challenge, timers}) {element, update(observation, {look, passed})}: spec is
- *   LevelView.pictures; in a challenge the move log marks nothing. Once the step spec.whatif.after
+ * create(spec, {challenge, target, timers}) {element, update(observation, {look, passed})}: spec
+ *   is LevelView.pictures, target LevelView.target (the captain's chart, beside the chain); in a
+ *   challenge the move log marks nothing. Once the step spec.whatif.after
  *   has passed, the chain plays its WHAT IF for as long as a what-if moment, timed on `timers`
  *   (window unless given), then rewinds. `look` lists what the current
  *   goal rings (subjects, or "HEAD"); `passed` the ids of the goals met, for the desk's outline.
@@ -30,10 +31,10 @@ const Pictures = (function () {
 
   /* Each picture: its elements in a slot, and how it redraws from a tick (`now`). */
   const BUILD = {
-    chain(spec) {
+    chain(spec, { target }) {
       const chain = Chain.create();
       const folder = spec.folder ? FolderRow.create() : null;
-      const chart = spec.target ? TargetChart.create() : null;
+      const chart = target ? TargetChart.create() : null;
       const graph = spec.graph ? GitGraph.create() : null;
       const beside = chart || graph ? el("div", { class: chart ? "pictures-pair" : "pictures-pair is-stack" }, chain.element, chart && chart.element) : null;
       return {
@@ -43,7 +44,7 @@ const Pictures = (function () {
           chain.update({ project, github: observation.github, teammate: observation.teammate, ghosts: observation.ghosts, show: { mothership: spec.mothership, alex: spec.alex, ghosts }, look: rings, walk: walking, whatif: whatif ? spec.whatif.without : null });
           chain.element.classList.toggle("is-rewind", rewound);
           if (folder) folder.update(project.files);
-          if (chart) chart.update(project, spec.target);
+          if (chart) chart.update(project, target);
           if (!graph || !observation.graph) return;
           if (!graph.element.parentNode) beside.append(graph.element);
           graph.update(observation.graph, rings);
@@ -73,9 +74,9 @@ const Pictures = (function () {
     },
   };
 
-  function create(spec, { challenge = false, timers = window } = {}) {
+  function create(spec, { challenge = false, target = null, timers = window } = {}) {
     const state = { picked: null, walking: false, blinking: false, reflogRead: false, whatif: "waiting", last: null };
-    const options = { challenge, onPick: (hash) => repick(hash) };
+    const options = { challenge, target, onPick: (hash) => repick(hash) };
     const large = BUILD[spec.large](spec, options);
     const small = spec.small ? BUILD[spec.small](spec, options) : null;
     const element = el("div", { class: "pictures" },

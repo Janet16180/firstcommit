@@ -8,7 +8,7 @@ installBrowser();
 const { Pictures } = load(["dom.js", "strings.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "target-chart.js", "git-graph.js", "sides.js", "pictures.js"], ["Pictures"]);
 
 /* A level's pictures as LevelView.pictures gives them: the chain alone unless a test says more. */
-const spec = (more = {}) => ({ large: "chain", small: null, folder: false, mothership: false, alex: false, ghosts: false, kept: null, lines: [], graph: false, target: null, whatif: null, ...more });
+const spec = (more = {}) => ({ large: "chain", small: null, folder: false, mothership: false, alex: false, ghosts: false, kept: null, lines: [], graph: false, whatif: null, ...more });
 /* The sample observation, with the fields the pictures read; `typed` are this tick's lines. */
 const observed = (typed = [], more = {}) => ({ ...record("observation"), commands: typed.map((line) => ({ line, status: 0 })), texts: [], graph: null, ...more });
 const shown = (pictures) => [".pictures-large", ".pictures-small"].flatMap((slot) => [...pictures.element.querySelector(slot).children]).map((node) => node.className.split(" ")[0]);
@@ -76,7 +76,8 @@ test("the goal's look rings its commit on the chain", () => {
 
 test("a challenge's chart stands beside the chain", () => {
   const subject = record("observation").project.commits[0].subject;
-  const pictures = made({ target: { commits: [{ id: "tip", parents: [], subject }], names: { main: "tip" }, head: "main" } });
+  const pictures = Pictures.create(spec(), { target: { commits: [{ id: "tip", parents: [], subject }], names: { main: "tip" }, head: "main" } });
+  pictures.update(observed(), { look: [], passed: [] });
   assert.ok(pictures.element.querySelector(".pictures-pair .target"));
   assert.equal(pictures.element.querySelectorAll(".pictures-pair .chain").length, 2);
 });

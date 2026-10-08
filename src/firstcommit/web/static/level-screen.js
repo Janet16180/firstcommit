@@ -23,11 +23,13 @@
  * ended from the command line or another tab), 0 that the server did not answer. Anything else is a
  * bug and is left to surface. Needs dom.js, strings.js, markup.js, art-sprites.js, progress.js,
  * poll.js, zones.js, zone-panel.js, mission.js, comms.js, completion.js, scene.js, moment-layer.js,
- * view-tabs.js, strip.js, sides.js, tape.js, births.js and field-guide.js (with its art and text).
+ * view-tabs.js, strip.js, sides.js, tape.js, births.js, pictures.js (with the pictures it draws)
+ * and field-guide.js (with its art and text). A level with teaching pictures shows them in place
+ * of the zones, the strips and the tab row.
  * Defines one global, LevelScreen.
  */
 
-/* global Dom, Strings, ArtSprites, Progress, Polling, Zones, ZonePanel, Mission, Comms, Completion, ScenePlayer, MomentLayer, ViewTabs, Strip, Sides, Tape, ViewBirth, FieldGuide */
+/* global Dom, Strings, ArtSprites, Progress, Polling, Zones, ZonePanel, Mission, Comms, Completion, ScenePlayer, MomentLayer, ViewTabs, Strip, Sides, Tape, ViewBirth, FieldGuide, Pictures */
 /* exported LevelScreen */
 
 const LevelScreen = (function () {
@@ -137,6 +139,18 @@ const LevelScreen = (function () {
 
   /* The view the level opens on: its main view, or your station when the page does not draw it yet. */
   const opening = (screen) => (DRAWN.includes(screen.level.view) ? screen.level.view : home(screen));
+
+  /* A level with teaching pictures shows them in place of the zones, the strips and the tab row. */
+  function openPictures(screen) {
+    const { ctx, ui, level } = screen;
+    screen.pictures = Pictures.create(level.pictures, { challenge: level.challenge, target: level.target, timers: ctx.timers });
+    ui.tabs.element.hidden = true;
+    ui.sky.dataset.view = "pictures";
+    ui.sky.replaceChildren(screen.pictures.element, ui.moments.element);
+  }
+
+  /* What the current goal asks to look at. */
+  const looked = ({ level, state }) => (state.step < level.steps.length ? level.steps[state.step].look : []);
 
   /* The births the level waits for, in order: its main view's, the crew band the first time a
      crew level opens on another view (once the crew view was born), and the tape in a level that
@@ -504,6 +518,10 @@ const LevelScreen = (function () {
      whether a teammate is on it; returns the stage as Zones.read reads it, and whether HEAD moved. */
   function stage(screen, observation) {
     const { ui } = screen;
+    if (screen.pictures) {
+      screen.pictures.update(observation, { look: looked(screen), passed: screen.state.done });
+      return { moved: false };
+    }
     ui.zones.update(observation);
     const reading = Zones.read(observation);
     ui.strip.update(reading);
@@ -567,7 +585,8 @@ const LevelScreen = (function () {
     ui.solve.hidden = !ctx.status().dev;
     ui.restart.disabled = false;
     drawHud(screen);
-    openView(screen);
+    if (level.pictures) openPictures(screen);
+    else openView(screen);
     screen.mission = Mission.create({
       level,
       active,
@@ -617,7 +636,7 @@ const LevelScreen = (function () {
   /* ctx: game, status(), refresh(), reload() (shows this screen again), sound, timers, page,
      reducedMotion, terminal ({attach(host), detach(), type(text), run(line)}). */
   function create(ctx, levelId) {
-    const screen = { ctx, levelId, level: null, state: null, number: "", shownStars: null, view: "station", seen: [], crew: false, births: [], bearing: false, taped: false, firstMove: null, guide: null, toldLines: 0, held: false, metNote: false, mission: null, poller: null, finished: false, offline: false, attached: false, disposed: false, ui: {} };
+    const screen = { ctx, levelId, level: null, state: null, number: "", shownStars: null, view: "station", seen: [], crew: false, births: [], bearing: false, taped: false, firstMove: null, guide: null, pictures: null, toldLines: 0, held: false, metNote: false, mission: null, poller: null, finished: false, offline: false, attached: false, disposed: false, ui: {} };
     screen.element = el("div", { class: "level-screen" });
     layout(screen);
     load(screen);
