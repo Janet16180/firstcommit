@@ -253,14 +253,12 @@ def check(lab: kit.Lab, state: kit.State, answer: str | None, typed: kit.Typed) 
     Returns
     -------
     kit.Verdict
-        The staging area's verdict first (it says when the work is lost), then the rule's, then the look's.
+        The first unmet of the staging area's verdict (it says when the work is lost), the rule's
+        and the look's; the staging area's when all are met, as it names the finished state.
     """
-    verdict = watch_stage(lab, state, typed)
-    if verdict.solved:
-        verdict = watch_ignore(lab, state, typed)
-    if verdict.solved:
-        verdict = watch_status(lab, state, typed)
-    return verdict
+    staged = watch_stage(lab, state, typed)
+    unmet = [verdict for verdict in (staged, watch_ignore(lab, state, typed), watch_status(lab, state, typed)) if not verdict.solved]
+    return unmet[0] if unmet else staged
 
 
 def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:

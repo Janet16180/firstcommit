@@ -17,7 +17,7 @@ def test_the_simulator_floods_the_working_folder_once_the_page_has_looked() -> N
 def test_looking_ignoring_the_output_and_staging_the_rule_and_the_change_solves_the_level() -> None:
     lab, state = arrived(level)
     typed = typed_in(lab, "git status", IGNORE, "git add .gitignore nav.cfg")
-    assert level.check(lab, state, None, typed).solved
+    assert level.check(lab, state, None, typed) == kit.Verdict(True, level.STAGED)
     snap = kit.snapshot(lab.project)
     assert kit.staged(snap) == [".gitignore", "nav.cfg"]
     assert all(file["ignored"] for file in snap["files"] if file["path"].startswith("sim-output/"))

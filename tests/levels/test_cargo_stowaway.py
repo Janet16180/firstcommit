@@ -15,7 +15,7 @@ def test_the_night_shifts_add_stages_the_keys_once_the_page_has_looked() -> None
 def test_looking_then_restoring_the_keys_from_the_staging_area_solves_the_level() -> None:
     lab, state = arrived(level)
     typed = typed_in(lab, "git status", "git restore --staged keys.txt")
-    assert level.check(lab, state, None, typed).solved
+    assert level.check(lab, state, None, typed) == kit.Verdict(True, level.UNSTAGED)
     snap = kit.snapshot(lab.project)
     assert (kit.staged(snap), kit.untracked(snap)) == (["engine.cfg", "route.txt"], ["keys.txt"])
 

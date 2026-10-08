@@ -226,10 +226,11 @@ def check(lab: kit.Lab, state: kit.State, answer: str | None, typed: kit.Typed) 
     Returns
     -------
     kit.Verdict
-        The areas' verdict first, then the look's.
+        The areas' verdict first, then the look's; the areas' when both are met, as it names the finished state.
     """
     areas = watch_unstage(lab, state, typed)
-    return watch_status(lab, state, typed) if areas.solved else areas
+    looked = watch_status(lab, state, typed)
+    return looked if areas.solved and not looked.solved else areas
 
 
 def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
