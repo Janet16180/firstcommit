@@ -15,7 +15,8 @@
  * (your row of four alone, for the black box view) and "chart" (history: your row alone, where
  * the vault and the mothership line up row by row over both histories, Zones.rows, so a commit
  * both hold sits level on each side, marked shared and tethered across; in a level with no
- * mothership, the vault alone). The chart says a paused operation over itself, and a key under
+ * mothership, the vault alone), and "stack" (the same chart with its two sides stacked, so each
+ * side starts at its top: no gaps and no tethers, the shared commits still marked). The chart says a paused operation over itself, and a key under
  * it says what a tether means once one is drawn.
  * Needs dom.js, strings.js, places.js, art-sprites.js, typed.js and zones.js. Defines one global, ZonePanel.
  */
@@ -133,9 +134,11 @@ const ZonePanel = (function () {
   function contents(zones, mode) {
     const stations = Boolean(zones.crew) && mode === "zones";
     const height = stations ? CREW_ROW : ROW;
-    const rows = mode === "chart" ? Zones.rows(zones.vault || [], zones.remote) : null;
-    const yours = rows && { rows, shared: hashes(zones.remote) };
-    const theirs = rows && { rows, shared: hashes(zones.vault) };
+    const level = mode === "chart";
+    const charted = level || mode === "stack";
+    const rowsOf = (list) => (level ? Zones.rows(zones.vault || [], zones.remote) : Zones.rows(list || [], null));
+    const yours = charted && { rows: rowsOf(zones.vault), shared: hashes(zones.remote) };
+    const theirs = charted && { rows: rowsOf(zones.remote), shared: hashes(zones.vault) };
     return {
       ...stationContents(zones, "", height, yours),
       remote: zones.remote && { count: zones.remote.length, nodes: zones.remote.length ? [capsules("remote", zones.remote, height, theirs)] : [] },
@@ -315,7 +318,8 @@ const ZonePanel = (function () {
 
     /* Two stations while the level has a teammate and the mode shows them, else the row of four. */
     function arrange(withCrew) {
-      element.classList.toggle("is-chart", mode === "chart");
+      element.classList.toggle("is-chart", mode === "chart" || mode === "stack");
+      element.classList.toggle("is-stack", mode === "stack");
       if (withCrew === crew) return;
       const next = withCrew ? crewRows(shells) : soloRow(shells);
       row.replaceWith(next);
@@ -335,7 +339,7 @@ const ZonePanel = (function () {
     /* A merge (or rebase, cherry-pick...) stopped halfway is said over the vault, or over the
        whole chart, so the chart's two sides keep their rows level. */
     function sayPaused(operation) {
-      const chart = mode === "chart";
+      const chart = mode === "chart" || mode === "stack";
       shells.vault.operation.hidden = !operation || chart;
       shells.vault.operation.replaceChildren(...pausedLine(operation));
       banner.hidden = !operation || !chart;
@@ -366,8 +370,8 @@ const ZonePanel = (function () {
     return {
       element,
 
-      /* "zones", "row" (your row of four even with a teammate: the black box view) or "chart"
-         (history). */
+      /* "zones", "row" (your row of four even with a teammate: the black box view), "chart"
+         (history, its two sides level) or "stack" (history, its two sides stacked). */
       mode(name) {
         mode = name;
         if (!last) return;

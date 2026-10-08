@@ -50,6 +50,11 @@ const LevelScreen = (function () {
   /* How the zones lay out on each view (zone-panel.js): history is the chart, the black box keeps
      to your row; every other view shows the zones as they are. */
   const ZONE_MODES = { history: "chart", blackbox: "row" };
+  /* Where history's two sides stack (orbit.css): in the wide column, and on a narrow screen. */
+  const STACKED = ["(min-width: 1100px)", "(max-width: 760px)"];
+  const stacked = () => STACKED.some((query) => window.matchMedia(query).matches);
+  /* The zones' mode for a view: history stacks its two sides where the screen stacks them. */
+  const zoneMode = (view) => (view === "history" && stacked() ? "stack" : ZONE_MODES[view] || "zones");
   /* Solve's pace: how often it looks, and how long a line or a goal may take before it gives up. */
   const POLL_MS = 300;
   const LINE_MS = 20000;
@@ -121,7 +126,7 @@ const LevelScreen = (function () {
     const boxed = view === "blackbox";
     ui.strip.element.hidden = !folded;
     ui.band.element.hidden = !(folded || boxed) || !screen.crew;
-    ui.zones.mode(ZONE_MODES[view] || "zones");
+    ui.zones.mode(zoneMode(view));
     ui.sides.element.hidden = view !== "sides";
     ui.tape.element.hidden = !screen.taped || !TAPED.includes(view);
     ui.tabs.select(view);
@@ -650,12 +655,17 @@ const LevelScreen = (function () {
     const screen = { ctx, levelId, level: null, state: null, number: "", shownStars: null, view: "station", seen: [], crew: false, births: [], bearing: false, taped: false, firstMove: null, guide: null, pictures: null, toldLines: 0, held: false, metNote: false, mission: null, poller: null, finished: false, offline: false, attached: false, disposed: false, ui: {} };
     screen.element = el("div", { class: "level-screen" });
     layout(screen);
+    /* A screen that crosses a width where history stacks redraws the view it is on. */
+    const widths = STACKED.map((query) => window.matchMedia(query));
+    const restack = () => screen.state && !screen.pictures && show(screen, screen.view);
+    widths.forEach((width) => width.addEventListener("change", restack));
     load(screen);
     return {
       element: screen.element,
 
       dispose() {
         screen.disposed = true;
+        widths.forEach((width) => width.removeEventListener("change", restack));
         stop(screen);
         if (screen.guide) screen.guide.close();
         if (screen.attached) ctx.terminal.detach();

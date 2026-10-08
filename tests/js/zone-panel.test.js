@@ -437,6 +437,21 @@ test("in the chart a commit both sides hold is marked shared on each side and te
   assert.equal(panel.element.querySelectorAll(".cap.is-shared, svg.tethers line").length, 0);
 });
 
+test("stacked, the chart's vault and mothership each start at their top with no gaps, the shared commits still tinted and nothing tethered", () => {
+  const panel = ZonePanel.create();
+  panel.update(crewObservation());
+  panel.mode("stack");
+  assert.ok(panel.element.classList.contains("is-chart"));
+  assert.ok(panel.element.classList.contains("is-stack"));
+  assert.deepEqual(rowsOf(panel, "vault"), ["de4c885"]);
+  assert.deepEqual(rowsOf(panel, "remote"), ["21e6785", "de4c885"]);
+  assert.equal(zone(panel, "vault").querySelectorAll(".cap.is-shared").length, 1);
+  assert.equal(panel.element.querySelectorAll("svg.tethers line").length, 0);
+  panel.mode("chart");
+  assert.ok(!panel.element.classList.contains("is-stack"));
+  assert.deepEqual(rowsOf(panel, "vault"), ["gap", "de4c885"]);
+});
+
 test("the chart says a paused merge over the whole chart, not inside the vault, so both sides' rows stay level", () => {
   const project = { ...record("snapshots").one, operation: "merge", files: [{ ...record("snapshots").one.files[0], conflicted: true, index_change: "modified" }] };
   const panel = ZonePanel.create();

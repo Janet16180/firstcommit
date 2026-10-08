@@ -232,13 +232,12 @@ test("on a wide screen a column picture stands right of the mission and the term
   assert.match(block, /\.stage\.is-column \.views {[^}]*position: sticky;/);
 });
 
-test("in the column, history's vault and mothership stack with push pointing down and pull up, and no tether crosses", () => {
-  const wide = css.slice(css.indexOf("@media (min-width: 1100px)"));
-  const block = wide.slice(0, wide.indexOf("\n}"));
-  assert.match(block, /\.stage\.is-column \.viz\.is-chart \.viz-row {\s*grid-template-columns: minmax\(0, 1fr\);/);
-  assert.match(block, /\.stage\.is-column \.viz\.is-chart \.fl \.art-icon {\s*transform: rotate\(90deg\);/);
-  assert.match(block, /\.stage\.is-column \.viz\.is-chart \.fl\.is-back \.art-icon {\s*transform: rotate\(-90deg\);/);
-  assert.match(block, /\.stage\.is-column \.viz\.is-chart \.tethers,/);
+test("stacked, history's vault and mothership take the whole width, push pointing down and pull up, and no tether crosses", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.match(rule(".viz.is-stack .viz-row"), /grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(rule(".viz.is-stack .fl .art-icon"), /transform: rotate\(90deg\);/);
+  assert.match(rule(".viz.is-stack .fl.is-back .art-icon"), /transform: rotate\(-90deg\);/);
+  assert.match(css, /\n\.viz\.is-stack \.tethers,\n\.viz\.is-stack \.chart-key:not\(\[hidden\]\) {\s*display: none;/);
 });
 
 test("a place's game name is quieter after the real one, and drops on a small card and on a phone", () => {

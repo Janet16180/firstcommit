@@ -1131,3 +1131,23 @@ test("a challenge's chain and chart stay side by side across the top, since they
   assert.ok(!run.q(".stage").classList.contains("is-column"));
   run.view.dispose();
 });
+
+test("where the chart's two sides stack, on a wide screen's column or a narrow screen, history draws them stacked, each from its top", async () => {
+  const wide = global.matchMedia;
+  global.matchMedia = (query) => ({ matches: query.includes("min-width: 1100px") || query.includes("reduce"), addEventListener() {}, removeEventListener() {} });
+  try {
+    const run = viewing("history", ["station", "history"]);
+    await settle();
+    assert.ok(run.q(".viz").classList.contains("is-stack"));
+    run.q('.view-tab[data-view="station"]').click();
+    assert.ok(!run.q(".viz").classList.contains("is-chart"));
+    run.view.dispose();
+  } finally {
+    global.matchMedia = wide;
+  }
+  const between = viewing("history", ["station", "history"]);
+  await settle();
+  assert.ok(between.q(".viz").classList.contains("is-chart"));
+  assert.ok(!between.q(".viz").classList.contains("is-stack"));
+  between.view.dispose();
+});
