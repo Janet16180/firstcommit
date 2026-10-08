@@ -19,6 +19,7 @@ def said(
     staged: bool = False,
     remote: bool = True,
     ignored: bool = False,
+    branch: str | None = "main",
 ) -> str | None:
     """
     Give the mood and text of the rule that speaks for one typed line, or None.
@@ -41,6 +42,8 @@ def said(
         Whether the repository names a remote after it.
     ignored : bool
         Whether the working folder holds files Git ignores after it.
+    branch : str | None
+        The branch the player is on after it, or None on no branch.
 
     Returns
     -------
@@ -48,7 +51,7 @@ def said(
         ``"<mood>: <text>"``, or None when no rule fits.
     """
     command: Command = {"line": line, "status": status}
-    rule = reactions.react(command, kinds, repository, staged, rules, remote=remote, ignored=ignored)
+    rule = reactions.react(command, kinds, repository, staged, rules, remote=remote, ignored=ignored, branch=branch)
     return None if rule is None else f"{rule.mood}: {rule.text}"
 
 
@@ -230,6 +233,13 @@ def test_a_rule_may_ask_whether_the_working_folder_holds_ignored_files_after_the
     rule = ReactionRule(line=r"git status\b", mood="warn", text="Junk.", ignored=False)
     assert said("git status", rules=(rule,), ignored=False) == "warn: Junk."
     assert said("git status", rules=(rule,), ignored=True) is None
+
+
+def test_a_rule_may_ask_which_branch_the_player_is_on_after_the_line() -> None:
+    rule = ReactionRule(line=r"git push\b", mood="warn", text="Main.", branch="main")
+    assert said("git push", rules=(rule,), branch="main") == "warn: Main."
+    assert said("git push", rules=(rule,), branch="fix-lights") is None
+    assert said("git push", rules=(rule,), branch=None) is None
 
 
 def test_a_bare_commit_that_stopped_with_changes_staged_teaches_the_message_option() -> None:

@@ -39,7 +39,7 @@ def test_a_forced_push_drops_alexs_commit_and_rama_warns() -> None:
     lab, state = started(level)
     typed = typed_in(lab, "git push --force")
     rule = reaction(level, typed[0], {"push-received"}, True, False)
-    assert rule is not None and (rule.mood, rule.text) == ("err", level.FORCED)
+    assert rule is not None and (rule.mood, rule.text, rule.moment) == ("err", level.FORCED, "force-break")
     verdict = level.check(lab, state, None, typed)
     assert (verdict.lost, verdict.message) == (True, level.ALEX_DROPPED)
 

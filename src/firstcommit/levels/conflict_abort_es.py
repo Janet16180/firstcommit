@@ -15,6 +15,9 @@ sus propias líneas en los dos, y tu `git pull` se detuvo a mitad de camino, con
 para el lunes en `todo.txt` no tiene commit. Vuelve a donde estabas antes del pull y conserva la
 nota.
 
+Alex, por el comunicador: "Los dos archivos también cambiaron de mi lado, y solo yo sé por qué. No
+adivines mis líneas esta noche. Cancela el merge, y lo respondemos juntos el lunes."
+
 La misión termina cuando hayas mirado con `git status`, no haya un merge en curso, `main` y los
 dos archivos estén como los dejó tu commit, y `todo.txt` todavía tenga tu nota.
 """

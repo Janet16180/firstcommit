@@ -1027,3 +1027,50 @@ def test_the_remotes_are_listed_by_name_with_their_addresses_as_configured(tmp_p
 def test_a_repository_with_no_remote_lists_none(tmp_path: Path) -> None:
     shell(tmp_path, "git init -q")
     assert repomap.snapshot(tmp_path)["remotes"] == []
+
+
+def test_a_merge_conflict_gives_both_sides_and_the_common_version_with_their_branch_and_author(tmp_path: Path) -> None:
+    repo = new_repo(
+        tmp_path,
+        "printf 'bay 2\\n' > dock.txt && git add dock.txt && git commit -q -m base && git switch -q -c scout\n"
+        "printf 'bay 4\\n' > dock.txt && GIT_AUTHOR_NAME=Robin git commit -q -am theirs\n"
+        "git switch -q main && printf 'bay 3\\n' > dock.txt && git commit -q -am ours\n"
+        "git merge -q scout >/dev/null || true\n"
+        "echo edited > dock.txt\n",
+    )
+    assert repomap.conflicts(repo) == [
+        {
+            "path": "dock.txt",
+            "you": {"label": "main", "author": "Alex Kim", "lines": ["bay 3"]},
+            "them": {"label": "scout", "author": "Robin", "lines": ["bay 4"]},
+            "base": ["bay 2"],
+        }
+    ]
+
+
+def test_a_conflict_with_a_pulled_branch_names_the_remote_tracking_branch(tmp_path: Path) -> None:
+    shell(tmp_path, "git init -q --bare hub.git && git clone -q hub.git one 2>/dev/null && git clone -q hub.git two 2>/dev/null")
+    shell(tmp_path / "one", "echo base > a.txt && git add a.txt && git commit -q -m base && git push -q origin HEAD:main 2>/dev/null")
+    shell(tmp_path / "two", "git pull -q origin main 2>/dev/null; echo two > a.txt && git commit -q -am two && git push -q origin HEAD:main 2>/dev/null")
+    shell(tmp_path / "one", "echo one > a.txt && git commit -q -am one && git pull -q --no-rebase origin main >/dev/null 2>&1 || true")
+    [conflict] = repomap.conflicts(tmp_path / "one")
+    assert (conflict["them"]["label"], conflict["them"]["lines"]) == ("origin/main", ["two"])
+
+
+def test_a_side_that_deleted_the_file_has_no_lines_and_a_file_both_added_has_no_base(tmp_path: Path) -> None:
+    repo = new_repo(
+        tmp_path,
+        "echo base > a.txt && git add a.txt && git commit -q -m base && git switch -q -c gone\n"
+        "git rm -q a.txt && echo new > b.txt && git add b.txt && git commit -q -m gone\n"
+        "git switch -q main && echo ours > a.txt && echo mine > b.txt && git add . && git commit -q -m ours\n"
+        "git merge -q gone >/dev/null 2>&1 || true\n",
+    )
+    conflicts = {conflict["path"]: conflict for conflict in repomap.conflicts(repo)}
+    assert conflicts["a.txt"]["them"]["lines"] is None and conflicts["a.txt"]["base"] == ["base"]
+    assert conflicts["b.txt"]["base"] is None and conflicts["b.txt"]["them"]["lines"] == ["new"]
+
+
+def test_without_a_conflict_or_a_repository_there_are_no_conflicts(tmp_path: Path) -> None:
+    assert repomap.conflicts(tmp_path / "nowhere") == []
+    repo = new_repo(tmp_path, "echo a > a.txt && git add a.txt && git commit -q -m a\n")
+    assert repomap.conflicts(repo) == []

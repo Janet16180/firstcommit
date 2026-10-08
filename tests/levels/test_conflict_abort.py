@@ -40,3 +40,7 @@ def test_finishing_the_merge_instead_is_named_and_the_level_offers_to_start_agai
 def test_the_merge_still_paused_is_named() -> None:
     lab, state = arrived(level)
     assert level.check(lab, state, None, typed_in(lab, "git status")).message == level.STILL_PAUSED
+
+
+def test_the_briefing_carries_alexs_note_on_why_to_call_the_merge_off() -> None:
+    assert "Alex, on the comms" in level.BRIEFING and "Call the merge off" in level.BRIEFING

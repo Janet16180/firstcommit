@@ -57,3 +57,11 @@ def test_bay_3_committed_is_named() -> None:
     lab, state = started(level)
     typed = typed_in(lab, MERGE, "cat docking.txt", "git restore --ours docking.txt", "git add docking.txt", "git commit --no-edit")
     assert level.check(lab, state, None, typed).message == level.BAY_3_COMMITTED
+
+
+def test_the_two_sides_are_yours_and_alexs_named_by_person() -> None:
+    lab, _ = started(level)
+    typed_in(lab, MERGE)
+    [conflict] = kit.conflicts(lab.project)
+    assert (conflict["you"]["author"], conflict["them"]["author"], conflict["them"]["label"]) == (kit.PLAYER.name, "Alex", "scout")
+    assert "Alex" in level.BRIEFING and "*ours*" in level.DEBRIEF and "*theirs*" in level.DEBRIEF
