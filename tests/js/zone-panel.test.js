@@ -262,3 +262,15 @@ test("in the crew view capsule rows are taller, so a capsule's labels fit under 
   solo.update(record("observation"));
   assert.match(zone(solo, "vault").querySelector(".caps").getAttribute("style"), /--row:40px/);
 });
+
+test("a capsule with many labels shows the first two and folds the rest into a count that names them", () => {
+  const project = record("snapshots").one;
+  const extra = ["survey", "origin/main", "origin/survey"].map((name) => ({ name, kind: name.startsWith("origin/") ? "remote" : "branch", target: project.head }));
+  const panel = ZonePanel.create();
+  panel.update(observe({ ...project, refs: [...project.refs, ...extra] }));
+  const head = keyed(zone(panel, "vault"), `vault:${project.head}`);
+  assert.equal([...head.querySelectorAll(".ref")].filter((node) => !node.classList.contains("ref-more")).length, 2);
+  const more = head.querySelector(".ref-more");
+  assert.equal(more.textContent, "+2");
+  assert.equal(more.getAttribute("title").split(", ").length, 2);
+});

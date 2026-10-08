@@ -842,10 +842,13 @@ pre.code code {
   max-height: 160px;
 }
 
+.viz.is-crew .cline {
+  flex-wrap: wrap;
+}
+
 .viz.is-crew .ref {
   font-size: 0.8rem;
   padding: 1px 3px;
-  white-space: nowrap;
 }
 
 .crew-flows .fl {
@@ -1013,9 +1016,11 @@ pre.code code {
   min-width: 0;
 }
 
+/* One line, clipped rather than wrapped, so a capsule never grows past its row. */
 .cline {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow: hidden;
   align-items: center;
   gap: 4px;
 }
@@ -1025,6 +1030,8 @@ pre.code code {
 }
 
 .ref {
+  flex: none;
+  white-space: nowrap;
   font: 0.95rem/1 var(--f-term);
   padding: 2px 5px;
   background: var(--zc);

@@ -25,6 +25,7 @@ const ZonePanel = (function () {
   const LANE = 16;
   const ROW = 40;
   const CREW_ROW = 72;
+  const SHOWN_LABELS = 2;
   const CENTRE = 11;
   const ZONES = ["workshop", "dock", "vault", "remote"];
   const STATION = ["workshop", "dock", "vault"];
@@ -54,10 +55,20 @@ const ZonePanel = (function () {
     ? el("span", { class: "cblock is-revert", style: `margin-left:${commit.lane * LANE}px` }, ArtSprites.icon("inverted"))
     : el("span", { class: "cblock", style: `margin-left:${commit.lane * LANE}px` }));
 
+  /* A capsule's labels: the first few as they are, the rest folded into a count that names them,
+     so a busy commit never outgrows its row. */
+  function labelChips(zone, labels) {
+    const folded = labels.slice(SHOWN_LABELS);
+    return [
+      labels.slice(0, SHOWN_LABELS).map((label) => el("span", { class: "ref", "data-kind": label.kind, "data-key": `${zone}-ref:${label.kind === "head" ? "HEAD" : label.text}` }, label.text)),
+      folded.length > 0 && el("span", { class: "ref ref-more", title: folded.map((label) => label.text).join(", ") }, `+${folded.length}`),
+    ];
+  }
+
   const capsule = (zone) => (commit) => el("div", { class: commit.parents.length > 1 ? "cap is-merge" : "cap", "data-key": `${zone}:${commit.hash}` },
     el("span", { class: "cgutter", "aria-hidden": "true" }, block(commit)),
     el("div", { class: "cinfo" },
-      el("div", { class: "cline" }, el("span", { class: "chash" }, commit.short), commit.labels.map((label) => el("span", { class: "ref", "data-kind": label.kind, "data-key": `${zone}-ref:${label.kind === "head" ? "HEAD" : label.text}` }, label.text))),
+      el("div", { class: "cline" }, el("span", { class: "chash" }, commit.short), labelChips(zone, commit.labels)),
       el("span", { class: "cmsg", title: commit.subject }, commit.subject),
     ),
   );
