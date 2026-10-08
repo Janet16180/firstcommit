@@ -6,7 +6,7 @@ TITLE = "Push rechazado"
 CARD = "Trae los commits del remoto a tu branch y junta las dos historias con un commit de merge. `--rebase`, en cambio, vuelve a aplicar tus commits encima de los del remoto."
 SCENE = [
     "Tu cápsula está lista en la plataforma de lanzamiento, y Alex también está trabajando.",
-    "Cuando dos tripulaciones envían cápsulas al mismo lugar, la nave nodriza se queda con la primera y no acepta soltarla.",
+    "Cuando dos tripulaciones envían cápsulas al mismo lugar, el remoto (la nave nodriza) se queda con la primera y no acepta soltarla.",
 ]
 
 BRIEFING = """

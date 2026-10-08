@@ -22,7 +22,7 @@ CARD = kit.CommandCard(
     text="Gives another repository's address a short name in yours, such as `origin`. Nothing is sent: it only writes the name down.",
 )
 SCENE = [
-    kit.SceneFrame(art="orbit", text="The mothership circles above the base. It keeps a copy of the work of every crew."),
+    kit.SceneFrame(art="orbit", text="Above the base circles the remote (the mothership). It keeps a copy of the work of every crew."),
     kit.SceneFrame(art="orbit", text="Before you can send it anything, your repository needs its address, under a short name."),
 ]
 

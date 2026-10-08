@@ -9,8 +9,9 @@ SCENE = [
 ]
 
 BRIEFING = """
-El experimento de anoche en `engine.cfg` recalentó el motor. Deséchalo y vuelve a los ajustes del
-commit. Tus notas en `notes.txt` están en el staging area para el próximo commit: consérvalas.
+El experimento de anoche en `engine.cfg`, en tu carpeta de trabajo (el taller), recalentó el
+motor. Deséchalo y vuelve a los ajustes del commit. Tus notas en `notes.txt` están en el staging
+area para el próximo commit: consérvalas.
 
 La misión termina cuando hayas mirado el experimento con `git diff`, `engine.cfg` haya vuelto a su
 versión del commit y `git status` muestre `notes.txt` todavía en el staging area.

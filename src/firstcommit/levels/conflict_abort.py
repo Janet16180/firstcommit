@@ -59,7 +59,7 @@ out of it: `main` was where your commit left it, both files held your lines agai
 in `todo.txt` was still there, because the merge never touched that file.
 
 `git merge --abort` is the safe door, and the merge can wait for Monday: Alex's commit stays on
-the mothership, and `git pull` will try again. Git can rebuild your uncommitted changes only in
+the remote (the mothership), and `git pull` will try again. Git can rebuild your uncommitted changes only in
 some cases, so commit or stash them before a merge. `git reset --hard` would also end the merge,
 but it throws away every uncommitted change to tracked files, your note too.
 

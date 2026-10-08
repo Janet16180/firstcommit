@@ -5,7 +5,7 @@ from firstcommit import kit
 TITLE = "Rumbo equivocado"
 CARD = "Mueve el branch donde estás a otro commit, y hace que tu carpeta coincida con él. Los commits que deja siguen en Git; un branch sobre ellos hace que sea fácil encontrarlos."
 SCENE = [
-    "Dos commits de un relevamiento cayeron en `main` por error. El pin de la nave nodriza está dos commits más abajo: no los vio. Tu carpeta tiene `survey.txt`, de esos commits.",
+    "Dos commits de un relevamiento cayeron en `main` por error. El pin del remoto (la nave nodriza) está dos commits más abajo: no los vio. Tu carpeta tiene `survey.txt`, de esos commits.",
 ]
 
 BRIEFING = """

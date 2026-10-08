@@ -39,8 +39,9 @@ RESTORE = rf"git (restore|checkout)\b(?!.*--staged( |$)).* {ENGINE}( |$)"
 STATUS = r"git status\b"
 
 BRIEFING = """
-Last night's experiment in `engine.cfg` overheated the engine. Scrap it and go back to the
-committed settings. Your notes in `notes.txt` are staged for the next commit: keep them.
+Last night's experiment in `engine.cfg`, in your working folder (the workshop), overheated the
+engine. Scrap it and go back to the committed settings. Your notes in `notes.txt` are staged for
+the next commit: keep them.
 
 The mission is done when you have looked at the experiment with `git diff`, `engine.cfg` is back to
 its committed version, and `git status` shows `notes.txt` still staged.

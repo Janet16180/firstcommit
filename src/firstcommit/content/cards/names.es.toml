@@ -1,7 +1,7 @@
 notes = """
 Un branch es un nombre para un commit. `HEAD` es "estás aquí": va sobre el branch donde estás, y
-tu próximo commit mueve solo ese branch. `origin/main` es tu marcador del `main` de la nave
-nodriza: se mueve solo cuando hablas con la nave nodriza (push, fetch, pull).
+tu próximo commit mueve solo ese branch. `origin/main` es tu marcador del `main` del remoto (la nave
+nodriza): se mueve solo cuando hablas con la nave nodriza (push, fetch, pull).
 
 Los nombres van y vienen; los commits se quedan. `git branch scout` escribe un nombre nuevo donde
 está `HEAD` y no copia ningún archivo; `git branch first-route <hash>` pone uno en cualquier

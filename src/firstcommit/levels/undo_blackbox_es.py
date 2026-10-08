@@ -12,7 +12,7 @@ BRIEFING = """
 Dos noches de ajustes de los propulsores quedaron en commits de un branch `thrusters`. Con mucho
 sueño, pasaste a `main` y borraste el branch con `git branch -D thrusters`: se fue el nombre, y los
 commits se quedaron sin nombre. Esta mañana trajiste con pull el commit de Alex `Note the free dock`.
-Recupera `thrusters` y súbelo a la nave nodriza antes de la revisión.
+Recupera `thrusters` y súbelo al remoto (la nave nodriza) antes de la revisión.
 """
 
 HINTS = [

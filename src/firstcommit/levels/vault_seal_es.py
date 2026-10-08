@@ -6,7 +6,7 @@ TITLE = "Sella la cápsula"
 CARD = "Sella lo que está en el staging area en un commit nuevo de tu repositorio, con tu mensaje. Se queda en esta computadora hasta que hagas push."
 SCENE = [
     "Un commit sella el staging area en una cápsula: una instantánea de sus archivos, con tu mensaje.",
-    "Cada cápsula nueva se engancha a la anterior. Esa cadena es la historia de tu proyecto, guardada en tu bóveda.",
+    "Cada cápsula nueva se engancha a la anterior. Esa cadena es la historia de tu proyecto, guardada en tu repositorio (la bóveda).",
 ]
 
 BRIEFING = """
@@ -28,7 +28,7 @@ DEBRIEF = """
 nombre y un hash. El diario nunca se agregó al staging area, así que se queda en la carpeta de
 trabajo, sin seguimiento.
 
-La cápsula está en tu bóveda, solo en esta computadora: la nave nodriza sigue vacía. Enviarle
+La cápsula está en tu bóveda, solo en esta computadora: el remoto (la nave nodriza) sigue vacío. Enviarle
 cápsulas es el próximo capítulo.
 
 Comandos para recordar:

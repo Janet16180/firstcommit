@@ -16,6 +16,7 @@ from termlab import sandbox
 
 import sample_levels
 from firstcommit import game, kit, levels, runner
+from game_words import unpaired
 
 HOSTILE = [
     "",
@@ -339,6 +340,34 @@ def test_a_commands_shape_keeps_its_options_and_drops_its_names() -> None:
     assert command_shape("git reset --hard HEAD@{2}   # back") == "reset --hard HEAD@{n}"
     assert command_shape("git revert HEAD~1") == "revert HEAD~n"
     assert (command_shape("ls"), command_shape("cd project && git log")) == (None, None)
+
+
+def every_text(level: runner.Level, language: str) -> str:
+    """
+    Join every text a player reads in a level, in one language.
+
+    Parameters
+    ----------
+    level : runner.Level
+        The level.
+    language : str
+        ``"en"`` or ``"es"``.
+
+    Returns
+    -------
+    str
+        Title, card, scene, briefing, question, steps, hints, debrief and messages.
+    """
+    text = level.texts[language]  # type: ignore[index]
+    steps = [field for step in text.steps.values() for field in (step.text, step.more, step.question, step.reveal, *step.options)]
+    messages = list(level.texts["es"].messages.values() if language == "es" else level.texts["es"].messages)
+    return "\n".join([text.title, text.card, *text.scene, text.briefing, text.question, *steps, *text.hints, text.debrief, *messages])
+
+
+@pytest.mark.parametrize("level", runner.catalogue().values(), ids=lambda level: level.id)
+@pytest.mark.parametrize("language", ["en", "es"])
+def test_a_level_that_uses_a_game_word_says_once_what_it_really_is(level: runner.Level, language: str) -> None:
+    assert unpaired(every_text(level, language), language) == []
 
 
 def test_every_level_that_asks_its_own_question_says_how_to_read_the_answer() -> None:

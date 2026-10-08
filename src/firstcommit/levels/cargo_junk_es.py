@@ -31,8 +31,8 @@ disco; `git status` dejó de listarlos, y `git add .` se los salta, así que no 
 commit por accidente.
 
 También agregaste `.gitignore` al staging area. Cuando esté en un commit, todos los que trabajan
-en el proyecto tendrán la misma regla, y los resultados del simulador de nadie llegarán a la nave
-nodriza. En los proyectos de verdad, las carpetas de compilación, los logs y las dependencias
+en el proyecto tendrán la misma regla, y los resultados del simulador de nadie llegarán al remoto (la
+nave nodriza). En los proyectos de verdad, las carpetas de compilación, los logs y las dependencias
 descargadas reciben el mismo trato.
 
 Comandos para recordar:

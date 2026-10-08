@@ -5,7 +5,7 @@ from firstcommit import kit
 TITLE = "Retira la cápsula"
 CARD = "Crea un commit nuevo que deshace uno anterior. El commit anterior se queda en la historia, así que es seguro en un branch que otros ya trajeron con pull."
 SCENE = [
-    "Ayer hiciste push del commit de las luces estroboscópicas y después de la ruta nocturna. Los pines muestran que la nave nodriza y Alex tienen los dos.",
+    "Ayer hiciste push del commit de las luces estroboscópicas y después de la ruta nocturna. Los pines muestran que el remoto (la nave nodriza) y Alex tienen los dos.",
 ]
 
 BRIEFING = """

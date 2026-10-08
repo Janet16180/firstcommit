@@ -6,7 +6,7 @@ TITLE = "Base 7"
 CARD = "Dice qué está en el staging area, qué cambió en la carpeta de trabajo y cómo está tu branch frente a su upstream. Pregúntale antes de cada commit y cada push."
 SCENE = [
     "Impacto de meteorito en la Base 7. Su computadora desapareció, y su historia con ella.",
-    "Los archivos sobrevivieron en un disco de respaldo, con restos del choque. Reconstruye la base y llévala a la nave nodriza.",
+    "Los archivos sobrevivieron en un disco de respaldo, con restos del choque. Reconstruye la base y llévala al remoto (la nave nodriza).",
 ]
 
 BRIEFING = """
@@ -20,7 +20,7 @@ de la nave nodriza sea el mismo que el tuyo.
 """
 
 HINTS = [
-    "Son todos los capítulos hasta ahora, en orden: el despegue, el muelle de carga, la bóveda y la nave nodriza.",
+    "Son todos los capítulos hasta ahora, en orden: el despegue, el staging area (el muelle de carga), tu repositorio (la bóveda) y el remoto (la nave nodriza).",
     "Primero un repositorio; luego elige la carga por su nombre, séllala, nombra la nave nodriza y lanza.",
     'Cada línea de la misión, en orden:\n\n    $ git init\n    $ git add blueprint.txt reactor.cfg\n    $ git commit -m "Rebuild Base 7"\n    $ git remote add origin ../github.com/moonbase/project.git\n    $ git push -u origin main',
 ]

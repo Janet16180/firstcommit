@@ -5,7 +5,7 @@ from firstcommit import kit
 TITLE = "Etiquetas"
 CARD = "Lista tus branches, cada uno con el commit que nombra. `*` marca el branch donde está `HEAD`."
 SCENE = [
-    "Sector nuevo: Etiquetas. Desde que conociste la nave nodriza escribiste `main` y `origin/main` en `git push` y `git status`. Este sector dice qué son: nombres. Los commits son el trabajo; los nombres son cómo lo encuentras.",
+    "Sector nuevo: Etiquetas. Desde que conociste el remoto (la nave nodriza) escribiste `main` y `origin/main` en `git push` y `git status`. Este sector dice qué son: nombres. Los commits son el trabajo; los nombres son cómo lo encuentras.",
     "Esta es la cadena: tus commits, el más nuevo arriba, cada uno unido por una línea al anterior. Los commits son el trabajo. Esta misión trata de los nombres que llevan.",
 ]
 

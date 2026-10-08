@@ -8,6 +8,7 @@ from firstcommit import markup, reactions, runner
 from firstcommit.levels import mothership_halves
 from firstcommit.reactions import ReactionRule
 from firstcommit.records import Command
+from game_words import unpaired
 
 
 def said(
@@ -286,3 +287,8 @@ def test_a_failed_fetch_or_pull_gets_no_pleased_reaction(line: str) -> None:
 def test_a_levels_own_pull_reaction_comes_before_the_shared_one() -> None:
     rules = (*runner.catalogue()["mothership-halves"].reactions, *reactions.RULES)
     assert said("git pull", kinds={"remote-updated", "branch-moved"}, rules=rules) == f"ok: {mothership_halves.TWO_HALVES}"
+
+
+@pytest.mark.parametrize("english", list(reactions.SPANISH), ids=lambda text: text[:40])
+def test_a_shared_reaction_that_uses_a_game_word_says_what_it_really_is(english: str) -> None:
+    assert (unpaired(english, "en"), unpaired(reactions.SPANISH[english], "es")) == ([], [])

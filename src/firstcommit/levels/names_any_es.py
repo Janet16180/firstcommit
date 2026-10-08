@@ -5,7 +5,7 @@ from firstcommit import kit
 TITLE = "Un nombre en cualquier commit"
 CARD = "Pone un nombre nuevo en cualquier commit, dado por su hash. Te quedas donde estás y tu carpeta no cambia."
 SCENE = [
-    "Después de tu pull, `main` subió al arreglo de Alex, y tu marcador y el pin de la nave nodriza también están ahí. `test-run` sigue en Start the project.",
+    "Después de tu pull, `main` subió al arreglo de Alex, y tu marcador y el pin del remoto (la nave nodriza) también están ahí. `test-run` sigue en Start the project.",
 ]
 
 BRIEFING = """

@@ -31,7 +31,7 @@ CARD = kit.CommandCard(
 SCENE = [
     kit.SceneFrame(
         art="chain",
-        text="Two survey commits landed on `main` by mistake. The mothership's pin is two commits below: it has not seen them. Your folder has `survey.txt`, from those commits.",
+        text="Two survey commits landed on `main` by mistake. The pin of the remote (the mothership) is two commits below: it has not seen them. Your folder has `survey.txt`, from those commits.",
     ),
 ]
 

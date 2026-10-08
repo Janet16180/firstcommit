@@ -27,7 +27,7 @@ CARD = kit.CommandCard(
     text="Makes a new commit that undoes an earlier one. The earlier commit stays in the history, so it is safe on a branch others have pulled.",
 )
 SCENE = [
-    kit.SceneFrame(art="chain", text="Yesterday you pushed the strobe commit, then the night route. The pins show the mothership and Alex have both."),
+    kit.SceneFrame(art="chain", text="Yesterday you pushed the strobe commit, then the night route. The pins show the remote (the mothership) and Alex have both."),
 ]
 
 LIGHTS = "lights.cfg"

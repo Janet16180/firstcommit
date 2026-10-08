@@ -5,7 +5,7 @@ from firstcommit import kit
 TITLE = "Lanzamiento"
 CARD = "Envía los commits de `main` a `origin` y convierte `origin/main` en su upstream, así que después un `git push` a secas sabe adónde ir."
 SCENE = [
-    "Un push sube tus cápsulas a la nave nodriza.",
+    "Un push sube tus cápsulas al remoto (la nave nodriza).",
     "Solo vuelan las cápsulas. Un cambio que no está en ninguna cápsula se queda en tierra.",
 ]
 

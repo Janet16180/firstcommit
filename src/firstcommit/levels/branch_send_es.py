@@ -6,7 +6,7 @@ TITLE = "Sube un rumbo"
 CARD = "Envía ese branch al remoto, por su nombre, desde el branch donde estés. Un `git push` simple envía solo el branch donde estás, a su upstream."
 SCENE = [
     "Tu exploración está en un segundo rumbo, `scout`, de dos cápsulas.",
-    "La nave nodriza recibe solo lo que le envías, un branch a la vez.",
+    "El remoto (la nave nodriza) recibe solo lo que le envías, un branch a la vez.",
 ]
 
 BRIEFING = """

@@ -48,7 +48,7 @@ BRIEFING = """
 Two nights of thruster tuning went into commits on a branch `thrusters`. Half asleep, you switched
 to `main` and deleted the branch with `git branch -D thrusters`: the name went, the commits stayed
 with no name. This morning you pulled Alex's commit `Note the free dock`. Get `thrusters` back, and
-up to the mothership, before the review.
+up to the remote (the mothership), before the review.
 """
 
 HINTS = [

@@ -29,7 +29,7 @@ CARD = kit.CommandCard(
 SCENE = [
     kit.SceneFrame(
         art="chain",
-        text="New sector: Name tags. Since you met the mothership you have typed `main` and `origin/main` in `git push` and `git status`. This sector says what they are: names. Commits are the work; names are how you find it.",
+        text="New sector: Name tags. Since you met the remote (the mothership) you have typed `main` and `origin/main` in `git push` and `git status`. This sector says what they are: names. Commits are the work; names are how you find it.",
     ),
     kit.SceneFrame(
         art="chain",
