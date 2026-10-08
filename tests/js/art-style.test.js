@@ -177,3 +177,36 @@ test("an ignored folder's chip sits behind a calm scanline field with emitters a
   const reduced = STYLE.slice(STYLE.indexOf("@media (prefers-reduced-motion: reduce)"));
   assert.ok(reduced.includes(".art-ignore-field::after"));
 });
+
+test("the book opens each file's two halves outward from the spine like pages, over the page's birth time", () => {
+  for (const [side, origin, sign] of [["you", "right", "-"], ["them", "left", ""]]) {
+    const selector = `.sky.art-birth-book .sides-half[data-side="${side}"]`;
+    assert.match(rules(selector).join(""), new RegExp(`transform-origin: ${origin}`));
+    const [, name, duration] = birthAnimation(selector);
+    assert.equal(duration, BIRTH);
+    assert.match(frames(name), new RegExp(`0%, \\d+% \\{ transform: perspective\\(\\d+px\\) rotateY\\(${sign}8\\ddeg\\)`));
+    assert.match(frames(name), /to \{ transform: none; \}/);
+  }
+});
+
+test("the book starts closed on a red crack down its spine, which fades as the pages open", () => {
+  const crack = rules(".sky.art-birth-book .sides-pages::after").join("");
+  assert.match(crack, /content: ""/);
+  assert.match(crack, /position: absolute/);
+  assert.match(crack, /var\(--s-new\)/);
+  assert.match(rules(".sky.art-birth-book .sides-pages").join(""), /position: relative/);
+  const [, name, duration] = birthAnimation(".sky.art-birth-book .sides-pages::after");
+  assert.equal(duration, BIRTH);
+  assert.match(frames(name), /0%, \d+% \{ opacity: 1; \}/);
+  assert.match(frames(name), /to \{ opacity: 0; \}/);
+});
+
+test("in the book the base line fades in last", () => {
+  assert.deepEqual(birthAnimation(".sky.art-birth-book .sides-base").slice(1), ["art-birth-after", BIRTH]);
+});
+
+test("reduced motion plays no book", () => {
+  const reduced = STYLE.slice(STYLE.indexOf("@media (prefers-reduced-motion: reduce)"));
+  assert.ok(reduced.includes(".sky.art-birth-book *"));
+  assert.ok(reduced.includes(".sky.art-birth-book .sides-pages::after"));
+});
