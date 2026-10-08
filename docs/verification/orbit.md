@@ -884,3 +884,15 @@ deleted side, an add/add with no base) and `tests/levels/test_conflict_collision
 |---|---|---|
 | 6-3 debrief | git calls your side *ours* and the incoming side *theirs* | git-merge(1) HOW CONFLICTS ARE PRESENTED; git-checkout(1) `--ours, --theirs`; git-restore(1) `--ours, --theirs` |
 | card (unchanged) | during a rebase the two can appear swapped | git-rebase(1) (`--ours`/`--theirs` swap) |
+
+## 7-1 Scrap the workshop (added 2026-10-08)
+
+| Tag | What ran | Result |
+|---|---|---|
+| E109 | on the host (git 2.43.0): a commit of `engine.cfg` and `notes.txt`; `notes.txt` changed and staged; `engine.cfg` changed and not staged; `git diff --stat`, `git restore engine.cfg`, `git status --short`, `git log --all -S overdrive`, then every blob in the object store | the diff lists only `engine.cfg`; the restore exits 0 and the file is the committed one; status `M  notes.txt` (still staged); no commit holds `overdrive`; the store holds three blobs (the two committed files and the staged notes), none with the experiment |
+
+| Claim | Says | Evidence |
+|---|---|---|
+| card, debrief, `GONE` (with the `search-beam` moment), prediction reveal | `git restore <file>` copies the staging area's version over the working folder's; lines never staged or committed have no copy anywhere | E109; git-restore(1) DESCRIPTION (`--worktree` is the default, the source the index) |
+| debrief, `LOOKED` | `git diff` shows what is in the working folder and not staged | E109; git-diff(1) |
+| `NOTES_LOST` (lost) | the staged notes restored away are in no commit | the level's test; E109 (only staged and committed versions are stored) |
