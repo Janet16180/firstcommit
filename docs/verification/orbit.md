@@ -638,3 +638,19 @@ plain push on `scout` (128, the level's reaction), the survey merged into `main`
 | debrief | `-u` makes `origin/scout` the upstream, so a plain push on `scout` works next time | E77; git-push(1) `-u` |
 | `NO_UPSTREAM` | a plain push on a branch with no upstream stops | E76 |
 | hint 3, `LISTED` | `git branch -r` lists the remote-tracking branches | E77; git-branch(1) ("Option -r causes the remote-tracking branches to be listed") |
+
+### Level `branch-ticket` (Your first ticket, 5-4, boss)
+
+*Re-checked* by `tests/levels/test_branch_ticket.py`: Alex's push as a level event with your fix
+uncommitted, the goals in either order, the fix committed on `main` (lost), pushed to the
+mothership's `main` (lost), thrown away with `git restore` (lost), kept in the stash (not lost,
+and solvable from there), and a forced push (Rama's error, lost).
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, hint 2, debrief | `git switch -c` makes the branch on the current commit, moves onto it, and takes uncommitted changes along | E79; git-switch(1) DESCRIPTION (switching aborts only "if the operation leads to loss of local changes"; a new branch on HEAD changes no file) |
+| debrief | `git push -u origin fix-lights` sends the branch; the mothership's `main` keeps only the team's work; the pull on `main` brings Alex's commit | E79 |
+| `FIX_LOST` (lost) | `git restore` on the file drops an uncommitted fix for good | E80 |
+| `_fix_kept`, the stash test | a stashed fix is still in a commit a ref reaches | E81 |
+| `MAIN_TOUCHED`, `MINE_ON_MAIN` (lost) | taking a commit back or moving it off a branch comes in the undo chapter | the plan, 7-2 and 7-3 |
+| `ALEX_DROPPED`, `FORCED` (lost) | a forced push replaces the mothership's branch and drops Alex's commit | E68 |
