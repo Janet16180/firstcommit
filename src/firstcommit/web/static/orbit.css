@@ -2933,11 +2933,22 @@ pre.code code {
   }
 
   .hud {
+    flex-wrap: wrap;
     padding: 6px 8px;
     gap: 6px;
   }
 
   .hud .lbl {
+    display: none;
+  }
+
+  /* These two have no picture: without their words they would be empty boxes. */
+  .hud .guide-open .lbl,
+  .hud .solve .lbl {
+    display: inline;
+  }
+
+  .termcol .term-hint {
     display: none;
   }
 
