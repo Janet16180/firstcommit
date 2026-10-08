@@ -107,6 +107,19 @@ test("Alex's pin marks Alex's branches, in Alex's own colour class", () => {
   assert.equal(chain.element.querySelectorAll(".chain-rows .chain-pin").length, 1);
 });
 
+test("drawn as Alex's repository, the chain is Alex's colour and the other person's pin is yours, in your colour", () => {
+  const you = snapshot({ commits: forked().commits, refs: [ref("main", "b"), ref("origin/main", "b", "remote")] });
+  const chain = drawn(forked(), { teammate: you, owner: "alex", show: { mothership: false, alex: true, ghosts: false } });
+  assert.equal(chain.element.dataset.owner, "alex");
+  assert.deepEqual(words(rowOf(chain, "b"), ".chain-pin.is-you"), ["You: main"]);
+  assert.equal(chain.element.querySelector(".chain-pin.is-alex"), null);
+  assert.deepEqual(words(chain.element, ".chain-legend li").filter((line) => line.includes("really")), ["where your branch really is"]);
+});
+
+test("the chain is yours unless it says otherwise", () => {
+  assert.equal(drawn(forked()).element.dataset.owner, "you");
+});
+
 test("a commit no name leads to is drawn faded and dashed only when the level shows ghosts", () => {
   const ghost = commit("g", ["c"], 8);
   assert.equal(rowOf(drawn(forked(), { ghosts: [ghost] }), "g"), null);

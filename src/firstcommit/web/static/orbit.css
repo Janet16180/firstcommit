@@ -22,6 +22,8 @@
   /* Alex's green: #3D8A18 here and #A6E05A in dark, both 3:1 or more on the panel and the page;
      pink is the mothership's alone. Text on it is --on-accent, white here. */
   --alex: #3D8A18;
+  /* Your violet, kept when a picture of Alex's repository turns its own violet green. */
+  --you: var(--z-va);
   --s-new: #D33A32;
   --s-mod: #B98A00;
   --s-clean: #A9A2C0;
@@ -2447,6 +2449,15 @@ pre.code code {
 
 .chain-pin.is-alex {
   background: var(--alex);
+}
+
+.chain-pin.is-you {
+  background: var(--you);
+}
+
+/* Alex's repository: what is violet in yours is Alex's green. */
+.chain[data-owner="alex"] {
+  --z-va: var(--alex);
 }
 
 .chain-legend {
