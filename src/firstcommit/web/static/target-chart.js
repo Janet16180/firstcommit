@@ -43,7 +43,7 @@ const TargetChart = (function () {
       const check = (ok, text) => el("li", { class: ok ? "target-check is-ok" : "target-check" }, text);
       counts.replaceChildren(
         check(placed.length === wanted.length, t("target.names", { count: placed.length, total: wanted.length })),
-        check(project.branch === target.head, t("target.head")),
+        check(project.branch === target.head && placed.includes(target.head), t("target.head")),
         check(extra === 0, t("target.extra", { count: extra })));
     }
 

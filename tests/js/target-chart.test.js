@@ -56,3 +56,9 @@ test("the chart speaks Spanish when the page does", () => {
     Strings.use("en");
   }
 });
+
+test("HEAD is in place only on the chart's name and that name's commit: switch -c from the wrong commit does not count", () => {
+  const chart = TargetChart.create();
+  chart.update(project([ref("main", "d"), ref("release", "d"), ref("lights-v2", "d")], "lights-v2"), target);
+  assert.deepEqual(checks(chart)[1], ["HEAD in place", false]);
+});
