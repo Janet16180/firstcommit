@@ -360,13 +360,31 @@ def _folder_text(file: Path) -> str | None:
     str | None
         Its text, or None when it is missing or not a plain file.
     """
+    data = folder_bytes(file)
+    return data[:MAX_TEXT].decode(errors="replace") if data is not None else None
+
+
+def folder_bytes(file: Path) -> bytes | None:
+    """
+    Read a plain file's first bytes, one more than `MAX_TEXT` at most, never through a link.
+
+    Parameters
+    ----------
+    file : Path
+        The file.
+
+    Returns
+    -------
+    bytes | None
+        Its bytes, longer than `MAX_TEXT` when the file is; None when it is missing or not a plain file.
+    """
     try:
         descriptor = os.open(file, os.O_RDONLY | os.O_NOFOLLOW | os.O_NONBLOCK)
     except OSError:
         return None
     with os.fdopen(descriptor, "rb") as handle:
-        text = handle.read(MAX_TEXT).decode(errors="replace") if stat.S_ISREG(os.fstat(handle.fileno()).st_mode) else None
-    return text
+        data = handle.read(MAX_TEXT + 1) if stat.S_ISREG(os.fstat(handle.fileno()).st_mode) else None
+    return data
 
 
 def _staged_text(path: Path, name: str) -> str | None:

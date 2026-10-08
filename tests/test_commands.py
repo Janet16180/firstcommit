@@ -113,6 +113,47 @@ def test_the_shell_opens_without_the_systems_login_notices_and_on_the_players_ow
     assert b"home=/" in shown and f"home={tmp_path} ".encode() not in shown and b"player=unset" in shown
 
 
+def test_a_shell_can_have_a_prompt_of_its_own_and_print_one_line_before_it(typist: Typist, tmp_path: Path) -> None:
+    startup = tmp_path / "bashrc"
+    startup.write_text(commands.startup(tmp_path / "commands.log", tmp_path / "history", prompt=commands.ALEX_PROMPT, banner="Try: it's `git status`"))
+    (tmp_path / ".hushlogin").touch()
+    shown = typist(commands.shell(startup, tmp_path), terminal.player_env(os.environ), project(tmp_path), [])
+    assert shown.startswith(b"Try: it's `git status`\r\n")
+    assert shown.endswith(b"\x1b[32malex: project\x1b[0m $ ")
+
+
+def fake_editors(folder: Path) -> str:
+    """
+    Make stand-ins for nano, vim and vi that print what they were asked to open and exit with status 3.
+
+    Parameters
+    ----------
+    folder : Path
+        Where they go.
+
+    Returns
+    -------
+    str
+        A ``PATH`` that finds them first.
+    """
+    for name in ("nano", "vim", "vi"):
+        program = folder / name
+        program.write_text(f'#!/bin/sh\necho "{name} opened $*"\nexit 3\n')
+        program.chmod(0o755)
+    return f"{folder}:{os.environ['PATH']}"
+
+
+def test_nano_vim_and_vi_name_themselves_in_the_terminal_title_while_they_run_and_keep_their_status(typist: Typist, tmp_path: Path) -> None:
+    bin_folder = tmp_path / "bin"
+    bin_folder.mkdir()
+    env = {**terminal.player_env(os.environ), "PATH": fake_editors(bin_folder)}
+    inputs = [(f"{name} checklist.txt; echo status=$?\n".encode(), b"$ ") for name in ("nano", "vim", "vi")]
+    shown = typist(logging_shell(tmp_path), env, project(tmp_path), [*inputs, (b"vim $'a\\033]0;x\\a.txt'\n", b"$ ")])
+    for name in ("nano", "vim", "vi"):
+        assert f"\x1b]0;firstcommit-editor {name} checklist.txt\x07{name} opened checklist.txt\r\n\x1b]0;\x07status=3".encode() in shown
+    assert b"\x1b]0;firstcommit-editor vim a]0;x.txt\x07" in shown
+
+
 def test_the_startup_file_alone_keeps_the_home_it_is_given(typist: Typist, tmp_path: Path) -> None:
     startup = tmp_path / "bashrc"
     startup.write_text(commands.startup(tmp_path / "commands.log", tmp_path / "history"))

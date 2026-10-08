@@ -156,6 +156,51 @@ class Conflict(TypedDict):
     base: list[str] | None
 
 
+class CleanPart(TypedDict):
+    """Lines of a file outside every conflict block, as they are; each without its line ending."""
+
+    kind: Literal["clean"]
+    lines: list[str]
+
+
+class BlockPart(TypedDict):
+    """
+    One conflict block of a file, as git wrote it between its markers.
+
+    ``yours`` are the lines between ``<<<<<<<`` and ``=======`` (or the ``|||||||`` of the base
+    version, which is left out), ``theirs`` those between ``=======`` and ``>>>>>>>``, each without
+    its line ending. ``yours_label`` and ``theirs_label`` are the words after the opening and
+    closing markers, as git wrote them, such as ``HEAD`` and a full commit hash.
+    """
+
+    kind: Literal["block"]
+    yours: list[str]
+    theirs: list[str]
+    yours_label: str
+    theirs_label: str
+
+
+MarkedPart = CleanPart | BlockPart
+"""A run of a file's lines: clean lines, or one conflict block."""
+
+
+class MarkedFile(TypedDict):
+    """
+    A file read for its conflict blocks (`firstcommit.markers`): its lines in order, and the hash of the bytes they were read from.
+
+    ``read`` is the SHA-256 of the file's bytes, in hex; a resolve sends it back, so a file that
+    changed since it was read is never overwritten.
+    """
+
+    path: str
+    read: str
+    parts: list[MarkedPart]
+
+
+Keep = Literal["yours", "theirs", "both"]
+"""What to keep of one conflict block: your side, theirs, or both, yours first."""
+
+
 class ReflogEntry(TypedDict):
     """
     One move of HEAD, as its reflog records it: from where, to where, and git's note of why.
@@ -361,6 +406,13 @@ Language = Literal["en", "es"]
 
 Who = Literal["you", "alex"]
 """The two people of the playground (`firstcommit.playground`), who share one remote."""
+StartId = Literal["empty", "changes", "branches", "alex-ahead", "both", "conflict", "lost"]
+"""The free playground's starting points, in the picker's order (`firstcommit.freeplay.STARTS`)."""
+PlaygroundView = Literal["chain", "history", "desk", "crew", "conflict", "movelog", "graph"]
+"""
+The free playground's views: the chain, history (your repository beside the mothership), the desk,
+the crew, a conflict's file, the move log (``git reflog``) and git's own graph.
+"""
 Button = Literal["edit", "add", "commit", "push", "fetch", "pull", "pull-no-rebase", "status", "merge-abort", "keep-ours", "keep-theirs"]
 """
 The kinds of the playground's buttons. A button's id is its kind, or ``"<kind>:<file>"`` for a

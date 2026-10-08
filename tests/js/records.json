@@ -2142,5 +2142,754 @@
    "conflicts": [],
    "reviews": []
   }
- ]
+ ],
+ "playground": {
+  "starts": [
+   {
+    "id": "empty",
+    "title": "Empty folder",
+    "blurb": "Two files and no repository yet.",
+    "banner": "No repository here yet. Try: git init",
+    "view": "desk",
+    "mothership": false,
+    "alex": false,
+    "uses": []
+   },
+   {
+    "id": "changes",
+    "title": "Uncommitted changes",
+    "blurb": "notes.txt edited on main, and a branch to switch to.",
+    "banner": "notes.txt is edited and not committed. Try: git status",
+    "view": "desk",
+    "mothership": true,
+    "alex": false,
+    "uses": [
+     {
+      "id": "branch",
+      "title": "Parallel universes"
+     },
+     {
+      "id": "undo",
+      "title": "Time travel"
+     }
+    ]
+   },
+   {
+    "id": "branches",
+    "title": "Two branches",
+    "blurb": "Two experiments forked off main.",
+    "banner": "Try: git switch bright-lights, then pick another view.",
+    "view": "chain",
+    "mothership": true,
+    "alex": false,
+    "uses": [
+     {
+      "id": "names",
+      "title": "Name tags"
+     }
+    ]
+   },
+   {
+    "id": "alex-ahead",
+    "title": "Alex is ahead",
+    "blurb": "Alex pushed two commits you have not fetched.",
+    "banner": "Alex sent two commits. Try: git status, then git fetch.",
+    "view": "history",
+    "mothership": true,
+    "alex": true,
+    "uses": [
+     {
+      "id": "mothership",
+      "title": "The mothership"
+     }
+    ]
+   },
+   {
+    "id": "both",
+    "title": "Both committed",
+    "blurb": "You and Alex each committed a different file: a merge with no conflict.",
+    "banner": "You and Alex each made a commit. Try: git status, then git pull --no-rebase.",
+    "view": "history",
+    "mothership": true,
+    "alex": false,
+    "uses": [
+     {
+      "id": "conflict",
+      "title": "Collisions"
+     }
+    ]
+   },
+   {
+    "id": "conflict",
+    "title": "Conflict",
+    "blurb": "You and Alex changed the same line, and your pull stopped on it.",
+    "banner": "Your pull stopped on a conflict in checklist.txt. Try: git status",
+    "view": "conflict",
+    "mothership": true,
+    "alex": true,
+    "uses": [
+     {
+      "id": "conflict",
+      "title": "Collisions"
+     }
+    ]
+   },
+   {
+    "id": "lost",
+    "title": "Something lost",
+    "blurb": "A branch with two commits, deleted.",
+    "banner": "A branch was deleted. Try: git log --oneline --all, then git reflog",
+    "view": "movelog",
+    "mothership": true,
+    "alex": false,
+    "uses": [
+     {
+      "id": "undo",
+      "title": "Time travel"
+     }
+    ]
+   }
+  ],
+  "current": {
+   "start": "conflict",
+   "started": "2026-10-08T21:21:10.293444+00:00",
+   "view": "conflict",
+   "alex": true,
+   "whose": "you"
+  }
+ },
+ "playground_observation": {
+  "start": "conflict",
+  "started": "2026-10-08T21:21:10.293444+00:00",
+  "project": {
+   "exists": true,
+   "bare": false,
+   "head": "9b9b67cfd5c59c242844b8ea7529e2a397709c90",
+   "branch": "main",
+   "commits": [
+    {
+     "hash": "9b9b67cfd5c59c242844b8ea7529e2a397709c90",
+     "short": "9b9b67c",
+     "parents": [
+      "0a8298cfcb9a00e68a1bb3b6b05f34caa85529a9"
+     ],
+     "subject": "Head for the Moon",
+     "author": "Cadet",
+     "time": 1780567200
+    },
+    {
+     "hash": "94b6459f310f9ec74b15d5f70e207bdf95b25026",
+     "short": "94b6459",
+     "parents": [
+      "0a8298cfcb9a00e68a1bb3b6b05f34caa85529a9"
+     ],
+     "subject": "Head for Jupiter",
+     "author": "Alex",
+     "time": 1780563600
+    },
+    {
+     "hash": "0a8298cfcb9a00e68a1bb3b6b05f34caa85529a9",
+     "short": "0a8298c",
+     "parents": [
+      "44c16d071bc8ec04294f6a0629f063291e505ca8"
+     ],
+     "subject": "Add the launch checklist",
+     "author": "Cadet",
+     "time": 1780477200
+    },
+    {
+     "hash": "44c16d071bc8ec04294f6a0629f063291e505ca8",
+     "short": "44c16d0",
+     "parents": [
+      "a38b8217663b2f7e62eb8b395cfc8948b5245e14"
+     ],
+     "subject": "Add the crew list",
+     "author": "Cadet",
+     "time": 1780390800
+    },
+    {
+     "hash": "a38b8217663b2f7e62eb8b395cfc8948b5245e14",
+     "short": "a38b821",
+     "parents": [
+      "b9e397c48054ecdd8c48a84b7d1047fefc55fad3"
+     ],
+     "subject": "Plot the route",
+     "author": "Cadet",
+     "time": 1780304400
+    },
+    {
+     "hash": "b9e397c48054ecdd8c48a84b7d1047fefc55fad3",
+     "short": "b9e397c",
+     "parents": [],
+     "subject": "Start the project",
+     "author": "First Commit",
+     "time": 1777626000
+    }
+   ],
+   "refs": [
+    {
+     "name": "main",
+     "kind": "branch",
+     "target": "9b9b67cfd5c59c242844b8ea7529e2a397709c90"
+    },
+    {
+     "name": "origin/main",
+     "kind": "remote",
+     "target": "94b6459f310f9ec74b15d5f70e207bdf95b25026"
+    }
+   ],
+   "pushed": [],
+   "remotes": [
+    {
+     "name": "origin",
+     "url": "../github.com/moonbase/project.git"
+    }
+   ],
+   "files": [
+    {
+     "path": "README.md",
+     "head": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+     "index": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+     "folder": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    },
+    {
+     "path": "checklist.txt",
+     "head": "91a973c0f21b8dcd7f31fcc6458c27fa25bbfd73",
+     "index": null,
+     "folder": "ed76517bc335e1b7aa7a4179e523e05539c239f9",
+     "head_mode": "100644",
+     "index_mode": null,
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": true,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    },
+    {
+     "path": "crew.txt",
+     "head": "5d6c120fd7e9e3862421d2b9fa090c57be3ea4b3",
+     "index": "5d6c120fd7e9e3862421d2b9fa090c57be3ea4b3",
+     "folder": "5d6c120fd7e9e3862421d2b9fa090c57be3ea4b3",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    },
+    {
+     "path": "notes.txt",
+     "head": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
+     "index": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
+     "folder": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    },
+    {
+     "path": "route.txt",
+     "head": "65ce4718f4fb93646e3ba1097203aea0fae74a58",
+     "index": "65ce4718f4fb93646e3ba1097203aea0fae74a58",
+     "folder": "65ce4718f4fb93646e3ba1097203aea0fae74a58",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    }
+   ],
+   "operation": "merge",
+   "stash": 0,
+   "truncated": false
+  },
+  "github": {
+   "exists": true,
+   "bare": true,
+   "head": "94b6459f310f9ec74b15d5f70e207bdf95b25026",
+   "branch": "main",
+   "commits": [
+    {
+     "hash": "94b6459f310f9ec74b15d5f70e207bdf95b25026",
+     "short": "94b6459",
+     "parents": [
+      "0a8298cfcb9a00e68a1bb3b6b05f34caa85529a9"
+     ],
+     "subject": "Head for Jupiter",
+     "author": "Alex",
+     "time": 1780563600
+    },
+    {
+     "hash": "0a8298cfcb9a00e68a1bb3b6b05f34caa85529a9",
+     "short": "0a8298c",
+     "parents": [
+      "44c16d071bc8ec04294f6a0629f063291e505ca8"
+     ],
+     "subject": "Add the launch checklist",
+     "author": "Cadet",
+     "time": 1780477200
+    },
+    {
+     "hash": "44c16d071bc8ec04294f6a0629f063291e505ca8",
+     "short": "44c16d0",
+     "parents": [
+      "a38b8217663b2f7e62eb8b395cfc8948b5245e14"
+     ],
+     "subject": "Add the crew list",
+     "author": "Cadet",
+     "time": 1780390800
+    },
+    {
+     "hash": "a38b8217663b2f7e62eb8b395cfc8948b5245e14",
+     "short": "a38b821",
+     "parents": [
+      "b9e397c48054ecdd8c48a84b7d1047fefc55fad3"
+     ],
+     "subject": "Plot the route",
+     "author": "Cadet",
+     "time": 1780304400
+    },
+    {
+     "hash": "b9e397c48054ecdd8c48a84b7d1047fefc55fad3",
+     "short": "b9e397c",
+     "parents": [],
+     "subject": "Start the project",
+     "author": "First Commit",
+     "time": 1777626000
+    }
+   ],
+   "refs": [
+    {
+     "name": "main",
+     "kind": "branch",
+     "target": "94b6459f310f9ec74b15d5f70e207bdf95b25026"
+    }
+   ],
+   "pushed": [],
+   "remotes": [],
+   "files": [],
+   "operation": null,
+   "stash": 0,
+   "truncated": false
+  },
+  "teammate": {
+   "exists": true,
+   "bare": false,
+   "head": "94b6459f310f9ec74b15d5f70e207bdf95b25026",
+   "branch": "main",
+   "commits": [
+    {
+     "hash": "94b6459f310f9ec74b15d5f70e207bdf95b25026",
+     "short": "94b6459",
+     "parents": [
+      "0a8298cfcb9a00e68a1bb3b6b05f34caa85529a9"
+     ],
+     "subject": "Head for Jupiter",
+     "author": "Alex",
+     "time": 1780563600
+    },
+    {
+     "hash": "0a8298cfcb9a00e68a1bb3b6b05f34caa85529a9",
+     "short": "0a8298c",
+     "parents": [
+      "44c16d071bc8ec04294f6a0629f063291e505ca8"
+     ],
+     "subject": "Add the launch checklist",
+     "author": "Cadet",
+     "time": 1780477200
+    },
+    {
+     "hash": "44c16d071bc8ec04294f6a0629f063291e505ca8",
+     "short": "44c16d0",
+     "parents": [
+      "a38b8217663b2f7e62eb8b395cfc8948b5245e14"
+     ],
+     "subject": "Add the crew list",
+     "author": "Cadet",
+     "time": 1780390800
+    },
+    {
+     "hash": "a38b8217663b2f7e62eb8b395cfc8948b5245e14",
+     "short": "a38b821",
+     "parents": [
+      "b9e397c48054ecdd8c48a84b7d1047fefc55fad3"
+     ],
+     "subject": "Plot the route",
+     "author": "Cadet",
+     "time": 1780304400
+    },
+    {
+     "hash": "b9e397c48054ecdd8c48a84b7d1047fefc55fad3",
+     "short": "b9e397c",
+     "parents": [],
+     "subject": "Start the project",
+     "author": "First Commit",
+     "time": 1777626000
+    }
+   ],
+   "refs": [
+    {
+     "name": "main",
+     "kind": "branch",
+     "target": "94b6459f310f9ec74b15d5f70e207bdf95b25026"
+    },
+    {
+     "name": "origin/main",
+     "kind": "remote",
+     "target": "94b6459f310f9ec74b15d5f70e207bdf95b25026"
+    }
+   ],
+   "pushed": [
+    "origin/main"
+   ],
+   "remotes": [
+    {
+     "name": "origin",
+     "url": "../../github.com/moonbase/project.git"
+    }
+   ],
+   "files": [
+    {
+     "path": "README.md",
+     "head": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+     "index": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+     "folder": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    },
+    {
+     "path": "checklist.txt",
+     "head": "3f9cf019812a1a2088b4fd8c7ac94a625a6c5611",
+     "index": "3f9cf019812a1a2088b4fd8c7ac94a625a6c5611",
+     "folder": "3f9cf019812a1a2088b4fd8c7ac94a625a6c5611",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    },
+    {
+     "path": "crew.txt",
+     "head": "5d6c120fd7e9e3862421d2b9fa090c57be3ea4b3",
+     "index": "5d6c120fd7e9e3862421d2b9fa090c57be3ea4b3",
+     "folder": "5d6c120fd7e9e3862421d2b9fa090c57be3ea4b3",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    },
+    {
+     "path": "notes.txt",
+     "head": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
+     "index": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
+     "folder": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    },
+    {
+     "path": "route.txt",
+     "head": "65ce4718f4fb93646e3ba1097203aea0fae74a58",
+     "index": "65ce4718f4fb93646e3ba1097203aea0fae74a58",
+     "folder": "65ce4718f4fb93646e3ba1097203aea0fae74a58",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    }
+   ],
+   "operation": null,
+   "stash": 0,
+   "truncated": false
+  },
+  "you": {
+   "conflicts": [
+    {
+     "path": "checklist.txt",
+     "you": {
+      "label": "main",
+      "author": "Cadet",
+      "lines": [
+       "LAUNCH CHECKLIST",
+       "1. Seal the hatch",
+       "2. Fuel tanks: full",
+       "3. Check the radio",
+       "4. Course: the Moon",
+       "5. Music: off",
+       "6. Shields: on",
+       "7. Gloves on",
+       "8. Snack: crackers",
+       "9. Wave goodbye to base"
+      ]
+     },
+     "them": {
+      "label": "origin/main",
+      "author": "Alex",
+      "lines": [
+       "LAUNCH CHECKLIST",
+       "1. Seal the hatch",
+       "2. Fuel tanks: half",
+       "3. Check the radio",
+       "4. Course: Jupiter",
+       "5. Music: off",
+       "6. Shields: off",
+       "7. Gloves on",
+       "8. Snack: space noodles",
+       "9. Wave goodbye to base"
+      ]
+     },
+     "base": [
+      "LAUNCH CHECKLIST",
+      "1. Seal the hatch",
+      "2. Fuel tanks: full",
+      "3. Check the radio",
+      "4. Course: Mars",
+      "5. Music: off",
+      "6. Shields: off",
+      "7. Gloves on",
+      "8. Snack: crackers",
+      "9. Wave goodbye to base"
+     ]
+    }
+   ],
+   "marked": [
+    {
+     "path": "checklist.txt",
+     "read": "2b5dfe4f6420827f3bb86517b4919b716c3a3f2a420f04b01a2613ea50cf8efd",
+     "parts": [
+      {
+       "kind": "clean",
+       "lines": [
+        "LAUNCH CHECKLIST",
+        "1. Seal the hatch",
+        "2. Fuel tanks: half",
+        "3. Check the radio"
+       ]
+      },
+      {
+       "kind": "block",
+       "yours": [
+        "4. Course: the Moon"
+       ],
+       "theirs": [
+        "4. Course: Jupiter"
+       ],
+       "yours_label": "HEAD",
+       "theirs_label": "94b6459f310f9ec74b15d5f70e207bdf95b25026"
+      },
+      {
+       "kind": "clean",
+       "lines": [
+        "5. Music: off",
+        "6. Shields: on",
+        "7. Gloves on",
+        "8. Snack: space noodles",
+        "9. Wave goodbye to base"
+       ]
+      }
+     ]
+    }
+   ],
+   "reflog": [
+    {
+     "old": "0a8298cfcb9a00e68a1bb3b6b05f34caa85529a9",
+     "new": "9b9b67cfd5c59c242844b8ea7529e2a397709c90",
+     "message": "commit: Head for the Moon",
+     "line": "9b9b67c (HEAD -> main) HEAD@{0}: commit: Head for the Moon"
+    },
+    {
+     "old": "44c16d071bc8ec04294f6a0629f063291e505ca8",
+     "new": "0a8298cfcb9a00e68a1bb3b6b05f34caa85529a9",
+     "message": "commit: Add the launch checklist",
+     "line": "0a8298c HEAD@{1}: commit: Add the launch checklist"
+    },
+    {
+     "old": "a38b8217663b2f7e62eb8b395cfc8948b5245e14",
+     "new": "44c16d071bc8ec04294f6a0629f063291e505ca8",
+     "message": "commit: Add the crew list",
+     "line": "44c16d0 HEAD@{2}: commit: Add the crew list"
+    },
+    {
+     "old": "b9e397c48054ecdd8c48a84b7d1047fefc55fad3",
+     "new": "a38b8217663b2f7e62eb8b395cfc8948b5245e14",
+     "message": "commit: Plot the route",
+     "line": "a38b821 HEAD@{3}: commit: Plot the route"
+    },
+    {
+     "old": "",
+     "new": "b9e397c48054ecdd8c48a84b7d1047fefc55fad3",
+     "message": "clone: from /home/player/.firstcommit/playground/github.com/moonbase/project.git",
+     "line": "b9e397c HEAD@{4}: clone: from /home/player/.firstcommit/playground/github.com/moonbase/project.git"
+    }
+   ],
+   "ghosts": [],
+   "texts": [
+    {
+     "path": "README.md",
+     "folder": "# Project\n",
+     "index": "# Project\n"
+    },
+    {
+     "path": "checklist.txt",
+     "folder": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n<<<<<<< HEAD\n4. Course: the Moon\n=======\n4. Course: Jupiter\n>>>>>>> 94b6459f310f9ec74b15d5f70e207bdf95b25026\n5. Music: off\n6. Shields: on\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n",
+     "index": null
+    },
+    {
+     "path": "crew.txt",
+     "folder": "Crew: Ana, Alex\n",
+     "index": "Crew: Ana, Alex\n"
+    },
+    {
+     "path": "notes.txt",
+     "folder": "Notes\n",
+     "index": "Notes\n"
+    },
+    {
+     "path": "route.txt",
+     "folder": "Route: Moon\n",
+     "index": "Route: Moon\n"
+    }
+   ],
+   "graph": [
+    "* 9b9b67c (HEAD -> main) Head for the Moon",
+    "| * 94b6459 (origin/main) Head for Jupiter",
+    "|/  ",
+    "* 0a8298c Add the launch checklist",
+    "* 44c16d0 Add the crew list",
+    "* a38b821 Plot the route",
+    "* b9e397c Start the project"
+   ],
+   "typed": []
+  },
+  "alex": {
+   "conflicts": [],
+   "marked": [],
+   "reflog": [
+    {
+     "old": "0a8298cfcb9a00e68a1bb3b6b05f34caa85529a9",
+     "new": "94b6459f310f9ec74b15d5f70e207bdf95b25026",
+     "message": "commit: Head for Jupiter",
+     "line": "94b6459 (HEAD -> main, origin/main) HEAD@{0}: commit: Head for Jupiter"
+    },
+    {
+     "old": "44c16d071bc8ec04294f6a0629f063291e505ca8",
+     "new": "0a8298cfcb9a00e68a1bb3b6b05f34caa85529a9",
+     "message": "pull --quiet: Fast-forward",
+     "line": "0a8298c HEAD@{1}: pull --quiet: Fast-forward"
+    },
+    {
+     "old": "b9e397c48054ecdd8c48a84b7d1047fefc55fad3",
+     "new": "44c16d071bc8ec04294f6a0629f063291e505ca8",
+     "message": "pull --quiet: Fast-forward",
+     "line": "44c16d0 HEAD@{2}: pull --quiet: Fast-forward"
+    },
+    {
+     "old": "",
+     "new": "b9e397c48054ecdd8c48a84b7d1047fefc55fad3",
+     "message": "clone: from /home/player/.firstcommit/playground/github.com/moonbase/project.git",
+     "line": "b9e397c HEAD@{3}: clone: from /home/player/.firstcommit/playground/github.com/moonbase/project.git"
+    }
+   ],
+   "ghosts": [],
+   "texts": [
+    {
+     "path": "README.md",
+     "folder": "# Project\n",
+     "index": "# Project\n"
+    },
+    {
+     "path": "checklist.txt",
+     "folder": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: Jupiter\n5. Music: off\n6. Shields: off\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n",
+     "index": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: Jupiter\n5. Music: off\n6. Shields: off\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"
+    },
+    {
+     "path": "crew.txt",
+     "folder": "Crew: Ana, Alex\n",
+     "index": "Crew: Ana, Alex\n"
+    },
+    {
+     "path": "notes.txt",
+     "folder": "Notes\n",
+     "index": "Notes\n"
+    },
+    {
+     "path": "route.txt",
+     "folder": "Route: Moon\n",
+     "index": "Route: Moon\n"
+    }
+   ],
+   "graph": [
+    "* 94b6459 (HEAD -> main, origin/main) Head for Jupiter",
+    "* 0a8298c Add the launch checklist",
+    "* 44c16d0 Add the crew list",
+    "* a38b821 Plot the route",
+    "* b9e397c Start the project"
+   ],
+   "typed": []
+  }
+ },
+ "resolve": {
+  "file": {
+   "path": "checklist.txt",
+   "read": "323e6796875a4a8ff69abd6fe0d8c9f8cc035738dcf357d4d524e26dfca08fa4",
+   "parts": [
+    {
+     "kind": "clean",
+     "lines": [
+      "LAUNCH CHECKLIST",
+      "1. Seal the hatch",
+      "2. Fuel tanks: half",
+      "3. Check the radio",
+      "4. Course: the Moon",
+      "4. Course: Jupiter",
+      "5. Music: off",
+      "6. Shields: on",
+      "7. Gloves on",
+      "8. Snack: space noodles",
+      "9. Wave goodbye to base"
+     ]
+    }
+   ]
+  }
+ }
 }

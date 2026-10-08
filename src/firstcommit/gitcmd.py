@@ -50,10 +50,28 @@ program from a lab's ``.git/config``. The player's shell keeps the repository's 
 PLAYER = Person("Cadet", "cadet@example.com")
 """The player's identity until they set their own (the "Your real setup" chapter teaches ``git config``)."""
 
-BASE_CONFIG = (
-    "[init]\n\tdefaultBranch = main\n[core]\n\tpager = cat\n\teditor = true\n\texcludesFile =\n\tattributesFile =\n"
-    f"[user]\n\tname = {PLAYER.name}\n\temail = {PLAYER.email}\n\tuseConfigOnly = true\n"
-)
+
+def base_config(person: Person) -> str:
+    """
+    Give a global git configuration of the game's, signed as one person.
+
+    Parameters
+    ----------
+    person : Person
+        Whose name and email it holds.
+
+    Returns
+    -------
+    str
+        The configuration's text: `BASE_CONFIG`'s settings, with the person's identity.
+    """
+    return (
+        "[init]\n\tdefaultBranch = main\n[core]\n\tpager = cat\n\teditor = true\n\texcludesFile =\n\tattributesFile =\n"
+        f"[user]\n\tname = {person.name}\n\temail = {person.email}\n\tuseConfigOnly = true\n"
+    )
+
+
+BASE_CONFIG = base_config(PLAYER)
 """
 The game's global git configuration when it starts: the player's shell and the game's own commands share it.
 
@@ -123,12 +141,12 @@ def isolation(home: Path) -> dict[str, str]:
     -------
     dict[str, str]
         ``GIT_CONFIG_GLOBAL``, ``GIT_CONFIG_NOSYSTEM``, ``GIT_CEILING_DIRECTORIES`` (the labs
-        folder), and `PLAYER_SETTINGS` as ``GIT_CONFIG_COUNT`` entries.
+        folder and the playground's), and `PLAYER_SETTINGS` as ``GIT_CONFIG_COUNT`` entries.
     """
     return {
         "GIT_CONFIG_GLOBAL": str(home / save.GITCONFIG_FILE),
         "GIT_CONFIG_NOSYSTEM": "1",
-        "GIT_CEILING_DIRECTORIES": str(home / save.LABS_FOLDER),
+        "GIT_CEILING_DIRECTORIES": f"{home / save.LABS_FOLDER}:{home / save.PLAYGROUND_FOLDER}",
         **config_entries(PLAYER_SETTINGS),
     }
 

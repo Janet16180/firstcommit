@@ -443,6 +443,15 @@ def test_git_opens_nano_to_edit_a_commit_message(image: str) -> None:
 
 @pytest.mark.docker
 @pytest.mark.slow
+def test_the_image_has_vim_for_the_playgrounds_editor_way_and_vi_opens_it(image: str) -> None:
+    programs = in_image(image, 'readlink -f "$(command -v vim)" "$(command -v vi)"; vim --version | head -n 1')
+
+    assert programs.splitlines()[:2] == ["/usr/bin/vim.basic", "/usr/bin/vim.basic"]
+    assert programs.splitlines()[2].startswith("VIM - Vi IMproved 9.1")
+
+
+@pytest.mark.docker
+@pytest.mark.slow
 def test_git_help_shows_the_manual(image: str) -> None:
     manual = in_image(image, "git help commit 2>&1")
 

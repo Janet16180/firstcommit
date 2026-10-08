@@ -6,7 +6,12 @@ Files under the game home (`home`):
 - ``active.json``: an `Active` record while a level is being played;
 - ``observed.json``: an `Observed` record, the lab as the page last saw it;
 - ``gitconfig``: the game's own global git configuration (see `firstcommit.gitcmd`);
-- ``labs/<level>/``: the lab of the level being played (`firstcommit.runner` owns it).
+- ``labs/<level>/``: the lab of the level being played (`firstcommit.runner` owns it);
+- ``playground.json``: a `Playground` record, once the free playground has been opened;
+- ``playground/``: the free playground's lab (`firstcommit.freeplay` owns it), apart from the labs;
+- ``playground-shells/<person>/``: the files of the playground's shell of each person, yours and
+  Alex's: its startup file, typed-command log, history and ``.hushlogin``, and for Alex a git
+  configuration of Alex's own; Alex's shell has it as its ``HOME``.
 
 The files are written atomically (termlab's store). Callers hold `lock` around every
 read-modify-write, so the command line and the web server never lose each other's update.
@@ -24,9 +29,9 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Annotated, Any, Literal, TypedDict, cast
 
-from termlab import store
+from termlab import sandbox, store
 
-from firstcommit.records import Command, Language, PullRequest, Seen, Snapshot
+from firstcommit.records import Command, Language, PlaygroundView, PullRequest, Seen, Snapshot, StartId, Who
 
 HOME_VARIABLE = "FIRSTCOMMIT_HOME"
 DEFAULT_HOME = "~/.firstcommit"
@@ -39,6 +44,9 @@ HUSHLOGIN_FILE = ".hushlogin"
 COMMANDS_FILE = "commands.log"
 HISTORY_FILE = "history"
 LABS_FOLDER = "labs"
+PLAYGROUND_FILE = "playground.json"
+PLAYGROUND_FOLDER = "playground"
+PLAYGROUND_SHELLS_FOLDER = "playground-shells"
 START_OVER = (
     "A save written by an older version of the game reads this way too. To start over, run "
     "`firstcommit reset --yes`, or the `reset` command of the script that starts the game; either erases your progress."
@@ -169,6 +177,24 @@ class Observed(TypedDict):
     teammate: Snapshot | None
     told: int
     fresh: bool
+
+
+class Playground(TypedDict):
+    """
+    Where the player left the free playground.
+
+    ``start`` is the starting point its lab was last built from, and ``started`` when it was
+    built, which tells one build from the next, a Start over included. ``view`` and ``whose`` are
+    the view shown and whose repository it draws. ``alex_shown`` holds, for each start the player
+    has been in, whether Alex's terminal was shown; a start missing from it shows Alex as the
+    start's default does (`firstcommit.freeplay.Start.alex`).
+    """
+
+    start: StartId
+    started: IsoTime
+    alex_shown: dict[StartId, bool]
+    view: PlaygroundView
+    whose: Who
 
 
 def home() -> Path:
@@ -323,23 +349,55 @@ def clear_observed() -> None:
     (home() / OBSERVED_FILE).unlink(missing_ok=True)
 
 
-def ensure_gitconfig(initial: str) -> Path:
+def load_playground() -> Playground | None:
     """
-    Create the game's global git configuration if it does not exist yet.
+    Read where the player left the free playground.
+
+    Returns
+    -------
+    Playground | None
+        The record, or None if the playground was never opened.
+
+    Raises
+    ------
+    SaveError
+        If ``playground.json`` does not hold a valid `Playground` record.
+    """
+    return cast(Playground | None, _read(PLAYGROUND_FILE, Playground))
+
+
+def write_playground(playground: Playground) -> None:
+    """
+    Replace the record of where the player left the free playground.
+
+    Parameters
+    ----------
+    playground : Playground
+        The whole record.
+    """
+    store.write_json(home() / PLAYGROUND_FILE, dict(playground))
+
+
+def ensure_gitconfig(initial: str, folder: Path | None = None) -> Path:
+    """
+    Create a global git configuration of the game's if it does not exist yet.
 
     An existing file is never overwritten: the player sets their name in it while playing.
 
     Parameters
     ----------
     initial : str
-        Content of a new file (`firstcommit.gitcmd.BASE_CONFIG`).
+        Content of a new file (`firstcommit.gitcmd.base_config`).
+    folder : Path | None
+        Where it goes, such as Alex's playground shell (`ensure_playground_shell`); None is the
+        game home, for the game's own configuration.
 
     Returns
     -------
     Path
         The configuration file.
     """
-    path = home() / GITCONFIG_FILE
+    path = (home() if folder is None else folder) / GITCONFIG_FILE
     path.parent.mkdir(parents=True, exist_ok=True)
     # Mode "x" creates the file only if it is missing, in one step, so two processes cannot both write it.
     with contextlib.suppress(FileExistsError), path.open("x") as handle:
@@ -382,10 +440,31 @@ def ensure_hushlogin() -> Path:
     return path
 
 
+def ensure_playground_shell(person: Who) -> Path:
+    """
+    Make the folder of one person's playground shell, with the ``.hushlogin`` that keeps it quiet, if it is missing.
+
+    Parameters
+    ----------
+    person : Who
+        ``"you"`` or ``"alex"``.
+
+    Returns
+    -------
+    Path
+        ``<home>/playground-shells/<person>``.
+    """
+    folder = home() / PLAYGROUND_SHELLS_FOLDER / person
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / HUSHLOGIN_FILE).touch()
+    return folder
+
+
 def erase() -> None:
-    """Delete the progress, the level in progress, the last observation, the game's git configuration and its shell's files (startup file, hushlogin, typed-command log, history), damaged or not."""
-    for name in (PROGRESS_FILE, ACTIVE_FILE, OBSERVED_FILE, GITCONFIG_FILE, STARTUP_FILE, HUSHLOGIN_FILE, COMMANDS_FILE, HISTORY_FILE):
+    """Delete the progress, the level in progress, the last observation, the playground's record and shells, the game's git configuration and its shell's files (startup file, hushlogin, typed-command log, history), damaged or not."""
+    for name in (PROGRESS_FILE, ACTIVE_FILE, OBSERVED_FILE, PLAYGROUND_FILE, GITCONFIG_FILE, STARTUP_FILE, HUSHLOGIN_FILE, COMMANDS_FILE, HISTORY_FILE):
         (home() / name).unlink(missing_ok=True)
+    sandbox.remove_tree(home() / PLAYGROUND_SHELLS_FOLDER, home())
 
 
 class Pulls(TypedDict):
@@ -496,7 +575,7 @@ def _mismatch(value: Any, expected: Any, where: str) -> str | None:
     value : Any
         Value read from JSON.
     expected : Any
-        A `TypedDict`, ``dict[str, X]``, ``list[X]``, ``Literal[...]``, ``X | None``, `IsoDate`,
+        A `TypedDict`, ``dict[K, X]`` (``K`` is ``str`` or a ``Literal``), ``list[X]``, ``Literal[...]``, ``X | None``, `IsoDate`,
         `IsoTime`, ``int``, ``str``, ``bool`` or ``Any``.
     where : str
         Dotted path of the value in its file, for the message; empty for the whole record.
@@ -516,7 +595,8 @@ def _mismatch(value: Any, expected: Any, where: str) -> str | None:
     if typing.is_typeddict(expected):
         problem = _record_mismatch(value, expected, where)
     elif origin is dict:
-        problem = _mapping_mismatch(value, typing.get_args(expected)[1], where)
+        key, item = typing.get_args(expected)
+        problem = _mapping_mismatch(value, key, item, where)
     elif origin is list:
         problem = _list_mismatch(value, typing.get_args(expected)[0], where)
     elif origin is Annotated:
@@ -620,14 +700,16 @@ def _record_mismatch(value: Any, record: Any, where: str) -> str | None:
     return problem
 
 
-def _mapping_mismatch(value: Any, item: Any, where: str) -> str | None:
+def _mapping_mismatch(value: Any, key: Any, item: Any, where: str) -> str | None:
     """
-    Compare a JSON value with ``dict[str, item]``.
+    Compare a JSON value with ``dict[key, item]``.
 
     Parameters
     ----------
     value : Any
         Value read from JSON.
+    key : Any
+        The type of every key: ``str``, or a ``Literal`` of the keys allowed.
     item : Any
         The type of every value in the mapping.
     where : str
@@ -640,7 +722,7 @@ def _mapping_mismatch(value: Any, item: Any, where: str) -> str | None:
     """
     if not isinstance(value, dict):
         return f"`{where}` must be an object, not {value!r}"
-    return _first(_mismatch(entry, item, f"{where}.{key}") for key, entry in value.items())
+    return _first(_mismatch(name, key, f"{where}.{name}") or _mismatch(entry, item, f"{where}.{name}") for name, entry in value.items())
 
 
 def _first(problems: Iterable[str | None]) -> str | None:
