@@ -190,7 +190,7 @@ every copy, a ship launching, generated files flooding into every copy, a forced
 Alex's chain on the mothership, an unreviewed commit on the mothership's ``main`` landing at
 Alex's station, or a search beam that finds no copy of lines never staged or committed.
 """
-Art = Literal["space", "timeline", "terminal", "planet", "flag", "zones", "conveyor", "capsule", "chain", "orbit", "rocket", "pull", "alarm", "fork", "merge", "collision", "blackbox", "meteor"]
+Art = Literal["space", "timeline", "terminal", "planet", "flag", "zones", "conveyor", "capsule", "chain", "orbit", "rocket", "pull", "alarm", "fork", "merge", "collision", "blackbox", "meteor", "simulator"]
 """The pictures a level's scene can show; the page draws each one (its art files)."""
 View = Literal["station", "crew", "history", "sides", "blackbox", "board", "focus"]
 """

@@ -25,7 +25,7 @@ CARD = kit.CommandCard(
     text="A file of names and patterns Git ignores: `git status` stops listing them and `git add .` skips them. The files stay on your disk.",
 )
 SCENE = [
-    kit.SceneFrame(art="conveyor", text="The jump simulator ran all night, and it writes a pile of output files every time it runs."),
+    kit.SceneFrame(art="simulator", text="The jump simulator ran all night, and it writes a pile of output files every time it runs."),
     kit.SceneFrame(art="zones", text="Generated files stay on your disk, but they never belong in a commit."),
 ]
 
