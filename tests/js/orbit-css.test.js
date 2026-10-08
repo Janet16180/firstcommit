@@ -152,7 +152,7 @@ test("two sides take the zones' place, and open each conflicted file as a book o
   const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
   assert.match(rule('.sky[data-view="sides"] .viz'), /display: none;/);
   assert.match(rule(".sides-pages"), /grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\);/);
-  assert.match(rule('.sides-half[data-author="alex"]'), /--side: var\(--z-re\);/);
+  assert.match(rule('.sides-half[data-author="alex"]'), /--side: var\(--alex\);/);
   assert.match(rule(".sides-line"), /white-space: pre-wrap;/);
 });
 
@@ -193,4 +193,16 @@ test("the field guide over a level is a large dialog that scrolls within itself,
   assert.match(rule(".guide-overlay"), /max-height: calc\(100vh - 48px\);/);
   assert.match(rule(".guide-overlay"), /overflow-y: auto;/);
   assert.match(rule(".guide-overlay::backdrop"), /background:/);
+});
+
+test("Alex wears a green of their own in both looks, and no Alex rule borrows the mothership's pink", () => {
+  assert.equal(tokens(css, ":root")["--alex"], "#3D8A18");
+  assert.equal(tokens(css, ':root[data-theme="dark"]')["--alex"], "#A6E05A");
+  const art = fs.readFileSync(path.join(STATIC, "art-style.css"), "utf8");
+  const alexRules = [...`${css}\n${art}`.matchAll(/([^{}]*alex[^{}]*)\{([^}]*)\}/gi)].map((match) => ({ selector: match[1].trim(), body: match[2] }));
+  assert.ok(alexRules.length >= 3);
+  for (const rule of alexRules) assert.doesNotMatch(rule.body, /--z-re\b/, rule.selector);
+  for (const selector of ['.sides-half[data-author="alex"]', '.strip-capsule[data-author="alex"]']) {
+    assert.match(alexRules.find((rule) => rule.selector.endsWith(selector)).body, /var\(--alex\)/, selector);
+  }
 });

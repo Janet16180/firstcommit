@@ -19,6 +19,9 @@
   --z-st: #1D93A8;
   --z-va: #7A52D1;
   --z-re: #D23F6A;
+  /* Alex's green: #3D8A18 here and #A6E05A in dark, both 3:1 or more on the panel and the page;
+     pink is the mothership's alone. Text on it is --on-accent, white here. */
+  --alex: #3D8A18;
   --s-new: #D33A32;
   --s-mod: #B98A00;
   --s-clean: #A9A2C0;
@@ -76,6 +79,7 @@
   --z-st: #4FD8EA;
   --z-va: #B08CFF;
   --z-re: #FF6F98;
+  --alex: #A6E05A;
   --s-new: #FF6B5E;
   --s-mod: #FFD054;
   --s-clean: #5E5683;
@@ -619,7 +623,7 @@ pre.code code {
 }
 
 .sides-half[data-author="alex"] {
-  --side: var(--z-re);
+  --side: var(--alex);
 }
 
 .sides-head {
@@ -919,7 +923,7 @@ pre.code code {
 }
 
 .strip-capsule[data-author="alex"] {
-  background: var(--z-re);
+  background: var(--alex);
 }
 
 .strip-more {
