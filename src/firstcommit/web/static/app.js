@@ -295,8 +295,7 @@
       for (const person of ["you", "alex"]) if (play[person]) play[person].element.remove();
     },
     type: (person, text) => play[person] && play[person].type(text),
-    /* Raw keys need termlab's keys(raw), which comes with T1b; until then Get me out sends nothing. */
-    keys: (person, keys) => play[person] && play[person].keys && play[person].keys(keys),
+    keys: (person, keys) => play[person] && play[person].keys(keys),
   };
 
   /* A refused WebSocket looks like a network failure; asking the API tells a stale key apart
