@@ -572,3 +572,195 @@ order, and a local commit after the push.
 | card | `git status` says what is staged, what changed, and how the branch stands against its upstream | E14, E53, E63; git-status(1) |
 | `DEBRIS_SEALED`, `DEBRIS_LAUNCHED` (lost) | a commit cannot be taken back until a later chapter | as vault-seal; `kit.in_history` on both repositories |
 | scene, briefing | the history was lost with the computer; the files survived | setup: a plain folder, no `.git` (E33: the history lives only in `.git`) |
+
+## Wave 2: the branch chapter (added 2026-10-08)
+
+Experiments run in the image (`firstcommit:latest`, git 2.43.0) with the game's configuration, as
+for wave 1, numbered on from E68:
+
+| Tag | What ran | Result |
+|---|---|---|
+| E69 | a bare `github/project.git` with five commits by three people; from its parent folder, `git clone github/project.git` | status 0; the folder `project`; `origin` records the bare repository's absolute path; `git log --oneline` there lists all five, the newest with `(HEAD -> main, origin/main, origin/HEAD)`; `git branch -a` lists `main`, `remotes/origin/HEAD -> origin/main` and `remotes/origin/main`; `git log --reverse --format=%an` starts with the first author |
+| E70 | the same `git clone` again, with `project` there | status 128: the destination exists and is not empty |
+| E71 | in the clone, `git branch scout`, then `ls`, `git log --oneline -1`, `git branch` | status 0; the folder unchanged; `scout` on the same commit as `main`; still on `main` (`* main`) |
+| E72 | `git branch scout` again; `git switch nosuch` | both 128: the branch exists; no such reference |
+| E73 | `git switch scout`, commit `probe.txt`, `git switch main`, `ls`, `git switch scout`, `ls` | all 0; `scout` moves on and `main` stays; on `main` the folder has no `probe.txt`; back on `scout` it does |
+| E74 | `git switch -c side`; `git checkout -b side2` | both 0, each on its new branch |
+| E75 | a clone level with its remote and a local `scout` the remote lacks; on `main`, a plain `git push` | status 0, everything up to date; the remote has `main` only |
+| E76 | on `scout`, a plain `git push` | status 128: `scout` has no upstream; git suggests `--set-upstream origin scout` |
+| E77 | `git push -u origin scout`, from `scout` and, in a fresh setup, from `main`; `git branch -r` | status 0 both ways; the remote has `scout` at the local `scout`; `scout@{upstream}` is `origin/scout`; still on `main` in the second; `-r` lists `origin/main` and `origin/scout` |
+| E78 | `git push --all` | status 0; every local branch reaches the remote |
+| E79 | the playground with `lights.cfg` on `main` and your uncommitted fix to it; Alex pushes a change to `notes.txt`; `git switch -c fix-lights`, `git commit -am`, `git push -u origin fix-lights`, `git switch main`, `git pull` | all 0; the edit came along (` M lights.cfg` on `fix-lights`); the remote's `fix-lights` holds the fix, its `main` only Alex's commit and the start; back on `main` the file is unfixed; the pull fast-forwards to Alex's commit |
+| E80 | the same setup; `git restore lights.cfg` | the fix is gone from the folder, in no commit |
+| E81 | the same setup; `git stash` | the fix is kept in a commit `refs/stash` reaches (`git stash list` shows it) |
+| E82 | from the lab, `bash -c 'cd project && git log --oneline'` | status 0: the line's status is git's |
+
+### Level `branch-recruit` (New recruit, 5-1)
+
+*Re-checked* by `tests/levels/test_branch_recruit.py`: no project folder at the start, the
+history's size and authors, the clone holding every commit, the count right and wrong and not a
+number, a `git log` before the clone and before `cd project` (Rama's two answers), a clone in
+another folder, and a plain repository named `project`.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, debrief, scene | a clone copies the whole history, names the address `origin`, and makes a branch such as `main` to work on | E69; git-clone(1) DESCRIPTION ("creates and checks out an initial branch that is forked from the cloned repository's currently active branch") |
+| briefing, hint 1 | `git clone github/project.git` makes the folder `project` | E69, E70 |
+| hint 2, `RIGHT_COUNT`, `WRONG_COUNT` | `git log --oneline` prints one line per commit | E69 |
+| hint 3, `LISTED`, debrief | `git branch -a` lists your branches and the remote's, as `remotes/origin/main` | E69; git-branch(1) DESCRIPTION ("option -a shows both local and remote branches") |
+| debrief | `origin/main` is the record of the remote's `main` as last heard | git-clone(1) ("remote-tracking branches"); gitglossary(7) remote-tracking branch; E53 |
+| `NOT_CLONED_YET`, `OUTSIDE_THE_CLONE` | a git command in the lab's folder fails, before the clone and after it, until `cd project` | the level's tests (status 128 both times); E82 |
+
+### Level `branch-course` (A second course, 5-2)
+
+*Re-checked* by `tests/levels/test_branch_course.py`: the branch copies no file and points at
+`main`'s commit, `switch -c` passes two goals at once, the probe leaves the folder on `main` and
+comes back on `scout`, the probe committed on `main` (lost), and an `ls` before the switch back.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, prediction reveal, `MADE` | `git branch <name>` makes a label on the current commit, copies no file, and does not switch | E71; git-branch(1) ("creates a new branch head named <branchname> which points to the current HEAD") |
+| `ON`, scene, debrief | after `git switch`, new commits move that branch only | E73; git-switch(1) ("All new commits will be added to the tip of this branch") |
+| `BACK_ON_MAIN`, `LOOKED`, debrief | switching rewrites the working folder to the branch's last commit; the probe comes back on `scout` | E73; git-switch(1) ("The working tree and the index are updated to match the branch") |
+| `PROBE_ON_MAIN` (lost) | moving a commit off `main` is not taught before the undo chapter | the plan, 7-3 |
+
+### Level `branch-send` (Send a course up, 5-3)
+
+*Re-checked* by `tests/levels/test_branch_send.py`: a plain push on `main` leaves `scout` here,
+`git push -u origin scout` from `main` (the upstream set, `main` on the mothership unchanged), a
+plain push on `scout` (128, the level's reaction), the survey merged into `main` and pushed
+(lost), and a list typed before the push.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, `PUSHED_MAIN`, hint 1, debrief | a plain `git push` sends only the current branch, to its upstream | E75; git-config(1) `push.default` (`simple`, the default) |
+| card, hint 2, `NOT_SENT` | `git push origin <branch>` sends that branch by name from any branch | E77; git-push(1) `<refspec>` |
+| debrief | `-u` makes `origin/scout` the upstream, so a plain push on `scout` works next time | E77; git-push(1) `-u` |
+| `NO_UPSTREAM` | a plain push on a branch with no upstream stops | E76 |
+| hint 3, `LISTED` | `git branch -r` lists the remote-tracking branches | E77; git-branch(1) ("Option -r causes the remote-tracking branches to be listed") |
+
+### Level `branch-ticket` (Your first ticket, 5-4, boss)
+
+*Re-checked* by `tests/levels/test_branch_ticket.py`: Alex's push as a level event with your fix
+uncommitted, the goals in either order, the fix committed on `main` (lost), pushed to the
+mothership's `main` (lost), thrown away with `git restore` (lost), kept in the stash (not lost,
+and solvable from there), and a forced push (Rama's error, lost).
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, hint 2, debrief | `git switch -c` makes the branch on the current commit, moves onto it, and takes uncommitted changes along | E79; git-switch(1) DESCRIPTION (switching aborts only "if the operation leads to loss of local changes"; a new branch on HEAD changes no file) |
+| debrief | `git push -u origin fix-lights` sends the branch; the mothership's `main` keeps only the team's work; the pull on `main` brings Alex's commit | E79 |
+| `FIX_LOST` (lost) | `git restore` on the file drops an uncommitted fix for good | E80 |
+| `_fix_kept`, the stash test | a stashed fix is still in a commit a ref reaches | E81 |
+| `MAIN_TOUCHED`, `MINE_ON_MAIN` (lost) | taking a commit back or moving it off a branch comes in the undo chapter | the plan, 7-2 and 7-3 |
+| `ALEX_DROPPED`, `FORCED` (lost) | a forced push replaces the mothership's branch and drops Alex's commit | E68 |
+
+### Deck `branch`
+
+Checked the same way as the vault deck: each `verify` snippet and the predict card's `code` run
+in `tests/test_decks.py`.
+
+| Card | Claim | Evidence |
+|---|---|---|
+| `branch-clone-history` | a plain clone holds every commit; `--depth` makes a shallow one | `verify`: the copy counts five commits; git-clone(1) `--depth` ("a history truncated to the specified number of commits") |
+| `branch-is-a-label` | `git branch scout` points a new label at your commit; the folder and your branch stay; nothing reaches the remote | `verify`; E71 |
+| `branch-switch-folder` | back on `main`, the folder has no `probe.txt`; `scout` keeps it | `code` and `correct`; E73 |
+| `branch-push-one` | a plain push on `main` leaves a new `scout` here; `--all` sends every branch | `verify`; E75, E78 |
+| `branch-origin-main` | `origin/main` is a remote-tracking branch; `git branch -a` shows it as `remotes/origin/main` | E69; gitglossary(7) remote-tracking branch |
+| `branch-switch-c-carries` | `git switch -c` takes the uncommitted edit along | `verify`; E79 |
+| notes | as the cards above | the cards |
+
+## Wave 2: the conflict chapter (added 2026-10-08)
+
+Experiments run in the image (`firstcommit:latest`, git 2.43.0) with the game's configuration,
+numbered on from E82:
+
+| Tag | What ran | Result |
+|---|---|---|
+| E83 | `beacon` one commit ahead of `main`; on `main`, `git merge beacon` | status 0, a fast-forward: `main` at `beacon`'s commit, no new commit |
+| E84 | `main` and `scout` each a commit ahead on different files; `git merge --no-edit scout`; `git log --oneline --graph` on a terminal | status 0; a merge commit with two parents and git's `Merge branch 'scout'` message; both changes in the files; the graph draws the two lines joining |
+| E85 | the same with a plain `git merge scout` on a terminal (`script`), `core.editor = true` | status 0: git waits for the editor, which ends at once, and keeps its prepared message |
+| E86 | both branches changed the same line of `docking.txt`; `git merge --no-edit scout` | status 1; the file holds `<<<<<<< HEAD`, your line, `=======`, theirs, `>>>>>>> scout`; `git status` lists it unmerged |
+| E87 | then `git commit -m x` | status 128: git refuses while a file is unmerged |
+| E88 | then `git restore --theirs docking.txt` | status 0; the file holds `scout`'s line; still unmerged until added |
+| E89 | then `git add docking.txt` and a bare `git commit` | both 0; the merge commit has two parents and git's message (no editor opened) |
+| E90 | the conflict again; `git add` with the markers still in, then `git commit --no-edit` | both 0; the commit holds the markers |
+| E91 | three files in conflict; `git merge --abort`; then the merge again and `git reset --hard` | abort 0: no merge in progress, `HEAD` back at its commit, the files as before; reset 0, no merge in progress either |
+| E92 | an uncommitted edit to a file the merge does not touch; the merge stops; `git merge --abort` | the edit is still there |
+| E93 | an uncommitted edit to a file the merge would change; `git merge --no-edit scout` | status 1: git refuses before merging and names the file |
+| E94 | the playground: your commit sets bay 5 and adds `checklist.txt`, Alex pushed bay 4; `git push`, then `git pull --rebase` | push 1 (refused); pull 1, `docking.txt` unmerged, the checklist staged |
+| E95 | then `git restore --ours docking.txt`, `git add docking.txt`, `git rebase --continue` | `--ours` gives Alex's bay 4 during the rebase; continue 0 with `core.editor = true`; your commit replayed on Alex's with the checklist; the push goes through |
+| E96 | the same with `git pull --no-rebase`, `--theirs`, add, `git commit --no-edit`; Alex pulls, commits and pushes again; your `git push`, `git pull --no-rebase --no-edit`, `git push` | the merge commit has two parents; the push is refused (1), the pull merges without a conflict (0), the push goes through (0) |
+| E97 | after a merge committed with your side, `git restore --source=scout docking.txt` | status 0; the file holds `scout`'s version |
+
+### Level `conflict-meet` (Two crews meet, 6-1)
+
+*Re-checked* by `tests/levels/test_conflict_meet.py`: the fast-forward making no commit, the merge
+commit with two parents keeping both changes, `scout` merged first (lost), and a graph drawn before
+the merge.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, prediction reveal, `FORWARDED`, debrief | with nothing new on your branch, a merge slides the label and makes no commit | E83; git-merge(1) FAST-FORWARD MERGE |
+| card, `MERGED`, debrief | when both moved on, a merge commit with two parents keeps both changes | E84; git-merge(1) TRUE MERGE |
+| debrief, hint 2 | `--no-edit` keeps git's prepared message; without it git opens an editor on a terminal | E85; git-merge(1) `--edit, -e, --no-edit` |
+| `MERGED_BEACON` (lost) | merged after `scout`, `beacon` comes in through a merge commit | the level's test |
+
+### Level `conflict-abort` (Abort the docking, 6-2)
+
+*Re-checked* by `tests/levels/test_conflict_abort.py`: the pull stopping as a level event with both
+files in conflict, the abort keeping the note, a hard reset (Rama's warning, the note lost), the
+merge finished instead (lost), and the merge still paused.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, `BACK`, debrief | `git merge --abort` goes back to before the merge; an edit to a file the merge did not touch stays | E91, E92; git-merge(1) `--abort` |
+| card, debrief | git can rebuild uncommitted changes only in some cases, so commit or stash before a merge | git-merge(1) `--abort` ("will in some cases be unable to reconstruct these changes") |
+| `LOOKED`, hint 1 | `git status` shows the merge in progress and the unmerged files | E86, E91 |
+| `RESET`, `NOTE_LOST`, debrief | `git reset --hard` ends the merge and drops uncommitted changes to tracked files | E91; git-reset(1) `--hard` |
+| scene | the pull stopped with conflicts in two files | the level's test |
+
+### Level `conflict-collision` (Collision, 6-3)
+
+*Re-checked* by `tests/levels/test_conflict_collision.py`: the markers, a commit refused while in
+conflict (Rama's answer), `--theirs` then still unmerged until added (Rama says so), bay 3 kept, the file written
+by hand, markers committed then fixed by a new commit, and bay 3 committed.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| debrief, `READ_BOTH`, hint 1 | the file holds both sides between `<<<<<<<`, `=======` and `>>>>>>>` | E86; git-merge(1) HOW CONFLICTS ARE PRESENTED |
+| card, hint 2 | `--theirs` gives the incoming side, `--ours` yours; under a rebase they can appear swapped | E88, E95; git-restore(1) `--ours, --theirs` |
+| card, `NOT_ADDED`, hint 3 | `git add` marks the conflict solved | E88, E89; git-merge(1) HOW TO RESOLVE CONFLICTS |
+| `ANSWER_FIRST` | a commit is refused while a file is unmerged | E87 |
+| `SIDE` | after `--ours` or `--theirs` the file stays unmerged until added | E88 |
+| `NOT_BAY_4_COMMITTED`, `BAY_3_COMMITTED` | a commit with markers or the wrong side is fixed by a new commit; `git restore --source=scout` brings `scout`'s version | E90, E97 |
+| debrief | `git commit --no-edit` finishes the merge with two parents; `git merge --abort` was there all along | E89, E91 |
+
+### Level `conflict-docking` (Docking collision, 6-4, boss)
+
+*Re-checked* by `tests/levels/test_conflict_docking.py`: the refused push and the stopped pull,
+both pulls answered with Alex's bay then Alex's second push and one more pull, bay 5 kept, a forced
+push (Rama's error, lost), and a hard reset to the mothership (the checklist lost).
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card | `git commit --no-edit` keeps the prepared message and finishes a merge once conflicts are added | E89; git-commit(1) `--no-edit` |
+| debrief | a merge finishes with `git commit --no-edit`, a rebase with `git rebase --continue`; the checklist comes along either way | E95, E96 |
+| debrief | the second push bounces, one more pull joins Alex's new commit without a conflict | E96 |
+| `ALEX_DROPPED`, `FORCED` (lost) | a forced push drops Alex's commits from the mothership | E68 |
+| `CHECKLIST_LOST` (lost) | `git reset --hard origin/main` leaves the checklist in no commit a ref reaches | the level's test |
+
+### Deck `conflict`
+
+Checked the same way as the vault deck: each `verify` snippet and the predict card's `code` run
+in `tests/test_decks.py`.
+
+| Card | Claim | Evidence |
+|---|---|---|
+| `conflict-fast-forward` | nothing new on `main`: the merge slides the label, no commit | `verify`; E83 |
+| `conflict-two-parents` | both moved on: a merge commit with two parents keeps both changes | `verify`; E84 |
+| `conflict-markers` | line 2 of the conflicted file is your side; the common version is not shown | `code` and `correct`; E86 |
+| `conflict-abort` | `--abort` goes back to before the merge; commit or stash first | `verify`; E91; git-merge(1) `--abort` |
+| `conflict-add-solves` | the file stays unmerged until `git add` | `verify`; E88 |
+| `conflict-add-markers` | `git add` takes markers and all, and marks the conflict solved | `verify`; E90 |
+| notes | as the cards above, plus `--no-edit` and the editor | E85 |

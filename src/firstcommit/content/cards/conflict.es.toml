@@ -1,0 +1,107 @@
+notes = """
+`git merge <branch>` trae los commits de un branch al branch donde estás. Si el tuyo no tiene nada
+que le falte al otro, Git solo avanza tu etiqueta: un fast-forward, sin commit nuevo. Si los dos
+avanzaron, Git crea un commit de merge con dos padres y conserva los cambios de los dos lados.
+Escribe `--no-edit` para conservar el mensaje que deja listo Git; sin él, Git abre un editor en una
+terminal.
+
+Si los dos lados cambiaron las mismas líneas, el merge se detiene: un conflicto. El archivo tiene
+las dos versiones entre marcadores, la tuya después de `<<<<<<<`, la del otro después de `=======`,
+hasta `>>>>>>>`. Elige, o escribe tú la versión correcta; `git add` marca el archivo como resuelto,
+y `git commit --no-edit` termina el merge. `git merge --abort` vuelve a antes del merge; haz commit
+o guarda en el stash tus propios cambios antes, porque Git puede reconstruirlos solo en algunos
+casos.
+
+    $ git merge beacon                   # nada nuevo aquí: la etiqueta avanza
+    $ git merge --no-edit scout          # los dos avanzaron: un commit de merge con dos padres
+    $ git status                         # un merge en curso, y sus conflictos
+    $ git restore --theirs docking.txt   # conserva el lado que llega (--ours: el tuyo)
+    $ git add docking.txt                # marca el conflicto como resuelto
+    $ git commit --no-edit               # termina el merge
+    $ git merge --abort                  # o vuelve a antes del merge
+"""
+
+[[card]]
+id = "conflict-fast-forward"
+prompt = "`beacon` está un commit adelante de `main`, y `main` no tiene nada que le falte a `beacon`. En `main`, ejecutas `git merge beacon`. ¿Qué pasa?"
+correct = "`main` avanza al commit de `beacon`; ningún commit nuevo"
+wrong = [
+    "Git crea un commit de merge con dos padres",
+    "Git copia el commit de `beacon` sobre `main` como uno nuevo",
+    "Git se detiene y te pide resolver un conflicto",
+]
+explain = """
+Cuando tu branch no tiene nada nuevo, no hay nada que juntar: Git solo avanza tu etiqueta hasta el
+commit del otro branch. Eso es un fast-forward, y no crea ningún commit. Un commit de merge aparece
+solo cuando cada lado tiene commits que al otro le faltan.
+"""
+
+[[card]]
+id = "conflict-two-parents"
+prompt = "`main` y `scout` tienen cada uno un commit que al otro le falta, en archivos distintos. Después de `git merge --no-edit scout` en `main`, ¿cuál es el commit más nuevo de `main`?"
+correct = "Un commit de merge con dos padres, con los dos cambios"
+wrong = [
+    "El commit de `scout`, copiado encima de `main`",
+    "Un commit de merge con solo la versión de `scout` de los archivos",
+    "Tu último commit: Git se detiene a preguntar por un conflicto",
+]
+explain = """
+Los dos lados avanzaron, así que Git los junta en un commit de merge nuevo cuyos dos padres son las
+dos puntas. Los cambios tocaron archivos distintos, así que nada entra en conflicto y se conservan
+los dos. Un merge nunca copia un lado encima del otro.
+"""
+
+[[card]]
+id = "conflict-markers"
+prompt = "¿Qué muestra el último comando?"
+explain = """
+El merge se detuvo por un conflicto y escribió las dos versiones en el archivo: la línea 1 es
+`<<<<<<< HEAD`, la línea 2 tu lado (la bahía 3 de `main`), luego `=======`, la bahía 4 de `scout`
+y `>>>>>>> scout`. La bahía de la que partieron los dos no aparece.
+"""
+
+[[card]]
+id = "conflict-abort"
+prompt = "Un merge se detuvo con conflictos en tres archivos, y quieres dejarlo por hoy. ¿Qué hace `git merge --abort`?"
+correct = "Vuelve a como estaba todo antes del merge"
+wrong = [
+    "Conserva tu lado de cada archivo en conflicto y hace commit",
+    "Borra el branch que estabas trayendo",
+    "Hace commit de los archivos como están, con marcadores y todo",
+]
+explain = """
+`git merge --abort` detiene el merge en pausa y reconstruye el estado de antes: tu branch y sus
+archivos como estaban. El otro branch no se toca, así que puedes volver a hacer merge más tarde.
+Haz commit o guarda en el stash tus propios cambios antes de un merge: Git puede reconstruirlos
+solo en algunos casos.
+"""
+
+[[card]]
+id = "conflict-add-solves"
+prompt = "Durante un conflicto, escribiste la versión correcta de `docking.txt` y la guardaste. ¿Qué le dice a Git que el conflicto en ese archivo está resuelto?"
+correct = "`git add docking.txt`"
+wrong = [
+    "Guardar el archivo sin los marcadores",
+    "`git status`, que ve que los marcadores ya no están",
+    "Nada: Git revisa el archivo cuando vuelves a hacer merge",
+]
+explain = """
+Git no lee tu archivo para decidir: el archivo sigue sin resolver hasta que lo agregas al staging
+area. `git add` guarda tu versión en el staging area y marca el conflicto como resuelto; luego
+`git commit --no-edit` termina el merge.
+"""
+
+[[card]]
+id = "conflict-add-markers"
+prompt = "Durante un conflicto, ejecutas `git add` en un archivo que todavía tiene los marcadores. ¿Qué pasa?"
+correct = "Git lo agrega, con marcadores y todo, como resuelto"
+wrong = [
+    "Git se niega mientras estén los marcadores",
+    "Git quita los marcadores y conserva tu lado",
+    "Git lo agrega pero deja el conflicto abierto",
+]
+explain = """
+`git add` no busca marcadores: agrega el archivo como está y marca el conflicto como resuelto, así
+que el próximo commit se lleva los marcadores. Lee el archivo antes de agregarlo; si se hizo commit
+de marcadores, arregla el archivo y haz commit otra vez.
+"""

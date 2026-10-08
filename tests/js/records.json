@@ -794,7 +794,8 @@
   "quest_done": false,
   "done": [
    "look"
-  ]
+  ],
+  "lost": false
  },
  "check_unsolved": {
   "solved": false,

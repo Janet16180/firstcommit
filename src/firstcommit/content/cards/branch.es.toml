@@ -1,0 +1,101 @@
+notes = """
+Un clone copia un repositorio entero: cada commit de su historia, un remoto llamado `origin` con su
+dirección y un branch propio, como `main`, en el commit donde estaba el branch del remoto.
+
+Un branch es una etiqueta sobre un commit. `git branch scout` escribe una etiqueta nueva sobre el
+commit donde estás y no copia ningún archivo. `HEAD` dice en qué branch estás; `git switch scout`
+lo lleva allí y reescribe la carpeta de trabajo según el último commit de ese branch. Tu próximo
+commit mueve solo el branch donde estás. Los cambios sin commit no pertenecen a ningún branch:
+`git switch -c` los lleva al branch nuevo.
+
+`origin/main` es lo que tu repositorio registró del `main` del remoto, de la última vez que tuvo
+noticias de él. Un `git push` simple envía solo el branch donde estás, a su upstream; un branch
+nuevo sube por su nombre, y `-u` convierte la copia del remoto en su upstream.
+
+    $ git clone github/project.git   # copia un repositorio con toda su historia
+    $ git branch scout               # una etiqueta nueva sobre el commit donde estás
+    $ git switch scout               # ve a ella; la carpeta de trabajo la sigue
+    $ git switch -c fix-lights       # crea un branch y ve a él, con tus cambios
+    $ git push -u origin scout       # envía un branch por su nombre y lo sigue
+    $ git branch -a                  # tus branches y los del remoto
+"""
+
+[[card]]
+id = "branch-clone-history"
+prompt = "Clonas un repositorio cuyo `main` tiene 40 commits. ¿Cuánta de esa historia queda en tu clone?"
+correct = "Los 40 commits"
+wrong = [
+    "Solo el último commit, con sus archivos",
+    "Los archivos del último commit, sin historia",
+    "Los últimos diez commits",
+]
+explain = """
+`git clone` copia toda la historia: cada commit al que llegan los branches del remoto, con su
+autor, fecha y mensaje. Por eso puedes leer `git log` en un clone enseguida, sin preguntarle al
+remoto. Un clone hecho con `--depth` es parcial y tiene menos, pero un `git clone` simple lo tiene
+todo.
+"""
+
+[[card]]
+id = "branch-is-a-label"
+prompt = "Estás en `main` y ejecutas `git branch scout`. ¿Qué cambia?"
+correct = "Una etiqueta nueva, `scout`, apunta ahora a tu commit"
+wrong = [
+    "La carpeta de trabajo se copia en una carpeta nueva para `scout`",
+    "Ahora estás en `scout`, listo para hacer commit allí",
+    "También se crea un branch `scout` en el remoto",
+]
+explain = """
+`git branch scout` escribe una etiqueta nueva sobre el commit donde estás. No se copia ningún
+archivo, sigues en `main` (`git switch scout` te lleva) y no llega nada al remoto hasta que haces
+push del branch.
+"""
+
+[[card]]
+id = "branch-switch-folder"
+prompt = "¿Qué muestra el último comando?"
+explain = """
+`git switch main` reescribe la carpeta de trabajo según el último commit de `main`, que no tiene
+`probe.txt`, así que el archivo sale de la carpeta. No se pierde: vive en el commit de `scout`, y
+`git switch scout` lo trae de vuelta.
+"""
+
+[[card]]
+id = "branch-push-one"
+prompt = "Estás en `main`, que tiene upstream, y tienes un branch `scout` que el remoto nunca vio. Ejecutas un `git push` simple. ¿Qué llega al remoto?"
+correct = "Solo `main`"
+wrong = [
+    "`main` y `scout`, porque los dos son tuyos",
+    "Solo `scout`, porque es nuevo",
+    "Cada branch que tiene un commit que le falta al remoto",
+]
+explain = """
+Con la configuración por defecto de git, un `git push` simple envía solo el branch donde estás, a
+su upstream. `scout` se queda aquí hasta que lo nombras: `git push -u origin scout`, que funciona
+desde cualquier branch. `git push --all` enviaría todos los branches.
+"""
+
+[[card]]
+id = "branch-origin-main"
+prompt = "En tu clone, ¿cómo se llama lo que tu repositorio registró de dónde estaba el `main` del remoto `origin` la última vez que tuvo noticias de él?"
+accept = ["origin/main", "remotes/origin/main", "refs/remotes/origin/main"]
+explain = """
+`origin/main` es un remote-tracking branch: una etiqueta que tu repositorio mueve cuando tiene
+noticias de `origin` (clone, fetch, pull, push). `git branch -a` lo lista como
+`remotes/origin/main`. No es el remoto en sí, solo sus últimas noticias.
+"""
+
+[[card]]
+id = "branch-switch-c-carries"
+prompt = "Editaste `lights.cfg` en `main` y no hiciste commit. Ejecutas `git switch -c fix-lights`. ¿Dónde está tu cambio?"
+correct = "En la carpeta de trabajo, en `fix-lights`, todavía sin commit"
+wrong = [
+    "Se quedó en `main`; `fix-lights` empieza sin él",
+    "Con un commit en `main` antes del switch",
+    "Se perdió: git descarta los cambios al crear un branch",
+]
+explain = """
+Los cambios sin commit no pertenecen a ningún branch: están en la carpeta de trabajo y en el
+staging area. `git switch -c` crea el branch sobre el commit donde estás, así que nada en la
+carpeta tiene que cambiar, y el cambio va contigo. Haz commit allí, y `main` nunca lo ve.
+"""
