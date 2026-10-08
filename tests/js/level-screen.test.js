@@ -417,6 +417,16 @@ test("a prediction sends the choice, shows the reveal on Rama's line in a neutra
   run.view.dispose();
 });
 
+test("a line typed while a prediction waits, that the game has nothing to say about, gets a nudge to answer it first", async () => {
+  const level = seenLevel();
+  level.steps[1] = { ...level.steps[1], kind: "choice", question: para("Where does it go?"), choices: [{ value: "dock", text: para("The dock") }] };
+  const run = screen({ replies: { "/api/level": level, "/api/observe": { ...quiet(), commands: [{ line: "git fetch", status: 0 }] } } });
+  await settle();
+  assert.equal(run.q(".comms-text").textContent, "Answer the prediction first: the goals after it wait for your answer.");
+  assert.equal(run.q(".comms").dataset.mood, "info");
+  run.view.dispose();
+});
+
 test("a challenge says so in the head, hides its command until solved, watches every goal, and docks in gold", async () => {
   const level = { ...seenLevel(), challenge: true, card: null };
   const run = screen({ active: { ...record("active"), step: 0, done: [] }, replies: { "/api/level": level, "/api/step": { ...record("step"), step: 0, done: [] } } });

@@ -23,7 +23,7 @@
 const LevelScreen = (function () {
   const { el } = Dom;
   const { t } = Strings;
-  const SAY = { preparing: "level.preparing", start: "level.start", down: "level.down", back: "level.back", hint: "level.hint", ended: "level.ended", partMet: "level.partMet" };
+  const SAY = { preparing: "level.preparing", start: "level.start", down: "level.down", back: "level.back", hint: "level.hint", ended: "level.ended", partMet: "level.partMet", predictFirst: "level.predictFirst" };
 
 
   function hud(screen) {
@@ -254,6 +254,10 @@ const LevelScreen = (function () {
     else if (typed.length) screen.ctx.sound.play("command");
   }
 
+  /* Whether the current goal is a prediction: the goals after it are not looked at until it is
+     answered, so lines typed meanwhile may get no word from the game. */
+  const predicting = ({ level, state }) => state.step < level.steps.length && level.steps[state.step].kind === "choice";
+
   async function tick(screen) {
     const { game } = screen.ctx;
     try {
@@ -264,6 +268,7 @@ const LevelScreen = (function () {
       if (screen.offline) screen.ui.comms.say(t(SAY.back), "info");
       screen.offline = false;
       react(screen, observation.reactions);
+      if (observation.commands.length && !observation.reactions.length && predicting(screen)) screen.ui.comms.say(t(SAY.predictFirst), "info");
       echo(screen, observation.commands);
       if (observation.commands.length) await recount(screen);
       if (plan.watchStep) stepped(screen, await game.step(null), true);
