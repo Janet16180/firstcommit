@@ -135,7 +135,7 @@ test("each row's lane draws its wire pieces stretched to the row, one column apa
   const chain = drawn(forked());
   const lane = rowOf(chain, "d").querySelector("svg.chain-lane");
   assert.equal(lane.getAttribute("preserveAspectRatio"), "none");
-  assert.deepEqual([...lane.querySelectorAll("path.chain-wire")].map((path) => path.getAttribute("d")), ["M10 0 L10 100", "M32 50 L32 100"]);
+  assert.deepEqual([...lane.querySelectorAll("path.chain-wire")].map((path) => path.getAttribute("d")), ["M10 0 L10 100", "M38 50 L38 100"]);
   assert.equal(rowOf(chain, "d").querySelector(".chain-cap").style.getPropertyValue("--column"), "1");
 });
 
@@ -197,4 +197,14 @@ test("a bookmark or the mothership ahead of main on main's own line keeps main's
   const github = snapshot({ commits: [commit("y", ["c"], 9), ...forked().commits], refs: [ref("main", "y")] });
   const chain = drawn(forked(), { github, show: { mothership: true, alex: false, ghosts: false } });
   assert.equal(rowOf(chain, "y").querySelector(".chain-cap").style.getPropertyValue("--column"), "0");
+});
+
+test("main's column stays empty above main's tip: every branch made from it, even on its tip, gets a column of its own", () => {
+  const tips = snapshot({ commits: [commit("e", ["c"], 7), commit("q", ["c"], 6), commit("l", ["c"], 5), ...forked().commits], refs: [ref("main", "c"), ref("dim", "e"), ref("quiet", "q"), ref("lights", "l"), ref("scout", "d")], branch: "dim", head: "e" });
+  const chain = drawn(tips);
+  const columnOf = (name) => rowOf(chain, name).querySelector(".chain-cap").style.getPropertyValue("--column");
+  assert.deepEqual(["e", "q", "l"].map(columnOf).sort(), ["1", "2", "3"]);
+  const above = rows(chain).slice(0, rows(chain).indexOf(rowOf(chain, "c")));
+  const inMainColumn = above.flatMap((row) => [...row.querySelectorAll("path.chain-wire")].map((path) => path.getAttribute("d"))).filter((d) => d.startsWith("M10 "));
+  assert.deepEqual(inMainColumn, []);
 });

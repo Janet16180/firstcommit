@@ -2264,7 +2264,7 @@ pre.code code {
 .chain-lanes {
   position: relative;
   flex: none;
-  width: calc(20px + (var(--columns, 1) - 1) * 22px);
+  width: calc(20px + (var(--columns, 1) - 1) * var(--column-width));
 }
 
 .chain-lane {
@@ -2307,7 +2307,7 @@ pre.code code {
 .chain-cap {
   position: absolute;
   top: 50%;
-  left: calc(var(--column, 0) * 22px + 2px);
+  left: calc(var(--column, 0) * var(--column-width) + 2px);
   z-index: 1;
   width: 16px;
   height: 16px;
