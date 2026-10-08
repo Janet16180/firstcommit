@@ -167,6 +167,29 @@ const createGameApi = (function () {
      the line `git reflog` prints for it. */
   const REFLOG_ENTRY = record({ old: text, new: text, message: text, line: text });
   const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), teammate: nullable(SNAPSHOT), events: EVENTS, teammate_events: EVENTS, buttons: BARS, commands: list(record({ line: text, status: number })), reactions: list(record({ line: text, mood: MOOD, text: BLOCKS, moment: nullable(MOMENT) })), conflicts: list(CONFLICT), reflog: list(REFLOG_ENTRY), ghosts: list(COMMIT), texts: list(record({ path: text, folder: nullable(text), index: nullable(text) })), graph: nullable(list(text)) });
+  /* The free-play playground (docs/drafts/playground/plan.md, E3): its views, its starting points
+     (each with the chapters whose commands it uses), and the current start's preferences, with a
+     stamp that changes every time the start is built, so the page replaces both shells. */
+  const PG_VIEW = oneOf("chain", "history", "desk", "crew", "conflict", "movelog", "graph");
+  const PLAYGROUND = record({
+    starts: list(record({ id: text, title: text, blurb: text, banner: text, view: PG_VIEW, mothership: flag, alex: flag, uses: list(record({ id: text, title: text })) })),
+    current: nullable(record({ start: text, started: text, view: PG_VIEW, alex: flag, whose: WHO })),
+  });
+  /* A file with conflict markers, as the server read it: the lines git merged on its own, and
+     each block's two sides with the words after its markers; `read` names the text as read, for
+     a write back. */
+  const MARKED_PART = (value, where) => {
+    record({ kind: oneOf("clean", "block") })(value, where);
+    const fields = value.kind === "clean" ? { lines: list(text) } : { yours: list(text), theirs: list(text), yours_label: text, theirs_label: text };
+    record(fields)(value, where);
+  };
+  const MARKED = record({ path: text, read: text, parts: list(MARKED_PART) });
+  /* One person's side of the playground's lab (their snapshot is the observation's project or
+     teammate): `typed` holds every line typed in their terminal since the start was built,
+     oldest first; `graph` is null without a repository. */
+  const DESK = record({ conflicts: list(CONFLICT), marked: list(MARKED), reflog: list(REFLOG_ENTRY), ghosts: list(COMMIT), texts: list(record({ path: text, folder: nullable(text), index: nullable(text) })), graph: nullable(list(text)), typed: list(record({ line: text, status: number })) });
+  const PG_OBSERVATION = record({ start: text, started: text, project: SNAPSHOT, github: nullable(SNAPSHOT), teammate: nullable(SNAPSHOT), you: DESK, alex: nullable(DESK) });
+  const RESOLVED = record({ file: MARKED });
   const PRESSED = record({
     press: record({ person: WHO, button: BUTTON, command: text, status: number, output: text }),
     before: OBSERVATION,
@@ -229,6 +252,14 @@ const createGameApi = (function () {
       language: (language) => checked(NOTHING, "/api/language", { language }),
       /* Marks a view born, so its birth does not play again and its tab stays. */
       view: (view) => checked(NOTHING, "/api/view", { view }),
+      /* The playground: its starts and the current one; building a start (again, for Start over)
+         makes a lab, so it may take as long as starting a level. */
+      playground: () => checked(PLAYGROUND, "/api/playground"),
+      playgroundStart: (start) => checked(PLAYGROUND, "/api/playground/start", { start }, startTimeoutMs),
+      playgroundPrefs: ({ view, alex, whose }) => checked(PLAYGROUND, "/api/playground/prefs", { view, alex, whose }),
+      playgroundObserve: () => checked(PG_OBSERVATION, "/api/playground/observe"),
+      /* Writes click-to-keep's picks into a file's marker blocks; a 409 says the file changed since `read`. */
+      playgroundResolve: ({ person, file, read, choices }) => checked(RESOLVED, "/api/playground/resolve", { person, file, read, choices }),
     };
   };
 })();

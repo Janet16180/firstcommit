@@ -20,9 +20,11 @@ from firstcommit import (
     changes,
     commands,
     explanations,
+    freeplay,
     game,
     gitcmd,
     kit,
+    markers,
     markup,
     playground,
     reactions,
@@ -1284,6 +1286,234 @@ def test_the_games_shell_is_bash_with_the_games_own_startup_file(game_home: Path
     assert startup.read_text() == commands.startup(game_home / save.COMMANDS_FILE, game_home / save.HISTORY_FILE)
 
 
+def test_each_playground_shell_is_bash_with_a_startup_file_log_history_and_quiet_home_of_its_own(game_home: Path) -> None:
+    shells: list[tuple[records.Who, str]] = [("you", commands.PROMPT), ("alex", commands.ALEX_PROMPT)]
+    for person, prompt in shells:
+        folder = game_home / "playground-shells" / person
+        assert game.playground_shell_command(person) == commands.shell(folder / save.STARTUP_FILE, folder)
+        assert (folder / save.STARTUP_FILE).read_text() == commands.startup(folder / save.COMMANDS_FILE, folder / save.HISTORY_FILE, prompt=prompt, banner="")
+        assert (folder / save.HUSHLOGIN_FILE).exists()
+
+
+def test_your_playground_shell_first_prints_the_starts_suggestion_in_the_players_language(game_home: Path) -> None:
+    save.write_playground({"start": "lost", "started": "2026-10-08T12:00:00+00:00", "alex_shown": {}, "view": "movelog", "whose": "you"})
+    game.set_language("es")
+    game.playground_shell_command("you")
+    game.playground_shell_command("alex")
+    for person, prompt, banner in [("you", commands.PROMPT, freeplay.STARTS["lost"].banner["es"]), ("alex", commands.ALEX_PROMPT, "")]:
+        folder = game_home / "playground-shells" / person
+        assert (folder / save.STARTUP_FILE).read_text() == commands.startup(folder / save.COMMANDS_FILE, folder / save.HISTORY_FILE, prompt=prompt, banner=banner)
+
+
+def test_alexs_playground_shell_has_alexs_own_home_and_git_config_and_yours_is_the_games(game_home: Path) -> None:
+    base = {"PATH": "/usr/bin", "HOME": "/home/player"}
+    assert game.playground_environment("you", base) == game.shell_environment(base)
+    alex = game.playground_environment("alex", base)
+    folder = game_home / "playground-shells" / "alex"
+    assert alex == {**game.shell_environment(base), "HOME": str(folder), "GIT_CONFIG_GLOBAL": str(folder / save.GITCONFIG_FILE)}
+    assert (folder / save.GITCONFIG_FILE).read_text() == gitcmd.base_config(playground.ALEX)
+
+
+def test_each_playground_terminal_opens_in_that_persons_clone_else_the_playground_else_the_players_home(
+    game_home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("HOME", str(tmp_path))
+    assert (game.playground_folder("you"), game.playground_folder("alex")) == (str(tmp_path), str(tmp_path))
+    lab = freeplay.build("empty")
+    assert (game.playground_folder("you"), game.playground_folder("alex")) == (str(lab.project), str(lab.root))
+    freeplay.build("both")
+    assert (game.playground_folder("you"), game.playground_folder("alex")) == (str(lab.project), str(lab.teammate))
+
+
+def test_alex_commits_as_alex_in_alexs_shell_and_each_shell_logs_only_its_own_lines(typist: Callable[..., bytes]) -> None:
+    lab = freeplay.build("alex-ahead")
+    lines: list[tuple[records.Who, str]] = [("alex", 'echo "Dock 3" >> notes.txt && git commit -qam "Note the dock"'), ("you", "git status --short")]
+    for person, line in lines:
+        env = game.playground_environment(person, terminal.player_env(os.environ))
+        typist(game.playground_shell_command(person), env, Path(game.playground_folder(person)), [(line.encode() + b"\n", b"$ ")])
+    assert gitcmd.output(lab.teammate, "log", "-1", "--format=%an %ae %s").strip() == "Alex alex@example.com Note the dock"
+    assert game.playground_typed("alex") == [{"line": 'echo "Dock 3" >> notes.txt && git commit -qam "Note the dock"', "status": 0}]
+    assert game.playground_typed("you") == [{"line": "git status --short", "status": 0}]
+
+
+def test_the_playground_lists_its_starts_in_the_players_language_and_no_current_one_before_the_first_visit() -> None:
+    status = game.playground_status()
+    assert [start["id"] for start in status["starts"]] == list(freeplay.STARTS)
+    assert status["current"] is None
+    game.set_language("es")
+    changes = game.playground_status()["starts"][1]
+    assert changes == {
+        "id": "changes",
+        "title": "Cambios sin commit",
+        "blurb": freeplay.STARTS["changes"].blurb["es"],
+        "banner": freeplay.STARTS["changes"].banner["es"],
+        "view": "desk",
+        "mothership": True,
+        "alex": False,
+        "uses": [{"id": "branch", "title": CHAPTERS["branch"]["es"]}, {"id": "undo", "title": CHAPTERS["undo"]["es"]}],
+    }
+
+
+def test_starting_the_playground_builds_the_start_on_its_view_with_alex_as_it_wants_and_forgets_the_lines_typed_before(game_home: Path) -> None:
+    for person in ("you", "alex"):
+        log = save.ensure_playground_shell(person) / save.COMMANDS_FILE
+        log.write_bytes(b"1\t0\tgit status\0")
+    started = current(game.start_playground("conflict"))
+    assert started == {"start": "conflict", "started": started["started"], "view": "conflict", "alex": True, "whose": "you"}
+    assert (game_home / "playground" / "project" / "checklist.txt").exists()
+    assert (game.playground_typed("you"), game.playground_typed("alex")) == ([], [])
+    assert save.load_playground() == {"start": "conflict", "started": started["started"], "alex_shown": {}, "view": "conflict", "whose": "you"}
+
+
+def test_each_build_of_the_playground_has_a_started_stamp_of_its_own_that_the_observation_carries() -> None:
+    first = current(game.start_playground("branches"))["started"]
+    assert current(game.set_playground_prefs(view="desk", alex=None, whose=None))["started"] == first
+    assert game.observe_playground()["started"] == first
+    again = current(game.start_playground("branches"))["started"]
+    assert again != first
+    assert game.observe_playground()["started"] == again
+
+
+def current(status: game.PlaygroundStatus) -> game.PlaygroundPrefs:
+    """
+    Give where the player is in the playground, which a test expects to be somewhere.
+
+    Parameters
+    ----------
+    status : game.PlaygroundStatus
+        What a playground call gave.
+
+    Returns
+    -------
+    game.PlaygroundPrefs
+        Its current start.
+    """
+    assert status["current"] is not None
+    return status["current"]
+
+
+def test_the_playground_remembers_the_view_whose_repository_and_alex_for_each_start() -> None:
+    game.start_playground("conflict")
+    chosen = current(game.set_playground_prefs(view="chain", alex=False, whose="alex"))
+    assert chosen == {"start": "conflict", "started": chosen["started"], "view": "chain", "alex": False, "whose": "alex"}
+    assert current(game.set_playground_prefs(view=None, alex=None, whose="you")) == {**chosen, "whose": "you"}
+    branches = current(game.start_playground("branches"))
+    assert branches == {"start": "branches", "started": branches["started"], "view": "chain", "alex": False, "whose": "you"}
+    game.set_playground_prefs(view=None, alex=True, whose=None)
+    assert current(game.start_playground("conflict"))["alex"] is False
+    assert current(game.start_playground("branches"))["alex"] is True
+
+
+def test_the_playground_refuses_an_unknown_start_or_view_prefs_before_any_start_and_alex_where_there_is_none() -> None:
+    with pytest.raises(game.UnknownIdError, match="nowhere"):
+        game.start_playground("nowhere")
+    with pytest.raises(game.PlaygroundNotOpenError):
+        game.set_playground_prefs(view="chain", alex=None, whose=None)
+    with pytest.raises(game.PlaygroundNotOpenError):
+        game.observe_playground()
+    game.start_playground("empty")
+    with pytest.raises(game.UnknownIdError, match="view 'station'"):
+        game.set_playground_prefs(view="station", alex=None, whose=None)
+    with pytest.raises(game.UnknownIdError, match="person 'bob'"):
+        game.set_playground_prefs(view=None, alex=None, whose="bob")
+    with pytest.raises(game.NoAlexError):
+        game.set_playground_prefs(view=None, alex=True, whose=None)
+    with pytest.raises(game.NoAlexError):
+        game.set_playground_prefs(view=None, alex=None, whose="alex")
+    assert current(game.set_playground_prefs(view=None, alex=False, whose="you"))["alex"] is False
+
+
+def test_observing_the_playground_gives_each_persons_repository_its_conflicts_marked_files_texts_graph_and_typed_lines() -> None:
+    game.start_playground("conflict")
+    seen = game.observe_playground()
+    assert seen["start"] == "conflict"
+    assert seen["project"]["exists"] and seen["github"] is not None and seen["teammate"] is not None
+    you, alex = seen["you"], seen["alex"]
+    assert alex is not None
+    assert [conflict["path"] for conflict in you["conflicts"]] == ["checklist.txt"]
+    assert [(file["path"], [part["kind"] for part in file["parts"]]) for file in you["marked"]] == [("checklist.txt", ["clean", "block", "clean"])]
+    assert "checklist.txt" in [text["path"] for text in you["texts"]]
+    assert you["graph"] and alex["graph"]
+    assert you["reflog"][0]["line"].endswith("HEAD@{0}: commit: Head for the Moon")
+    assert (alex["conflicts"], alex["marked"], you["typed"], alex["typed"]) == ([], [], [], [])
+
+
+def test_observing_the_empty_start_has_no_mothership_no_alex_and_no_graph() -> None:
+    game.start_playground("empty")
+    seen = game.observe_playground()
+    assert (seen["github"], seen["teammate"], seen["alex"], seen["you"]["graph"]) == (None, None, None, None)
+    assert seen["project"]["exists"] is False
+    assert [text["path"] for text in seen["you"]["texts"]] == ["README.md", "notes.txt"]
+
+
+def marked_checklist() -> records.MarkedFile:
+    """
+    Start the playground's Conflict and read your checklist as the conflict panel shows it.
+
+    Returns
+    -------
+    records.MarkedFile
+        ``checklist.txt``, with its one conflict block.
+    """
+    game.start_playground("conflict")
+    (marked,) = game.observe_playground()["you"]["marked"]
+    return marked
+
+
+def test_resolving_writes_the_chosen_sides_into_the_real_file_and_gives_it_back_with_no_markers_left(game_home: Path) -> None:
+    marked = marked_checklist()
+    resolved = game.resolve_playground("you", "checklist.txt", marked["read"], ["both"])["file"]
+    path = game_home / "playground" / "project" / "checklist.txt"
+    assert "4. Course: the Moon\n4. Course: Jupiter\n" in path.read_text() and "<<<<<<<" not in path.read_text()
+    assert resolved == markers.marked("checklist.txt", path.read_bytes())
+    assert [part["kind"] for part in resolved["parts"]] == ["clean"]
+    gitcmd.output(path.parent, "add", "checklist.txt")
+    assert game.observe_playground()["you"]["marked"] == []
+
+
+def test_resolving_a_file_that_changed_since_the_panel_read_it_writes_nothing(game_home: Path) -> None:
+    marked = marked_checklist()
+    path = game_home / "playground" / "project" / "checklist.txt"
+    path.write_text(path.read_text() + "10. Lock the door\n")
+    before = path.read_bytes()
+    with pytest.raises(game.FileChangedError):
+        game.resolve_playground("you", "checklist.txt", marked["read"], ["yours"])
+    assert path.read_bytes() == before
+
+
+def test_resolving_never_writes_through_a_link(game_home: Path, tmp_path: Path) -> None:
+    marked = marked_checklist()
+    outside = tmp_path / "outside.txt"
+    path = game_home / "playground" / "project" / "checklist.txt"
+    before = path.read_bytes()
+    outside.write_bytes(before)
+    path.unlink()
+    path.symlink_to(outside)
+    with pytest.raises(game.FileChangedError):
+        game.resolve_playground("you", "checklist.txt", marked["read"], ["yours"])
+    assert outside.read_bytes() == before
+
+
+def test_resolving_needs_one_choice_per_block_a_file_in_conflict_and_someone_the_playground_has(game_home: Path) -> None:
+    marked = marked_checklist()
+    path = game_home / "playground" / "project" / "checklist.txt"
+    before = path.read_bytes()
+    with pytest.raises(game.WrongChoicesError, match="1 conflict blocks, 2 choices"):
+        game.resolve_playground("you", "checklist.txt", marked["read"], ["yours", "theirs"])
+    for person, file in [("bob", "checklist.txt"), ("you", "notes.txt"), ("alex", "checklist.txt")]:
+        with pytest.raises(game.UnknownIdError):
+            game.resolve_playground(person, file, marked["read"], ["yours"])
+    assert path.read_bytes() == before
+
+
+def test_resolving_before_any_start_or_for_alex_where_there_is_none_conflicts() -> None:
+    with pytest.raises(game.PlaygroundNotOpenError):
+        game.resolve_playground("you", "checklist.txt", "0" * 64, [])
+    game.start_playground("empty")
+    with pytest.raises(game.NoAlexError):
+        game.resolve_playground("alex", "checklist.txt", "0" * 64, [])
+
+
 def test_observing_tells_the_commands_typed_since_the_last_observation_once(sample_level: runner.Level, typist: Callable[..., bytes]) -> None:
     game.start(sample_level.id)
     assert game.observe()["commands"] == []
@@ -1658,6 +1888,14 @@ def test_reset_erases_all_progress_and_restores_the_base_git_config(sample_level
     assert save.load_active() is None
     assert not (game_home / "labs").exists()
     assert (game_home / "gitconfig").read_text() == gitcmd.BASE_CONFIG
+
+
+def test_reset_erases_the_playground_and_where_the_player_left_it(game_home: Path) -> None:
+    freeplay.build("branches")
+    save.write_playground({"start": "branches", "started": "2026-10-08T12:00:00+00:00", "alex_shown": {}, "view": "chain", "whose": "you"})
+    game.reset()
+    assert save.load_playground() is None
+    assert not (game_home / "playground").exists()
 
 
 def test_reset_works_on_a_damaged_save(sample_level: runner.Level, game_home: Path) -> None:

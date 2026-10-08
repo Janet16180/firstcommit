@@ -517,6 +517,21 @@ def test_the_terminal_runs_the_games_shell_so_typed_commands_are_logged(game_hom
     assert list(routes.TERMINAL.shell()) == game.shell_command()
 
 
+def test_the_playground_has_a_terminal_for_you_and_one_for_alex_each_with_its_own_shell_folder_and_settings(
+    game_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("GIT_DIR", "/elsewhere/.git")
+    terminals = routes.PLAYGROUND_TERMINALS
+    assert list(terminals) == ["/api/terminal/playground", "/api/terminal/playground-alex"]
+    people: list[game.Who] = ["you", "alex"]
+    for (path, settings), person in zip(terminals.items(), people, strict=True):
+        assert settings.shell is not None and list(settings.shell()) == game.playground_shell_command(person)
+        assert str(settings.start_folder()) == game.playground_folder(person)
+        assert settings.max_terminals == routes.TERMINAL.max_terminals, path
+        assert "GIT_DIR" not in settings.environment()
+    assert terminals["/api/terminal/playground-alex"].environment()["GIT_CONFIG_GLOBAL"].endswith("/playground-shells/alex/gitconfig")
+
+
 def test_serving_on_a_busy_port_fails_with_a_hint(site: Site, capsys: pytest.CaptureFixture[str]) -> None:
     port = int(site.url.rsplit(":", 1)[1])
     assert routes.serve(port) == 1
@@ -647,6 +662,99 @@ def test_a_press_with_no_level_in_progress_conflicts_without_a_kind(site: Site, 
     assert api(site, "/api/press", {"person": "you", "button": "push"}) == (409, {"error": "no level is in progress"})
 
 
+def test_the_free_playground_routes_call_the_game_with_what_the_page_sent(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
+    status: dict[str, Any] = {"starts": [], "current": None}
+    calls = {name: record(monkeypatch, name, status) for name in ("playground_status", "start_playground", "set_playground_prefs", "observe_playground")}
+    assert api(site, "/api/playground") == (200, status)
+    assert api(site, "/api/playground/start", {"start": "conflict"}) == (200, status)
+    assert api(site, "/api/playground/prefs", {"view": "chain", "alex": True}) == (200, status)
+    assert api(site, "/api/playground/prefs", {"whose": "alex"}) == (200, status)
+    assert api(site, "/api/playground/observe") == (200, status)
+    assert calls == {
+        "playground_status": [()],
+        "start_playground": [("conflict",)],
+        "set_playground_prefs": [("chain", True, None), (None, None, "alex")],
+        "observe_playground": [()],
+    }
+
+
+@pytest.mark.parametrize(
+    ("path", "body"),
+    [
+        ("/api/playground/start", {}),
+        ("/api/playground/start", {"start": 3}),
+        ("/api/playground/prefs", {}),
+        ("/api/playground/prefs", {"view": 1}),
+        ("/api/playground/prefs", {"alex": "yes"}),
+        ("/api/playground/prefs", {"whose": None}),
+        ("/api/playground/prefs", {"view": "x" * 101}),
+    ],
+)
+def test_the_free_playground_routes_refuse_a_body_the_page_never_sends(site: Site, monkeypatch: pytest.MonkeyPatch, path: str, body: dict[str, Any]) -> None:
+    calls = [record(monkeypatch, name, {}) for name in ("start_playground", "set_playground_prefs")]
+    assert api(site, path, body)[0] == 400
+    assert calls == [[], []]
+
+
+def test_an_unknown_start_or_view_is_not_found_and_prefs_before_a_start_or_alex_where_there_is_none_conflict(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
+    record(monkeypatch, "start_playground", error=game.UnknownIdError("no start 'nowhere'"))
+    assert api(site, "/api/playground/start", {"start": "nowhere"}) == (404, {"error": "no start 'nowhere'"})
+    for error in (game.PlaygroundNotOpenError("the playground has no start yet"), game.NoAlexError("Empty folder has no Alex")):
+        record(monkeypatch, "set_playground_prefs", error=error)
+        assert api(site, "/api/playground/prefs", {"alex": True}) == (409, {"error": str(error)})
+    record(monkeypatch, "observe_playground", error=game.PlaygroundNotOpenError("the playground has no start yet"))
+    assert api(site, "/api/playground/observe") == (409, {"error": "the playground has no start yet"})
+
+
+def test_a_resolve_sends_whose_file_the_hash_read_and_the_choices(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
+    reply = {"file": {"path": "checklist.txt", "read": "ab" * 32, "parts": []}}
+    calls = record(monkeypatch, "resolve_playground", reply)
+    body = {"person": "you", "file": "checklist.txt", "read": "cd" * 32, "choices": ["yours", "both"]}
+    assert api(site, "/api/playground/resolve", body) == (200, reply)
+    assert calls == [("you", "checklist.txt", "cd" * 32, ["yours", "both"])]
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"person": None},
+        {"file": 3},
+        {"file": ""},
+        {"read": "xyz"},
+        {"read": "AB" * 32},
+        {"choices": "yours"},
+        {"choices": ["mine"]},
+        {"choices": ["yours"] * 1001},
+    ],
+)
+def test_a_resolve_needs_a_person_a_file_a_hash_and_known_choices(site: Site, monkeypatch: pytest.MonkeyPatch, change: dict[str, Any]) -> None:
+    calls = record(monkeypatch, "resolve_playground", {})
+    body = {"person": "you", "file": "checklist.txt", "read": "cd" * 32, "choices": ["yours"], **change}
+    assert api(site, "/api/playground/resolve", body)[0] == 400
+    assert calls == []
+
+
+def test_a_resolve_of_a_changed_file_conflicts_and_a_wrong_number_of_choices_is_refused(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
+    body = {"person": "you", "file": "checklist.txt", "read": "cd" * 32, "choices": ["yours"]}
+    record(monkeypatch, "resolve_playground", error=game.FileChangedError("checklist.txt changed since it was read"))
+    assert api(site, "/api/playground/resolve", body) == (409, {"error": "checklist.txt changed since it was read", "kind": "changed"})
+    record(monkeypatch, "resolve_playground", error=game.WrongChoicesError("1 conflict blocks, 2 choices"))
+    assert api(site, "/api/playground/resolve", body) == (400, {"error": "1 conflict blocks, 2 choices"})
+
+
+def test_the_real_free_playground_starts_and_is_observed(site: Site) -> None:
+    status, started = api(site, "/api/playground/start", {"start": "alex-ahead"})
+    assert (status, started["current"]) == (200, {"start": "alex-ahead", "started": started["current"]["started"], "view": "history", "alex": True, "whose": "you"})
+    status, seen = api(site, "/api/playground/observe")
+    assert status == 200 and seen["alex"] is not None
+    api(site, "/api/playground/start", {"start": "conflict"})
+    (marked,) = api(site, "/api/playground/observe")[1]["you"]["marked"]
+    body = {"person": "you", "file": "checklist.txt", "read": marked["read"], "choices": ["theirs"]}
+    status, resolved = api(site, "/api/playground/resolve", body)
+    assert status == 200 and resolved["file"]["parts"][0]["kind"] == "clean"
+    assert api(site, "/api/playground/resolve", body)[0] == 409
+
+
 def test_the_real_playground_runs_each_press_and_a_failed_command_is_an_answer_not_an_error(site: Site, playground_level: runner.Level) -> None:
     assert api(site, "/api/start", {"level": playground_level.id})[0] == 200
     assert api(site, "/api/observe")[1]["teammate"] is not None
@@ -697,5 +805,10 @@ def test_every_route_is_a_get_or_post_under_api() -> None:
         ("POST", "/api/scene"),
         ("POST", "/api/language"),
         ("POST", "/api/view"),
+        ("GET", "/api/playground"),
+        ("POST", "/api/playground/start"),
+        ("POST", "/api/playground/prefs"),
+        ("GET", "/api/playground/observe"),
+        ("POST", "/api/playground/resolve"),
     }
     assert set(routes.ROUTES) == expected

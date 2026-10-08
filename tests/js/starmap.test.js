@@ -160,3 +160,14 @@ test("a challenge is a boss node, and its card keeps the command hidden until it
   assert.equal(run.q(".card-meta code"), null);
   assert.match(run.q(".card-num").textContent, /challenge 2\.2/);
 });
+
+test("beside the sectors, the Playground is a landmark of its own, open from the start, after the last sector with missions", () => {
+  const run = starMap({ ...withoutActive(), chapters: record("status").chapters.map((chapter) => ({ ...chapter, levels: chapter.levels.map((level) => ({ ...level, done: false })) })) });
+  const landmark = run.q(".landmark");
+  const parts = [...run.q(".sectors").childNodes];
+  assert.deepEqual(parts.map((part) => part.className.split(" ")[0]), ["sector", "sector", "landmark", "sector"]);
+  assert.ok(parts[3].classList.contains("is-soon"));
+  assert.equal(landmark.getAttribute("href"), "#/playground");
+  assert.equal(landmark.querySelector(".landmark-name").textContent, "Playground");
+  assert.match(landmark.querySelector(".landmark-blurb").textContent, /^Free play/);
+});

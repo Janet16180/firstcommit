@@ -22,6 +22,8 @@
   /* Alex's green: #3D8A18 here and #A6E05A in dark, both 3:1 or more on the panel and the page;
      pink is the mothership's alone. Text on it is --on-accent, white here. */
   --alex: #3D8A18;
+  /* Your violet, kept when a picture of Alex's repository turns its own violet green. */
+  --you: var(--z-va);
   --s-new: #D33A32;
   --s-mod: #B98A00;
   --s-clean: #A9A2C0;
@@ -523,6 +525,34 @@ pre.code code {
 
 .guide-head p {
   margin: 8px 0 0;
+  color: var(--ink-soft);
+}
+
+/* The Playground's landmark, after the sectors: free play, open from the start. */
+.landmark {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 34px;
+  padding: 16px 18px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 3px solid var(--edge);
+  border-left: 10px solid var(--gold);
+  box-shadow: 5px 5px 0 var(--edge);
+  text-decoration: none;
+}
+
+.landmark:hover,
+.landmark:focus-visible {
+  background: var(--panel-2);
+}
+
+.landmark-name {
+  font: 700 1.6rem/1.15 var(--f-px);
+}
+
+.landmark-blurb {
   color: var(--ink-soft);
 }
 
@@ -2449,6 +2479,15 @@ pre.code code {
   background: var(--alex);
 }
 
+.chain-pin.is-you {
+  background: var(--you);
+}
+
+/* Alex's repository: what is violet in yours is Alex's green. */
+.chain[data-owner="alex"] {
+  --z-va: var(--alex);
+}
+
 .chain-legend {
   display: flex;
   flex-wrap: wrap;
@@ -3034,6 +3073,13 @@ pre.code code {
     font-size: 1rem;
   }
 
+  /* The playground's head: its name and start on the first row, its buttons wrapping under. */
+  .pg-head .hud-title {
+    flex: 1 1 calc(100% - 60px);
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+
   .z-head .place-game {
     display: none;
   }
@@ -3097,4 +3143,852 @@ pre.code code {
   .zone.is-waking {
     animation: none;
   }
+}
+
+/* The playground (playground-screen.js): the views and one picture on the left, the terminals on
+   the right; one column below 980px, and on a phone the picture folds into one line. */
+.pg-body {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 16px 16px 28px;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+}
+
+.pg-left,
+.pg-terms {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pg-views,
+.pg-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.pg-tab,
+.pg-more-button {
+  font: 700 0.9rem var(--f-ui);
+  padding: 4px 12px;
+  background: var(--panel);
+  color: var(--ink-soft);
+  border: 2px solid var(--edge);
+  cursor: pointer;
+}
+
+.pg-tab[aria-selected="true"],
+.pg-more-button[aria-current="true"] {
+  background: var(--z-va);
+  color: var(--on-accent);
+}
+
+.pg-tab[hidden] {
+  display: none;
+}
+
+.pg-more {
+  position: relative;
+}
+
+.pg-more-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  background: var(--panel);
+  border: 2px solid var(--edge);
+  box-shadow: 4px 4px 0 var(--edge);
+}
+
+.pg-more-list[hidden] {
+  display: none;
+}
+
+.pg-more-list .pg-tab {
+  text-align: left;
+  white-space: nowrap;
+}
+
+.pg-whose {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font: 700 0.9rem var(--f-ui);
+}
+
+.pg-whose[hidden] {
+  display: none;
+}
+
+.pg-whose-button {
+  font: 700 0.85rem var(--f-ui);
+  padding: 3px 10px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 2px solid var(--you);
+  cursor: pointer;
+}
+
+.pg-whose-button[data-whose="alex"] {
+  border-color: var(--alex);
+}
+
+.pg-whose-button[data-whose="you"][aria-pressed="true"] {
+  background: var(--you);
+  color: var(--on-accent);
+}
+
+.pg-whose-button[data-whose="alex"][aria-pressed="true"] {
+  background: var(--alex);
+  color: var(--on-accent);
+}
+
+.pg-pictured {
+  position: relative;
+  min-width: 0;
+  padding: 14px;
+  background: var(--panel);
+  border: 3px solid var(--edge);
+  box-shadow: 5px 5px 0 var(--edge);
+}
+
+.pg-key {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 2px solid var(--edge);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--ink);
+  font: 700 0.9rem/1 var(--f-body);
+  cursor: pointer;
+}
+
+.pg-key[aria-pressed="true"] {
+  background: var(--gold);
+}
+
+/* The legend folds behind "i": each picture's own key, which lists only what it draws. */
+.pg-pictured:not(.is-keyed) .chain-legend,
+.pg-pictured:not(.is-keyed) .viz .legend,
+.pg-pictured:not(.is-keyed) .chart-key {
+  display: none;
+}
+
+.pg-fold {
+  display: none;
+}
+
+.pg-loose,
+.pg-live {
+  margin: 10px 0 0;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+.pg-loose[hidden],
+.pg-live[hidden],
+.pg-down[hidden] {
+  display: none;
+}
+
+.pg-live {
+  padding: 6px 10px;
+  border-left: 4px solid var(--gold);
+}
+
+.pg-down {
+  max-width: 1600px;
+  margin: 12px auto 0;
+  padding: 8px 16px;
+  color: var(--s-new);
+  font-weight: 700;
+}
+
+.pg-choose {
+  max-width: 900px;
+  margin: 24px auto 12px;
+  padding: 0 16px;
+  font: 700 1.3rem var(--f-px);
+}
+
+.pg-choices {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 16px 28px;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.pg-choice {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 14px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 3px solid var(--edge);
+  box-shadow: 4px 4px 0 var(--edge);
+  text-align: left;
+  cursor: pointer;
+}
+
+.pg-choice-title {
+  font: 700 1.05rem var(--f-ui);
+}
+
+.pg-choice-blurb {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.pg-choice-uses {
+  margin-top: 2px;
+  padding: 0 6px;
+  border: 2px solid var(--line);
+  color: var(--ink-soft);
+  font: 700 0.8rem var(--f-ui);
+}
+
+.pg-picker {
+  padding-bottom: 28px;
+}
+
+.pg-picker[hidden],
+.pg-body[hidden] {
+  display: none;
+}
+
+.pg-choose-note {
+  max-width: 900px;
+  margin: 0 auto 12px;
+  padding: 0 16px;
+  color: var(--ink-soft);
+}
+
+.pg-choose-cancel {
+  display: block;
+  margin: 0 auto;
+}
+
+/* The line to try, right above your prompt: it types, it does not run. */
+.pg-try {
+  align-self: flex-start;
+  margin: 6px 8px;
+  padding: 1px 10px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 2px dashed var(--gold);
+  font: 1.05rem var(--f-term);
+  cursor: pointer;
+}
+
+.pg-try[hidden] {
+  display: none;
+}
+
+.pg-head .pg-back {
+  border-color: var(--gold);
+}
+
+.pg-starting {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 0 16px;
+}
+
+/* The playground's picture is half the screen wide: the zones lay out by its width, as the level
+   screen's do by the screen's (the 980px and 760px blocks below the stage's). */
+.pg-slot {
+  container-type: inline-size;
+}
+
+@container (max-width: 980px) {
+  .pg-slot .viz-row,
+  .pg-slot .viz.is-chart .viz-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .pg-slot .flow {
+    display: none;
+  }
+
+  .pg-slot .crew-sky {
+    justify-self: center;
+    width: min(100%, 320px);
+  }
+
+  .pg-slot .station-row,
+  .pg-slot .station.is-mirror .station-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .pg-slot .zone {
+    min-height: 150px;
+  }
+
+  .pg-slot .z-body {
+    max-height: 180px;
+  }
+}
+
+@container (max-width: 760px) {
+  .pg-slot .viz-crew {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "sky" "you" "alex";
+  }
+}
+
+@media (max-width: 980px) {
+  .pg-body {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 12px 12px 20px;
+  }
+}
+
+/* A phone: the picture starts folded into its one line, which a tap unfolds. */
+@media (max-width: 760px) {
+  .pg-fold {
+    display: flex;
+    width: 100%;
+    padding: 4px 30px 4px 0;
+    background: none;
+    border: 0;
+    color: var(--ink);
+    font: 700 0.9rem var(--f-ui);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  /* A drawn chevron: right while folded, down when open. */
+  .pg-fold::before {
+    content: "";
+    flex: none;
+    align-self: center;
+    margin-right: 8px;
+    border: 6px solid transparent;
+    border-left-color: currentColor;
+    border-right-width: 0;
+  }
+
+  .pg-fold[aria-expanded="true"]::before {
+    border: 6px solid transparent;
+    border-top-color: currentColor;
+    border-bottom-width: 0;
+  }
+
+  .pg-pictured {
+    padding: 8px 10px;
+  }
+
+  .pg-tab,
+  .pg-more-button {
+    padding: 3px 7px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
+  /* One row of tabs that scrolls sideways; More views stays at its end, its list over the picture. */
+  .pg-views {
+    flex-wrap: nowrap;
+  }
+
+  .pg-tabs {
+    flex: 1;
+    flex-wrap: nowrap;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .pg-more-list {
+    right: 0;
+    left: auto;
+  }
+
+  .pg-pictured.is-folded .pg-slot,
+  .pg-pictured.is-folded .pg-key {
+    display: none;
+  }
+}
+
+/* The playground's terminals: yours framed violet, Alex's green, each named on its frame's bar. */
+.pg-alex-toggle {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 2px 0;
+  background: none;
+  border: 0;
+  color: var(--ink);
+  font: 700 0.9rem var(--f-ui);
+  cursor: pointer;
+}
+
+.pg-switch {
+  position: relative;
+  width: 34px;
+  height: 18px;
+  background: var(--panel);
+  border: 2px solid var(--edge);
+}
+
+.pg-switch::after {
+  content: "";
+  position: absolute;
+  top: 1px;
+  left: 1px;
+  width: 12px;
+  height: 12px;
+  background: var(--ink-soft);
+}
+
+.pg-alex-toggle[aria-checked="true"] .pg-switch {
+  background: var(--alex);
+}
+
+.pg-alex-toggle[aria-checked="true"] .pg-switch::after {
+  left: 17px;
+  background: #FFFFFF;
+}
+
+.pg-termswitch {
+  display: none;
+}
+
+.pg-term.termcol {
+  height: max(320px, calc(100vh - 210px));
+  gap: 0;
+  background: var(--crt);
+  border: 3px solid var(--you);
+  box-shadow: 5px 5px 0 var(--edge);
+}
+
+.pg-term.termcol[data-who="alex"] {
+  border-color: var(--alex);
+}
+
+.pg-terms.is-two .pg-term.termcol {
+  height: max(240px, calc(50vh - 130px));
+}
+
+.pg-term[hidden] {
+  display: none;
+}
+
+.pg-term-name {
+  margin: 0;
+  padding: 3px 10px;
+  background: var(--you);
+  color: var(--on-accent);
+  font: 700 0.85rem var(--f-ui);
+}
+
+.pg-term[data-who="alex"] .pg-term-name {
+  background: var(--alex);
+}
+
+.pg-term-host {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* The frame draws the border; the pane inside it has none of its own. */
+.pg-term .term-panel {
+  border: 0;
+  box-shadow: none;
+}
+
+.pg-term .term-title,
+.pg-terms.is-two .term-hint {
+  display: none;
+}
+
+/* A phone: one terminal at a time, the one whose repository the picture draws; the terminal
+   switch stands in for the picture's. */
+@media (max-width: 760px) {
+  .pg-whose {
+    display: none;
+  }
+
+  .pg-termswitch:not([hidden]) {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font: 700 0.9rem var(--f-ui);
+  }
+
+  .pg-termswitch .pg-whose-button {
+    flex: 1;
+  }
+
+  .pg-terms[data-whose="you"] .pg-term[data-who="alex"],
+  .pg-terms[data-whose="alex"] .pg-term[data-who="you"] {
+    display: none;
+  }
+
+  .pg-terms.is-two .pg-term.termcol {
+    height: max(320px, calc(100vh - 260px));
+  }
+}
+
+/* Click to keep (keep-panel.js): the real file in a code box, your side violet and Alex's green
+   (in Alex's repository the HEAD side is Alex's), the picks under each block, Write in gold. */
+.keep {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 0.9rem;
+}
+
+.keep-file {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.keep-outside,
+.keep-none {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.keep-box {
+  background: var(--panel);
+  border: 3px solid var(--edge);
+}
+
+.keep-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 0;
+  padding: 4px 10px;
+  background: var(--edge);
+  color: var(--crt-ink);
+  font: 700 1rem var(--f-term);
+}
+
+.keep-state {
+  margin-left: auto;
+  color: #FF8A78;
+}
+
+.keep-state.is-ok {
+  color: #9EF0A0;
+}
+
+.keep-lines {
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  font: 1.05rem/1.45 var(--f-term);
+}
+
+.keep-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 0 10px;
+}
+
+.keep-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.keep-line.is-marker {
+  color: var(--ink-soft);
+}
+
+.keep-line.is-gone,
+.keep-line.is-dropped {
+  text-decoration: line-through;
+  opacity: 0.45;
+}
+
+.keep-line[data-part="ours"] {
+  --side: var(--you);
+}
+
+.keep-line[data-part="theirs"] {
+  --side: var(--alex);
+}
+
+.keep[data-person="alex"] .keep-line[data-part="ours"] {
+  --side: var(--alex);
+}
+
+.keep[data-person="alex"] .keep-line[data-part="theirs"] {
+  --side: var(--you);
+}
+
+.keep-line[data-part="ours"],
+.keep-line[data-part="theirs"] {
+  background: color-mix(in srgb, var(--side) 14%, var(--panel));
+  box-shadow: inset 5px 0 0 var(--side);
+}
+
+.keep-tag {
+  padding: 0 6px;
+  border-radius: 8px;
+  background: var(--you);
+  color: var(--on-accent);
+  font: 700 0.7rem var(--f-ui);
+}
+
+.keep-tag[data-who="alex"] {
+  background: var(--alex);
+}
+
+.keep-choose {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-top: 2px dashed var(--line);
+  border-bottom: 2px dashed var(--line);
+  font: 700 0.85rem var(--f-ui);
+}
+
+.keep-pick {
+  padding: 3px 10px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 2px solid var(--edge);
+  font: 700 0.85rem var(--f-ui);
+  cursor: pointer;
+}
+
+.keep-pick[aria-pressed="true"] {
+  background: var(--you);
+  color: var(--on-accent);
+}
+
+.keep-pick[data-who="alex"][aria-pressed="true"] {
+  background: var(--alex);
+}
+
+.keep-pick[data-who="both"][aria-pressed="true"] {
+  background: var(--gold);
+  color: #1F1A3D;
+}
+
+.keep-pick:disabled,
+.keep-chip:disabled {
+  cursor: default;
+}
+
+.keep-act {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.keep-write {
+  background: var(--gold);
+  color: #1F1A3D;
+}
+
+.keep-write:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.keep-message {
+  margin: 0;
+  padding: 6px 10px;
+  border: 2px solid var(--edge);
+}
+
+.keep-message.is-ok {
+  border-color: var(--z-st);
+}
+
+.keep-message.is-error {
+  border-color: var(--s-new);
+}
+
+.keep-message.is-waiting {
+  border-color: var(--gold);
+}
+
+.keep-or {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 2px solid var(--edge);
+  background: var(--panel-2);
+}
+
+.keep-or p {
+  margin: 0;
+  flex-basis: 100%;
+}
+
+.keep-chip {
+  padding: 1px 8px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 2px dashed var(--gold);
+  font: 1rem var(--f-term);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* An editor has the file: the panel waits, greyed, all but its message. */
+.keep.is-waiting .keep-box,
+.keep.is-waiting .keep-act,
+.keep.is-waiting .keep-or {
+  opacity: 0.4;
+  filter: grayscale(1);
+}
+
+/* The editor strip (editor-strip.js): gold, above the terminal an editor runs in, with Get me
+   out in red. On a phone vim's other keys fold behind "more keys", all but Esc while typing. */
+.pg-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 6px 10px;
+  background: var(--gold);
+  color: #1F1A3D;
+  font: 700 0.85rem var(--f-ui);
+}
+
+.pg-strip[hidden] {
+  display: none;
+}
+
+.pg-strip-name {
+  font: 1.05rem var(--f-term);
+}
+
+.pg-strip-keys {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pg-strip-toggle {
+  display: none;
+  padding: 0 4px;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.pg-strip-out {
+  flex: none;
+  padding: 2px 10px;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 760px) {
+  /* Two lines: the keys, then the editor's name, more keys and Get me out. */
+  .pg-strip {
+    flex-wrap: wrap;
+  }
+
+  .pg-strip-keys {
+    flex-basis: 100%;
+    order: -1;
+  }
+
+  .pg-strip-out {
+    margin-left: auto;
+  }
+
+  .pg-strip-toggle {
+    display: inline;
+  }
+
+  .pg-strip:not(.is-open) .pg-strip-key.is-more:not(.is-always) {
+    display: none;
+  }
+}
+
+/* A file as a commit recorded it (past-panel.js), beside the chain: violet like the vault it
+   reads, dashed red when the commit has no such file. */
+.past {
+  align-self: start;
+  padding: 10px 12px;
+  background: var(--panel);
+  border: 3px solid var(--z-va);
+}
+
+.past[data-state="missing"] {
+  border-style: dashed;
+  border-color: var(--s-new);
+}
+
+.past[data-state="empty"] {
+  border-style: dashed;
+}
+
+.past-title {
+  margin: 0 0 8px;
+  font: 700 1rem var(--f-ui);
+  overflow-wrap: anywhere;
+}
+
+.past-text {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  background: var(--crt);
+  color: var(--crt-ink);
+  font: 1.05rem/1.45 var(--f-term);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.past-empty,
+.past-missing,
+.past-note {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+/* A commit that did not touch the file the level reads. */
+.chain-row.is-dim {
+  opacity: 0.3;
 }

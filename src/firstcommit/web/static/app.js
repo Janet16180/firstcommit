@@ -10,7 +10,7 @@
  * also sit in the map's bar. Loads last; defines no global.
  */
 
-/* global createClient, createTerminal, createGameApi, Dom, Strings, Route, Sound, Dialog, ArtSky, Progress, StarMap, LevelScreen, FieldGuide, CardsView, NotesView, DevList */
+/* global createClient, createTerminal, createGameApi, Dom, Strings, Route, Sound, Dialog, ArtSky, Progress, StarMap, LevelScreen, FieldGuide, CardsView, NotesView, DevList, PlaygroundScreen */
 
 (function () {
   const { el } = Dom;
@@ -56,12 +56,13 @@
     cards: (ctx, route) => CardsView.create(ctx, route.chapter),
     notes: (ctx, route) => NotesView.create(ctx, route.chapter),
     dev: (ctx) => DevList.create(ctx),
+    playground: (ctx, route) => PlaygroundScreen.create(ctx, route),
   };
-  const OWN_HEAD = ["home", "level", "guide"];
+  const OWN_HEAD = ["home", "level", "guide", "playground"];
 
   /* client.js removes the fragment when it carries the access key; keep the address part first. */
-  const firstAddress = location.hash.split("&")[0];
-  const app = { status: null, view: null, turn: 0, terminal: null, terminalFor: null, locked: false };
+  const firstAddress = Route.address(location.hash);
+  const app = { status: null, view: null, turn: 0, terminal: null, terminalFor: null, locked: false, fromLevel: null };
   const client = createClient({ header: "X-FirstCommit-Token", storageKey: "firstcommit.token", command: "firstcommit", onLocked: () => showLocked() });
   const game = createGameApi(client.api);
   const main = document.getElementById("app");
@@ -90,6 +91,7 @@
     document.documentElement.dataset.theme = shownTheme();
     for (const button of document.querySelectorAll(".pref-theme")) button.textContent = t(`pref.theme.${themeChoice}`);
     if (app.terminal) app.terminal.setLook(shownTheme(), t("terminal.title"));
+    for (const person of ["you", "alex"]) if (play[person]) play[person].setLook(shownTheme(), t(`pg.term.${person}`));
   }
 
   function cycleTheme() {
@@ -127,7 +129,7 @@
     }
     applyTheme();
     renderSound();
-    if (app.terminal) app.terminal.setLabels(terminalLabels());
+    for (const shell of [app.terminal, play.you, play.alex]) if (shell) shell.setLabels(terminalLabels());
   }
 
   async function switchLanguage() {
@@ -254,6 +256,49 @@
     run: (line) => app.terminal && app.terminal.run(line),
   };
 
+  /* The playground's two shells, yours and Alex's, each on its own endpoint: they live while the
+     start they were opened for stands, even while the player is elsewhere, and are replaced when
+     it is built again. */
+  const PLAY_PATHS = { you: "/api/terminal/playground", alex: "/api/terminal/playground-alex" };
+  const play = { you: null, alex: null, started: null, titles: {}, listeners: {} };
+
+  function disposePlay() {
+    for (const person of ["you", "alex"]) {
+      if (play[person]) play[person].dispose();
+      play[person] = null;
+      play.titles[person] = "";
+    }
+  }
+
+  /* A shell's title (the editor wrappers set it) goes to the playground showing it; one set while
+     the player was away is told when it is shown again. */
+  function retitle(person, title) {
+    play.titles[person] = title;
+    if (play.listeners[person]) play.listeners[person](title);
+  }
+
+  const playTerminals = {
+    attach(person, host, started, onTitle) {
+      if (play.started !== started) disposePlay();
+      play.started = started;
+      if (!play[person]) {
+        play[person] = createTerminal({ protocol: "firstcommit", token: client.token, command: "firstcommit", path: PLAY_PATHS[person], looks: TERMINAL_LOOKS, labels: terminalLabels(), storagePrefix: `firstcommit.pg-${person}.`, openFromHeight: 0, onUnreachable: probe, onTitle: (title) => retitle(person, title) });
+        play[person].setLook(shownTheme(), t(`pg.term.${person}`));
+      }
+      play.listeners[person] = onTitle;
+      if (play.titles[person]) onTitle(play.titles[person]);
+      host.append(play[person].element);
+      play[person].start();
+    },
+    detach() {
+      play.listeners = {};
+      for (const person of ["you", "alex"]) if (play[person]) play[person].element.remove();
+    },
+    type: (person, text) => play[person] && play[person].type(text),
+    /* Raw keys need termlab's keys(raw), which comes with T1b; until then Get me out sends nothing. */
+    keys: (person, keys) => play[person] && play[person].keys && play[person].keys(keys),
+  };
+
   /* A refused WebSocket looks like a network failure; asking the API tells a stale key apart
      (client.js then shows the locked screen). Its own failure is already shown in the terminal. */
   function probe() {
@@ -278,7 +323,16 @@
     prefButtons,
     reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     terminal,
+    playTerminals,
+    /* The level the player came to the playground from (a field guide card over it), or null. */
+    back: () => app.fromLevel,
   };
+
+  /* Remembers the level being left for the playground, so it can lead back; any other view forgets it. */
+  function noteLevel(route) {
+    if (route.view === "level") app.fromLevel = route.id;
+    else if (route.view !== "playground") app.fromLevel = null;
+  }
 
   /* Shows the view for an address; a newer navigation that starts while this one waits wins. */
   async function show(route) {
@@ -286,6 +340,7 @@
     if (app.view && app.view.dispose) app.view.dispose();
     app.view = null;
     app.turn += 1;
+    noteLevel(route);
     const turn = app.turn;
     try {
       await refresh();

@@ -2,13 +2,15 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { installBrowser, load, record } = require("./load");
+const { fakeServer, installBrowser, load, record, settle } = require("./load");
+const Pg = require("./playground-records");
 
 const document = installBrowser();
-const { DevList, Strings } = load(["dom.js", "strings.js", "progress.js", "dev.js"], ["DevList", "Strings"]);
+const { DevList, Strings, createGameApi } = load(["dom.js", "strings.js", "api.js", "progress.js", "dev.js"], ["DevList", "Strings", "createGameApi"]);
 
 function list(status) {
-  const view = DevList.create({ status: () => status });
+  const server = fakeServer({ "/api/playground": Pg.playground() });
+  const view = DevList.create({ status: () => status, game: createGameApi(server.api) });
   document.body.replaceChildren(view.element);
   return { view, all: (selector) => [...view.element.querySelectorAll(selector)], q: (selector) => view.element.querySelector(selector) };
 }
@@ -51,4 +53,19 @@ test("the list speaks the page's language", () => {
   } finally {
     Strings.use("en");
   }
+});
+
+test("in dev mode a Playground section links to each starting point", async () => {
+  const run = list(dev());
+  await settle();
+  const links = run.all(".dev-playground a");
+  assert.equal(run.q(".dev-playground h2").textContent, "Playground");
+  assert.deepEqual(links.map((link) => link.getAttribute("href")), Pg.START_IDS.map((id) => `#/playground?start=${id}`));
+  assert.match(links[0].textContent, /Empty folder/);
+});
+
+test("out of dev mode there is no Playground section", async () => {
+  const run = list({ ...record("status"), dev: false });
+  await settle();
+  assert.equal(run.q(".dev-playground"), null);
 });

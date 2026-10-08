@@ -29,6 +29,10 @@ BANNER = "  First Commit: learn Git by doing"
 
 MAX_ID = 100
 MAX_ANSWER = 1000
+MAX_PATH = 1000
+MAX_CHOICES = 1000
+# A SHA-256 as the playground's conflict panel sends it back: 64 lowercase hex digits.
+SHA256 = re.compile(r"[0-9a-f]{64}")
 DEFAULT_CARDS = 20
 MAX_CARDS = 100
 # A count in a query: 1 to 3 ASCII digits (str.isdigit() lets "²" through, which int() rejects).
@@ -70,6 +74,36 @@ TERMINAL = terminal.TerminalSettings(
     start_folder=shell_folder,
     shell=game.shell_command,
 )
+
+
+def playground_terminal(person: game.Who) -> terminal.TerminalSettings:
+    """
+    Give the settings of one person's terminal in the free playground.
+
+    Parameters
+    ----------
+    person : Who
+        ``"you"`` or ``"alex"``.
+
+    Returns
+    -------
+    terminal.TerminalSettings
+        `TERMINAL`'s protocol and limit, with that person's environment, folder and shell
+        (`firstcommit.game.playground_environment`, ``playground_folder`` and
+        ``playground_shell_command``), read again for each new terminal.
+    """
+    return terminal.TerminalSettings(
+        protocol=TERMINAL.protocol,
+        notice_prefix=TERMINAL.notice_prefix,
+        environment=lambda: game.playground_environment(person, terminal.player_env(os.environ)),
+        start_folder=lambda: Path(game.playground_folder(person)),
+        max_terminals=TERMINAL.max_terminals,
+        shell=lambda: game.playground_shell_command(person),
+    )
+
+
+PLAYGROUND_TERMINALS = {"/api/terminal/playground": playground_terminal("you"), "/api/terminal/playground-alex": playground_terminal("alex")}
+"""The playground's two terminals, by path, beside the level's `TERMINAL`; all of them share its limit."""
 
 
 def bad(message: str) -> Reply:
@@ -546,6 +580,186 @@ def api_press(body: dict[str, Any]) -> Reply:
     return playing(lambda: game.press(person, button))
 
 
+def in_playground(action: Callable[[], Mapping[str, Any]]) -> Reply:
+    """
+    Run a free playground action, where a playground not opened yet or a missing Alex is a conflict.
+
+    Parameters
+    ----------
+    action : Callable[[], Mapping[str, Any]]
+        Calls `game` and gives the reply.
+
+    Returns
+    -------
+    Reply
+        200 and the reply; 404 for an unknown start, view or person; 409 before any start, or
+        for Alex in a start without a mothership.
+    """
+    try:
+        reply = found(action)
+    except (game.PlaygroundNotOpenError, game.NoAlexError) as error:
+        reply = HTTPStatus.CONFLICT, {"error": str(error)}
+    return reply
+
+
+def api_playground(query: dict[str, Any]) -> Reply:
+    """
+    GET /api/playground: the free playground's starts and where the player left it.
+
+    Parameters
+    ----------
+    query : dict[str, Any]
+        Unused.
+
+    Returns
+    -------
+    Reply
+        200 and `game.PlaygroundStatus`.
+    """
+    return HTTPStatus.OK, dict(game.playground_status())
+
+
+def api_playground_start(body: dict[str, Any]) -> Reply:
+    """
+    POST /api/playground/start {"start": id}: build the free playground afresh from a start.
+
+    Parameters
+    ----------
+    body : dict[str, Any]
+        The JSON body.
+
+    Returns
+    -------
+    Reply
+        200 and `game.PlaygroundStatus`; 400 without a start id, 404 for an unknown one.
+    """
+    start = body.get("start")
+    if not is_id(start):
+        return bad('send {"start": "<start id>"}')
+    return in_playground(lambda: game.start_playground(start))
+
+
+def api_playground_prefs(body: dict[str, Any]) -> Reply:
+    """
+    POST /api/playground/prefs {"view"?: id, "alex"?: bool, "whose"?: person}: remember the playground's view, Alex and whose repository.
+
+    Parameters
+    ----------
+    body : dict[str, Any]
+        The JSON body: at least one of the three.
+
+    Returns
+    -------
+    Reply
+        200 and `game.PlaygroundStatus`; 400 for a malformed body, 404 for an unknown view or
+        person, 409 before any start or for Alex in a start without a mothership.
+    """
+    view, alex, whose = body.get("view"), body.get("alex"), body.get("whose")
+    given = [name for name in ("view", "alex", "whose") if name in body]
+    fits = (view is None or is_id(view)) and (alex is None or isinstance(alex, bool)) and (whose is None or is_id(whose))
+    if not given or not fits or any(body[name] is None for name in given):
+        return bad('send {"view": "<view>", "alex": true or false, "whose": "<person>"}, with at least one of them')
+    return in_playground(lambda: game.set_playground_prefs(view, alex, whose))
+
+
+def api_playground_observe(query: dict[str, Any]) -> Reply:
+    """
+    GET /api/playground/observe: the free playground as it is now.
+
+    Parameters
+    ----------
+    query : dict[str, Any]
+        Unused.
+
+    Returns
+    -------
+    Reply
+        200 and `game.PlaygroundObservation`; 409 before any start.
+    """
+    return in_playground(game.observe_playground)
+
+
+def api_playground_resolve(body: dict[str, Any]) -> Reply:
+    """
+    POST /api/playground/resolve {"person", "file", "read", "choices"}: write the sides chosen for each conflict block of a file.
+
+    Parameters
+    ----------
+    body : dict[str, Any]
+        The JSON body: whose file, its path, the SHA-256 (lowercase hex) of the file as the page
+        read it, and one of ``"yours"``, ``"theirs"`` or ``"both"`` per conflict block, at most
+        `MAX_CHOICES`.
+
+    Returns
+    -------
+    Reply
+        200 and `game.ResolveView`; 400 for a malformed body or the wrong number of choices, 404
+        for an unknown person or a file not in conflict, 409 ``{"error", "kind": "changed"}`` when
+        the file changed since it was read, and 409 before any start or for Alex where there is none.
+    """
+    person, file, read, choices = body.get("person"), body.get("file"), body.get("read"), body.get("choices")
+    if not is_id(person) or not is_path(file) or not is_sha256(read) or not is_choices(choices):
+        return bad('send {"person": "<who>", "file": "<path>", "read": "<sha-256>", "choices": ["yours" | "theirs" | "both", ...]}')
+    try:
+        reply = in_playground(lambda: game.resolve_playground(person, file, read, choices))
+    except game.FileChangedError as error:
+        reply = HTTPStatus.CONFLICT, {"error": str(error), "kind": "changed"}
+    except game.WrongChoicesError as error:
+        reply = bad(str(error))
+    return reply
+
+
+def is_path(value: Any) -> TypeGuard[str]:
+    """
+    Tell whether a body field can be a file's path in a clone (whether it is one is `game`'s to say).
+
+    Parameters
+    ----------
+    value : Any
+        The field.
+
+    Returns
+    -------
+    TypeGuard[str]
+        True for a non-empty string of at most `MAX_PATH` characters.
+    """
+    return isinstance(value, str) and 0 < len(value) <= MAX_PATH
+
+
+def is_sha256(value: Any) -> TypeGuard[str]:
+    """
+    Tell whether a body field is a SHA-256 as the conflict panel sends it back.
+
+    Parameters
+    ----------
+    value : Any
+        The field.
+
+    Returns
+    -------
+    TypeGuard[str]
+        True for 64 lowercase hex digits.
+    """
+    return isinstance(value, str) and SHA256.fullmatch(value) is not None
+
+
+def is_choices(value: Any) -> TypeGuard[list[game.Keep]]:
+    """
+    Tell whether a body field is a list of conflict choices.
+
+    Parameters
+    ----------
+    value : Any
+        The field.
+
+    Returns
+    -------
+    TypeGuard[list[game.Keep]]
+        True for a list of at most `MAX_CHOICES` items, each one of `game.KEEPS`.
+    """
+    return isinstance(value, list) and len(value) <= MAX_CHOICES and all(choice in game.KEEPS for choice in value)
+
+
 ROUTES: dict[tuple[str, str], shell.Route] = {
     key: guarded(route)
     for key, route in {
@@ -565,6 +779,11 @@ ROUTES: dict[tuple[str, str], shell.Route] = {
         ("POST", "/api/card"): api_card,
         ("GET", "/api/notes"): api_notes,
         ("POST", "/api/press"): api_press,
+        ("GET", "/api/playground"): api_playground,
+        ("POST", "/api/playground/start"): api_playground_start,
+        ("POST", "/api/playground/prefs"): api_playground_prefs,
+        ("GET", "/api/playground/observe"): api_playground_observe,
+        ("POST", "/api/playground/resolve"): api_playground_resolve,
     }.items()
 }
 
@@ -583,7 +802,7 @@ def create_server(port: int) -> tuple[ThreadingHTTPServer, str]:
     tuple[ThreadingHTTPServer, str]
         The server and the link that opens the page, with the access key.
     """
-    return shell.create_server(port, routes=ROUTES, static_dir=STATIC, terminal=TERMINAL, settings=SETTINGS)
+    return shell.create_server(port, routes=ROUTES, static_dir=STATIC, terminal=TERMINAL, settings=SETTINGS, more_terminals=PLAYGROUND_TERMINALS)
 
 
 def serve(port: int) -> int:
@@ -600,4 +819,6 @@ def serve(port: int) -> int:
     int
         Exit status: 0 after Ctrl-C, 1 if the port is in use.
     """
-    return shell.serve(port, routes=ROUTES, static_dir=STATIC, terminal=TERMINAL, settings=SETTINGS, banner=BANNER)
+    return shell.serve(
+        port, routes=ROUTES, static_dir=STATIC, terminal=TERMINAL, settings=SETTINGS, banner=BANNER, more_terminals=PLAYGROUND_TERMINALS
+    )
