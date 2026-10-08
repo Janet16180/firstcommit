@@ -50,6 +50,65 @@ Done since: the code review and the security review (both report only), then a f
 `SSH_AGENT_PID`, `GH_TOKEN`, `GITHUB_TOKEN` and `GH_ENTERPRISE_TOKEN` from the page's shell (the
 lead recommends yes).
 
+## Handoff, end of 2026-10-08 (read this first)
+
+Plans in force: `docs/drafts/chapters-3-7.md` (rules, wave 1) and `docs/drafts/chapters-5-9.md`
+(sectors 5 to 9 and the view ladder, approved by the user). Contract: `docs/briefs/ORBIT.md`.
+
+`phase-2-engine` at 9234c6e has 24 levels in English and Spanish (liftoff,
+cargo 2-1 to 2-3, vault, mothership 4-1 to 4-5 plus 4-2b, branch 5-1 to 5-4, conflict 6-1 to 6-4), the
+lost panel during a quest, the pager off, any address to the stand-in GitHub, last hints that
+solve the level (a harness test types them), 3-2 as an accidental change, Snapshot.remotes and
+Reaction.moment. Every tier was green at each merge, Docker included.
+
+The user's decisions today, not yet built or not yet merged (see ORBIT.md and the plans):
+- the mothership's address becomes `../github.com/moonbase/project.git`, with Rama's line
+  "At work, the same address looks like https://github.com/moonbase/project.git" (not insteadOf:
+  git shows the local path everywhere, engine's evidence);
+- Node 24 LTS, pinned by checksum, in the Docker test stage (Node 18 broke a page test);
+- the challenge alarm is generic, and Base 7 gets its own `meteor` scene;
+- each moment plays once per opening of the level screen;
+- Robin is a reviewer shown only as a portrait; Alex the teammate who acts.
+
+Team for tomorrow: engine and frontend (named teammates, each in `.scratch/wt/orbit-*`), the
+artist subagent (`.claude/agents/artist.md`, a registered type from a new session), at most three
+agents working at once. A new session re-briefs them from this file and their branches.
+
+engine's queue, in order (engine's handoff, head 0b712d5): shared ok reactions for git fetch and
+git pull; the new mothership address with Rama's line, and the press sample's remotes; meteor in
+Art for Base 7 (check frontend's merged art first); Node 24 in the test image; termlab's hint
+label; rebase onto the latest `phase-2-engine`; ble.sh (built, NOT merged, waiting for the user: see below); then wave 2 (records for views with ids
+station, crew, history, sides, blackbox, board, focus; 2-5 Junk bay; sector 5 with the new 5-4
+"Edits come along"; sector 6 reworks; sector 7). Merged tonight at 9234c6e: 2-3's secrets explanation
+(8b67f03) and 4-2b "Two halves of a ship" (6a7251d). E10 (the 409) is closed: two play scripts shared a port and a log; runs now use private ports.
+
+ble.sh is built at `p2/orbit-engine` 0b712d5 (one commit after 6a7251d), every tier green on
+engine's side, but held for the user to try first:
+- it pins 0.4.0-devel3 (0.3.4 has no PREEXEC/POSTEXEC hooks or faces), vendored unmodified with
+  its checksum and BSD-3 licence in `src/firstcommit/vendor/`;
+- each command takes about 0.5 s longer to return to the prompt than plain bash;
+- the first start in a fresh game home leaves one line "ble/term.sh: updating tput cache ...";
+- try it: `git switch --detach 0b712d5` in a scratch worktree, then run the game and type a few
+  commands. Merge it with a review branch if the delay is acceptable.
+The old side branch `p2/orbit-engine-blesh` (b8a5a68) and its worktree are superseded and can be
+deleted with the user's go-ahead.
+
+frontend's batch is merged (7e9f7d3: crew view with Alex as a 60% mirror, the artist's six
+moments, the unnamed mothership card, reaction moments played once per opening of a level, the
+Node 18 timers fix, and Rama's line holding a warn, err or moment reaction until the moment
+ends). Its queue: wire the tab row and the strip into the level screen once engine's view
+records land (LevelView.view, views_seen, POST /api/view); the V2 fold and V4 unroll births in
+5-1 with reduced-motion versions and Rama's birth lines; V3 band; V5 two sides; V6 black box;
+ignored files greyed "still on your disk"; grow MOMENT in api.js as engine adds junk-flood,
+unreviewed-main, force-break and search-beam (art and captions are ready). Small gaps left: a
+warn followed one tick later by a met goal (no moment) is still replaced; in 2-3 the met goal's
+note is replaced on the next poll by the next goal's note. Leftovers to tidy: the scratch
+worktree `frontend-moments` and the Docker image `frontend-firstcommit:test`.
+
+Waiting for the user: try ble.sh (above) and decide; delete the old lessons, the map guide, map.js and the theme-time files
+(asked, not answered); review `docs/i18n-glossary.md`; playtests with first-time players on
+the build of 2026-10-08 (`deploy/docker/run reset`, then `deploy/docker/run`).
+
 ## Orbit wave 1 (2026-10-08, merged into `phase-2-engine` at 99f4312)
 
 All 1884 tests, the 19 Docker tests, ruff, mypy and ESLint pass.
