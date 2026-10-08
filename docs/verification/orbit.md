@@ -370,6 +370,7 @@ and unstaged file lost, `git restore --staged .`, and keys that reach a commit.
 | `KEYS_LOST` (lost) | in neither area and in no commit, that copy is lost; unstaging never needs deleting | E42 (the blob may linger in the object database, but nothing names it; recovering it is not taught, so the scope is "that copy") |
 | `CARGO_UNSTAGED` | `git add engine.cfg route.txt` stages them again | E43, E34 |
 | `KEYS_COMMITTED`, `NO_REPOSITORY` | as cargo-selective's | `kit.in_history`; E32 |
+| `WHY_SECRETS` (with the `secret-leak` moment), debrief (added 2026-10-08) | a staged file goes into the next commit; deleting it later leaves the old commit holding it; every clone of a pushed history holds it; a file named in `.gitignore` stays out of `git add .` | E104: in the image, `keys.txt` committed, then `git rm` and a second commit; `git show HEAD~1:keys.txt` still prints the password, and so does a clone of the pushed history; with `keys.txt` in `.gitignore`, `git add .` stages the other files only. E69 (a clone holds every commit); gitignore(5) |
 
 ### Level `vault-recorder` (Flight recorder, 3-3)
 

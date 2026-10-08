@@ -52,6 +52,10 @@ the commit has no `keys.txt`, so the keys left the staging area. The working fol
 touched, so the file is still there, untracked. The engine and the route are still staged for
 the next commit.
 
+Passwords, API keys and tokens never belong in a repository: once one is in a commit, every copy
+of the history holds it, and deleting the file later leaves the old commit as it was. A file
+named in `.gitignore` stays out of `git add .`; a later chapter teaches it.
+
 Commands to keep:
 
     $ git status                        # see what is staged
@@ -76,12 +80,18 @@ KEYS_COMMITTED = (
 )
 CARGO_UNSTAGED = "The engine settings and the route must stay staged for the next commit: `git add engine.cfg route.txt` stages them again."
 UNSTAGED = "`keys.txt` is out of the staging area and still in the working folder, and the engine and the route are still staged."
+WHY_SECRETS = (
+    "Whatever is staged goes into the next commit, and a commit stays in the history. Once it is pushed, everyone "
+    "who can read the repository has it, in every copy. Deleting the file later does not help: the old commit still "
+    "holds it. That is why a secret like `keys.txt` must never be staged."
+)
 RM_REFUSED = (
     "Git refused, and that kept your file: without `--cached`, `git rm` deletes the file from the working folder too. "
     "`git restore --staged keys.txt` takes it out of the staging area only."
 )
 
 REACTIONS = [
+    kit.ReactionRule(line=STATUS, mood="warn", text=WHY_SECRETS, outcome="ok", repository=True, staged=True, moment="secret-leak"),
     kit.ReactionRule(line=r"git rm(?!.* --cached)\b", mood="err", text=RM_REFUSED, outcome="failed", repository=True),
     kit.ReactionRule(line=r"rm\b.*keys\.txt", mood="warn", text=DELETED, event="file-deleted"),
 ]

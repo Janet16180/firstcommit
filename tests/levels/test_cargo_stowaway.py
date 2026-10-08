@@ -80,3 +80,10 @@ def test_keys_in_a_commit_are_said_and_the_level_offers_to_start_again() -> None
     kit.git(lab.project, "commit", "-q", "-m", "Night cargo")
     verdict = level.check(lab, state, None, typed_in(lab, "git status"))
     assert (verdict.solved, verdict.lost, verdict.message) == (False, True, level.KEYS_COMMITTED)
+
+
+def test_looking_at_the_staged_keys_explains_why_secrets_stay_out_with_the_leak_moment() -> None:
+    lab, state = arrived(level)
+    typed = typed_in(lab, "git status")
+    rule = reaction(level, typed[0], set(), True, True)
+    assert rule is not None and (rule.mood, rule.text, rule.moment) == ("warn", level.WHY_SECRETS, "secret-leak")
