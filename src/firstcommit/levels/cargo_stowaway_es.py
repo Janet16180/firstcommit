@@ -26,6 +26,11 @@ el commit no tiene `keys.txt`, así que las llaves salieron del staging area. La
 no se tocó, así que el archivo sigue ahí, sin seguimiento. El motor y la ruta siguen en el staging
 area para el próximo commit.
 
+Las contraseñas, las API keys y los tokens nunca van en un repositorio: una vez que uno está en un
+commit, cada copia de la historia lo tiene, y borrar el archivo después deja el commit viejo como
+estaba. Un archivo nombrado en `.gitignore` queda fuera de `git add .`; un capítulo posterior lo
+enseña.
+
 Comandos para recordar:
 
     $ git status                        # mira qué está en el staging area
@@ -58,4 +63,9 @@ UNSTAGED = "`keys.txt` está fuera del staging area y sigue en la carpeta de tra
 RM_REFUSED = (
     "Git se negó, y así conservaste tu archivo: sin `--cached`, `git rm` borra el archivo también de la carpeta de trabajo. "
     "`git restore --staged keys.txt` lo saca solo del staging area."
+)
+WHY_SECRETS = (
+    "Todo lo que está en el staging area va al próximo commit, y un commit se queda en la historia. Una vez que se hace "
+    "push, todos los que pueden leer el repositorio lo tienen, en cada copia. Borrar el archivo después no sirve: el "
+    "commit viejo lo sigue teniendo. Por eso un secreto como `keys.txt` nunca debe estar en el staging area."
 )

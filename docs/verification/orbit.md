@@ -370,6 +370,7 @@ and unstaged file lost, `git restore --staged .`, and keys that reach a commit.
 | `KEYS_LOST` (lost) | in neither area and in no commit, that copy is lost; unstaging never needs deleting | E42 (the blob may linger in the object database, but nothing names it; recovering it is not taught, so the scope is "that copy") |
 | `CARGO_UNSTAGED` | `git add engine.cfg route.txt` stages them again | E43, E34 |
 | `KEYS_COMMITTED`, `NO_REPOSITORY` | as cargo-selective's | `kit.in_history`; E32 |
+| `WHY_SECRETS` (with the `secret-leak` moment), debrief (added 2026-10-08) | a staged file goes into the next commit; deleting it later leaves the old commit holding it; every clone of a pushed history holds it; a file named in `.gitignore` stays out of `git add .` | E104: in the image, `keys.txt` committed, then `git rm` and a second commit; `git show HEAD~1:keys.txt` still prints the password, and so does a clone of the pushed history; with `keys.txt` in `.gitignore`, `git add .` stages the other files only. E69 (a clone holds every commit); gitignore(5) |
 
 ### Level `vault-recorder` (Flight recorder, 3-3)
 
@@ -553,6 +554,24 @@ was, and the quest waiting when the edit is committed before the empty push.
 | hint 2 | `git commit -am` commits the edit | E63; git-commit(1) `-a` ("automatically stage files that have been modified and deleted") |
 | `COMMITTED_EDIT` | the commit is ahead of `origin/main` | E63 (status says ahead by 1 before the push) |
 | `NOTHING_STAGED` (a commit that fails with nothing staged) | `git add route.txt` stages the edit; `-am` stages the tracked route | E63; git-commit(1) `-a`; the level's test (status 1) |
+
+### Level `mothership-halves` (Two halves of a ship, 4-2b; added 2026-10-08)
+
+*Re-checked* by `tests/levels/test_mothership_halves.py` and `tests/test_game.py`: Alex's commit
+waiting and your edit uncommitted, Alex's push as a goal event joining both halves in a merge
+commit, the whole ship after your pull, and the launch moment on that pull through the game.
+
+E105, in the image: a frame commit on a bare GitHub, two clones; Alex commits `engine.cfg`, you
+commit `nav.cfg` and push (0); Alex's push is refused (1); Alex's `git pull --no-rebase --no-edit`
+exits 0 with a merge commit of two parents and no conflict; Alex's push goes through (0); your
+`git pull` fast-forwards (0) and both files hold both halves.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card | `git pull` fetches, then merges, or only slides the label when you have nothing new | E54, E66, E105; git-pull(1) DESCRIPTION |
+| debrief, `TWO_HALVES` (with the `launch` moment) | changes to different files join in a merge commit with no conflict; your pull then brings the whole ship | E105; git-merge(1) TRUE MERGE |
+| debrief | Alex's push was refused until Alex pulled | E64, E105 |
+| hints, step commands | `git commit -am` takes the tracked, edited `nav.cfg` | E63; git-commit(1) `-a` |
 
 ### Level `mothership-refused` (Push refused, 4-4)
 

@@ -2087,3 +2087,16 @@ def test_a_reaction_carries_its_rules_moment_and_none_otherwise(sample_level: ru
     type_lines(game_home, ("ls", 0), ("git add hello.txt", 0))
     said = game.observe()["reactions"]
     assert [(reaction["line"], reaction["moment"]) for reaction in said] == [("ls", None), ("git add hello.txt", "secret-leak")]
+
+
+def test_in_two_halves_the_pull_that_brings_alexs_half_plays_the_launch_moment(game_home: Path) -> None:
+    game.start("mothership-halves")
+    game.observe()
+    lab = runner.lab_of("mothership-halves")
+    for line in ('git commit -q -am "Set the navigation"', "git push -q"):
+        type_lines(game_home, (line, kit.type_line(lab.project, line)["status"]))
+        game.observe()
+        game.quest_step(None)
+    type_lines(game_home, ("git pull -q", kit.type_line(lab.project, "git pull -q")["status"]))
+    said = game.observe()["reactions"]
+    assert [(reaction["line"], reaction["moment"]) for reaction in said] == [("git pull -q", "launch")]
