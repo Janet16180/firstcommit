@@ -30,7 +30,8 @@
  *                               {p: tone("s-new")} tints the file's paper.
  * shape(name, recolour)         a shared sprite's {rows, palette}, for pictures that draw it in layers.
  * CREW                          each crew member's colours as {a, b, c} (body, shade, light): `you`
- *                               violet, `alex` pink. The station's dome takes them as they are.
+ *                               violet, `alex` green (pink is the mothership's). The station's dome
+ *                               takes them as they are.
  * NIGHT_POLE                    the station recolouring that lights its flag pole against the night.
  */
 
@@ -214,7 +215,7 @@ const ArtPixels = (function () {
 
   const CREW = Object.freeze({
     you: Object.freeze({ a: tone("art-violet"), b: tone("art-violet-dk"), c: tone("art-violet-lt") }),
-    alex: Object.freeze({ a: tone("art-pink"), b: tone("art-pink-dk"), c: tone("art-pink-lt") }),
+    alex: Object.freeze({ a: tone("art-green"), b: tone("art-green-dk"), c: tone("art-green-lt") }),
   });
 
   function sprite(name, recolour = {}) {

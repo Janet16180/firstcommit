@@ -93,14 +93,14 @@ test("text is a line in the terminal font, centred unless anchored, animated whe
 test("a shape is a sprite's rows and palette, recoloured; an unknown one is refused", () => {
   const { rows, palette } = ArtPixels.shape("station", ArtPixels.CREW.alex);
   assert.ok(rows.length > 0);
-  assert.equal(palette.a, "var(--art-pink)");
+  assert.equal(palette.a, "var(--art-green)");
   assert.equal(ArtPixels.sprite("station").length, ArtPixels.draw(rows, palette).length);
   assert.throws(() => ArtPixels.shape("moon"), RangeError);
 });
 
-test("the crew colours are violet for you and pink for Alex, in art tokens", () => {
+test("the crew colours are violet for you and green for Alex, in art tokens", () => {
   assert.deepEqual({ ...ArtPixels.CREW.you }, { a: "var(--art-violet)", b: "var(--art-violet-dk)", c: "var(--art-violet-lt)" });
-  assert.deepEqual({ ...ArtPixels.CREW.alex }, { a: "var(--art-pink)", b: "var(--art-pink-dk)", c: "var(--art-pink-lt)" });
+  assert.deepEqual({ ...ArtPixels.CREW.alex }, { a: "var(--art-green)", b: "var(--art-green-dk)", c: "var(--art-green-lt)" });
 });
 
 test("a station's flag pole is the outline colour unless the night palette lights it", () => {

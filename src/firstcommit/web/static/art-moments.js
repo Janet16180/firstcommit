@@ -258,7 +258,7 @@ const ArtMoments = (function () {
         ], offset(yours.x - ship.x, yours.y - ship.nav)),
         part(moving, "art-launch-join", [
           place(ship.x, ship.engine, 3, draw(ENGINE, { ...HULL, f: CREW.alex.a })),
-          text(ship.x - 2, ship.engine + 16, c.engine, { fill: tone("art-pink-lt"), anchor: "end" }),
+          text(ship.x - 2, ship.engine + 16, c.engine, { fill: tone("art-green-lt"), anchor: "end" }),
         ], offset(alexs.x - ship.x, alexs.y - ship.engine)),
         part(moving, "art-launch-flame", place(ship.x, ship.engine + 27, 3, part(moving, "art-flick", draw(FLAME, { o: tone("art-orange"), y: tone("art-flame-hot") })))),
       ]),

@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const { html } = require("./fakedom");
 const { createClock, installBrowser, load } = require("./load");
-const { STYLE, assertPalette, assertStyled, labelOf, walk } = require("./art-check");
+const { STYLE, assertPalette, assertStyled, colours, labelOf, walk } = require("./art-check");
 
 installBrowser();
 const { ArtMoments } = load(["dom.js", "art-pixels.js", "art-moments.js"], ["ArtMoments"]);
@@ -92,14 +92,14 @@ test("unreviewed work rises onto the mothership's line and lands at Alex's stati
   const element = play("unreviewed-main");
   assert.equal(element.querySelectorAll(".art-wi-rise").length, 1);
   assert.equal(element.querySelectorAll(".art-wi-land").length, 1);
-  assert.ok(element.querySelector("rect[fill=\"var(--art-pink)\"]"), "Alex's station");
+  assert.ok(element.querySelector("rect[fill=\"var(--art-green)\"]"), "Alex's station");
 });
 
 test("a forced push replaces Alex's capsule, which cracks and falls off the line", () => {
   const element = play("force-break");
   for (const part of ["art-wi-rise", "art-wi-fall", "art-wi-crack"]) assert.ok(classesOf(element).includes(part), part);
   const fallen = element.querySelector(".art-wi-fall");
-  assert.ok(fallen.querySelector("rect[fill=\"var(--art-pink)\"]"), "Alex's capsule falls");
+  assert.ok(fallen.querySelector("rect[fill=\"var(--art-green)\"]"), "Alex's capsule falls");
   assert.ok(fallen.querySelector(".art-wi-crack"), "and it is the one that cracks");
 });
 
@@ -168,4 +168,10 @@ test("the stations' flag poles show against the night", () => {
   const domes = [...walk(element)].filter((node) => /scale\(2\)$/.test(node.getAttribute("transform") || "") && node.querySelector("rect[fill=\"var(--art-yellow)\"]"));
   assert.equal(domes.length, 2);
   for (const dome of domes) assert.ok(dome.querySelector("rect[fill=\"var(--star)\"]"));
+});
+
+test("in the launch, your half is violet and Alex's half green, with no pink", () => {
+  const painted = new Set(colours(play("launch")));
+  for (const tone of ["art-violet", "art-violet-lt", "art-green", "art-green-lt"]) assert.ok(painted.has(`var(--${tone})`), tone);
+  assert.ok(![...painted].some((colour) => colour.startsWith("var(--art-pink")));
 });

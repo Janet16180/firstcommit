@@ -118,8 +118,8 @@ test("the sector planets cycle orange, ringed cyan, violet, ringed pink, in a sq
 
 test("each crew station is a dome with a flag in that crew member's colours, Alex's matching their capsule", () => {
   const fills = (name) => new Set([...ArtSprites.icon(name).querySelectorAll("rect")].map((rect) => rect.getAttribute("fill")));
-  assert.ok(fills("station-you").has("var(--art-violet)") && !fills("station-you").has("var(--art-pink)"));
-  assert.ok(fills("station-alex").has("var(--art-pink)") && !fills("station-alex").has("var(--art-violet)"));
+  assert.ok(fills("station-you").has("var(--art-violet)") && !fills("station-you").has("var(--art-green)"));
+  assert.ok(fills("station-alex").has("var(--art-green)") && !fills("station-alex").has("var(--art-violet)") && !fills("station-alex").has("var(--art-pink)"));
   assert.ok(fills("station-alex").has("var(--art-yellow)"), "the flag");
   assert.equal(labelOf(ArtSprites.icon("station-alex", { label: "Alex's station" })), "Alex's station");
 });

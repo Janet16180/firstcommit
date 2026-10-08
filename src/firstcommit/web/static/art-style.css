@@ -29,6 +29,9 @@
   --art-pink: #FF6F98;
   --art-pink-dk: #C2456E;
   --art-pink-lt: #FFC2D4;
+  --art-green: #A6E05A;
+  --art-green-dk: #5CB82E;
+  --art-green-lt: #D8F5B0;
   --art-red: #FF6B5E;
   --art-red-lt: #FFB3A8;
   --art-muted: #8E86B8;
@@ -441,7 +444,7 @@
 }
 
 .art-station--alex {
-  --station-colour: var(--z-re);
+  --station-colour: var(--alex);
 }
 
 /* The station's name (with its station icon) on the top border, on the panel so the icon keeps

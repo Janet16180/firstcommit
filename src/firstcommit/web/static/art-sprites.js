@@ -18,7 +18,7 @@
  *                         arrows meeting at a blinking pause bar) --s-mod, and "inverted" (a
  *                         .cblock turned over, outlined in --edge) the zone's --zc.
  *                         "station-you" and "station-alex" are a crew member's base dome and
- *                         flag, in ArtPixels.CREW colours (violet, and pink like Alex's capsule).
+ *                         flag, in ArtPixels.CREW colours (violet, and green like Alex's capsule).
  * planet(index, {label})  the planet of the sector at 0-based `index`: orange, cyan with a ring,
  *                         violet, pink with a ring, then again. Square; the page sets its size.
  */

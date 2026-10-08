@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const { html } = require("./fakedom");
 const { installBrowser, load } = require("./load");
-const { assertPalette, assertStyled, isHidden, labelOf, walk } = require("./art-check");
+const { assertPalette, assertStyled, colours, isHidden, labelOf, walk } = require("./art-check");
 
 installBrowser();
 const { ArtScenes } = load(["dom.js", "art-pixels.js", "art-scenes.js"], ["ArtScenes"]);
@@ -144,4 +144,14 @@ test("the simulator feeds a belt of crates into the workshop, piled past its roo
   assert.ok(crates.some((crate) => leftOf(crate) < left || leftOf(crate) >= right), "some fall outside its walls");
   assert.ok(simulator.querySelectorAll(".art-belt").length >= 2, "crates ride the belt");
   assert.ok(fillsOf(simulator).has("var(--art-orange)"), "workshop crates in the workshop's colour");
+});
+
+test("Alex is green and the mothership pink: Alex's capsules and branch in green, the ship and origin in pink", () => {
+  const fills = (name) => new Set(colours(ArtScenes.scene(name, { captions: ENGLISH[name] })));
+  for (const name of ["merge", "collision"]) {
+    assert.ok(fills(name).has("var(--art-green)"), `${name} draws Alex in green`);
+    assert.ok(!fills(name).has("var(--art-pink)"), `${name} has no pink without the mothership`);
+  }
+  assert.ok(fills("pull").has("var(--art-green)") && fills("pull").has("var(--art-pink)"), "Alex's capsule leaves the pink ship");
+  for (const name of ["orbit", "rocket"]) assert.ok(fills(name).has("var(--art-pink)") && !fills(name).has("var(--art-green)"), name);
 });

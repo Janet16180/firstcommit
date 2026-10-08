@@ -61,7 +61,7 @@ test("a station frames its zones in its crew member's colour, with a name tab on
   assert.match(frame, /border: 4px solid var\(--station-colour\)/);
   assert.match(frame, /min-width: 0/);
   assert.match(rules(".art-station--you").join(""), /--station-colour: var\(--z-va\)/);
-  assert.match(rules(".art-station--alex").join(""), /--station-colour: var\(--z-re\)/);
+  assert.match(rules(".art-station--alex").join(""), /--station-colour: var\(--alex\)/);
   const tab = rules(".art-station-name").join("");
   assert.match(tab, /position: absolute/);
   assert.match(tab, /border: 3px solid var\(--station-colour\)/);
@@ -372,4 +372,8 @@ test("the tape and its birth paint only with the design's tokens", () => {
 test("reduced motion plays no tape birth and leaves the tape whole", () => {
   const reduced = STYLE.slice(STYLE.indexOf("@media (prefers-reduced-motion: reduce)"));
   assert.ok(reduced.includes(".sky.art-birth-tape *"));
+});
+
+test("the art palette has a green ramp for Alex next to the pink one the mothership keeps", () => {
+  for (const name of ["--art-green", "--art-green-dk", "--art-green-lt", "--art-pink", "--art-pink-dk", "--art-pink-lt"]) assert.ok(TOKENS.has(name), name);
 });
