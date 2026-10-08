@@ -43,6 +43,11 @@ const LevelScreen = (function () {
   const UNFOLDED = ["station", "crew", "blackbox"];
   /* How the zones lay out on each view (zone-panel.js): history is the chart, the black box keeps
      to your row; every other view shows the zones as they are. */
+  /* The views and pictures that grow downward: on a wide screen they stand in a tall column beside
+     the mission and the terminal. A challenge's chart is read against the chain beside it, so that
+     pair keeps the width across the top. */
+  const COLUMN_VIEWS = ["history"];
+  const COLUMN_PICTURES = ["chain", "movelog"];
   const ZONE_MODES = { history: "chart", blackbox: "row" };
   /* Solve's pace: how often it looks, and how long a line or a goal may take before it gives up. */
   const POLL_MS = 300;
@@ -119,6 +124,7 @@ const LevelScreen = (function () {
     ui.sides.element.hidden = view !== "sides";
     ui.tape.element.hidden = !screen.taped || !TAPED.includes(view);
     ui.tabs.select(view);
+    ui.stage.classList.toggle("is-column", COLUMN_VIEWS.includes(view));
     measureTerminal(screen);
   }
 
@@ -147,6 +153,7 @@ const LevelScreen = (function () {
     ui.tabs.element.hidden = true;
     ui.sky.dataset.view = "pictures";
     ui.sky.replaceChildren(screen.pictures.element, ui.moments.element);
+    ui.stage.classList.toggle("is-column", COLUMN_PICTURES.includes(level.pictures.large) && !level.target);
   }
 
   /* What the current goal asks to look at. */
