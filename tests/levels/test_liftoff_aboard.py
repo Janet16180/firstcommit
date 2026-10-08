@@ -75,9 +75,9 @@ def test_an_ls_that_failed_does_not_count() -> None:
 
 def test_the_failed_git_status_gets_the_levels_own_lesson_and_not_the_shared_one() -> None:
     rules = (*runner.load(level).reactions, *reactions.RULES)
-    rule = reactions.react({"line": "git status", "status": 128}, (), False, False, rules, remote=False)
+    rule = reactions.react({"line": "git status", "status": 128}, (), False, False, rules, remote=False, ignored=False)
     assert rule is not None and rule.text == level.NO_REPOSITORY_YET
-    assert reactions.react({"line": "git status", "status": 0}, (), True, False, rules, remote=False) is not None
+    assert reactions.react({"line": "git status", "status": 0}, (), True, False, rules, remote=False, ignored=False) is not None
 
 
 def test_the_step_messages_tell_what_git_status_said() -> None:

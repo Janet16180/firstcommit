@@ -202,7 +202,9 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
   it; the game remembers the views seen (`game.see_view`).
 - **`REACTIONS`**: what Rama says about a typed line (`firstcommit.reactions`). A rule matches
   the start of the line (a regular expression), how it ended (`outcome`), an event kind of what
-  changed (`event`) and whether a repository is there afterwards (`repository`). The first rule
+  changed (`event`) and what is true afterwards: a repository is there (`repository`), something
+  is staged (`staged`), a remote is named (`remote`), the working folder holds files Git ignores
+  (`ignored`). A rule may carry a `moment` the page plays (`records.Moment`). The first rule
   that fits speaks; a level's rules come before the shared `reactions.RULES`, so add one only
   when the level can say something more precise.
 - **`EVENTS`**: `kit.LevelEvent(id, run, goal="")`. `run(lab, state)` makes a real change with

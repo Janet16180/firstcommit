@@ -28,8 +28,8 @@ area para el próximo commit.
 
 Las contraseñas, las API keys y los tokens nunca van en un repositorio: una vez que uno está en un
 commit, cada copia de la historia lo tiene, y borrar el archivo después deja el commit viejo como
-estaba. Un archivo nombrado en `.gitignore` queda fuera de `git add .`; un capítulo posterior lo
-enseña.
+estaba. Un archivo nombrado en `.gitignore` queda fuera de `git add .`; la última misión de este
+sector lo enseña.
 
 Comandos para recordar:
 

@@ -139,8 +139,11 @@ class Command(TypedDict):
 
 Mood = Literal["info", "ok", "warn", "err"]
 """How Rama says something about a typed line (`firstcommit.reactions`): neutral, pleased, careful or about a failure."""
-Moment = Literal["secret-leak", "launch"]
-"""A one-time moment the page plays over the zones when a reaction carries it: a secret leaking into every copy, or a ship launching."""
+Moment = Literal["secret-leak", "launch", "junk-flood"]
+"""
+A one-time moment the page plays over the zones when a reaction carries it: a secret leaking into
+every copy, a ship launching, or generated files flooding into every copy.
+"""
 Art = Literal["space", "timeline", "terminal", "planet", "flag", "zones", "conveyor", "capsule", "chain", "orbit", "rocket", "pull", "alarm", "fork", "merge", "collision", "blackbox", "meteor"]
 """The pictures a level's scene can show; the page draws each one (its art files)."""
 View = Literal["station", "crew", "history", "sides", "blackbox", "board", "focus"]
@@ -148,6 +151,11 @@ View = Literal["station", "crew", "history", "sides", "blackbox", "board", "focu
 The views of the level screen (docs/drafts/chapters-5-9.md, the view ladder): your station's four
 zones, the crew view, history, a conflict's two sides, the black box, the review board, and your
 branch and main.
+"""
+Seen = Literal[View, "band"]
+"""
+What the page marks seen once its birth has played: a view, or ``band``, the crew view flattened
+into Alex's band above another view (born in 5-3), which no level opens on.
 """
 
 Language = Literal["en", "es"]

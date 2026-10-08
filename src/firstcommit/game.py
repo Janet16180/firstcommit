@@ -68,7 +68,7 @@ from firstcommit.lab import Lab
 from firstcommit.markup import Block
 from firstcommit.playground import ButtonOffError as ButtonOffError
 from firstcommit.reactions import ReactionRule
-from firstcommit.records import Art, ButtonView, Command, Language, Moment, Mood, Press, View, Who
+from firstcommit.records import Art, ButtonView, Command, Language, Moment, Mood, Press, Seen, View, Who
 from firstcommit.repomap import Snapshot
 from firstcommit.save import Payout
 from firstcommit.save import SaveError as SaveError
@@ -84,7 +84,7 @@ CHALLENGE_MOODS = ("warn", "err")
 """What Rama still says in a challenge: danger and errors, never guidance."""
 QUEST_FIRST = "The guided quest is not finished yet: step {step} of {steps} is next."
 LANGUAGES: tuple[Language, ...] = get_args(Language)
-VIEWS: tuple[View, ...] = get_args(View)
+SEEN: tuple[Seen, ...] = get_args(Seen)
 SPANISH = {
     QUEST_FIRST: "La misión guiada todavía no termina: el siguiente es el paso {step} de {steps}.",
     kit.PICK_ONE: "Elige una de las opciones.",
@@ -224,8 +224,8 @@ class LevelView(TypedDict):
     finished the level, filled from its last play, so it shows even when the level was solved
     from the terminal. ``scene`` is empty for a level without one; ``scene_seen`` says whether
     the player has seen it (`see_scene`). ``view`` is the view the level screen opens on, and
-    ``views_seen`` every view the page has shown being born, in the order seen (`see_view`), the
-    same for every level. ``challenge`` marks a level whose goals are met in any
+    ``views_seen`` every view (and the band) the page has shown being born, in the order seen
+    (`see_view`), your station from the start, the same for every level. ``challenge`` marks a level whose goals are met in any
     order, with no guidance; its ``card`` is None until the player has solved it once, since the
     card names the command.
     """
@@ -241,7 +241,7 @@ class LevelView(TypedDict):
     scene: list[SceneFrameView]
     scene_seen: bool
     view: View
-    views_seen: list[View]
+    views_seen: list[Seen]
     card: CommandCard | None
     challenge: bool
     briefing: list[Block]
@@ -551,20 +551,20 @@ def see_scene(level_id: str) -> None:
 
 def see_view(view: str) -> None:
     """
-    Remember that the page has shown a view being born, so it plays the birth only once; `reset` forgets it.
+    Remember that the page has shown a view (or the band) being born, so it plays the birth only once; `reset` forgets it.
 
     Parameters
     ----------
     view : str
-        One of `VIEWS`.
+        One of `SEEN`.
 
     Raises
     ------
     ValueError
         If the page draws no such view; nothing changes then.
     """
-    if view not in VIEWS:
-        raise ValueError(f"the level screen's views are {', '.join(VIEWS)}, not {view!r}")
+    if view not in SEEN:
+        raise ValueError(f"the level screen's births are {', '.join(SEEN)}, not {view!r}")
     with save.lock():
         progress = save.load_progress()
         if view not in progress["views"]:
@@ -1361,7 +1361,8 @@ def _observation(
     kinds = {event["kind"] for event in events}
     staged = bool(repomap.staged(now["project"]))
     remote = bool(now["project"]["remotes"])
-    said = [(command, reactions.react(command, kinds, now["project"]["exists"], staged, rules, remote=remote)) for command in typed]
+    ignored = any(file["ignored"] for file in now["project"]["files"])
+    said = [(command, reactions.react(command, kinds, now["project"]["exists"], staged, rules, remote=remote, ignored=ignored)) for command in typed]
     return {
         "level": now["level"],
         "project": now["project"],

@@ -34,7 +34,7 @@ from firstcommit import (
     score,
 )
 from firstcommit.chapters import BLURBS, CHAPTERS
-from firstcommit.levels import cargo_selective, mothership_base7
+from firstcommit.levels import cargo_junk, cargo_selective, mothership_base7
 from sample_levels import cargo_sample_es
 
 pytestmark = pytest.mark.usefixtures("sample_decks")
@@ -410,7 +410,7 @@ def test_a_scene_stays_seen_once_the_player_saw_it_until_a_reset(sample_level: r
 
 
 def test_a_level_page_names_its_main_view_and_the_views_the_player_has_seen(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
-    assert (game.level(sample_level.id)["view"], game.level(sample_level.id)["views_seen"]) == ("station", [])
+    assert (game.level(sample_level.id)["view"], game.level(sample_level.id)["views_seen"]) == ("station", ["station"])
     level = replaced(sample_level, view="history")
     monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
     assert game.level(level.id)["view"] == "history"
@@ -418,17 +418,17 @@ def test_a_level_page_names_its_main_view_and_the_views_the_player_has_seen(samp
 
 def test_a_view_stays_seen_in_the_order_seen_until_a_reset(sample_level: runner.Level) -> None:
     game.see_view("crew")
-    game.see_view("station")
+    game.see_view("band")
     game.see_view("crew")
-    assert game.level(sample_level.id)["views_seen"] == ["crew", "station"]
+    assert game.level(sample_level.id)["views_seen"] == ["station", "crew", "band"]
     game.reset()
-    assert game.level(sample_level.id)["views_seen"] == []
+    assert game.level(sample_level.id)["views_seen"] == ["station"]
 
 
 def test_only_a_view_the_page_draws_can_be_seen(sample_level: runner.Level) -> None:
     with pytest.raises(ValueError, match="map"):
         game.see_view("map")
-    assert save.load_progress()["views"] == []
+    assert save.load_progress()["views"] == ["station"]
 
 
 def test_a_level_solved_by_a_typed_answer_shows_its_question_filled_from_its_state(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1999,6 +1999,20 @@ def test_a_push_before_any_remote_is_named_gets_rama_s_error_from_the_snapshot(g
     type_lines(game_home, (line, kit.type_line(lab.project, line)["status"]))
     said = game.observe()["reactions"]
     assert [(reaction["line"], reaction["mood"], reaction["text"]) for reaction in said] == [(line, "err", markup.parse(reactions.NO_REMOTE))]
+
+
+def test_a_status_warns_of_the_junk_until_the_snapshot_shows_ignored_files(game_home: Path) -> None:
+    game.start("cargo-junk")
+    game.observe()
+    lab = runner.lab_of("cargo-junk")
+    type_lines(game_home, ("git status", kit.type_line(lab.project, "git status")["status"]))
+    said = game.observe()["reactions"]
+    assert [(reaction["mood"], reaction["text"], reaction["moment"]) for reaction in said] == [("warn", markup.parse(cargo_junk.WHY_IGNORE), "junk-flood")]
+    kit.type_line(lab.project, 'echo "sim-output/" > .gitignore')
+    game.observe()
+    type_lines(game_home, ("git status", kit.type_line(lab.project, "git status")["status"]))
+    said = game.observe()["reactions"]
+    assert [(reaction["mood"], reaction["text"]) for reaction in said] == [("info", markup.parse(reactions.STATUS))]
 
 
 def test_a_challenge_poll_that_meets_no_goal_says_the_first_goal_still_unmet(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:

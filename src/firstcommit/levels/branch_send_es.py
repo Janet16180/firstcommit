@@ -34,7 +34,8 @@ nave nodriza tiene `scout` para que el equipo lo revise, y su `main` no se movi�
 lo envía.
 
 `git branch -r` lista lo que tu repositorio registró de los branches del remoto: `origin/main`, y
-ahora `origin/scout`.
+ahora `origin/scout`. Alex hizo fetch después de tu push, así que su repositorio también tiene
+`origin/scout`, listo para revisarlo, y los branches propios de Alex no se movieron.
 
 En el trabajo, haces push del branch de tu tarea por su nombre y pides una revisión; `main` cambia
 solo cuando se hace merge de esa revisión.

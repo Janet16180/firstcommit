@@ -26,7 +26,7 @@ from typing import Annotated, Any, Literal, TypedDict, cast
 
 from termlab import store
 
-from firstcommit.records import Command, Language, Snapshot, View
+from firstcommit.records import Command, Language, Seen, Snapshot
 
 HOME_VARIABLE = "FIRSTCOMMIT_HOME"
 DEFAULT_HOME = "~/.firstcommit"
@@ -110,7 +110,7 @@ class Progress(TypedDict):
     Everything the player has earned, and what the game remembers for them.
 
     ``scenes`` holds the ids of the levels whose scene the player has seen, in the order seen,
-    ``views`` the views of the level screen the page has shown being born, in the order seen,
+    ``views`` what the page has shown being born (`Seen`), in the order seen, your station from the start,
     and ``language`` the language the game speaks.
     """
 
@@ -121,7 +121,7 @@ class Progress(TypedDict):
     best_streak: int
     last_payout: Payout | None
     scenes: list[str]
-    views: list[View]
+    views: list[Seen]
     language: Language
 
 
@@ -208,9 +208,9 @@ def new_progress() -> Progress:
     Returns
     -------
     Progress
-        No XP, no levels, no cards, no streak, no payout and no scene or view seen, in English.
+        No XP, no levels, no cards, no streak, no payout, no scene seen and only your station's view, in English.
     """
-    return {"xp": 0, "levels": {}, "cards": {}, "streak": 0, "best_streak": 0, "last_payout": None, "scenes": [], "views": [], "language": "en"}
+    return {"xp": 0, "levels": {}, "cards": {}, "streak": 0, "best_streak": 0, "last_payout": None, "scenes": [], "views": ["station"], "language": "en"}
 
 
 def load_progress() -> Progress:

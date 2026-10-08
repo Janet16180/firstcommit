@@ -382,14 +382,15 @@ def test_the_page_marks_a_view_it_draws_as_seen(site: Site, monkeypatch: pytest.
         assert api(site, "/api/view", body)[0] == 400
     assert calls == []
     assert api(site, "/api/view", {"view": "history"}) == (200, {})
-    assert calls == [("history",)]
+    assert api(site, "/api/view", {"view": "band"}) == (200, {})
+    assert calls == [("history",), ("band",)]
 
 
 def test_the_real_game_remembers_a_seen_view_until_a_reset(site: Site, sample_level: runner.Level) -> None:
     assert api(site, "/api/view", {"view": "crew"}) == (200, {})
-    assert api(site, f"/api/level?id={sample_level.id}")[1]["views_seen"] == ["crew"]
+    assert api(site, f"/api/level?id={sample_level.id}")[1]["views_seen"] == ["station", "crew"]
     assert api(site, "/api/reset", {"confirm": True})[0] == 200
-    assert api(site, f"/api/level?id={sample_level.id}")[1]["views_seen"] == []
+    assert api(site, f"/api/level?id={sample_level.id}")[1]["views_seen"] == ["station"]
 
 
 def test_cards_are_listed_for_a_chapter_or_all_with_a_limit(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
