@@ -36,6 +36,7 @@ from firstcommit import (
     score,
 )
 from firstcommit.chapters import BLURBS, CHAPTERS
+from firstcommit.levels import cargo_selective, mothership_base7
 from sample_levels import cargo_sample_es
 
 pytestmark = pytest.mark.usefixtures("sample_decks")
@@ -621,7 +622,7 @@ def test_a_level_in_progress_that_no_longer_exists_counts_as_none(sample_level: 
 
 def test_a_read_step_passes_whatever_is_typed(sample_level: runner.Level) -> None:
     game.start(sample_level.id)
-    assert game.quest_step("anything") == {"correct": True, "message": [], "step": 1, "quest_done": False, "done": ["look"]}
+    assert game.quest_step("anything") == {"correct": True, "message": [], "step": 1, "quest_done": False, "done": ["look"], "lost": False}
 
 
 def test_a_watch_step_passes_once_the_lab_shows_it_was_done(sample_level: runner.Level, game_home: Path) -> None:
@@ -648,7 +649,7 @@ def test_an_answer_step_needs_the_right_answer(sample_level: runner.Level, game_
     assert (wrong["correct"], wrong["step"], wrong["quest_done"]) == (False, 2, False)
     assert wrong["message"] == markup.parse("Look at the first line of `git status`.")
     assert game.quest_step(None)["correct"] is False
-    assert game.quest_step(" trunk ") == {"correct": True, "message": markup.parse("Right."), "step": 3, "quest_done": True, "done": ["look", "stage", "branch"]}
+    assert game.quest_step(" trunk ") == {"correct": True, "message": markup.parse("Right."), "step": 3, "quest_done": True, "done": ["look", "stage", "branch"], "lost": False}
 
 
 def with_prediction(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> runner.Level:
@@ -797,7 +798,7 @@ def test_in_a_challenge_rama_speaks_only_of_danger_and_errors(sample_level: runn
 def test_a_finished_quest_checks_nothing_more(sample_level: runner.Level) -> None:
     game.start(sample_level.id)
     save.write_active({**active_record(), "step": 3, "done": ["look", "stage", "branch"]})
-    assert game.quest_step("trunk") == {"correct": False, "message": [], "step": 3, "quest_done": True, "done": ["look", "stage", "branch"]}
+    assert game.quest_step("trunk") == {"correct": False, "message": [], "step": 3, "quest_done": True, "done": ["look", "stage", "branch"], "lost": False}
 
 
 def test_quest_steps_never_count_as_attempts(sample_level: runner.Level) -> None:
@@ -2017,3 +2018,39 @@ def test_in_spanish_cards_and_notes_are_spanish_and_choices_answer_with_their_en
     result = game.answer_card("cargo-c01", "right")
     assert (result["correct"], result["answer"], result["answer_text"], result["explain"]) == (True, "right", markup.parse("la buena"), markup.parse("Porque sí."))
     assert game.answer_card("cargo-text", "La rama main")["correct"]
+
+
+def test_a_step_that_says_the_work_is_lost_tells_quest_step_and_its_message_comes_first(game_home: Path) -> None:
+    game.start("cargo-selective")
+    game.observe()
+    lab = runner.lab_of("cargo-selective")
+    kit.type_line(lab.project, "git add . && git commit -q -m 'Load the cargo'")
+    result = game.quest_step(None)
+    assert (result["correct"], result["lost"]) == (False, True)
+    assert result["message"] == markup.parse(cargo_selective.KEYS_COMMITTED)
+
+
+def test_a_step_with_nothing_lost_says_so(game_home: Path) -> None:
+    game.start("cargo-selective")
+    assert game.quest_step(None)["lost"] is False
+
+
+def test_in_a_challenge_a_lost_goal_comes_first_even_when_another_goal_is_met(game_home: Path) -> None:
+    game.start("mothership-base7")
+    lab = runner.lab_of("mothership-base7")
+    kit.type_line(lab.project, "git init -q && git add . && git commit -q -m 'Rebuild Base 7'")
+    result = game.quest_step(None)
+    assert (result["correct"], result["lost"]) == (True, True)
+    assert result["message"] == markup.parse(mothership_base7.DEBRIS_SEALED)
+
+
+def test_the_lost_message_wins_over_a_pleased_reaction_to_the_line_that_lost_the_work(game_home: Path) -> None:
+    game.start("cargo-selective")
+    game.observe()
+    lab = runner.lab_of("cargo-selective")
+    type_lines(game_home, ("git add .", kit.type_line(lab.project, "git add .")["status"]))
+    game.observe()
+    line = "git commit -m 'Load the cargo'"
+    type_lines(game_home, (line, kit.type_line(lab.project, line)["status"]))
+    said = game.observe()["reactions"]
+    assert [(reaction["line"], reaction["mood"], reaction["text"]) for reaction in said] == [(line, "err", markup.parse(cargo_selective.KEYS_COMMITTED))]

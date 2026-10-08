@@ -294,13 +294,19 @@ GuideView = dict[str, FigureView]
 
 
 class StepResult(TypedDict):
-    """The result of a quest step: whether a goal was met, feedback, and where the quest stands now (``done``, as in `ActiveView`)."""
+    """
+    The result of a quest step: whether a goal was met, feedback, and where the quest stands now (``done``, as in `ActiveView`).
+
+    ``lost`` says a step checked (in a challenge, any goal not met yet) found the player's work
+    gone for good; its message is then the feedback, and the page offers to start again.
+    """
 
     correct: bool
     message: list[Block]
     step: int
     quest_done: bool
     done: list[str]
+    lost: bool
 
 
 class CheckResult(TypedDict):
@@ -709,10 +715,12 @@ def quest_step(answer: str | None) -> StepResult:
         language = _language()
         reached: list[str] = []
         message: list[Block] = []
+        lost = False
         if not _quest_done(active, entry):
             verdicts = [(step.id, _check_step(step, entry.texts[language].steps[step.id], lab, active, _typed(answer), _messages(entry, language))) for step in _pending(active, entry)]
             reached = [step_id for step_id, verdict in verdicts if verdict.solved]
-            unmet = [verdict for _, verdict in verdicts if not verdict.solved]
+            unmet = sorted((verdict for _, verdict in verdicts if not verdict.solved), key=lambda verdict: not verdict.lost)
+            lost = bool(unmet) and unmet[0].lost
             message = markup.parse((unmet[0] if unmet else verdicts[-1][1]).message)
         if reached:
             active["done"] = [step.id for step in entry.quest if step.id in {*active["done"], *reached}]
@@ -720,7 +728,7 @@ def quest_step(answer: str | None) -> StepResult:
             save.write_active(active)
         for goal in reached:
             active = _fire(entry, active, goal)
-    return {"correct": bool(reached), "message": message, "step": active["step"], "quest_done": _quest_done(active, entry), "done": active["done"]}
+    return {"correct": bool(reached), "message": message, "step": active["step"], "quest_done": _quest_done(active, entry), "done": active["done"], "lost": lost}
 
 
 def check(answer: str | None, auto: bool) -> CheckResult:
@@ -840,7 +848,8 @@ def observe() -> Observation:
         lab = runner.lab_of(entry.id)
         last = save.load_observed()
         now, typed = _look(entry.id, lab, last, active["typed"])
-        observation = _observation(last, now, _buttons(lab, now), typed, _rules(entry), _messages(entry, _language()))
+        messages = _messages(entry, _language())
+        observation = _lost_over_pleased(_observation(last, now, _buttons(lab, now), typed, _rules(entry), messages), _loss(entry, active, lab, messages))
         if now != last:
             save.write_observed(now)
         if last is None or last["level"] != entry.id:
@@ -1573,6 +1582,55 @@ def _check_step(step: kit.Step, text: kit.StepText, lab: kit.Lab, active: save.A
         verdict = kit.choose(step, answer or "")
     message = text.reveal if isinstance(step, kit.ChoiceStep) and verdict.solved else _say(verdict.message, messages)
     return dataclasses.replace(verdict, message=message)
+
+
+def _loss(entry: runner.Level, active: save.Active, lab: kit.Lab, messages: Mapping[str, str]) -> str:
+    """
+    Say whether a step the quest checks now finds the player's work lost for good.
+
+    Parameters
+    ----------
+    entry : runner.Level
+        The level in progress.
+    active : save.Active
+        Its record, the lines typed read in.
+    lab : kit.Lab
+        Its lab.
+    messages : Mapping[str, str]
+        The messages in the player's language (`_messages`).
+
+    Returns
+    -------
+    str
+        The first lost verdict's message among the steps `quest_step` would check (the current
+        one; in a challenge every goal not met yet), or empty when nothing is lost.
+    """
+    language = _language()
+    pending = [] if _quest_done(active, entry) else _pending(active, entry)
+    verdicts = (_check_step(step, entry.texts[language].steps[step.id], lab, active, None, messages) for step in pending)
+    return next((verdict.message for verdict in verdicts if verdict.lost), "")
+
+
+def _lost_over_pleased(observation: Observation, loss: str) -> Observation:
+    """
+    Let a loss win over what Rama would say pleased about the lines that caused it.
+
+    Parameters
+    ----------
+    observation : Observation
+        What changed and what Rama says (`_observation`).
+    loss : str
+        The loss's message (`_loss`), or empty.
+
+    Returns
+    -------
+    Observation
+        The same, with each ``ok`` reaction saying the loss instead, as an error, when there is one.
+    """
+    said: list[Reaction] = [
+        {"line": reaction["line"], "mood": "err", "text": markup.parse(loss)} if loss and reaction["mood"] == "ok" else reaction for reaction in observation["reactions"]
+    ]
+    return {**observation, "reactions": said}
 
 
 def _cards_to_review(chapter: str | None, progress: save.Progress, limit: int) -> list[cards.Card]:
