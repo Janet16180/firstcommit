@@ -5,7 +5,7 @@ const test = require("node:test");
 const { createClock, installBrowser, load, record } = require("./load");
 
 const document = installBrowser();
-const { ZonePanel } = load(["dom.js", "strings.js", "places.js", "art-pixels.js", "art-sprites.js", "typed.js", "zones.js", "zone-panel.js"], ["ZonePanel"]);
+const { ZonePanel, Strings } = load(["dom.js", "strings.js", "places.js", "art-pixels.js", "art-sprites.js", "typed.js", "zones.js", "zone-panel.js"], ["ZonePanel", "Strings"]);
 
 const observe = (project, github = null) => ({ ...record("observation"), project, github });
 /* A repository that names the mothership `origin`, as a clone does. */
@@ -78,7 +78,7 @@ test("empty zones say what fills them", () => {
 
 test("the legend names every state a file can show", () => {
   const panel = ZonePanel.create();
-  assert.deepEqual(texts(panel.element, ".legend li"), ["no repository", "conflict (both sides changed it)", "new (untracked)", "edited (modified)", "on the dock (staged)", "saved (committed)"]);
+  assert.deepEqual(texts(panel.element, ".legend li"), ["no repository", "conflict (both sides changed it)", "untracked (new)", "modified (edited)", "staged (on the dock)", "committed (saved in the vault)"]);
 });
 
 test("an observation that changed nothing leaves the zones' nodes in place", () => {
@@ -517,4 +517,14 @@ test("in a level with no mothership the chart is your vault alone; a mothership 
   assert.ok(panel.element.classList.contains("no-mothership"));
   panel.update(observe(record("observation").project, record("snapshots").one));
   assert.ok(!panel.element.classList.contains("no-mothership"));
+});
+
+test("the state legend names git's meaning first and the game's in brackets, in Spanish too", () => {
+  Strings.use("es");
+  try {
+    const panel = ZonePanel.create();
+    assert.deepEqual(texts(panel.element, ".legend li").slice(2), ["sin seguimiento (nuevo)", "modificado (editado)", "en el staging area (en el muelle)", "en un commit (guardado en la bóveda)"]);
+  } finally {
+    Strings.use("en");
+  }
 });
