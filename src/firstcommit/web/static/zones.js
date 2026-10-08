@@ -6,7 +6,7 @@
  * (the local repository's history) and the mothership (the level's GitHub). It only reads the
  * snapshots the server sent; nothing here runs or imitates git. Defines one global, Zones.
  *
- * read(observation) gives {repository, operation, workshop, dock, vault, remote, crew}:
+ * read(observation) gives {repository, operation, workshop, dock, vault, remote, named, crew}:
  * - repository: whether the folder holds a repository;
  * - operation: the merge, rebase, cherry-pick, revert or bisect in progress, or null;
  * - workshop: [{path, state}] for every file in the folder that git does not ignore, state one of
@@ -18,6 +18,8 @@
  *   history; a branch that splits off takes the next free one), each label {text, kind} with
  *   kind "head", "branch", "remote" or "tag"; null without a repository;
  * - remote: the same for the level's GitHub, or null when the level has none;
+ * - named: whether the repository names a remote `origin` (a mothership it cannot name yet is
+ *   there, but out of its reach);
  * - crew: the teammate's station, read from their clone like yours, {repository, workshop, dock,
  *   vault}, or null when the level has no teammate.
  *
@@ -129,7 +131,7 @@ const Zones = (function () {
   }
 
   function read({ project, github, teammate }) {
-    return { ...station(project), operation: project.operation, remote: github ? commits(github, false) : null, crew: teammate ? station(teammate) : null };
+    return { ...station(project), operation: project.operation, remote: github ? commits(github, false) : null, named: project.remotes.some((remote) => remote.name === "origin"), crew: teammate ? station(teammate) : null };
   }
 
   /* Each kind of move: the git commands that make it, its arrow, and its flights between two readings. */
@@ -201,7 +203,7 @@ const Zones = (function () {
     const lit = [...new Set(made.map((move) => move.arrow).filter(Boolean))];
     const wake = [];
     if (!before.repository && after.repository) wake.push("dock", "vault");
-    if (before.remote === null && after.remote !== null) wake.push("remote");
+    if ((before.remote === null && after.remote !== null) || (after.remote !== null && !before.named && after.named)) wake.push("remote");
     const landed = new Set(flights.map((flight) => flight.to));
     const was = histories(before);
     const now = histories(after);

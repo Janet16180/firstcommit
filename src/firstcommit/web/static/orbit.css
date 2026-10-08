@@ -846,6 +846,12 @@ pre.code code {
   color: var(--ink-soft);
 }
 
+/* A long address in a zone's message breaks across lines rather than past the zone's edge. */
+.zone-empty code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .flow {
   display: flex;
   flex-direction: column;

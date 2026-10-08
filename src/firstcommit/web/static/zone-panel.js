@@ -283,9 +283,13 @@ const ZonePanel = (function () {
         const shell = shells[key];
         const zone = filled[key];
         const name = base(key);
-        shell.element.classList.toggle("is-dormant", !zone);
-        shell.count.textContent = zone ? String(zone.count) : "–";
-        shell.body.replaceChildren(...(!zone ? [say(OFF[name])] : zone.count ? zone.nodes : [say(EMPTY[name])]));
+        /* A mothership the repository does not name yet: how to name it, and where it lives. */
+        const unnamed = key === "remote" && zone && !zones.named;
+        shell.element.classList.toggle("is-dormant", !zone || unnamed);
+        shell.count.textContent = zone && !unnamed ? String(zone.count) : "–";
+        let body = !zone ? [say(OFF[name])] : zone.count ? zone.nodes : [say(EMPTY[name])];
+        if (unnamed) body = [say("zones.unnamed.remote"), say("zones.remote.where")];
+        shell.body.replaceChildren(...body);
       }
       /* A merge (or rebase, cherry-pick...) stopped halfway is said over the vault. */
       const paused = shells.vault.operation;

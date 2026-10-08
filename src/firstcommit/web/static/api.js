@@ -55,6 +55,7 @@ const createGameApi = (function () {
     branch: nullable(text),
     commits: list(record({ hash: text, short: text, parents: list(text), subject: text, author: text, time: number })),
     refs: list(record({ name: text, kind: oneOf("branch", "remote", "tag"), target: text })),
+    remotes: list(record({ name: text, url: text })),
     files: list(record({
       path: text,
       head: nullable(text),

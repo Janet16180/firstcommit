@@ -105,3 +105,8 @@ test("Alex's mirrored station draws at about 60 percent and takes no clicks, so 
   assert.match(rule(".station.is-mirror"), /pointer-events: none;/);
   assert.match(rule(".viz-crew"), /grid-template-columns: minmax\(0, 1fr\) minmax\(150px, 200px\) minmax\(0, 0\.6fr\);/);
 });
+
+test("a long address in a zone's message wraps inside the zone", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.match(rule(".zone-empty code"), /white-space: normal;\s*overflow-wrap: anywhere;/);
+});

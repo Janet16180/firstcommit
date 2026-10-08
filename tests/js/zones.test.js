@@ -288,3 +288,10 @@ test("your push flies only capsules your own vault holds", () => {
   assert.ok(flights.some((flight) => flight.from === "vault:y1" && flight.to === "remote:y1"));
   assert.ok(!flights.some((flight) => flight.from === "vault:a1"));
 });
+
+test("the mothership is named once the repository knows origin, and naming it wakes the mothership", () => {
+  const github = snapshot({ exists: true, bare: true });
+  assert.equal(Zones.read(observe(snapshot({ exists: true, remotes: [] }), github)).named, false);
+  assert.equal(Zones.read(observe(snapshot({ exists: true, remotes: [{ name: "origin", url: "../github/project.git" }] }), github)).named, true);
+  assert.deepEqual(Zones.moves(model({ remote: [], named: false }), model({ remote: [], named: true }), ["remote"]).wake, ["remote"]);
+});

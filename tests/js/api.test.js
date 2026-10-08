@@ -357,3 +357,9 @@ test("the level in progress and a step's result say which goals are done", async
 test("a check says whether the player's work is lost for good", async () => {
   await refused("/api/check", (check) => delete check.lost, (api) => api.check(null, false));
 });
+
+test("a snapshot names the remotes its repository knows, each with its address", async () => {
+  const observation = record("observation");
+  delete observation.project.remotes;
+  await assert.rejects(gameApi({ "/api/observe": observation }).game.observe(), /project\.remotes/);
+});
