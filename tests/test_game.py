@@ -100,7 +100,7 @@ def fake_snapshot(path: Path) -> repomap.Snapshot:
         }
         for name in names
     ]
-    return {"exists": path.is_dir(), "bare": False, "head": None, "branch": None, "commits": [], "refs": [], "pushed": [], "files": files, "operation": None, "stash": 0, "truncated": False}
+    return {"exists": path.is_dir(), "bare": False, "head": None, "branch": None, "commits": [], "refs": [], "pushed": [], "remotes": [], "files": files, "operation": None, "stash": 0, "truncated": False}
 
 
 def fake_describe(before: repomap.Snapshot, after: repomap.Snapshot) -> list[changes.Event]:

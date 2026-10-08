@@ -64,6 +64,7 @@ SNAPSHOT: records.Snapshot = {
     "commits": [{"hash": HASH, "short": HASH[:7], "parents": [], "subject": "Add a README", "author": "Ada Tester", "time": 1760000000}],
     "refs": [{"name": "main", "kind": "branch", "target": HASH}],
     "pushed": [],
+    "remotes": [{"name": "origin", "url": "../github/project.git"}],
     "files": [
         {
             "path": "README.md",

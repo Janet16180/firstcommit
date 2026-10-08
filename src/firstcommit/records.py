@@ -83,6 +83,13 @@ class FileEntry(TypedDict):
     folder_change: FolderChange | None
 
 
+class Remote(TypedDict):
+    """A remote a repository names: its name and its address as configured (``remote.<name>.url``)."""
+
+    name: str
+    url: str
+
+
 class Snapshot(TypedDict):
     """
     The state of one repository.
@@ -100,6 +107,9 @@ class Snapshot(TypedDict):
     as their reflogs record it, so a commit that reached one by a push was here before the
     remote had it. Invariant: a sorted subset of the names of ``refs`` of kind ``"remote"``;
     empty when there are none, or when their reflogs are off.
+
+    ``remotes`` lists the remotes the repository names, sorted by name, each with its address as
+    written in its configuration; empty without a repository or without remotes.
     """
 
     exists: bool
@@ -109,6 +119,7 @@ class Snapshot(TypedDict):
     commits: list[Commit]
     refs: list[Ref]
     pushed: list[str]
+    remotes: list[Remote]
     files: list[FileEntry]
     operation: Operation | None
     stash: int

@@ -38,6 +38,7 @@ from firstcommit.records import (
     Operation,
     Ref,
     RefKind,
+    Remote,
     Snapshot,
 )
 
@@ -327,11 +328,31 @@ def snapshot(path: Path) -> Snapshot:
         "commits": commits,
         "refs": refs,
         "pushed": _pushed(path, refs),
+        "remotes": _remotes(path),
         "files": files,
         "operation": next((operation for marker, operation in OPERATION_MARKERS if os.path.exists(repo.git_dir / marker)), None),
         "stash": _stash_count(path) if stashed else 0,
         "truncated": commits_cut or files_cut,
     }
+
+
+def _remotes(path: Path) -> list[Remote]:
+    """
+    List the remotes a repository names, with their addresses as configured.
+
+    Parameters
+    ----------
+    path : Path
+        The repository.
+
+    Returns
+    -------
+    list[Remote]
+        Sorted by name; empty when it names none.
+    """
+    found = gitcmd.run(path, "config", "--get-regexp", r"^remote\..*\.url$")
+    pairs = (line.split(" ", 1) for line in _lines(found))
+    return sorted(({"name": key.removeprefix("remote.").removesuffix(".url"), "url": url} for key, url in pairs), key=lambda remote: remote["name"])
 
 
 def objects(path: Path) -> list[ObjectInfo]:
@@ -379,6 +400,7 @@ def empty() -> Snapshot:
         "commits": [],
         "refs": [],
         "pushed": [],
+        "remotes": [],
         "files": [],
         "operation": None,
         "stash": 0,
