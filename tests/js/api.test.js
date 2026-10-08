@@ -404,3 +404,32 @@ test("a snapshot names the remotes its repository knows, each with its address",
   delete observation.project.remotes;
   await assert.rejects(gameApi({ "/api/observe": observation }).game.observe(), /project\.remotes/);
 });
+
+test("a level says its teaching pictures and its challenge's chart, or null, and each step what it rings", async () => {
+  const { game } = gameApi();
+  const level = await game.level("x");
+  assert.equal(level.pictures.large, "chain");
+  assert.ok(level.target.commits.length > 0);
+  assert.deepEqual(level.steps[0].look, ["HEAD"]);
+  const plain = gameApi({ ...REPLIES, "/api/level": { ...record("level"), pictures: null, target: null } }).game;
+  assert.equal((await plain.level("x")).pictures, null);
+  await refused("/api/level", (body) => delete body.pictures, (api) => api.level("x"));
+  await refused("/api/level", (body) => (body.pictures.large = "tape"), (api) => api.level("x"));
+  await refused("/api/level", (body) => (body.pictures.small = "movelog"), (api) => api.level("x"));
+  await refused("/api/level", (body) => delete body.pictures.whatif, (api) => api.level("x"));
+  await refused("/api/level", (body) => delete body.target, (api) => api.level("x"));
+  await refused("/api/level", (body) => (body.target.names = []), (api) => api.level("x"));
+  await refused("/api/level", (body) => delete body.steps[0].look, (api) => api.level("x"));
+});
+
+test("an observation carries the desk's texts, git's graph or null, and each reflog line as git prints it", async () => {
+  const { game } = gameApi();
+  const observation = await game.observe();
+  assert.ok(Array.isArray(observation.texts));
+  assert.ok(observation.reflog.every((entry) => typeof entry.line === "string"));
+  const graphless = gameApi({ ...REPLIES, "/api/observe": { ...record("observation"), graph: null, texts: [] } }).game;
+  assert.equal((await graphless.observe()).graph, null);
+  await refused("/api/observe", (body) => delete body.texts, (api) => api.observe());
+  await refused("/api/observe", (body) => delete body.graph, (api) => api.observe());
+  await refused("/api/observe", (body) => delete body.reflog[0].line, (api) => api.observe());
+});

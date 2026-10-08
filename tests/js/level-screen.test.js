@@ -928,7 +928,7 @@ test("in a level that shows it, the tape runs under history and the black box, a
 });
 
 test("the tape is born on the level's first move of HEAD: it appears in place, Rama says so, and the game is told", async () => {
-  const moved = { ...record("observation"), reflog: [{ old: record("observation").reflog[0].new, new: record("observation").reflog[1].new, message: "reset: moving to HEAD~1" }, ...record("observation").reflog] };
+  const moved = { ...record("observation"), reflog: [{ old: record("observation").reflog[0].new, new: record("observation").reflog[1].new, message: "reset: moving to HEAD~1", line: "5941dbe HEAD@{0}: reset: moving to HEAD~1" }, ...record("observation").reflog] };
   let looks = 0;
   const run = taped("history", ["station", "history", "blackbox"], () => ((looks += 1) === 1 ? record("observation") : moved));
   await settle();
