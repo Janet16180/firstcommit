@@ -9,6 +9,7 @@ run on this machine by ``tests/test_smoke.py``) on the player image. The other t
 script's messages with a fake ``docker``.
 """
 
+import ast
 import json
 import os
 import pty
@@ -448,6 +449,18 @@ def test_the_image_has_vim_for_the_playgrounds_editor_way_and_vi_opens_it(image:
 
     assert programs.splitlines()[:2] == ["/usr/bin/vim.basic", "/usr/bin/vim.basic"]
     assert programs.splitlines()[2].startswith("VIM - Vi IMproved 9.1")
+
+
+@pytest.mark.docker
+@pytest.mark.slow
+def test_vim_keeps_the_title_the_games_shell_gives_it_and_says_insert_while_in_insert_mode(image: str) -> None:
+    keys = "(sleep 2; printf ix; sleep 1; printf '\\033'; sleep 1; printf ':wq\\r')"
+    titles = "import re, sys; print(re.findall(r'\\x1b]2;([^\\x07]*)\\x07', sys.stdin.buffer.read().decode()))"
+    script = f'cd /tmp && echo line > a.txt && {keys} | script -qfc "vim a.txt" /dev/null | python3 -c "{titles}" && cat a.txt'
+    shown = in_image(image, script, "--env", "TERM=xterm-256color", "--env", "FIRSTCOMMIT_TITLE=firstcommit-editor vim a.txt")
+    seen, written = shown.splitlines()
+    assert ast.literal_eval(seen) == ["firstcommit-editor vim a.txt", "firstcommit-editor vim a.txt insert", "firstcommit-editor vim a.txt", ""]
+    assert written == "xline"
 
 
 @pytest.mark.docker
