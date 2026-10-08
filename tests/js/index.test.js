@@ -42,5 +42,5 @@ test("the old level page, its lessons and the time theme are gone", () => {
 });
 
 test("the page loads the map screen, the level screen and their parts", () => {
-  for (const name of ["art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "typed.js", "scene.js", "art-infographics.js", "infographic-text.js", "field-guide.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "art-moments.js", "moment-layer.js", "view-tabs.js", "strip.js", "sides.js", "tape.js", "births.js", "level-screen.js", "starmap.js"]) assert.ok(scripts.includes(name), name);
+  for (const name of ["art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "typed.js", "scene.js", "art-infographics.js", "infographic-text.js", "field-guide.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "art-moments.js", "moment-layer.js", "view-tabs.js", "strip.js", "sides.js", "tape.js", "births.js", "level-screen.js", "starmap.js", "dev.js"]) assert.ok(scripts.includes(name), name);
 });

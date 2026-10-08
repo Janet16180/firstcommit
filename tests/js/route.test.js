@@ -34,3 +34,8 @@ test("a broken escape in the address is the map, not an error", () => {
 test("the field guide has its own address", () => {
   assert.deepEqual(Route.parse("#/guide"), { view: "guide" });
 });
+
+test("dev mode's level list has its own address", () => {
+  assert.deepEqual(Route.parse("#/dev"), { view: "dev" });
+  assert.deepEqual(Route.parse("#/dev/anything"), { view: "dev" });
+});

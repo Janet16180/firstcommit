@@ -10,7 +10,7 @@
  * also sit in the map's bar. Loads last; defines no global.
  */
 
-/* global createClient, createTerminal, createGameApi, Dom, Strings, Route, Sound, Dialog, ArtSky, Progress, StarMap, LevelScreen, FieldGuide, CardsView, NotesView */
+/* global createClient, createTerminal, createGameApi, Dom, Strings, Route, Sound, Dialog, ArtSky, Progress, StarMap, LevelScreen, FieldGuide, CardsView, NotesView, DevList */
 
 (function () {
   const { el } = Dom;
@@ -55,6 +55,7 @@
     guide: (ctx) => FieldGuide.create(ctx),
     cards: (ctx, route) => CardsView.create(ctx, route.chapter),
     notes: (ctx, route) => NotesView.create(ctx, route.chapter),
+    dev: (ctx) => DevList.create(ctx),
   };
   const OWN_HEAD = ["home", "level", "guide"];
 

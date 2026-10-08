@@ -7,7 +7,7 @@ const { fakeServer, httpError, installBrowser, load, record, settle } = require(
 
 installBrowser();
 const { Dom } = load(
-  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "route.js", "poll.js", "sound.js", "dialog.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "view-tabs.js", "strip.js", "sides.js", "tape.js", "births.js", "level-screen.js", "starmap.js", "art-infographics.js", "infographic-text.js", "field-guide.js", "cards.js", "notes.js"],
+  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "route.js", "poll.js", "sound.js", "dialog.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "view-tabs.js", "strip.js", "sides.js", "tape.js", "births.js", "level-screen.js", "starmap.js", "art-infographics.js", "infographic-text.js", "field-guide.js", "cards.js", "notes.js", "dev.js"],
   ["Dom"],
 );
 
@@ -257,6 +257,13 @@ test("the field guide's address shows the guide under its own head", async () =>
   const page = await boot({ hash: "#/guide" });
   assert.ok(page.main.querySelector(".field-guide"));
   assert.equal(page.document.querySelector(".topbar").hidden, true);
+});
+
+test("dev mode's address lists every level, under the page's top bar", async () => {
+  const page = await boot({ hash: "#/dev", replies: { "/api/status": { ...record("status"), dev: true } } });
+  assert.ok(page.main.querySelector(".dev .dev-level a"));
+  assert.equal(page.document.querySelector(".topbar").hidden, false);
+  assert.match(page.document.title, /^Dev mode/);
 });
 
 test("before the game answers, the page speaks English, whatever the browser's language", async () => {
