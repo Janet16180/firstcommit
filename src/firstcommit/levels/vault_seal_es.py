@@ -55,6 +55,7 @@ JOURNAL_SEALED = (
     "`journal.txt` también está en un commit, y no estaba listo. Deshacer un commit llega en un capítulo posterior: "
     "vuelve a empezar la misión."
 )
+JOURNAL_STAGED = "`journal.txt` está en el staging area, y no está listo. `git rm --cached journal.txt` lo vuelve a sacar; el archivo se queda."
 SEALED = "El mapa está sellado en una cápsula, y el diario se queda en la carpeta de trabajo."
 LOOKED = "`git log` lista tu cápsula: su hash, tu nombre, la fecha y tu mensaje."
 NOT_LOOKED = "Ahora mira la historia: escribe `git log`."

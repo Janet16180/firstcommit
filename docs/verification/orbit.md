@@ -491,7 +491,8 @@ Wrong or misleading, with the correction sent to frontend:
 
 *Re-checked* by `tests/levels/test_vault_seal.py`: commit and log, the commit by Cadet, the
 journal untracked and GitHub empty afterwards, a bare commit (status 1, the shared `NO_MESSAGE`),
-a log before the commit, the journal sealed too (lost), and a commit without the map.
+a log before the commit, the journal sealed too (lost), a commit without the map, and the journal
+staged (Rama's warning, the goal's way back out).
 
 | Text | Claim | Evidence |
 |---|---|---|
@@ -503,6 +504,7 @@ a log before the commit, the journal sealed too (lost), and a commit without the
 | `LOOKED` | `git log` lists the commit with hash, name, date and message | E55, E45 |
 | `JOURNAL_SEALED` (lost) | a commit cannot be taken back until a later chapter | chapters-3-7 (revert and reset in chapter 7) |
 | `MAP_MISSING` | stage the map, then commit again | E13, E55 |
+| `JOURNAL_STAGED` (reaction and goal message) | before the first commit, `git rm --cached journal.txt` unstages it and keeps the file; `git restore --staged` cannot yet | E102 (added 2026-10-08): in the image, a repository with no commit, `git add .`, then `git restore --staged journal.txt` exits 128 (no HEAD) while `git rm --cached journal.txt` exits 0 and leaves `?? journal.txt` |
 
 ### Level `vault-look` (Look before you seal, 3-2)
 

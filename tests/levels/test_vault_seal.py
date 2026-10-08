@@ -1,3 +1,5 @@
+import pytest
+
 from firstcommit import kit, reactions
 from firstcommit.levels import vault_seal as level
 from level_helpers import reaction, started, typed_in, watch
@@ -52,3 +54,14 @@ def test_unstaging_the_map_and_committing_nothing_new_says_what_is_missing() -> 
 
 def test_the_prediction_passes_with_any_option() -> None:
     assert all(kit.choose(level.GUESS, option).solved for option in level.GUESS.options)
+
+
+@pytest.mark.parametrize("line", ["git add .", "git add journal.txt", "git add -A", "git add map.txt journal.txt"])
+def test_staging_the_journal_gets_a_warning_and_the_goal_says_how_to_take_it_back_out(line: str) -> None:
+    lab, state = started(level)
+    typed = typed_in(lab, line)
+    rule = reaction(level, typed[0], {"file-staged"}, True, True)
+    assert rule is not None and (rule.mood, rule.text) == ("warn", level.JOURNAL_STAGED)
+    assert watch(level, "commit").watch(lab, state, typed).message == level.JOURNAL_STAGED
+    typed += typed_in(lab, "git rm --cached journal.txt")
+    assert watch(level, "commit").watch(lab, state, typed).message == level.NO_COMMIT

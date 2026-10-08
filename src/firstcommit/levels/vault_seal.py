@@ -68,9 +68,12 @@ JOURNAL_SEALED = (
     "`journal.txt` is in a commit too, and it was not ready. Taking a commit back comes in a later chapter: "
     "start the mission again."
 )
+JOURNAL_STAGED = "`journal.txt` is staged, and it is not ready. `git rm --cached journal.txt` takes it back out; the file stays."
 SEALED = "The map is sealed in a capsule, and the journal stays in the working folder."
 LOOKED = "`git log` lists your capsule: its hash, your name, the date and your message."
 NOT_LOOKED = "Now look at the history: type `git log`."
+
+REACTIONS = [kit.ReactionRule(line=r"git add( \S+)* (\.|-A|--all|journal\.txt)( |$)", mood="warn", text=JOURNAL_STAGED, event="file-staged")]
 
 GUESS = kit.ChoiceStep(
     id="guess",
@@ -106,6 +109,8 @@ def watch_commit(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdic
         message = NO_REPOSITORY
     elif journal:
         message = JOURNAL_SEALED
+    elif KEPT in kit.staged(snap):
+        message = JOURNAL_STAGED
     elif not snap["commits"]:
         message = NO_COMMIT
     elif not kit.in_history(lab.project, CARGO):
