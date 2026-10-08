@@ -105,7 +105,7 @@ test("in the fold the flows and the legend fade out", () => {
   assert.match(frames(flow), /to \{ opacity: 0; \}/);
 });
 
-test("the unroll reveals every vault from the top down, then the mothership fades in", () => {
+test("the unroll reveals every vault from the top down, then the mothership fades in with its tethers", () => {
   const [, unroll, duration] = birthAnimation('.sky.art-birth-unroll .viz .zone[data-zone$="vault"]');
   assert.equal(duration, BIRTH);
   assert.match(frames(unroll), /from \{ clip-path: inset\(0 0 100% 0\); \}/);
@@ -114,6 +114,7 @@ test("the unroll reveals every vault from the top down, then the mothership fade
   assert.equal(after, BIRTH);
   assert.match(frames(mothership), /0%, \d+% \{ opacity: 0; \}/);
   assert.match(frames(mothership), /to \{ opacity: 1; \}/);
+  assert.deepEqual(birthAnimation(".sky.art-birth-unroll .viz .tethers").slice(1), [mothership, BIRTH]);
 });
 
 test("the unroll starts with the strip's vault card lit in its own colour", () => {

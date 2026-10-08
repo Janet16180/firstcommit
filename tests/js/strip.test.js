@@ -76,7 +76,18 @@ test("Alex's strip is a band named for Alex, with their station's three cards an
   assert.equal(band.element.getAttribute("aria-label"), "Alex's station, folded");
   assert.equal(band.element.querySelector(".strip-who").textContent, "Alex's base");
   assert.deepEqual([...band.element.querySelectorAll(".strip-card")].map((node) => node.dataset.zone), ["workshop", "dock", "vault"]);
+  assert.ok(band.element.querySelector(".strip-who svg.art-icon--station-alex"));
   const yours = Strip.create({ onExpand: () => {} });
+  yours.update(reading());
   assert.ok(!yours.element.classList.contains("is-band"));
-  assert.equal(yours.element.querySelector(".strip-who"), null);
+  assert.equal(yours.element.querySelector(".strip-who").textContent, "Your base");
+  assert.ok(yours.element.querySelector(".strip-who svg.art-icon--station-you"));
+});
+
+test("a conflicted file carries a conflict tag, so a paused merge shows in the strip too", () => {
+  const strip = Strip.create({ onExpand: () => {} });
+  strip.update(reading({ workshop: [file("README.md", "conflicted"), file("todo.txt", "edited"), file("notes.txt")] }));
+  const tags = [...card(strip, "workshop").querySelectorAll(".strip-file")].map((node) => [node.firstChild.textContent, node.querySelector(".strip-tag")?.dataset.state || null]);
+  assert.deepEqual(tags, [["README.md", "conflicted"], ["todo.txt", "edited"], ["notes.txt", null]]);
+  assert.equal(card(strip, "workshop").querySelector(".strip-tag").textContent, "conflict");
 });
