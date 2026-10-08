@@ -79,11 +79,12 @@ const createGameApi = (function () {
   const LEVEL_SUMMARY = record({ id: text, title: text, difficulty: number, xp: number, command: text, stars: number, challenge: flag, done: flag, has_quest: flag });
   /* A finished level's command card (records.CommandCard). */
   const CARD = record({ level: text, command: text, text: BLOCKS });
-  /* The scene pictures the artist has drawn, the moods Rama speaks in and the moments a reaction may
-     play (records.Art, records.Mood and records.Moment). */
+  /* The scene pictures the artist has drawn, the moods Rama speaks in, the moments a reaction may
+     play and the views of the ladder, in its order (records.Art, Mood, Moment and View). */
   const ART = oneOf("space", "timeline", "terminal", "planet", "flag", "zones", "conveyor", "capsule", "chain", "orbit", "rocket", "pull", "alarm", "fork", "merge", "collision", "blackbox");
   const MOOD = oneOf("info", "ok", "warn", "err");
   const MOMENT = oneOf("secret-leak", "launch");
+  const VIEW = oneOf("station", "crew", "history", "sides", "blackbox", "board", "focus");
 
   const STATUS = record({
     xp: number,
@@ -107,6 +108,8 @@ const createGameApi = (function () {
     par: number,
     scene: list(record({ art: ART, text: BLOCKS })),
     scene_seen: flag,
+    view: VIEW,
+    views_seen: list(VIEW),
     card: nullable(CARD),
     challenge: flag,
     briefing: BLOCKS,
@@ -191,6 +194,8 @@ const createGameApi = (function () {
       scene: (level) => checked(NOTHING, "/api/scene", { level }),
       /* Makes the game speak `language`; the records that follow come in it. */
       language: (language) => checked(NOTHING, "/api/language", { language }),
+      /* Marks a view born, so its birth does not play again and its tab stays. */
+      view: (view) => checked(NOTHING, "/api/view", { view }),
     };
   };
 })();

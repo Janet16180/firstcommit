@@ -23,6 +23,7 @@ const REPLIES = {
   "/api/press": record("press"),
   "/api/scene": {},
   "/api/language": {},
+  "/api/view": {},
 };
 
 function gameApi(replies = REPLIES) {
@@ -49,6 +50,7 @@ test("each action calls its route with the body the server expects", async () =>
   await game.press("alex", "push");
   await game.scene("lvl");
   await game.language("es");
+  await game.view("history");
   assert.deepEqual(calls.map((call) => [call.path, call.body]), [
     ["/api/status", undefined],
     ["/api/level?id=a%20level%2Fx", undefined],
@@ -67,6 +69,7 @@ test("each action calls its route with the body the server expects", async () =>
     ["/api/press", { person: "alex", button: "push" }],
     ["/api/scene", { level: "lvl" }],
     ["/api/language", { language: "es" }],
+    ["/api/view", { view: "history" }],
   ]);
 });
 
@@ -270,6 +273,17 @@ test("a level must carry its command, its par, its scene and whether it was seen
   await refused("/api/level", (level) => delete level.scene_seen, (game) => game.level("x"));
   await refused("/api/level", (level) => delete level.card, (game) => game.level("x"));
   await refused("/api/level", (level) => (level.scene[0].art = "volcano"), (game) => game.level("x"));
+});
+
+test("a level must say the view it opens on and the views already born, from the ladder", async () => {
+  await refused("/api/level", (level) => delete level.view, (game) => game.level("x"));
+  await refused("/api/level", (level) => (level.view = "bridge"), (game) => game.level("x"));
+  await refused("/api/level", (level) => delete level.views_seen, (game) => game.level("x"));
+  await refused("/api/level", (level) => (level.views_seen = ["station", "deck"]), (game) => game.level("x"));
+  for (const view of ["station", "crew", "history", "sides", "blackbox", "board", "focus"]) {
+    const { game } = gameApi({ ...REPLIES, "/api/level": { ...record("level"), view } });
+    assert.equal((await game.level("x")).view, view);
+  }
 });
 
 test("a scene's pictures are the ones the artist has drawn", async () => {
