@@ -54,3 +54,26 @@ test("reduced motion stops the crack, the inverted rise and the blinking pause b
   const reduced = STYLE.slice(STYLE.indexOf("@media (prefers-reduced-motion: reduce)"));
   for (const selector of [".art-crack", ".art-crack::after", ".art-rise-inverted", ".art-pause"]) assert.ok(reduced.includes(selector), selector);
 });
+
+test("a station frames its zones in its crew member's colour, with a name tab on the border", () => {
+  const frame = rules(".art-station").join("");
+  assert.match(frame, /--station-colour: var\(--z-va\)/);
+  assert.match(frame, /border: 4px solid var\(--station-colour\)/);
+  assert.match(frame, /min-width: 0/);
+  assert.match(rules(".art-station--you").join(""), /--station-colour: var\(--z-va\)/);
+  assert.match(rules(".art-station--alex").join(""), /--station-colour: var\(--z-re\)/);
+  const tab = rules(".art-station-name").join("");
+  assert.match(tab, /position: absolute/);
+  assert.match(tab, /border: 3px solid var\(--station-colour\)/);
+  assert.match(tab, /background: var\(--panel\)/);
+});
+
+test("a flying capsule trails an exhaust flame, above it when it lands", () => {
+  const flame = rules(".art-crew-flight::after").join("");
+  assert.match(flame, /content: ""/);
+  assert.match(flame, /top: 100%/);
+  assert.match(flame, /animation: art-crew-flame 0\.2s steps\(2\) infinite/);
+  assert.match(rules(".art-crew-flight--down::after").join(""), /bottom: 100%/);
+  const reduced = STYLE.slice(STYLE.indexOf("@media (prefers-reduced-motion: reduce)"));
+  assert.ok(reduced.includes(".art-crew-flight::after"));
+});

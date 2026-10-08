@@ -80,3 +80,25 @@ test("the shared sprites draw in art tokens, and a palette letter can be recolou
   assert.ok(tinted.includes("var(--s-new)") && !tinted.includes("var(--star)"));
   assert.throws(() => ArtPixels.sprite("moon"), RangeError);
 });
+
+test("text is a line in the terminal font, centred unless anchored, animated when given a class", () => {
+  const line = ArtPixels.text(10, 20, "git add", { className: "art-fade", delay: 0.5 });
+  assert.equal(line.textContent, "git add");
+  assert.equal(line.getAttribute("text-anchor"), "middle");
+  assert.ok(line.classList.contains("art-text") && line.classList.contains("art-fade"));
+  assert.equal(line.getAttribute("style"), "animation-delay:0.5s");
+  assert.equal(ArtPixels.text(0, 0, "x", { anchor: "start" }).getAttribute("text-anchor"), "start");
+});
+
+test("a shape is a sprite's rows and palette, recoloured; an unknown one is refused", () => {
+  const { rows, palette } = ArtPixels.shape("station", ArtPixels.CREW.alex);
+  assert.ok(rows.length > 0);
+  assert.equal(palette.a, "var(--art-pink)");
+  assert.equal(ArtPixels.sprite("station").length, ArtPixels.draw(rows, palette).length);
+  assert.throws(() => ArtPixels.shape("moon"), RangeError);
+});
+
+test("the crew colours are violet for you and pink for Alex, in art tokens", () => {
+  assert.deepEqual({ ...ArtPixels.CREW.you }, { a: "var(--art-violet)", b: "var(--art-violet-dk)", c: "var(--art-violet-lt)" });
+  assert.deepEqual({ ...ArtPixels.CREW.alex }, { a: "var(--art-pink)", b: "var(--art-pink-dk)", c: "var(--art-pink-lt)" });
+});

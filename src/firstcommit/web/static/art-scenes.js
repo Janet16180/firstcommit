@@ -20,7 +20,7 @@
 /* exported ArtScenes */
 
 const ArtScenes = (function () {
-  const { tone, draw, place, picture, stars, rama: ramaParts, planet, ARROW, sprite } = ArtPixels;
+  const { tone, draw, place, text, picture, stars, rama: ramaParts, planet, ARROW, sprite, CREW } = ArtPixels;
   const OUTLINE = tone("art-outline");
 
   const file = (paper = "star") => sprite("file", { p: tone(paper) });
@@ -28,11 +28,6 @@ const ArtScenes = (function () {
   const ramaAt = (x, y) => place(x, y, 2, Dom.svg("g", { class: "art-bob" }, ramaParts()));
   const sky = (name, count) => stars(name, { count, width: 160, height: 71, twinkle: 0.3, tint: 0.25, dim: 0.6 });
   const rect = (x, y, width, height, fill, extra = {}) => Dom.svg("rect", { x, y, width, height, fill, ...extra });
-
-  function text(x, y, words, { fill = tone("star"), size = 8, anchor = "middle", className = null, delay = null } = {}) {
-    const classes = ["art-text", className].filter(Boolean).join(" ");
-    return Dom.svg("text", { x, y, "text-anchor": anchor, "font-size": size, fill, class: classes, style: delay === null ? null : `animation-delay:${delay}s` }, words);
-  }
 
   const timed = (className, delay, children) => Dom.svg("g", { class: className, style: `animation-delay:${delay}s` }, children);
 
@@ -61,7 +56,7 @@ const ArtScenes = (function () {
 
   const ZONE_TONES = ["art-orange", "art-cyan", "art-violet", "art-pink"];
   const NIGHT_PLANET = { a: tone("art-ground-edge"), b: tone("art-ground"), c: tone("art-muted-dk") };
-  const ALEX_CAPSULE = { v: tone("art-pink"), V: tone("art-pink-dk"), h: tone("art-pink-lt") };
+  const ALEX_CAPSULE = { v: CREW.alex.a, V: CREW.alex.b, h: CREW.alex.c };
   const CRACK = ["...c....", "...cc...", "....c...", "...cc...", "...c....", "....c...", "....cc..", "...c....", "...cc...", "....c..."];
 
   const capsuleAt = (x, y, scale = 2, recolour = {}) => place(x, y, scale, sprite("capsule", recolour));

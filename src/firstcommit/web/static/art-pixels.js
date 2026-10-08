@@ -11,6 +11,9 @@
  * place(x, y, scale, children, {className, delay})
  *                               a group moved and scaled, its animation (a class) on an inner group
  *                               so CSS transforms do not replace the placement.
+ * text(x, y, words, {fill, size, anchor, className, delay})
+ *                               a line of words in the terminal font, centred on x unless `anchor`
+ *                               says otherwise; `className` animates it after `delay` s.
  * picture(attributes, label, children)
  *                               an <svg>: with a label it is an image with that name, without one it
  *                               is hidden from assistive technology.
@@ -22,9 +25,12 @@
  *                               returns {rects, width, height}.
  * ARROW                         the 8x7 flow arrow, pointing right.
  * SPRITES                       the names of the shared sprites: folder, crate, lid, capsule, flag,
- *                               cross, file, ship, meteor and probe.
+ *                               cross, file, ship, meteor, probe and station.
  * sprite(name, recolour)        a shared sprite's <rect>s; `recolour` swaps palette letters, as
  *                               {p: tone("s-new")} tints the file's paper.
+ * shape(name, recolour)         a shared sprite's {rows, palette}, for pictures that draw it in layers.
+ * CREW                          each crew member's colours as {a, b, c} (body, shade, light): `you`
+ *                               violet, `alex` pink. The station's dome takes them as they are.
  */
 
 /* global Dom */
@@ -52,6 +58,11 @@ const ArtPixels = (function () {
     const transform = scale === 1 ? `translate(${x} ${y})` : `translate(${x} ${y}) scale(${scale})`;
     const timing = delay === null ? null : `animation-delay:${delay}s`;
     return Dom.svg("g", { transform }, Dom.svg("g", { class: className, style: timing }, children));
+  }
+
+  function text(x, y, words, { fill = tone("star"), size = 8, anchor = "middle", className = null, delay = null } = {}) {
+    const classes = ["art-text", className].filter(Boolean).join(" ");
+    return Dom.svg("text", { x, y, "text-anchor": anchor, "font-size": size, fill, class: classes, style: delay === null ? null : `animation-delay:${delay}s` }, words);
   }
 
   function picture(attributes, label, children) {
@@ -182,13 +193,28 @@ const ArtPixels = (function () {
       palette: { k: OUTLINE, m: tone("art-muted"), M: tone("art-muted-dk") },
     },
     probe: { rows: ["...kkk..", "okkgggk.", "ookggggk", "okkgggk.", "...kkk.."], palette: { k: OUTLINE, g: tone("art-yellow"), o: tone("art-orange") } },
+    /* A base dome with a flag; recolour a, b and c with a CREW member's colours. */
+    station: {
+      rows: [".....kfff..", ".....kff...", ".....k.....", "...kkkkk...", "..kccaaak..", ".kcaaaaabk.", ".kaaaaabbk.", "kkkkkkkkkkk"],
+      palette: { k: OUTLINE, a: tone("art-hull"), b: tone("art-hull-shade"), c: tone("star"), f: tone("art-yellow") },
+    },
   };
 
-  function sprite(name, recolour = {}) {
+  function shape(name, recolour = {}) {
     if (!(name in SHEET)) throw new RangeError(`unknown sprite: ${name}`);
     const { rows, palette } = SHEET[name];
-    return draw(rows, { ...palette, ...recolour });
+    return { rows, palette: { ...palette, ...recolour } };
   }
 
-  return { tone, draw, place, picture, random, stars, rama, planet, ARROW, SPRITES: Object.freeze(Object.keys(SHEET)), sprite };
+  const CREW = Object.freeze({
+    you: Object.freeze({ a: tone("art-violet"), b: tone("art-violet-dk"), c: tone("art-violet-lt") }),
+    alex: Object.freeze({ a: tone("art-pink"), b: tone("art-pink-dk"), c: tone("art-pink-lt") }),
+  });
+
+  function sprite(name, recolour = {}) {
+    const { rows, palette } = shape(name, recolour);
+    return draw(rows, palette);
+  }
+
+  return { tone, draw, place, text, picture, random, stars, rama, planet, ARROW, SPRITES: Object.freeze(Object.keys(SHEET)), sprite, shape, CREW };
 })();

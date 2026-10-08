@@ -407,6 +407,184 @@
   to { transform: translateY(0) scaleY(1); }
 }
 
+/* The crew view: a station frames one crew member's three zones as one base. The page lays the
+   stations out; --station-colour (or a --you / --alex modifier) picks the colour. */
+.art-station {
+  --station-colour: var(--z-va);
+  position: relative;
+  min-width: 0;
+  padding: 20px 10px 10px;
+  border: 4px solid var(--station-colour);
+  background: color-mix(in srgb, var(--station-colour) 7%, transparent);
+  box-shadow: inset 0 0 0 3px var(--panel), 6px 6px 0 var(--edge);
+}
+
+.art-station--you {
+  --station-colour: var(--z-va);
+}
+
+.art-station--alex {
+  --station-colour: var(--z-re);
+}
+
+/* The station's name (with its station icon) on the top border, on the panel so the icon keeps
+   its colours. */
+.art-station-name {
+  position: absolute;
+  top: -14px;
+  left: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: calc(100% - 24px);
+  padding: 2px 8px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 3px solid var(--station-colour);
+  box-shadow: 3px 3px 0 var(--edge);
+  font: 1.05rem/1.1 var(--f-px, monospace);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Put on a capsule's flying copy between stations: an exhaust flame below it as it rises, above
+   it (--down) as it lands. */
+.art-crew-flight::after {
+  content: "";
+  position: absolute;
+  left: calc(50% - 5px);
+  top: 100%;
+  width: 10px;
+  height: 20px;
+  background: linear-gradient(var(--art-flame-hot) 0 8px, var(--art-orange) 8px 14px, transparent 14px 16px, var(--art-orange) 16px 20px);
+  animation: art-crew-flame 0.2s steps(2) infinite;
+}
+
+.art-crew-flight--down::after {
+  top: auto;
+  bottom: 100%;
+  transform: scaleY(-1);
+}
+
+@keyframes art-crew-flame {
+  50% { height: 13px; }
+}
+
+/* The moments (art-moments.js). --art-moment, set on the picture, is the whole moment's length;
+   every part is drawn where the still frame has it, and --dx and --dy say where it comes from. */
+
+/* The letterbox around the canvas is night too, whatever shape the layer is. */
+.art-moment {
+  display: block;
+  background: var(--void);
+}
+
+/* The secret leak, 7 s: the keys seal into a ghost capsule, rise, reach four stations and glow
+   red under the caption, then everything goes back the way it came. */
+.art-leak-file {
+  animation: art-leak-file var(--art-moment) steps(1) both;
+}
+
+@keyframes art-leak-file {
+  0%, 12% { opacity: 1; }
+  13%, 95% { opacity: 0; }
+  96%, 100% { opacity: 1; }
+}
+
+.art-leak-ghost {
+  animation: art-leak-ghost var(--art-moment) steps(6) both;
+}
+
+@keyframes art-leak-ghost {
+  0%, 6% { transform: translate(var(--dx), var(--dy)); opacity: 0; }
+  7%, 16% { transform: translate(var(--dx), var(--dy)); opacity: 1; }
+  30%, 84% { transform: none; opacity: 1; }
+  93% { transform: translate(var(--dx), var(--dy)); opacity: 1; }
+  96%, 100% { transform: translate(var(--dx), var(--dy)); opacity: 0; }
+}
+
+.art-leak-copy {
+  animation: art-leak-copy var(--art-moment) steps(6) both;
+}
+
+@keyframes art-leak-copy {
+  0%, 32% { transform: translate(var(--dx), var(--dy)); opacity: 0; }
+  33% { transform: translate(var(--dx), var(--dy)); opacity: 1; }
+  46%, 74% { transform: none; opacity: 1; }
+  83% { transform: translate(var(--dx), var(--dy)); opacity: 1; }
+  84%, 100% { transform: translate(var(--dx), var(--dy)); opacity: 0; }
+}
+
+.art-leak-glow {
+  animation: art-leak-glow var(--art-moment) steps(1) both;
+}
+
+@keyframes art-leak-glow {
+  0%, 45% { opacity: 0; }
+  46%, 74% { opacity: 1; }
+  75%, 100% { opacity: 0; }
+}
+
+.art-leak-caption {
+  animation: art-leak-caption var(--art-moment) steps(4) both;
+}
+
+@keyframes art-leak-caption {
+  0%, 48% { opacity: 0; }
+  52%, 100% { opacity: 1; }
+}
+
+/* The launch, 5 s: the two halves fly in from their stations, join with a flash, light the
+   engine and the whole ship goes up and out, under the caption. */
+.art-launch-join {
+  animation: art-launch-join var(--art-moment) steps(8) both;
+}
+
+@keyframes art-launch-join {
+  0%, 10% { transform: translate(var(--dx), var(--dy)); }
+  40%, 100% { transform: none; }
+}
+
+.art-launch-ring {
+  animation: art-launch-ring var(--art-moment) steps(1) both;
+}
+
+@keyframes art-launch-ring {
+  0%, 40% { opacity: 0; }
+  41%, 44% { opacity: 1; }
+  45%, 47% { opacity: 0; }
+  48%, 51% { opacity: 1; }
+  52%, 100% { opacity: 0; }
+}
+
+.art-launch-flame {
+  animation: art-launch-flame var(--art-moment) steps(1) both;
+}
+
+@keyframes art-launch-flame {
+  0%, 47% { opacity: 0; }
+  48%, 100% { opacity: 1; }
+}
+
+.art-launch-ship {
+  animation: art-launch-ship var(--art-moment) steps(10) both;
+}
+
+@keyframes art-launch-ship {
+  0%, 58% { transform: none; }
+  86%, 100% { transform: translateY(-110px); }
+}
+
+.art-launch-caption {
+  animation: art-launch-caption var(--art-moment) steps(4) both;
+}
+
+@keyframes art-launch-caption {
+  0%, 42% { opacity: 0; }
+  48%, 100% { opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .art-rama,
   .art-rama *,
@@ -417,8 +595,15 @@
   .art-pause,
   .art-crack,
   .art-crack::after,
-  .art-rise-inverted {
+  .art-rise-inverted,
+  .art-crew-flight::after,
+  .art-moment * {
     animation: none !important;
+  }
+
+  .art-leak-file,
+  .art-launch-ring {
+    display: none;
   }
 
   .art-crack::after {
