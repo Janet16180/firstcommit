@@ -935,3 +935,19 @@ deleted side, an add/add with no base) and `tests/levels/test_conflict_collision
 | debrief | `git branch -D` removes a label, not the commits | E112 |
 | debrief | the reflog lives in your repository only and keeps entries for commits no label holds about a month | git-reflog(1) (local to the repository); git-gc(1) and git-config(1) `gc.reflogExpireUnreachable` (30 days by default) |
 | `WIPE`, `ERASED` (lost) | expiring the reflog and pruning erases commits no label holds | the level's test (`reflog expire --expire=now --all`, then `gc --prune=now`, and the commit is gone); git-gc(1) `--prune` |
+
+## E106 to E112 re-run in the player image (added 2026-10-08)
+
+Every command of E106 to E112 ran again in the player image (`deploy/docker/run build`, Ubuntu
+24.04, git 2.43.0), with `--network none`, a fresh `HOME` per run and `core.editor = true`. Each
+result matches the host's, line for line:
+
+| Tag | In the image |
+|---|---|
+| E106 | the bare repository and its leading folders made; the clone is `project`, its `origin` the absolute path; `remote -v` shows `../github.com/moonbase/project.git`; push, pull and fetch exit 0 |
+| E107 | `?? sim-output/`; `git add .` stages all three outputs; the restore exits 0 and keeps the files; check-ignore exits 1, then names `.git/info/exclude:7` and `.gitignore:1`; `git add sim-output` refused (exit 1); `git add .` stages only `.gitignore` and `nav.cfg` |
+| E108 | the switch carries `M lights.cfg`; with `route.txt` edited, `switch main` and `checkout main` exit 1 ("would be overwritten by checkout"); unknown branch 128 (`switch`), 1 (`checkout`); `-c` on an existing name 128 |
+| E109 | the restore exits 0 and the file is `power=80`; `M  notes.txt` still staged; no commit holds `overdrive`; three blobs, none the experiment |
+| E110 | `Revert "strobe"` on top of `route`, lights steady, `route.txt` kept; push 0; the other clone pulls steady lights; after the reset the plain push exits 1 |
+| E111 | the reset leaves only `a` in the folder and `--all` lists only `base`; `rescue` at `HEAD@{1}` lists `d2 d1 base` |
+| E112 | "Deleted branch thrusters"; `HEAD@{0}` the checkout to `main`, `HEAD@{1}` `d2`; the label lists `d2 d1`; the push exits 0 and the hub's `thrusters` is `d2` |
