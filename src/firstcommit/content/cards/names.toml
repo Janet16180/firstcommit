@@ -1,0 +1,67 @@
+notes = """
+A branch is a label on a commit. `git branch scout` writes a new label on the commit you are on
+and copies no file. `HEAD` says which branch you are on; `git switch scout` moves it there and
+rewrites the working folder to match that branch's last commit. Your next commit moves only the
+branch you are on.
+
+    $ git branch scout                            # a new label on the commit you are on
+    $ git switch scout                            # move onto it; the working folder follows
+"""
+
+[[card]]
+id = "names-is-a-label"
+kind = "choice"
+level = 1
+prompt = "You are on `main` and run `git branch scout`. What changes?"
+correct = "A new label, `scout`, now points at your commit"
+wrong = [
+    "The working folder is copied into a new folder for `scout`",
+    "You are now on `scout`, ready to commit there",
+    "A branch `scout` is created on the remote too",
+]
+explain = """
+`git branch scout` writes one new label on the commit you are on. No file is copied, you stay on
+`main` (`git switch scout` moves you), and nothing reaches the remote until you push the branch.
+"""
+source = "git-branch(1), DESCRIPTION"
+verify = """
+git init -q base && cd base
+echo "Route: Earth, Moon" > route.txt && git add route.txt && git commit -q -m "Add the route"
+git branch scout
+test "$(git rev-parse scout)" = "$(git rev-parse main)" && test "$(git branch --show-current)" = main && test "$(ls)" = route.txt
+"""
+
+[[card]]
+id = "names-switch-folder"
+kind = "predict"
+level = 2
+prompt = "What does the last command print?"
+code = """
+git init -q base && cd base
+echo "Route: Earth, Moon" > route.txt && git add route.txt && git commit -q -m "Add the route"
+git switch -q -c scout
+echo "Probe: launched" > probe.txt && git add probe.txt && git commit -q -m "Launch the probe"
+git switch -q main
+ls
+"""
+correct = "route.txt"
+wrong = ["probe.txt route.txt", "probe.txt"]
+explain = """
+`git switch main` rewrites the working folder to match `main`'s last commit, which has no
+`probe.txt`, so the file leaves the folder. It is not lost: it lives in `scout`'s commit, and
+`git switch scout` brings it back.
+"""
+source = "git-switch(1), DESCRIPTION"
+
+[[card]]
+id = "names-origin-main"
+kind = "text"
+level = 1
+prompt = "In your clone, what is the name of your repository's record of where the remote `origin`'s `main` was when you last heard from it?"
+accept = ["origin/main", "remotes/origin/main", "refs/remotes/origin/main"]
+explain = """
+`origin/main` is a remote-tracking branch: a label your repository moves when it hears from
+`origin` (clone, fetch, pull, push). `git branch -a` lists it as `remotes/origin/main`. It is not
+the remote itself, only the last news of it.
+"""
+source = "gitglossary(7), remote-tracking branch; git-branch(1), `-a`"

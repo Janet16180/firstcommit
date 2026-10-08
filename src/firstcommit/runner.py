@@ -25,7 +25,7 @@ from typing import Any
 from termlab import sandbox
 
 from firstcommit import gitcmd, kit, levels, reactions, save
-from firstcommit.chapters import CHAPTERS
+from firstcommit.chapters import CHAPTERS, PLAY_ORDER
 from firstcommit.records import Art, Language, Mood, View
 
 MODULE_NAME = re.compile(r"([a-z]+)_[a-z0-9_]+")
@@ -695,7 +695,8 @@ def discover(package: ModuleType) -> dict[str, Level]:
     Returns
     -------
     dict[str, Level]
-        Levels by id, sorted by chapter order, then difficulty, then id.
+        Levels by id, sorted by chapter order, then their place in `PLAY_ORDER` (a level left out
+        comes after those listed), then difficulty, then id.
 
     Raises
     ------
@@ -709,8 +710,25 @@ def discover(package: ModuleType) -> dict[str, Level]:
         for name in sorted(names)
         if not name.endswith(SPANISH_SUFFIX)
     ]
-    found.sort(key=lambda level: (order.index(level.chapter), level.difficulty, level.id))
+    found.sort(key=lambda level: (order.index(level.chapter), _place(level.id), level.difficulty, level.id))
     return {level.id: level for level in found}
+
+
+def _place(level_id: str) -> int:
+    """
+    Give a level's place in `PLAY_ORDER`, or a place after every listed level when it is not listed.
+
+    Parameters
+    ----------
+    level_id : str
+        The level's id.
+
+    Returns
+    -------
+    int
+        Its index in `PLAY_ORDER`, else the length of `PLAY_ORDER`.
+    """
+    return PLAY_ORDER.index(level_id) if level_id in PLAY_ORDER else len(PLAY_ORDER)
 
 
 def _spanish_module(package: ModuleType, name: str, names: set[str]) -> ModuleType | None:

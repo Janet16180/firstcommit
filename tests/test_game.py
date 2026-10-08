@@ -430,12 +430,12 @@ def test_in_dev_mode_a_level_in_progress_shows_its_last_hints_lines_and_its_answ
 
 def test_in_dev_mode_an_answer_the_lab_cannot_give_yet_is_none_until_it_can(game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv(game.DEV_VARIABLE, "1")
-    game.start("branch-recruit")
-    solution = game.level("branch-recruit")["solution"]
+    game.start("mothership-recruit")
+    solution = game.level("mothership-recruit")["solution"]
     assert solution is not None and solution["answers"]["count"] is None and solution["lines"][0] == "git clone github.com/moonbase/project.git"
-    lab = runner.lab_of("branch-recruit")
+    lab = runner.lab_of("mothership-recruit")
     kit.type_line(lab.root, solution["lines"][0])
-    solution = game.level("branch-recruit")["solution"]
+    solution = game.level("mothership-recruit")["solution"]
     assert solution is not None and solution["answers"]["count"] == str(len(kit.git(lab.project, "log", "--oneline").splitlines()))
 
 

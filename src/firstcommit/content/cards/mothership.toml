@@ -13,6 +13,10 @@ here. The first push of a branch with `-u` also makes `origin/main` its upstream
 your branch. A push is refused when the remote has commits your branch does not have; nothing is
 lost, and a pull joins the two histories first.
 
+A clone copies a whole repository: every commit of its history, a remote named `origin` for its
+address, and a branch of your own, such as `main`, on the commit the remote's branch was on.
+
+    $ git clone github.com/moonbase/project.git                  # copy a repository and its whole history
     $ git remote add origin ../github.com/moonbase/project.git   # name the remote's address
     $ git remote -v                                              # list the remotes
     $ git push -u origin main                                    # first push of main, with its upstream
@@ -174,4 +178,29 @@ echo "route" > route.txt && git add route.txt && git commit -q -m "Route"
 mine=$(git rev-parse HEAD); theirs=$(git -C ../remote.git rev-parse main)
 git push -q 2>/dev/null
 test $? -ne 0 && test "$(git rev-parse HEAD)" = "$mine" && test "$(git -C ../remote.git rev-parse main)" = "$theirs"
+"""
+
+[[card]]
+id = "mothership-clone-history"
+kind = "choice"
+level = 1
+prompt = "You clone a repository whose `main` has 40 commits. How much of that history is in your clone?"
+correct = "All 40 commits"
+wrong = [
+    "Only the last commit, with its files",
+    "The files of the last commit, with no history",
+    "The last ten commits",
+]
+explain = """
+`git clone` copies the whole history: every commit the remote's branches reach, with its author,
+date and message. That is why you can read `git log` in a clone at once, without asking the
+remote. A clone made with `--depth` is shallow and holds less, but a plain `git clone` holds it
+all.
+"""
+source = "git-clone(1), DESCRIPTION and `--depth`"
+verify = """
+git init -q base && cd base
+for n in 1 2 3 4 5; do echo "line $n" >> log.txt && git add log.txt && git commit -q -m "Entry $n"; done
+cd .. && git clone -q base copy
+test "$(git -C copy rev-list --count main)" = 5
 """

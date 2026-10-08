@@ -621,9 +621,9 @@ for wave 1, numbered on from E68:
 | E81 | the same setup; `git stash` | the fix is kept in a commit `refs/stash` reaches (`git stash list` shows it) |
 | E82 | from the lab, `bash -c 'cd project && git log --oneline'` | status 0: the line's status is git's |
 
-### Level `branch-recruit` (New recruit, 5-1)
+### Level `mothership-recruit` (New recruit, 4-6; was `branch-recruit`, 5-1)
 
-*Re-checked* by `tests/levels/test_branch_recruit.py`: no project folder at the start, the
+*Re-checked* by `tests/levels/test_mothership_recruit.py`: no project folder at the start, the
 history's size and authors, the clone holding every commit, the count right and wrong and not a
 number, a `git log` before the clone and before `cd project` (Rama's two answers), a clone in
 another folder, and a plain repository named `project`.
@@ -633,13 +633,12 @@ another folder, and a plain repository named `project`.
 | card, debrief, scene | a clone copies the whole history, names the address `origin`, and makes a branch such as `main` to work on | E69; git-clone(1) DESCRIPTION ("creates and checks out an initial branch that is forked from the cloned repository's currently active branch") |
 | briefing, hint 1 | `git clone github/project.git` makes the folder `project` | E69, E70 |
 | hint 2, `RIGHT_COUNT`, `WRONG_COUNT` | `git log --oneline` prints one line per commit | E69 |
-| hint 3, `LISTED`, debrief | `git branch -a` lists your branches and the remote's, as `remotes/origin/main` | E69; git-branch(1) DESCRIPTION ("option -a shows both local and remote branches") |
-| debrief | `origin/main` is the record of the remote's `main` as last heard | git-clone(1) ("remote-tracking branches"); gitglossary(7) remote-tracking branch; E53 |
+| debrief | `git log --oneline` shows names in brackets on the newest commit, such as `main` and `origin/main` | E69 |
 | `NOT_CLONED_YET`, `OUTSIDE_THE_CLONE` | a git command in the lab's folder fails, before the clone and after it, until `cd project` | the level's tests (status 128 both times); E82 |
 
-### Level `branch-course` (A second course, 5-2)
+### Level `names-experiments` (A second course, 5-3 until its rework; was `branch-course`, 5-2)
 
-*Re-checked* by `tests/levels/test_branch_course.py`: the branch copies no file and points at
+*Re-checked* by `tests/levels/test_names_experiments.py`: the branch copies no file and points at
 `main`'s commit, `switch -c` passes two goals at once, the probe leaves the folder on `main` and
 comes back on `scout`, the probe committed on `main` (lost), and an `ls` before the switch back.
 
@@ -688,11 +687,11 @@ in `tests/test_decks.py`.
 
 | Card | Claim | Evidence |
 |---|---|---|
-| `branch-clone-history` | a plain clone holds every commit; `--depth` makes a shallow one | `verify`: the copy counts five commits; git-clone(1) `--depth` ("a history truncated to the specified number of commits") |
-| `branch-is-a-label` | `git branch scout` points a new label at your commit; the folder and your branch stay; nothing reaches the remote | `verify`; E71 |
-| `branch-switch-folder` | back on `main`, the folder has no `probe.txt`; `scout` keeps it | `code` and `correct`; E73 |
+| `mothership-clone-history` (was `branch-clone-history`) | a plain clone holds every commit; `--depth` makes a shallow one | `verify`: the copy counts five commits; git-clone(1) `--depth` ("a history truncated to the specified number of commits") |
+| `names-is-a-label` (was `branch-is-a-label`) | `git branch scout` points a new label at your commit; the folder and your branch stay; nothing reaches the remote | `verify`; E71 |
+| `names-switch-folder` (was `branch-switch-folder`) | back on `main`, the folder has no `probe.txt`; `scout` keeps it | `code` and `correct`; E73 |
 | `branch-push-one` | a plain push on `main` leaves a new `scout` here; `--all` sends every branch | `verify`; E75, E78 |
-| `branch-origin-main` | `origin/main` is a remote-tracking branch; `git branch -a` shows it as `remotes/origin/main` | E69; gitglossary(7) remote-tracking branch |
+| `names-origin-main` (was `branch-origin-main`) | `origin/main` is a remote-tracking branch; `git branch -a` shows it as `remotes/origin/main` | E69; gitglossary(7) remote-tracking branch |
 | `branch-switch-c-carries` | `git switch -c` takes the uncommitted edit along | `verify`; E79 |
 | notes | as the cards above | the cards |
 

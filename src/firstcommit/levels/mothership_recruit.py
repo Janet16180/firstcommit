@@ -1,12 +1,12 @@
 """
 New recruit: clone the outpost's repository and see that the clone holds its whole history.
 
-Wave 2, branch 5-1 (docs/drafts/chapters-3-7.md), guided, with a counted answer. Setup gives the
-stand-in GitHub a history of five to eight commits by three people, a number drawn at random so
-it cannot be remembered, and no project folder: the terminal opens in the lab, next to
-``github``. The goals: a clone in ``project`` whose ``origin`` is the outpost; its history listed
-with ``git log`` (looking is the lesson); the number of its commits, typed; and its branches,
-listed with ``git branch -a``, where ``main`` and ``origin/main`` show as two labels.
+Mothership 4-6, before the Base 7 challenge (docs/drafts/sector5/plan.md; it was branch 5-1), guided,
+with a counted answer. Setup gives the stand-in GitHub a history of five to eight commits by
+three people, a number drawn at random so it cannot be remembered, and no project folder: the
+terminal opens in the lab, next to ``github``. The goals: a clone in ``project`` whose ``origin``
+is the outpost; its history listed with ``git log`` (looking is the lesson); and the number of
+its commits, typed. The names in ``git log``'s brackets wait for the Name tags sector.
 """
 
 import random
@@ -44,22 +44,20 @@ HISTORY = [
 FEWEST = 5
 CLONE = r"git clone\b"
 LOG = r"(cd project && )?git log\b"
-BRANCHES = r"(cd project && )?git branch( -a| --all| -r| --remotes)\b"
 
 BRIEFING = """
 You join Outpost 3 today. Its repository is on the mothership, at `github.com/moonbase/project.git` from the
 folder your terminal opens in. Get your own copy, and find out how much of the outpost's history
 came with it.
 
-The mission is done when `project` is your clone of the outpost, you have read its history and
-counted its commits, and you have listed its branches with `git branch -a`.
+The mission is done when `project` is your clone of the outpost, and you have read its history
+and counted its commits.
 """
 
 HINTS = [
     "`git clone` takes the address and makes a folder named after it: `git clone github.com/moonbase/project.git` makes `project`.",
     "Go into the clone first: `cd project && git log --oneline` prints one line per commit.",
-    "`git branch -a` lists your branches and the remote's, such as `remotes/origin/main`.",
-    "Every line, in order; the answer is the number of lines the log prints:\n\n    $ git clone github.com/moonbase/project.git\n    $ cd project && git log --oneline\n    $ git branch -a",
+    "Every line, in order; the answer is the number of lines the log prints:\n\n    $ git clone github.com/moonbase/project.git\n    $ cd project && git log --oneline",
 ]
 
 DEBRIEF = """
@@ -67,35 +65,31 @@ DEBRIEF = """
 files. It named the address `origin`, and made your own branch `main` on the commit the outpost's
 `main` was on.
 
-`git log --oneline` showed both labels on the newest commit: `main` is your branch, and
-`origin/main` is your repository's record of where the mothership's `main` was when you last
-heard from it. A branch is a label on a commit; the next mission makes one of your own.
+`git log --oneline` showed names in brackets on the newest commit, such as `main` and
+`origin/main`. The Name tags sector, after Base 7, says what they are.
 
 At work, the first thing you do on a team is clone its repository, with the address GitHub shows.
 
 Commands to keep:
 
     $ git clone github.com/moonbase/project.git   # copy a repository and its whole history
-    $ git log --oneline                           # one line per commit, with its labels
-    $ git branch -a                               # your branches, and the remote's
+    $ git log --oneline                           # one line per commit, newest first
 """
 
 NOT_CLONED = "There is no clone in `project` yet. Copy the outpost: `git clone github.com/moonbase/project.git`."
 NOT_A_CLONE = "`project` is not a clone of the outpost: its `origin` is not `github.com/moonbase/project.git`. Leave the level and start it again."
 CLONED = "`project` is your clone of the outpost."
-READ = "That is the outpost's whole history, newest commit first, with the labels on it."
+READ = "That is the outpost's whole history, newest commit first."
 NOT_READ = "Read your clone's history: `cd project && git log --oneline`."
 RIGHT_COUNT = "Right: your clone holds every commit the outpost has, not only its latest files."
 WRONG_COUNT = "That is not how many commits your clone holds. `git log --oneline` prints one line per commit: count them."
 NOT_A_NUMBER = "Type the number of commits, such as 3."
-LISTED = "`main` is your branch; `remotes/origin/main` is where the mothership's `main` was when you cloned."
-NOT_LISTED = "List the branches, the remote's too: `git branch -a`."
 NOT_CLONED_YET = "There is no repository here yet. Clone the outpost first: `git clone github.com/moonbase/project.git`."
 OUTSIDE_THE_CLONE = "Your terminal is not in the clone yet: it is in the folder that holds it. Go into it: `cd project`."
 
 REACTIONS = [
     kit.ReactionRule(line=r"git (?!clone\b)", mood="info", text=NOT_CLONED_YET, outcome="failed", repository=False),
-    kit.ReactionRule(line=r"git (log|status|branch)\b", mood="info", text=OUTSIDE_THE_CLONE, outcome="failed", repository=True),
+    kit.ReactionRule(line=r"git (log|status)\b", mood="info", text=OUTSIDE_THE_CLONE, outcome="failed", repository=True),
 ]
 
 
@@ -193,35 +187,10 @@ def counts_the_commits(lab: kit.Lab, state: kit.State, answer: str) -> kit.Verdi
     return kit.Verdict(message == RIGHT_COUNT, message)
 
 
-def watch_branches(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
-    """
-    Pass once ``git branch -a`` (or ``-r``) worked after the clone.
-
-    Parameters
-    ----------
-    lab : kit.Lab
-        The level's lab.
-    state : kit.State
-        The level's state.
-    typed : kit.Typed
-        The lines typed since the level started.
-
-    Returns
-    -------
-    kit.Verdict
-        The step's verdict; the clone comes first.
-    """
-    cloned = watch_clone(lab, state, typed)
-    listed = kit.typed(kit.after(typed, CLONE), BRANCHES, "ok")
-    verdict = kit.Verdict(listed, LISTED if listed else NOT_LISTED)
-    return verdict if cloned.solved else cloned
-
-
 QUEST: list[kit.Step] = [
     kit.WatchStep(id="clone", text="Clone the outpost's repository.", command="git clone github.com/moonbase/project.git", watch=watch_clone),
     kit.WatchStep(id="log", text="Go into your clone and read its history.", command="cd project && git log --oneline", watch=watch_log),
     kit.AnswerStep(id="count", text="Count the commits that came with the clone.", question="How many commits does your clone hold?", placeholder="a number", check=counts_the_commits),
-    kit.WatchStep(id="branches", text="List the branches, the remote's too.", command="git branch -a", watch=watch_branches),
 ]
 
 
@@ -258,7 +227,7 @@ def setup(lab: kit.Lab) -> kit.State:
 
 def check(lab: kit.Lab, state: kit.State, answer: str | None, typed: kit.Typed) -> kit.Verdict:
     """
-    Solved once the clone is there and its branches were listed; the quest keeps the count before.
+    Solved once the clone is there and its history was read; the quest asks for the count after.
 
     Parameters
     ----------
@@ -276,7 +245,7 @@ def check(lab: kit.Lab, state: kit.State, answer: str | None, typed: kit.Typed) 
     kit.Verdict
         The last goal's verdict.
     """
-    return watch_branches(lab, state, typed)
+    return watch_log(lab, state, typed)
 
 
 def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
@@ -371,6 +340,5 @@ QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str |
     "clone": clone,
     "log": read_history,
     "count": count,
-    "branches": kit.typing("git branch -a"),
 }
 """The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game reads it only in dev mode."""

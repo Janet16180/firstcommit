@@ -1,5 +1,5 @@
 from firstcommit import kit
-from firstcommit.levels import branch_course as level
+from firstcommit.levels import names_experiments as level
 from level_helpers import started, typed_in, watch
 
 PROBE = f'echo "{level.PROBE_LINE}" > {level.PROBE} && git add {level.PROBE} && git commit -m "Launch the probe"'

@@ -1,0 +1,43 @@
+notes = """
+Un branch es una etiqueta sobre un commit. `git branch scout` escribe una etiqueta nueva sobre el
+commit donde estás y no copia ningún archivo. `HEAD` dice en qué branch estás; `git switch scout`
+lo lleva allí y reescribe la carpeta de trabajo según el último commit de ese branch. Tu próximo
+commit mueve solo el branch donde estás.
+
+    $ git branch scout                            # una etiqueta nueva sobre el commit donde estás
+    $ git switch scout                            # ve a ella; la carpeta de trabajo la sigue
+"""
+
+[[card]]
+id = "names-is-a-label"
+prompt = "Estás en `main` y ejecutas `git branch scout`. ¿Qué cambia?"
+correct = "Una etiqueta nueva, `scout`, apunta ahora a tu commit"
+wrong = [
+    "La carpeta de trabajo se copia en una carpeta nueva para `scout`",
+    "Ahora estás en `scout`, y puedes hacer commit allí",
+    "También se crea un branch `scout` en el remoto",
+]
+explain = """
+`git branch scout` escribe una etiqueta nueva sobre el commit donde estás. No se copia ningún
+archivo, sigues en `main` (`git switch scout` te lleva) y no llega nada al remoto hasta que haces
+push del branch.
+"""
+
+[[card]]
+id = "names-switch-folder"
+prompt = "¿Qué muestra el último comando?"
+explain = """
+`git switch main` reescribe la carpeta de trabajo según el último commit de `main`, que no tiene
+`probe.txt`, así que el archivo sale de la carpeta. No se pierde: vive en el commit de `scout`, y
+`git switch scout` lo trae de vuelta.
+"""
+
+[[card]]
+id = "names-origin-main"
+prompt = "En tu clone, ¿cómo se llama lo que tu repositorio registró de dónde estaba el `main` del remoto `origin` la última vez que tuvo noticias de él?"
+accept = ["origin/main", "remotes/origin/main", "refs/remotes/origin/main"]
+explain = """
+`origin/main` es un remote-tracking branch: una etiqueta que tu repositorio mueve cuando tiene
+noticias de `origin` (clone, fetch, pull, push). `git branch -a` lo lista como
+`remotes/origin/main`. No es el remoto en sí, solo sus últimas noticias.
+"""

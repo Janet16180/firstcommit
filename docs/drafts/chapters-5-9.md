@@ -1,6 +1,11 @@
 # Sectors 5 to 9 and the visual progression: the lead's decision
 
 > Approved by the user on 2026-10-08. Wave 2 is being built.
+>
+> **Renumbered later on 2026-10-08** (docs/drafts/sector5/plan.md, approved): New recruit moved
+> to the mothership as 4-6, before Base 7; a new sector 5, Name tags, holds A second course
+> (reworked as 5-3 Two experiments); Branches, Collisions and Time travel are now sectors 6, 7 and
+> 8. The numbers below are the old ones. The map's order is `firstcommit.chapters.PLAY_ORDER`.
 
 Decided on 2026-10-08 from a second debate between mentor (learning science, visual explanation)
 and crew (real situations, story, game feel). Their proposals and rebuttals are in

@@ -149,7 +149,9 @@ uv run firstcommit --help
 
 File `src/firstcommit/levels/<chapter>_<slug>.py`. Its id is the file name with `_` turned into
 `-` (`liftoff_aboard.py` is `liftoff-aboard`), and its chapter is the part before the
-first `_`.
+first `_`. A new level also goes into `PLAY_ORDER` in `chapters.py`, at its place on the map: the
+map numbers each level by that place in its chapter (`tests/test_chapters.py` checks that every
+level is listed once).
 
 ```python
 from firstcommit import kit
