@@ -636,19 +636,22 @@ another folder, and a plain repository named `project`.
 | debrief | `git log --oneline` shows names in brackets on the newest commit, such as `main` and `origin/main` | E69 |
 | `NOT_CLONED_YET`, `OUTSIDE_THE_CLONE` | a git command in the lab's folder fails, before the clone and after it, until `cd project` | the level's tests (status 128 both times); E82 |
 
-### Level `names-experiments` (A second course, 5-3 until its rework; was `branch-course`, 5-2)
+### Level `names-experiments` (Two experiments, 5-3; it was `branch-course`, A second course, 5-2)
 
-*Re-checked* by `tests/levels/test_names_experiments.py`: the branch copies no file and points at
-`main`'s commit, `switch -c` passes two goals at once, the probe leaves the folder on `main` and
-comes back on `scout`, the probe committed on `main` (lost), and an `ls` before the switch back.
+*Re-checked* by `tests/levels/test_names_experiments.py`: the start (`bright-lights` made
+yesterday, `engine.txt` untracked on `main`), a second name and a switch leaving the folder as it
+was, the commit forking the chain with `main` staying, the switch swapping `engine.txt` for
+`lights.txt`, a commit on `main` (lost), and the older forms with Rama's word on `checkout`.
 
 | Text | Claim | Evidence |
 |---|---|---|
-| card, prediction reveal, `MADE` | `git branch <name>` makes a label on the current commit, copies no file, and does not switch | E71; git-branch(1) ("creates a new branch head named <branchname> which points to the current HEAD") |
-| `ON`, scene, debrief | after `git switch`, new commits move that branch only | E73; git-switch(1) ("All new commits will be added to the tip of this branch") |
-| `BACK_ON_MAIN`, `LOOKED`, debrief | switching rewrites the working folder to the branch's last commit; the probe comes back on `scout` | E73; git-switch(1) ("The working tree and the index are updated to match the branch") |
-| `PROBE_ON_MAIN` (lost) | moving a commit off `main` is not taught before the undo chapter | the plan, 7-3 |
-
+| `NAMED` | `git branch <name>` makes a name on the current commit and does not switch | E71; git-branch(1) ("creates a new branch head named <branchname> which points to the current HEAD") |
+| `ON_QUIET` | switching between two names on one commit leaves the folder as it is, untracked files included | git-switch(1) DESCRIPTION ("The working tree and the index are updated to match the branch"); the level's test |
+| `COMMITTED`, debrief | a commit moves only the branch HEAD is on | E73; git-switch(1) ("All new commits will be added to the tip of this branch") |
+| prediction, `ON_BRIGHT` | switching to `bright-lights` brings `lights.txt` back and takes the committed `engine.txt` out | E73; the 5-3 script, beat 7; the level's test |
+| `DRAWN`, debrief | `git log --oneline --graph --all` draws every branch with `*`, `|` and `/` | git-log(1) `--graph`, `--all`; the script, beat 8 (real output) |
+| `OLDER_FORM_WORKS` | `git checkout <name>` is the older form of `git switch <name>` | git-switch(1) DESCRIPTION; git-checkout(1) |
+| `MAIN_MOVED` (lost) | moving a commit off `main` is not taught before Time travel | the plan |
 ### Level `branch-send` (Send a course up, 5-3)
 
 *Re-checked* by `tests/levels/test_branch_send.py`: a plain push on `main` leaves `scout` here,
@@ -940,6 +943,29 @@ list read before `night-watch` not counting.
 | `OLDER_WAY`, `NIGHT_MADE`, debrief | `git checkout <name>` and `git checkout -b <name>` do what `git switch` and `git switch -c` do; `checkout` also restores files, and `switch` was added for the branch part | git-checkout(1) DESCRIPTION and `-b`; git-switch(1) DESCRIPTION ("Switch to a specified branch") |
 | `DRAWN` | `git log --oneline --graph --all` draws every branch's line, and each side line closes with `|/` | git-log(1) `--graph`, `--all`; the script, beat 6 (real output) |
 | `LISTED` | `night-watch` and `quiet-engine` name the same commit | the script, beat 10 (real output); the level's test |
+
+### Level `names-chart` (Match the chart, 5-5, challenge)
+
+*Re-checked* by `tests/levels/test_names_chart.py`: the chart's names against the start, the
+refused `git branch -d` on the name HEAD is on (Rama's reaction), the hint's lines matching the
+chart with every commit kept, `lights-v2` made from `main` (named), HEAD left elsewhere, and a new
+commit (lost).
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, `USED_BY_WORKTREE`, debrief | `git branch -d` refuses the branch HEAD is on; git says it is used by the worktree | git-branch(1) `-d`; the 5-5 script, beat 3 (real output on git 2.43); the level's test |
+| `WRONG_SIDE`, debrief | a new name lands where HEAD is | git-switch(1) `-c` (`<start-point>` defaults to HEAD); git-branch(1); the level's test |
+| `MATCHED`, debrief | the hint's lines move only names: every commit stays | the level's test (the same commits before and after) |
+
+### Deck `names` (2026-10-08)
+
+| Card | Claim | Evidence |
+|---|---|---|
+| `names-delete-keeps` | `git branch -d` takes the name off; the commit stays in a branch's history | `verify`; git-branch(1) `-d` |
+| `names-new-name-at-head` | `git switch -c` names the commit HEAD is on and makes no commit | `verify`; git-switch(1) `-c` |
+| `names-delete-head` | `git branch -d` refuses the branch HEAD is on, and HEAD stays | `verify`; git-branch(1) `-d` |
+| `names-checkout-b` | `git checkout -b` is the older form of `git switch -c` | git-checkout(1) `-b`; git-switch(1) `-c` |
+| notes | as the sector's levels and cards | the levels' evidence above |
 
 ## No `origin/HEAD` in the playground's clones (added 2026-10-08)
 
