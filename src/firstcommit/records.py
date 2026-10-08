@@ -156,6 +156,19 @@ class Conflict(TypedDict):
     base: list[str] | None
 
 
+class ReflogEntry(TypedDict):
+    """
+    One move of HEAD, as its reflog records it: from where, to where, and git's note of why.
+
+    ``old`` is the commit HEAD left, empty for the first move; ``new`` the commit it moved to;
+    ``message`` git's own words, such as ``reset: moving to HEAD~1`` or ``commit: Add the map``.
+    """
+
+    old: str
+    new: str
+    message: str
+
+
 class Command(TypedDict):
     """
     One command line the player typed in the game's terminal (`firstcommit.commands`), and how it ended.
@@ -185,10 +198,11 @@ The views of the level screen (docs/drafts/chapters-5-9.md, the view ladder): yo
 zones, the crew view, history, a conflict's two sides, the black box, the review board, and your
 branch and main.
 """
-Seen = Literal[View, "band"]
+Seen = Literal[View, "band", "tape"]
 """
-What the page marks seen once its birth has played: a view, or ``band``, the crew view flattened
-into Alex's band above another view (born in 5-3), which no level opens on.
+What the page marks seen once its birth has played: a view; ``band``, the crew view flattened
+into Alex's band above another view (born in 5-3); or ``tape``, the black box's tape of HEAD's
+moves under history (born in 7-3). No level opens on ``band`` or ``tape``.
 """
 
 Language = Literal["en", "es"]
