@@ -7,7 +7,7 @@ const test = require("node:test");
 const { STATIC, installBrowser, load } = require("./load");
 
 installBrowser();
-const { Strings } = load(["strings.js"], ["Strings"]);
+const { Strings, InfographicText } = load(["strings.js", "infographic-text.js"], ["Strings", "InfographicText"]);
 
 const { en, es } = Strings.TABLES;
 const placeholders = (entry) => JSON.stringify(entry).match(/\{\w+\}/g)?.sort() || [];
@@ -68,24 +68,21 @@ const never = () => [...glossary.split("NEVER = {")[1].split("\n}")[0].matchAll(
 const prose = (text) => text.replace(/`[^`]*`/g, " ").replace(/\bgit [\w\- <>.]+/g, " ");
 
 /* Every Spanish text of the page: the table's strings (plurals included) and the guide's `es` words. */
-function spanishTexts() {
-  const { InfographicText } = load(["infographic-text.js"], ["InfographicText"]);
-  const guide = (value) => {
-    if (!value || typeof value !== "object") return [];
-    if ("es" in value) return [value.es];
-    return Object.values(value).flatMap(guide);
-  };
-  return [...Object.values(es).flatMap((entry) => (typeof entry === "string" ? [entry] : Object.values(entry))), ...guide(InfographicText)];
-}
+const guide = (value) => {
+  if (!value || typeof value !== "object") return [];
+  if ("es" in value) return [value.es];
+  return Object.values(value).flatMap(guide);
+};
+const SPANISH = [...Object.values(es).flatMap((entry) => (typeof entry === "string" ? [entry] : Object.values(entry))), ...guide(InfographicText)];
 
 test("the page's Spanish never uses a form the glossary rules out", { skip: !glossary.includes("NEVER = {") && "engine's glossary list has not merged yet" }, () => {
-  const texts = spanishTexts();
+  const texts = SPANISH;
   const found = never().flatMap((word) => texts.filter((text) => new RegExp(`(?<![\\p{L}])${word}(?![\\p{L}])`, "u").test(prose(text))).map((text) => `${word}: ${text}`));
   assert.deepEqual(found, []);
 });
 
 test("the page's Spanish uses the glossary's words for the working folder (la carpeta), history, a snapshot and untracked", () => {
-  const texts = spanishTexts().map(prose);
+  const texts = SPANISH.map(prose);
   for (const word of ["directorio de trabajo", "historial", "foto del proyecto", "untracked", "modified", "staged", "committed", "el carpeta", "del carpeta", "al carpeta"]) {
     assert.deepEqual(texts.filter((text) => text.includes(word)), [], word);
   }
