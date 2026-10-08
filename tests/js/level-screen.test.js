@@ -187,6 +187,56 @@ test("a goal met by a line whose reaction plays a moment leaves that reaction on
   run.view.dispose();
 });
 
+/* Two watch goals where the first is met only on the second ask, and the observations are `first`
+   once, then `later` for good. */
+function metLate(first, later = quiet()) {
+  const level = seenLevel();
+  level.steps = [...level.steps, { ...level.steps[2], id: "commit" }];
+  let asked = 0;
+  let observed = 0;
+  const met = { ...correct(3, false, ["look", "status", "stage"]), message: para("Staged. Now seal it.") };
+  const waiting = { ...record("step"), step: 2, message: para("Stage the notes.") };
+  const waitingNext = { ...record("step"), step: 3, message: para("Seal the capsule.") };
+  const step = () => {
+    asked += 1;
+    if (asked === 1) return waiting;
+    return asked === 2 ? met : waitingNext;
+  };
+  return screen({ active: { ...record("active"), step: 2, steps: 4 }, replies: { "/api/level": level, "/api/step": step, "/api/observe": () => ((observed += 1) === 1 ? first : later) } });
+}
+
+test("a goal met a tick after a line Rama warned about leaves the warning on Rama's line", async () => {
+  const run = metLate({ ...quiet(), commands: [{ line: "git add .", status: 0 }], reactions: [{ line: "git add .", mood: "warn", text: para("The keys rode along."), moment: null }] });
+  await settle();
+  await run.clock.advance(1500);
+  assert.equal(run.q(".comms-text").textContent, "The keys rode along.");
+  assert.equal(run.q(".comms").dataset.mood, "warn");
+  assert.equal(run.q(".goal.is-current .goal-note").textContent, "Staged. Now seal it.");
+  run.view.dispose();
+});
+
+test("a met goal's note stays under the next goal until the player types again", async () => {
+  const typed = { ...quiet(), commands: [{ line: "git add .", status: 0 }], reactions: [{ line: "git add .", mood: "warn", text: para("The keys rode along."), moment: null }] };
+  const run = metLate(typed);
+  await settle();
+  await run.clock.advance(1500);
+  await run.clock.advance(1500);
+  await settle();
+  assert.equal(run.q(".goal.is-current .goal-note").textContent, "Staged. Now seal it.");
+  run.view.dispose();
+});
+
+test("once the player types again, the next goal's own note replaces the met goal's", async () => {
+  const typed = (line) => ({ ...quiet(), commands: [{ line, status: 0 }], reactions: [{ line, mood: "warn", text: para("The keys rode along."), moment: null }] });
+  const run = metLate(typed("git add ."), typed("git log"));
+  await settle();
+  await run.clock.advance(1500);
+  await run.clock.advance(1500);
+  await settle();
+  assert.equal(run.q(".goal.is-current .goal-note").textContent, "Seal the capsule.");
+  run.view.dispose();
+});
+
 test("a goal met by a line with a plain reaction is said on Rama's line, as before", async () => {
   const run = twoWatches([{ line: "git add notes.txt", mood: "ok", text: para("On the dock."), moment: null }]);
   await settle();

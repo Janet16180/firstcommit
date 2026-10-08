@@ -122,14 +122,15 @@ const LevelScreen = (function () {
      challenge Rama speaks only of danger and errors, so a met goal is said without its message,
      which could tell what comes next; saying it still clears an error the player has fixed. When
      Rama's line must `keep` what it says about the typed lines, the met goal's message goes under
-     the next goal instead. Work lost for good ends the play, whoever asked. */
+     the next goal instead, and stays there until the player types again. Work lost for good ends
+     the play, whoever asked. */
   function stepped(screen, result, { watched = false, mood = "ok", keep = false } = {}) {
     const { ui, state, ctx } = screen;
     if (result.lost) {
       lostWork(screen, result.message);
       return;
     }
-    if (!result.correct && watched) screen.mission.note(result.message);
+    if (!result.correct && watched && !screen.metNote) screen.mission.note(result.message);
     if (!result.correct && !watched) {
       ui.comms.say(result.message, "err");
       ctx.sound.play("wrong");
@@ -140,6 +141,7 @@ const LevelScreen = (function () {
     state.auto_check = result.quest_done;
     screen.mission.setStep(state.step, state.done);
     const message = screen.level.challenge ? t(SAY.partMet) : result.message;
+    screen.metNote = keep;
     if (keep) screen.mission.note(message);
     else ui.comms.say(message, mood);
     ctx.sound.play("goal");
@@ -256,9 +258,18 @@ const LevelScreen = (function () {
     screen.ui.comms.say(said.flatMap((reaction) => reaction.text), reactions[reactions.length - 1].mood);
   }
 
-  /* A reaction a met goal must not talk over: a warning, an error, or one that plays a moment (nor,
-     while that moment plays, a goal met a tick later). */
+  /* A reaction a met goal must not talk over: a warning, an error, or one that plays a moment. */
   const kept = (reaction) => reaction.moment !== null || reaction.mood === "warn" || reaction.mood === "err";
+
+  /* Whether Rama's line must keep what it says: a kept reaction holds it until the player types
+     again, and a moment holds it while it plays. Typing again also frees the met goal's note. */
+  function keeping(screen, { commands, reactions }) {
+    if (commands.length || reactions.length) {
+      screen.held = reactions.some(kept);
+      screen.metNote = false;
+    }
+    return screen.held || screen.ui.moments.showing();
+  }
 
   function moments(screen, reactions) {
     for (const reaction of reactions) if (reaction.moment) screen.ui.moments.play(reaction.moment);
@@ -288,7 +299,7 @@ const LevelScreen = (function () {
       if (observation.commands.length && !observation.reactions.length && predicting(screen)) screen.ui.comms.say(t(SAY.predictFirst), "info");
       echo(screen, observation.commands);
       if (observation.commands.length) await recount(screen);
-      const keep = observation.reactions.some(kept) || screen.ui.moments.showing();
+      const keep = keeping(screen, observation);
       if (plan.watchStep) stepped(screen, await game.step(null), { watched: true, keep });
       if (plan.autoCheck && !screen.finished) checked(screen, await game.check(null, true), { auto: true, keep });
     } catch (error) {
@@ -359,7 +370,7 @@ const LevelScreen = (function () {
   /* ctx: game, status(), refresh(), reload() (shows this screen again), sound, timers, page,
      reducedMotion, terminal ({attach(host), detach(), type(text)}). */
   function create(ctx, levelId) {
-    const screen = { ctx, levelId, level: null, state: null, number: "", shownStars: null, mission: null, poller: null, finished: false, offline: false, attached: false, disposed: false, ui: {} };
+    const screen = { ctx, levelId, level: null, state: null, number: "", shownStars: null, held: false, metNote: false, mission: null, poller: null, finished: false, offline: false, attached: false, disposed: false, ui: {} };
     screen.element = el("div", { class: "level-screen" });
     layout(screen);
     load(screen);
