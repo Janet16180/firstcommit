@@ -19,7 +19,8 @@
  *   maps a child's hash to the look of its lines ("ghost", "mothership"); `walk` lists hashes
  *   whose links light up in turn ("walk", with the link's step).
  * create() {element, update(view)}: view = {project, github, teammate, ghosts, show: {mothership,
- *   alex, ghosts}, look: [subject | "HEAD"], walk}. `walk` lights git log's path from HEAD.
+ *   alex, ghosts}, look: [subject | "HEAD"], walk}. `walk` lights git log's path from HEAD. An
+ *   update that brings nothing new keeps the drawing, so its motions are not started over.
  */
 
 /* global Dom, Strings */
@@ -154,8 +155,16 @@ const Chain = (function () {
 
   function create() {
     const element = el("section", { class: "chain", "aria-label": t("chain.label") });
+    let drawnFrom = null;
 
-    function update({ project, github, teammate, ghosts, show, look, walk }) {
+    function update(view) {
+      const key = JSON.stringify([view, Strings.language()]);
+      if (key === drawnFrom) return;
+      drawnFrom = key;
+      draw(view);
+    }
+
+    function draw({ project, github, teammate, ghosts, show, look, walk }) {
       const mine = new Set(project.commits.map((commit) => commit.hash));
       const motherOnly = show.mothership && github ? github.commits.filter((commit) => !mine.has(commit.hash)) : [];
       const lost = show.ghosts ? ghosts.filter((commit) => !mine.has(commit.hash)) : [];

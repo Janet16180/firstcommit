@@ -157,3 +157,13 @@ test("the chain speaks Spanish when the page does", () => {
     Strings.use("en");
   }
 });
+
+test("an update with nothing new leaves the drawing alone, so a running walk is not started over", () => {
+  const chain = Chain.create();
+  chain.update(view(forked(), { walk: true }));
+  const first = chain.element.querySelector(".chain-rows");
+  chain.update(view(forked(), { walk: true }));
+  assert.equal(chain.element.querySelector(".chain-rows"), first);
+  chain.update(view(forked()));
+  assert.notEqual(chain.element.querySelector(".chain-rows"), first);
+});
