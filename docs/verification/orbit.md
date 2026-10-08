@@ -654,3 +654,18 @@ and solvable from there), and a forced push (Rama's error, lost).
 | `_fix_kept`, the stash test | a stashed fix is still in a commit a ref reaches | E81 |
 | `MAIN_TOUCHED`, `MINE_ON_MAIN` (lost) | taking a commit back or moving it off a branch comes in the undo chapter | the plan, 7-2 and 7-3 |
 | `ALEX_DROPPED`, `FORCED` (lost) | a forced push replaces the mothership's branch and drops Alex's commit | E68 |
+
+### Deck `branch`
+
+Checked the same way as the vault deck: each `verify` snippet and the predict card's `code` run
+in `tests/test_decks.py`.
+
+| Card | Claim | Evidence |
+|---|---|---|
+| `branch-clone-history` | a plain clone holds every commit; `--depth` makes a shallow one | `verify`: the copy counts five commits; git-clone(1) `--depth` ("a history truncated to the specified number of commits") |
+| `branch-is-a-label` | `git branch scout` points a new label at your commit; the folder and your branch stay; nothing reaches the remote | `verify`; E71 |
+| `branch-switch-folder` | back on `main`, the folder has no `probe.txt`; `scout` keeps it | `code` and `correct`; E73 |
+| `branch-push-one` | a plain push on `main` leaves a new `scout` here; `--all` sends every branch | `verify`; E75, E78 |
+| `branch-origin-main` | `origin/main` is a remote-tracking branch; `git branch -a` shows it as `remotes/origin/main` | E69; gitglossary(7) remote-tracking branch |
+| `branch-switch-c-carries` | `git switch -c` takes the uncommitted edit along | `verify`; E79 |
+| notes | as the cards above | the cards |
