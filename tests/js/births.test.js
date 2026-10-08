@@ -1,0 +1,63 @@
+"use strict";
+
+const assert = require("node:assert/strict");
+const test = require("node:test");
+const { createClock, installBrowser, load } = require("./load");
+
+const document = installBrowser();
+const { ViewBirth } = load(["dom.js", "strings.js", "births.js"], ["ViewBirth"]);
+
+const reading = (vault) => ({ repository: vault !== null, workshop: [], dock: vault && [], vault, remote: null, crew: null });
+
+/* A birth played on a bare sky, recording what was shown, what Rama said and the sky's classes at each step. */
+function birth(view, { reducedMotion = false } = {}) {
+  const clock = createClock();
+  const sky = document.createElement("div");
+  const seen = [];
+  const finished = ViewBirth.play(view, {
+    sky,
+    reducedMotion,
+    timers: clock,
+    show: (shown) => seen.push(["show", shown]),
+    say: (line) => seen.push(["say", line]),
+  });
+  return { clock, sky, seen, finished };
+}
+
+test("history is born out of your station: the fold, then the unroll, each with Rama's line", async () => {
+  const run = birth("history");
+  assert.deepEqual(run.seen, [["show", "fold"], ["say", "You know every room now."]]);
+  assert.ok(run.sky.classList.contains("art-birth-fold"));
+  assert.equal(run.sky.style["--art-birth"], `${ViewBirth.BIRTH_MS}ms`);
+  await run.clock.advance(ViewBirth.BIRTH_MS);
+  assert.deepEqual(run.seen.slice(2), [["show", "history"], ["say", "Here's the chart of every course."]]);
+  assert.ok(!run.sky.classList.contains("art-birth-fold"));
+  assert.ok(run.sky.classList.contains("art-birth-unroll"));
+  await run.clock.advance(ViewBirth.BIRTH_MS);
+  await run.finished;
+  assert.ok(!run.sky.classList.contains("art-birth-unroll"));
+});
+
+test("under reduced motion a birth is two still frames, each held long enough to read its caption", async () => {
+  const run = birth("history", { reducedMotion: true });
+  assert.deepEqual(run.seen, [["show", "fold"], ["say", "You know every room now."]]);
+  assert.ok(!run.sky.classList.contains("art-birth-fold"));
+  await run.clock.advance(ViewBirth.BIRTH_MS);
+  assert.equal(run.seen.length, 2);
+  await run.clock.advance(ViewBirth.STILL_MS - ViewBirth.BIRTH_MS);
+  assert.deepEqual(run.seen.slice(2), [["show", "history"], ["say", "Here's the chart of every course."]]);
+  assert.ok(!run.sky.classList.contains("art-birth-unroll"));
+  await run.clock.advance(ViewBirth.STILL_MS);
+  await run.finished;
+});
+
+test("only the views with a birth drawn have one", () => {
+  assert.equal(ViewBirth.has("history"), true);
+  for (const view of ["station", "crew", "sides", "blackbox"]) assert.equal(ViewBirth.has(view), false, view);
+});
+
+test("history waits to be born until your vault holds commits, so the fold has something to fold", () => {
+  assert.equal(ViewBirth.ready("history", reading(null)), false);
+  assert.equal(ViewBirth.ready("history", reading([])), false);
+  assert.equal(ViewBirth.ready("history", reading([{ hash: "a" }])), true);
+});

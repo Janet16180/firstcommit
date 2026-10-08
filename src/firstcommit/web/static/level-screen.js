@@ -7,8 +7,9 @@
  * and, once the mission is solved, the completion band and the dock at the bottom. The views are
  * the view ladder's (docs/drafts/chapters-5-9.md): your station (or the crew view, in a level with
  * a teammate) shows the four zones; history folds your station into the strip and leaves the
- * vault and the mothership on the stage. A level opens on its main view, a view not born yet is
- * marked born, and the tab row holds the views born so far.
+ * vault and the mothership on the stage. A level opens on its main view; a view not born yet is
+ * born first (births.js), once the stage has something to show it with, and then marked born.
+ * The tab row holds the views born so far.
  * Opening a mission that is not in progress starts it, and a level's scene plays the first time
  * it opens. It keeps no game state of its own: the step, the hints, the commands, the stars and
  * whether the mission is solved come from the server's replies, and the page polls the lab while
@@ -18,11 +19,11 @@
  * ended from the command line or another tab), 0 that the server did not answer. Anything else is a
  * bug and is left to surface. Needs dom.js, strings.js, markup.js, art-sprites.js, progress.js,
  * poll.js, zones.js, zone-panel.js, mission.js, comms.js, completion.js, scene.js, moment-layer.js,
- * view-tabs.js and strip.js.
+ * view-tabs.js, strip.js and births.js.
  * Defines one global, LevelScreen.
  */
 
-/* global Dom, Strings, ArtSprites, Progress, Polling, Zones, ZonePanel, Mission, Comms, Completion, ScenePlayer, MomentLayer, ViewTabs, Strip */
+/* global Dom, Strings, ArtSprites, Progress, Polling, Zones, ZonePanel, Mission, Comms, Completion, ScenePlayer, MomentLayer, ViewTabs, Strip, ViewBirth */
 /* exported LevelScreen */
 
 const LevelScreen = (function () {
@@ -102,17 +103,38 @@ const LevelScreen = (function () {
     screen.ui.tabs = row;
   }
 
-  /* The level's main view, born now if it was not; one the page does not draw yet opens on your station. */
+  /* The game is told a view was born, and its tab joins the row. */
+  function born(screen, view) {
+    screen.seen.push(view);
+    screen.ctx.game.view(view);
+    drawTabs(screen);
+  }
+
+  /* The level's main view. One not born yet with a birth to play waits on your station for it;
+     one the page does not draw yet opens on your station. */
   function openView(screen) {
-    const { level, ctx } = screen;
+    const { level } = screen;
     screen.seen = [...level.views_seen];
     const drawn = DRAWN.includes(level.view);
-    if (drawn && !screen.seen.includes(level.view)) {
-      screen.seen.push(level.view);
-      ctx.game.view(level.view);
-    }
+    const unborn = drawn && !screen.seen.includes(level.view);
+    screen.birth = unborn && ViewBirth.has(level.view) ? level.view : null;
     drawTabs(screen);
-    show(screen, drawn ? level.view : "station");
+    if (unborn && !screen.birth) born(screen, level.view);
+    show(screen, drawn && !screen.birth ? level.view : home(screen));
+  }
+
+  /* Plays the waiting birth once the stage, as `reading` reads it, can show it. */
+  async function bear(screen, reading) {
+    const { ctx, ui } = screen;
+    const view = screen.birth;
+    if (!view || !ViewBirth.ready(view, reading)) return;
+    screen.birth = null;
+    screen.bearing = true;
+    await ViewBirth.play(view, { sky: ui.sky, show: (shown) => show(screen, shown), say: (line) => ui.comms.say(line, "info"), reducedMotion: ctx.reducedMotion, timers: ctx.timers });
+    screen.bearing = false;
+    if (screen.disposed) return;
+    born(screen, view);
+    show(screen, view);
   }
 
   /* The stage follows the level's teammate: your station's view becomes the crew view. */
@@ -316,13 +338,14 @@ const LevelScreen = (function () {
   const kept = (reaction) => reaction.moment !== null || reaction.mood === "warn" || reaction.mood === "err";
 
   /* Whether Rama's line must keep what it says: a kept reaction holds it until the player types
-     again, and a moment holds it while it plays. Typing again also frees the met goal's note. */
+     again, and a moment or a view's birth holds it while it plays. Typing again also frees the
+     met goal's note. */
   function keeping(screen, { commands, reactions }) {
     if (commands.length || reactions.length) {
       screen.held = reactions.some(kept);
       screen.metNote = false;
     }
-    return screen.held || screen.ui.moments.showing();
+    return screen.held || screen.bearing || screen.ui.moments.showing();
   }
 
   function moments(screen, reactions) {
@@ -345,8 +368,10 @@ const LevelScreen = (function () {
       const plan = Polling.plan(screen.level.steps, screen.state, screen.level.challenge);
       const observation = await game.observe();
       screen.ui.zones.update(observation);
-      screen.ui.strip.update(Zones.read(observation));
+      const reading = Zones.read(observation);
+      screen.ui.strip.update(reading);
       crewed(screen, observation);
+      bear(screen, reading);
       measureTerminal(screen);
       if (screen.offline) screen.ui.comms.say(t(SAY.back), "info");
       screen.offline = false;
@@ -427,7 +452,7 @@ const LevelScreen = (function () {
   /* ctx: game, status(), refresh(), reload() (shows this screen again), sound, timers, page,
      reducedMotion, terminal ({attach(host), detach(), type(text)}). */
   function create(ctx, levelId) {
-    const screen = { ctx, levelId, level: null, state: null, number: "", shownStars: null, view: "station", seen: [], crew: false, held: false, metNote: false, mission: null, poller: null, finished: false, offline: false, attached: false, disposed: false, ui: {} };
+    const screen = { ctx, levelId, level: null, state: null, number: "", shownStars: null, view: "station", seen: [], crew: false, birth: null, bearing: false, held: false, metNote: false, mission: null, poller: null, finished: false, offline: false, attached: false, disposed: false, ui: {} };
     screen.element = el("div", { class: "level-screen" });
     layout(screen);
     load(screen);

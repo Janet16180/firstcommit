@@ -7,7 +7,7 @@ const { createClock, fakeServer, httpError, installBrowser, load, record, settle
 
 const document = installBrowser({ reducedMotion: true });
 const { LevelScreen, createGameApi } = load(
-  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "view-tabs.js", "strip.js", "level-screen.js"],
+  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "view-tabs.js", "strip.js", "births.js", "level-screen.js"],
   ["LevelScreen", "createGameApi"],
 );
 
@@ -706,16 +706,56 @@ test("a level on your station alone shows no tab row and no strip", async () => 
   run.view.dispose();
 });
 
-test("a view not born yet is marked born when its level opens, and gets its tab; one already born is not marked again", async () => {
-  const run = viewing("history", ["station"]);
+test("a view not born yet and with no birth to play is marked born when its level opens; one already born is not marked again", async () => {
+  const run = viewing("station", []);
   await settle();
-  assert.deepEqual(run.server.calls.filter((call) => call.path === "/api/view").map((call) => call.body), [{ view: "history" }]);
-  assert.deepEqual(tabs(run), ["station", "history"]);
+  assert.deepEqual(run.server.calls.filter((call) => call.path === "/api/view").map((call) => call.body), [{ view: "station" }]);
   run.view.dispose();
   const again = viewing("history", ["station", "history"]);
   await settle();
   assert.ok(!again.routes().includes("/api/view"));
   again.view.dispose();
+});
+
+const said = (run) => run.q(".comms-text").textContent;
+const marked = (run) => run.server.calls.filter((call) => call.path === "/api/view").map((call) => call.body);
+
+test("history is born once your vault holds commits: the fold and the unroll with Rama's lines, then its tab, and the game is told", async () => {
+  const run = viewing("history", ["station"]);
+  await settle();
+  assert.equal(shown(run), "fold");
+  assert.equal(said(run), "You know every room now.");
+  assert.equal(run.q(".view-tabs").hidden, true);
+  assert.deepEqual(marked(run), []);
+  await run.clock.advance(2600);
+  assert.equal(shown(run), "history");
+  assert.equal(said(run), "Here's the chart of every course.");
+  await run.clock.advance(2600);
+  assert.deepEqual(marked(run), [{ view: "history" }]);
+  assert.deepEqual(tabs(run), ["station", "history"]);
+  assert.equal(chosen(run), "history");
+  run.view.dispose();
+});
+
+test("a goal met as history is born goes under the next goal, so Rama's birth lines are heard", async () => {
+  const level = { ...seenLevel(), view: "history", views_seen: ["station"] };
+  level.steps = [...level.steps, { ...level.steps[2], id: "read" }];
+  const met = { ...correct(3, false, ["look", "status", "stage"]), message: para("Cloned.") };
+  const run = screen({ active: { ...record("active"), step: 2, steps: 4 }, replies: { "/api/level": level, "/api/step": met } });
+  await settle();
+  assert.equal(said(run), "You know every room now.");
+  assert.equal(run.q(".goal.is-current .goal-note").textContent, "Cloned.");
+  run.view.dispose();
+});
+
+test("while your vault is empty, a level whose history is not born yet stays on your station", async () => {
+  const empty = { ...quiet(), project: record("snapshots").unborn };
+  const run = viewing("history", ["station"], { "/api/observe": empty });
+  await settle();
+  await run.clock.advance(6000);
+  assert.equal(shown(run), "station");
+  assert.deepEqual(marked(run), []);
+  run.view.dispose();
 });
 
 test("a view the page cannot draw yet opens on your station", async () => {
