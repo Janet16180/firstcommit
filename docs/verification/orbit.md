@@ -927,6 +927,20 @@ the folder unchanged, a name on the wrong commit named and moved, and a switch o
 | card, prediction 2, `NAMED` | `git branch <name> <commit>` makes the name there and does not move HEAD or change the folder | git-branch(1) `<start-point>` ("the new branch is not checked out"); the level's test |
 | `MOVED_ONTO` | `git switch first-route` moves HEAD and rewrites the folder to that commit | git-switch(1) DESCRIPTION; the level's test |
 
+### Level `names-step` (One step, 5-4)
+
+*Re-checked* by `tests/levels/test_names_step.py`: `git switch -c` naming `main`'s commit and
+moving HEAD with no commit, two commands in place of one not counting, the third side line,
+`dim.txt` committed on `main` (lost), the newer forms counting for the older ways' steps, and the
+list read before `night-watch` not counting.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, prediction, `MADE`, debrief | `git switch -c <name>` makes the branch where you are and switches to it; no commit is made; git prints "Switched to a new branch" | git-switch(1) `-c` ("Create a new branch named <new-branch> starting at <start-point> before switching"); the 5-4 script, beat 3 (real output) |
+| `OLDER_WAY`, `NIGHT_MADE`, debrief | `git checkout <name>` and `git checkout -b <name>` do what `git switch` and `git switch -c` do; `checkout` also restores files, and `switch` was added for the branch part | git-checkout(1) DESCRIPTION and `-b`; git-switch(1) DESCRIPTION ("Switch to a specified branch") |
+| `DRAWN` | `git log --oneline --graph --all` draws every branch's line, and each side line closes with `|/` | git-log(1) `--graph`, `--all`; the script, beat 6 (real output) |
+| `LISTED` | `night-watch` and `quiet-engine` name the same commit | the script, beat 10 (real output); the level's test |
+
 ## No `origin/HEAD` in the playground's clones (added 2026-10-08)
 
 `playground.setup` runs `git remote set-head origin --delete` in each clone, so `git log` shows

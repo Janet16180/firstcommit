@@ -323,10 +323,9 @@ def command_shape(line: str) -> str | None:
 
 
 KNOWN_GAPS = {
-    "branch-ticket": ["switch -c"],
     "undo-blackbox": ["branch HEAD@{n}", "reflog"],
 }
-"""Commands two challenges ask for before a guided level teaches them: 5-4 One step teaches ``switch -c``, and 8-4 The move log the reflog, as they are built."""
+"""Commands a challenge asks for before a guided level teaches them: 8-4 The move log teaches the reflog, once it is built."""
 
 
 def test_a_challenge_only_asks_for_commands_an_earlier_guided_level_taught() -> None:
@@ -367,6 +366,7 @@ def test_each_level_opens_on_the_main_view_of_the_plan() -> None:
         "names-tags": "history",
         "names-any": "history",
         "names-experiments": "history",
+        "names-step": "history",
         "branch-send": "history",
         "branch-switch": "history",
         "branch-ticket": "history",
