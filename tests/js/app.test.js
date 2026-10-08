@@ -317,7 +317,7 @@ test("the terminal's status and button speak the game's language, and follow a s
   });
   await settle();
   try {
-    assert.deepEqual(page.seen.labels[0], { connecting: "conectando", connected: "conectado", hide: "ocultar", show: "mostrar" });
+    assert.deepEqual(page.seen.labels[0], { connecting: "conectando", connected: "conectado", hide: "ocultar", show: "mostrar", hint: "Ctrl+V pega · Ctrl+C copia lo seleccionado" });
   } finally {
     global.location.hash = "#/";
     page.fire("hashchange", {});
@@ -326,5 +326,5 @@ test("the terminal's status and button speak the game's language, and follow a s
   page.main.querySelector(".map-bar .pref-language").click();
   await settle();
   await settle();
-  assert.deepEqual(page.seen.labels.at(-1), { connecting: "connecting", connected: "connected", hide: "hide", show: "show" });
+  assert.deepEqual(page.seen.labels.at(-1), { connecting: "connecting", connected: "connected", hide: "hide", show: "show", hint: "Ctrl+V paste · Ctrl+C copies a selection" });
 });

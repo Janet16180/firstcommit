@@ -110,7 +110,7 @@
   }
 
   /* The words of the terminal's status and its hide/show button, in the page's language. */
-  const terminalLabels = () => Object.fromEntries(["connecting", "connected", "hide", "show"].map((name) => [name, t(`terminal.${name}`)]));
+  const terminalLabels = () => Object.fromEntries(["connecting", "connected", "hide", "show", "hint"].map((name) => [name, t(`terminal.${name}`)]));
 
   /* The page's own words, in the game's language (Status.language); English until the game
      first answers. */
