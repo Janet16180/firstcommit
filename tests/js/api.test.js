@@ -291,6 +291,27 @@ test("a level must say the view it opens on and the views already born, from the
   }
 });
 
+test("the status says whether the game runs in dev mode", async () => {
+  const { game } = gameApi();
+  assert.equal((await game.status()).dev, false);
+  await refused("/api/status", (status) => delete status.dev, (api) => api.status());
+});
+
+test("in dev mode a level carries its solution: the lines to type, the answers by step and to its own question", async () => {
+  const { game } = gameApi();
+  const { solution } = await game.level("x");
+  assert.deepEqual(solution.lines, ["git add map.txt", "git commit -m \"Add the map\""]);
+  assert.equal(solution.answers.guess, "It comes with you");
+  assert.equal(solution.answer, null);
+  const unsolved = gameApi({ ...REPLIES, "/api/level": { ...record("level"), solution: null } }).game;
+  assert.equal((await unsolved.level("x")).solution, null);
+  const unknown = gameApi({ ...REPLIES, "/api/level": { ...record("level"), solution: { lines: [], answers: { count: null }, answer: "Robin" } } }).game;
+  assert.equal((await unknown.level("x")).solution.answers.count, null);
+  await refused("/api/level", (level) => delete level.solution, (api) => api.level("x"));
+  await refused("/api/level", (level) => (level.solution.lines = "git add ."), (api) => api.level("x"));
+  await refused("/api/level", (level) => (level.solution.answers.guess = 3), (api) => api.level("x"));
+});
+
 test("a scene's pictures are the ones the artist has drawn", async () => {
   for (const art of ["space", "timeline", "terminal", "planet", "flag", "zones", "conveyor", "meteor", "simulator"]) {
     const level = { ...record("level"), scene: [{ ...record("level").scene[0], art }] };

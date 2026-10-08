@@ -100,6 +100,7 @@ const createGameApi = (function () {
     max_difficulty: number,
     collection: list(CARD),
     language: oneOf("en", "es"),
+    dev: flag,
   });
   const LEVEL = record({
     id: text,
@@ -115,6 +116,8 @@ const createGameApi = (function () {
     view: VIEW,
     views_seen: list(SEEN),
     tape: flag,
+    /* Dev mode only: the last hint's lines and the answers, null where the lab cannot tell yet. */
+    solution: nullable(record({ lines: list(text), answers: mapping(nullable(text)), answer: nullable(text) })),
     card: nullable(CARD),
     challenge: flag,
     briefing: BLOCKS,
