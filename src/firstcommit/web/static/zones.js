@@ -6,7 +6,7 @@
  * (the local repository's history) and the mothership (the level's GitHub). It only reads the
  * snapshots the server sent; nothing here runs or imitates git. Defines one global, Zones.
  *
- * read(observation) gives {repository, operation, workshop, dock, vault, remote}:
+ * read(observation) gives {repository, operation, workshop, dock, vault, remote, crew}:
  * - repository: whether the folder holds a repository;
  * - operation: the merge, rebase, cherry-pick, revert or bisect in progress, or null;
  * - workshop: [{path, state}] for every file in the folder that git does not ignore, state one of
@@ -17,7 +17,9 @@
  *   parents, lane, revert, labels}] (revert: the commit undoes another, by git's own message): `lane` is its column in the drawn graph (0 for the first line of
  *   history; a branch that splits off takes the next free one), each label {text, kind} with
  *   kind "head", "branch", "remote" or "tag"; null without a repository;
- * - remote: the same for the level's GitHub, or null when the level has none.
+ * - remote: the same for the level's GitHub, or null when the level has none;
+ * - crew: the teammate's station, read from their clone like yours, {repository, workshop, dock,
+ *   vault}, or null when the level has no teammate.
  *
  * moves(before, after, typed, refused) says how to animate the change between two such readings:
  * - lit: the arrows to light ("add", "commit", "push", "pull");
@@ -29,6 +31,9 @@
  * - bounces: {from, to}, a capsule thrown at a zone that sends it back (a refused push);
  * - cracks: the files that just became conflicted; rises: the revert capsules just made (they rise
  *   in upside down, and are not in appears).
+ * The teammate's items take the "crew-" zones ("crew-vault:<hash>"); what they push flies from
+ * their station up to the mothership, and what they pull lands at their station, whatever the
+ * player typed: the teammate does not type in the player's terminal.
  * `typed` names the git commands that succeeded meanwhile and `refused` those that failed
  * (typed.js): when any succeeded, only the flights they make are drawn; with none, the change
  * was made outside the game's terminal and is drawn as it is.
@@ -112,16 +117,19 @@ const Zones = (function () {
     }));
   }
 
-  function read({ project, github }) {
-    const repository = project.exists;
+  /* One clone's three places: its folder, its staging area and its history. */
+  function station(snapshot) {
+    const repository = snapshot.exists;
     return {
       repository,
-      operation: project.operation,
-      workshop: project.files.filter(inWorkshop).map((file) => ({ path: file.path, state: workshopState(file, repository) })),
-      dock: repository ? project.files.filter((file) => file.index_change).map((file) => ({ path: file.path, change: file.index_change, version: file.index })) : null,
-      vault: repository ? commits(project, true) : null,
-      remote: github ? commits(github, false) : null,
+      workshop: snapshot.files.filter(inWorkshop).map((file) => ({ path: file.path, state: workshopState(file, repository) })),
+      dock: repository ? snapshot.files.filter((file) => file.index_change).map((file) => ({ path: file.path, change: file.index_change, version: file.index })) : null,
+      vault: repository ? commits(snapshot, true) : null,
     };
+  }
+
+  function read({ project, github, teammate }) {
+    return { ...station(project), operation: project.operation, remote: github ? commits(github, false) : null, crew: teammate ? station(teammate) : null };
   }
 
   /* Each kind of move: the git commands that make it, its arrow, and its flights between two readings. */
@@ -129,9 +137,11 @@ const Zones = (function () {
     { kind: "add", commands: ["add", "commit", "stage"], arrow: "add", flights: (before, after) => newOnDock(before, after).map((path) => [`workshop:${path}`, `dock:${path}`]) },
     { kind: "unstage", commands: ["restore", "reset", "rm"], arrow: null, flights: (before, after) => leftDock(before, after).map((path) => [`dock:${path}`, `workshop:${path}`]) },
     { kind: "commit", commands: ["commit", "merge", "cherry-pick", "revert"], arrow: "commit", flights: (before, after) => sealed(before, after) },
-    { kind: "push", commands: ["push"], arrow: "push", flights: (before, after) => added(after.remote, before.remote).map((hash) => [`vault:${hash}`, `remote:${hash}`]) },
+    { kind: "push", commands: ["push"], arrow: "push", flights: (before, after) => added(after.remote, before.remote).filter((hash) => hashes(after.vault).has(hash)).map((hash) => [`vault:${hash}`, `remote:${hash}`]) },
     { kind: "pull", commands: ["pull", "fetch", "merge", "clone"], arrow: "pull", flights: (before, after) => added(after.vault, before.vault).filter((hash) => hashes(before.remote).has(hash)).map((hash) => [`remote:${hash}`, `vault:${hash}`]) },
     { kind: "merge", commands: ["merge", "pull"], arrow: null, flights: (before, after) => joined(before, after) },
+    { kind: "crew-push", commands: null, arrow: "crew-push", flights: (before, after) => (after.crew ? added(after.remote, before.remote).filter((hash) => hashes(after.crew.vault).has(hash) && !hashes(after.vault).has(hash)).map((hash) => [`crew-vault:${hash}`, `remote:${hash}`]) : []) },
+    { kind: "crew-pull", commands: null, arrow: "crew-pull", flights: (before, after) => (before.crew && after.crew ? added(after.crew.vault, before.crew.vault).filter((hash) => hashes(before.remote).has(hash)).map((hash) => [`remote:${hash}`, `crew-vault:${hash}`]) : []) },
     { kind: "slide", commands: null, arrow: null, flights: (before, after) => [...slid(before, after, "vault"), ...slid(before, after, "remote")] },
   ];
 
@@ -181,6 +191,9 @@ const Zones = (function () {
     return after.workshop.filter((file) => file.state === "conflicted" && !was.has(file.path)).map((file) => `workshop:${file.path}`);
   }
 
+  /* Every history a reading draws as capsules, by the zone its keys name. */
+  const histories = (reading) => ({ vault: reading.vault, remote: reading.remote, "crew-vault": reading.crew ? reading.crew.vault : null });
+
   function moves(before, after, typed, refused = []) {
     const allowed = (move) => typed.length === 0 || move.commands === null || move.commands.some((command) => typed.includes(command));
     const made = MOVES.filter(allowed).map((move) => ({ ...move, pairs: move.flights(before, after) })).filter((move) => move.pairs.length);
@@ -190,10 +203,12 @@ const Zones = (function () {
     if (!before.repository && after.repository) wake.push("dock", "vault");
     if (before.remote === null && after.remote !== null) wake.push("remote");
     const landed = new Set(flights.map((flight) => flight.to));
-    const zones = ["vault", "remote"];
-    const fades = zones.flatMap((zone) => added(before[zone], after[zone]).map((hash) => `${zone}:${hash}`));
-    const reverts = new Set(zones.flatMap((zone) => (after[zone] || []).filter((commit) => commit.revert).map((commit) => `${zone}:${commit.hash}`)));
-    const fresh = zones.flatMap((zone) => (before[zone] ? added(after[zone], before[zone]) : []).map((hash) => `${zone}:${hash}`)).filter((key) => !landed.has(key));
+    const was = histories(before);
+    const now = histories(after);
+    const zones = Object.keys(now);
+    const fades = zones.flatMap((zone) => added(was[zone], now[zone]).map((hash) => `${zone}:${hash}`));
+    const reverts = new Set(zones.flatMap((zone) => (now[zone] || []).filter((commit) => commit.revert).map((commit) => `${zone}:${commit.hash}`)));
+    const fresh = zones.flatMap((zone) => (was[zone] ? added(now[zone], was[zone]) : []).map((hash) => `${zone}:${hash}`)).filter((key) => !landed.has(key));
     const unique = [...new Map(flights.map((flight) => [`${flight.from}>${flight.to}`, flight])).values()];
     return { lit, flights: unique, wake, fades, appears: fresh.filter((key) => !reverts.has(key)), bounces: bounced(after, refused), cracks: cracked(before, after), rises: fresh.filter((key) => reverts.has(key)) };
   }

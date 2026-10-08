@@ -255,3 +255,36 @@ test("a revert capsule rises in instead of simply appearing", () => {
   assert.deepEqual(moves.rises, ["vault:r"]);
   assert.deepEqual(moves.appears, []);
 });
+
+/* A crew level: your station, the mothership, and Alex's station (their clone of the playground). */
+const station = (vault, fields = {}) => ({ repository: true, workshop: [], dock: [], vault, ...fields });
+
+test("a teammate's clone is read as their own station, with its workshop, dock and vault", () => {
+  const zones = Zones.read(record("press").observation);
+  assert.deepEqual(zones.crew.vault.map((item) => item.short), ["21e6785", "de4c885"]);
+  assert.deepEqual(zones.crew.workshop.map((item) => item.path), ["README.md", "notes.txt"]);
+  assert.deepEqual(zones.crew.dock, []);
+  assert.equal(Zones.read(record("observation")).crew, null);
+});
+
+test("a teammate's push flies the new capsule from their station up to the mothership, whatever you typed", () => {
+  const before = model({ vault: [capsule("s1")], remote: [capsule("s1")], crew: station([capsule("a1"), capsule("s1")]) });
+  const after = model({ vault: [capsule("s1")], remote: [capsule("a1"), capsule("s1")], crew: station([capsule("a1"), capsule("s1")]) });
+  const moves = Zones.moves(before, after, ["status"]);
+  assert.deepEqual(moves.flights, [{ from: "crew-vault:a1", to: "remote:a1" }]);
+  assert.deepEqual(moves.lit, ["crew-push"]);
+});
+
+test("a capsule the mothership got lands at the teammate's station when they pull", () => {
+  const before = model({ vault: [capsule("y1")], remote: [capsule("y1")], crew: station([]) });
+  const after = model({ vault: [capsule("y1")], remote: [capsule("y1")], crew: station([capsule("y1")]) });
+  assert.deepEqual(Zones.moves(before, after, []).flights, [{ from: "remote:y1", to: "crew-vault:y1" }]);
+});
+
+test("your push flies only capsules your own vault holds", () => {
+  const before = model({ vault: [capsule("y1")], remote: [], crew: station([capsule("a1")]) });
+  const after = model({ vault: [capsule("y1")], remote: [capsule("y1"), capsule("a1")], crew: station([capsule("a1")]) });
+  const flights = Zones.moves(before, after, ["push"]).flights;
+  assert.ok(flights.some((flight) => flight.from === "vault:y1" && flight.to === "remote:y1"));
+  assert.ok(!flights.some((flight) => flight.from === "vault:a1"));
+});
