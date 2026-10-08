@@ -2027,7 +2027,7 @@
      "verdict": "changes-requested",
      "body": "Turn the deck lights on too.",
      "commit": "b1b2b3b40000000000000000000000000000b1b2",
-     "outdated": true
+     "stale": true
     }
    ]
   },

@@ -14,8 +14,6 @@ from pathlib import Path
 from firstcommit import gitcmd, repomap
 from firstcommit.records import Commit, PullRequest, PullView, Review, ReviewVerdict, ReviewView
 
-OWNER = "moonbase"
-"""The stand-in GitHub's owner, as its address names it (``github.com/moonbase/project.git``)."""
 COMMIT_LIMIT = 100
 
 
@@ -172,7 +170,7 @@ def merge(github: Path, pulls: list[PullRequest], number: int, merger: gitcmd.Pe
     if result.returncode != 0:
         raise ValueError(f"pull request #{number} has conflicts with {pull['base']!r}")
     tree = result.stdout.split("\n", 1)[0]
-    message = f"Merge pull request #{number} from {OWNER}/{pull['head']}\n\n{pull['title']}\n"
+    message = f"Merge pull request #{number} from {pull['head']}\n\n{pull['title']}\n"
     commit = gitcmd.output(github, "commit-tree", tree, "-p", base, "-p", head, author=merger, when=when, stdin=message).strip()
     gitcmd.output(github, "update-ref", f"refs/heads/{pull['base']}", commit, base)
     return _replaced(pulls, {**pull, "state": "merged", "merge_commit": commit})
@@ -220,7 +218,7 @@ def _view(github: Path, pull: PullRequest) -> PullView:
     files = [line for line in gitcmd.run(github, "diff", "--name-only", f"{base}...{head}").stdout.split("\n") if line]
     mergeable, conflicts = (True, []) if merged else mergeability(github, pull["base"], head)
     reviews: list[ReviewView] = [
-        {"reviewer": entry["reviewer"], "verdict": entry["verdict"], "body": entry["body"], "commit": entry["commit"], "outdated": entry["commit"] != head}
+        {"reviewer": entry["reviewer"], "verdict": entry["verdict"], "body": entry["body"], "commit": entry["commit"], "stale": entry["commit"] != head}
         for entry in pull["reviews"]
     ]
     return {

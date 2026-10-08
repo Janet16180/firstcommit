@@ -87,7 +87,7 @@ def test_merging_makes_a_commit_with_two_parents_on_the_base_and_records_it(tmp_
     tip = shell(github, "git rev-parse main").strip()
     assert (merged["state"], merged["merge_commit"]) == ("merged", tip)
     assert shell(github, "git log -1 --format=%P main").split() == [main, fix]
-    assert shell(github, "git log -1 --format=%s main").strip() == "Merge pull request #1 from moonbase/fix"
+    assert shell(github, "git log -1 --format=%s main").strip() == "Merge pull request #1 from fix"
     assert shell(github, "git show main:a.txt") == "base\nfix\n"
 
 
@@ -111,17 +111,17 @@ def test_only_an_open_pull_request_can_be_reviewed_or_merged(tmp_path: Path) -> 
         pulls.review(merged, 7, reviewer="Robin", verdict="approved", body="", commit="")
 
 
-def test_a_review_is_kept_with_the_commit_it_saw_and_turns_outdated_when_the_branch_moves(tmp_path: Path) -> None:
+def test_a_review_is_kept_with_the_commit_it_saw_and_turns_stale_when_the_branch_moves(tmp_path: Path) -> None:
     github = hub(tmp_path, FIX)
     seen = shell(github, "git rev-parse fix").strip()
     reviewed = pulls.review(opened(github), 1, reviewer="Robin", verdict="changes-requested", body="Name the file.", commit=seen)
     assert reviewed[0]["reviews"] == [{"reviewer": "Robin", "verdict": "changes-requested", "body": "Name the file.", "commit": seen}]
     [view] = pulls.board(github, reviewed)
-    assert view["reviews"][0]["outdated"] is False
+    assert view["reviews"][0]["stale"] is False
     shell(tmp_path / "clone", "git switch -q fix && echo more >> a.txt && git commit -q -am more && git push -q origin fix 2>/dev/null")
     pulls.mirror(github, reviewed)
     [view] = pulls.board(github, reviewed)
-    assert view["reviews"][0]["outdated"] is True
+    assert view["reviews"][0]["stale"] is True
     assert shell(github, "git rev-parse refs/pull/1/head") == shell(github, "git rev-parse fix")
 
 

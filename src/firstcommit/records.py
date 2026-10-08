@@ -180,7 +180,7 @@ class Review(TypedDict):
     A review of a pull request, a game record that git never sees, as on GitHub.
 
     ``commit`` is the pull request's head commit the reviewer saw; once the branch moves past it,
-    the review is outdated.
+    the review is stale.
     """
 
     reviewer: str
@@ -208,9 +208,15 @@ class PullRequest(TypedDict):
 
 
 class ReviewView(Review):
-    """A review as the board shows it: ``outdated`` once the pull request's head has moved past the commit it saw."""
+    """
+    A review as the board shows it: ``stale`` once the pull request's head has moved past the commit it saw.
 
-    outdated: bool
+    GitHub calls such an approval stale, and a branch protection rule may dismiss it. "Outdated"
+    is GitHub's word for a line comment whose line a later commit changed, which reviews here do
+    not have yet.
+    """
+
+    stale: bool
 
 
 class PullView(TypedDict):
