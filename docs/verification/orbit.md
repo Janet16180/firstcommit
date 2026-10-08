@@ -909,3 +909,16 @@ deleted side, an add/add with no base) and `tests/levels/test_conflict_collision
 | debrief, `PUSHED` | the revert pushes like any commit, and the teammate's pull brings it | E110 |
 | `RESET_SHARED` (with the `force-break` moment), debrief | after a reset of a pushed `main`, only a forced push makes the mothership forget the commits; `git pull` brings them back | E110 (the plain push is refused); E64; the level's test (a pull, then the revert, solves it) |
 | `REWRITTEN` (lost) | a forced push drops the commits Alex pulled from the mothership | the level's test |
+
+## 7-3 Wrong course (added 2026-10-08)
+
+| Tag | What ran | Result |
+|---|---|---|
+| E111 | on the host (git 2.43.0): a clone with `base` pushed, then two unpushed commits; `git reset --hard origin/main`, `ls`, `git log --oneline --all`; then `git branch rescue HEAD@{1}` and `git log --oneline rescue` | the reset moves `main` to `base` and removes `s` from the folder; `--all` no longer lists the two commits (no ref holds them); `HEAD@{1}` names the old tip, and `rescue` there lists both again |
+
+| Claim | Says | Evidence |
+|---|---|---|
+| card, debrief, prediction reveal, `RESET`, `MOVED_BACK` | `reset --hard` moves the branch and makes the staging area and folder match; it deletes no commit | E111; git-reset(1) `--hard` |
+| debrief, `GHOSTS` | with no label, the reflog still reaches the commits; `git branch rescue HEAD@{1}` brings them back | E111; git-reflog(1); `repomap.ghosts` (*re-checked* by `tests/test_repomap.py` and `tests/levels/test_undo_wrong.py`) |
+| debrief | `--soft` and `--mixed` keep the changes staged or in the working folder | git-reset(1) `--soft`, `--mixed` |
+| debrief | they would still exist "for a while" | git-gc(1) `gc.reflogExpireUnreachable` (30 days by default) |
