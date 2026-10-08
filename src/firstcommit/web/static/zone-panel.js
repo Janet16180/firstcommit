@@ -149,7 +149,7 @@ const ZonePanel = (function () {
      outside; elsewhere the group adds nothing to the row. */
   const soloRow = (shells) => el("div", { class: "viz-row" },
     shells.workshop.element, flow(FLOWS[0]),
-    el("div", { class: "viz-kept" }, el("p", { class: "viz-kept-name" }, t("zones.kept")), shells.dock.element, flow(FLOWS[1]), shells.vault.element, flow(FLOWS[2]), shells.remote.element));
+    el("div", { class: "viz-kept art-blackbox" }, el("p", { class: "viz-kept-name" }, t("zones.kept")), shells.dock.element, flow(FLOWS[1]), shells.vault.element, flow(FLOWS[2]), shells.remote.element));
 
   /* One person's station: their workshop, dock and vault, with the arrows between them. A
      mirrored station (Alex's, on the far side) runs the other way, so its vault faces the
