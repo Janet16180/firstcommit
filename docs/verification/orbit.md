@@ -610,3 +610,16 @@ another folder, and a plain repository named `project`.
 | hint 3, `LISTED`, debrief | `git branch -a` lists your branches and the remote's, as `remotes/origin/main` | E69; git-branch(1) DESCRIPTION ("option -a shows both local and remote branches") |
 | debrief | `origin/main` is the record of the remote's `main` as last heard | git-clone(1) ("remote-tracking branches"); gitglossary(7) remote-tracking branch; E53 |
 | `NOT_CLONED_YET`, `OUTSIDE_THE_CLONE` | a git command in the lab's folder fails, before the clone and after it, until `cd project` | the level's tests (status 128 both times); E82 |
+
+### Level `branch-course` (A second course, 5-2)
+
+*Re-checked* by `tests/levels/test_branch_course.py`: the branch copies no file and points at
+`main`'s commit, `switch -c` passes two goals at once, the probe leaves the folder on `main` and
+comes back on `scout`, the probe committed on `main` (lost), and an `ls` before the switch back.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, prediction reveal, `MADE` | `git branch <name>` makes a label on the current commit, copies no file, and does not switch | E71; git-branch(1) ("creates a new branch head named <branchname> which points to the current HEAD") |
+| `ON`, scene, debrief | after `git switch`, new commits move that branch only | E73; git-switch(1) ("All new commits will be added to the tip of this branch") |
+| `BACK_ON_MAIN`, `LOOKED`, debrief | switching rewrites the working folder to the branch's last commit; the probe comes back on `scout` | E73; git-switch(1) ("The working tree and the index are updated to match the branch") |
+| `PROBE_ON_MAIN` (lost) | moving a commit off `main` is not taught before the undo chapter | the plan, 7-3 |
