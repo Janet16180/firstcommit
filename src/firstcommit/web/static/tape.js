@@ -28,7 +28,7 @@ const Tape = (function () {
   function create() {
     const track = el("div", { class: "tape-track", role: "listbox", "aria-label": t("tape.label") });
     const readout = el("div", { class: "tape-read", "aria-live": "polite" });
-    const element = el("section", { class: "tape", "aria-label": t("tape.label") }, track, readout);
+    const element = el("section", { class: "tape art-tape", "aria-label": t("tape.label") }, track, readout);
     let moves = [];
     let ghosts = new Set();
     /* The chosen move, counted from the oldest, or null to follow the newest. */

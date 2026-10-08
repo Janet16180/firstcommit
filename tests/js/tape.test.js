@@ -24,6 +24,7 @@ const chosen = (tape) => ticks(tape).find((tick) => tick.getAttribute("aria-sele
 test("the tape runs oldest to newest, each tick named by the kind of move and the capsule it landed on", () => {
   const tape = Tape.create();
   tape.update(reflog(), []);
+  assert.ok(tape.element.classList.contains("art-tape"));
   assert.deepEqual(ticks(tape).map((tick) => tick.dataset.kind), ["commit", "commit", "switch", "reset"]);
   assert.deepEqual(ticks(tape).map((tick) => tick.querySelector(".tape-hash").textContent), ["2222222", "3333333", "3333333", "2222222"]);
   assert.deepEqual(ticks(tape).map((tick) => tick.querySelector(".tape-kind").textContent), ["commit", "commit", "switch", "reset"]);
