@@ -951,3 +951,19 @@ result matches the host's, line for line:
 | E110 | `Revert "strobe"` on top of `route`, lights steady, `route.txt` kept; push 0; the other clone pulls steady lights; after the reset the plain push exits 1 |
 | E111 | the reset leaves only `a` in the folder and `--all` lists only `base`; `rescue` at `HEAD@{1}` lists `d2 d1 base` |
 | E112 | "Deleted branch thrusters"; `HEAD@{0}` the checkout to `main`, `HEAD@{1}` `d2`; the label lists `d2 d1`; the push exits 0 and the hub's `thrusters` is `d2` |
+
+## Wave 3 groundwork: pull requests on the stand-in GitHub (added 2026-10-08)
+
+No level uses it yet; the levels of sector 8 will cite these when they are written.
+
+| Tag | What ran | Result |
+|---|---|---|
+| E113 | on the host (git 2.43.0), in a bare hub: `main` with `a.txt` and `d.txt`; `fix` adds a line to `a.txt`; `main` then changes `d.txt`; `git merge-tree --write-tree --name-only main fix`; a `clash` branch adds another line to `a.txt`; `git merge-tree --write-tree --name-only fix clash`, also with `--no-messages` | the clean merge exits 0 and prints only the tree; the clash exits 1 and prints the tree, then `a.txt`, then (without `--no-messages`) a blank line and "CONFLICT (content): Merge conflict in a" |
+
+`firstcommit.pulls` reads mergeability and conflicted paths from that output, makes the merge with
+`commit-tree <tree> -p <base> -p <head>` and moves the base with `update-ref` given the old value,
+so a base that moved meanwhile is not overwritten. *Re-checked* by `tests/test_pulls.py`.
+
+Before a player reads them, the board's GitHub claims need docs.github.com: the merge commit's
+message ("Merge pull request #<n> from <owner>/<branch>", then the title), `refs/pull/<n>/head`, and
+what an outdated review is.

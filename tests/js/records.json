@@ -1994,5 +1994,58 @@
   "explanation": null,
   "fix": null,
   "fix_line": ""
- }
+ },
+ "board": [
+  {
+   "number": 1,
+   "title": "Fix the hall lights",
+   "author": "Alex",
+   "head": "fix-lights",
+   "base": "main",
+   "state": "open",
+   "head_commit": "c3d4e5f60000000000000000000000000000c3d4",
+   "commits": [
+    {
+     "hash": "c3d4e5f60000000000000000000000000000c3d4",
+     "short": "c3d4e5f",
+     "parents": [
+      "a0c26f80000000000000000000000000000000bb"
+     ],
+     "subject": "Fix the hall lights",
+     "author": "Alex",
+     "time": 1788253200
+    }
+   ],
+   "files": [
+    "lights.cfg"
+   ],
+   "mergeable": true,
+   "conflicts": [],
+   "reviews": [
+    {
+     "reviewer": "Robin",
+     "verdict": "changes-requested",
+     "body": "Turn the deck lights on too.",
+     "commit": "b1b2b3b40000000000000000000000000000b1b2",
+     "outdated": true
+    }
+   ]
+  },
+  {
+   "number": 2,
+   "title": "Survey the crater",
+   "author": "you",
+   "head": "scout",
+   "base": "main",
+   "state": "merged",
+   "head_commit": "d1d2d3d40000000000000000000000000000d1d2",
+   "commits": [],
+   "files": [
+    "survey.txt"
+   ],
+   "mergeable": true,
+   "conflicts": [],
+   "reviews": []
+  }
+ ]
 }

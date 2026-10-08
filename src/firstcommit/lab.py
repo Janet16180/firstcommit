@@ -34,6 +34,11 @@ class Lab:
         return self.root / "github.com" / "moonbase" / "project.git"
 
     @property
+    def pulls(self) -> Path:
+        """The stand-in GitHub's pull requests: a game record beside the bare repository, which git never sees."""
+        return self.github.parent / "pulls.json"
+
+    @property
     def teammate(self) -> Path:
         """A teammate's working folder: their own clone of the stand-in GitHub."""
         return self.root / "teammate" / "project"

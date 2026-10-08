@@ -127,6 +127,11 @@ uv run firstcommit --help
   playground's two clones). Otherwise git prints the player's absolute folders in push and pull
   output and writes them into merge commits. `git remote -v` then shows `../github.com/moonbase/project.git`:
   the game's GitHub is a folder next to the player's, and the remote chapter says so.
+- Pull requests and reviews exist only on GitHub, so the game keeps them as records beside the
+  bare repository (`lab.pulls`, read and written with `save.load_pulls` and `save.write_pulls`),
+  and `firstcommit.pulls` opens, reviews and merges them with real git on `lab.github`
+  (`merge-tree`, `commit-tree`, `update-ref`), mirroring `refs/pull/<n>/head`. Never fake a
+  merge by editing files, and never fake the `gh` tool.
 - A level with two people on one remote builds them with `kit.setup_playground(lab)` and
   prepares a state with `kit.press(lab, person, button)`, the same real commands the page's
   buttons run.

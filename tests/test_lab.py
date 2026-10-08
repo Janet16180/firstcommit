@@ -27,3 +27,8 @@ def test_a_folder_outside_the_lab_has_no_url_for_its_github(tmp_path: Path) -> N
     lab = Lab(tmp_path / "lab")
     with pytest.raises(ValueError, match="outside the lab"):
         lab.github_url(tmp_path / "elsewhere")
+
+
+def test_a_lab_keeps_the_pull_requests_beside_the_stand_in_github_not_inside_it(tmp_path: Path) -> None:
+    lab = Lab(tmp_path)
+    assert lab.pulls == lab.github.parent / "pulls.json"
