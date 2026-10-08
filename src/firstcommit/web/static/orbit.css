@@ -744,6 +744,39 @@ pre.code code {
   grid-template-columns: minmax(0, 1fr);
 }
 
+/* In a crew level Alex's station leaves the stage for the band above it. */
+.sky[data-view="history"] .station.is-mirror,
+.sky[data-view="history"] .flow.is-mirror {
+  display: none;
+}
+
+.sky[data-view="history"] .viz-crew {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas: "you sky";
+}
+
+/* The crew band: Alex's station folded thinner than yours, named for them. */
+.strip.is-band {
+  grid-template-columns: auto repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 6px;
+}
+
+.strip.is-band .strip-card {
+  padding: 2px 6px;
+  border-width: 2px;
+  opacity: 0.85;
+}
+
+.strip-who {
+  font: 700 0.8rem var(--f-ui);
+  color: var(--ink-soft);
+}
+
+.sky > .strip.is-band {
+  padding: 8px 12px 0;
+}
+
 .viz {
   grid-area: viz;
   padding: 12px 12px 10px;
@@ -1798,6 +1831,11 @@ pre.code code {
   .viz-crew {
     grid-template-columns: minmax(0, 1fr) minmax(0, 0.6fr);
     grid-template-areas: "sky sky" "you alex";
+  }
+
+  .sky[data-view="history"] .viz-crew {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "sky" "you";
   }
 
   .crew-sky {

@@ -7,7 +7,8 @@
  * and, once the mission is solved, the completion band and the dock at the bottom. The views are
  * the view ladder's (docs/drafts/chapters-5-9.md): your station (or the crew view, in a level with
  * a teammate) shows the four zones; history folds your station into the strip and leaves the
- * vault and the mothership on the stage. A level opens on its main view; a view not born yet is
+ * vault and the mothership on the stage, and in a crew level flattens Alex's station into the
+ * band along the top. A level opens on its main view; a view not born yet is
  * born first (births.js), once the stage has something to show it with, and then marked born.
  * The tab row holds the views born so far.
  * Opening a mission that is not in progress starts it, and a level's scene plays the first time
@@ -90,7 +91,9 @@ const LevelScreen = (function () {
     const { ui } = screen;
     screen.view = view;
     ui.sky.dataset.view = view;
-    ui.strip.element.hidden = view === "station" || view === "crew";
+    const folded = view !== "station" && view !== "crew";
+    ui.strip.element.hidden = !folded;
+    ui.band.element.hidden = !folded || !screen.crew;
     ui.tabs.select(view);
     measureTerminal(screen);
   }
@@ -152,11 +155,12 @@ const LevelScreen = (function () {
     ui.zones = ZonePanel.create({ reducedMotion: screen.ctx.reducedMotion, timers: screen.ctx.timers });
     ui.moments = MomentLayer.create({ reducedMotion: screen.ctx.reducedMotion, timers: screen.ctx.timers });
     ui.strip = Strip.create({ onExpand: () => show(screen, home(screen)) });
+    ui.band = Strip.create({ onExpand: () => show(screen, "crew"), who: "alex" });
     ui.tabs = ViewTabs.create({ tabs: [], current: "station", onPick: () => {} });
     ui.comms = Comms.create();
     ui.mission = el("aside", { class: "mission px", "aria-label": t("mission.label") }, el("p", {}, t("level.loading")));
     ui.termcol = el("div", { class: "termcol" }, ui.comms.element);
-    ui.sky = el("div", { class: "sky" }, ui.strip.element, ui.zones.element, ui.moments.element);
+    ui.sky = el("div", { class: "sky" }, ui.band.element, ui.strip.element, ui.zones.element, ui.moments.element);
     ui.stage = el("main", { class: "stage" }, el("div", { class: "views" }, ui.tabs.element, ui.sky), ui.mission, ui.termcol);
     screen.element.replaceChildren(hud(screen), ui.stage);
     show(screen, "station");
@@ -370,6 +374,7 @@ const LevelScreen = (function () {
       screen.ui.zones.update(observation);
       const reading = Zones.read(observation);
       screen.ui.strip.update(reading);
+      if (reading.crew) screen.ui.band.update(reading.crew);
       crewed(screen, observation);
       bear(screen, reading);
       measureTerminal(screen);

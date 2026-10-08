@@ -128,3 +128,11 @@ test("history folds your station's workshop and dock away, and gives the vault a
   assert.match(rule('.sky[data-view="history"] .viz-row'), /grid-template-columns: minmax\(0, 1fr\) 42px minmax\(0, 1fr\);/);
   assert.match(rule('.sky[data-view="history"] .station .station-row'), /grid-template-columns: minmax\(0, 1fr\);/);
 });
+
+test("in a crew level history takes Alex's mirror off the stage, leaving your vault and the mothership, and the band runs thin above", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.match(css, /\n\.sky\[data-view="history"\] \.station\.is-mirror,\n\.sky\[data-view="history"\] \.flow\.is-mirror \{\s*display: none;/);
+  assert.match(rule('.sky[data-view="history"] .viz-crew'), /grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\);/);
+  assert.match(rule(".strip.is-band"), /grid-template-columns: auto repeat\(3, minmax\(0, 1fr\)\);/);
+  assert.match(rule(".strip.is-band .strip-card"), /padding: 2px 6px;/);
+});

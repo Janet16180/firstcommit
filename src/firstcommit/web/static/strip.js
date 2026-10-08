@@ -6,11 +6,13 @@
  * or three capsules, then "+N"; an edited or new file is tagged "on no branch" (uncommitted
  * work belongs to no branch yet); every card badges its count. It hides on purpose what the
  * stage shows: hashes, branch names, file contents and older capsules. A tapped card asks to be
- * expanded back into its zone. It reads a station as zones.js reads it. Needs dom.js and
- * strings.js. Defines one global, Strip.
+ * expanded back into its zone. Alex's strip is the crew band (V3 band), a thin row named for
+ * them, with their station's three cards. It reads a station as zones.js reads it. Needs dom.js
+ * and strings.js. Defines one global, Strip.
  *
- * create({onExpand}) {element, update(reading)}: the strip, redrawn from a Zones.read reading;
- *                    onExpand(zone) is called with the tapped card's zone.
+ * create({onExpand, who}) {element, update(reading)}: the strip of `who` ("you", the default, or
+ *                    "alex"), redrawn from a Zones.read reading (Alex's: its `crew`); onExpand(zone)
+ *                    is called with the tapped card's zone.
  */
 
 /* global Dom, Strings */
@@ -38,13 +40,15 @@ const Strip = (function () {
       el("span", { class: "strip-items" }, off ? [] : fold(items, draw)));
   }
 
-  function create({ onExpand }) {
-    const element = el("div", { class: "strip", role: "group", "aria-label": t("strip.label") });
+  function create({ onExpand, who = "you" }) {
+    const band = who === "alex";
+    const element = el("div", { class: band ? "strip is-band" : "strip", role: "group", "aria-label": t(band ? "strip.crewLabel" : "strip.label") });
     return {
       element,
 
       update(reading) {
         const cards = [
+          band && el("span", { class: "strip-who" }, t("zones.station.alex")),
           card("workshop", reading.workshop, fileChip, onExpand),
           card("dock", reading.dock, fileChip, onExpand),
           card("vault", reading.vault, capsuleBlock, onExpand),

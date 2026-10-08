@@ -68,3 +68,15 @@ test("the cards speak the page's language", () => {
     Strings.use("en");
   }
 });
+
+test("Alex's strip is a band named for Alex, with their station's three cards and no mothership", () => {
+  const band = Strip.create({ onExpand: () => {}, who: "alex" });
+  band.update({ repository: true, workshop: [file("engine.cfg")], dock: [], vault: [capsule("a1", "Alex")] });
+  assert.ok(band.element.classList.contains("is-band"));
+  assert.equal(band.element.getAttribute("aria-label"), "Alex's station, folded");
+  assert.equal(band.element.querySelector(".strip-who").textContent, "Alex's base");
+  assert.deepEqual([...band.element.querySelectorAll(".strip-card")].map((node) => node.dataset.zone), ["workshop", "dock", "vault"]);
+  const yours = Strip.create({ onExpand: () => {} });
+  assert.ok(!yours.element.classList.contains("is-band"));
+  assert.equal(yours.element.querySelector(".strip-who"), null);
+});

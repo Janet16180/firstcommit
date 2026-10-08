@@ -663,6 +663,7 @@ function viewing(view, seen, replies = {}) {
 
 const tabs = (run) => run.all(".view-tab").map((tab) => tab.dataset.view);
 const shown = (run) => run.q(".sky").dataset.view;
+const yours = (run) => run.all(".strip").find((strip) => !strip.classList.contains("is-band"));
 const chosen = (run) => run.all(".view-tab").find((tab) => tab.getAttribute("aria-selected") === "true").dataset.view;
 
 test("a level that opens on history folds your station into the strip, with a tab back to it", async () => {
@@ -671,8 +672,8 @@ test("a level that opens on history folds your station into the strip, with a ta
   assert.equal(shown(run), "history");
   assert.deepEqual(tabs(run), ["station", "history"]);
   assert.equal(chosen(run), "history");
-  assert.equal(run.q(".strip").hidden, false);
-  assert.deepEqual(run.all(".strip-card").map((card) => card.dataset.zone), ["workshop", "dock", "vault", "remote"]);
+  assert.equal(yours(run).hidden, false);
+  assert.deepEqual([...yours(run).querySelectorAll(".strip-card")].map((card) => card.dataset.zone), ["workshop", "dock", "vault", "remote"]);
   run.view.dispose();
 });
 
@@ -681,10 +682,10 @@ test("the station's tab unfolds the strip back into the zones, and the history t
   await settle();
   run.q('.view-tab[data-view="station"]').click();
   assert.equal(shown(run), "station");
-  assert.equal(run.q(".strip").hidden, true);
+  assert.equal(yours(run).hidden, true);
   run.q('.view-tab[data-view="history"]').click();
   assert.equal(shown(run), "history");
-  assert.equal(run.q(".strip").hidden, false);
+  assert.equal(yours(run).hidden, false);
   run.view.dispose();
 });
 
@@ -702,7 +703,7 @@ test("a level on your station alone shows no tab row and no strip", async () => 
   await settle();
   assert.equal(shown(run), "station");
   assert.equal(run.q(".view-tabs").hidden, true);
-  assert.equal(run.q(".strip").hidden, true);
+  assert.equal(yours(run).hidden, true);
   run.view.dispose();
 });
 
@@ -772,5 +773,24 @@ test("in a level with a teammate the crew view stands in for your station's tab"
   assert.deepEqual(tabs(run), ["crew", "history"]);
   run.q('.view-tab[data-view="crew"]').click();
   assert.equal(shown(run), "crew");
+  run.view.dispose();
+});
+
+test("in a crew level, history flattens Alex's station into the band along the top; the crew view brings it back", async () => {
+  const run = viewing("history", ["station", "crew", "history"], { "/api/observe": { ...record("press").observation, commands: [], reactions: [] } });
+  await settle();
+  const band = run.q(".strip.is-band");
+  assert.equal(band.hidden, false);
+  assert.deepEqual([...band.querySelectorAll(".strip-card")].map((card) => card.dataset.zone), ["workshop", "dock", "vault"]);
+  assert.equal(band.querySelector('.strip-card[data-zone="workshop"] .strip-count').textContent, "2");
+  run.q('.view-tab[data-view="crew"]').click();
+  assert.equal(band.hidden, true);
+  run.view.dispose();
+});
+
+test("without a teammate there is no band", async () => {
+  const run = viewing("history", ["station", "history"]);
+  await settle();
+  assert.equal(run.q(".strip.is-band").hidden, true);
   run.view.dispose();
 });
