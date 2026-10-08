@@ -167,3 +167,11 @@ test("an update with nothing new leaves the drawing alone, so a running walk is 
   chain.update(view(forked()));
   assert.notEqual(chain.element.querySelector(".chain-rows"), first);
 });
+
+test("main holds the first column even when HEAD rides a side line, and a bookmark that forked away gets its own", () => {
+  const onScout = drawn({ ...forked(), branch: "scout", head: hash("d") });
+  assert.equal(rowOf(onScout, "d").querySelector(".chain-cap").style.getPropertyValue("--column"), "1");
+  assert.equal(rowOf(onScout, "c").querySelector(".chain-cap").style.getPropertyValue("--column"), "0");
+  const diverged = snapshot({ commits: [commit("y", ["b"], 5), ...forked().commits], refs: [ref("main", "c"), ref("origin/main", "y", "remote")] });
+  assert.equal(rowOf(drawn(diverged), "y").querySelector(".chain-cap").style.getPropertyValue("--column"), "1");
+});

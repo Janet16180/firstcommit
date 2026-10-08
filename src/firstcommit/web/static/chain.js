@@ -19,7 +19,8 @@
  *   maps a child's hash to the look of its lines ("ghost", "mothership"); `walk` lists hashes
  *   whose links light up in turn ("walk", with the link's step).
  * create() {element, update(view)}: view = {project, github, teammate, ghosts, show: {mothership,
- *   alex, ghosts}, look: [subject | "HEAD"], walk, placed, legend}. `walk` lights git log's path
+ *   alex, ghosts}, look: [subject | "HEAD"], walk, placed, legend}. main's line (else origin/main's,
+ *   else HEAD's) holds the first column. `walk` lights git log's path
  *   from HEAD; `placed` names get a tick (the captain's chart); `legend: false` leaves the key
  *   out. An update that brings nothing new keeps the drawing, so its motions are not started over.
  */
@@ -173,8 +174,9 @@ const Chain = (function () {
       const commits = [...project.commits, ...motherOnly, ...lost];
       const byHash = new Map(commits.map((commit) => [commit.hash, commit]));
       const styles = new Map([...motherOnly.map((commit) => [commit.hash, "mothership"]), ...lost.map((commit) => [commit.hash, "ghost"])]);
-      const trunk = [...project.refs.filter((ref) => ref.name === "main" || ref.name === "origin/main").map((ref) => ref.target), project.head];
-      const { rows, columns } = layout(commits, trunk.filter(Boolean));
+      const tip = (name) => (project.refs.find((ref) => ref.name === name) || {}).target;
+      const trunk = tip("main") || tip("origin/main") || project.head;
+      const { rows, columns } = layout(commits, trunk ? [trunk] : []);
       const pieces = wires(rows, styles, walk ? walkFrom(project, byHash) : []);
       const looked = new Set(look);
       element.setAttribute("aria-label", t("chain.label"));
