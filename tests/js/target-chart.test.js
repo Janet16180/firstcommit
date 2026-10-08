@@ -62,3 +62,15 @@ test("HEAD is in place only on the chart's name and that name's commit: switch -
   chart.update(project([ref("main", "d"), ref("release", "d"), ref("lights-v2", "d")], "lights-v2"), target);
   assert.deepEqual(checks(chart)[1], ["HEAD in place", false]);
 });
+
+test("the chart lists side lines in the same order as your chain, so the two read side by side", () => {
+  const forks = {
+    commits: [{ id: "quiet", parents: ["fix"], subject: "Try a quiet engine" }, { id: "bright", parents: ["fix"], subject: "Try bright lights" }, { id: "fix", parents: [], subject: "Fix the route" }],
+    names: { main: "fix" },
+    head: "main",
+  };
+  const mine = { exists: true, bare: false, head: hash("f"), branch: "main", commits: [commit("b", ["f"], "Try bright lights", 10), commit("q", ["f"], "Try a quiet engine", 5), commit("f", [], "Fix the route", 1)], refs: [ref("main", "f")], remotes: [], files: [] };
+  const chart = TargetChart.create();
+  chart.update(mine, forks);
+  assert.deepEqual([...chart.element.querySelectorAll(".chain-subject")].map((each) => each.textContent), ["Try bright lights", "Try a quiet engine", "Fix the route"]);
+});

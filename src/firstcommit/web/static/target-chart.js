@@ -20,9 +20,11 @@ const TargetChart = (function () {
   const { el } = Dom;
   const { t } = Strings;
 
-  /* The chart as a snapshot of its own: the goal tree's commits, by their labels, and its names. */
-  function charted(target) {
-    const commits = target.commits.map((commit, at) => ({ hash: commit.id, short: "", parents: commit.parents, subject: commit.subject, author: "", time: target.commits.length - at }));
+  /* The chart as a snapshot of its own: the goal tree's commits, by their labels, and its names.
+     A commit you have takes your commit's time, so the chart orders its lines as your chain does. */
+  function charted(target, project) {
+    const timeOf = (subject, at) => (project.commits.find((commit) => commit.subject === subject) || { time: target.commits.length - at }).time;
+    const commits = target.commits.map((commit, at) => ({ hash: commit.id, short: "", parents: commit.parents, subject: commit.subject, author: "", time: timeOf(commit.subject, at) }));
     const refs = Object.entries(target.names).map(([name, id]) => ({ name, kind: name.includes("/") ? "remote" : "branch", target: id }));
     return { exists: true, bare: false, head: target.names[target.head], branch: target.head, commits, refs, remotes: [], files: [] };
   }
@@ -39,7 +41,7 @@ const TargetChart = (function () {
       const placed = wanted.filter(([name, id]) => project.refs.some((ref) => ref.name === name && subjectOf(project.commits, ref.target, "hash") === subjectOf(target.commits, id, "id"))).map(([name]) => name);
       const extra = project.refs.filter((ref) => ref.kind === "branch" && !(ref.name in target.names)).length;
       title.textContent = t("target.title");
-      chain.update({ project: charted(target), github: null, teammate: null, ghosts: [], show: { mothership: false, alex: false, ghosts: false }, look: [], walk: false, placed, legend: false });
+      chain.update({ project: charted(target, project), github: null, teammate: null, ghosts: [], show: { mothership: false, alex: false, ghosts: false }, look: [], walk: false, placed, legend: false });
       const check = (ok, text) => el("li", { class: ok ? "target-check is-ok" : "target-check" }, text);
       counts.replaceChildren(
         check(placed.length === wanted.length, t("target.names", { count: placed.length, total: wanted.length })),
