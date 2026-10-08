@@ -4,12 +4,13 @@
  * The field guide cards' small pictures, in the look of the game's teaching pictures
  * (docs/drafts/teaching-pictures.md): the desk (Git's places with the files in them) and the
  * chain (commits newest first, each joined to its parents, with name tags and HEAD). The chain
- * copies chain.js's look (p2/orbit-frontend: its column step, square capsules, wires, tags, HEAD
- * mark and pins), not its code, since chain.js is not on this branch yet; once it is, this
- * module should draw with it, so the game keeps one chain renderer.
+ * is drawn with chain.js's layout, wires and lanes, in its classes, so the game has one chain
+ * renderer; only the rows' words are the cards' own (a lit name, a name taken off, a merge
+ * commit's mark, your bookmark and the mothership as one name).
  * Every word comes from `words` (GuideText.pictures localized, plus `places`, each place's
  * label); a file's state is written beside it and each commit row says whose it is to a screen
- * reader, so colour is never the only clue. Needs dom.js; guide.css styles it. Defines one
+ * reader, so colour is never the only clue. Needs dom.js and chain.js (with strings.js and
+ * places.js); orbit.css and guide.css style it. Defines one
  * global, GuidePictures.
  *
  * draw(model, words) {element}: model is a desk or a chain as GuideText describes them;
@@ -17,19 +18,12 @@
  *   place, commit (with its lines to its parents) or name, and a name taken off (`gone`).
  */
 
-/* global Dom */
+/* global Dom, Chain */
 /* exported GuidePictures */
 
 const GuidePictures = (function () {
-  const { el, svg } = Dom;
+  const { el } = Dom;
   const PLACES = ["folder", "staging", "vault", "remote"];
-  /* The lane's geometry in px, one row per commit: the first column's centre, the step between
-     columns, a row's height (guide.css's --gp-row) and a capsule's size. */
-  const X0 = 10;
-  const COLUMN = 22;
-  const ROW = 36;
-  const CAPSULE = { width: 16, height: 16 };
-
   const fresh = (item, base) => (item.fresh ? `${base} gp-fresh` : base);
 
   function chip(item, words) {
@@ -53,68 +47,63 @@ const GuidePictures = (function () {
     return el("div", { class: "gp gp-desk" }, PLACES.filter((key) => key in model).map((key) => place(key, model[key], (model.fresh || []).includes(key), words)));
   }
 
-  const centre = (row, col) => ({ x: X0 + col * COLUMN, y: ROW / 2 + row * ROW });
+  /* Each commit's lines are styled by the commit: lit when the command made it, faded for a
+     ghost, pink dotted for the mothership's alone. */
+  const lineStyle = (commit) => (commit.fresh ? "fresh" : commit.ghost ? "ghost" : commit.who === "mothership" ? "mothership" : null);
+  const rowKind = (commit) => (commit.ghost ? "is-ghost" : commit.who === "mothership" ? "is-mothership-only" : null);
 
-  function lane(commits) {
-    const rowOf = new Map(commits.map((commit, row) => [commit.id, row]));
-    const columns = Math.max(...commits.map((commit) => commit.col)) + 1;
-    const width = 2 * X0 + (columns - 1) * COLUMN;
-    const height = commits.length * ROW;
-    /* Down its own column, turning into the parent's in the parent's last half row, as git
-       --graph draws a side line joining back. */
-    const links = commits.flatMap((commit, row) => commit.parents.map((parent) => {
-      const from = centre(row, commit.col);
-      const to = centre(rowOf.get(parent), commits[rowOf.get(parent)].col);
-      const look = commit.fresh ? "fresh" : commit.ghost ? "ghost" : commit.who === "mothership" ? "mothership" : "line";
-      return svg("path", { class: `gp-link gp-link--${look}`, d: `M${from.x} ${from.y} L${from.x} ${to.y - ROW / 2} L${to.x} ${to.y}` });
-    }));
-    const capsules = commits.map((commit, row) => {
-      const { x, y } = centre(row, commit.col);
-      const look = commit.ghost ? "ghost" : commit.who || "you";
-      return svg("rect", { class: fresh(commit, `gp-capsule gp-capsule--${look}`), x: x - CAPSULE.width / 2, y: y - CAPSULE.height / 2, width: CAPSULE.width, height: CAPSULE.height });
-    });
-    return svg("svg", { class: "gp-lane", viewBox: `0 0 ${width} ${height}`, width, height, "aria-hidden": "true" }, links, capsules);
-  }
-
-  function tag(name, head) {
-    const kind = head ? "head" : name.kind;
-    return el("span", { class: fresh(name, `gp-tag gp-tag--${kind}`) }, name.name);
-  }
+  const headMark = (words) => el("span", { class: "chain-head", title: words.head }, "HEAD \u25B6");
+  const TAG = { branch: "chain-tag", head: "chain-tag is-head", remote: "chain-tag is-bookmark" };
+  const tag = (name, kind, text = name.name) => el("span", { class: fresh(name, TAG[kind]) }, text);
 
   /* A name the command took off: struck through and lit, with the words that say so. */
   function goneTag(name, words) {
-    return el("span", { class: "gp-gone" }, el("s", { class: "gp-tag gp-tag--gone gp-fresh" }, name.name), el("span", { class: "gp-gone-note" }, words.gone));
+    return el("span", { class: "gp-gone" }, el("s", { class: "chain-tag gp-fresh" }, name.name), el("span", { class: "gp-gone-note" }, words.gone));
   }
 
-  /* The row's names. Where your bookmark and the mothership's pin sit on one commit they are one
-     name, "origin/main (mothership)", lit if either moved. */
+  /* The row's names, in chain.js's look. Where your bookmark and the mothership's pin sit on one
+     commit they are one name, "origin/main (mothership)", lit if either moved; apart, the
+     mothership is a pin. */
   function rowNames(names, head, words) {
     const pin = names.find((name) => name.kind === "mothership");
     const bookmark = names.find((name) => name.kind === "remote");
-    return names.filter((name) => !(pin && bookmark && name === pin)).map((name) => {
+    return names.map((name) => {
       if (name.gone) return goneTag(name, words);
-      if (name.name === head) return el("span", { class: "gp-rides" }, headMark(words), tag(name, true));
-      if (name === bookmark && pin) return tag({ ...name, name: `${name.name} (${words.mothership})`, kind: "remote gp-tag--synced", fresh: name.fresh || pin.fresh }, false);
-      return tag(name, false);
+      if (name.name === head) return [headMark(words), tag(name, "head")];
+      if (name === pin) return bookmark ? null : el("span", { class: fresh(name, "chain-pin is-mothership") }, words.mothership);
+      if (name === bookmark && pin) return el("span", { class: fresh({ fresh: name.fresh || pin.fresh }, "chain-tag is-bookmark gp-synced") }, `${name.name} (${words.mothership})`);
+      return tag(name, name.kind);
     });
   }
 
-  const headMark = (words) => el("span", { class: "gp-head", title: words.head }, "HEAD");
-
-  function commitRow(commit, model, words) {
+  function commitRow({ commit, column }, pieces, columns, model, words) {
     const who = commit.ghost ? words.ghost : commit.who === "mothership" ? words.notYours : words.by[commit.who || "you"];
-    const names = model.names.filter((name) => name.on === commit.id);
-    return el("li", { class: "gp-row" },
-      el("span", { class: "gp-sr" }, who),
-      model.head === commit.id ? headMark(words) : null,
-      rowNames(names, model.head, words),
-      commit.mark ? el("span", { class: "gp-mark" }, words.marks[commit.mark]) : null);
+    const cap = el("span", { class: ["chain-cap", rowKind(commit)].filter(Boolean).join(" ") });
+    cap.style.setProperty("--column", String(column));
+    return el("li", { class: ["chain-row", rowKind(commit), commit.fresh && "is-look"].filter(Boolean).join(" "), "data-hash": commit.id },
+      el("span", { class: "chain-lanes" }, Chain.lane(pieces, columns, 0), cap),
+      el("span", { class: "chain-body" },
+        el("span", { class: "gp-sr" }, who),
+        model.head === commit.id ? headMark(words) : null,
+        rowNames(model.names.filter((name) => name.on === commit.id), model.head, words),
+        commit.mark ? el("span", { class: "gp-mark" }, words.marks[commit.mark]) : null));
   }
 
+  /* The chain as chain.js lays it out and wires it, main's line in the first column (else
+     HEAD's), with the card's own row words. */
   function chain(model, words) {
-    return el("div", { class: "gp gp-chain" },
-      lane(model.commits),
-      el("ol", { class: "gp-rows", role: "list" }, model.commits.map((commit) => commitRow(commit, model, words))));
+    const commits = model.commits.map((commit, at) => ({ ...commit, hash: commit.id, time: model.commits.length - at }));
+    const main = model.names.find((name) => name.kind === "branch" && name.name === "main" && !name.gone);
+    const headBranch = model.names.find((name) => name.kind === "branch" && name.name === model.head);
+    const trunk = main ? main.on : headBranch ? headBranch.on : model.head;
+    const { rows, columns } = Chain.layout(commits, [trunk]);
+    const styles = new Map(commits.filter(lineStyle).map((commit) => [commit.hash, lineStyle(commit)]));
+    const pieces = Chain.wires(rows, styles);
+    const element = el("div", { class: "gp gp-chain chain" },
+      el("ol", { class: "chain-rows", role: "list" }, rows.map((placed, at) => commitRow(placed, pieces[at], columns, model, words))));
+    element.style.setProperty("--columns", String(columns));
+    element.style.setProperty("--column-width", `${Chain.COLUMN}px`);
+    return element;
   }
 
   const KINDS = { desk, chain };

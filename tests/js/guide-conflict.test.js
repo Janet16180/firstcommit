@@ -6,7 +6,7 @@ const { makeEvent } = require("./fakedom");
 const { installBrowser, load } = require("./load");
 
 const document = installBrowser();
-const { GuideConflict, GuideGit, GuideText } = load(["dom.js", "guide-pictures.js", "guide-card.js", "guide-git.js", "guide-text.js", "guide-conflict.js"], ["GuideConflict", "GuideGit", "GuideText"]);
+const { GuideConflict, GuideGit, GuideText } = load(["dom.js", "strings.js", "places.js", "chain.js", "guide-pictures.js", "guide-card.js", "guide-git.js", "guide-text.js", "guide-conflict.js"], ["GuideConflict", "GuideGit", "GuideText"]);
 
 /* GuideText's {en, es} pairs in one language, as the field guide passes them. */
 function localized(value, language) {

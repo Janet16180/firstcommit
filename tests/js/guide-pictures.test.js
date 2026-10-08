@@ -5,7 +5,7 @@ const test = require("node:test");
 const { installBrowser, load } = require("./load");
 
 const document = installBrowser();
-const { GuidePictures } = load(["dom.js", "guide-pictures.js"], ["GuidePictures"]);
+const { GuidePictures, Chain } = load(["dom.js", "strings.js", "places.js", "chain.js", "guide-pictures.js"], ["GuidePictures", "Chain"]);
 
 const words = {
   places: { folder: "Working folder (workshop)", staging: "Staging area (cargo dock)", vault: "Repository (vault)", remote: "Remote (mothership)" },
@@ -51,77 +51,78 @@ test("a file's state is written beside it, so colour is never the only clue, and
 
 const chain = (more = {}) => ({
   kind: "chain",
-  commits: [{ id: "m", col: 0, parents: ["c", "d"], fresh: true, mark: "merge" }, { id: "d", col: 1, parents: ["b"], who: "alex" }, { id: "c", col: 0, parents: ["b"] }, { id: "b", col: 0, parents: [] }],
+  commits: [{ id: "m", parents: ["c", "d"], fresh: true, mark: "merge" }, { id: "d", parents: ["b"], who: "alex" }, { id: "c", parents: ["b"] }, { id: "b", parents: [] }],
   names: [{ name: "main", on: "m", kind: "branch" }, { name: "scout", on: "d", kind: "branch" }, { name: "origin/main", on: "b", kind: "remote" }],
   head: "main",
   ...more,
 });
+const row = (picture, id) => picture.querySelector(`.chain-row[data-hash="${id}"]`);
 
-test("a chain draws one row per commit, newest first, with its names on its row", () => {
+test("a chain is drawn by chain.js's layout and wires, in its look: one row per commit, newest first, with its names", () => {
   const picture = draw(chain());
-  const rows = picture.querySelectorAll(".gp-row");
-  assert.equal(rows.length, 4);
-  assert.deepEqual(texts(rows[0], ".gp-tag"), ["main"]);
-  assert.deepEqual(texts(rows[1], ".gp-tag"), ["scout"]);
-  assert.deepEqual(texts(rows[3], ".gp-tag"), ["origin/main"]);
+  assert.ok(picture.classList.contains("chain"));
+  assert.deepEqual([...picture.querySelectorAll(".chain-row")].map((node) => node.getAttribute("data-hash")), ["m", "c", "d", "b"], "a side line just above the commit it leaves, as chain.js lays it out");
+  assert.equal(picture.querySelectorAll(".chain-cap").length, 4);
+  assert.deepEqual(texts(row(picture, "d"), ".chain-tag"), ["scout"]);
+  assert.deepEqual(texts(row(picture, "b"), ".chain-tag"), ["origin/main"]);
+  assert.equal(picture.style.getPropertyValue("--column-width"), `${Chain.COLUMN}px`);
 });
 
-test("a merge commit draws a line to each of its parents", () => {
+test("HEAD rides its branch: that tag is filled behind the HEAD mark; a bookmark is dashed", () => {
   const picture = draw(chain());
-  assert.equal(picture.querySelectorAll(".gp-link").length, 4);
-  assert.equal(picture.querySelectorAll(".gp-capsule").length, 4);
-});
-
-test("HEAD rides its branch: that tag is filled and marked HEAD; other names keep their kind", () => {
-  const picture = draw(chain());
-  const main = [...picture.querySelectorAll(".gp-tag")].find((node) => node.textContent === "main");
-  assert.ok(main.classList.contains("gp-tag--head"));
-  assert.ok(main.parentNode.querySelector(".gp-head"));
-  const bookmark = [...picture.querySelectorAll(".gp-tag")].find((node) => node.textContent === "origin/main");
-  assert.ok(bookmark.classList.contains("gp-tag--remote"));
-  assert.equal(picture.querySelectorAll(".gp-head").length, 1);
+  const main = row(picture, "m").querySelector(".chain-tag");
+  assert.ok(main.classList.contains("is-head"));
+  const body = [...row(picture, "m").querySelector(".chain-body").children].map((node) => node.className);
+  assert.equal(body.indexOf("chain-head") + 1, body.indexOf(main.className));
+  assert.ok(row(picture, "b").querySelector(".chain-tag").classList.contains("is-bookmark"));
+  assert.equal(picture.querySelectorAll(".chain-head").length, 1);
 });
 
 test("a detached HEAD sits on the commit's own row", () => {
   const picture = draw(chain({ head: "c" }));
-  const rows = picture.querySelectorAll(".gp-row");
-  assert.ok(rows[2].querySelector(".gp-head"));
-  assert.equal(picture.querySelectorAll(".gp-tag--head").length, 0);
+  assert.ok(row(picture, "c").querySelector(".chain-head"));
+  assert.equal(picture.querySelectorAll(".chain-tag.is-head").length, 0);
+});
+
+test("what changed is lit: a new commit's ring and its lines to both parents, and a merge commit says what it is", () => {
+  const picture = draw(chain());
+  assert.ok(row(picture, "m").classList.contains("is-look"));
+  assert.ok(row(picture, "m").querySelectorAll(".chain-wire.is-fresh").length >= 2);
+  assert.equal(row(picture, "m").querySelector(".gp-mark").textContent, "merge commit");
+  assert.ok(!row(picture, "c").classList.contains("is-look"));
 });
 
 test("each row tells a screen reader whose commit it is, or that it is a ghost or the mothership's alone", () => {
   const picture = draw({
     kind: "chain",
-    commits: [{ id: "c", col: 0, parents: ["b"], who: "mothership" }, { id: "b", col: 0, parents: ["a"], ghost: true }, { id: "a", col: 0, parents: [], who: "alex" }],
+    commits: [{ id: "c", parents: ["b"], who: "mothership" }, { id: "b", parents: ["a"], ghost: true }, { id: "a", parents: [], who: "alex" }],
     names: [{ name: "main", on: "a", kind: "branch" }],
     head: "main",
   });
-  assert.deepEqual(texts(picture, ".gp-row .gp-sr"), ["on the mothership only", "no name leads here", "Alex's commit"]);
-  assert.equal(picture.querySelector("svg").getAttribute("aria-hidden"), "true");
-});
-
-test("an unknown kind of picture is an error", () => {
-  assert.throws(() => GuidePictures.draw({ kind: "tape" }, words), RangeError);
-});
-
-test("what changed is lit: a new commit's lines to its parents too, and a merge commit says what it is", () => {
-  const picture = draw(chain());
-  assert.equal(picture.querySelectorAll(".gp-link--fresh").length, 2);
-  assert.equal(picture.querySelector(".gp-row .gp-mark").textContent, "merge commit");
+  assert.deepEqual(["c", "b", "a"].map((id) => row(picture, id).querySelector(".gp-sr").textContent), ["on the mothership only", "no name leads here", "Alex's commit"]);
+  assert.ok(row(picture, "c").classList.contains("is-mothership-only"));
+  assert.ok(row(picture, "b").classList.contains("is-ghost"));
+  for (const lane of picture.querySelectorAll("svg")) assert.equal(lane.getAttribute("aria-hidden"), "true");
 });
 
 test("a name taken off stays drawn, struck through and lit, and says so", () => {
-  const picture = draw({ kind: "chain", commits: [{ id: "a", col: 0, parents: [] }], names: [{ name: "main", on: "a", kind: "branch" }, { name: "test-run", on: "a", kind: "branch", gone: true }], head: "main" });
-  const gone = picture.querySelector(".gp-tag--gone");
+  const picture = draw({ kind: "chain", commits: [{ id: "a", parents: [] }], names: [{ name: "main", on: "a", kind: "branch" }, { name: "test-run", on: "a", kind: "branch", gone: true }], head: "main" });
+  const gone = picture.querySelector(".gp-gone .chain-tag");
   assert.equal(gone.textContent, "test-run");
   assert.ok(gone.classList.contains("gp-fresh"));
   assert.match(gone.parentNode.textContent, /taken off/);
 });
 
-test("where your bookmark and the mothership agree, one name says both", () => {
-  const picture = draw({ kind: "chain", commits: [{ id: "a", col: 0, parents: [] }], names: [{ name: "main", on: "a", kind: "branch" }, { name: "origin/main", on: "a", kind: "remote" }, { name: "mothership", on: "a", kind: "mothership" }], head: "main" });
-  assert.deepEqual(texts(picture, ".gp-tag"), ["main", "origin/main (mothership)"]);
-  assert.equal(picture.querySelectorAll(".gp-tag--mothership").length, 0);
+test("where your bookmark and the mothership agree, one name says both; apart, the mothership is a pin", () => {
+  const together = draw({ kind: "chain", commits: [{ id: "a", parents: [] }], names: [{ name: "main", on: "a", kind: "branch" }, { name: "origin/main", on: "a", kind: "remote" }, { name: "mothership", on: "a", kind: "mothership" }], head: "main" });
+  assert.deepEqual(texts(together, ".chain-tag"), ["main", "origin/main (mothership)"]);
+  assert.equal(together.querySelectorAll(".chain-pin").length, 0);
+  const apart = draw({ kind: "chain", commits: [{ id: "b", parents: ["a"], who: "mothership" }, { id: "a", parents: [] }], names: [{ name: "main", on: "a", kind: "branch" }, { name: "origin/main", on: "a", kind: "remote" }, { name: "mothership", on: "b", kind: "mothership" }], head: "main" });
+  assert.equal(row(apart, "b").querySelector(".chain-pin.is-mothership").textContent, "mothership");
+});
+
+test("an unknown kind of picture is an error", () => {
+  assert.throws(() => GuidePictures.draw({ kind: "tape" }, words), RangeError);
 });
 
 test("a place that just appeared is lit", () => {

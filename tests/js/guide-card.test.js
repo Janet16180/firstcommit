@@ -5,7 +5,7 @@ const test = require("node:test");
 const { installBrowser, load } = require("./load");
 
 const document = installBrowser();
-const { GuideCard } = load(["dom.js", "guide-pictures.js", "guide-card.js"], ["GuideCard"]);
+const { GuideCard } = load(["dom.js", "strings.js", "places.js", "chain.js", "guide-pictures.js", "guide-card.js"], ["GuideCard"]);
 
 const words = {
   card: {

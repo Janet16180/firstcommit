@@ -6,7 +6,7 @@ const { installBrowser, load, record } = require("./load");
 
 const document = installBrowser();
 const { makeEvent } = require("./fakedom");
-const { FieldGuide, Strings } = load(["dom.js", "strings.js", "art-pixels.js", "art-sprites.js", "art-infographics.js", "infographic-text.js", "guide-git.js", "guide-text.js", "guide-pictures.js", "guide-card.js", "guide-conflict.js", "field-guide.js"], ["FieldGuide", "Strings"]);
+const { FieldGuide, Strings } = load(["dom.js", "strings.js", "places.js", "chain.js", "art-pixels.js", "art-sprites.js", "art-infographics.js", "infographic-text.js", "guide-git.js", "guide-text.js", "guide-pictures.js", "guide-card.js", "guide-conflict.js", "field-guide.js"], ["FieldGuide", "Strings"]);
 
 const level = (id, done) => ({ ...record("status").chapters[1].levels[0], id, title: id, done });
 const status = (chapters) => ({ ...record("status"), chapters });

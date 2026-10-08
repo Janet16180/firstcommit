@@ -17,7 +17,7 @@
  * "new", "edited", "conflict", "clean" or "ignored" (left out in the staging area, the vault and the
  * remote), and `fresh` lights what the command just changed; the desk's own `fresh` lists the
  * places that just appeared.
- * A chain is {kind: "chain", commits, names, head}: commits newest first, each {id, col, parents,
+ * A chain is {kind: "chain", commits, names, head}: commits newest first, each {id, parents,
  * who, ghost, fresh, mark}, with `who` "you" (the default), "alex" or "mothership" (a commit the
  * mothership has and you do not) and `mark` a key of pictures.marks said beside it; names [{name,
  * on, kind, fresh, gone}] with kind "branch", "remote" (origin/main, your bookmark) or
@@ -33,7 +33,7 @@
 const GuideText = (function () {
   const desk = (places) => ({ kind: "desk", ...places });
   const chain = (commits, names, head = "main") => ({ kind: "chain", commits, names, head });
-  const commit = (id, parents = [], more = {}) => ({ id, col: 0, parents, ...more });
+  const commit = (id, parents = [], more = {}) => ({ id, parents, ...more });
   const branch = (name, on) => ({ name, on, kind: "branch" });
   const bookmark = (on) => ({ name: "origin/main", on, kind: "remote" });
   const mothership = (on) => ({ name: "mothership", on, kind: "mothership" });
@@ -270,8 +270,8 @@ const GuideText = (function () {
     {
       command: "git merge <branch>",
       picture: {
-        before: chain([commit("d", ["b"], { col: 1 }), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("scout", "d"), branch("main", "c")]),
-        after: chain([commit("m", ["c", "d"], { fresh: true, mark: "merge" }), commit("d", ["b"], { col: 1 }), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("main", "m"), branch("scout", "d")]),
+        before: chain([commit("d", ["b"], {}), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("scout", "d"), branch("main", "c")]),
+        after: chain([commit("m", ["c", "d"], { fresh: true, mark: "merge" }), commit("d", ["b"], {}), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("main", "m"), branch("scout", "d")]),
       },
       runs: ["merge"],
       mistake: {
@@ -358,7 +358,7 @@ const GuideText = (function () {
     },
     {
       command: "git log --oneline --graph --all",
-      picture: { before: chain([commit("d", ["b"]), commit("c", ["b"], { col: 1 }), commit("b", ["a"]), commit("a")], [branch("main", "d"), branch("scout", "c")]) },
+      picture: { before: chain([commit("d", ["b"]), commit("c", ["b"], {}), commit("b", ["a"]), commit("a")], [branch("main", "d"), branch("scout", "c")]) },
       runs: ["log-graph"],
       mistake: {
         en: "Leaving out --all: git log shows only what your branch leads back to, so another branch's commits seem to be missing.",
@@ -401,8 +401,8 @@ const GuideText = (function () {
     {
       command: "git pull --no-rebase",
       picture: {
-        before: chain([commit("d", ["b"], { col: 1, who: "mothership" }), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [mothership("d"), branch("main", "c"), bookmark("b")]),
-        after: chain([commit("m", ["c", "d"], { fresh: true, mark: "merge" }), commit("d", ["b"], { col: 1, who: "alex" }), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("main", "m"), bookmark("d"), mothership("d")]),
+        before: chain([commit("d", ["b"], { who: "mothership" }), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [mothership("d"), branch("main", "c"), bookmark("b")]),
+        after: chain([commit("m", ["c", "d"], { fresh: true, mark: "merge" }), commit("d", ["b"], { who: "alex" }), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("main", "m"), bookmark("d"), mothership("d")]),
       },
       runs: ["pull-no-rebase"],
       mistake: {
@@ -519,8 +519,8 @@ const GuideText = (function () {
     {
       command: "git commit --no-edit",
       picture: {
-        before: chain([commit("d", ["b"], { col: 1, who: "alex" }), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("alex-route", "d"), branch("main", "c")]),
-        after: chain([commit("m", ["c", "d"], { fresh: true, mark: "merge" }), commit("d", ["b"], { col: 1, who: "alex" }), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("main", "m"), branch("alex-route", "d")]),
+        before: chain([commit("d", ["b"], { who: "alex" }), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("alex-route", "d"), branch("main", "c")]),
+        after: chain([commit("m", ["c", "d"], { fresh: true, mark: "merge" }), commit("d", ["b"], { who: "alex" }), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("main", "m"), branch("alex-route", "d")]),
       },
       runs: ["conflict-commit-yours"],
       mistake: {
