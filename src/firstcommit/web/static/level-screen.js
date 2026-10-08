@@ -8,7 +8,7 @@
  * the view ladder's (docs/drafts/chapters-5-9.md): your station (or the crew view, in a level with
  * a teammate) shows the four zones; history folds your station into the strip and leaves the
  * vault and the mothership on the stage, and in a crew level flattens Alex's station into the
- * band along the top. A level opens on its main view; a view not born yet is
+ * band along the top; two sides open each conflicted file like a book under the strip. A level opens on its main view; a view not born yet is
  * born first (births.js), once the stage has something to show it with, and then marked born.
  * The tab row holds the views born so far.
  * Opening a mission that is not in progress starts it, and a level's scene plays the first time
@@ -20,18 +20,18 @@
  * ended from the command line or another tab), 0 that the server did not answer. Anything else is a
  * bug and is left to surface. Needs dom.js, strings.js, markup.js, art-sprites.js, progress.js,
  * poll.js, zones.js, zone-panel.js, mission.js, comms.js, completion.js, scene.js, moment-layer.js,
- * view-tabs.js, strip.js and births.js.
+ * view-tabs.js, strip.js, sides.js and births.js.
  * Defines one global, LevelScreen.
  */
 
-/* global Dom, Strings, ArtSprites, Progress, Polling, Zones, ZonePanel, Mission, Comms, Completion, ScenePlayer, MomentLayer, ViewTabs, Strip, ViewBirth */
+/* global Dom, Strings, ArtSprites, Progress, Polling, Zones, ZonePanel, Mission, Comms, Completion, ScenePlayer, MomentLayer, ViewTabs, Strip, Sides, ViewBirth */
 /* exported LevelScreen */
 
 const LevelScreen = (function () {
   const { el } = Dom;
   const { t } = Strings;
   /* The views the page draws so far; a level whose main view is another opens on your station. */
-  const DRAWN = ["station", "crew", "history"];
+  const DRAWN = ["station", "crew", "history", "sides"];
   const SAY = { preparing: "level.preparing", start: "level.start", down: "level.down", back: "level.back", hint: "level.hint", ended: "level.ended", partMet: "level.partMet", predictFirst: "level.predictFirst" };
 
 
@@ -94,6 +94,7 @@ const LevelScreen = (function () {
     const folded = view !== "station" && view !== "crew";
     ui.strip.element.hidden = !folded;
     ui.band.element.hidden = !folded || !screen.crew;
+    ui.sides.element.hidden = view !== "sides";
     ui.tabs.select(view);
     measureTerminal(screen);
   }
@@ -166,11 +167,12 @@ const LevelScreen = (function () {
     ui.moments = MomentLayer.create({ reducedMotion: screen.ctx.reducedMotion, timers: screen.ctx.timers });
     ui.strip = Strip.create({ onExpand: () => show(screen, home(screen)) });
     ui.band = Strip.create({ onExpand: () => show(screen, "crew"), who: "alex" });
+    ui.sides = Sides.create();
     ui.tabs = ViewTabs.create({ tabs: [], current: "station", onPick: () => {} });
     ui.comms = Comms.create();
     ui.mission = el("aside", { class: "mission px", "aria-label": t("mission.label") }, el("p", {}, t("level.loading")));
     ui.termcol = el("div", { class: "termcol" }, ui.comms.element);
-    ui.sky = el("div", { class: "sky" }, ui.band.element, ui.strip.element, ui.zones.element, ui.moments.element);
+    ui.sky = el("div", { class: "sky" }, ui.band.element, ui.strip.element, ui.sides.element, ui.zones.element, ui.moments.element);
     ui.stage = el("main", { class: "stage" }, el("div", { class: "views" }, ui.tabs.element, ui.sky), ui.mission, ui.termcol);
     screen.element.replaceChildren(hud(screen), ui.stage);
     show(screen, "station");
@@ -371,6 +373,7 @@ const LevelScreen = (function () {
     const reading = Zones.read(observation);
     ui.strip.update(reading);
     if (reading.crew) ui.band.update(reading.crew);
+    ui.sides.update(observation.conflicts);
     crewed(screen, observation);
     return reading;
   }

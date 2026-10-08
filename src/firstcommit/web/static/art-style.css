@@ -384,7 +384,8 @@
   75% { transform: translateX(-1px); }
 }
 
-.art-crack::after {
+.art-crack::after,
+.sky.art-birth-book .sides-pages::after {
   content: "";
   position: absolute;
   top: -2px;
@@ -397,6 +398,9 @@
     linear-gradient(var(--s-new) 0 0) 2px 50% / 4px 30% no-repeat,
     linear-gradient(var(--s-new) 0 0) 4px 100% / 3px 42% no-repeat;
   opacity: 0;
+}
+
+.art-crack::after {
   animation: art-crack-flash 0.6s steps(1) both;
 }
 
@@ -758,6 +762,51 @@
   animation: art-birth-after var(--art-birth, 1.4s) steps(4) both;
 }
 
+/* The book (data-view "sides", level 6-3): each conflicted file starts closed, its two halves
+   edge-on at the spine with the red crack of the conflict down it; the halves swing open from
+   the spine outward like pages, yours to the left and theirs to the right, the crack fades as
+   they open, and the base line shows last. The crack is drawn like .art-crack's, above. */
+.sky.art-birth-book .sides-pages {
+  position: relative;
+}
+
+.sky.art-birth-book .sides-pages::after {
+  z-index: 1;
+  animation: art-birth-book-crack var(--art-birth, 1.4s) steps(4) both;
+}
+
+@keyframes art-birth-book-crack {
+  0%, 30% { opacity: 1; }
+  55% { opacity: 0; }
+  to { opacity: 0; }
+}
+
+.sky.art-birth-book .sides-half[data-side="you"] {
+  transform-origin: right;
+  animation: art-birth-book-you var(--art-birth, 1.4s) steps(8) both;
+}
+
+@keyframes art-birth-book-you {
+  0%, 16% { transform: perspective(600px) rotateY(-88deg); }
+  60% { transform: none; }
+  to { transform: none; }
+}
+
+.sky.art-birth-book .sides-half[data-side="them"] {
+  transform-origin: left;
+  animation: art-birth-book-them var(--art-birth, 1.4s) steps(8) both;
+}
+
+@keyframes art-birth-book-them {
+  0%, 16% { transform: perspective(600px) rotateY(88deg); }
+  60% { transform: none; }
+  to { transform: none; }
+}
+
+.sky.art-birth-book .sides-base {
+  animation: art-birth-after var(--art-birth, 1.4s) steps(4) both;
+}
+
 /* Put on an ignored folder's chip (.file.is-ignored, orbit.css): a calm field of scanlines
    behind its words, with an emitter at each corner, in the workshop's colour. The files are still
    on the disk, out of Git's sight. ::after, because the chip's ::before is its state dot. */
@@ -801,6 +850,8 @@
   .sky.art-birth-fold *,
   .sky.art-birth-unroll *,
   .sky.art-birth-flatten *,
+  .sky.art-birth-book *,
+  .sky.art-birth-book .sides-pages::after,
   .art-ignore-field::after {
     animation: none !important;
   }

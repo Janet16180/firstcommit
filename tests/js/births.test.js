@@ -53,7 +53,7 @@ test("under reduced motion a birth is two still frames, each held long enough to
 
 test("only the views with a birth drawn have one", () => {
   assert.equal(ViewBirth.has("history"), true);
-  for (const view of ["station", "crew", "sides", "blackbox"]) assert.equal(ViewBirth.has(view), false, view);
+  for (const view of ["station", "crew", "blackbox"]) assert.equal(ViewBirth.has(view), false, view);
 });
 
 test("history waits to be born until your vault holds commits, so the fold has something to fold", () => {
@@ -75,4 +75,19 @@ test("the band waits for a teammate on the stage", () => {
   assert.equal(ViewBirth.has("band"), true);
   assert.equal(ViewBirth.ready("band", reading([{ hash: "a" }])), false);
   assert.equal(ViewBirth.ready("band", { ...reading([]), crew: reading([]) }), true);
+});
+
+test("two sides are born when a conflict cracks open like a book, with Rama's line", async () => {
+  const run = birth("sides");
+  assert.deepEqual(run.seen, [["show", "sides"], ["say", "Your scanner has a docking mode: both sides, line by line."]]);
+  assert.ok(run.sky.classList.contains("art-birth-book"));
+  await run.clock.advance(ViewBirth.BIRTH_MS);
+  await run.finished;
+  assert.ok(!run.sky.classList.contains("art-birth-book"));
+});
+
+test("two sides wait for a file in conflict", () => {
+  assert.equal(ViewBirth.has("sides"), true);
+  assert.equal(ViewBirth.ready("sides", { ...reading([]), workshop: [{ path: "a.txt", state: "edited" }] }), false);
+  assert.equal(ViewBirth.ready("sides", { ...reading([]), workshop: [{ path: "a.txt", state: "conflicted" }] }), true);
 });

@@ -10,7 +10,7 @@
  * has(view)              whether the view (or "band", the crew band) has a birth.
  * ready(view, reading)   whether the stage, as Zones.read reads it, has something to show the
  *                        birth with: history waits for your vault to hold commits, the band for
- *                        a teammate.
+ *                        a teammate, two sides for a file in conflict.
  * play(view, {sky, show, say, reducedMotion, timers})
  *                        a promise that resolves once the birth is over; show(view) puts a view on
  *                        the stage ("fold" is your station with the strip above it, "flatten" the
@@ -31,6 +31,7 @@ const ViewBirth = (function () {
       { view: "history", motion: "art-birth-unroll", line: "views.born.history" },
     ],
     band: [{ view: "flatten", motion: "art-birth-flatten", line: "views.born.band" }],
+    sides: [{ view: "sides", motion: "art-birth-book", line: "views.born.sides" }],
   };
 
   const has = (view) => Object.hasOwn(STAGES, view);
@@ -38,6 +39,7 @@ const ViewBirth = (function () {
   const READY = {
     history: (reading) => Boolean(reading.vault && reading.vault.length),
     band: (reading) => reading.crew !== null,
+    sides: (reading) => reading.workshop.some((file) => file.state === "conflicted"),
   };
 
   const ready = (view, reading) => READY[view](reading);

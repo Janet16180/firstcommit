@@ -7,7 +7,7 @@ const { createClock, fakeServer, httpError, installBrowser, load, record, settle
 
 const document = installBrowser({ reducedMotion: true });
 const { LevelScreen, createGameApi } = load(
-  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "view-tabs.js", "strip.js", "births.js", "level-screen.js"],
+  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "view-tabs.js", "strip.js", "sides.js", "births.js", "level-screen.js"],
   ["LevelScreen", "createGameApi"],
 );
 
@@ -784,7 +784,7 @@ test("while your vault is empty, a level whose history is not born yet stays on 
 });
 
 test("a view the page cannot draw yet opens on your station", async () => {
-  const run = viewing("sides", ["station", "history", "sides"]);
+  const run = viewing("blackbox", ["station", "history", "blackbox"]);
   await settle();
   assert.equal(shown(run), "station");
   assert.deepEqual(tabs(run), ["station", "history"]);
@@ -844,4 +844,45 @@ test("no band is born before the crew view, in a level that opens on the crew vi
     assert.deepEqual(marked(run), [], `${view} ${seen}`);
     run.view.dispose();
   }
+});
+
+/* An observation with docking.txt in conflict, as git leaves it after a merge stops. */
+function conflicted() {
+  const one = record("snapshots").one;
+  const project = { ...one, operation: "merge", files: [{ ...one.files[0], path: "docking.txt", conflicted: true, index_change: "modified" }] };
+  return { ...record("observation"), project, commands: [], reactions: [] };
+}
+
+test("two sides take the zones' place under your strip, one book per conflicted file", async () => {
+  const run = viewing("sides", ["station", "history", "sides"], { "/api/observe": conflicted() });
+  await settle();
+  assert.equal(shown(run), "sides");
+  assert.equal(run.q(".sides").hidden, false);
+  assert.equal(yours(run).hidden, false);
+  assert.equal(run.q(".sides-path").textContent, "docking.txt");
+  assert.deepEqual(tabs(run), ["station", "history", "sides"]);
+  run.q('.view-tab[data-view="history"]').click();
+  assert.equal(run.q(".sides").hidden, true);
+  run.view.dispose();
+});
+
+test("two sides are born when the first conflict appears, then get their tab and the game is told", async () => {
+  const run = viewing("sides", ["station", "history"], { "/api/observe": conflicted() });
+  await settle();
+  assert.equal(shown(run), "sides");
+  assert.equal(said(run), "Your scanner has a docking mode: both sides, line by line.");
+  assert.deepEqual(marked(run), []);
+  await run.clock.advance(2600);
+  assert.deepEqual(marked(run), [{ view: "sides" }]);
+  assert.deepEqual(tabs(run), ["station", "history", "sides"]);
+  run.view.dispose();
+});
+
+test("before any conflict, a level whose two sides are not born yet stays on your station", async () => {
+  const run = viewing("sides", ["station", "history"]);
+  await settle();
+  await run.clock.advance(3000);
+  assert.equal(shown(run), "station");
+  assert.equal(run.q(".sides").hidden, true);
+  run.view.dispose();
 });
