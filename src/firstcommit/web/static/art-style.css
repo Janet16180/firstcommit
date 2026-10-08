@@ -636,6 +636,79 @@
   48%, 100% { opacity: 1; }
 }
 
+/* The births of the history view (level 5-1), played on the level screen's own DOM. The page
+   puts --art-birth (the length of each) on .sky and one class at a time; with fill "both" each
+   ends on the frame the next view starts from.
+
+   The fold (data-view "fold"): the zones fold up toward the strip, small and faded, while the
+   flows and the legend fade, and each strip card lands from below, where its zone was. */
+.sky.art-birth-fold .viz .zone {
+  transform-origin: top;
+  animation: art-birth-fold-zone var(--art-birth, 1.4s) steps(8) both;
+}
+
+@keyframes art-birth-fold-zone {
+  0%, 8% { transform: none; opacity: 1; }
+  45% { transform: scale(0.9, 0.25); opacity: 1; }
+  70% { transform: translateY(-16px) scale(0.6, 0.08); opacity: 0; }
+  to { transform: translateY(-16px) scale(0.6, 0.08); opacity: 0; }
+}
+
+.sky.art-birth-fold .viz .flow,
+.sky.art-birth-fold .viz .legend {
+  animation: art-birth-fade-out var(--art-birth, 1.4s) steps(4) both;
+}
+
+@keyframes art-birth-fade-out {
+  0%, 8% { opacity: 1; }
+  40% { opacity: 0; }
+  to { opacity: 0; }
+}
+
+.sky.art-birth-fold .strip-card {
+  transform-origin: bottom;
+  animation: art-birth-land var(--art-birth, 1.4s) steps(8) both;
+}
+
+@keyframes art-birth-land {
+  from { transform: translateY(56px) scale(0.6); opacity: 0; }
+  40% { transform: translateY(56px) scale(0.6); opacity: 0; }
+  45% { opacity: 1; }
+  88% { transform: translateY(-3px); opacity: 1; }
+  to { transform: none; opacity: 1; }
+}
+
+/* The unroll (data-view "history"): the strip's vault card lights, every vault left on the stage
+   (Alex's too, in a crew level) unrolls from the top down like a chart, then the mothership
+   fades in. */
+.sky.art-birth-unroll .strip-card[data-zone="vault"] {
+  animation: art-birth-lit var(--art-birth, 1.4s) steps(1) both;
+}
+
+@keyframes art-birth-lit {
+  0%, 24% { background: color-mix(in srgb, var(--zc) 45%, var(--panel)); }
+  25%, 100% { background: color-mix(in srgb, var(--zc) 11%, var(--panel)); }
+}
+
+.sky.art-birth-unroll .viz .zone[data-zone$="vault"] {
+  animation: art-birth-unroll var(--art-birth, 1.4s) steps(8) both;
+}
+
+@keyframes art-birth-unroll {
+  from { clip-path: inset(0 0 100% 0); }
+  10% { clip-path: inset(0 0 100% 0); }
+  70%, 100% { clip-path: inset(0); }
+}
+
+.sky.art-birth-unroll .viz .zone[data-zone="remote"] {
+  animation: art-birth-after var(--art-birth, 1.4s) steps(4) both;
+}
+
+@keyframes art-birth-after {
+  0%, 60% { opacity: 0; }
+  to { opacity: 1; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .art-rama,
   .art-rama *,
@@ -648,7 +721,9 @@
   .art-crack::after,
   .art-rise-inverted,
   .art-crew-flight::after,
-  .art-moment * {
+  .art-moment *,
+  .sky.art-birth-fold *,
+  .sky.art-birth-unroll * {
     animation: none !important;
   }
 
