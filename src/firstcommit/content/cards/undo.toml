@@ -1,0 +1,144 @@
+notes = """
+Git keeps what you staged or committed; lines you only typed in the working folder are outside
+its records. `git restore <file>` replaces the file with its staged version, so unsaved lines are
+gone for good: look with `git diff` first.
+
+To undo a commit others already have, `git revert <commit>` makes a new commit that does the
+opposite, and everyone gets it by pulling. `git reset --hard <commit>` moves the branch you are on
+and rewrites the files: use it only on commits nobody else has, and put a label on the commits
+first. A reset deletes no commit; until a label holds them again, `git reflog` lists where `HEAD`
+has been, as `HEAD@{1}`, `HEAD@{2}` and so on, and `git branch <name> HEAD@{1}` brings them back.
+
+    $ git diff                         # what is in the working folder and not staged
+    $ git restore engine.cfg           # scrap it: back to the staged version
+    $ git revert HEAD~1                # undo a shared commit with a new one
+    $ git branch rescue                # a label first
+    $ git reset --hard origin/main     # then move the branch back
+    $ git reflog                       # where HEAD has been
+    $ git branch thrusters HEAD@{1}    # a label on a commit from the reflog
+"""
+
+[[card]]
+id = "undo-restore-gone"
+kind = "choice"
+level = 1
+prompt = "You typed new lines in `engine.cfg` and never staged or committed them. After `git restore engine.cfg`, where can Git find those lines?"
+correct = "Nowhere: they are gone"
+wrong = [
+    "In the last commit",
+    "In the staging area",
+    "In the reflog",
+]
+explain = """
+`git restore` copies the staged version over the file in the working folder. Lines that were never
+staged or committed had no copy anywhere in Git, so nothing can bring them back.
+"""
+source = "git-restore(1), DESCRIPTION"
+verify = """
+git init -q base && cd base
+echo "power=80" > engine.cfg && git add engine.cfg && git commit -q -m "Set the engine"
+printf 'power=99\\noverdrive=on\\n' > engine.cfg
+git restore engine.cfg
+test "$(cat engine.cfg)" = "power=80" && test -z "$(git log --all -S overdrive --format=%H)"
+! git cat-file --batch-all-objects --batch-check='%(objectname)' | git cat-file --batch | grep -q overdrive
+"""
+
+[[card]]
+id = "undo-revert-adds"
+kind = "choice"
+level = 1
+prompt = "A commit on `main` has already been pulled by your team. What does `git revert` with that commit do?"
+correct = "Adds a new commit that undoes it"
+wrong = [
+    "Deletes it from the history",
+    "Moves `main` back to before it",
+    "Undoes it in your files, no commit",
+]
+explain = """
+`git revert` makes a new commit with the opposite change. The old commit stays in the history,
+nothing shared is rewritten, so the push goes through and everyone gets the undo with their next
+pull.
+"""
+source = "git-revert(1), DESCRIPTION"
+verify = """
+git init -q base && cd base
+echo steady > lights.cfg && git add lights.cfg && git commit -q -m "Set the lights"
+echo strobe > lights.cfg && git commit -q -am "Try strobe"
+bad=$(git rev-parse HEAD)
+git revert --no-edit HEAD > /dev/null
+test "$(cat lights.cfg)" = steady && test "$(git rev-list --count HEAD)" = 3 && git merge-base --is-ancestor "$bad" HEAD
+"""
+
+[[card]]
+id = "undo-reset-keeps"
+kind = "choice"
+level = 2
+prompt = "You run `git branch rescue`, then `git reset --hard HEAD~2` on `main`. Where are the two commits `main` left?"
+correct = "Still there, held by `rescue`"
+wrong = [
+    "Deleted with the reset",
+    "Back in the working folder",
+    "Moved into the staging area",
+]
+explain = """
+A reset moves a label; it deletes no commit. `rescue` still points at the old tip, so both commits
+are there to work on. `--hard` only made the staging area and the working folder match the commit
+`main` moved to.
+"""
+source = "git-reset(1), `--hard`"
+verify = """
+git init -q base && cd base
+echo a > a.txt && git add a.txt && git commit -q -m one
+echo b > a.txt && git commit -q -am two && echo c > a.txt && git commit -q -am three
+tip=$(git rev-parse HEAD)
+git branch rescue && git reset -q --hard HEAD~2
+test "$(git rev-parse rescue)" = "$tip" && test "$(cat a.txt)" = a
+"""
+
+[[card]]
+id = "undo-reflog-find"
+kind = "predict"
+level = 2
+prompt = "What does the last command print?"
+code = """
+git init -q base && cd base
+echo a > a.txt && git add a.txt && git commit -q -m "Start"
+git switch -q -c thrusters
+echo 1 > t.cfg && git add t.cfg && git commit -q -m "Tune, day 1"
+echo 2 > t.cfg && git commit -q -am "Tune, day 2"
+git switch -q main && git branch -q -D thrusters
+git log -1 --format=%s 'HEAD@{1}'
+"""
+correct = "Tune, day 2"
+wrong = ["Start", "Tune, day 1"]
+explain = """
+`HEAD@{1}` is where `HEAD` was one move ago: on `thrusters`' last commit, just before the switch to
+`main`. Deleting the branch removed the label, not the commits, and the reflog still names them.
+"""
+source = "git-reflog(1); gitrevisions(7), `<refname>@{<n>}`"
+
+[[card]]
+id = "undo-reset-pushed"
+kind = "choice"
+level = 3
+prompt = "Your team already pulled `main`. You run `git reset --hard HEAD~1` on it, then a plain `git push`. What happens?"
+correct = "Git refuses the push"
+wrong = [
+    "The remote's `main` moves back too",
+    "The push removes the commit for everyone",
+    "Git makes a revert commit for you",
+]
+explain = """
+The remote's `main` has a commit yours no longer has, so the push is not a fast-forward and Git
+refuses it. Only `--force` would make the remote forget the commit, and that breaks everyone
+else's copy: on a shared branch, `git revert` is the undo.
+"""
+source = "git-push(1), NOTE ABOUT FAST-FORWARDS"
+verify = """
+git init -q --bare hub.git
+git clone -q hub.git base 2> /dev/null && cd base
+echo a > a.txt && git add a.txt && git commit -q -m one && echo b > a.txt && git commit -q -am two
+git push -q origin HEAD:main 2> /dev/null && git branch -q -u origin/main
+git reset -q --hard HEAD~1
+! git push -q origin HEAD:main 2> /dev/null
+"""
