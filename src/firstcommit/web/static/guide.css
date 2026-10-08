@@ -197,8 +197,14 @@
   font: 1.15rem/1.1 var(--f-term);
 }
 
-.gc-conflict {
-  align-self: flex-start;
+.gc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gc-try {
+  text-decoration: none;
 }
 
 /* The small pictures. */

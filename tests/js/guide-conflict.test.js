@@ -51,6 +51,12 @@ test("the add step says plainly what git add does in a conflict", () => {
   assert.equal(section.querySelector(".gx-sentence").textContent, "git add tells Git this file is resolved: git add checklist.txt.");
 });
 
+test("the walkthrough links to a conflict of your own in the playground", () => {
+  const link = create().querySelector("a.gx-try");
+  assert.equal(link.getAttribute("href"), "#/playground?start=conflict&view=conflict");
+  assert.equal(link.textContent, "Try a conflict in the playground");
+});
+
 test("pointing at a part says whose it is, and leaving puts the step's picture back", () => {
   const section = create();
   assert.equal(explainTitle(section), "What Git wrote");

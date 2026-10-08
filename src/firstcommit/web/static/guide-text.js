@@ -5,7 +5,9 @@
  * one-sentence meaning of each command lives there). A card ({command, picture, runs, mistake,
  * lessons, related}) adds to its command: a picture before and after it (a desk or a chain, the
  * game's teaching pictures; `after` left out when the command only looks), the transcripts real
- * git printed (keys of GuideGit.runs), the common beginner mistake, the mission that teaches it
+ * git printed (keys of GuideGit.runs), the free playground's start to try it in
+ * (`playground`: {start, view, try}, with `try` a real one-line command that works there,
+ * docs/drafts/playground/plan.md), the common beginner mistake, the mission that teaches it
  * (`lessons`, the command labels of the missions that teach it, as the map's records carry them;
  * the first such mission in the chapter that tags the command is named) and related commands.
  * Never a level's id: the page does not know them.
@@ -46,6 +48,7 @@ const GuideText = (function () {
         es: "Esperar que ls muestre .git: los nombres que empiezan con un punto están ocultos, y solo ls -a los lista.",
       },
       lessons: ["ls · git status"],
+      playground: { start: "empty", view: "desk", try: "ls -a" },
       related: ["git status", "git init"],
     },
     {
@@ -57,6 +60,7 @@ const GuideText = (function () {
         es: "Escribirlo en una carpeta que no es un repositorio: Git responde \"not a git repository\". Primero haz git init, o entra en la carpeta del proyecto.",
       },
       lessons: ["ls · git status"],
+      playground: { start: "changes", view: "desk", try: "git status" },
       related: ["git add <file>", "git diff", "git restore --staged <file>"],
     },
     {
@@ -68,6 +72,7 @@ const GuideText = (function () {
         es: "No ver nada después de git add: git diff compara con el staging area, así que las líneas que ya agregaste solo salen con git diff --staged.",
       },
       lessons: ["git diff"],
+      playground: { start: "changes", view: "desk", try: "git diff" },
       related: ["git status", "git add <file>", "git log"],
     },
     {
@@ -79,6 +84,7 @@ const GuideText = (function () {
         es: "Creer que git log muestra todos los commits: solo lista los que alcanza tu branch hacia atrás. git reflog encuentra los demás.",
       },
       lessons: ["git log <file>"],
+      playground: { start: "branches", view: "chain", try: "git log --oneline" },
       related: ["git commit -m \"<message>\"", "git diff", "git reflog"],
     },
     {
@@ -93,6 +99,7 @@ const GuideText = (function () {
         es: "Hacerlo en la carpeta equivocada, como tu carpeta personal: toda esa carpeta se convierte en un repositorio. Primero revisa dónde estás.",
       },
       lessons: ["git init"],
+      playground: { start: "empty", view: "desk", try: "git init" },
       related: ["git status", "ls", "git clone <url>"],
     },
     {
@@ -107,6 +114,7 @@ const GuideText = (function () {
         es: "Clonar dentro de la carpeta de otro repositorio: primero sal de ella, para que la copia tenga su propia carpeta.",
       },
       lessons: ["git clone"],
+      playground: { start: "alex-ahead", view: "history", try: "git clone ../github.com/moonbase/project.git ../copy" },
       related: ["git init", "git pull", "git remote add origin <url>"],
     },
     {
@@ -121,6 +129,7 @@ const GuideText = (function () {
         es: "Volver a editar el archivo después de git add: el staging area guarda la versión que agregaste, así que agrégalo otra vez antes del commit.",
       },
       lessons: ["git add", "git add <file> <file>"],
+      playground: { start: "changes", view: "desk", try: "git add notes.txt" },
       related: ["git commit -m \"<message>\"", "git restore --staged <file>", "git status"],
     },
     {
@@ -135,6 +144,7 @@ const GuideText = (function () {
         es: "Olvidar --cached: git rm también borra el archivo de tu carpeta de trabajo.",
       },
       lessons: ["git add <file> <file>"],
+      playground: { start: "changes", view: "desk", try: "git rm --cached notes.txt" },
       related: ["git restore --staged <file>", "git add <file>"],
     },
     {
@@ -149,6 +159,7 @@ const GuideText = (function () {
         es: "Olvidar --staged: git restore <file> descarta, en cambio, tus ediciones de la carpeta de trabajo.",
       },
       lessons: ["git restore --staged"],
+      playground: { start: "changes", view: "desk", try: "git restore --staged notes.txt" },
       related: ["git add <file>", "git restore <file>", "git rm --cached <file>"],
     },
     {
@@ -163,6 +174,7 @@ const GuideText = (function () {
         es: "Olvidar git add antes: un commit solo toma lo que está en el staging area, así que Git responde \"no changes added to commit\".",
       },
       lessons: ["git commit -m"],
+      playground: { start: "changes", view: "chain", try: "git commit -am \"Note the fuel\"" },
       related: ["git add <file>", "git log", "git push"],
     },
     {
@@ -177,6 +189,7 @@ const GuideText = (function () {
         es: "Esperar que envíe tu trabajo: solo guarda la dirección. No sube nada hasta que haces git push.",
       },
       lessons: ["git remote add"],
+      playground: { start: "branches", view: "history" },
       related: ["git push", "git clone <url>"],
     },
     {
@@ -191,6 +204,7 @@ const GuideText = (function () {
         es: "Hacer push de ediciones sin commit: push solo envía commits, nunca lo que está en tu carpeta de trabajo o en el staging area.",
       },
       lessons: ["git push"],
+      playground: { start: "branches", view: "history", try: "git push" },
       related: ["git commit -m \"<message>\"", "git pull", "git fetch"],
     },
     {
@@ -205,6 +219,7 @@ const GuideText = (function () {
         es: "Esperar que cambien tus archivos: fetch solo mueve origin/main. git pull, o un merge, trae los commits a tu branch.",
       },
       lessons: ["git fetch · git pull"],
+      playground: { start: "alex-ahead", view: "history", try: "git fetch" },
       related: ["git pull", "git status", "git merge <branch>"],
     },
     {
@@ -219,6 +234,7 @@ const GuideText = (function () {
         es: "Hacer pull con ediciones sin commit en los mismos archivos: Git se niega, para no sobrescribirlas. Primero haz commit.",
       },
       lessons: ["git pull"],
+      playground: { start: "alex-ahead", view: "history", try: "git pull" },
       related: ["git fetch", "git push", "git merge <branch>"],
     },
     {
@@ -233,6 +249,7 @@ const GuideText = (function () {
         es: "Esperar una copia de tus archivos: un branch nuevo es solo una etiqueta nueva en el commit donde estás.",
       },
       lessons: ["git switch -c"],
+      playground: { start: "branches", view: "chain", try: "git switch -c test" },
       related: ["git switch <branch>", "git merge <branch>"],
     },
     {
@@ -247,6 +264,7 @@ const GuideText = (function () {
         es: "Cambiar de branch con ediciones que el otro branch sobrescribiría: Git se niega. Primero haz commit de ellas, o deshazlas.",
       },
       lessons: ["git branch", "git switch"],
+      playground: { start: "branches", view: "chain", try: "git switch bright-lights" },
       related: ["git switch -c <branch>", "git status", "git merge <branch>"],
     },
     {
@@ -261,6 +279,7 @@ const GuideText = (function () {
         es: "Creer que un merge borra el otro branch, o lo copia encima del tuyo: las dos líneas se quedan, y la etiqueta de scout sigue donde estaba.",
       },
       lessons: ["git merge"],
+      playground: { start: "both", view: "chain", try: "git merge origin/main" },
       related: ["git merge --abort", "git switch <branch>", "git pull"],
       conflict: true,
     },
@@ -276,6 +295,7 @@ const GuideText = (function () {
         es: "Usarlo cuando el commit de merge ya está hecho: ya no hay un merge que detener, y Git lo dice.",
       },
       lessons: ["git merge --abort"],
+      playground: { start: "conflict", view: "conflict", try: "git merge --abort" },
       related: ["git merge <branch>", "git status"],
       conflict: true,
     },
@@ -291,6 +311,7 @@ const GuideText = (function () {
         es: "Esperar recuperar las ediciones: Git nunca las guardó, así que nada puede traerlas de vuelta.",
       },
       lessons: ["git restore"],
+      playground: { start: "changes", view: "desk", try: "git restore notes.txt" },
       related: ["git restore --staged <file>", "git diff", "git revert <commit>"],
     },
     {
@@ -305,6 +326,7 @@ const GuideText = (function () {
         es: "Esperar que el commit viejo desaparezca: se queda en la historia, y un commit nuevo lo deshace.",
       },
       lessons: ["git revert"],
+      playground: { start: "branches", view: "chain", try: "git revert HEAD" },
       related: ["git reset --hard <commit>", "git log", "git push"],
     },
     {
@@ -319,6 +341,7 @@ const GuideText = (function () {
         es: "Usar --hard con ediciones que todavía quieres: se pierden para siempre. Primero haz commit, o no uses --hard para conservar tus archivos como están.",
       },
       lessons: ["git reset --hard"],
+      playground: { start: "branches", view: "chain", try: "git reset --hard HEAD~1" },
       related: ["git revert <commit>", "git reflog", "git restore <file>"],
     },
     {
@@ -330,6 +353,7 @@ const GuideText = (function () {
         es: "Creer que un commit desapareció después de un reset: el reflog todavía lo lista, y un branch nuevo en su hash lo recupera.",
       },
       lessons: ["git reflog"],
+      playground: { start: "lost", view: "movelog", try: "git reflog" },
       related: ["git reset --hard <commit>", "git log"],
     },
     {
@@ -341,6 +365,7 @@ const GuideText = (function () {
         es: "Olvidar --all: git log solo muestra lo que alcanza tu branch, así que los commits de otro branch parecen no estar.",
       },
       lessons: ["git switch -c"],
+      playground: { start: "branches", view: "graph", try: "git log --oneline --graph --all" },
       related: ["git log", "git branch -v", "git switch -c <branch>"],
     },
     {
@@ -355,6 +380,7 @@ const GuideText = (function () {
         es: "Agregar a .gitignore un archivo que ya tiene commit: Git lo sigue siguiendo. Primero sácalo con git rm --cached.",
       },
       lessons: [".gitignore"],
+      playground: { start: "empty", view: "desk" },
       related: ["git status", "git add <file>", "git rm --cached <file>"],
     },
     {
@@ -369,6 +395,7 @@ const GuideText = (function () {
         es: "Un git push solo en un branch nuevo: todavía no tiene upstream, así que Git se detiene y lo pide. La primera vez agrega -u origin <branch>.",
       },
       lessons: ["git push -u origin <branch>"],
+      playground: { start: "branches", view: "history", try: "git push -u origin bright-lights" },
       related: ["git push", "git switch -c <branch>", "git branch -v"],
     },
     {
@@ -383,6 +410,7 @@ const GuideText = (function () {
         es: "Hacer push una y otra vez después de \"rejected\": la nave nodriza tiene commits que tú no tienes. Primero tráelos con pull, luego haz push.",
       },
       lessons: ["git pull --no-rebase"],
+      playground: { start: "both", view: "history", try: "git pull --no-rebase" },
       related: ["git pull", "git push", "git merge <branch>"],
     },
     {
@@ -397,6 +425,7 @@ const GuideText = (function () {
         es: "Esperar estar en el branch nuevo: git branch solo pone el nombre. git switch te lleva a él.",
       },
       lessons: ["git branch"],
+      playground: { start: "branches", view: "chain", try: "git branch test" },
       related: ["git switch <branch>", "git switch -c <branch>", "git branch -v"],
     },
     {
@@ -411,6 +440,7 @@ const GuideText = (function () {
         es: "Escribir el mensaje del commit en vez de su hash: Git necesita el hash, la primera palabra de cada línea de git log --oneline.",
       },
       lessons: ["git branch <name> <commit>"],
+      playground: { start: "branches", view: "chain", try: "git branch first HEAD~2" },
       related: ["git branch <name>", "git branch -d <name>", "git log --oneline --graph --all"],
     },
     {
@@ -425,6 +455,7 @@ const GuideText = (function () {
         es: "Creer que los commits se van con el nombre: solo se va el nombre. Un commit al que lleva otro nombre se queda en la historia.",
       },
       lessons: ["git branch <name> <commit>"],
+      playground: { start: "branches", view: "chain", try: "git branch -d quiet-engine" },
       related: ["git branch <name>", "git branch -v", "git reflog"],
     },
     {
@@ -436,6 +467,7 @@ const GuideText = (function () {
         es: "Buscar origin/main en la lista: git branch solo muestra tus propios nombres. git branch -r muestra tus marcadores del remoto.",
       },
       lessons: ["git branch -v"],
+      playground: { start: "branches", view: "chain", try: "git branch -v" },
       related: ["git branch <name>", "git log --oneline --graph --all", "git status"],
     },
     {
@@ -450,6 +482,7 @@ const GuideText = (function () {
         es: "Olvidar -b: git checkout <name> busca entonces un branch o un archivo con ese nombre, y hace algo muy distinto.",
       },
       lessons: ["git switch -c"],
+      playground: { start: "branches", view: "chain", try: "git checkout -b test" },
       related: ["git switch -c <branch>", "git checkout <branch>"],
     },
     {
@@ -464,6 +497,7 @@ const GuideText = (function () {
         es: "Darle el nombre de un archivo: git checkout <file> descarta las ediciones de ese archivo, como git restore. git switch solo cambia de branch.",
       },
       lessons: ["git switch -c"],
+      playground: { start: "branches", view: "chain", try: "git checkout quiet-engine" },
       related: ["git switch <branch>", "git checkout -b <branch>", "git restore <file>"],
     },
     {
@@ -478,6 +512,7 @@ const GuideText = (function () {
         es: "Esperar que solo toque el conflicto: toma el archivo entero de Alex, así que tus tanques llenos volvieron a la mitad. Lee el archivo antes de git add.",
       },
       lessons: ["git restore --theirs"],
+      playground: { start: "conflict", view: "conflict", try: "git restore --theirs checklist.txt" },
       related: ["git merge <branch>", "git commit --no-edit", "git merge --abort"],
       conflict: true,
     },
@@ -493,6 +528,7 @@ const GuideText = (function () {
         es: "Hacer commit antes de git add: mientras un archivo tenga marcadores de conflicto, Git se niega a crear el commit de merge.",
       },
       lessons: ["git restore --theirs"],
+      playground: { start: "conflict", view: "conflict", try: "git commit --no-edit" },
       related: ["git merge <branch>", "git restore --theirs <file>", "git log --oneline --graph --all"],
       conflict: true,
     },
@@ -520,6 +556,7 @@ const GuideText = (function () {
       },
       showAll: { en: "Show all {count} lines", es: "Mostrar las {count} líneas" },
       showLess: { en: "Show fewer lines", es: "Mostrar menos líneas" },
+      tryIt: { en: "Try it in the playground", es: "Pruébalo en el playground" },
     },
     pictures: {
       notYet: { en: "not there yet", es: "todavía no existe" },
@@ -549,6 +586,8 @@ const GuideText = (function () {
         en: "You aimed for the Moon on main; Alex aimed for Jupiter on alex-route. Both changed line 4, so git merge stopped. This is the real file git wrote.",
         es: "Tú pusiste rumbo a la Luna en main; Alex puso rumbo a Júpiter en alex-route. Los dos cambiaron la línea 4, así que git merge se detuvo. Este es el archivo real que escribió git.",
       },
+      playground: { start: "conflict", view: "conflict" },
+      tryIt: { en: "Try a conflict in the playground", es: "Prueba un conflicto en el playground" },
       steps: [
         { en: "Git stopped the merge and wrote both versions of the course line into the file, between marker lines.", es: "Git detuvo el merge y escribió las dos versiones de la línea del rumbo en el archivo, entre líneas marcadoras." },
         { en: "From <<<<<<< HEAD to =======: your version. HEAD is the branch you are on, main.", es: "De <<<<<<< HEAD a =======: tu versión. HEAD es el branch donde estás, main." },

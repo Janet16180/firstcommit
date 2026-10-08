@@ -168,3 +168,9 @@ test("a jump bar leads to each part of the guide", () => {
   buttons[3].click();
   assert.equal(document.activeElement, view.element.querySelector("#guide-conflict"));
 });
+
+test("a card opened in the guide links to its playground start", () => {
+  const view = FieldGuide.create({ status: () => two(true, false) });
+  const link = openCard(view, "git switch <branch>").querySelector("a.gc-try");
+  assert.equal(link.getAttribute("href"), "#/playground?start=branches&view=chain&try=git%20switch%20bright-lights");
+});

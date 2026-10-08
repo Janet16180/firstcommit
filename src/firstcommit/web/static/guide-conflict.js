@@ -290,7 +290,7 @@ const GuideConflict = (function () {
 
     const element = el("section", { class: "art-ig guide-conflict", id: "guide-conflict", tabindex: "-1", "aria-labelledby": "guide-conflict-title" },
       el("h2", { class: "art-ig-title", id: "guide-conflict-title" }, words.title),
-      el("p", { class: "gx-lede" }, words.lede),
+      el("p", { class: "gx-lede" }, words.lede, " ", el("a", { class: "gx-try", href: GuideCard.playgroundHref(words.playground) }, words.tryIt)),
       steps.element,
       el("div", { class: "gx-layout", onpointerdown: (event) => !event.target.closest(".gx-file") && setHover(null) }, left, right));
     show();

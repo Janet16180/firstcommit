@@ -119,6 +119,30 @@ test("every after picture lights what the command changed", () => {
   for (const card of GuideText.cards.filter((item) => item.picture.after)) assert.ok(lit(card.picture.after), card.command);
 });
 
+/* The free playground's starts and views (records.py's StartId and PlaygroundView on
+   p2/orbit-engine, docs/drafts/playground/plan.md). */
+const STARTS = ["empty", "changes", "branches", "alex-ahead", "both", "conflict", "lost"];
+const VIEWS = ["chain", "history", "desk", "crew", "conflict", "movelog", "graph"];
+
+function checkPlayground(link, where) {
+  assert.ok(STARTS.includes(link.start), `${where}: start ${link.start}`);
+  assert.ok(link.view === undefined || VIEWS.includes(link.view), `${where}: view ${link.view}`);
+  assert.deepEqual(Object.keys(link).filter((key) => !["start", "view", "try"].includes(key)), [], where);
+  if (link.try === undefined) return;
+  assert.match(link.try, /^(?:git|ls) [^\n]+$/, `${where}: try ${link.try}`);
+  assert.ok(!/[<>]/.test(link.try), `${where}: a try is a real command, not a placeholder: ${link.try}`);
+}
+
+test("every card links to a playground start that suits it, with a real one-line command to try", () => {
+  for (const card of GuideText.cards) checkPlayground(card.playground, card.command);
+  const tries = GuideText.cards.filter((card) => card.playground.try).length;
+  assert.ok(tries >= GuideText.cards.length - 3, `${tries} cards have a try`);
+});
+
+test("the conflict walkthrough links to the conflict start, in its conflict view", () => {
+  assert.deepEqual(GuideText.conflict.playground, { start: "conflict", view: "conflict" });
+});
+
 test("every word is given in English and in Spanish, and each card has its mistake in both", () => {
   assert.ok(words(GuideText, []).length > 60);
   for (const card of GuideText.cards) assert.ok(card.mistake.en && card.mistake.es, card.command);
