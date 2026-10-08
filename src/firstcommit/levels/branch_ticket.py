@@ -1,7 +1,7 @@
 """
 Your first ticket: the boss of the branch chapter. A fix goes up on its own branch, and ``main`` is left to the team.
 
-Wave 2, branch 5-4 (docs/drafts/chapters-3-7.md), a challenge combining the vault (commit), the
+Wave 2, branch 5-5 (docs/drafts/chapters-5-9.md; 5-4 in chapters-3-7.md), a challenge combining the vault (commit), the
 mothership (push, pull) and this chapter (a branch made with your edit in hand, pushed by name).
 Setup builds the playground with the base's lights settings on ``main``, and leaves your fix to
 them uncommitted in your clone. Alex's push to ``main`` is a level event, run after the page's

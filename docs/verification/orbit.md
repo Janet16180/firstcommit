@@ -851,3 +851,16 @@ address looks like https://github.com/moonbase/project.git". E48 to E101 above r
 | Claim | Says | Evidence |
 |---|---|---|
 | 5-3 debrief | after Alex's fetch, Alex's repository has `origin/scout` and Alex's own branches did not move | E106 (fetch exits 0); git-fetch(1) DESCRIPTION; *re-checked* by `tests/levels/test_branch_send.py` |
+
+## 5-4 Edits come along (added 2026-10-08)
+
+| Tag | What ran | Result |
+|---|---|---|
+| E108 | on the host (git 2.43.0): `main` and `scout` with the same `lights.cfg` and different `route.txt`; on `main`, `lights.cfg` edited; `git switch scout`; then `route.txt` edited and `git switch main`, `git checkout main`; also `git switch nope`, `git checkout nope`, `git switch -c scout` | the first switch exits 0, prints `M lights.cfg` and keeps the edit; with `route.txt` edited, both `switch main` and `checkout main` exit 1 with "Your local changes to the following files would be overwritten by checkout: route.txt ... Aborting" and stay on `scout` with the edit; an unknown branch exits 128 (`switch`) or 1 (`checkout`, "did not match any file(s)"); an existing name for `-c` exits 128 |
+
+| Claim | Says | Evidence |
+|---|---|---|
+| card, prediction reveal, `CARRIED`, debrief | an uncommitted edit is on no branch: it stays in the working folder while you switch | E108; git-switch(1) DESCRIPTION ("Switching branches does not require a clean index and working tree") |
+| `REFUSED`, `SWITCH_REFUSED`, debrief | Git refuses only when the switch would overwrite an edit; the edit stays | E108; git-switch(1) (the operation is aborted when it would lose local changes) |
+| `SWITCH_REFUSED` | two ways out: commit here, or `git restore route.txt` | E108 (the refusal); the commit route is *re-checked* by `tests/levels/test_branch_switch.py`; git-restore(1) (restores the working file from the staging area) |
+| `watch_refused` | it reads a failed switch while `route.txt` holds an edit; a switch to an unknown branch also fails, so it asks for the edit too | E108; *re-checked* by `tests/levels/test_branch_switch.py` |

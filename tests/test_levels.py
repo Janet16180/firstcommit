@@ -369,6 +369,7 @@ def test_each_level_opens_on_the_main_view_of_the_plan() -> None:
         "branch-recruit": "history",
         "branch-course": "history",
         "branch-send": "history",
+        "branch-switch": "history",
         "branch-ticket": "history",
         "conflict-meet": "history",
         "conflict-abort": "history",
