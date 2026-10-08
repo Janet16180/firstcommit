@@ -559,3 +559,16 @@ answer, and a forced push (Rama's error, lost).
 | `BOUNCED`, debrief, hint 1 | the push was refused because the mothership has a commit your `main` lacks; nothing was lost | E64; the test's tips unchanged; git-push(1) NOTE ABOUT FAST-FORWARDS |
 | `FORCED`, `ALEX_DROPPED` (lost) | `--force` replaced the mothership's `main`, Alex's commit gone from it | E68 |
 | scene | the mothership keeps the first capsule and refuses to drop it | E64 |
+
+### Level `mothership-base7` (Base 7, 4-5, boss)
+
+*Re-checked* by `tests/levels/test_mothership_base7.py`: the whole loop from a plain folder,
+the debris deleted then `git add .`, the debris sealed (lost) and pushed (lost), goals in any
+order, and a local commit after the push.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| debrief | the loop: `git init`, `git add` by name, `git commit`, `git remote add`, `git push -u` | E5, E34, E55, E48, E61 |
+| card | `git status` says what is staged, what changed, and how the branch stands against its upstream | E14, E53, E63; git-status(1) |
+| `DEBRIS_SEALED`, `DEBRIS_LAUNCHED` (lost) | a commit cannot be taken back until a later chapter | as vault-seal; `kit.in_history` on both repositories |
+| scene, briefing | the history was lost with the computer; the files survived | setup: a plain folder, no `.git` (E33: the history lives only in `.git`) |
