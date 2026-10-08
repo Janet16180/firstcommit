@@ -9,7 +9,7 @@ installBrowser();
 const { MomentLayer, ArtMoments, Strings, Dom } = load(["dom.js", "strings.js", "art-pixels.js", "art-moments.js", "moment-layer.js"], ["MomentLayer", "ArtMoments", "Strings", "Dom"]);
 
 /* Plays with a stand-in for ArtMoments.play, whose moments end when the test says. */
-function withFakeMoments(run) {
+async function withFakeMoments(run) {
   const real = ArtMoments.play;
   const played = [];
   ArtMoments.play = (name, options) => {
@@ -20,7 +20,7 @@ function withFakeMoments(run) {
     return { element, finished };
   };
   try {
-    return run(played);
+    return await run(played);
   } finally {
     ArtMoments.play = real;
   }
@@ -56,8 +56,8 @@ test("a moment covers the zones until it is over", async () => {
   });
 });
 
-test("a click puts the moment away before it is over", () => {
-  withFakeMoments(() => {
+test("a click puts the moment away before it is over", async () => {
+  await withFakeMoments(() => {
     const layer = MomentLayer.create();
     layer.play("secret-leak");
     layer.element.click();
@@ -65,8 +65,8 @@ test("a click puts the moment away before it is over", () => {
   });
 });
 
-test("each moment plays once while the layer lives", () => {
-  withFakeMoments((played) => {
+test("each moment plays once while the layer lives", async () => {
+  await withFakeMoments((played) => {
     const layer = MomentLayer.create();
     layer.play("secret-leak");
     layer.play("secret-leak");
@@ -75,10 +75,32 @@ test("each moment plays once while the layer lives", () => {
   });
 });
 
-test("when the player asked for reduced motion the moment is told so, and shows its still frame", () => {
-  withFakeMoments((played) => {
+test("when the player asked for reduced motion the moment is told so, and shows its still frame", async () => {
+  await withFakeMoments((played) => {
     MomentLayer.create({ reducedMotion: true }).play("launch");
     MomentLayer.create({ reducedMotion: false }).play("launch");
     assert.deepEqual(played.map((moment) => moment.options.reducedMotion), [true, false]);
+  });
+});
+
+test("the layer says when no moment is showing: at once, or once the moment is over or put away", async () => {
+  await withFakeMoments(async (played) => {
+    const layer = MomentLayer.create();
+    let idle = false;
+    await layer.idle();
+    layer.play("launch");
+    layer.idle().then(() => (idle = true));
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(idle, false);
+    played[0].end();
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(idle, true);
+
+    let away = false;
+    layer.play("secret-leak");
+    layer.idle().then(() => (away = true));
+    layer.element.click();
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.equal(away, true);
   });
 });

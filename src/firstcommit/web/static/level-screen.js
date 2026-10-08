@@ -145,15 +145,16 @@ const LevelScreen = (function () {
     ctx.sound.play("goal");
   }
 
-  /* A check's result. A solve says its verdict, so no earlier nudge outlives it; an automatic
-     check that does not solve says nothing: the player did not ask. */
-  function checked(screen, result, auto = false) {
+  /* A check's result. A solve says its verdict, so no earlier nudge outlives it, unless Rama's line
+     must `keep` what it says about the typed lines; an automatic check that does not solve says
+     nothing: the player did not ask. */
+  function checked(screen, result, { auto = false, keep = false } = {}) {
     if (result.lost) {
       lostWork(screen, result.message);
     } else if (result.solved) {
       if (screen.finished) return;
       stop(screen);
-      screen.ui.comms.say(result.message, "ok");
+      if (!keep) screen.ui.comms.say(result.message, "ok");
       won(screen, { debrief: result.debrief, stars: result.stars, card: result.new_card, payout: result.payout });
     } else if (!auto) {
       screen.ui.comms.say(result.message, "err");
@@ -190,10 +191,12 @@ const LevelScreen = (function () {
     return line;
   }
 
-  /* A solve: `debrief` (the lesson), `stars` won, the new command `card` or null, the `payout`. */
+  /* A solve: `debrief` (the lesson), `stars` won, the new command `card` or null, the `payout`.
+     The band waits for a moment still playing over the zones. */
   async function won(screen, { debrief, stars, card, payout }) {
     const { ctx, levelId } = screen;
     screen.mission.solved();
+    await screen.ui.moments.idle();
     const status = await ctx.refresh();
     const next = Progress.nextLevel(status.chapters, levelId);
     ctx.sound.play("complete");
@@ -284,8 +287,9 @@ const LevelScreen = (function () {
       if (observation.commands.length && !observation.reactions.length && predicting(screen)) screen.ui.comms.say(t(SAY.predictFirst), "info");
       echo(screen, observation.commands);
       if (observation.commands.length) await recount(screen);
-      if (plan.watchStep) stepped(screen, await game.step(null), { watched: true, keep: observation.reactions.some(kept) });
-      if (plan.autoCheck && !screen.finished) checked(screen, await game.check(null, true), true);
+      const keep = observation.reactions.some(kept);
+      if (plan.watchStep) stepped(screen, await game.step(null), { watched: true, keep });
+      if (plan.autoCheck && !screen.finished) checked(screen, await game.check(null, true), { auto: true, keep });
     } catch (error) {
       if (!expected(screen, error)) throw error;
     }

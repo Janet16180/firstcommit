@@ -195,6 +195,20 @@ test("a goal met by a line with a plain reaction is said on Rama's line, as befo
   run.view.dispose();
 });
 
+test("a solve by a line whose reaction plays a moment keeps that reaction on Rama's line, and the band waits for the moment", async () => {
+  const reactions = [{ line: "git pull", mood: "ok", text: para("The whole ship is in your station."), moment: "launch" }];
+  const run = screen({ active: { ...record("active"), step: 3, auto_check: true }, replies: { "/api/check": record("check_solved"), "/api/observe": { ...quiet(), reactions } } });
+  await settle();
+  await settle();
+  assert.equal(run.q(".comms-text").textContent, "The whole ship is in your station.");
+  assert.ok(!document.querySelector(".band-layer"));
+  assert.ok(!run.q(".dock"));
+  await run.clock.advance(10000);
+  assert.ok(Boolean(run.q(".dock")));
+  assert.equal(run.q(".comms-text").textContent, "The whole ship is in your station.");
+  run.view.dispose();
+});
+
 test("once the quest is done the mission is checked by itself; a solve stops the polling and docks the lesson at the bottom", async () => {
   const run = screen({ active: { ...record("active"), step: 3, auto_check: true }, replies: { "/api/check": record("check_solved") } });
   await settle();
