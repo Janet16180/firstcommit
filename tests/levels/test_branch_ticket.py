@@ -35,6 +35,19 @@ def test_the_fix_pushed_to_the_mothership_main_skipped_review() -> None:
     assert [line["status"] for line in typed] == [0, 0, 0]
     verdict = level.check(lab, state, None, typed)
     assert (verdict.lost, verdict.message) == (True, level.MAIN_TOUCHED)
+    rule = reaction(level, typed[-1], {"push-received"}, True, False, branch="main")
+    assert rule is not None and (rule.mood, rule.text, rule.moment) == ("warn", level.UNREVIEWED, "unreviewed-main")
+
+
+def test_pushing_main_by_name_from_the_fix_branch_also_skips_review_but_pushing_the_fix_does_not() -> None:
+    def said(line: str, branch: str) -> kit.ReactionRule | None:
+        return reaction(level, {"line": line, "status": 0}, {"push-received"}, True, False, branch=branch)
+
+    by_name = said("git push origin main", "fix-lights")
+    assert by_name is not None and by_name.moment == "unreviewed-main"
+    for line, branch in (("git push -u origin fix-lights", "fix-lights"), ("git push -u origin fix-lights", "main"), ("git push", "fix-lights")):
+        rule = said(line, branch)
+        assert rule is None or rule.moment is None, (line, branch)
 
 
 def test_the_fix_thrown_away_before_any_commit_is_lost() -> None:

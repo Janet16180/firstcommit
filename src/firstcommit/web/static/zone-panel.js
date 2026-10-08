@@ -105,7 +105,7 @@ const ZonePanel = (function () {
      its count leaves them out: git does not see them. */
   function stationContents(reading, prefix, height) {
     const files = reading.workshop.map((file) => fileChip(file.path, stateTag(file.state), { "data-state": file.state, "data-key": `${prefix}workshop:${file.path}`, title: t(`zones.tip.${file.state}`) }));
-    const ignored = reading.ignored.map((group) => fileChip(group.name, (group.count === 1 ? t("zones.ignoredOne") : t("zones.ignored", { count: group.count })), { class: "file is-ignored", title: t("zones.tip.ignored") }));
+    const ignored = reading.ignored.map((group) => fileChip(group.name, (group.count === 1 ? t("zones.ignoredOne") : t("zones.ignored", { count: group.count })), { class: "file is-ignored art-ignore-field", title: t("zones.tip.ignored") }));
     const workshop = [...files, ...ignored];
     const dock = reading.dock && reading.dock.map((change) => fileChip(change.path, t(`zones.change.${change.change}`), { class: "file is-staged", "data-key": `${prefix}dock:${change.path}` }));
     return {

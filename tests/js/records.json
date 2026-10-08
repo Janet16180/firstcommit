@@ -141,7 +141,10 @@
   ],
   "scene_seen": false,
   "view": "history",
-  "views_seen": ["station", "crew"],
+  "views_seen": [
+   "station",
+   "crew"
+  ],
   "card": {
    "level": "sample-second",
    "command": "git commit -m \"Message\"",
@@ -740,6 +743,28 @@
     ],
     "moment": null
    }
+  ],
+  "conflicts": [
+   {
+    "path": "docking.txt",
+    "you": {
+     "label": "main",
+     "author": "Cadet",
+     "lines": [
+      "Dock at bay 3"
+     ]
+    },
+    "them": {
+     "label": "scout",
+     "author": "Alex",
+     "lines": [
+      "Dock at bay 4"
+     ]
+    },
+    "base": [
+     "Dock at bay 2"
+    ]
+   }
   ]
  },
  "cards": [
@@ -1278,7 +1303,12 @@
      }
     ],
     "pushed": [],
-    "remotes": [{"name": "origin", "url": "../github.com/moonbase/project.git"}],
+    "remotes": [
+     {
+      "name": "origin",
+      "url": "../github.com/moonbase/project.git"
+     }
+    ],
     "files": [
      {
       "path": "README.md",
@@ -1380,7 +1410,12 @@
      }
     ],
     "pushed": [],
-    "remotes": [{"name": "origin", "url": "../../github.com/moonbase/project.git"}],
+    "remotes": [
+     {
+      "name": "origin",
+      "url": "../../github.com/moonbase/project.git"
+     }
+    ],
     "files": [
      {
       "path": "README.md",
@@ -1532,7 +1567,8 @@
     ]
    },
    "commands": [],
-   "reactions": []
+   "reactions": [],
+   "conflicts": []
   },
   "observation": {
    "level": "cargo-sample",
@@ -1564,7 +1600,12 @@
      }
     ],
     "pushed": [],
-    "remotes": [{"name": "origin", "url": "../github.com/moonbase/project.git"}],
+    "remotes": [
+     {
+      "name": "origin",
+      "url": "../github.com/moonbase/project.git"
+     }
+    ],
     "files": [
      {
       "path": "README.md",
@@ -1678,7 +1719,12 @@
     "pushed": [
      "origin/main"
     ],
-    "remotes": [{"name": "origin", "url": "../../github.com/moonbase/project.git"}],
+    "remotes": [
+     {
+      "name": "origin",
+      "url": "../../github.com/moonbase/project.git"
+     }
+    ],
     "files": [
      {
       "path": "README.md",
@@ -1924,7 +1970,8 @@
     ]
    },
    "commands": [],
-   "reactions": []
+   "reactions": [],
+   "conflicts": []
   },
   "explanation": null,
   "fix": null,

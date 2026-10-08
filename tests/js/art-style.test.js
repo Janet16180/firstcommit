@@ -133,3 +133,47 @@ test("reduced motion plays neither birth", () => {
   const reduced = STYLE.slice(STYLE.indexOf("@media (prefers-reduced-motion: reduce)"));
   for (const selector of [".sky.art-birth-fold *", ".sky.art-birth-unroll *"]) assert.ok(reduced.includes(selector), selector);
 });
+
+test("the flatten squashes Alex's mirrored station up into a thin fading line over the page's birth time", () => {
+  assert.match(rules(".sky.art-birth-flatten .station.is-mirror").join(""), /transform-origin: top/);
+  const [, name, duration] = birthAnimation(".sky.art-birth-flatten .station.is-mirror");
+  assert.equal(duration, BIRTH);
+  assert.match(frames(name), /0%, \d+% \{ transform: none; opacity: 1; \}/);
+  assert.match(frames(name), /to \{ transform: translateY\(-\d+px\) scaleY\(0\.0\d+\); opacity: 0; \}/);
+  const [, flows] = birthAnimation(".sky.art-birth-flatten .flow.is-mirror");
+  assert.equal(flows, "art-birth-fade-out");
+});
+
+test("in the flatten the band's cards land from below without touching their resting opacity, then the name shows", () => {
+  const card = ".sky.art-birth-flatten .strip.is-band .strip-card";
+  assert.match(rules(card).join(""), /transform-origin: bottom/);
+  const [, name, duration] = birthAnimation(card);
+  assert.equal(duration, BIRTH);
+  assert.match(frames(name), /from \{ transform: translateY\(\d+px\) scaleY\(0\); \}/);
+  assert.match(frames(name), /to \{ transform: none; \}/);
+  assert.ok(!/opacity/.test(frames(name)), "the band's own opacity stays");
+  assert.deepEqual(birthAnimation(".sky.art-birth-flatten .strip.is-band .strip-who").slice(1), ["art-birth-after", BIRTH]);
+});
+
+test("reduced motion plays no flatten", () => {
+  const reduced = STYLE.slice(STYLE.indexOf("@media (prefers-reduced-motion: reduce)"));
+  assert.ok(reduced.includes(".sky.art-birth-flatten *"));
+});
+
+test("an ignored folder's chip sits behind a calm scanline field with emitters at its corners, behind its words", () => {
+  const chip = rules(".art-ignore-field").join("");
+  assert.match(chip, /position: relative/);
+  assert.match(chip, /isolation: isolate/);
+  const field = rules(".art-ignore-field::after").join("");
+  assert.match(field, /content: ""/);
+  assert.match(field, /position: absolute/);
+  assert.match(field, /z-index: -1/);
+  assert.match(field, /pointer-events: none/);
+  assert.match(field, /repeating-linear-gradient\(/);
+  assert.equal((field.match(/no-repeat/g) || []).length, 4, "four corner emitters");
+  for (const [, token] of field.matchAll(/var\((--[\w-]+)/g)) assert.ok(TOKENS.has(token), token);
+  assert.ok(!/#[0-9A-Fa-f]{3,6}\b|\brgba?\(|\bhsla?\(/.test(field));
+  assert.ok(!/::before/.test(STYLE.match(/\.art-ignore-field[^{]*\{/g).join("")), "the chip's ::before is its state dot");
+  const reduced = STYLE.slice(STYLE.indexOf("@media (prefers-reduced-motion: reduce)"));
+  assert.ok(reduced.includes(".art-ignore-field::after"));
+});

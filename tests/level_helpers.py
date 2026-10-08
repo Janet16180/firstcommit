@@ -104,7 +104,14 @@ def watch(module: ModuleType, step_id: str) -> kit.WatchStep:
 
 
 def reaction(
-    module: ModuleType, line: kit.Command, kinds: set[str], repository: bool, staged: bool, remote: bool = True, ignored: bool = False
+    module: ModuleType,
+    line: kit.Command,
+    kinds: set[str],
+    repository: bool,
+    staged: bool,
+    remote: bool = True,
+    ignored: bool = False,
+    branch: str | None = "main",
 ) -> kit.ReactionRule | None:
     """
     Find what Rama says about a line in a level: its own rules first, then the shared ones.
@@ -125,10 +132,12 @@ def reaction(
         Whether the repository names a remote afterwards; most levels' repositories do.
     ignored : bool
         Whether the working folder holds ignored files afterwards; most levels' folders do not.
+    branch : str | None
+        The branch the player is on afterwards, or None on no branch; ``main`` by default.
 
     Returns
     -------
     kit.ReactionRule | None
         The rule that speaks, or None.
     """
-    return reactions.react(line, kinds, repository, staged, (*runner.load(module).reactions, *reactions.RULES), remote=remote, ignored=ignored)
+    return reactions.react(line, kinds, repository, staged, (*runner.load(module).reactions, *reactions.RULES), remote=remote, ignored=ignored, branch=branch)

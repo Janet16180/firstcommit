@@ -1,9 +1,10 @@
 """
 Collision: a conflict is a question. Read both sides, choose, add, and commit the merge.
 
-Wave 2, conflict 6-3 (docs/drafts/chapters-3-7.md), guided. Setup makes a repository where
-``main`` moved the docking to bay 3 while ``scout`` moved it to bay 4, its message saying bay 3
-is closed for repairs. The goals: the merge paused with ``docking.txt`` in conflict; the file
+Wave 2, conflict 6-3 (docs/drafts/chapters-5-9.md), guided. Setup makes a repository where
+``main`` moved the docking to bay 3 while Alex, on ``scout``, moved it to bay 4, the commit's
+message saying bay 3 is closed for repairs; the page draws the two sides as yours and Alex's
+(`firstcommit.repomap.conflicts`). The goals: the merge paused with ``docking.txt`` in conflict; the file
 read with ``cat`` (typed: reading both sides is the lesson); bay 4 in the working folder with no
 markers; the file added, so no conflict is left; and ``main``'s last commit holding bay 4 with
 ``scout`` in its history. Markers or bay 3 committed are named, with the way to fix them.
@@ -30,6 +31,7 @@ SCENE = [
 
 DOCKING = "docking.txt"
 SCOUT = "scout"
+ALEX = kit.Person("Alex", "alex@example.com")
 START = "Dock at bay 2\n"
 OURS = "Dock at bay 3\n"
 THEIRS = "Dock at bay 4\n"
@@ -38,8 +40,9 @@ MERGE = r"git merge\b"
 READ = r"cat docking\.txt\b"
 
 BRIEFING = """
-`main` moved the docking to bay 3. `scout` moved it to bay 4, and its commit says why: bay 3 is
-closed for repairs. Bring `scout` into `main`, and answer the conflict with the right bay.
+You moved the docking to bay 3 on `main`. Alex, on `scout`, moved it to bay 4, and Alex's commit
+says why: bay 3 is closed for repairs. Bring `scout` into `main`, and answer the conflict with the
+right bay.
 
 The mission is done when you have read both sides of the conflict with `cat docking.txt`, and
 `main`'s last commit holds `scout`'s work and docks at bay 4, with no conflict markers.
@@ -47,16 +50,16 @@ The mission is done when you have read both sides of the conflict with `cat dock
 
 HINTS = [
     "`git merge --no-edit scout` stops with `docking.txt` in conflict; `cat docking.txt` shows both sides between markers.",
-    "Bay 4 is `scout`'s side, the incoming one: `git restore --theirs docking.txt` keeps it.",
+    "Bay 4 is Alex's side, the incoming one from `scout`: `git restore --theirs docking.txt` keeps it.",
     "`git add docking.txt` marks the conflict solved; `git commit --no-edit` then finishes the merge with Git's message.",
     "Every line of the mission, in order:\n\n    $ git merge --no-edit scout\n    $ cat docking.txt\n    $ git restore --theirs docking.txt\n    $ git add docking.txt\n    $ git commit --no-edit",
 ]
 
 DEBRIEF = """
 The merge stopped because both sides changed the same line, and Git cannot know which is right.
-`cat docking.txt` showed both: yours between `<<<<<<<` and `=======`, `scout`'s between `=======` and
-`>>>>>>>`. `scout`'s commit gave the reason, so you kept its side with `git restore --theirs`, or by
-writing the file yourself. `git add` marked the conflict solved, and `git commit --no-edit` finished
+`cat docking.txt` showed both: yours between `<<<<<<<` and `=======`, Alex's between `=======` and
+`>>>>>>>`. Git calls your side *ours* and the incoming side *theirs*. Alex's commit gave the reason,
+so you kept Alex's side with `git restore --theirs`, or by writing the file yourself. `git add` marked the conflict solved, and `git commit --no-edit` finished
 the merge with two parents.
 
 A conflict is a question, not a breakage: nothing was lost while the merge was paused, and
@@ -74,10 +77,10 @@ Commands to keep:
 NO_REPOSITORY = "This folder is no longer a repository: `.git` is gone. Leave the level and start it again to get it back."
 NOT_STARTED = "Bring `scout` in: `git merge --no-edit scout`."
 CONFLICT = "The merge stopped: `docking.txt` is in conflict, and Git waits for your answer."
-READ_BOTH = "Both sides are there: bay 3 is yours, bay 4 is `scout`'s."
+READ_BOTH = "Both sides are there: bay 3 is yours, bay 4 is Alex's."
 NOT_READ = "Read both sides of the conflict: `cat docking.txt`."
 MARKERS = "`docking.txt` still holds the conflict markers. Keep one side: `git restore --theirs docking.txt`."
-BAY_3 = "`docking.txt` docks at bay 3, which is closed for repairs. `scout`'s side is right: `git restore --theirs docking.txt`."
+BAY_3 = "`docking.txt` docks at bay 3, which is closed for repairs. Alex's side is right: `git restore --theirs docking.txt`."
 CHOSEN = "`docking.txt` docks at bay 4, with no markers."
 OTHER = "`docking.txt` should say `Dock at bay 4`, the incoming side: `git restore --theirs docking.txt`."
 NOT_ADDED = "Mark the conflict solved: `git add docking.txt`."
@@ -314,7 +317,7 @@ QUEST: list[kit.Step] = [
 ]
 
 
-def _commit(lab: kit.Lab, text: str, message: str, day: int) -> None:
+def _commit(lab: kit.Lab, text: str, message: str, day: int, author: kit.Person = kit.PLAYER) -> None:
     """
     Write the docking plan and commit it on the current branch.
 
@@ -328,10 +331,12 @@ def _commit(lab: kit.Lab, text: str, message: str, day: int) -> None:
         The commit's message.
     day : int
         The day of June 2026 it is dated.
+    author : kit.Person
+        Who made it; you by default.
     """
     (lab.project / DOCKING).write_text(text)
     kit.git(lab.project, "add", DOCKING)
-    kit.git(lab.project, "commit", "-q", "-m", message, author=kit.PLAYER, when=f"2026-06-{day:02}T09:00:00+00:00")
+    kit.git(lab.project, "commit", "-q", "-m", message, author=author, when=f"2026-06-{day:02}T09:00:00+00:00")
 
 
 def setup(lab: kit.Lab) -> kit.State:
@@ -351,7 +356,7 @@ def setup(lab: kit.Lab) -> kit.State:
     kit.git(lab.root, "init", "-q", str(lab.project))
     _commit(lab, START, "Write the docking plan", 1)
     kit.git(lab.project, "switch", "-q", "-c", SCOUT)
-    _commit(lab, THEIRS, "Bay 3 is closed for repairs: dock at bay 4", 2)
+    _commit(lab, THEIRS, "Bay 3 is closed for repairs: dock at bay 4", 2, ALEX)
     kit.git(lab.project, "switch", "-q", "main")
     _commit(lab, OURS, "Move the docking to bay 3", 3)
     return {}

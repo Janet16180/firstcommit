@@ -29,6 +29,7 @@ const ENGLISH = {
   collision: { conflict: "CONFLICT", lines: "same file, same lines" },
   blackbox: { main: "main", reflog: "reflog" },
   meteor: { base: "base 7", alert: "alert" },
+  simulator: { simulator: "jump simulator", output: "sim-output/", workshop: "workshop" },
 };
 
 const SPANISH = {
@@ -38,15 +39,16 @@ const SPANISH = {
   conveyor: { workshop: "taller", dock: "muelle", title: "git add elige qué se carga" },
   chain: { ...ENGLISH.chain, message1: "despegue", message2: "parada en Fobos", message3: "bitácora", caption: "cada cápsula apunta a la anterior" },
   collision: { conflict: "CONFLICT", lines: "mismo archivo, mismas líneas" },
+  simulator: { simulator: "simulador de saltos", output: "sim-output/", workshop: "taller" },
 };
 
 const wordsOf = (picture) => [...walk(picture)].filter((node) => node.localName === "text").map((node) => node.textContent);
 
-test("the scenes are the design's thirteen, the four new ones of chapters 5 to 7, and Base 7's meteor", () => {
+test("the scenes are the design's thirteen, the four new ones of chapters 5 to 7, Base 7's meteor and Junk bay's simulator", () => {
   assert.deepEqual([...ArtScenes.NAMES], [
     "space", "timeline", "terminal", "planet", "flag", "zones", "conveyor",
     "capsule", "chain", "orbit", "rocket", "pull", "alarm",
-    "fork", "merge", "collision", "blackbox", "meteor",
+    "fork", "merge", "collision", "blackbox", "meteor", "simulator",
   ]);
 });
 
@@ -90,7 +92,7 @@ test("a missing caption is refused, naming the scene and the key", () => {
 
 test("the moving pictures move with the art sheet's step animations", () => {
   const classes = (name) => [...walk(ArtScenes.scene(name, { captions: ENGLISH[name] }))].flatMap((node) => node.classList.list());
-  const moves = { capsule: ["art-drop", "art-lid"], orbit: ["art-orbit"], rocket: ["art-push"], pull: ["art-pull"], alarm: ["art-alarm"], meteor: ["art-meteor", "art-boom", "art-alarm"], fork: ["art-slide"], collision: ["art-slide"], blackbox: ["art-vanish", "art-slide"], merge: ["art-pop"] };
+  const moves = { capsule: ["art-drop", "art-lid"], orbit: ["art-orbit"], rocket: ["art-push"], pull: ["art-pull"], alarm: ["art-alarm"], meteor: ["art-meteor", "art-boom", "art-alarm"], fork: ["art-slide"], collision: ["art-slide"], blackbox: ["art-vanish", "art-slide"], merge: ["art-pop"], simulator: ["art-belt", "art-pop"] };
   for (const [name, wanted] of Object.entries(moves)) for (const className of wanted) assert.ok(classes(name).includes(className), `${name} uses ${className}`);
 });
 
@@ -127,4 +129,19 @@ test("in the alarm, your base's label keeps clear of Rama", () => {
   const rama = [...walk(alarm)].find((node) => /^translate\(\d+ 38\) scale\(2\)$/.test(node.getAttribute("transform") || ""));
   const ramaLeft = Number(rama.getAttribute("transform").match(/translate\((\d+)/)[1]);
   assert.ok(ramaLeft >= 75, `Rama starts at ${ramaLeft}`);
+});
+
+test("the simulator feeds a belt of crates into the workshop, piled past its roof and falling outside", () => {
+  const simulator = ArtScenes.scene("simulator", { captions: ENGLISH.simulator });
+  const top = (node) => Number((node.getAttribute("transform") || "").match(/^translate\(\d+ (-?\d+)\)$/)?.[1]);
+  const crates = [...simulator.querySelectorAll("g.art-pop")].map((pop) => pop.parentNode).filter((node) => !Number.isNaN(top(node)));
+  const room = [...walk(simulator)].find((node) => node.getAttribute("data-part") === "workshop");
+  const roof = Number(room.getAttribute("y"));
+  const [left, right] = [Number(room.getAttribute("x")), Number(room.getAttribute("x")) + Number(room.getAttribute("width"))];
+  const leftOf = (node) => Number(node.getAttribute("transform").match(/^translate\((\d+)/)[1]);
+  assert.ok(crates.length >= 15, `${crates.length} crates`);
+  assert.ok(crates.some((crate) => top(crate) < roof), "some crates stand above the roof");
+  assert.ok(crates.some((crate) => leftOf(crate) < left || leftOf(crate) >= right), "some fall outside its walls");
+  assert.ok(simulator.querySelectorAll(".art-belt").length >= 2, "crates ride the belt");
+  assert.ok(fillsOf(simulator).has("var(--art-orange)"), "workshop crates in the workshop's colour");
 });

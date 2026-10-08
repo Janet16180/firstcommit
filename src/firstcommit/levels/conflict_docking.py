@@ -81,7 +81,7 @@ SENT = "The mothership's `main` is yours."
 FORCED = "`--force` replaced the mothership's `main` with yours. On a team, that erases someone's work."
 
 REACTIONS = [
-    kit.ReactionRule(line=FORCE, mood="err", text=FORCED, outcome="ok"),
+    kit.ReactionRule(line=FORCE, mood="err", text=FORCED, outcome="ok", moment="force-break"),
 ]
 
 

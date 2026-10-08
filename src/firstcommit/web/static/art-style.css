@@ -306,6 +306,19 @@
   to { opacity: 0.15; }
 }
 
+/* A crate riding the simulator's belt into the workshop: it comes out of the slot and goes in at
+   the door, again and again. */
+.art-belt {
+  animation: art-belt 3s steps(15) infinite;
+}
+
+@keyframes art-belt {
+  0% { transform: translateX(0); opacity: 0; }
+  8% { opacity: 1; }
+  90% { transform: translateX(42px); opacity: 1; }
+  100% { transform: translateX(42px); opacity: 0; }
+}
+
 .art-sparks {
   position: absolute;
   inset: 0;
@@ -709,6 +722,69 @@
   to { opacity: 1; }
 }
 
+/* The flatten (data-view "flatten", level 5-3): with the crew view on the stage and Alex's band
+   above it, Alex's mirrored station squashes up toward the band into a thin line and fades, its
+   flows fade, and the band's cards land from below; the band's name shows last. The cards keep
+   the band's own opacity, so the frame after the birth matches. */
+.sky.art-birth-flatten .station.is-mirror {
+  transform-origin: top;
+  animation: art-birth-flatten-station var(--art-birth, 1.4s) steps(8) both;
+}
+
+@keyframes art-birth-flatten-station {
+  0%, 8% { transform: none; opacity: 1; }
+  45% { transform: scaleY(0.12); opacity: 1; }
+  70% { transform: translateY(-24px) scaleY(0.02); opacity: 0; }
+  to { transform: translateY(-24px) scaleY(0.02); opacity: 0; }
+}
+
+.sky.art-birth-flatten .flow.is-mirror {
+  animation: art-birth-fade-out var(--art-birth, 1.4s) steps(4) both;
+}
+
+.sky.art-birth-flatten .strip.is-band .strip-card {
+  transform-origin: bottom;
+  animation: art-birth-band-land var(--art-birth, 1.4s) steps(8) both;
+}
+
+@keyframes art-birth-band-land {
+  from { transform: translateY(24px) scaleY(0); }
+  40% { transform: translateY(24px) scaleY(0); }
+  88% { transform: translateY(-2px); }
+  to { transform: none; }
+}
+
+.sky.art-birth-flatten .strip.is-band .strip-who {
+  animation: art-birth-after var(--art-birth, 1.4s) steps(4) both;
+}
+
+/* Put on an ignored folder's chip (.file.is-ignored, orbit.css): a calm field of scanlines
+   behind its words, with an emitter at each corner, in the workshop's colour. The files are still
+   on the disk, out of Git's sight. ::after, because the chip's ::before is its state dot. */
+.art-ignore-field {
+  position: relative;
+  isolation: isolate;
+}
+
+.art-ignore-field::after {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--z-wd) 0 0) 0 0 / 3px 3px no-repeat,
+    linear-gradient(var(--z-wd) 0 0) 100% 0 / 3px 3px no-repeat,
+    linear-gradient(var(--z-wd) 0 0) 0 100% / 3px 3px no-repeat,
+    linear-gradient(var(--z-wd) 0 0) 100% 100% / 3px 3px no-repeat,
+    repeating-linear-gradient(to bottom, color-mix(in srgb, var(--z-wd) 20%, transparent) 0 1px, transparent 1px 3px);
+  animation: art-ignore-shimmer 4s steps(2) infinite;
+}
+
+@keyframes art-ignore-shimmer {
+  50% { opacity: 0.6; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .art-rama,
   .art-rama *,
@@ -723,7 +799,9 @@
   .art-crew-flight::after,
   .art-moment *,
   .sky.art-birth-fold *,
-  .sky.art-birth-unroll * {
+  .sky.art-birth-unroll *,
+  .sky.art-birth-flatten *,
+  .art-ignore-field::after {
     animation: none !important;
   }
 

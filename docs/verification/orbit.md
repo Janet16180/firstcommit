@@ -721,16 +721,17 @@ numbered on from E82:
 
 ### Level `conflict-meet` (Two crews meet, 6-1)
 
-*Re-checked* by `tests/levels/test_conflict_meet.py`: the fast-forward making no commit, the merge
-commit with two parents keeping both changes, `scout` merged first (lost), and a graph drawn before
-the merge.
+Reworked 2026-10-08 to one idea (docs/drafts/chapters-5-9.md): `beacon` and its fast-forward are
+gone. *Re-checked* by `tests/levels/test_conflict_meet.py`: `main` and Alex's `scout` diverged, the
+merge making exactly one commit with two parents and keeping both changes and the `scout` label, a
+paused merge named, and a graph drawn before the merge.
 
 | Text | Claim | Evidence |
 |---|---|---|
-| card, prediction reveal, `FORWARDED`, debrief | with nothing new on your branch, a merge slides the label and makes no commit | E83; git-merge(1) FAST-FORWARD MERGE |
-| card, `MERGED`, debrief | when both moved on, a merge commit with two parents keeps both changes | E84; git-merge(1) TRUE MERGE |
-| debrief, hint 2 | `--no-edit` keeps git's prepared message; without it git opens an editor on a terminal | E85; git-merge(1) `--edit, -e, --no-edit` |
-| `MERGED_BEACON` (lost) | merged after `scout`, `beacon` comes in through a merge commit | the level's test |
+| prediction reveal | with only one side moved, Git slides the label and makes no commit, as in 4-3 | E83; git-merge(1) FAST-FORWARD MERGE; 4-3's pull is a fast-forward (its setup leaves your `main` with nothing new) |
+| card, prediction reveal, `MERGED`, debrief | when both moved on, one merge commit with two parents keeps both changes | E84; git-merge(1) TRUE MERGE |
+| card, debrief | the merged branch stays where it was: a merge removes no branch | E84 (`scout` unmoved, *re-checked*); git-merge(1) DESCRIPTION |
+| debrief, hint 1 | `--no-edit` keeps git's prepared message; without it git opens an editor on a terminal | E85; git-merge(1) `--edit, -e, --no-edit` |
 
 ### Level `conflict-abort` (Abort the docking, 6-2)
 
@@ -851,3 +852,35 @@ address looks like https://github.com/moonbase/project.git". E48 to E101 above r
 | Claim | Says | Evidence |
 |---|---|---|
 | 5-3 debrief | after Alex's fetch, Alex's repository has `origin/scout` and Alex's own branches did not move | E106 (fetch exits 0); git-fetch(1) DESCRIPTION; *re-checked* by `tests/levels/test_branch_send.py` |
+
+## 5-4 Edits come along (added 2026-10-08)
+
+| Tag | What ran | Result |
+|---|---|---|
+| E108 | on the host (git 2.43.0): `main` and `scout` with the same `lights.cfg` and different `route.txt`; on `main`, `lights.cfg` edited; `git switch scout`; then `route.txt` edited and `git switch main`, `git checkout main`; also `git switch nope`, `git checkout nope`, `git switch -c scout` | the first switch exits 0, prints `M lights.cfg` and keeps the edit; with `route.txt` edited, both `switch main` and `checkout main` exit 1 with "Your local changes to the following files would be overwritten by checkout: route.txt ... Aborting" and stay on `scout` with the edit; an unknown branch exits 128 (`switch`) or 1 (`checkout`, "did not match any file(s)"); an existing name for `-c` exits 128 |
+
+| Claim | Says | Evidence |
+|---|---|---|
+| card, prediction reveal, `CARRIED`, debrief | an uncommitted edit is on no branch: it stays in the working folder while you switch | E108; git-switch(1) DESCRIPTION ("Switching branches does not require a clean index and working tree") |
+| `REFUSED`, `SWITCH_REFUSED`, debrief | Git refuses only when the switch would overwrite an edit; the edit stays | E108; git-switch(1) (the operation is aborted when it would lose local changes) |
+| `SWITCH_REFUSED` | two ways out: commit here, or `git restore route.txt` | E108 (the refusal); the commit route is *re-checked* by `tests/levels/test_branch_switch.py`; git-restore(1) (restores the working file from the staging area) |
+| `watch_refused` | it reads a failed switch while `route.txt` holds an edit; a switch to an unknown branch also fails, so it asks for the edit too | E108; *re-checked* by `tests/levels/test_branch_switch.py` |
+
+## 5-5: the unreviewed-main moment (added 2026-10-08)
+
+| Claim | Says | Evidence |
+|---|---|---|
+| `UNREVIEWED` (with the `unreviewed-main` moment) | a plain `git push` on `main`, or `git push origin main` from any branch, puts your commit on the mothership's `main`; Alex's next pull brings it to Alex | E64, E105 (a pull brings the mothership's `main`); git-push(1) (a plain push sends the current branch to its upstream); *re-checked* by `tests/levels/test_branch_ticket.py` (the push of the fix branch never carries the moment) |
+
+## 6-3: two sides, named by person (added 2026-10-08)
+
+`repomap.conflicts` reads each unmerged path's stages with `git ls-files --unmerged` and the blobs
+with `git cat-file blob`, so the halves stay true while the player edits the file; the incoming
+side's name comes from `MERGE_MSG` when a branch or remote-tracking branch of that name is
+`MERGE_HEAD`. *Re-checked* by `tests/test_repomap.py` (a merge, a pull naming `origin/main`, a
+deleted side, an add/add with no base) and `tests/levels/test_conflict_collision.py`.
+
+| Claim | Says | Evidence |
+|---|---|---|
+| 6-3 debrief | git calls your side *ours* and the incoming side *theirs* | git-merge(1) HOW CONFLICTS ARE PRESENTED; git-checkout(1) `--ours, --theirs`; git-restore(1) `--ours, --theirs` |
+| card (unchanged) | during a rebase the two can appear swapped | git-rebase(1) (`--ours`/`--theirs` swap) |

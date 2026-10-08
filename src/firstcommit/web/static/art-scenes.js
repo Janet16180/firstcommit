@@ -6,9 +6,10 @@
  * dom.js and art-pixels.js load first, art-style.css animates them.
  *
  * NAMES                   the scenes there are, the values of the engine's `Art`: the design's
- *                         thirteen, fork, merge, collision and blackbox for chapters 5 to 7, and
- *                         meteor for Base 7. alarm, which opens every challenge, is a red beacon
- *                         on your base; only meteor has the meteorite strike.
+ *                         thirteen, fork, merge, collision and blackbox for chapters 5 to 7,
+ *                         meteor for Base 7 and simulator for Junk bay (2-5). alarm, which opens
+ *                         every challenge, is a red beacon on your base; only meteor has the
+ *                         meteorite strike.
  * CAPTIONS                {scene: [key, ...]}: the captions each scene draws, in drawing order.
  *                         Every word or code in a picture comes from them, so a scene speaks
  *                         the page's language.
@@ -80,6 +81,49 @@ const ArtScenes = (function () {
 
   /* Children drawn where they end up, sliding in from (dx, dy) canvas pixels away. */
   const slide = (dx, dy, delay, children) => Dom.svg("g", { class: "art-slide", style: `--dx:${dx}px;--dy:${dy}px;animation-delay:${delay}s` }, children);
+
+  /* The workshop's crates: output the simulator writes, in the workshop's colour. */
+  const outputCrate = () => sprite("crate", { b: tone("art-orange"), B: tone("art-orange-dk") });
+
+  /* The jump simulator's cabinet, 40x50 on the ground from x 4, its receiver dish above, a
+     trajectory plotted on its screen and its output slot low on the right, at the belt. */
+  function simulatorCabinet() {
+    const arc = Array.from({ length: 27 }, (_, step) => {
+      const along = step / 26;
+      return rect(10 + step, Math.round(46 - 13 * (2 * along - along * along)), 1, 1, tone("art-mint"));
+    });
+    return [
+      rect(30, 18, 2, 6, tone("art-muted")),
+      rect(25, 16, 12, 2, tone("art-hull-shade")),
+      rect(27, 15, 8, 1, tone("art-hull-shade")),
+      rect(4, 24, 40, 50, tone("art-muted-dk"), { stroke: OUTLINE, "stroke-width": 1 }),
+      rect(5, 25, 38, 2, tone("art-muted")),
+      rect(8, 29, 32, 20, tone("crt"), { stroke: OUTLINE, "stroke-width": 1 }),
+      [16, 24, 32].map((x) => rect(x, 30, 1, 18, tone("crt-2"))),
+      [34, 39, 44].map((y) => rect(9, y, 30, 1, tone("crt-2"))),
+      arc,
+      rect(36, 31, 3, 3, tone("art-yellow")),
+      rect(8, 52, 3, 3, tone("art-mint")),
+      rect(13, 52, 3, 3, tone("art-mint"), { class: "art-tw", style: "animation-delay:0.6s" }),
+      rect(18, 52, 3, 3, tone("art-yellow"), { class: "art-tw", style: "animation-delay:1.3s" }),
+      rect(24, 52, 16, 3, tone("crt")),
+      rect(25, 53, 9, 1, tone("crt-ink")),
+      [58, 60, 62, 64].map((y) => rect(8, y, 20, 1, OUTLINE)),
+      rect(34, 59, 10, 2, tone("art-muted")),
+      rect(36, 61, 8, 9, OUTLINE),
+    ];
+  }
+
+  /* The crates in the order they pile up: two rows inside the room, a third level with the
+     roof, two more above it and two fallen off against the outside wall. */
+  const SIMULATOR_PILE = [
+    [99, 64], [111, 64], [123, 64], [135, 64],
+    [99, 54], [111, 54], [123, 54], [135, 54],
+    [99, 44], [111, 44], [123, 44], [135, 44],
+    [102, 34], [114, 34], [126, 34], [138, 34],
+    [108, 24], [126, 24],
+    [148, 64], [148, 54],
+  ];
 
   const SCENES = {
     space: {
@@ -357,6 +401,24 @@ const ArtScenes = (function () {
         text(53, 44, c.base, { size: 9 }),
         ramaAt(104, 38),
         text(80, 16, c.alert, { fill: tone("art-red"), size: 12, className: "art-alarm" }),
+      ],
+    },
+    simulator: {
+      captions: ["simulator", "output", "workshop"],
+      draw: (c) => [
+        sky("simulator", 25),
+        ground(),
+        simulatorCabinet(),
+        rect(44, 69, 54, 4, tone("art-muted"), { stroke: OUTLINE, "stroke-width": 1 }),
+        [48, 56, 64, 72, 80, 88].map((x) => rect(x, 70, 2, 2, OUTLINE)),
+        [0, -1.5].map((delay) => Dom.svg("g", { class: "art-belt", style: `animation-delay:${delay}s` }, place(44, 59, 1, outputCrate()))),
+        rect(98, 44, 50, 30, tone("void-2"), { "data-part": "workshop" }),
+        SIMULATOR_PILE.map(([x, y], index) => place(x, y, 1, outputCrate(), { className: "art-pop", delay: (0.3 + index * 0.15).toFixed(2) })),
+        rect(98, 44, 50, 30, "none", { stroke: tone("art-orange"), "stroke-width": 2 }),
+        rect(97, 58, 2, 15, tone("void-2")),
+        text(46, 84, c.simulator, { size: 7 }),
+        text(123, 16, c.output, { fill: tone("art-muted"), className: "art-fade", delay: 3.2 }),
+        text(123, 84, c.workshop, { fill: tone("art-orange"), size: 9 }),
       ],
     },
   };
