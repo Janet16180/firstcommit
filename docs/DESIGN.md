@@ -143,13 +143,19 @@ are deterministic.
 
 - **The game shell.** The page's terminal (termlab) and `firstcommit shell` start a shell with
   `GIT_CONFIG_GLOBAL=$FIRSTCOMMIT_HOME/gitconfig`, `GIT_CONFIG_NOSYSTEM=1` and
-  `GIT_CEILING_DIRECTORIES=$FIRSTCOMMIT_HOME/labs`. The player's own Git settings (credential
-  helpers, `push.autoSetupRemote`, aliases, signing) cannot change what a mission does, and a lab
-  never falls through to a repository in a parent folder. Both variables were checked 2026-10-05.
+  `GIT_CEILING_DIRECTORIES=$FIRSTCOMMIT_HOME/labs:$FIRSTCOMMIT_HOME/playground`. The player's own
+  Git settings (credential helpers, `push.autoSetupRemote`, aliases, signing) cannot change what a
+  mission does, and neither a lab nor the free playground ever falls through to a repository in a
+  parent folder. Both variables were checked 2026-10-05.
   Whatever the player's own shell, the game shell is bash with the game's startup file, so the
   prompt is the game's (the folder's name, never the user or the host), and each command line
   typed there is logged with its exit status in `$FIRSTCOMMIT_HOME/commands.log` for the figure;
   the log holds only commands typed in the game's own terminal and never leaves the game home.
+- **The playground's two shells.** The free playground has a terminal for you and one for Alex,
+  each a game shell with its own startup file, log and history under
+  `$FIRSTCOMMIT_HOME/playground-shells/<person>`. Alex's shell runs as the same Linux user, with
+  that folder as its `HOME` and its own `GIT_CONFIG_GLOBAL` there, signed Alex; it is a second
+  person's settings, not a second account.
 - **Lab repos pin what their level depends on** in their local config (for example
   `push.autoSetupRemote=false` in the upstream mission), so they still behave if the player runs
   git from a normal terminal.

@@ -50,10 +50,28 @@ program from a lab's ``.git/config``. The player's shell keeps the repository's 
 PLAYER = Person("Cadet", "cadet@example.com")
 """The player's identity until they set their own (the "Your real setup" chapter teaches ``git config``)."""
 
-BASE_CONFIG = (
-    "[init]\n\tdefaultBranch = main\n[core]\n\tpager = cat\n\teditor = true\n\texcludesFile =\n\tattributesFile =\n"
-    f"[user]\n\tname = {PLAYER.name}\n\temail = {PLAYER.email}\n\tuseConfigOnly = true\n"
-)
+
+def base_config(person: Person) -> str:
+    """
+    Give a global git configuration of the game's, signed as one person.
+
+    Parameters
+    ----------
+    person : Person
+        Whose name and email it holds.
+
+    Returns
+    -------
+    str
+        The configuration's text: `BASE_CONFIG`'s settings, with the person's identity.
+    """
+    return (
+        "[init]\n\tdefaultBranch = main\n[core]\n\tpager = cat\n\teditor = true\n\texcludesFile =\n\tattributesFile =\n"
+        f"[user]\n\tname = {person.name}\n\temail = {person.email}\n\tuseConfigOnly = true\n"
+    )
+
+
+BASE_CONFIG = base_config(PLAYER)
 """
 The game's global git configuration when it starts: the player's shell and the game's own commands share it.
 

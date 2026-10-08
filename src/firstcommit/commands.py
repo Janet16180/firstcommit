@@ -36,13 +36,18 @@ RECORD = re.compile(rb"\d+\t(\d+)\t(.*)", re.DOTALL)
 PLAYER_HOME = "FIRSTCOMMIT_PLAYER_HOME"
 """Where `shell` keeps the player's ``HOME`` while bash reads the system's startup file."""
 
+PROMPT = r"\W $ "
+"""The game's prompt: the folder's name, never the user's or the machine's, such as ``project $``."""
+ALEX_PROMPT = r"\[\e[32m\]alex: \W\[\e[0m\] $ "
+"""The prompt of Alex's shell in the playground: ``alex: project $``, with ``alex: project`` in green."""
+
 STARTUP = r"""
 HOME=${{{player_home}:-$HOME}}
 unset {player_home}
 if [[ -r {completion} ]]; then
     . {completion}
 fi
-PS1='\W $ '
+PS1={prompt}
 PS2='> '
 HISTFILE={history}
 unset HISTCONTROL HISTIGNORE HISTTIMEFORMAT
@@ -59,9 +64,9 @@ __firstcommit_log() {{
     __firstcommit_seen=${{number:-0}}
 }}
 PROMPT_COMMAND=__firstcommit_log
+{banner}"""
 """
-"""
-The startup file, with the history file, the log and the tab completion to fill in.
+The startup file, with the history file, the log, the tab completion, the prompt and a first line to fill in.
 
 Bash reads this file instead of the player's ``~/.bashrc``, which is where Ubuntu turns tab
 completion on, so it loads the completion itself when it is installed.
@@ -77,7 +82,7 @@ rather than printing an error at every prompt.
 """
 
 
-def startup(log: Path, history: Path) -> str:
+def startup(log: Path, history: Path, prompt: str = PROMPT, banner: str = "") -> str:
     """
     Write the game's bash startup file.
 
@@ -87,14 +92,24 @@ def startup(log: Path, history: Path) -> str:
         The log the shell appends each command line to.
     history : Path
         The shell's history file.
+    prompt : str
+        The prompt, as bash's ``PS1``.
+    banner : str
+        One line the shell prints before its first prompt, as given; none when empty.
 
     Returns
     -------
     str
-        The startup file's text, the paths quoted for bash.
+        The startup file's text, the paths, the prompt and the line quoted for bash.
     """
+    first_line = f"printf '%s\\n' {shlex.quote(banner)}\n" if banner else ""
     return STARTUP.format(
-        log=shlex.quote(str(log)), history=shlex.quote(str(history)), completion=shlex.quote(str(COMPLETION)), player_home=PLAYER_HOME
+        log=shlex.quote(str(log)),
+        history=shlex.quote(str(history)),
+        completion=shlex.quote(str(COMPLETION)),
+        player_home=PLAYER_HOME,
+        prompt=shlex.quote(prompt),
+        banner=first_line,
     )
 
 

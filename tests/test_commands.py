@@ -113,6 +113,15 @@ def test_the_shell_opens_without_the_systems_login_notices_and_on_the_players_ow
     assert b"home=/" in shown and f"home={tmp_path} ".encode() not in shown and b"player=unset" in shown
 
 
+def test_a_shell_can_have_a_prompt_of_its_own_and_print_one_line_before_it(typist: Typist, tmp_path: Path) -> None:
+    startup = tmp_path / "bashrc"
+    startup.write_text(commands.startup(tmp_path / "commands.log", tmp_path / "history", prompt=commands.ALEX_PROMPT, banner="Try: it's `git status`"))
+    (tmp_path / ".hushlogin").touch()
+    shown = typist(commands.shell(startup, tmp_path), terminal.player_env(os.environ), project(tmp_path), [])
+    assert shown.startswith(b"Try: it's `git status`\r\n")
+    assert shown.endswith(b"\x1b[32malex: project\x1b[0m $ ")
+
+
 def test_the_startup_file_alone_keeps_the_home_it_is_given(typist: Typist, tmp_path: Path) -> None:
     startup = tmp_path / "bashrc"
     startup.write_text(commands.startup(tmp_path / "commands.log", tmp_path / "history"))

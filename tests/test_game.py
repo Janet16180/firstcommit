@@ -1285,6 +1285,56 @@ def test_the_games_shell_is_bash_with_the_games_own_startup_file(game_home: Path
     assert startup.read_text() == commands.startup(game_home / save.COMMANDS_FILE, game_home / save.HISTORY_FILE)
 
 
+def test_each_playground_shell_is_bash_with_a_startup_file_log_history_and_quiet_home_of_its_own(game_home: Path) -> None:
+    shells: list[tuple[records.Who, str]] = [("you", commands.PROMPT), ("alex", commands.ALEX_PROMPT)]
+    for person, prompt in shells:
+        folder = game_home / "playground-shells" / person
+        assert game.playground_shell_command(person) == commands.shell(folder / save.STARTUP_FILE, folder)
+        assert (folder / save.STARTUP_FILE).read_text() == commands.startup(folder / save.COMMANDS_FILE, folder / save.HISTORY_FILE, prompt=prompt, banner="")
+        assert (folder / save.HUSHLOGIN_FILE).exists()
+
+
+def test_your_playground_shell_first_prints_the_starts_suggestion_in_the_players_language(game_home: Path) -> None:
+    save.write_playground({"start": "lost", "alex_shown": {}, "view": "movelog", "whose": "you"})
+    game.set_language("es")
+    game.playground_shell_command("you")
+    game.playground_shell_command("alex")
+    for person, prompt, banner in [("you", commands.PROMPT, freeplay.STARTS["lost"].banner["es"]), ("alex", commands.ALEX_PROMPT, "")]:
+        folder = game_home / "playground-shells" / person
+        assert (folder / save.STARTUP_FILE).read_text() == commands.startup(folder / save.COMMANDS_FILE, folder / save.HISTORY_FILE, prompt=prompt, banner=banner)
+
+
+def test_alexs_playground_shell_has_alexs_own_home_and_git_config_and_yours_is_the_games(game_home: Path) -> None:
+    base = {"PATH": "/usr/bin", "HOME": "/home/player"}
+    assert game.playground_environment("you", base) == game.shell_environment(base)
+    alex = game.playground_environment("alex", base)
+    folder = game_home / "playground-shells" / "alex"
+    assert alex == {**game.shell_environment(base), "HOME": str(folder), "GIT_CONFIG_GLOBAL": str(folder / save.GITCONFIG_FILE)}
+    assert (folder / save.GITCONFIG_FILE).read_text() == gitcmd.base_config(playground.ALEX)
+
+
+def test_each_playground_terminal_opens_in_that_persons_clone_else_the_playground_else_the_players_home(
+    game_home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("HOME", str(tmp_path))
+    assert (game.playground_folder("you"), game.playground_folder("alex")) == (str(tmp_path), str(tmp_path))
+    lab = freeplay.build("empty")
+    assert (game.playground_folder("you"), game.playground_folder("alex")) == (str(lab.project), str(lab.root))
+    freeplay.build("both")
+    assert (game.playground_folder("you"), game.playground_folder("alex")) == (str(lab.project), str(lab.teammate))
+
+
+def test_alex_commits_as_alex_in_alexs_shell_and_each_shell_logs_only_its_own_lines(typist: Callable[..., bytes]) -> None:
+    lab = freeplay.build("alex-ahead")
+    lines: list[tuple[records.Who, str]] = [("alex", 'echo "Dock 3" >> notes.txt && git commit -qam "Note the dock"'), ("you", "git status --short")]
+    for person, line in lines:
+        env = game.playground_environment(person, terminal.player_env(os.environ))
+        typist(game.playground_shell_command(person), env, Path(game.playground_folder(person)), [(line.encode() + b"\n", b"$ ")])
+    assert gitcmd.output(lab.teammate, "log", "-1", "--format=%an %ae %s").strip() == "Alex alex@example.com Note the dock"
+    assert game.playground_typed("alex") == [{"line": 'echo "Dock 3" >> notes.txt && git commit -qam "Note the dock"', "status": 0}]
+    assert game.playground_typed("you") == [{"line": "git status --short", "status": 0}]
+
+
 def test_observing_tells_the_commands_typed_since_the_last_observation_once(sample_level: runner.Level, typist: Callable[..., bytes]) -> None:
     game.start(sample_level.id)
     assert game.observe()["commands"] == []

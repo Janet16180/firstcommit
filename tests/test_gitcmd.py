@@ -73,6 +73,12 @@ def test_run_returns_the_failure_instead_of_raising(tmp_path: Path) -> None:
     assert "not a git repository" in result.stderr
 
 
+def test_the_base_config_signs_as_the_person_given_and_the_games_own_signs_as_the_player() -> None:
+    assert gitcmd.base_config(gitcmd.PLAYER) == gitcmd.BASE_CONFIG
+    alex = gitcmd.base_config(gitcmd.Person("Alex", "alex@example.com"))
+    assert alex == gitcmd.BASE_CONFIG.replace(gitcmd.PLAYER.name, "Alex").replace(gitcmd.PLAYER.email, "alex@example.com")
+
+
 def test_isolation_names_the_games_config_its_labs_and_the_playground(tmp_path: Path) -> None:
     assert gitcmd.isolation(tmp_path) == {
         "GIT_CONFIG_GLOBAL": str(tmp_path / save.GITCONFIG_FILE),

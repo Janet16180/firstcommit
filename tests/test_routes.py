@@ -517,6 +517,21 @@ def test_the_terminal_runs_the_games_shell_so_typed_commands_are_logged(game_hom
     assert list(routes.TERMINAL.shell()) == game.shell_command()
 
 
+def test_the_playground_has_a_terminal_for_you_and_one_for_alex_each_with_its_own_shell_folder_and_settings(
+    game_home: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("GIT_DIR", "/elsewhere/.git")
+    terminals = routes.PLAYGROUND_TERMINALS
+    assert list(terminals) == ["/api/terminal/playground", "/api/terminal/playground-alex"]
+    people: list[game.Who] = ["you", "alex"]
+    for (path, settings), person in zip(terminals.items(), people, strict=True):
+        assert settings.shell is not None and list(settings.shell()) == game.playground_shell_command(person)
+        assert str(settings.start_folder()) == game.playground_folder(person)
+        assert settings.max_terminals == routes.TERMINAL.max_terminals, path
+        assert "GIT_DIR" not in settings.environment()
+    assert terminals["/api/terminal/playground-alex"].environment()["GIT_CONFIG_GLOBAL"].endswith("/playground-shells/alex/gitconfig")
+
+
 def test_serving_on_a_busy_port_fails_with_a_hint(site: Site, capsys: pytest.CaptureFixture[str]) -> None:
     port = int(site.url.rsplit(":", 1)[1])
     assert routes.serve(port) == 1

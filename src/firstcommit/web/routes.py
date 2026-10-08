@@ -72,6 +72,36 @@ TERMINAL = terminal.TerminalSettings(
 )
 
 
+def playground_terminal(person: game.Who) -> terminal.TerminalSettings:
+    """
+    Give the settings of one person's terminal in the free playground.
+
+    Parameters
+    ----------
+    person : Who
+        ``"you"`` or ``"alex"``.
+
+    Returns
+    -------
+    terminal.TerminalSettings
+        `TERMINAL`'s protocol and limit, with that person's environment, folder and shell
+        (`firstcommit.game.playground_environment`, ``playground_folder`` and
+        ``playground_shell_command``), read again for each new terminal.
+    """
+    return terminal.TerminalSettings(
+        protocol=TERMINAL.protocol,
+        notice_prefix=TERMINAL.notice_prefix,
+        environment=lambda: game.playground_environment(person, terminal.player_env(os.environ)),
+        start_folder=lambda: Path(game.playground_folder(person)),
+        max_terminals=TERMINAL.max_terminals,
+        shell=lambda: game.playground_shell_command(person),
+    )
+
+
+PLAYGROUND_TERMINALS = {"/api/terminal/playground": playground_terminal("you"), "/api/terminal/playground-alex": playground_terminal("alex")}
+"""The playground's two terminals, by path, beside the level's `TERMINAL`; all of them share its limit."""
+
+
 def bad(message: str) -> Reply:
     """
     Refuse a request the page would never send.
@@ -583,7 +613,7 @@ def create_server(port: int) -> tuple[ThreadingHTTPServer, str]:
     tuple[ThreadingHTTPServer, str]
         The server and the link that opens the page, with the access key.
     """
-    return shell.create_server(port, routes=ROUTES, static_dir=STATIC, terminal=TERMINAL, settings=SETTINGS)
+    return shell.create_server(port, routes=ROUTES, static_dir=STATIC, terminal=TERMINAL, settings=SETTINGS, more_terminals=PLAYGROUND_TERMINALS)
 
 
 def serve(port: int) -> int:
@@ -600,4 +630,6 @@ def serve(port: int) -> int:
     int
         Exit status: 0 after Ctrl-C, 1 if the port is in use.
     """
-    return shell.serve(port, routes=ROUTES, static_dir=STATIC, terminal=TERMINAL, settings=SETTINGS, banner=BANNER)
+    return shell.serve(
+        port, routes=ROUTES, static_dir=STATIC, terminal=TERMINAL, settings=SETTINGS, banner=BANNER, more_terminals=PLAYGROUND_TERMINALS
+    )

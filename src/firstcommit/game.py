@@ -86,8 +86,8 @@ from firstcommit.records import (
     Seen,
     Target,
     View,
-    Who,
 )
+from firstcommit.records import Who as Who
 from firstcommit.repomap import Snapshot
 from firstcommit.save import Payout
 from firstcommit.save import SaveError as SaveError
@@ -1183,6 +1183,104 @@ def shell_command() -> list[str]:
     home = save.home()
     startup = save.write_shell_startup(commands.startup(home / save.COMMANDS_FILE, home / save.HISTORY_FILE))
     return commands.shell(startup, save.ensure_hushlogin().parent)
+
+
+def playground_environment(person: Who, base: Mapping[str, str]) -> dict[str, str]:
+    """
+    Build the environment of one person's playground shell.
+
+    Yours is the game shell's (`shell_environment`). Alex's has Alex's own ``HOME``, the folder of
+    Alex's shell, and Alex's own global git configuration there, which signs Alex's commits as
+    Alex; it is created if missing, and never overwritten.
+
+    Parameters
+    ----------
+    person : Who
+        ``"you"`` or ``"alex"``.
+    base : Mapping[str, str]
+        The environment to start from; not changed.
+
+    Returns
+    -------
+    dict[str, str]
+        The shell's environment.
+    """
+    environment = shell_environment(base)
+    if person == "alex":
+        folder = save.ensure_playground_shell(person)
+        config = save.ensure_gitconfig(gitcmd.base_config(playground.ALEX), folder)
+        environment.update({"HOME": str(folder), "GIT_CONFIG_GLOBAL": str(config)})
+    return environment
+
+
+def playground_shell_command(person: Who) -> list[str]:
+    """
+    Give the command of one person's playground shell, writing its startup file first.
+
+    Each person's shell is the game's bash (`firstcommit.commands.startup`) with a startup file,
+    a typed-command log, a history and a quiet home of its own (`firstcommit.save.ensure_playground_shell`).
+    Alex's prompt is ``alex: project $`` in green. Yours prints the current start's suggestion
+    first, in the player's language: the only guidance free play gives.
+
+    Parameters
+    ----------
+    person : Who
+        ``"you"`` or ``"alex"``.
+
+    Returns
+    -------
+    list[str]
+        The program and its arguments.
+    """
+    folder = save.ensure_playground_shell(person)
+    left = save.load_playground()
+    banner = freeplay.STARTS[left["start"]].banner[_language()] if person == "you" and left is not None else ""
+    prompt = commands.ALEX_PROMPT if person == "alex" else commands.PROMPT
+    text = commands.startup(folder / save.COMMANDS_FILE, folder / save.HISTORY_FILE, prompt=prompt, banner=banner)
+    startup = folder / save.STARTUP_FILE
+    startup.write_text(text)
+    return commands.shell(startup, folder)
+
+
+def playground_folder(person: Who) -> str:
+    """
+    Give the folder one person's playground terminal opens in: that person's clone, else the playground, else the player's home.
+
+    Parameters
+    ----------
+    person : Who
+        ``"you"`` or ``"alex"``.
+
+    Returns
+    -------
+    str
+        The folder.
+    """
+    lab = freeplay.lab()
+    clone = lab.project if person == "you" else lab.teammate
+    folder = Path.home()
+    if clone.is_dir():
+        folder = clone
+    elif lab.root.is_dir():
+        folder = lab.root
+    return str(folder)
+
+
+def playground_typed(person: Who) -> list[Command]:
+    """
+    Give the lines typed in one person's playground terminal since the current start began, oldest first.
+
+    Parameters
+    ----------
+    person : Who
+        ``"you"`` or ``"alex"``.
+
+    Returns
+    -------
+    list[Command]
+        Each line and its exit status (`firstcommit.commands.since`).
+    """
+    return commands.since(save.home() / save.PLAYGROUND_SHELLS_FOLDER / person / save.COMMANDS_FILE, 0)[0]
 
 
 def terminal_folder() -> str:

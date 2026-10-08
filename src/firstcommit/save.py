@@ -8,7 +8,10 @@ Files under the game home (`home`):
 - ``gitconfig``: the game's own global git configuration (see `firstcommit.gitcmd`);
 - ``labs/<level>/``: the lab of the level being played (`firstcommit.runner` owns it);
 - ``playground.json``: a `Playground` record, once the free playground has been opened;
-- ``playground/``: the free playground's lab (`firstcommit.freeplay` owns it), apart from the labs.
+- ``playground/``: the free playground's lab (`firstcommit.freeplay` owns it), apart from the labs;
+- ``playground-shells/<person>/``: the files of the playground's shell of each person, yours and
+  Alex's: its startup file, typed-command log, history and ``.hushlogin``, and for Alex a git
+  configuration of Alex's own; Alex's shell has it as its ``HOME``.
 
 The files are written atomically (termlab's store). Callers hold `lock` around every
 read-modify-write, so the command line and the web server never lose each other's update.
@@ -26,7 +29,7 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Annotated, Any, Literal, TypedDict, cast
 
-from termlab import store
+from termlab import sandbox, store
 
 from firstcommit.records import Command, Language, PlaygroundView, PullRequest, Seen, Snapshot, StartId, Who
 
@@ -43,6 +46,7 @@ HISTORY_FILE = "history"
 LABS_FOLDER = "labs"
 PLAYGROUND_FILE = "playground.json"
 PLAYGROUND_FOLDER = "playground"
+PLAYGROUND_SHELLS_FOLDER = "playground-shells"
 START_OVER = (
     "A save written by an older version of the game reads this way too. To start over, run "
     "`firstcommit reset --yes`, or the `reset` command of the script that starts the game; either erases your progress."
@@ -372,23 +376,26 @@ def write_playground(playground: Playground) -> None:
     store.write_json(home() / PLAYGROUND_FILE, dict(playground))
 
 
-def ensure_gitconfig(initial: str) -> Path:
+def ensure_gitconfig(initial: str, folder: Path | None = None) -> Path:
     """
-    Create the game's global git configuration if it does not exist yet.
+    Create a global git configuration of the game's if it does not exist yet.
 
     An existing file is never overwritten: the player sets their name in it while playing.
 
     Parameters
     ----------
     initial : str
-        Content of a new file (`firstcommit.gitcmd.BASE_CONFIG`).
+        Content of a new file (`firstcommit.gitcmd.base_config`).
+    folder : Path | None
+        Where it goes, such as Alex's playground shell (`ensure_playground_shell`); None is the
+        game home, for the game's own configuration.
 
     Returns
     -------
     Path
         The configuration file.
     """
-    path = home() / GITCONFIG_FILE
+    path = (home() if folder is None else folder) / GITCONFIG_FILE
     path.parent.mkdir(parents=True, exist_ok=True)
     # Mode "x" creates the file only if it is missing, in one step, so two processes cannot both write it.
     with contextlib.suppress(FileExistsError), path.open("x") as handle:
@@ -431,10 +438,31 @@ def ensure_hushlogin() -> Path:
     return path
 
 
+def ensure_playground_shell(person: Who) -> Path:
+    """
+    Make the folder of one person's playground shell, with the ``.hushlogin`` that keeps it quiet, if it is missing.
+
+    Parameters
+    ----------
+    person : Who
+        ``"you"`` or ``"alex"``.
+
+    Returns
+    -------
+    Path
+        ``<home>/playground-shells/<person>``.
+    """
+    folder = home() / PLAYGROUND_SHELLS_FOLDER / person
+    folder.mkdir(parents=True, exist_ok=True)
+    (folder / HUSHLOGIN_FILE).touch()
+    return folder
+
+
 def erase() -> None:
-    """Delete the progress, the level in progress, the last observation, the playground's record, the game's git configuration and its shell's files (startup file, hushlogin, typed-command log, history), damaged or not."""
+    """Delete the progress, the level in progress, the last observation, the playground's record and shells, the game's git configuration and its shell's files (startup file, hushlogin, typed-command log, history), damaged or not."""
     for name in (PROGRESS_FILE, ACTIVE_FILE, OBSERVED_FILE, PLAYGROUND_FILE, GITCONFIG_FILE, STARTUP_FILE, HUSHLOGIN_FILE, COMMANDS_FILE, HISTORY_FILE):
         (home() / name).unlink(missing_ok=True)
+    sandbox.remove_tree(home() / PLAYGROUND_SHELLS_FOLDER, home())
 
 
 class Pulls(TypedDict):
