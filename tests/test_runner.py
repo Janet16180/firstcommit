@@ -181,6 +181,7 @@ BROKEN: dict[str, tuple[types.ModuleType, str]] = {
     "a scene frame with a picture nobody drew": (level_module(SCENE=[kit.SceneFrame(art="dragon", text="Hi.")]), "SCENE"),  # type: ignore[arg-type]
     "a scene frame without text": (level_module(SCENE=[kit.SceneFrame(art="space", text="")]), "SCENE"),
     "a view nobody drew": (level_module(VIEW="map"), "VIEW"),
+    "the band, a birth mark and not a view to open on": (level_module(VIEW="band"), "VIEW"),
     "reactions that are not rules": (level_module(REACTIONS=["git add"]), "REACTIONS"),
     "a reaction whose line is not a pattern": (level_module(REACTIONS=[kit.ReactionRule(line="git (add", mood="ok", text="Hi.")]), "REACTIONS"),
     "a reaction with an unknown mood": (level_module(REACTIONS=[kit.ReactionRule(line="git", mood="happy", text="Hi.")]), "REACTIONS"),  # type: ignore[arg-type]

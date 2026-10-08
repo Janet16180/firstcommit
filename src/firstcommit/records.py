@@ -152,6 +152,11 @@ The views of the level screen (docs/drafts/chapters-5-9.md, the view ladder): yo
 zones, the crew view, history, a conflict's two sides, the black box, the review board, and your
 branch and main.
 """
+Seen = Literal[View, "band"]
+"""
+What the page marks seen once its birth has played: a view, or ``band``, the crew view flattened
+into Alex's band above another view (born in 5-3), which no level opens on.
+"""
 
 Language = Literal["en", "es"]
 """The languages every text the player reads is written in: English and Spanish."""

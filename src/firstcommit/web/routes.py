@@ -436,7 +436,7 @@ def api_language(body: dict[str, Any]) -> Reply:
 
 def api_view(body: dict[str, Any]) -> Reply:
     """
-    POST /api/view {"view": id}: remember that the page has shown a view being born.
+    POST /api/view {"view": id}: remember that the page has shown a view (or the band) being born.
 
     Parameters
     ----------
@@ -446,11 +446,11 @@ def api_view(body: dict[str, Any]) -> Reply:
     Returns
     -------
     Reply
-        200 and ``{}``; 400 unless ``view`` is one of `game.VIEWS`.
+        200 and ``{}``; 400 unless ``view`` is one of `game.SEEN`.
     """
     view = body.get("view")
-    if view not in game.VIEWS:
-        return bad(f"send {{\"view\": ...}} with one of {', '.join(game.VIEWS)}")
+    if view not in game.SEEN:
+        return bad(f"send {{\"view\": ...}} with one of {', '.join(game.SEEN)}")
     game.see_view(view)
     return HTTPStatus.OK, {}
 

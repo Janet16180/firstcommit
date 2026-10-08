@@ -410,7 +410,7 @@ def test_a_scene_stays_seen_once_the_player_saw_it_until_a_reset(sample_level: r
 
 
 def test_a_level_page_names_its_main_view_and_the_views_the_player_has_seen(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
-    assert (game.level(sample_level.id)["view"], game.level(sample_level.id)["views_seen"]) == ("station", [])
+    assert (game.level(sample_level.id)["view"], game.level(sample_level.id)["views_seen"]) == ("station", ["station"])
     level = replaced(sample_level, view="history")
     monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
     assert game.level(level.id)["view"] == "history"
@@ -418,17 +418,17 @@ def test_a_level_page_names_its_main_view_and_the_views_the_player_has_seen(samp
 
 def test_a_view_stays_seen_in_the_order_seen_until_a_reset(sample_level: runner.Level) -> None:
     game.see_view("crew")
-    game.see_view("station")
+    game.see_view("band")
     game.see_view("crew")
-    assert game.level(sample_level.id)["views_seen"] == ["crew", "station"]
+    assert game.level(sample_level.id)["views_seen"] == ["station", "crew", "band"]
     game.reset()
-    assert game.level(sample_level.id)["views_seen"] == []
+    assert game.level(sample_level.id)["views_seen"] == ["station"]
 
 
 def test_only_a_view_the_page_draws_can_be_seen(sample_level: runner.Level) -> None:
     with pytest.raises(ValueError, match="map"):
         game.see_view("map")
-    assert save.load_progress()["views"] == []
+    assert save.load_progress()["views"] == ["station"]
 
 
 def test_a_level_solved_by_a_typed_answer_shows_its_question_filled_from_its_state(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
