@@ -21,7 +21,7 @@ DIFFICULTY = 1
 XP = 100
 COMMAND = "git branch -v"
 PAR = 7
-VIEW = "history"
+PICTURES = kit.pictures("chain", mothership=True)
 CARD = kit.CommandCard(
     command="git branch -v",
     text="Lists your branches, each with the commit it names. `*` marks the branch `HEAD` is on.",
@@ -334,7 +334,7 @@ def watch_status(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdic
 
 QUEST: list[kit.Step] = [
     kit.WatchStep(id="log", text="Read the history.", command="git log --oneline", watch=watch_log),
-    kit.WatchStep(id="branches", text="List your branches.", command="git branch -v", watch=watch_branches),
+    kit.WatchStep(id="branches", text="List your branches.", command="git branch -v", watch=watch_branches, look=("HEAD",)),
     COMMIT_GUESS,
     kit.WatchStep(id="commit", text="Commit your note.", command='git commit -am "Note the fuel level"', watch=watch_commit),
     kit.WatchStep(id="log-again", text="Read the history again.", command="git log --oneline", watch=watch_log_again),

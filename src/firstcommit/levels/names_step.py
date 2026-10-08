@@ -19,7 +19,7 @@ DIFFICULTY = 2
 XP = 150
 COMMAND = "git switch -c"
 PAR = 7
-VIEW = "history"
+PICTURES = kit.pictures("chain", graph=True)
 CARD = kit.CommandCard(
     command="git switch -c <name>",
     text="Makes a new branch on the commit you are on and moves `HEAD` onto it, in one step. `git checkout -b <name>` is the older form.",

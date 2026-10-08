@@ -356,6 +356,18 @@ def test_the_tape_shows_from_wrong_course_on() -> None:
     assert sorted(level.id for level in runner.catalogue().values() if level.tape) == ["undo-blackbox", "undo-wrong"]
 
 
+def test_the_name_tags_levels_draw_the_chain() -> None:
+    drawn = {level.id: level.pictures["large"] for level in runner.catalogue().values() if level.chapter == "names" and level.pictures is not None}
+    assert drawn == {"names-tags": "chain", "names-any": "chain", "names-step": "chain"}
+
+
+@pytest.mark.parametrize("level", [level for level in runner.catalogue().values() if any(step.look for step in level.quest)], ids=lambda level: level.id)
+def test_a_steps_look_names_head_or_a_commit_its_lab_holds(level: runner.Level, game_home: Path) -> None:
+    runner.start_lab(level)
+    subjects = set(kit.git(runner.lab_of(level.id).project, "log", "--all", "--format=%s").splitlines())
+    assert {subject for step in level.quest for subject in step.look} <= subjects | {"HEAD"}
+
+
 def test_each_level_opens_on_the_main_view_of_the_plan() -> None:
     views = {level.id: level.view for level in runner.catalogue().values() if level.view != "station"}
     assert views == {
@@ -363,10 +375,7 @@ def test_each_level_opens_on_the_main_view_of_the_plan() -> None:
         "mothership-incoming": "crew",
         "mothership-refused": "crew",
         "mothership-recruit": "history",
-        "names-tags": "history",
-        "names-any": "history",
         "names-experiments": "history",
-        "names-step": "history",
         "branch-send": "history",
         "branch-switch": "history",
         "branch-ticket": "history",
