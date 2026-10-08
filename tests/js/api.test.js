@@ -291,7 +291,7 @@ test("a level must say the view it opens on and the views already born, from the
 });
 
 test("a scene's pictures are the ones the artist has drawn", async () => {
-  for (const art of ["space", "timeline", "terminal", "planet", "flag", "zones", "conveyor", "meteor"]) {
+  for (const art of ["space", "timeline", "terminal", "planet", "flag", "zones", "conveyor", "meteor", "simulator"]) {
     const level = { ...record("level"), scene: [{ ...record("level").scene[0], art }] };
     const { game } = gameApi({ ...REPLIES, "/api/level": level });
     assert.equal((await game.level("x")).scene[0].art, art);
