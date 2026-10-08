@@ -89,7 +89,7 @@ def test_a_misspelled_name_stages_nothing_and_gets_the_shared_nudge() -> None:
     assert typed[0]["status"] == 128
     verdict = stage_step().watch(lab, state, typed)
     assert not verdict.solved and "git add map.txt" in verdict.message
-    rule = reactions.react(typed[0], (), True, False, rules())
+    rule = reactions.react(typed[0], (), True, False, rules(), remote=False)
     assert rule is not None and rule.text == reactions.NOT_STAGED
 
 
@@ -99,7 +99,7 @@ def test_staging_everything_stages_the_journal_too_and_the_way_back_before_a_com
     assert kit.staged(kit.snapshot(lab.project)) == ["journal.txt", "map.txt"]
     verdict = stage_step().watch(lab, state, typed)
     assert not verdict.solved and "git rm --cached journal.txt" in verdict.message
-    rule = reactions.react(typed[0], {"file-staged"}, True, True, rules())
+    rule = reactions.react(typed[0], {"file-staged"}, True, True, rules(), remote=False)
     assert rule is not None and rule.mood == "warn" and rule.text == level.EVERYTHING_STAGED
     typed += typed_in(lab, "git rm --cached journal.txt", "git status")
     assert kit.untracked(kit.snapshot(lab.project)) == ["journal.txt"]
@@ -107,7 +107,7 @@ def test_staging_everything_stages_the_journal_too_and_the_way_back_before_a_com
 
 
 def test_staging_one_file_gets_the_shared_reaction_not_the_warning() -> None:
-    rule = reactions.react({"line": "git add map.txt", "status": 0}, {"file-staged"}, True, True, rules())
+    rule = reactions.react({"line": "git add map.txt", "status": 0}, {"file-staged"}, True, True, rules(), remote=False)
     assert rule is not None and rule.text == reactions.STAGED
 
 
@@ -124,5 +124,5 @@ def test_restore_staged_fails_before_the_first_commit_and_the_level_says_what_wo
     typed = typed_in(lab, "git add .", "git restore --staged journal.txt")
     assert typed[1]["status"] == 128
     assert kit.staged(kit.snapshot(lab.project)) == ["journal.txt", "map.txt"]
-    rule = reactions.react(typed[1], (), True, False, rules())
+    rule = reactions.react(typed[1], (), True, False, rules(), remote=False)
     assert rule is not None and rule.text == level.NOTHING_TO_RESTORE

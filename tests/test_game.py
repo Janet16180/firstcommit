@@ -2057,3 +2057,14 @@ def test_the_lost_message_wins_over_a_pleased_reaction_to_the_line_that_lost_the
     type_lines(game_home, (line, kit.type_line(lab.project, line)["status"]))
     said = game.observe()["reactions"]
     assert [(reaction["line"], reaction["mood"], reaction["text"]) for reaction in said] == [(line, "err", markup.parse(cargo_selective.KEYS_COMMITTED))]
+
+
+def test_a_push_before_any_remote_is_named_gets_rama_s_error_from_the_snapshot(game_home: Path) -> None:
+    game.start("mothership-base7")
+    game.observe()
+    lab = runner.lab_of("mothership-base7")
+    kit.type_line(lab.project, "git init -q && git add blueprint.txt && git commit -q -m 'Rebuild'")
+    line = "git push -u origin main"
+    type_lines(game_home, (line, kit.type_line(lab.project, line)["status"]))
+    said = game.observe()["reactions"]
+    assert [(reaction["line"], reaction["mood"], reaction["text"]) for reaction in said] == [(line, "err", markup.parse(reactions.NO_REMOTE))]
