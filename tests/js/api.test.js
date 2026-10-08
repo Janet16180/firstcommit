@@ -315,9 +315,21 @@ test("an observation must carry Rama's reactions, each with its line, a known mo
   await refused("/api/observe", (observation) => delete observation.reactions[0].line, (game) => game.observe());
 });
 
+test("an observation gives each conflicted file's two sides, who wrote them and the base, a deleted side or a missing base as null", async () => {
+  const { game } = gameApi();
+  const [conflict] = (await game.observe()).conflicts;
+  assert.equal(conflict.path, "docking.txt");
+  assert.deepEqual(conflict.them, { label: "scout", author: "Alex", lines: ["Dock at bay 4"] });
+  const deleted = gameApi({ ...REPLIES, "/api/observe": { ...record("observation"), conflicts: [{ ...conflict, you: { ...conflict.you, lines: null }, base: null }] } }).game;
+  assert.equal((await deleted.observe()).conflicts[0].you.lines, null);
+  await refused("/api/observe", (seen) => delete seen.conflicts, (api) => api.observe());
+  await refused("/api/observe", (seen) => delete seen.conflicts[0].them.author, (api) => api.observe());
+  await refused("/api/observe", (seen) => (seen.conflicts[0].base = "Dock at bay 2"), (api) => api.observe());
+});
+
 test("a reaction may carry a moment the page knows, or none", async () => {
   const observation = record("observation");
-  for (const moment of ["secret-leak", "launch", "junk-flood"]) {
+  for (const moment of ["secret-leak", "launch", "junk-flood", "force-break", "unreviewed-main"]) {
     observation.reactions[0].moment = moment;
     const { game } = gameApi({ ...REPLIES, "/api/observe": observation });
     assert.equal((await game.observe()).reactions[0].moment, moment);

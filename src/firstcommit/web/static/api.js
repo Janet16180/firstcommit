@@ -83,7 +83,7 @@ const createGameApi = (function () {
      play and the views of the ladder, in its order (records.Art, Mood, Moment and View). */
   const ART = oneOf("space", "timeline", "terminal", "planet", "flag", "zones", "conveyor", "capsule", "chain", "orbit", "rocket", "pull", "alarm", "fork", "merge", "collision", "blackbox", "meteor");
   const MOOD = oneOf("info", "ok", "warn", "err");
-  const MOMENT = oneOf("secret-leak", "launch", "junk-flood");
+  const MOMENT = oneOf("secret-leak", "launch", "junk-flood", "force-break", "unreviewed-main");
   const VIEW = oneOf("station", "crew", "history", "sides", "blackbox", "board", "focus");
   /* What the save remembers as born: the views, and the crew band, which no level opens on (records.Seen). */
   const SEEN = oneOf("station", "crew", "history", "sides", "blackbox", "board", "focus", "band");
@@ -135,7 +135,10 @@ const createGameApi = (function () {
     mapping(list(record({ id: BUTTON, label: text, line: text, off: text })))(value, where);
     for (const person of Object.keys(value)) WHO(person, `${where}'s key`);
   };
-  const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), teammate: nullable(SNAPSHOT), events: EVENTS, teammate_events: EVENTS, buttons: BARS, commands: list(record({ line: text, status: number })), reactions: list(record({ line: text, mood: MOOD, text: BLOCKS, moment: nullable(MOMENT) })) });
+  /* A conflicted file's two halves, as git's index stages hold them: a side's lines are null when it deleted the file. */
+  const CONFLICT_SIDE = record({ label: text, author: text, lines: nullable(list(text)) });
+  const CONFLICT = record({ path: text, you: CONFLICT_SIDE, them: CONFLICT_SIDE, base: nullable(list(text)) });
+  const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), teammate: nullable(SNAPSHOT), events: EVENTS, teammate_events: EVENTS, buttons: BARS, commands: list(record({ line: text, status: number })), reactions: list(record({ line: text, mood: MOOD, text: BLOCKS, moment: nullable(MOMENT) })), conflicts: list(CONFLICT) });
   const PRESSED = record({
     press: record({ person: WHO, button: BUTTON, command: text, status: number, output: text }),
     before: OBSERVATION,
