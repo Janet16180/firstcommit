@@ -623,3 +623,18 @@ comes back on `scout`, the probe committed on `main` (lost), and an `ls` before 
 | `ON`, scene, debrief | after `git switch`, new commits move that branch only | E73; git-switch(1) ("All new commits will be added to the tip of this branch") |
 | `BACK_ON_MAIN`, `LOOKED`, debrief | switching rewrites the working folder to the branch's last commit; the probe comes back on `scout` | E73; git-switch(1) ("The working tree and the index are updated to match the branch") |
 | `PROBE_ON_MAIN` (lost) | moving a commit off `main` is not taught before the undo chapter | the plan, 7-3 |
+
+### Level `branch-send` (Send a course up, 5-3)
+
+*Re-checked* by `tests/levels/test_branch_send.py`: a plain push on `main` leaves `scout` here,
+`git push -u origin scout` from `main` (the upstream set, `main` on the mothership unchanged), a
+plain push on `scout` (128, the level's reaction), the survey merged into `main` and pushed
+(lost), and a list typed before the push.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, `PUSHED_MAIN`, hint 1, debrief | a plain `git push` sends only the current branch, to its upstream | E75; git-config(1) `push.default` (`simple`, the default) |
+| card, hint 2, `NOT_SENT` | `git push origin <branch>` sends that branch by name from any branch | E77; git-push(1) `<refspec>` |
+| debrief | `-u` makes `origin/scout` the upstream, so a plain push on `scout` works next time | E77; git-push(1) `-u` |
+| `NO_UPSTREAM` | a plain push on a branch with no upstream stops | E76 |
+| hint 3, `LISTED` | `git branch -r` lists the remote-tracking branches | E77; git-branch(1) ("Option -r causes the remote-tracking branches to be listed") |
