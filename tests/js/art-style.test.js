@@ -210,3 +210,74 @@ test("reduced motion plays no book", () => {
   assert.ok(reduced.includes(".sky.art-birth-book *"));
   assert.ok(reduced.includes(".sky.art-birth-book .sides-pages::after"));
 });
+
+const CASING = '.sky[data-view="blackbox"] .viz-kept.art-blackbox';
+
+test("the black box wears a flight recorder's casing only in its view: a hard shadow, rivets and a hazard band behind the zones", () => {
+  const selectors = [...STYLE.matchAll(/([^{}]*\.art-blackbox[^{}]*)\{/g)].flatMap(([, list]) => list.split(",")).filter((selector) => selector.includes(".art-blackbox"));
+  assert.ok(selectors.length > 0);
+  for (const selector of selectors) assert.match(selector.trim(), /^\.sky(\[data-view="blackbox"\]|\.art-birth-boundary) /, "nowhere else");
+  const casing = rules(CASING).join("");
+  assert.match(casing, /isolation: isolate/);
+  assert.match(casing, /box-shadow: \d+px \d+px 0 var\(--edge\)/);
+  const plate = rules(`${CASING}::before`).join("");
+  assert.match(plate, /content: ""/);
+  assert.match(plate, /position: absolute/);
+  assert.match(plate, /z-index: -1/);
+  assert.match(plate, /pointer-events: none/);
+  assert.equal((plate.match(/no-repeat/g) || []).length, 5, "four rivets and the band");
+  assert.match(plate, /repeating-linear-gradient\(-45deg, var\(--gold\)/);
+});
+
+test("the black box's name sits on a recorder plate with a steady lamp", () => {
+  const name = rules(`${CASING} .viz-kept-name`).join("");
+  assert.match(name, /background: var\(--panel\)/);
+  assert.match(name, /border: 2px solid var\(--ink\)/);
+  assert.match(name, /box-shadow: 2px 2px 0 var\(--edge\)/);
+  const lamp = rules(`${CASING} .viz-kept-name::before`).join("");
+  assert.match(lamp, /content: ""/);
+  assert.match(lamp, /background: var\(--s-new\)/);
+  assert.ok(!/animation/.test(lamp), "the lamp does not blink");
+});
+
+test("the boundary traces the frame's four edges round the kept zones over the page's birth time", () => {
+  assert.match(rules(".sky.art-birth-boundary .viz-kept.art-blackbox").join(""), /border-color: transparent/);
+  const trace = ".sky.art-birth-boundary .viz-kept.art-blackbox::after";
+  const edges = rules(trace).join("");
+  assert.match(edges, /content: ""/);
+  assert.match(edges, /inset: -3px/);
+  assert.match(edges, /pointer-events: none/);
+  assert.equal((edges.match(/linear-gradient\(var\(--ink\) 0 0\)/g) || []).length, 4, "four edges");
+  assert.match(edges, /background-size: 100% 3px, 3px 100%, 100% 3px, 3px 100%;/, "drawn whole when still");
+  const [, name, duration] = birthAnimation(trace);
+  assert.equal(duration, BIRTH);
+  assert.match(frames(name), /0%, \d+% \{ background-size: 0 3px, 3px 0, 0 3px, 3px 0; \}/);
+  assert.match(frames(name), /to \{ background-size: 100% 3px, 3px 100%, 100% 3px, 3px 100%; \}/);
+});
+
+test("in the boundary the casing shows after the trace, the plate lands and the workshop outside dims, then returns", () => {
+  assert.deepEqual(birthAnimation(".sky.art-birth-boundary .viz-kept.art-blackbox::before").slice(1), ["art-birth-after", BIRTH]);
+  const [, plate, duration] = birthAnimation(".sky.art-birth-boundary .viz-kept.art-blackbox .viz-kept-name");
+  assert.equal(duration, BIRTH);
+  assert.match(frames(plate), /0%, \d+% \{ transform: translateY\(-\d+px\); opacity: 0; \}/);
+  assert.match(frames(plate), /to \{ transform: none; opacity: 1; \}/);
+  for (const outside of ['.sky.art-birth-boundary .viz-row > .zone[data-zone="workshop"]', ".sky.art-birth-boundary .viz-row > .flow"]) {
+    const [, dim, time] = birthAnimation(outside);
+    assert.equal(time, BIRTH);
+    assert.match(frames(dim), /0%, \d+% \{ opacity: 1; \}/);
+    assert.match(frames(dim), /opacity: 0\.\d+;/);
+    assert.match(frames(dim), /to \{ opacity: 1; \}/);
+  }
+});
+
+test("the casing and the boundary paint only with the design's tokens", () => {
+  const art = STYLE.slice(STYLE.indexOf(`${CASING} {`), STYLE.indexOf("@media (prefers-reduced-motion: reduce)"));
+  assert.ok(art.includes("art-birth-boundary"));
+  for (const [, name] of art.matchAll(/var\((--[\w-]+)/g)) assert.ok(TOKENS.has(name) || name === "--art-birth", name);
+  assert.ok(!/#[0-9A-Fa-f]{3,6}\b|\brgba?\(|\bhsla?\(/.test(art));
+});
+
+test("reduced motion plays no boundary and leaves the frame drawn", () => {
+  const reduced = STYLE.slice(STYLE.indexOf("@media (prefers-reduced-motion: reduce)"));
+  for (const selector of [".sky.art-birth-boundary *", ".sky.art-birth-boundary .viz-kept.art-blackbox::before", ".sky.art-birth-boundary .viz-kept.art-blackbox::after"]) assert.ok(reduced.includes(selector), selector);
+});

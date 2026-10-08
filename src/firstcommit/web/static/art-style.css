@@ -807,6 +807,107 @@
   animation: art-birth-after var(--art-birth, 1.4s) steps(4) both;
 }
 
+/* Put on the places Git keeps (.viz-kept, orbit.css), shown only on the black box view (level
+   7-1): the frame becomes a flight recorder's casing. A hard shadow, a rivet in each corner, a thin
+   hazard band along the top between them, and the name on a recorder plate with a steady lamp.
+   The casing sits behind the zones (::before, z-index -1 in the frame's own stacking context). */
+.sky[data-view="blackbox"] .viz-kept.art-blackbox {
+  isolation: isolate;
+  box-shadow: 4px 4px 0 var(--edge);
+}
+
+.sky[data-view="blackbox"] .viz-kept.art-blackbox::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--ink) 0 0) left 4px top 4px / 4px 4px no-repeat,
+    linear-gradient(var(--ink) 0 0) right 4px top 4px / 4px 4px no-repeat,
+    linear-gradient(var(--ink) 0 0) left 4px bottom 4px / 4px 4px no-repeat,
+    linear-gradient(var(--ink) 0 0) right 4px bottom 4px / 4px 4px no-repeat,
+    repeating-linear-gradient(-45deg, var(--gold) 0 4px, transparent 4px 8px) center top 2px / calc(100% - 28px) 4px no-repeat;
+}
+
+.sky[data-view="blackbox"] .viz-kept.art-blackbox .viz-kept-name {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 6px;
+  line-height: 1.2;
+  background: var(--panel);
+  border: 2px solid var(--ink);
+  box-shadow: 2px 2px 0 var(--edge);
+}
+
+.sky[data-view="blackbox"] .viz-kept.art-blackbox .viz-kept-name::before {
+  content: "";
+  flex: none;
+  width: 6px;
+  height: 6px;
+  background: var(--s-new);
+}
+
+/* The boundary (data-view "blackbox", level 7-1): the frame draws itself round the kept zones,
+   one edge after another clockwise from the top-left, then the casing shows and the name plate
+   lands, while the workshop outside, and its arrow in, dim and come back. The real border and
+   shadow wait under the traced edges, which are drawn whole when still (reduced motion). */
+.sky.art-birth-boundary .viz-kept.art-blackbox {
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.sky.art-birth-boundary .viz-kept.art-blackbox::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  pointer-events: none;
+  background:
+    linear-gradient(var(--ink) 0 0) left top no-repeat,
+    linear-gradient(var(--ink) 0 0) right top no-repeat,
+    linear-gradient(var(--ink) 0 0) right bottom no-repeat,
+    linear-gradient(var(--ink) 0 0) left bottom no-repeat;
+  background-size: 100% 3px, 3px 100%, 100% 3px, 3px 100%;
+  animation: art-birth-boundary-trace var(--art-birth, 1.4s) steps(4) both;
+}
+
+@keyframes art-birth-boundary-trace {
+  0%, 8% { background-size: 0 3px, 3px 0, 0 3px, 3px 0; }
+  23% { background-size: 100% 3px, 3px 0, 0 3px, 3px 0; }
+  38% { background-size: 100% 3px, 3px 100%, 0 3px, 3px 0; }
+  53% { background-size: 100% 3px, 3px 100%, 100% 3px, 3px 0; }
+  68% { background-size: 100% 3px, 3px 100%, 100% 3px, 3px 100%; }
+  to { background-size: 100% 3px, 3px 100%, 100% 3px, 3px 100%; }
+}
+
+.sky.art-birth-boundary .viz-kept.art-blackbox::before {
+  animation: art-birth-after var(--art-birth, 1.4s) steps(4) both;
+}
+
+.sky.art-birth-boundary .viz-kept.art-blackbox .viz-kept-name {
+  animation: art-birth-boundary-plate var(--art-birth, 1.4s) steps(4) both;
+}
+
+@keyframes art-birth-boundary-plate {
+  0%, 62% { transform: translateY(-10px); opacity: 0; }
+  70% { opacity: 1; }
+  86% { transform: translateY(2px); opacity: 1; }
+  to { transform: none; opacity: 1; }
+}
+
+.sky.art-birth-boundary .viz-row > .zone[data-zone="workshop"],
+.sky.art-birth-boundary .viz-row > .flow {
+  animation: art-birth-boundary-dim var(--art-birth, 1.4s) steps(4) both;
+}
+
+@keyframes art-birth-boundary-dim {
+  0%, 10% { opacity: 1; }
+  35% { opacity: 0.4; }
+  72% { opacity: 0.4; }
+  to { opacity: 1; }
+}
+
 /* Put on an ignored folder's chip (.file.is-ignored, orbit.css): a calm field of scanlines
    behind its words, with an emitter at each corner, in the workshop's colour. The files are still
    on the disk, out of Git's sight. ::after, because the chip's ::before is its state dot. */
@@ -852,6 +953,9 @@
   .sky.art-birth-flatten *,
   .sky.art-birth-book *,
   .sky.art-birth-book .sides-pages::after,
+  .sky.art-birth-boundary *,
+  .sky.art-birth-boundary .viz-kept.art-blackbox::before,
+  .sky.art-birth-boundary .viz-kept.art-blackbox::after,
   .art-ignore-field::after {
     animation: none !important;
   }
