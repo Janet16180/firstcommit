@@ -43,3 +43,31 @@ test("querySelectorAll and closest take a selector list, as a browser does", () 
   assert.deepEqual([...document.body.querySelectorAll("button.choice, form button")], [choice, submit]);
   assert.equal(submit.closest("section, form"), form);
 });
+
+test("a selector the fake does not understand is refused by name, never matched loosely", () => {
+  const document = createDocument();
+  const root = document.createElement("div");
+  root.append(document.createElement("span"));
+  assert.throws(() => root.querySelector("[class~=lock]"), /does not support the selector part "\[class~=lock\]"/);
+  assert.throws(() => root.querySelector("li:first-child"), /does not support/);
+  assert.ok(root.querySelector("span"));
+});
+
+test("attribute values match quoted or not, by prefix with ^= or anywhere with *=, and :not() leaves out what it names", () => {
+  const document = createDocument();
+  const root = document.createElement("div");
+  const tab = document.createElement("button");
+  tab.setAttribute("role", "tab");
+  tab.setAttribute("fill", "var(--z-va)");
+  tab.classList.add("on");
+  const other = document.createElement("button");
+  other.setAttribute("role", "button");
+  root.append(tab, other);
+  assert.deepEqual(root.querySelectorAll("[role=tab]").length, 1);
+  assert.deepEqual(root.querySelectorAll('[role="tab"]').length, 1);
+  assert.equal(root.querySelector('[fill^="var("]'), tab);
+  assert.equal(root.querySelector("[fill*=z-va]"), tab);
+  assert.equal(root.querySelector("button:not(.on)"), other);
+  assert.equal(root.querySelectorAll("button:not([role=tab])").length, 1);
+  assert.equal(root.querySelector('button:not([fill="var(--z-va)"])'), other);
+});

@@ -137,22 +137,48 @@ class FakeFragment extends FakeNode {
   }
 }
 
-/* A selector list, as alternatives of descendant parts: "a.b c, d" gives [[a.b, c], [d]]. */
+/* The selector parts the fake understands: a tag, then any #id, .class, [attr], [attr=value]
+   (quoted or not; also ^= for a prefix and *= for anywhere) or :not() of one such simple part. */
+const ATTRIBUTE = String.raw`\[([\w-]+)(?:([\^*]?)=(?:"([^"]*)"|([^\]"]*)))?\]`;
+const SIMPLE = String.raw`(?:#[\w-]+|\.[\w-]+|${ATTRIBUTE})`;
+const SUPPORTED = new RegExp(String.raw`^([a-zA-Z][\w-]*)?(${SIMPLE}|:not\(${SIMPLE}\))*$`);
+
+/* One compound part's tag, id, classes and attributes, and the simple parts its :not() leaves out. */
+function parsePart(part) {
+  const not = new RegExp(String.raw`:not\((${SIMPLE})\)`, "g");
+  const nots = [...part.matchAll(not)].map((match) => parsePart(match[1]));
+  const own = part.replace(not, "");
+  const tag = (own.match(/^[a-zA-Z][\w-]*/) || [""])[0].toLowerCase();
+  const id = (own.match(/#([\w-]+)/) || [null, null])[1];
+  const classes = [...own.matchAll(/\.([\w-]+)/g)].map((match) => match[1]);
+  const attributes = [...own.matchAll(new RegExp(ATTRIBUTE, "g"))].map((match) => ({ name: match[1], op: match[2] || "", value: match[3] ?? match[4] }));
+  return { tag, id, classes, attributes, nots };
+}
+
+/* A selector list, as alternatives of descendant parts: "a.b c, d" gives [[a.b, c], [d]]. A part
+   it does not understand is refused, so it never matches loosely. */
 function parseSelector(text) {
   return text.split(",").map((alternative) => alternative.trim().split(/\s+/).map((part) => {
-    const tag = (part.match(/^[a-zA-Z][\w-]*/) || [""])[0].toLowerCase();
-    const id = (part.match(/#([\w-]+)/) || [null, null])[1];
-    const classes = [...part.matchAll(/\.([\w-]+)/g)].map((match) => match[1]);
-    const attributes = [...part.matchAll(/\[([\w-]+)(?:="([^"]*)")?\]/g)].map((match) => ({ name: match[1], value: match[2] }));
-    return { tag, id, classes, attributes };
+    if (!SUPPORTED.test(part)) throw new Error(`fakedom does not support the selector part "${part}"`);
+    return parsePart(part);
   }));
+}
+
+function attributeMatches(element, { name, op, value }) {
+  if (!element.hasAttribute(name)) return false;
+  const actual = element.getAttribute(name);
+  if (value === undefined) return true;
+  if (op === "^") return actual.startsWith(value);
+  if (op === "*") return actual.includes(value);
+  return actual === value;
 }
 
 function matchesPart(element, part) {
   return (!part.tag || element.localName === part.tag)
     && (!part.id || element.getAttribute("id") === part.id)
     && part.classes.every((name) => element.classList.contains(name))
-    && part.attributes.every(({ name, value }) => element.hasAttribute(name) && (value === undefined || element.getAttribute(name) === value));
+    && part.attributes.every((attribute) => attributeMatches(element, attribute))
+    && part.nots.every((not) => !matchesPart(element, not));
 }
 
 const matches = (element, alternatives) => alternatives.some((parts) => matchesParts(element, parts));
