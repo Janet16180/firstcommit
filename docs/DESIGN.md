@@ -16,8 +16,10 @@ merge, resolve a conflict, push, pull, rebase, follow a pull-request flow and se
 work on WSL. They can also explain two ideas most tutorials skip: what a hash is and why Git is
 built on it, and why binary files, generated files and secrets do not belong in a repository.
 
-Every level runs **explain, then play**: a short lesson, a guided quest in a real terminal, a
-free challenge, a debrief, then flashcards spaced over the following days.
+Every level runs **explain, then play**: a short scene in which Rama, the ship's robot, sets
+out the idea, a guided quest of goals in a real terminal with Rama reacting to each line typed,
+free challenges, a debrief, then flashcards spaced over the following days. The field guide and
+each chapter's notes stay open for reference.
 
 ## 2. Decisions taken
 
@@ -27,7 +29,7 @@ free challenge, a debrief, then flashcards spaced over the following days.
 | Runtimes | The same game runs directly in WSL or in a Docker container now, and in a VM later; the code must not care which (user, 2026-10-06) |
 | Infrastructure | termlab provides the save helpers, lab cleanup, snippet runner, web server shell, web terminal and VM; everything else is this game's own (user, 2026-10-06) |
 | Length | As long as needed to cover everything (user, 2026-10-06) |
-| Style | Prototype a metro map and a time-travel theme on the same first level; the user picks; the other is deleted (user, 2026-10-05) |
+| Style | Prototype a metro map and a time-travel theme on the same first level; the user picks; the other is deleted (user, 2026-10-05). The Orbit design replaced the time-travel theme, which was deleted on 2026-10-08 with the old lessons (user) |
 | GitHub chapter | Generic GitHub flow, no company-specific rules (user, 2026-10-05) |
 | Source | A repo in the company GitHub org; creating it and pushing need the user's go-ahead (user, 2026-10-05) |
 | Hosting | Local only: each player runs the game on their own machine. Making the game public is a possibility for the far future; nothing is built for it now (user, 2026-10-06) |
@@ -41,7 +43,7 @@ runtime is a small adapter outside the package.
 | Runtime | How a player starts it | What it gives | Adapter files |
 |---|---|---|---|
 | WSL, direct | `uv run firstcommit` from a checkout, with termlab next to it | the simplest; developers use it | none |
-| Docker | `deploy/docker/run`: builds the image if needed, then `docker run` with a named volume for the game home | Ubuntu 24.04, git, Python, uv and termlab pinned in one image, so players get exactly the git the lessons were checked against; the player's WSL stays untouched | `deploy/docker/Dockerfile`, `deploy/docker/run` |
+| Docker | `deploy/docker/run`: builds the image if needed, then `docker run` with a named volume for the game home | Ubuntu 24.04, git, Python, uv and termlab pinned in one image, so players get exactly the git the levels were checked against; the player's WSL stays untouched | `deploy/docker/Dockerfile`, `deploy/docker/run` |
 | VM (later) | `vm/firstcommit-vm create`, then `serve` | a separate kernel: the real isolation option | `vm/game.env`, `vm/guest-setup.sh`, the two-line wrapper (termlab `docs/VM.md`) |
 
 Notes:
@@ -60,16 +62,17 @@ Notes:
 
 | Type | What it is | Where it lives |
 |---|---|---|
-| Lesson | 4-8 player-paced slides with a diagram each; any command output shown is real (section 6) | the level module |
+| Scene | Rama's short explanation, a few lines beside a picture, played the first time the level opens | the level module |
 | Guided quest | 3-6 steps: run this, look, answer a question about what you saw; checked against the live repo | the level module, steps and checks together |
 | Mission | A small incident on a real repo ("you committed on the wrong branch"), with a goal; checked automatically | the level module |
 | Debrief | Why Git behaves that way, plus "commands to keep" | the level module |
 | Cards | choice, text and "predict the output" flashcards, Leitner boxes | `content/cards/<chapter>.toml` |
 | Notes | A one-page cheat sheet per chapter | the same TOML file |
+| Field guide | Three infographics: Git's four places, a file's states and every command taught; an item unlocks as its chapter is played | `web/static/infographic-text.js` |
 
 A **level** is one module, `firstcommit/levels/<chapter>_<slug>.py`. It owns everything about
 itself, and the page has no level-specific code. The first level of each chapter carries the
-lesson and the guided quest; later levels are free challenges. Cards aim at 50% basic, 40%
+guided quest; later levels are free challenges. Cards aim at 50% basic, 40%
 deeper, 10% advanced.
 
 ### Chapters
@@ -128,8 +131,8 @@ are deterministic.
   `for-each-ref`, `cat-file`, `status --porcelain=v2`), never porcelain text; `solve` plays like a
   player with ordinary commands. Tests: setup, wrong states rejected, solve, accepted, lab removed.
 - **Snippets**: termlab's runner, with one fixed environment (identity, dates, `LC_ALL=C`, no
-  global config), runs every lesson slide that shows output, every predict card and every verify
-  snippet, so a hash or output printed in the game is re-checked on every test run.
+  global config), runs every predict card and every verify snippet, so a hash or output printed
+  in the game is re-checked on every test run.
 - **Target version**: Ubuntu 24.04's git 2.43, the same in WSL and in the image. The full suite
   runs in both runtimes. Git's hints and messages are never relied on word for word.
 - **Sources**: git-scm.com reference and Pro Git, git's release notes, docs.github.com, FIPS 180-4
@@ -147,7 +150,7 @@ are deterministic.
   prompt is the game's (the folder's name, never the user or the host), and each command line
   typed there is logged with its exit status in `$FIRSTCOMMIT_HOME/commands.log` for the figure;
   the log holds only commands typed in the game's own terminal and never leaves the game home.
-- **Lab repos pin what their lesson depends on** in their local config (for example
+- **Lab repos pin what their level depends on** in their local config (for example
   `push.autoSetupRemote=false` in the upstream mission), so they still behave if the player runs
   git from a normal terminal.
 - **"GitHub" is a local bare repository** next to each lab. There is no network, no account and
@@ -168,13 +171,13 @@ runtime        WSL (nothing) | deploy/docker/ | vm/ (later)          outside the
 interface      cli.py | web/routes.py, web/static/*                    parse input, render output
 orchestration  game.py                                                 every player action, under the save lock
 core           levels/*, runner.py, score.py, cards.py, markup.py, gitcmd.py, repomap.py,
-               changes.py, demos.py, reactions.py, kit.py
+               changes.py, reactions.py, kit.py
 data           save.py (the save's records), records.py (snapshot records), chapters.py
 infrastructure termlab: store, sandbox, snippets, web.shell, web.terminal, client.js, terminal.js, VM
 ```
 
-- `game.py` is the only thing the interfaces call: `status`, `level`, `see_scene`, `lesson`,
-  `start`, `quest_step`, `check`, `hint`, `observe`, `abort`, `reset`, `due_cards`, `answer_card`,
+- `game.py` is the only thing the interfaces call: `status`, `level`, `see_scene`, `start`,
+  `quest_step`, `check`, `hint`, `observe`, `abort`, `reset`, `due_cards`, `answer_card`,
   `notes`, `shell_environment`, `terminal_folder` and `doctor`. It returns typed records (the
   debrief comes inside `LevelView` and `CheckResult`), raises `UnknownIdError` for an id it does
   not have and `NotPlayingError` when no level is in progress, and re-exports `SaveError` and
@@ -188,7 +191,7 @@ infrastructure termlab: store, sandbox, snippets, web.shell, web.terminal, clien
 - `reactions.py`: what Rama says about a typed line, from the line, its exit status and what
   changed; one shared rule set written as data, plus each level's own rules, tried first.
 - `cards.py`: loads and validates decks, Leitner scheduling, judging an answer. No printing.
-- `markup.py`: the one parser for lesson and debrief text into blocks; the CLI and the page both
+- `markup.py`: the one parser for the game's text (scenes, steps, debriefs, cards) into blocks; the CLI and the page both
   render blocks. `markup.code` writes any text (a file name, a commit subject) as one code span
   that shows it exactly, so a name can never forge the game's own text.
 - `gitcmd.py`: every git command the game itself runs: isolated from the player's configuration,
@@ -199,9 +202,8 @@ infrastructure termlab: store, sandbox, snippets, web.shell, web.terminal, clien
   once, the way `git status` does it (`index_change`, `folder_change`), and the page and the
   levels use that classification instead of comparing areas themselves. The records live in
   `records.py`, so the save can check a saved snapshot. `changes.py` turns two snapshots into the
-  "what just happened" events, and `demos.py` runs lesson scripts for the lesson figures.
-  The snapshot feeds the live map, which
-  is therefore generic: every lab is a Git repo. A mission may also declare its goal as a graph,
+  "what just happened" events. The snapshot feeds the zones and the feed the page draws, which
+  are therefore generic: every lab is a Git repo. A mission may also declare its goal as a graph,
   drawn beside the live one (an idea from Learn Git Branching, found by Ring Zero's prior-art
   research).
 - `kit.py`: the level authors' toolkit: run git in a lab under the game environment, the fixed

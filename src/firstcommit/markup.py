@@ -1,5 +1,5 @@
 """
-The one parser for the game's text: lessons, quest steps, briefings, hints, debriefs, cards and notes.
+The one parser for the game's text: scenes, quest steps, briefings, hints, debriefs, cards and notes.
 
 Text is written as described in AUTHORING.md section 6 and parsed here into blocks; the command
 line and the page only render blocks, so the layout rules live in one place.

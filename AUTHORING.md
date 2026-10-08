@@ -5,7 +5,7 @@ barely used a terminal. Each chapter is made of:
 
 | Form | Where | Purpose |
 |---|---|---|
-| Levels | `src/firstcommit/levels/<chapter>_<slug>.py` | Lesson, guided quest and challenge on a real repository |
+| Levels | `src/firstcommit/levels/<chapter>_<slug>.py` | Scene, guided quest or challenge on a real repository, and debrief |
 | Cards | `src/firstcommit/content/cards/<chapter>.toml` | Spaced-repetition flashcards, including "predict the output" |
 | Notes | `notes` in the same TOML file | A one-page cheat sheet for the chapter |
 | Verification log | `docs/verification/<chapter>.md` | One line per claim, card and level: how it was verified |
@@ -20,7 +20,7 @@ its id, so authors never touch each other's files.
 A learning game that teaches something false is worse than no game. The target is **Ubuntu
 24.04 with its git 2.43** (the Docker image pins it; WSL's Ubuntu 24.04 ships it).
 
-For every sentence that states a fact, in a slide, step, briefing, hint, debrief, card or note:
+For every sentence that states a fact, in a scene, step, briefing, hint, debrief, card or note:
 
 1. **Check a primary source** and name it in the card's `source` or in the verification log:
    - the installed manual pages: `man git-commit`, `man gitglossary`, `man git` (environment
@@ -30,12 +30,11 @@ For every sentence that states a fact, in a slide, step, briefing, hint, debrief
    - git-scm.com: the reference and the Pro Git book (2nd edition);
    - docs.github.com for anything about GitHub;
    - FIPS 180-4 for SHA-1 and SHA-256.
-2. **Run an experiment** whenever the claim is observable, then make it permanent: a lesson's
-   `run` lines, a `predict` card or a `verify` snippet re-check it on every test run.
+2. **Run an experiment** whenever the claim is observable, then make it permanent: a `predict`
+   card or a `verify` snippet re-checks it on every test run (section 3.5).
 3. **Do not trust memory** for defaults, flags, numbers, limits or edge cases.
 4. **Never quote git's human-readable messages** (hints, errors, `status` wording) in text you
-   write: they change between versions. A lesson may *show* them, because its figures come
-   from the real git (section 3.5); checks never parse them (section 3.4).
+   write: they change between versions. Checks never parse them (section 3.4).
 5. **Say when something depends on a version or a setting** ("since Git 2.23", "unless
    `pull.rebase` is set"), and avoid claims that differ between Linux, macOS and Windows unless
    the card is about that difference.
@@ -54,8 +53,8 @@ For every sentence that states a fact, in a slide, step, briefing, hint, debrief
    user.name` without a value only reads the setting. Placeholders are obvious and safe to paste
    (`"Your Name"`).
 10. **Describe output as the player's terminal shows it.** Some output differs on a terminal:
-    `git log --oneline` adds `(HEAD -> main)` there (`log.decorate`, git-config(1)). Lessons show
-    terminal output; check prose against a real terminal, not against memory or a pipe. To see
+    `git log --oneline` adds `(HEAD -> main)` there (`log.decorate`, git-config(1)). The player
+    sees terminal output; check prose against a real terminal, not against memory or a pipe. To see
     what a terminal shows from a script, run the command under `script` with the pager off:
     `GIT_PAGER=cat script -qec 'git log --oneline' /dev/null` (without `GIT_PAGER=cat` the pager
     waits for a key and the command hangs).
@@ -93,10 +92,11 @@ uv run firstcommit --help
 
 ### 3.1 What makes a good level for a beginner
 
-- **Explain before you ask.** The first level of a chapter has a lesson and a guided quest;
-  later levels are challenges that reuse what the quest taught.
-- **One new idea per level.** Name it in the lesson, practise it in the quest, use it in the
-  challenge, explain it again in the debrief.
+- **Explain before you ask.** The first level of a chapter has a guided quest, whose scene and
+  steps show the new idea before the player uses it; later levels are challenges that reuse
+  what the quest taught.
+- **One new idea per level.** Name it in the scene and the briefing, practise it in the quest,
+  use it in the challenge, explain it again in the debrief.
 - **A small story, not trivia**: "a teammate pushed while you were working", "the build folder
   made the repository huge", "you committed on the wrong branch".
 - **Real Git only.** The player works on a real repository in a real terminal; the game never
@@ -156,7 +156,6 @@ SCENE: list[kit.SceneFrame] = []        # optional; Rama's scene the first time 
 REACTIONS: list[kit.ReactionRule] = []  # optional; tried before the shared ones
 EVENTS: list[kit.LevelEvent] = []       # optional; changes the level makes during the play
 CHALLENGE: bool = False                 # optional; True for a challenge (any order, no guidance)
-LESSON: list[kit.Slide] = []  # optional; the first level of a chapter has one
 QUEST: list[kit.Step] = []    # optional; the first level of a chapter has one
 BRIEFING: str                 # the situation and what counts as success
 QUESTION: str = ""            # optional; set it when the level is solved by a typed answer
@@ -244,8 +243,8 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
     says what really happens. At most one per guided level, where a named myth breaks; a checked
     answer (a hash, an author) is an answer step. Its `QUEST_ACTIONS` entry returns one option.
 
-  Every step, and every lesson slide (`kit.Slide(..., more="")`), may carry `more`: text the page
-  folds under a closed "More" below its text, for detail the step or the picture does not need.
+  Every step may carry `more`: text the page folds under a closed "More" below its text, for
+  detail the step does not need.
 
   A watch's message is shown live, after every poll, while the player works: write it as the
   next thing to do ("`README.md` is in the working folder; stage it with `git add`"), never as
@@ -289,8 +288,8 @@ bullets.
 
 The shared reactions' Spanish is `reactions_es.py`, a deck's `content/cards/<chapter>.es.toml`
 (section 4.1), the chapters' names and blurbs sit next to the English in `chapters.py`, and the
-game's own messages in `game.SPANISH`. Lessons, the changes the page animates and the
-playground's explanations stay English.
+game's own messages in `game.SPANISH`. The changes the page animates and the playground's
+explanations stay English.
 
 Write the Spanish as a Latin American teacher would, not word for word, with the words of
 `docs/i18n-glossary.md` (section 7). Commands,
@@ -298,7 +297,7 @@ file names, branch names, commit messages and git's own output stay as they are.
 
 ### 3.4 Reading the lab
 
-`kit.snapshot(path)` returns the repository as the map shows it (`firstcommit.repomap.Snapshot`):
+`kit.snapshot(path)` returns the repository as the page shows it (`firstcommit.repomap.Snapshot`):
 commits, refs, HEAD, the current branch, an operation in progress, and every file's blob id in
 the working folder, the staging area and HEAD. Checks and watches should read the snapshot, so
 what the player sees and what the game decides cannot disagree. Use `kit.git_run` for anything
@@ -323,64 +322,36 @@ for people.
 | `kit.typed(typed, pattern, outcome)`, `kit.after(typed, pattern)` | whether a line was typed and how it ended; the lines after the last one that worked |
 | `kit.type_line(folder, line)` | run a line in bash as the player would, for `solve` and `QUEST_ACTIONS`; returns its `kit.Command` |
 
-### 3.5 Lessons
+### 3.5 Snippets: what git prints outside a terminal
 
-A lesson is a list of `kit.Slide`s. Each slide has a short text and an optional `run`: shell
-lines added to the lesson's demonstration repository. The game runs every slide's `run` lines
-in order in an empty folder, with a fixed identity, date and locale, and only the game's
-starting global configuration (`gitcmd.BASE_CONFIG`) plus the settings below that make git
-print what a terminal shows. It shows each of the slide's commands with its real output, plus
-a figure (`view`): the repository map, the three areas, your computer's places (`places`: the
-working folder, staging area and repository, with the arrows the slide's change lit, played from
-the slide before), the object database, the commands only, or nothing. So every hash and line
-of output a lesson shows is what git really prints.
+"Predict" cards and "verify" snippets (section 4.1) run with bash, without a terminal, in one
+fixed environment (`environment` in `tests/test_decks.py`): an empty folder with the home folder
+next to it, the author and committer `Sam Lee <sam@example.com>`, the date 2026-01-15 09:00 UTC,
+`LC_ALL=C`, `TERM=dumb`, and only the game's starting global configuration
+(`gitcmd.BASE_CONFIG`) plus the settings below that make git print what a terminal shows. So
+every hash and line of output a card states is what git really prints, the same on every run.
 
-- Each non-blank line of `run` is one command. The whole lesson runs in one bash shell, so
-  `cd`, variables and `$?` carry over to the next line and the next slide. Keep a command on
-  one line (no here-documents, no `if` or `for` spread over lines); join steps with `&&`.
-- A line that starts with `! ` is expected to fail (`! git commit -m "x"` before anything is
-  staged); any other failing line is a bug in the lesson and fails the tests. So is a `! `
-  line that succeeds, a line that ends the shell (`exit`), and a slide that ends outside the
-  lesson's home folder.
-- The lesson starts in the empty folder `/home/you/project`, with `HOME` at `/home/you`: the
-  real folder is temporary, and every path under it is shown under `/home/you`, so two runs
-  print the same thing. The author and committer are `Sam Lee <sam@example.com>`, the date is
-  2026-01-15 09:00 UTC, with `LC_ALL=C`, `TERM=dumb` and umask 022.
-  `firstcommit.demos.environment` defines it; predict cards and verify snippets use the same.
-  Only printed paths are rewritten; what git stores keeps the real one. `git clone` saves the
-  absolute path as `origin`, so a lesson clone that pulls a merge must first run
-  `git remote set-url origin <relative path>`, as in 3.2. Otherwise the merge subject, and with
-  it the hash, change every run.
-- A command's output is its standard output and error together, in order. A slide's figure
-  shows the repository the shell is in after the slide's last line (from a subfolder, the
-  repository's top).
 - Output must be the same on every run and must be text: no `date`, no `ls -l` (it shows
   times), no `$RANDOM`, no binary files printed to the terminal.
-- Write files with plain shell (`echo "hello" > hello.txt`), so the reader can follow along.
-- 4-8 slides; one idea each. Picture first (the user's direction, 2026-10-06): every slide
-  shows a figure that makes its idea visible, and its text is at most 3 short sentences that
-  read the picture ("the new save point sits on top of the old one"); anything more goes in
-  `more`. Use "commands only" or no figure only when no picture fits the idea, and say why in a
-  comment. An idea that involves another repository (clone, push, fetch, pull) uses a figure
-  that shows both repositories.
+- `git clone` saves the absolute path as `origin`, and the folder is a new temporary one each
+  run, so a clone that pulls a merge must first run `git remote set-url origin <relative path>`,
+  as in 3.2. Otherwise the merge subject, and with it the hash, change every run.
 
-Lessons run without a terminal, and git prints some things differently then. Checked on git
-2.43 against a real terminal:
+Git prints some things differently without a terminal. Checked on git 2.43 against a real
+terminal:
 
 - `log.decorate = short` is set, so `git log`, `git show` and `git reflog` show
   `(HEAD -> main)` and tags as on a terminal (git-config(1): `auto` decorates only there).
-- Carriage returns are applied as a terminal applies them: `git rebase` leaves only its last
-  line, not its `Rebasing (1/1)` counter.
-- `git merge` and `git pull` open an editor for a merge commit on a terminal, so the lessons
+- `git merge` and `git pull` open an editor for a merge commit on a terminal, so the snippets
   set `GIT_MERGE_AUTOEDIT=yes` and a plain `git merge topic` that makes a merge commit fails:
-  write `--no-edit` or `-m`, and tell the player about the editor. `git revert` also opens an
-  editor only on a terminal and cannot be made to fail: always write `git revert --no-edit`.
-  `git commit` without `-m` and `git tag -a` without `-m` fail in a lesson anyway.
+  write `--no-edit` or `-m`. `git revert` also opens an editor only on a terminal and cannot be
+  made to fail: always write `git revert --no-edit`. `git commit` without `-m` and `git tag -a`
+  without `-m` fail in a snippet anyway.
 - `git shortlog` with no revision reads its input instead of the history when it is not on a
   terminal: write `git shortlog HEAD`.
 - Colours, the pager and progress lines stay off. On a terminal, `push`, `fetch`, `pull` and
   `gc` also print progress (`Enumerating objects`, `Writing objects` with a speed in KiB/s)
-  that a lesson does not show, so never quote those lines.
+  that a snippet does not print, so never quote those lines.
 - Everything else a beginner meets prints the same: `init`, `status`, `add`, `commit`,
   `restore`, `rm`, `switch`, `checkout` (with its detached-HEAD advice), `branch`, `diff`,
   `merge` with conflicts, `stash`, `cherry-pick`, `reset`, `clone`, `blame`, `cat-file`.
@@ -464,7 +435,7 @@ The chapter's cheat sheet (section 5).
 """
 
 [[card]]
-id = "basics-staging-area"          # "<chapter>-<slug>", unique
+id = "cargo-staging-area"           # "<chapter>-<slug>", unique
 kind = "choice"                     # "choice" | "text" | "predict"
 level = 1                           # 1 basic, 2 deeper, 3 advanced
 prompt = "..."
@@ -475,7 +446,7 @@ source = "git-add(1), DESCRIPTION"
 verify = """..."""                  # optional bash; exits 0 if the claim holds, 77 if this machine cannot tell
 
 [[card]]
-id = "basics-hello-blob"
+id = "cargo-hello-blob"
 kind = "predict"
 level = 2
 prompt = "What does the last command print?"
@@ -494,9 +465,9 @@ source = "git-hash-object(1)"
   same length and style as the right one. The right option may be at most 15 characters longer
   than the longest distractor, and the longest option in at most half of a deck's choice cards
   (the tests enforce both). No "all of the above".
-- **predict** and **verify**: the tests run `code` with bash in an empty folder, with the same
-  fixed environment as the lessons (`demos.environment`: identity, date, `LC_ALL=C`, and the
-  game's starting configuration `gitcmd.BASE_CONFIG` as the only global configuration), and
+- **predict** and **verify**: the tests run `code` with bash in an empty folder, in the fixed
+  environment of section 3.5 (identity, date, `LC_ALL=C`, and the game's starting
+  configuration `gitcmd.BASE_CONFIG` as the only global configuration), and
   compare standard output (trailing newlines stripped) with `correct`. They must be
   deterministic and must not depend on git's message wording.
 - A **verify** snippet passes only on exit status 0 of its *last* command: bash runs it without

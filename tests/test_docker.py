@@ -423,7 +423,7 @@ def test_run_shows_its_commands_and_refuses_an_unknown_one() -> None:
 
 @pytest.mark.docker
 @pytest.mark.slow
-def test_the_image_has_the_git_the_lessons_are_checked_against(image: str) -> None:
+def test_the_image_has_the_git_the_levels_are_checked_against(image: str) -> None:
     assert in_image(image, "git --version").startswith("git version 2.43.")
 
 

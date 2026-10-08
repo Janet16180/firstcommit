@@ -1,8 +1,9 @@
 # First Commit
 
 A hands-on game that teaches Git, and how GitHub uses it, to people who are starting out. Every
-level explains first, then lets you play: a short lesson, a guided quest in a real terminal, a
-challenge, a debrief, and flashcards spaced over the following days.
+level explains first, then lets you play: a short scene with Rama, the ship's robot, a guided
+quest in a real terminal, challenges, a debrief, and flashcards spaced over the following days.
+A field guide and each chapter's notes stay at hand.
 
 Everything runs on your own machine. The game keeps its own Git configuration and its own
 practice repositories under `~/.firstcommit`; it never touches your repositories or your
@@ -14,7 +15,7 @@ Work in progress: see [docs/DESIGN.md](docs/DESIGN.md).
 
 ## Play with Docker
 
-The Docker image holds Ubuntu 24.04 with git 2.43 and Python 3.12, the versions every lesson is
+The Docker image holds Ubuntu 24.04 with git 2.43 and Python 3.12, the versions every level is
 checked against, plus the game and termlab. You need Docker Engine installed inside your WSL
 Ubuntu ([install guide](https://docs.docker.com/engine/install/ubuntu/)); Docker Desktop has not
 been tested. termlab's `firstcommit` branch must sit next to this folder, as for development.

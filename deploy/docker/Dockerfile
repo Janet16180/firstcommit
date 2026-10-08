@@ -1,4 +1,4 @@
-# First Commit in a container: Ubuntu 24.04 with the git and Python the lessons are checked
+# First Commit in a container: Ubuntu 24.04 with the git and Python the levels are checked
 # against, and the game's and termlab's sources copied in. Build it through deploy/docker/run,
 # which passes termlab's folder as the named build context "termlab". Two targets: "player",
 # the game, and "test", the same image plus uv and the repository, to run the suite.

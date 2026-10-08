@@ -90,7 +90,7 @@ Guarantees the page relies on:
   size option, so the page's terminal can use VT323 at the design's size, and `font/woff2`.
 - Each Orbit chapter gets a flashcard deck.
 - The old version goes: the level `basics-first-commit`, its deck, and the time theme's page
-  modules. Git history keeps them.
+  modules. Git history keeps them. Done on 2026-10-08, with the old lessons and the map guide.
 - The headings get another pixel font with a capital C that cannot be read as an O (artist
   proposes, frontend ships it).
 
@@ -129,7 +129,7 @@ to the lead. The lead reviews, runs the slow and Docker tiers, and merges.
   zones drawn from real snapshots and lit from typed lines (TimePlaces' parse, 30b2e11). Starts
   with the visual shell, which needs no new record, then rebases on engine's records commit.
   Replaces the time theme; the old modules stay until the new page plays all three levels,
-  then one commit removes them.
+  then one commit removes them (removed on 2026-10-08).
 - **artist** (`.claude/agents/artist.md`): a subagent, not a teammate. Whoever needs a new
   or changed image or animation (usually frontend) calls it directly with what to draw and
   where it appears; it draws on its own and reports back to its caller. It owns only
