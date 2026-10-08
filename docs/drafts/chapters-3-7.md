@@ -58,7 +58,7 @@ P = has a prediction.
 | cargo | 2-4 | Stale copy | the dock holds the file as it was when added | guided, P | two copies side by side | O |
 | cargo | 2-5 | Junk bay | `.gitignore` keeps generated files out | situation | staged: a build folder floods the workshop | O |
 | vault | 3-1 | Seal the capsule | a commit seals the dock, on this computer only | guided, P | scene: capsule, chain; the mothership stays dark | E |
-| vault | 3-2 | Look before you seal | `git diff` and `git diff --staged` | guided | staged: overnight edits, one typo | E |
+| vault | 3-2 | Look before you seal | `git diff` and `git diff --staged` | guided | staged: overnight edits, one of them an accidental change (a crew note says only route.txt was meant to change) | E |
 | vault | 3-3 | Flight recorder | history is readable: find the commit, its hash and author | situation (answer) | staged: an oxygen alarm; the found capsule glows | E |
 | vault | 3-4 | Forgot one | `commit --amend --no-edit` before anyone sees it | situation | the capsule reopens and reseals | O |
 | vault | 3-5 | Cargo inspection | cargo and vault: one clean capsule, the secret in none | challenge | alarm; staged: a stowaway arrives | E |
