@@ -885,6 +885,11 @@ deleted side, an add/add with no base) and `tests/levels/test_conflict_collision
 | 6-3 debrief | git calls your side *ours* and the incoming side *theirs* | git-merge(1) HOW CONFLICTS ARE PRESENTED; git-checkout(1) `--ours, --theirs`; git-restore(1) `--ours, --theirs` |
 | card (unchanged) | during a rebase the two can appear swapped | git-rebase(1) (`--ours`/`--theirs` swap) |
 
+**Open, for the sector 6 rework:** `git restore --ours` or `--theirs` takes that side's whole file,
+so it silently drops the other side's cleanly merged changes in the same file. 6-3 and 6-4 are only
+safe because their conflicted files have no other changes; a level whose file has them must teach
+another way (found by the conflicts agent, 2026-10-08).
+
 ## 4-3: Alex pushes inside your push (added 2026-10-08)
 
 Alex's pull and push run in the stand-in GitHub's `post-receive` hook, so they are done before the
