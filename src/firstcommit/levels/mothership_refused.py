@@ -69,7 +69,7 @@ WAITING = "Alex is still on the way. Wait a moment for the report."
 BOUNCED = "Git refused the push: the mothership has Alex's commit, and your `main` does not."
 NOT_BOUNCED = "Send your commit up: `git push`."
 JOINED = "Your `main` holds Alex's commit and yours."
-NOT_JOINED = "Your `main` does not hold Alex's commit yet. Bring it in: `git pull --no-rebase`."
+NOT_JOINED = "Your `main` does not hold Alex's commit yet. Bring it in: `git pull`."
 SENT = "The mothership holds Alex's commit and yours."
 NOT_SENT = "Send the joined history up: `git push`."
 ALEX_DROPPED = (
@@ -248,8 +248,8 @@ def _holds_route(folder: Path, ref: str) -> bool:
 
 
 QUEST: list[kit.Step] = [
-    kit.WatchStep(id="push", text="Send your commit to the mothership.", command="git push", watch=watch_bounce),
-    kit.WatchStep(id="pull", text="Bring Alex's commit into your `main`.", command="git pull --no-rebase", watch=watch_join),
+    kit.WatchStep(id="push", text="Try to send your commit up.", command="git push", watch=watch_bounce),
+    kit.WatchStep(id="pull", text="Bring Alex's commit into your `main`.", command="git pull", watch=watch_join),
     kit.WatchStep(id="send", text="Send both commits up.", command="git push", watch=watch_send),
 ]
 

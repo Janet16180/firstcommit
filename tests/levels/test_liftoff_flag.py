@@ -62,7 +62,7 @@ def test_git_status_before_init_fails_and_does_not_count() -> None:
     typed = typed_in(lab, "git status", "git init", "ls -a")
     assert typed[0]["status"] == 128
     assert not watches()[2].watch(lab, state, typed).solved
-    assert reactions.react(typed[0], (), False, False, reactions.RULES) is not None
+    assert reactions.react(typed[0], (), False, False, reactions.RULES, remote=False) is not None
     typed += typed_in(lab, "git status")
     assert level.check(lab, state, None, typed).solved
 

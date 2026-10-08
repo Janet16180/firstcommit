@@ -338,6 +338,7 @@
      "commits": [],
      "refs": [],
      "pushed": [],
+     "remotes": [],
      "files": [
       {
        "path": "hello.txt",
@@ -437,6 +438,7 @@
      "commits": [],
      "refs": [],
      "pushed": [],
+     "remotes": [],
      "files": [
       {
        "path": "hello.txt",
@@ -515,6 +517,7 @@
       }
      ],
      "pushed": [],
+     "remotes": [],
      "files": [
       {
        "path": "hello.txt",
@@ -633,6 +636,7 @@
       }
      ],
      "pushed": [],
+     "remotes": [],
      "files": [
       {
        "path": "hello.txt",
@@ -712,6 +716,7 @@
       }
      ],
      "pushed": [],
+     "remotes": [],
      "files": [
       {
        "path": "hello.txt",
@@ -990,6 +995,7 @@
     }
    ],
    "pushed": [],
+   "remotes": [],
    "files": [
     {
      "path": "README.md",
@@ -1127,6 +1133,7 @@
     }
    ],
    "pushed": [],
+   "remotes": [],
    "files": [],
    "operation": null,
    "stash": 0,
@@ -1205,7 +1212,8 @@
        }
       ]
      }
-    ]
+    ],
+    "moment": null
    }
   ]
  },
@@ -1456,6 +1464,7 @@
    "commits": [],
    "refs": [],
    "pushed": [],
+   "remotes": [],
    "files": [],
    "operation": null,
    "stash": 0,
@@ -1469,6 +1478,7 @@
    "commits": [],
    "refs": [],
    "pushed": [],
+   "remotes": [],
    "files": [
     {
      "path": "hello.txt",
@@ -1512,6 +1522,7 @@
     }
    ],
    "pushed": [],
+   "remotes": [],
    "files": [
     {
      "path": "hello.txt",
@@ -1540,6 +1551,7 @@
    "commits": [],
    "refs": [],
    "pushed": [],
+   "remotes": [],
    "files": [
     {
      "path": "notes.txt",
@@ -1713,6 +1725,7 @@
     "commits": [],
     "refs": [],
     "pushed": [],
+    "remotes": [],
     "files": [
      {
       "path": "README.md",
@@ -1756,6 +1769,7 @@
      }
     ],
     "pushed": [],
+    "remotes": [],
     "files": [
      {
       "path": "README.md",
@@ -1807,6 +1821,7 @@
      }
     ],
     "pushed": [],
+    "remotes": [],
     "files": [
      {
       "path": "README.md",
@@ -1874,6 +1889,7 @@
      }
     ],
     "pushed": [],
+    "remotes": [],
     "files": [
      {
       "path": "README.md",
@@ -1954,6 +1970,7 @@
      }
     ],
     "pushed": [],
+    "remotes": [],
     "files": [
      {
       "path": "README.md",
@@ -2050,6 +2067,7 @@
      }
     ],
     "pushed": [],
+    "remotes": [],
     "files": [
      {
       "path": "README.md",
@@ -2154,6 +2172,7 @@
      }
     ],
     "pushed": [],
+    "remotes": [],
     "files": [
      {
       "path": "README.md",
@@ -2236,6 +2255,7 @@
      }
     ],
     "pushed": [],
+    "remotes": [],
     "files": [
      {
       "path": "README.md",
@@ -2311,6 +2331,7 @@
      }
     ],
     "pushed": [],
+    "remotes": [],
     "files": [
      {
       "path": "README.md",
@@ -2388,6 +2409,7 @@
      }
     ],
     "pushed": [],
+    "remotes": [],
     "files": [
      {
       "path": "README.md",
@@ -2478,6 +2500,7 @@
      }
     ],
     "pushed": [],
+    "remotes": [],
     "files": [
      {
       "path": "README.md",
@@ -2571,6 +2594,7 @@
      }
     ],
     "pushed": [],
+    "remotes": [],
     "files": [
      {
       "path": "README.md",
@@ -2655,6 +2679,7 @@
      }
     ],
     "pushed": [],
+    "remotes": [],
     "files": [
      {
       "path": "README.md",
@@ -2727,6 +2752,7 @@
      }
     ],
     "pushed": [],
+    "remotes": [],
     "files": [
      {
       "path": "README.md",
@@ -2792,6 +2818,7 @@
      }
     ],
     "pushed": [],
+    "remotes": [],
     "files": [],
     "operation": null,
     "stash": 0,
@@ -2830,6 +2857,7 @@
      }
     ],
     "pushed": [],
+    "remotes": [],
     "files": [],
     "operation": null,
     "stash": 0,
@@ -2879,6 +2907,7 @@
      }
     ],
     "pushed": [],
+    "remotes": [],
     "files": [
      {
       "path": "README.md",
@@ -2937,6 +2966,7 @@
      }
     ],
     "pushed": [],
+    "remotes": [],
     "files": [
      {
       "path": "README.md",
@@ -3003,6 +3033,7 @@
      }
     ],
     "pushed": [],
+    "remotes": [],
     "files": [
      {
       "path": "README.md",
@@ -3060,6 +3091,7 @@
      }
     ],
     "pushed": [],
+    "remotes": [],
     "files": [],
     "operation": null,
     "stash": 0,
@@ -3103,6 +3135,7 @@
      }
     ],
     "pushed": [],
+    "remotes": [],
     "files": [
      {
       "path": "README.md",
@@ -3286,6 +3319,7 @@
      }
     ],
     "pushed": [],
+    "remotes": [],
     "files": [
      {
       "path": "README.md",
@@ -3353,6 +3387,7 @@
      }
     ],
     "pushed": [],
+    "remotes": [],
     "files": [],
     "operation": null,
     "stash": 0,
@@ -3398,6 +3433,7 @@
     "pushed": [
      "origin/main"
     ],
+    "remotes": [],
     "files": [
      {
       "path": "README.md",

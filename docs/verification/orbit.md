@@ -91,7 +91,9 @@ exit statuses, the level tests below.
 | `ADD_WHAT` (`git add` alone) | It needs a name, or `.` for everything in this folder and the folders inside it | E12 (exit 0, nothing staged), E20 |
 | `NOT_STAGED` (`git add`, failed, in a repository) | Nothing was staged; a name git does not find is the usual cause | E10, E11 (one bad name stages none of the names) |
 | `COMMITTED` (`git commit`, event `commit-created`) | A new commit with its own hash and the message; `git log --oneline` lists it | E23 |
-| `NOT_COMMITTED` (`git commit`, failed, in a repository) | No commit; nothing new staged or no name and email are the usual causes | E21, E24. **Fixed**: it said "an empty staging area", but after a commit the staging area is not empty (E24), it only holds nothing new |
+| `NOT_COMMITTED` (`git commit`, failed, in a repository) | No commit; usually nothing new is staged; `git add` first, or `git commit -am` stages the tracked files | E21, E24, E63; git-commit(1) `-a`. **Fixed**: it said "an empty staging area", but after a commit the staging area is not empty (E24), it only holds nothing new. **Changed 2026-10-08**: it no longer names a missing name and email, which the game always sets (Cadet) |
+| `LOG_FILE` (`git log` given a file, ok; added 2026-10-08) | Only the commits that changed that file, newest first | E44 (`git log oxygen.cfg` and `git log -- oxygen.cfg` list only those); git-log(1) `<path>...`; `LOG_FILE_LINE` matches `name.ext` arguments and never `a..b` (*re-checked*) |
+| `NO_REMOTE` (`git push`, failed, in a repository that names no remote; added 2026-10-08) | The push had nowhere to go; `git remote add origin` names one | E103: in the image, a repository with a commit and no remote; `git push` exits 128 (no push destination), `git push -u origin main` exits 1 (`origin` is no repository); git-remote(1) `add`. The rule reads `Snapshot.remotes` (*re-checked* in `tests/test_reactions.py` and `tests/test_game.py`) |
 | `LOG` (`git log`, ok) | Newest commit first; each records its author, date and message, and is named by its hash | E30, E31; git-log(1) |
 | `HIDDEN_GIT` (`LIST_HIDDEN`, ok, in a repository) | `.git` is the repository and holds the whole history; a plain `ls` hides dot names | E5, E33; ls(1). `LIST_HIDDEN` matches `-a`, `-A`, `-la`, `--all`, `--almost-all` (*re-checked*) |
 | `LS_IN_REPOSITORY` (`ls`, ok, in a repository) | `ls` lists the working folder; `git status` tells which files changed and which are untracked | E1, E9, E25. **Fixed**: it said `git status` tells "which of these files Git tracks", but it never lists unchanged tracked files |
@@ -491,7 +493,8 @@ Wrong or misleading, with the correction sent to frontend:
 
 *Re-checked* by `tests/levels/test_vault_seal.py`: commit and log, the commit by Cadet, the
 journal untracked and GitHub empty afterwards, a bare commit (status 1, the shared `NO_MESSAGE`),
-a log before the commit, the journal sealed too (lost), and a commit without the map.
+a log before the commit, the journal sealed too (lost), a commit without the map, and the journal
+staged (Rama's warning, the goal's way back out).
 
 | Text | Claim | Evidence |
 |---|---|---|
@@ -503,6 +506,7 @@ a log before the commit, the journal sealed too (lost), and a commit without the
 | `LOOKED` | `git log` lists the commit with hash, name, date and message | E55, E45 |
 | `JOURNAL_SEALED` (lost) | a commit cannot be taken back until a later chapter | chapters-3-7 (revert and reset in chapter 7) |
 | `MAP_MISSING` | stage the map, then commit again | E13, E55 |
+| `JOURNAL_STAGED` (reaction and goal message) | before the first commit, `git rm --cached journal.txt` unstages it and keeps the file; `git restore --staged` cannot yet | E102 (added 2026-10-08): in the image, a repository with no commit, `git add .`, then `git restore --staged journal.txt` exits 128 (no HEAD) while `git rm --cached journal.txt` exits 0 and leaves `?? journal.txt` |
 
 ### Level `vault-look` (Look before you seal, 3-2)
 
@@ -548,6 +552,7 @@ was, and the quest waiting when the edit is committed before the empty push.
 | prediction reveal, `FIZZLED`, scene | a push sends commits; an edit in no commit is not sent | E62 |
 | hint 2 | `git commit -am` commits the edit | E63; git-commit(1) `-a` ("automatically stage files that have been modified and deleted") |
 | `COMMITTED_EDIT` | the commit is ahead of `origin/main` | E63 (status says ahead by 1 before the push) |
+| `NOTHING_STAGED` (a commit that fails with nothing staged) | `git add route.txt` stages the edit; `-am` stages the tracked route | E63; git-commit(1) `-a`; the level's test (status 1) |
 
 ### Level `mothership-refused` (Push refused, 4-4)
 

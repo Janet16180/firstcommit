@@ -10,7 +10,13 @@ from firstcommit.records import Command
 
 
 def said(
-    line: str, status: int = 0, kinds: Collection[str] = (), repository: bool = True, rules: tuple[ReactionRule, ...] = reactions.RULES, staged: bool = False
+    line: str,
+    status: int = 0,
+    kinds: Collection[str] = (),
+    repository: bool = True,
+    rules: tuple[ReactionRule, ...] = reactions.RULES,
+    staged: bool = False,
+    remote: bool = True,
 ) -> str | None:
     """
     Give the mood and text of the rule that speaks for one typed line, or None.
@@ -29,6 +35,8 @@ def said(
         The rules to read, the shared ones by default.
     staged : bool
         Whether the staging area differs from the last commit after it.
+    remote : bool
+        Whether the repository names a remote after it.
 
     Returns
     -------
@@ -36,7 +44,7 @@ def said(
         ``"<mood>: <text>"``, or None when no rule fits.
     """
     command: Command = {"line": line, "status": status}
-    rule = reactions.react(command, kinds, repository, staged, rules)
+    rule = reactions.react(command, kinds, repository, staged, rules, remote=remote)
     return None if rule is None else f"{rule.mood}: {rule.text}"
 
 
@@ -141,6 +149,16 @@ def test_reading_the_status_or_the_history_is_explained() -> None:
     assert said("git log --oneline") == f"info: {reactions.LOG}"
 
 
+@pytest.mark.parametrize("line", ["git log oxygen.cfg", "git log -- oxygen.cfg", "git log -p oxygen.cfg", "git log --oneline notes/day1.txt"])
+def test_git_log_on_a_file_says_it_lists_only_the_commits_that_changed_it(line: str) -> None:
+    assert said(line) == f"info: {reactions.LOG_FILE}"
+
+
+@pytest.mark.parametrize("line", ["git log", "git log --oneline", "git log main", "git log origin/main", "git log HEAD~3..HEAD"])
+def test_git_log_without_a_file_keeps_the_history_reaction(line: str) -> None:
+    assert said(line) == f"info: {reactions.LOG}"
+
+
 def test_a_typed_line_matches_a_pattern_from_its_start_and_an_outcome() -> None:
     failed: Command = {"line": "  git   status ", "status": 128}
     assert reactions.matches(failed, r"git status\b", "any")
@@ -216,3 +234,13 @@ def test_a_commit_that_brings_its_own_message_never_gets_the_message_lesson(line
 
 def test_a_bare_commit_with_nothing_staged_is_the_usual_failed_commit() -> None:
     assert said("git commit", 1, staged=False) == f"err: {reactions.NOT_COMMITTED}"
+
+
+def test_a_failed_commit_never_blames_a_missing_name_and_email() -> None:
+    assert "email" not in reactions.NOT_COMMITTED and "correo" not in reactions.SPANISH[reactions.NOT_COMMITTED]
+
+
+@pytest.mark.parametrize(("line", "status"), [("git push", 128), ("git push -u origin main", 1)])
+def test_a_push_from_a_repository_with_no_remote_says_to_name_one_first(line: str, status: int) -> None:
+    assert said(line, status, remote=False) == f"err: {reactions.NO_REMOTE}"
+    assert said(line, status, remote=True) != f"err: {reactions.NO_REMOTE}"

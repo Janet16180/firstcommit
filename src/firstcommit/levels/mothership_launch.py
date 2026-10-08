@@ -72,7 +72,12 @@ EDIT_NOT_COMMITTED = 'Commit the edit: `git commit -am "Add the Phobos stop"`.'
 SENT = "The mothership's `main` holds the edit's commit."
 NOT_SENT = "Send the new commit up: `git push`."
 
-REACTIONS = [kit.ReactionRule(line=r"git push$", mood="info", text=NO_UPSTREAM, outcome="failed", repository=True)]
+NOTHING_STAGED = 'Nothing is staged, so there was nothing to commit. `git add route.txt` first, or `git commit -am "Add the Phobos stop"` stages the tracked route for you.'
+
+REACTIONS = [
+    kit.ReactionRule(line=r"git push$", mood="info", text=NO_UPSTREAM, outcome="failed", repository=True),
+    kit.ReactionRule(line=r"git commit\b", mood="err", text=NOTHING_STAGED, outcome="failed", repository=True, staged=False),
+]
 
 GUESS = kit.ChoiceStep(
     id="guess",

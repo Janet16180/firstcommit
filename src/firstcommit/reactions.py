@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from firstcommit import reactions_es
-from firstcommit.records import Command, Mood
+from firstcommit.records import Command, Moment, Mood
 
 Outcome = Literal["any", "ok", "failed", "unknown-command"]
 """How a line must have ended: any way, with status 0, with any other status, or with bash's 127 for a command it does not know."""
@@ -75,7 +75,9 @@ class ReactionRule:
     line must have ended. ``event`` is an event kind that must be among the changes, or empty
     for none. ``repository`` says whether the player's folder must hold a repository afterwards
     (True or False), or None for either; ``staged``, likewise, whether its staging area must then
-    differ from the last commit. ``text`` is markup, as every game text.
+    differ from the last commit; ``remote`` whether the repository must then name a remote.
+    ``text`` is markup, as every game text. ``moment`` names a one-time moment the page plays
+    with it, or None.
     """
 
     line: str
@@ -85,6 +87,8 @@ class ReactionRule:
     event: str = ""
     repository: bool | None = None
     staged: bool | None = None
+    remote: bool | None = None
+    moment: Moment | None = None
 
 
 NEW_REPOSITORY = "A new repository: Git made the hidden `.git` folder, where it keeps this project's history. `ls -a` shows it."
@@ -104,7 +108,9 @@ NO_MESSAGE = (
     "No commit was made: every commit needs a message, and in the game no editor opens to write one. "
     'Give it on the line: `git commit -m "Add the map"`.'
 )
-NOT_COMMITTED = "No commit was made. Read Git's message: nothing new in the staging area, or no name and email set yet, are the usual causes."
+NOT_COMMITTED = "No commit was made. Read Git's message; usually nothing new is staged: `git add` your changes first, or `git commit -am` stages the files Git already tracks."
+NO_REMOTE = "Your repository knows no remote yet, so the push had nowhere to go. Name one first: `git remote add origin` and its address."
+LOG_FILE = "Only the commits that changed that file, newest first: the history of one file, out of the whole history."
 LOG = "Your history, newest commit first. Each commit records its author, its date and its message, and Git names it by its hash."
 HIDDEN_GIT = "See `.git`? That hidden folder is the repository: Git keeps the whole history in it. A plain `ls` hides names that start with a dot."
 LS_IN_REPOSITORY = "`ls` lists the working folder. To see which of these files changed, and which Git does not track yet, ask `git status`."
@@ -113,6 +119,9 @@ DID_YOU_MEAN_GIT = "Did you mean `git`? It happens to every crew."
 UNKNOWN_COMMAND = "The shell knows no command by that name. Check its spelling: Tab completes command names too."
 NEW_FILE = "A new file in the working folder. Git does not track it yet: `git status` lists it as untracked until you `git add` it."
 CHANGED_FILE = "You changed a file in the working folder. What is staged stays as it was until you `git add` the file again."
+
+LOG_FILE_LINE = r"git log( \S+)* (-- )?[\w./-]*\w\.\w+( |$)"
+"""A ``git log`` given a file: a word with a dot between two letters or digits, such as ``oxygen.cfg`` (never ``a..b``)."""
 
 RULES: tuple[ReactionRule, ...] = (
     ReactionRule(line=r"", mood="warn", text=REPOSITORY_GONE, event="repository-removed"),
@@ -130,7 +139,9 @@ RULES: tuple[ReactionRule, ...] = (
     ReactionRule(line=r"git commit\b", mood="ok", text=COMMITTED, event="commit-created"),
     ReactionRule(line=BARE_COMMIT, mood="err", text=NO_MESSAGE, outcome="failed", repository=True, staged=True),
     ReactionRule(line=r"git commit\b", mood="err", text=NOT_COMMITTED, outcome="failed", repository=True),
+    ReactionRule(line=LOG_FILE_LINE, mood="info", text=LOG_FILE, outcome="ok"),
     ReactionRule(line=r"git log\b", mood="info", text=LOG, outcome="ok"),
+    ReactionRule(line=r"git push\b", mood="err", text=NO_REMOTE, outcome="failed", repository=True, remote=False),
     ReactionRule(line=LIST_HIDDEN, mood="info", text=HIDDEN_GIT, outcome="ok", repository=True),
     ReactionRule(line=r"ls\b", mood="info", text=LS_IN_REPOSITORY, outcome="ok", repository=True),
     ReactionRule(line=r"ls\b", mood="info", text=LS_NO_REPOSITORY, outcome="ok", repository=False),
@@ -145,7 +156,7 @@ SPANISH: dict[str, str] = {globals()[name]: text for name, text in vars(reaction
 """Each shared text in Spanish, by its English text: the constant of `firstcommit.reactions_es` with the same name."""
 
 
-def react(command: Command, kinds: Collection[str], repository: bool, staged: bool, rules: Sequence[ReactionRule]) -> ReactionRule | None:
+def react(command: Command, kinds: Collection[str], repository: bool, staged: bool, rules: Sequence[ReactionRule], *, remote: bool) -> ReactionRule | None:
     """
     Find the rule that speaks for one typed line.
 
@@ -161,13 +172,15 @@ def react(command: Command, kinds: Collection[str], repository: bool, staged: bo
         Whether its staging area then differs from the last commit (`firstcommit.repomap.staged`).
     rules : Sequence[ReactionRule]
         The rules to try, in order: a level's own first, then `RULES`.
+    remote : bool
+        Whether the repository then names a remote (`firstcommit.repomap.Snapshot` ``remotes``).
 
     Returns
     -------
     ReactionRule | None
         The first rule that fits, or None.
     """
-    return next((rule for rule in rules if _fits(rule, command, kinds, repository, staged)), None)
+    return next((rule for rule in rules if _fits(rule, command, kinds, repository, staged, remote)), None)
 
 
 GLOBAL_OPTIONS = re.compile(
@@ -227,7 +240,7 @@ def plain(line: str) -> str:
     return GLOBAL_OPTIONS.sub("git", " ".join(line.split()))
 
 
-def _fits(rule: ReactionRule, command: Command, kinds: Collection[str], repository: bool, staged: bool) -> bool:
+def _fits(rule: ReactionRule, command: Command, kinds: Collection[str], repository: bool, staged: bool, remote: bool) -> bool:
     """
     Tell whether a rule fits a typed line.
 
@@ -243,15 +256,18 @@ def _fits(rule: ReactionRule, command: Command, kinds: Collection[str], reposito
         Whether a repository is there afterwards.
     staged : bool
         Whether anything is staged afterwards.
+    remote : bool
+        Whether the repository names a remote afterwards.
 
     Returns
     -------
     bool
-        True when the line, its outcome, the change, the repository and the staging area all fit.
+        True when the line, its outcome, the change, the repository, the staging area and the remotes all fit.
     """
     return (
         matches(command, rule.line, rule.outcome)
         and (not rule.event or rule.event in kinds)
         and (rule.repository is None or rule.repository == repository)
         and (rule.staged is None or rule.staged == staged)
+        and (rule.remote is None or rule.remote == remote)
     )

@@ -71,7 +71,7 @@ from firstcommit.lab import Lab
 from firstcommit.markup import Block
 from firstcommit.playground import ButtonOffError as ButtonOffError
 from firstcommit.reactions import ReactionRule
-from firstcommit.records import Art, ButtonView, Command, Language, Mood, Press, Who
+from firstcommit.records import Art, ButtonView, Command, Language, Moment, Mood, Press, Who
 from firstcommit.repomap import ObjectInfo, Snapshot
 from firstcommit.save import Payout
 from firstcommit.save import SaveError as SaveError
@@ -140,11 +140,12 @@ class SceneFrameView(TypedDict):
 
 
 class Reaction(TypedDict):
-    """What Rama says about one typed line (`firstcommit.reactions`)."""
+    """What Rama says about one typed line (`firstcommit.reactions`), and the moment the page plays with it, if any."""
 
     line: str
     mood: Mood
     text: list[Block]
+    moment: Moment | None
 
 
 class ActiveView(TypedDict):
@@ -687,7 +688,8 @@ def quest_step(answer: str | None) -> StepResult:
     Check the current step of the guided quest, and move on if it passed.
 
     Only the current step is ever checked, so a guided quest is played in order; a challenge's
-    goals are all checked, and any of them may be met first. An answer step is
+    goals are all checked, and any of them may be met first. The message is a loss when one is
+    found, else the first goal met now, else the first goal still unmet. An answer step is
     checked with ``answer`` (a missing or blank one counts as empty), a watch step against the lab
     and every line typed since the level started (the page polls it with None; the log is read
     first), and a read step always passes. Once the quest is done, nothing is checked and the
@@ -720,8 +722,10 @@ def quest_step(answer: str | None) -> StepResult:
             verdicts = [(step.id, _check_step(step, entry.texts[language].steps[step.id], lab, active, _typed(answer), _messages(entry, language))) for step in _pending(active, entry)]
             reached = [step_id for step_id, verdict in verdicts if verdict.solved]
             unmet = sorted((verdict for _, verdict in verdicts if not verdict.solved), key=lambda verdict: not verdict.lost)
+            met = [verdict for _, verdict in verdicts if verdict.solved]
             lost = bool(unmet) and unmet[0].lost
-            message = markup.parse((unmet[0] if unmet else verdicts[-1][1]).message)
+            said = unmet[0] if lost or not met else met[0]
+            message = markup.parse(said.message)
         if reached:
             active["done"] = [step.id for step in entry.quest if step.id in {*active["done"], *reached}]
             active["step"] = len(active["done"])
@@ -825,9 +829,9 @@ def observe() -> Observation:
     Snapshot the lab of the level in progress and tell what changed since the last observation.
 
     The snapshots are kept in the save (only when they changed), so the events are right
-    whichever process asks; the first observation of a level has no events, and right after it
-    the level's events with no goal run (`firstcommit.kit.LevelEvent`), so the next observation
-    tells their changes. The lines typed
+    whichever process asks; the first observation of a level has no events and is returned at
+    once, and the level's events with no goal (`firstcommit.kit.LevelEvent`) run when the next
+    observation starts, so it tells their changes. The lines typed
     since the last look are read into the level's record first (`save.Active` ``typed``), so a
     goal still sees them after this observation has told them.
 
@@ -847,13 +851,13 @@ def observe() -> Observation:
         active = _catch_up(active)
         lab = runner.lab_of(entry.id)
         last = save.load_observed()
+        if last is not None and last["level"] == entry.id:
+            active = _fire(entry, active, "")
         now, typed = _look(entry.id, lab, last, active["typed"])
         messages = _messages(entry, _language())
         observation = _lost_over_pleased(_observation(last, now, _buttons(lab, now), typed, _rules(entry), messages), _loss(entry, active, lab, messages))
         if now != last:
             save.write_observed(now)
-        if last is None or last["level"] != entry.id:
-            _fire(entry, active, "")
     return observation
 
 
@@ -1427,7 +1431,8 @@ def _observation(
         teammate_events = _changes(last["teammate"], now["teammate"])
     kinds = {event["kind"] for event in events}
     staged = bool(repomap.staged(now["project"]))
-    said = [(command, reactions.react(command, kinds, now["project"]["exists"], staged, rules)) for command in typed]
+    remote = bool(now["project"]["remotes"])
+    said = [(command, reactions.react(command, kinds, now["project"]["exists"], staged, rules, remote=remote)) for command in typed]
     return {
         "level": now["level"],
         "project": now["project"],
@@ -1437,7 +1442,9 @@ def _observation(
         "teammate_events": _event_views(teammate_events),
         "buttons": buttons,
         "commands": typed,
-        "reactions": [{"line": command["line"], "mood": rule.mood, "text": markup.parse(_say(rule.text, messages))} for command, rule in said if rule is not None],
+        "reactions": [
+            {"line": command["line"], "mood": rule.mood, "text": markup.parse(_say(rule.text, messages)), "moment": rule.moment} for command, rule in said if rule is not None
+        ],
     }
 
 
@@ -1628,7 +1635,8 @@ def _lost_over_pleased(observation: Observation, loss: str) -> Observation:
         The same, with each ``ok`` reaction saying the loss instead, as an error, when there is one.
     """
     said: list[Reaction] = [
-        {"line": reaction["line"], "mood": "err", "text": markup.parse(loss)} if loss and reaction["mood"] == "ok" else reaction for reaction in observation["reactions"]
+        {"line": reaction["line"], "mood": "err", "text": markup.parse(loss), "moment": None} if loss and reaction["mood"] == "ok" else reaction
+        for reaction in observation["reactions"]
     ]
     return {**observation, "reactions": said}
 

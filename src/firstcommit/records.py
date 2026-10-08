@@ -83,6 +83,13 @@ class FileEntry(TypedDict):
     folder_change: FolderChange | None
 
 
+class Remote(TypedDict):
+    """A remote a repository names: its name and its address as configured (``remote.<name>.url``)."""
+
+    name: str
+    url: str
+
+
 class Snapshot(TypedDict):
     """
     The state of one repository.
@@ -100,6 +107,9 @@ class Snapshot(TypedDict):
     as their reflogs record it, so a commit that reached one by a push was here before the
     remote had it. Invariant: a sorted subset of the names of ``refs`` of kind ``"remote"``;
     empty when there are none, or when their reflogs are off.
+
+    ``remotes`` lists the remotes the repository names, sorted by name, each with its address as
+    written in its configuration; empty without a repository or without remotes.
     """
 
     exists: bool
@@ -109,6 +119,7 @@ class Snapshot(TypedDict):
     commits: list[Commit]
     refs: list[Ref]
     pushed: list[str]
+    remotes: list[Remote]
     files: list[FileEntry]
     operation: Operation | None
     stash: int
@@ -138,6 +149,8 @@ class Command(TypedDict):
 
 Mood = Literal["info", "ok", "warn", "err"]
 """How Rama says something about a typed line (`firstcommit.reactions`): neutral, pleased, careful or about a failure."""
+Moment = Literal["secret-leak", "launch"]
+"""A one-time moment the page plays over the zones when a reaction carries it: a secret leaking into every copy, or a ship launching."""
 Art = Literal["space", "timeline", "terminal", "planet", "flag", "zones", "conveyor", "capsule", "chain", "orbit", "rocket", "pull", "alarm", "fork", "merge", "collision", "blackbox"]
 """The pictures a level's scene can show; the page draws each one (its art files)."""
 

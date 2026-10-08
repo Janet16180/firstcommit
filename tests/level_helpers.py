@@ -103,7 +103,7 @@ def watch(module: ModuleType, step_id: str) -> kit.WatchStep:
     return found
 
 
-def reaction(module: ModuleType, line: kit.Command, kinds: set[str], repository: bool, staged: bool) -> kit.ReactionRule | None:
+def reaction(module: ModuleType, line: kit.Command, kinds: set[str], repository: bool, staged: bool, remote: bool = True) -> kit.ReactionRule | None:
     """
     Find what Rama says about a line in a level: its own rules first, then the shared ones.
 
@@ -119,10 +119,12 @@ def reaction(module: ModuleType, line: kit.Command, kinds: set[str], repository:
         Whether a repository is there afterwards.
     staged : bool
         Whether anything is staged afterwards.
+    remote : bool
+        Whether the repository names a remote afterwards; most levels' repositories do.
 
     Returns
     -------
     kit.ReactionRule | None
         The rule that speaks, or None.
     """
-    return reactions.react(line, kinds, repository, staged, (*runner.load(module).reactions, *reactions.RULES))
+    return reactions.react(line, kinds, repository, staged, (*runner.load(module).reactions, *reactions.RULES), remote=remote)
