@@ -3,8 +3,12 @@
 /*
  * The level screen: a head with the way back to the map, the mission's number, title and command,
  * the commands typed against the par, the stars still in play, Intro (the level's scene again)
- * and Restart; the four zones across the top, the mission panel, Rama's comms line and the
- * terminal; and, once the mission is solved, the completion band and the dock at the bottom.
+ * and Restart; the views across the top, the mission panel, Rama's comms line and the terminal;
+ * and, once the mission is solved, the completion band and the dock at the bottom. The views are
+ * the view ladder's (docs/drafts/chapters-5-9.md): your station (or the crew view, in a level with
+ * a teammate) shows the four zones; history folds your station into the strip and leaves the
+ * vault and the mothership on the stage. A level opens on its main view, a view not born yet is
+ * marked born, and the tab row holds the views born so far.
  * Opening a mission that is not in progress starts it, and a level's scene plays the first time
  * it opens. It keeps no game state of its own: the step, the hints, the commands, the stars and
  * whether the mission is solved come from the server's replies, and the page polls the lab while
@@ -13,16 +17,19 @@
  * HTTP status: 404 means there is no such level, 409 that it is no longer in progress (solved or
  * ended from the command line or another tab), 0 that the server did not answer. Anything else is a
  * bug and is left to surface. Needs dom.js, strings.js, markup.js, art-sprites.js, progress.js,
- * poll.js, zone-panel.js, mission.js, comms.js, completion.js, scene.js and moment-layer.js.
+ * poll.js, zones.js, zone-panel.js, mission.js, comms.js, completion.js, scene.js, moment-layer.js,
+ * view-tabs.js and strip.js.
  * Defines one global, LevelScreen.
  */
 
-/* global Dom, Strings, ArtSprites, Progress, Polling, ZonePanel, Mission, Comms, Completion, ScenePlayer, MomentLayer */
+/* global Dom, Strings, ArtSprites, Progress, Polling, Zones, ZonePanel, Mission, Comms, Completion, ScenePlayer, MomentLayer, ViewTabs, Strip */
 /* exported LevelScreen */
 
 const LevelScreen = (function () {
   const { el } = Dom;
   const { t } = Strings;
+  /* The views the page draws so far; a level whose main view is another opens on your station. */
+  const DRAWN = ["station", "crew", "history"];
   const SAY = { preparing: "level.preparing", start: "level.start", down: "level.down", back: "level.back", hint: "level.hint", ended: "level.ended", partMet: "level.partMet", predictFirst: "level.predictFirst" };
 
 
@@ -75,15 +82,62 @@ const LevelScreen = (function () {
     await ctx.game.scene(screen.levelId);
   }
 
+  /* Your station's view: the crew view in a level with a teammate. */
+  const home = (screen) => (screen.crew ? "crew" : "station");
+
+  function show(screen, view) {
+    const { ui } = screen;
+    screen.view = view;
+    ui.sky.dataset.view = view;
+    ui.strip.element.hidden = view === "station" || view === "crew";
+    ui.tabs.select(view);
+    measureTerminal(screen);
+  }
+
+  /* The tab row for the views born so far that the page draws, your station's always among them. */
+  function drawTabs(screen) {
+    const views = ViewTabs.tabs([...screen.seen, home(screen)], screen.crew).filter((view) => DRAWN.includes(view));
+    const row = ViewTabs.create({ tabs: views, current: screen.view, onPick: (view) => show(screen, view) });
+    screen.ui.tabs.element.replaceWith(row.element);
+    screen.ui.tabs = row;
+  }
+
+  /* The level's main view, born now if it was not; one the page does not draw yet opens on your station. */
+  function openView(screen) {
+    const { level, ctx } = screen;
+    screen.seen = [...level.views_seen];
+    const drawn = DRAWN.includes(level.view);
+    if (drawn && !screen.seen.includes(level.view)) {
+      screen.seen.push(level.view);
+      ctx.game.view(level.view);
+    }
+    drawTabs(screen);
+    show(screen, drawn ? level.view : "station");
+  }
+
+  /* The stage follows the level's teammate: your station's view becomes the crew view. */
+  function crewed(screen, observation) {
+    const crew = observation.teammate !== null;
+    if (crew === screen.crew) return;
+    const atHome = screen.view === home(screen);
+    screen.crew = crew;
+    drawTabs(screen);
+    show(screen, atHome ? home(screen) : screen.view);
+  }
+
   function layout(screen) {
     const { ui } = screen;
     ui.zones = ZonePanel.create({ reducedMotion: screen.ctx.reducedMotion, timers: screen.ctx.timers });
     ui.moments = MomentLayer.create({ reducedMotion: screen.ctx.reducedMotion, timers: screen.ctx.timers });
+    ui.strip = Strip.create({ onExpand: () => show(screen, home(screen)) });
+    ui.tabs = ViewTabs.create({ tabs: [], current: "station", onPick: () => {} });
     ui.comms = Comms.create();
     ui.mission = el("aside", { class: "mission px", "aria-label": t("mission.label") }, el("p", {}, t("level.loading")));
     ui.termcol = el("div", { class: "termcol" }, ui.comms.element);
-    ui.stage = el("main", { class: "stage" }, el("div", { class: "sky" }, ui.zones.element, ui.moments.element), ui.mission, ui.termcol);
+    ui.sky = el("div", { class: "sky" }, ui.strip.element, ui.zones.element, ui.moments.element);
+    ui.stage = el("main", { class: "stage" }, el("div", { class: "views" }, ui.tabs.element, ui.sky), ui.mission, ui.termcol);
     screen.element.replaceChildren(hud(screen), ui.stage);
+    show(screen, "station");
   }
 
   function missing(screen) {
@@ -291,6 +345,8 @@ const LevelScreen = (function () {
       const plan = Polling.plan(screen.level.steps, screen.state, screen.level.challenge);
       const observation = await game.observe();
       screen.ui.zones.update(observation);
+      screen.ui.strip.update(Zones.read(observation));
+      crewed(screen, observation);
       measureTerminal(screen);
       if (screen.offline) screen.ui.comms.say(t(SAY.back), "info");
       screen.offline = false;
@@ -321,6 +377,7 @@ const LevelScreen = (function () {
     ui.intro.hidden = level.scene.length === 0;
     ui.restart.disabled = false;
     drawHud(screen);
+    openView(screen);
     screen.mission = Mission.create({
       level,
       active,
@@ -370,7 +427,7 @@ const LevelScreen = (function () {
   /* ctx: game, status(), refresh(), reload() (shows this screen again), sound, timers, page,
      reducedMotion, terminal ({attach(host), detach(), type(text)}). */
   function create(ctx, levelId) {
-    const screen = { ctx, levelId, level: null, state: null, number: "", shownStars: null, held: false, metNote: false, mission: null, poller: null, finished: false, offline: false, attached: false, disposed: false, ui: {} };
+    const screen = { ctx, levelId, level: null, state: null, number: "", shownStars: null, view: "station", seen: [], crew: false, held: false, metNote: false, mission: null, poller: null, finished: false, offline: false, attached: false, disposed: false, ui: {} };
     screen.element = el("div", { class: "level-screen" });
     layout(screen);
     load(screen);

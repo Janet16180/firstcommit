@@ -714,10 +714,34 @@ pre.code code {
   align-items: start;
 }
 
-.sky {
+.views {
   grid-area: viz;
+  min-width: 0;
+}
+
+.sky {
   position: relative;
   min-width: 0;
+}
+
+.sky > .strip {
+  padding: 12px 12px 0;
+}
+
+/* History: your station's workshop and dock folded into the strip above, the vault and the
+   mothership left on the stage. */
+.sky[data-view="history"] .viz-row > :nth-child(-n + 4),
+.sky[data-view="history"] .station-row > :not([data-zone$="vault"]),
+.sky[data-view="history"] .legend {
+  display: none;
+}
+
+.sky[data-view="history"] .viz-row {
+  grid-template-columns: minmax(0, 1fr) 42px minmax(0, 1fr);
+}
+
+.sky[data-view="history"] .station .station-row {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .viz {
@@ -1761,6 +1785,10 @@ pre.code code {
   .viz-row {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 10px;
+  }
+
+  .sky[data-view="history"] .viz-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 
   .flow {

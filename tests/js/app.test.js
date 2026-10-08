@@ -7,7 +7,7 @@ const { fakeServer, httpError, installBrowser, load, record, settle } = require(
 
 installBrowser();
 const { Dom } = load(
-  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "route.js", "poll.js", "sound.js", "dialog.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "level-screen.js", "starmap.js", "art-infographics.js", "infographic-text.js", "field-guide.js", "cards.js", "notes.js"],
+  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "route.js", "poll.js", "sound.js", "dialog.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "view-tabs.js", "strip.js", "level-screen.js", "starmap.js", "art-infographics.js", "infographic-text.js", "field-guide.js", "cards.js", "notes.js"],
   ["Dom"],
 );
 
@@ -64,7 +64,7 @@ async function onLevel(check) {
   const active = record("active");
   const page = await boot({
     hash: `#/level/${active.level}`,
-    replies: { "/api/status": { ...record("status"), active }, "/api/level": record("level"), "/api/observe": record("observation"), "/api/step": record("step"), "/api/check": record("check_unsolved") },
+    replies: { "/api/status": { ...record("status"), active }, "/api/level": record("level"), "/api/view": {}, "/api/observe": record("observation"), "/api/step": record("step"), "/api/check": record("check_unsolved") },
   });
   try {
     await settle();
@@ -309,6 +309,7 @@ test("the terminal's status and button speak the game's language, and follow a s
         return {};
       },
       "/api/level": record("level"),
+      "/api/view": {},
       "/api/observe": record("observation"),
       "/api/step": record("step"),
       "/api/check": record("check_unsolved"),

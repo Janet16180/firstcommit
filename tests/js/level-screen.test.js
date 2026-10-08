@@ -7,15 +7,15 @@ const { createClock, fakeServer, httpError, installBrowser, load, record, settle
 
 const document = installBrowser({ reducedMotion: true });
 const { LevelScreen, createGameApi } = load(
-  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "level-screen.js"],
+  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "view-tabs.js", "strip.js", "level-screen.js"],
   ["LevelScreen", "createGameApi"],
 );
 
 const para = (text) => [{ kind: "para", spans: [{ text, code: false }] }];
 const correct = (step, questDone = false, done = []) => ({ correct: true, message: para("Right."), step, quest_done: questDone, done, lost: false });
 
-/* The sample level, its scene already seen unless the test says otherwise. */
-const seenLevel = () => ({ ...record("level"), scene_seen: true });
+/* The sample level, its scene and its view already seen unless the test says otherwise. */
+const seenLevel = () => ({ ...record("level"), scene_seen: true, views_seen: ["station", "crew", "history"] });
 const quiet = () => ({ ...record("observation"), commands: [], reactions: [] });
 
 /* A level screen for the sample level; `active` is the level in progress as the status first says
@@ -26,6 +26,7 @@ function screen({ active = record("active"), replies = {}, levelId = "sample-sec
   const server = fakeServer({
     "/api/level": seenLevel(),
     "/api/scene": {},
+    "/api/view": {},
     "/api/start": { ...record("active"), step: 0 },
     "/api/observe": quiet(),
     "/api/step": record("step"),
@@ -652,5 +653,84 @@ test("work lost for good stops the level and shows the failure with Retry, even 
   run.q(".dock.is-lost .btn-primary").click();
   await settle();
   assert.equal(run.routes().at(-1), "/api/start");
+  run.view.dispose();
+});
+
+/* The sample level opening on `view`, with `seen` the views already born. */
+function viewing(view, seen, replies = {}) {
+  return screen({ replies: { "/api/level": { ...seenLevel(), view, views_seen: seen }, ...replies } });
+}
+
+const tabs = (run) => run.all(".view-tab").map((tab) => tab.dataset.view);
+const shown = (run) => run.q(".sky").dataset.view;
+const chosen = (run) => run.all(".view-tab").find((tab) => tab.getAttribute("aria-selected") === "true").dataset.view;
+
+test("a level that opens on history folds your station into the strip, with a tab back to it", async () => {
+  const run = viewing("history", ["station", "history"]);
+  await settle();
+  assert.equal(shown(run), "history");
+  assert.deepEqual(tabs(run), ["station", "history"]);
+  assert.equal(chosen(run), "history");
+  assert.equal(run.q(".strip").hidden, false);
+  assert.deepEqual(run.all(".strip-card").map((card) => card.dataset.zone), ["workshop", "dock", "vault", "remote"]);
+  run.view.dispose();
+});
+
+test("the station's tab unfolds the strip back into the zones, and the history tab folds it again", async () => {
+  const run = viewing("history", ["station", "history"]);
+  await settle();
+  run.q('.view-tab[data-view="station"]').click();
+  assert.equal(shown(run), "station");
+  assert.equal(run.q(".strip").hidden, true);
+  run.q('.view-tab[data-view="history"]').click();
+  assert.equal(shown(run), "history");
+  assert.equal(run.q(".strip").hidden, false);
+  run.view.dispose();
+});
+
+test("a tapped card of the strip expands your station again", async () => {
+  const run = viewing("history", ["station", "history"]);
+  await settle();
+  run.q('.strip-card[data-zone="vault"]').click();
+  assert.equal(shown(run), "station");
+  assert.equal(chosen(run), "station");
+  run.view.dispose();
+});
+
+test("a level on your station alone shows no tab row and no strip", async () => {
+  const run = viewing("station", ["station"]);
+  await settle();
+  assert.equal(shown(run), "station");
+  assert.equal(run.q(".view-tabs").hidden, true);
+  assert.equal(run.q(".strip").hidden, true);
+  run.view.dispose();
+});
+
+test("a view not born yet is marked born when its level opens, and gets its tab; one already born is not marked again", async () => {
+  const run = viewing("history", ["station"]);
+  await settle();
+  assert.deepEqual(run.server.calls.filter((call) => call.path === "/api/view").map((call) => call.body), [{ view: "history" }]);
+  assert.deepEqual(tabs(run), ["station", "history"]);
+  run.view.dispose();
+  const again = viewing("history", ["station", "history"]);
+  await settle();
+  assert.ok(!again.routes().includes("/api/view"));
+  again.view.dispose();
+});
+
+test("a view the page cannot draw yet opens on your station", async () => {
+  const run = viewing("sides", ["station", "history", "sides"]);
+  await settle();
+  assert.equal(shown(run), "station");
+  assert.deepEqual(tabs(run), ["station", "history"]);
+  run.view.dispose();
+});
+
+test("in a level with a teammate the crew view stands in for your station's tab", async () => {
+  const run = viewing("history", ["station", "crew", "history"], { "/api/observe": { ...record("press").observation, commands: [], reactions: [] } });
+  await settle();
+  assert.deepEqual(tabs(run), ["crew", "history"]);
+  run.q('.view-tab[data-view="crew"]').click();
+  assert.equal(shown(run), "crew");
   run.view.dispose();
 });

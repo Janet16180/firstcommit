@@ -113,11 +113,18 @@ test("a long address in a zone's message wraps inside the zone", () => {
 
 test("a moment covers the zones where they stand, its picture filling them, until it is put away", () => {
   const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
-  assert.match(rule(".sky"), /grid-area: viz;/);
+  assert.match(rule(".views"), /grid-area: viz;/);
   assert.match(rule(".sky"), /position: relative;/);
   assert.match(rule(".moment-layer"), /position: absolute;/);
   assert.match(rule(".moment-layer"), /inset: 0;/);
   assert.match(rule(".moment-layer .art-moment"), /width: 100%;/);
   assert.match(rule(".moment-layer .art-moment"), /height: 100%;/);
   assert.match(rule(".moment-layer[hidden]"), /display: none;/);
+});
+
+test("history folds your station's workshop and dock away, and gives the vault and the mothership the row", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.match(css, /\.sky\[data-view="history"\] \.viz-row > :nth-child\(-n \+ 4\),[^{]*\.sky\[data-view="history"\] \.station-row > :not\(\[data-zone\$="vault"\]\),[^{]*\.sky\[data-view="history"\] \.legend \{\s*display: none;/);
+  assert.match(rule('.sky[data-view="history"] .viz-row'), /grid-template-columns: minmax\(0, 1fr\) 42px minmax\(0, 1fr\);/);
+  assert.match(rule('.sky[data-view="history"] .station .station-row'), /grid-template-columns: minmax\(0, 1fr\);/);
 });
