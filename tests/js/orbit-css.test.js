@@ -162,3 +162,12 @@ test("the kept places are one group only on the black box view, framed there wit
   assert.match(rule('.sky[data-view="blackbox"] .viz-kept'), /grid-template-columns: minmax\(0, 1fr\) 42px minmax\(0, 1fr\) 42px minmax\(0, 1fr\);/);
   assert.match(rule('.sky[data-view="blackbox"] .viz-kept-name'), /display: block;/);
 });
+
+test("the tape is one scrollable row of ticks, a ghost hollow, the chosen one lit, with the readout under it", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.match(rule(".tape-track"), /display: flex;/);
+  assert.match(rule(".tape-track"), /overflow-x: auto;/);
+  assert.match(rule(".tape-tick.is-ghost"), /border-style: dashed;/);
+  assert.match(rule(".tape-tick.is-ghost"), /background: transparent;/);
+  assert.match(rule('.tape-tick[aria-selected="true"]'), /border-color: var\(--gold\);/);
+});

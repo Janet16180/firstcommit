@@ -702,6 +702,71 @@ pre.code code {
   font: 700 0.85rem var(--f-ui);
 }
 
+/* The black box's tape: HEAD's moves in one row, oldest first, the chosen one read out below. */
+.tape {
+  padding: 10px 12px 12px;
+}
+
+.tape-track {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+
+.tape-tick {
+  flex: none;
+  display: grid;
+  gap: 2px;
+  padding: 4px 8px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 2px solid var(--edge);
+  cursor: pointer;
+  text-align: left;
+}
+
+.tape-tick.is-ghost {
+  border-style: dashed;
+  background: transparent;
+  color: var(--ink-soft);
+}
+
+.tape-tick[aria-selected="true"] {
+  border-color: var(--gold);
+  box-shadow: 3px 3px 0 var(--edge);
+}
+
+.tape-kind {
+  font: 700 0.8rem var(--f-ui);
+}
+
+.tape-hash,
+.tape-ref,
+.tape-at {
+  font: 1rem var(--f-term);
+}
+
+.tape-read {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.tape-message {
+  font: 1rem var(--f-term);
+  color: var(--ink-soft);
+}
+
+.tape-ghost,
+.tape-none {
+  margin: 0;
+  flex-basis: 100%;
+  color: var(--ink-soft);
+}
+
 /* A file git ignores: still on the disk, out of git's sight. */
 .file.is-ignored {
   flex-wrap: wrap;
