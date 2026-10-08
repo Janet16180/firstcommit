@@ -134,6 +134,32 @@ test("reduced motion plays neither birth", () => {
   for (const selector of [".sky.art-birth-fold *", ".sky.art-birth-unroll *"]) assert.ok(reduced.includes(selector), selector);
 });
 
+test("the flatten squashes Alex's mirrored station up into a thin fading line over the page's birth time", () => {
+  assert.match(rules(".sky.art-birth-flatten .station.is-mirror").join(""), /transform-origin: top/);
+  const [, name, duration] = birthAnimation(".sky.art-birth-flatten .station.is-mirror");
+  assert.equal(duration, BIRTH);
+  assert.match(frames(name), /0%, \d+% \{ transform: none; opacity: 1; \}/);
+  assert.match(frames(name), /to \{ transform: translateY\(-\d+px\) scaleY\(0\.0\d+\); opacity: 0; \}/);
+  const [, flows] = birthAnimation(".sky.art-birth-flatten .flow.is-mirror");
+  assert.equal(flows, "art-birth-fade-out");
+});
+
+test("in the flatten the band's cards land from below without touching their resting opacity, then the name shows", () => {
+  const card = ".sky.art-birth-flatten .strip.is-band .strip-card";
+  assert.match(rules(card).join(""), /transform-origin: bottom/);
+  const [, name, duration] = birthAnimation(card);
+  assert.equal(duration, BIRTH);
+  assert.match(frames(name), /from \{ transform: translateY\(\d+px\) scaleY\(0\); \}/);
+  assert.match(frames(name), /to \{ transform: none; \}/);
+  assert.ok(!/opacity/.test(frames(name)), "the band's own opacity stays");
+  assert.deepEqual(birthAnimation(".sky.art-birth-flatten .strip.is-band .strip-who").slice(1), ["art-birth-after", BIRTH]);
+});
+
+test("reduced motion plays no flatten", () => {
+  const reduced = STYLE.slice(STYLE.indexOf("@media (prefers-reduced-motion: reduce)"));
+  assert.ok(reduced.includes(".sky.art-birth-flatten *"));
+});
+
 test("an ignored folder's chip sits behind a calm scanline field with emitters at its corners, behind its words", () => {
   const chip = rules(".art-ignore-field").join("");
   assert.match(chip, /position: relative/);
