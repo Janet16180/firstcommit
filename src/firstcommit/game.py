@@ -889,9 +889,10 @@ def observe() -> Observation:
     Snapshot the lab of the level in progress and tell what changed since the last observation.
 
     The snapshots are kept in the save (only when they changed), so the events are right
-    whichever process asks; the first observation of a level has no events and is returned at
-    once, and the level's events with no goal (`firstcommit.kit.LevelEvent`) run when the next
-    observation starts, so it tells their changes. The lines typed
+    whichever process asks; the first observation of a level has no events, and the level's
+    events with no goal (`firstcommit.kit.LevelEvent`) run right after its snapshot is taken, so
+    the page sees the lab as set up and the next observation tells their changes. They run before
+    this call returns, so a player who types at once never meets the lab without them. The lines typed
     since the last look are read into the level's record first (`save.Active` ``typed``), so a
     goal still sees them after this observation has told them.
 
@@ -911,13 +912,12 @@ def observe() -> Observation:
         active = _catch_up(active)
         lab = runner.lab_of(entry.id)
         last = save.load_observed()
-        if last is not None and last["level"] == entry.id:
-            active = _fire(entry, active, "")
         now, typed = _look(entry.id, lab, last, active["typed"])
         messages = _messages(entry, _language())
         observation = _lost_over_pleased(_observation(last, now, _buttons(lab, now), lab.project, typed, _rules(entry), messages), _loss(entry, active, lab, messages))
         if now != last:
             save.write_observed(now)
+        _fire(entry, active, "")
     return observation
 
 

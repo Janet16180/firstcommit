@@ -1328,12 +1328,12 @@ def with_events(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch, *ev
     return level
 
 
-def test_an_event_runs_once_after_the_first_observation_has_been_returned_so_the_next_one_tells_its_change(sample_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_an_event_runs_once_right_after_the_first_observations_snapshot_so_the_next_one_tells_its_change(sample_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     level = with_events(sample_level, monkeypatch, kit.LevelEvent(id="arrive", run=write_note))
     game.start(level.id)
     first = game.observe()
     assert [entry["path"] for entry in first["project"]["files"]] == ["hello.txt"]
-    assert not (lab_project(game_home) / "note.txt").exists()
+    assert (lab_project(game_home) / "note.txt").read_text() == "x"
     assert [event["kind"] for event in game.observe()["events"]] == ["file-created"]
     assert (lab_project(game_home) / "note.txt").read_text() == "x"
     (game_home / "observed.json").unlink()
@@ -1341,6 +1341,15 @@ def test_an_event_runs_once_after_the_first_observation_has_been_returned_so_the
     game.observe()
     assert (lab_project(game_home) / "note.txt").read_text() == "x"
     assert active_record()["events"] == ["arrive"]
+
+
+def test_a_player_who_types_right_after_the_first_look_meets_the_lab_as_set_up(game_home: Path) -> None:
+    game.start("mothership-refused")
+    game.observe()
+    assert kit.type_line(runner.lab_of("mothership-refused").project, "git push")["status"] != 0
+    game.start("vault-inspection")
+    game.observe()
+    assert kit.type_line(runner.lab_of("vault-inspection").project, "git restore --staged keys.txt")["status"] == 0
 
 
 def test_an_event_on_a_goal_runs_once_when_that_goal_is_reached(sample_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
