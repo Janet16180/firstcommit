@@ -19,8 +19,9 @@
  *   maps a child's hash to the look of its lines ("ghost", "mothership"); `walk` lists hashes
  *   whose links light up in turn ("walk", with the link's step).
  * create() {element, update(view)}: view = {project, github, teammate, ghosts, show: {mothership,
- *   alex, ghosts}, look: [subject | "HEAD"], walk}. `walk` lights git log's path from HEAD. An
- *   update that brings nothing new keeps the drawing, so its motions are not started over.
+ *   alex, ghosts}, look: [subject | "HEAD"], walk, placed, legend}. `walk` lights git log's path
+ *   from HEAD; `placed` names get a tick (the captain's chart); `legend: false` leaves the key
+ *   out. An update that brings nothing new keeps the drawing, so its motions are not started over.
  */
 
 /* global Dom, Strings */
@@ -114,13 +115,14 @@ const Chain = (function () {
 
   const RANK = { head: 0, branch: 1, tag: 2, remote: 3 };
 
-  function tags(project, hash, lookAtHead) {
+  function tags(project, hash, lookAtHead, placed) {
     const head = () => el("span", { class: lookAtHead ? "chain-head is-look" : "chain-head", title: t("chain.headTip") }, "HEAD ▶");
     const kindOf = (ref) => (ref.kind === "branch" && ref.name === project.branch ? "head" : ref.kind);
     const named = project.refs.filter((ref) => ref.target === hash).sort((a, b) => RANK[kindOf(a)] - RANK[kindOf(b)]);
     const parts = named.flatMap((ref) => {
       const kind = kindOf(ref);
-      const tag = el("span", { class: { head: "chain-tag is-head", branch: "chain-tag", tag: "chain-tag is-tag", remote: "chain-tag is-bookmark" }[kind] }, ref.name);
+      const kinds = { head: "chain-tag is-head", branch: "chain-tag", tag: "chain-tag is-tag", remote: "chain-tag is-bookmark" }[kind];
+      const tag = el("span", { class: placed.includes(ref.name) ? `${kinds} is-placed` : kinds }, ref.name);
       return kind === "head" ? [head(), tag] : [tag];
     });
     return project.branch === null && project.head === hash ? [head(), ...parts] : parts;
@@ -164,7 +166,7 @@ const Chain = (function () {
       draw(view);
     }
 
-    function draw({ project, github, teammate, ghosts, show, look, walk }) {
+    function draw({ project, github, teammate, ghosts, show, look, walk, placed = [], legend: keyed = true }) {
       const mine = new Set(project.commits.map((commit) => commit.hash));
       const motherOnly = show.mothership && github ? github.commits.filter((commit) => !mine.has(commit.hash)) : [];
       const lost = show.ghosts ? ghosts.filter((commit) => !mine.has(commit.hash)) : [];
@@ -190,11 +192,11 @@ const Chain = (function () {
               el("code", { class: "chain-hash" }, commit.short),
               el("span", { class: "chain-subject" }, commit.subject),
               style === "mothership" && el("span", { class: "chain-only" }, t("chain.only")),
-              ...tags(project, commit.hash, looked.has("HEAD")),
+              ...tags(project, commit.hash, looked.has("HEAD"), placed),
               ...(show.mothership ? pins(github, commit.hash, "mothership") : []),
               ...(show.alex ? pins(teammate, commit.hash, "alex") : [])));
         })),
-        legend(project, { mothership: show.mothership && Boolean(github), alex: show.alex && Boolean(teammate), only: motherOnly.length > 0, ghost: lost.length > 0 }));
+        ...(keyed ? [legend(project, { mothership: show.mothership && Boolean(github), alex: show.alex && Boolean(teammate), only: motherOnly.length > 0, ghost: lost.length > 0 })] : []));
     }
 
     return { element, update };

@@ -2555,6 +2555,59 @@ pre.code code {
   font: 700 0.8rem var(--f-body);
 }
 
+/* The captain's chart (target-chart.js): a done mark is the goals' teal square, so green stays
+   Alex's and gold stays "look here". */
+.target {
+  min-width: 0;
+}
+
+.target-title {
+  margin: 0 0 6px;
+  font: 700 0.95rem var(--f-body);
+}
+
+.target .chain {
+  background: var(--panel-2);
+  border-style: dashed;
+  border-color: var(--z-va);
+}
+
+.chain-tag.is-placed::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 4px;
+  background: var(--z-st);
+  border: 1px solid var(--edge);
+}
+
+.target-checks {
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9rem;
+}
+
+.target-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 4px;
+}
+
+.target-check::before {
+  content: "";
+  flex: none;
+  width: 12px;
+  height: 12px;
+  border: 2px solid var(--ink);
+}
+
+.target-check.is-ok::before {
+  background: var(--z-st);
+}
+
 @media (max-width: 980px) {
   .stage {
     grid-template-columns: minmax(0, 1fr);
