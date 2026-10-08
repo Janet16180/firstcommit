@@ -50,6 +50,23 @@ Done since: the code review and the security review (both report only), then a f
 `SSH_AGENT_PID`, `GH_TOKEN`, `GITHUB_TOKEN` and `GH_ENTERPRISE_TOKEN` from the page's shell (the
 lead recommends yes).
 
+## Orbit wave 1 (2026-10-08, merged into `phase-2-engine` at 99f4312)
+
+All 1884 tests, the 19 Docker tests, ruff, mypy and ESLint pass.
+- 14 levels in English and Spanish: liftoff (2), cargo (3), vault (4, challenge 3-5),
+  mothership (5, boss Base 7). Decks for liftoff, cargo, vault and mothership.
+- Spanish: neutral Latin American, Git terms kept in English (`docs/i18n-glossary.md`, a NEVER
+  list in `tests/test_translations.py` shared with the page's test). Status.language is the one
+  source; POST /api/language switches.
+- Engine: `core.editor = true`, the player signs as Cadet, level events, choice steps,
+  challenges, lost-work verdicts, history helpers, a reflog on the stand-in GitHub.
+- Page: sounds, Atkinson bold buttons, the field guide (fact-checked), the vault as a graph,
+  predictions, the challenge look, lost work, conflicts, scene captions in both languages.
+- Next: frontend plays wave 1 in Chrome; engine does ble.sh, termlab's label option, then wave 2
+  (branch, conflict, undo). The user runs playtests with first-time players on wave 1.
+- Still waiting for the user: delete the old lessons and map guide (map.js, theme-time files);
+  review `docs/i18n-glossary.md`.
+
 ## Orbit (2026-10-07, merged into `phase-2-engine` at 7858432)
 
 The user approved a new look and level style (`docs/drafts/orbit-design.html`); the contract is
