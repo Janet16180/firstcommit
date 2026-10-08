@@ -3,7 +3,7 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const { html } = require("./fakedom");
-const { installBrowser, load } = require("./load");
+const { createClock, installBrowser, load } = require("./load");
 const { STYLE, assertPalette, assertStyled, labelOf, walk } = require("./art-check");
 
 installBrowser();
@@ -136,16 +136,14 @@ test("the moments' animations live in the art sheet, timed by --art-moment, and 
   assert.match(STYLE, /\.art-moment \{[^}]*background: var\(--void\)/);
 });
 
-test("finished resolves once the moment has played, still or moving", async (context) => {
-  context.mock.timers.enable({ apis: ["setTimeout"] });
+test("finished resolves once the moment has played, still or moving, on the timers it is given", async () => {
   for (const [name, reducedMotion, ms] of [["secret-leak", false, 7000], ["launch", true, 5000], ["search-beam", false, 7000]]) {
+    const clock = createClock();
     let done = false;
-    ArtMoments.play(name, { captions: ENGLISH[name], reducedMotion }).finished.then(() => { done = true; });
-    context.mock.timers.tick(ms - 1);
-    await Promise.resolve();
+    ArtMoments.play(name, { captions: ENGLISH[name], reducedMotion, timers: clock }).finished.then(() => { done = true; });
+    await clock.advance(ms - 1);
     assert.equal(done, false, name);
-    context.mock.timers.tick(1);
-    await Promise.resolve();
+    await clock.advance(1);
     assert.equal(done, true, name);
   }
 });

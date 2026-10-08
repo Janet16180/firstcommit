@@ -16,10 +16,11 @@
  *                         which cracks and falls) and "search-beam" (7-1: a beam sweeps the black
  *                         box, the workshop outside it, and finds nothing).
  * CAPTIONS                {moment: [key, ...]}: the captions each moment draws, in drawing order.
- * play(name, {captions, reducedMotion})
+ * play(name, {captions, reducedMotion, timers})
  *                         {element, finished}: a new <svg> named by captions.caption, and a promise
  *                         that resolves when the moment is over (also when still, so the caption
- *                         can be read). A missing caption is a RangeError.
+ *                         can be read), timed on `timers` (window unless given). A missing caption
+ *                         is a RangeError.
  */
 
 /* global Dom, ArtPixels */
@@ -278,7 +279,7 @@ const ArtMoments = (function () {
   const NAMES = Object.freeze(Object.keys(MOMENTS));
   const CAPTIONS = Object.freeze(Object.fromEntries(NAMES.map((name) => [name, Object.freeze([...MOMENTS[name].captions])])));
 
-  function play(name, { captions = {}, reducedMotion = false } = {}) {
+  function play(name, { captions = {}, reducedMotion = false, timers = window } = {}) {
     if (!(name in MOMENTS)) throw new RangeError(`unknown moment: ${name}`);
     const missing = CAPTIONS[name].find((key) => typeof captions[key] !== "string");
     if (missing) throw new RangeError(`the ${name} moment needs the caption "${missing}"`);
@@ -291,7 +292,7 @@ const ArtMoments = (function () {
       preserveAspectRatio: "xMidYMid meet",
       style: `--art-moment:${seconds}s`,
     }, captions.caption, parts(captions, !reducedMotion));
-    const finished = new Promise((resolve) => setTimeout(resolve, seconds * 1000));
+    const finished = new Promise((resolve) => timers.setTimeout(resolve, seconds * 1000));
     return { element, finished };
   }
 
