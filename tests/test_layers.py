@@ -1,7 +1,8 @@
 """
 The package's layers, read from its source: who may import whom (DESIGN.md section 7).
 
-interface (cli, web) -> orchestration (game) -> core -> data (save, chapters) -> termlab.
+interface (cli, web) -> orchestration (game) -> core -> data (save, chapters) -> termlab (the
+server, terminal, save and cleanup plumbing, which needs nothing from the game).
 """
 
 import ast
@@ -15,16 +16,16 @@ import pytest
 import firstcommit
 
 PACKAGE = Path(firstcommit.__file__).parent
-LAYERS = {"data": 0, "core": 1, "orchestration": 2, "interface": 3}
+LAYERS = {"termlab": 0, "data": 1, "core": 2, "orchestration": 3, "interface": 4}
 INTERFACE_MAY_USE = {"firstcommit.game", "firstcommit.markup", "firstcommit.chapters"}
-"""The package modules an interface may import besides the other interfaces (DESIGN.md section 7)."""
+"""The package modules an interface may import besides the other interfaces and termlab (DESIGN.md section 7)."""
 RUNTIME_WORDS = re.compile(r"docker|qemu|wsl", re.IGNORECASE)
 LEVEL_MAY_NOT_IMPORT = {
     # Processes: a level runs git only through kit, in the game's isolation.
     "subprocess", "os", "pty", "multiprocessing",
     # Network: "GitHub" is the bare repository in the lab.
     "socket", "ssl", "urllib", "http", "ftplib", "smtplib",
-    # Deleting outside termlab.sandbox, native code, and importing around this list.
+    # Deleting outside firstcommit.termlab.sandbox, native code, and importing around this list.
     "shutil", "ctypes", "importlib",
 }  # fmt: skip
 """Standard-library modules a level never imports (AUTHORING.md section 3.2); pathlib and kit cover what a level needs."""
@@ -66,7 +67,9 @@ def layer(module: str) -> str:
         A key of `LAYERS`.
     """
     short = module.removeprefix("firstcommit").removeprefix(".")
-    if short in ("cli", "__main__", "web") or short.startswith("web."):
+    if short == "termlab" or short.startswith("termlab."):
+        kind = "termlab"
+    elif short in ("cli", "__main__", "web") or short.startswith("web."):
         kind = "interface"
     elif short == "game":
         kind = "orchestration"
@@ -186,8 +189,9 @@ def test_the_import_reader_sees_the_known_imports() -> None:
 
 
 @pytest.mark.parametrize("module", INTERFACES)
-def test_an_interface_uses_only_the_game_the_text_parser_and_the_chapters(module: str) -> None:
-    beyond = sorted(imported for imported in package_imports(module) if layer(imported) != "interface" and imported not in INTERFACE_MAY_USE)
+def test_an_interface_uses_only_the_game_the_text_parser_the_chapters_and_termlab(module: str) -> None:
+    allowed = {"interface", "termlab"}
+    beyond = sorted(imported for imported in package_imports(module) if layer(imported) not in allowed and imported not in INTERFACE_MAY_USE)
     assert not beyond, f"{module} imports {beyond}"
 
 
@@ -217,9 +221,15 @@ def test_a_level_never_imports_a_way_around_the_games_safety_rules(module: str) 
 
 
 @pytest.mark.parametrize("module", SOURCES)
-def test_the_package_needs_only_the_standard_library_and_termlab(module: str) -> None:
+def test_the_package_needs_only_the_standard_library(module: str) -> None:
     for imported, _ in imports(module):
-        assert imported.split(".")[0] in {*sys.stdlib_module_names, "termlab", "firstcommit"}, f"{module} imports {imported}"
+        assert imported.split(".")[0] in {*sys.stdlib_module_names, "firstcommit"}, f"{module} imports {imported}"
+
+
+@pytest.mark.parametrize("module", [module for module in SOURCES if layer(module) == "termlab"])
+def test_termlab_imports_only_the_standard_library_and_itself(module: str) -> None:
+    beyond = sorted(imported for imported in package_imports(module) if layer(imported) != "termlab")
+    assert not beyond, f"{module} imports {beyond}"
 
 
 def runtime_neutral_files() -> list[Path]:

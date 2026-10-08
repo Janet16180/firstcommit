@@ -15,8 +15,7 @@ Work in progress: see [docs/DESIGN.md](docs/DESIGN.md).
 
 ## Install
 
-On a fresh WSL Ubuntu 24.04, with termlab's `firstcommit` branch next to this folder as
-`../termlab-firstcommit` (see Develop below), one script installs everything:
+On a fresh WSL Ubuntu 24.04, one script installs everything:
 
 ```
 ./install.sh          # git, bash-completion, Docker Engine, uv, and the game's Python dependencies
@@ -30,16 +29,16 @@ it adds you to the `docker` group, open a new WSL terminal before `deploy/docker
 ## Play with Docker
 
 The Docker image holds Ubuntu 24.04 with git 2.43 and Python 3.12, the versions every level is
-checked against, plus the game and termlab. You need Docker Engine installed inside your WSL
-Ubuntu ([install guide](https://docs.docker.com/engine/install/ubuntu/)); Docker Desktop has not
-been tested. termlab's `firstcommit` branch must sit next to this folder, as for development.
+checked against, plus the game. You need Docker Engine installed inside your WSL Ubuntu
+([install guide](https://docs.docker.com/engine/install/ubuntu/)); Docker Desktop has not been
+tested.
 
 ```
 deploy/docker/run
 ```
 
 The first run builds the image, which takes a few minutes. Later runs reuse it and rebuild it by
-themselves when the game or termlab changes, and rebuild it from scratch, with Ubuntu's latest
+themselves when the game changes, and rebuild it from scratch, with Ubuntu's latest
 updates, once it is more than 30 days old, so git's security fixes reach you. The game then
 prints a link: open it in your Windows browser. Ctrl-C stops the game, and your progress stays.
 
@@ -82,20 +81,16 @@ section 3).
 
 ## Develop
 
-First Commit depends on termlab, on its `firstcommit` branch, checked out next to this folder
-as `../termlab-firstcommit`. termlab's `main` stays as Ring Zero uses it. From a termlab clone at
-`~/learning/termlab`:
-
-```
-git -C ~/learning/termlab worktree add ../termlab-firstcommit firstcommit
-```
+The game's plumbing (the local web server, the page's terminal, save helpers and lab cleanup)
+lives in `src/firstcommit/termlab/`, copied in from the termlab library; see
+[docs/TERMLAB.md](docs/TERMLAB.md).
 
 ```
 uv sync
 uv run pytest -q
 uv run ruff check
 uv run mypy
-eslint src/firstcommit/web/static tests/js
+eslint src/firstcommit tests/js
 ```
 
 Content rules, the level contract and how to verify every claim: [AUTHORING.md](AUTHORING.md).

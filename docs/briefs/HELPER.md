@@ -22,8 +22,7 @@ Do them one at a time, in the order below.
   cd .scratch/wt/helper-<job>
   ```
 
-  `uv run` sets up the worktree's environment on first use; `../termlab-firstcommit` resolves
-  through the link already in `.scratch/wt`.
+  `uv run` sets up the worktree's environment on first use.
 - Never push, never merge into `phase-2-engine` or `main`, never touch other branches,
   worktrees or `~/learning/termlab*`, never delete a branch. The lead reviews and merges.
 - Change only the files the job lists and their tests. If another file must change, stop and

@@ -13,10 +13,9 @@ import sys
 import textwrap
 from collections.abc import Callable
 
-from termlab.web import terminal
-
 from firstcommit import game
 from firstcommit.markup import Block, Span, visible
+from firstcommit.termlab.web import terminal
 
 DEFAULT_PORT = 8820
 PORT = re.compile(r"[0-9]{1,5}")

@@ -12,14 +12,12 @@ Read this first when resuming, then `docs/DESIGN.md` and `AUTHORING.md`.
   reports. Correctness first; every chapter gets an independent fact-checker.
 - Engineering rules: `~/.claude/CLAUDE.md` and `AUTHORING.md` section 2.
 - Git: `main` holds reviewed work; each phase is a branch (`phase-2-engine`), each agent a branch
-  `p2/<name>` in a worktree under `.scratch/wt/<name>` (with a `termlab-firstcommit` link next to
-  the worktrees so `../termlab-firstcommit` resolves). Small commits, plain messages, no trailer,
-  never push.
-- termlab: First Commit uses termlab's `firstcommit` branch, checked out as the worktree
-  `~/learning/termlab-firstcommit`; termlab's `main` (`~/learning/termlab`) stays as Ring Zero
-  uses it. The user allowed changes on that branch (2026-10-06). Changes so far: `d98edf1`, an
-  error reply's whole JSON reaches the game as `error.data`; `aee1388`, a reply body that never
-  arrives in time counts as no answer (status 0), like a fetch that fails.
+  `p2/<name>` in a worktree under `.scratch/wt/<name>`. Small commits, plain messages, no
+  trailer, never push.
+- termlab: since 2026-10-08 it lives inside the game as `src/firstcommit/termlab/` (user's call),
+  copied from termlab's `firstcommit` branch at d31e575; see `docs/TERMLAB.md`. termlab's own
+  repository (`~/learning/termlab`, its `main`) stays as Ring Zero uses it; the old
+  `~/learning/termlab-firstcommit` worktree is no longer used by the game.
 
 ## Decisions
 

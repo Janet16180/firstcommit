@@ -5,7 +5,6 @@
 set -euo pipefail
 
 root=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
-termlab=$root/../termlab-firstcommit
 dockerfile=$root/deploy/docker/Dockerfile
 
 uv_version=0.12.6
@@ -20,9 +19,6 @@ Usage: ./install.sh [--dev]
 
 Installs git, bash-completion, Docker Engine and uv $uv_version, then runs "uv sync".
   --dev   also install Node (the version the Docker test image pins) and ESLint
-
-termlab's firstcommit branch must sit next to this folder as ../termlab-firstcommit.
-Set FIRSTCOMMIT_TERMLAB_URL to a termlab clone URL to have it cloned there.
 EOF
 }
 
@@ -53,19 +49,6 @@ check_system() {
     if ! grep -qi microsoft /proc/version; then
         printf 'Note: this does not look like WSL; continuing anyway.\n'
     fi
-}
-
-check_termlab() {
-    if [ -d "$termlab" ]; then
-        return
-    fi
-    if [ -z "${FIRSTCOMMIT_TERMLAB_URL:-}" ]; then
-        fail "termlab is missing: First Commit needs termlab's firstcommit branch at" \
-            "  $termlab" \
-            "Copy it there, or run again with FIRSTCOMMIT_TERMLAB_URL=<termlab clone URL>."
-    fi
-    say "Cloning termlab's firstcommit branch"
-    git clone --branch firstcommit "$FIRSTCOMMIT_TERMLAB_URL" "$termlab"
 }
 
 install_packages() {
@@ -184,7 +167,6 @@ main() {
     done
     check_system
     install_packages
-    check_termlab
     install_docker
     install_uv
     if [ "$dev" = true ]; then

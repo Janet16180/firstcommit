@@ -4,9 +4,9 @@ import subprocess
 from pathlib import Path
 
 import pytest
-from termlab import snippets
 
 from firstcommit import cards, gitcmd
+from firstcommit.termlab import snippets
 from game_words import unpaired
 
 MAX_EXTRA_LENGTH = 15

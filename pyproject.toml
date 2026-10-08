@@ -4,16 +4,13 @@ version = "0.1.0"
 description = "First Commit: a hands-on game that teaches Git to people who are starting out."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = ["termlab"]
+dependencies = []
 
 [project.scripts]
 firstcommit = "firstcommit.cli:main"
 
 [dependency-groups]
-dev = ["pytest>=8", "hypothesis>=6.100", "ruff>=0.16,<0.17", "mypy>=2.4,<2.5"]
-
-[tool.uv.sources]
-termlab = { path = "../termlab-firstcommit", editable = true }
+dev = ["pytest>=8", "hypothesis>=6.100", "ruff>=0.16,<0.17", "mypy>=2.4,<2.5", "websockets>=16"]
 
 [build-system]
 requires = ["uv_build>=0.12.6,<0.13.0"]

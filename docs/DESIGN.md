@@ -1,8 +1,8 @@
 # First Commit: design
 
 A hands-on game that teaches Git, and how GitHub uses it, to new hires who are starting out.
-Working title. Built with the method in `~/learning/GAME_METHODOLOGY.md`, on the shared
-infrastructure library `termlab` (`~/learning/termlab`, read its `docs/USING.md`), and shaped by
+Working title. Built with the method in `~/learning/GAME_METHODOLOGY.md`, on plumbing copied in
+from the infrastructure library termlab (`src/firstcommit/termlab/`, see `docs/TERMLAB.md`), and shaped by
 the lessons of Ring Zero's audit (`~/learning/ring0/docs/AUDIT.md`) and architecture review
 (`docs/ENGINE_DESIGN.md` on Ring Zero's `docs/engine-design` branch).
 
@@ -27,7 +27,7 @@ each chapter's notes stay open for reference.
 |---|---|
 | Machines | Windows + WSL, Ubuntu 24.04 (git 2.43, Python 3.12) (user, 2026-10-05 and 2026-10-06) |
 | Runtimes | The same game runs directly in WSL or in a Docker container now, and in a VM later; the code must not care which (user, 2026-10-06) |
-| Infrastructure | termlab provides the save helpers, lab cleanup, snippet runner, web server shell, web terminal and VM; everything else is this game's own (user, 2026-10-06) |
+| Infrastructure | termlab provides the save helpers, lab cleanup, snippet runner, web server shell and web terminal; everything else is this game's own (user, 2026-10-06). Since 2026-10-08 it lives inside the game as `firstcommit.termlab`, copied from termlab d31e575; termlab's VM stays in the library (user, 2026-10-08) |
 | Length | As long as needed to cover everything (user, 2026-10-06) |
 | Style | Prototype a metro map and a time-travel theme on the same first level; the user picks; the other is deleted (user, 2026-10-05). The Orbit design replaced the time-travel theme, which was deleted on 2026-10-08 with the old lessons (user) |
 | GitHub chapter | Generic GitHub flow, no company-specific rules (user, 2026-10-05) |
@@ -42,9 +42,9 @@ runtime is a small adapter outside the package.
 
 | Runtime | How a player starts it | What it gives | Adapter files |
 |---|---|---|---|
-| WSL, direct | `uv run firstcommit` from a checkout, with termlab next to it | the simplest; developers use it | none |
-| Docker | `deploy/docker/run`: builds the image if needed, then `docker run` with a named volume for the game home | Ubuntu 24.04, git, Python, uv and termlab pinned in one image, so players get exactly the git the levels were checked against; the player's WSL stays untouched | `deploy/docker/Dockerfile`, `deploy/docker/run` |
-| VM (later) | `vm/firstcommit-vm create`, then `serve` | a separate kernel: the real isolation option | `vm/game.env`, `vm/guest-setup.sh`, the two-line wrapper (termlab `docs/VM.md`) |
+| WSL, direct | `uv run firstcommit` from a checkout | the simplest; developers use it | none |
+| Docker | `deploy/docker/run`: builds the image if needed, then `docker run` with a named volume for the game home | Ubuntu 24.04, git, Python and the game pinned in one image, so players get exactly the git the levels were checked against; the player's WSL stays untouched | `deploy/docker/Dockerfile`, `deploy/docker/run` |
+| VM (later) | `vm/firstcommit-vm create`, then `serve` | a separate kernel: the real isolation option | `vm/game.env`, `vm/guest-setup.sh`, the two-line wrapper, on termlab's VM (`~/learning/termlab`, `docs/VM.md`), to be adapted to termlab living inside the game |
 
 Notes:
 - **Docker networking.** termlab's server listens on 127.0.0.1 only and checks the Host header
@@ -163,8 +163,8 @@ are deterministic.
   no token. The game never touches the player's real repositories or their real `~/.gitconfig`.
 - **Writes only under the game home.** Labs are deleted only through termlab's `remove_tree`.
   Budget: under 50 MB of disk per lab. No daemons, no root.
-- **Web server and terminal**: termlab's, security-reviewed, used within the rules of its USING.md
-  section 4 (validate every body, drop the game's own markers from the shell, no CSP widening).
+- **Web server and terminal**: termlab's, security-reviewed, used within the rules of
+  `docs/TERMLAB.md` (validate every body, drop the game's own markers from the shell, no CSP widening).
 
 ## 7. Architecture
 
@@ -179,7 +179,8 @@ orchestration  game.py                                                 every pla
 core           levels/*, runner.py, score.py, cards.py, markup.py, gitcmd.py, repomap.py,
                changes.py, reactions.py, kit.py
 data           save.py (the save's records), records.py (snapshot records), chapters.py
-infrastructure termlab: store, sandbox, snippets, web.shell, web.terminal, client.js, terminal.js, VM
+infrastructure termlab/: store, sandbox, snippets, web.shell, web.terminal, client.js, terminal.js;
+               it imports only the standard library and itself
 ```
 
 - `game.py` is the only thing the interfaces call: `status`, `level`, `see_scene`, `start`,
@@ -233,7 +234,7 @@ each phase's review checks the work against it.
 | The look, a theme, the map metaphor | the page's theme and map-renderer files |
 | A new player action | `game.py`, one route, one CLI command, the page view that uses it |
 | A new runtime (VM, another host) | new files under `deploy/` or `vm/`; nothing in the package |
-| Security, terminal or VM plumbing | termlab, with its own review; no game change |
+| Security or terminal plumbing | `termlab/`, with a security review (`docs/TERMLAB.md`); no game rule change |
 | The save format | `save.py` and its test |
 | A git version change | content whose verified output changed, found by the snippet suite |
 
@@ -297,9 +298,8 @@ real name and hash.
 ## 10. Open questions
 
 1. **The front door for new hires.** Docker (one command, pinned git; needs Docker Engine in their
-   WSL) or WSL direct (needs uv and both repositories)? termlab is a path dependency, so the old
-   "`python3 -m firstcommit`, nothing to install" promise is gone either way; the image bakes
-   termlab in.
+   WSL) or WSL direct (needs uv and this repository)? With termlab inside the game, the package
+   again needs only the standard library at runtime.
 2. **The new chapters** `rebase`, `setup` and `toolbox`: keep, trim or add?
 3. **Name**: "First Commit" is a working title.
 

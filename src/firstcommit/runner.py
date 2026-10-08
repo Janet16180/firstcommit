@@ -6,7 +6,7 @@ in the content, so reading it raises with the module's name and what is wrong. I
 live in a sibling module, ``<module>_es`` (`load`), which is never read as a level itself.
 
 There is one lab at a time, ``<home>/labs/<level id>/``. Starting a level removes every lab first
-(through `termlab.sandbox`, which never deletes outside the home), so nothing a player did in an
+(through `firstcommit.termlab.sandbox`, which never deletes outside the home), so nothing a player did in an
 earlier level can leak into the next one. Every lab starts with the game's git configuration in
 place, whoever starts it (the game or the tests).
 """
@@ -22,11 +22,10 @@ from pathlib import Path
 from types import MappingProxyType, ModuleType
 from typing import Any
 
-from termlab import sandbox
-
 from firstcommit import gitcmd, kit, levels, reactions, save
 from firstcommit.chapters import CHAPTERS, PLAY_ORDER
 from firstcommit.records import Art, Language, Mood, Picture, Pictures, Target, View
+from firstcommit.termlab import sandbox
 
 MODULE_NAME = re.compile(r"([a-z]+)_[a-z0-9_]+")
 DIFFICULTIES = (1, 2, 3)

@@ -14,12 +14,11 @@ The field guide's "Try it" commands rely on these names.
 from collections.abc import Callable
 from dataclasses import dataclass
 
-from termlab import sandbox
-
 from firstcommit import gitcmd, playground, save
 from firstcommit.gitcmd import PLAYER
 from firstcommit.lab import Lab
 from firstcommit.records import Language, PlaygroundView, StartId
+from firstcommit.termlab import sandbox
 
 ALEX = playground.ALEX
 CHECKLIST = "checklist.txt"

@@ -29,9 +29,8 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Annotated, Any, Literal, TypedDict, cast
 
-from termlab import sandbox, store
-
 from firstcommit.records import Command, Language, PlaygroundView, PullRequest, Seen, Snapshot, StartId, Who
+from firstcommit.termlab import sandbox, store
 
 HOME_VARIABLE = "FIRSTCOMMIT_HOME"
 DEFAULT_HOME = "~/.firstcommit"

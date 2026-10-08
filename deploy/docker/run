@@ -4,7 +4,6 @@ set -euo pipefail
 
 here=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
 root=$(cd "$here/../.." && pwd)
-termlab=$root/../termlab-firstcommit
 
 # One name for the image, the container and (with -home) the volume; tests set their own.
 name=${FIRSTCOMMIT_DOCKER_NAME:-firstcommit}
@@ -29,7 +28,7 @@ Usage: deploy/docker/run [command]
 
   play    build the image if needed, then start the game (the default)
   shell   open a terminal in the running game, with the game's git settings
-  build   build the image if the game or termlab changed, without starting
+  build   build the image if the game changed, without starting
   update  rebuild the image now with Ubuntu's latest updates (play does it every $max_age_days days)
   reset   delete your saved game and practice repositories (asks first)
   test    run ruff, mypy and the tests in a container (or: test <pytest arguments>)
@@ -66,20 +65,11 @@ require_docker() {
 }
 
 inputs_hash() {
-    {
-        (cd "$root" && list_files deploy/docker/Dockerfile .dockerignore src/firstcommit)
-        (cd "$termlab" && list_files src/termlab)
-    } | sha256sum | cut -d ' ' -f 1
+    (cd "$root" && list_files deploy/docker/Dockerfile .dockerignore src/firstcommit) | sha256sum | cut -d ' ' -f 1
 }
 
 list_files() {
     find "$@" -type f ! -path '*/__pycache__/*' -print0 | LC_ALL=C sort -z | xargs -0 sha256sum
-}
-
-require_termlab() {
-    if [ ! -d "$termlab/src/termlab" ]; then
-        fail "termlab is missing: First Commit needs it next to the game, at $termlab."
-    fi
 }
 
 build() {
@@ -90,12 +80,11 @@ build() {
             "Install it with: sudo apt install docker-buildx-plugin" \
             "(or docker-buildx if your Docker came from Ubuntu's own docker.io package)."
     fi
-    docker build --file "$here/Dockerfile" --build-context "termlab=$termlab" \
+    docker build --file "$here/Dockerfile" \
         --target "$target" --tag "$tag" "$@" "$root"
 }
 
 ensure_image() {
-    require_termlab
     local hash labels inputs="" built=""
     hash=$(inputs_hash)
     if labels=$(docker image inspect --format "{{ index .Config.Labels \"$inputs_label\" }} {{ index .Config.Labels \"$built_label\" }}" "$name:latest" 2>/dev/null); then
@@ -111,7 +100,6 @@ ensure_image() {
 }
 
 update() {
-    require_termlab
     echo "Rebuilding the First Commit image with Ubuntu's latest updates."
     build_player "$(inputs_hash)" --pull --no-cache
 }
@@ -171,7 +159,6 @@ shell() {
 }
 
 run_tests() {
-    require_termlab
     build test "$name:test"
     local checks=()
     if [ "$#" -gt 0 ]; then

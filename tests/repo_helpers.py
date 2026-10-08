@@ -3,9 +3,8 @@
 import os
 from pathlib import Path
 
-from termlab import snippets
-
 from firstcommit import gitcmd, repomap, save
+from firstcommit.termlab import snippets
 
 ALEX = gitcmd.Person("Alex Kim", "alex@example.com")
 WHEN = "2026-01-15T09:00:00+00:00"

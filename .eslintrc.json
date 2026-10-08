@@ -21,6 +21,14 @@
   "overrides": [
     { "files": ["tests/js/*.js"], "env": { "browser": false, "node": true } },
     {
+      // termlab's page scripts define createTerminal and createClient for the page, and know only xterm.js's globals.
+      "files": ["src/firstcommit/termlab/web/static/*.js"],
+      "globals": { "Terminal": "readonly", "FitAddon": "readonly", "createTerminal": "off", "createClient": "off" },
+      "rules": {
+        "no-unused-vars": ["error", { "args": "after-used", "caughtErrors": "none", "varsIgnorePattern": "^(createTerminal|createClient)$" }]
+      }
+    },
+    {
       // The page builds every node with Dom.el, so text from the game can never become markup.
       "files": ["src/firstcommit/web/static/*.js"],
       "rules": {

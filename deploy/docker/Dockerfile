@@ -1,7 +1,6 @@
 # First Commit in a container: Ubuntu 24.04 with the git and Python the levels are checked
-# against, and the game's and termlab's sources copied in. Build it through deploy/docker/run,
-# which passes termlab's folder as the named build context "termlab". Two targets: "player",
-# the game, and "test", the same image plus uv and the repository, to run the suite.
+# against, and the game's sources copied in. Build it through deploy/docker/run. Two targets:
+# "player", the game, and "test", the same image plus uv and the repository, to run the suite.
 FROM ubuntu:24.04@sha256:534baea6a22c03a63003dbc8dbe78fe34bc0d7e595d9a9dc9834884ff530eb55 AS player
 
 # The base image is minimized: it leaves out manuals and replaces man with a notice. Beginners
@@ -45,9 +44,8 @@ EOF
 RUN useradd --create-home --shell /bin/bash player \
  && install --directory --owner=player --group=player /home/player/.firstcommit
 
-# termlab's folder may hold __pycache__ folders; they are rebuilt here, since the player cannot
+# The source folder may hold __pycache__ folders; they are rebuilt here, since the player cannot
 # write next to these files.
-COPY --from=termlab src/termlab /opt/firstcommit/lib/termlab
 COPY src/firstcommit /opt/firstcommit/lib/firstcommit
 RUN find /opt/firstcommit/lib -name __pycache__ -prune -exec rm -r {} + \
  && python3 -m compileall -q /opt/firstcommit/lib
@@ -66,9 +64,8 @@ WORKDIR /home/player
 CMD ["firstcommit", "serve"]
 
 
-# The repository and termlab side by side, as on a developer's machine, so the editable path
-# source resolves. Dependencies come from PyPI while building; the tests then run offline, on
-# the image's own Python.
+# The repository, as on a developer's machine. Dependencies come from PyPI while building; the
+# tests then run offline, on the image's own Python.
 FROM player AS test
 # Node 24 LTS runs the page's node tests (Ubuntu's nodejs 18 broke one). The release tarball from
 # nodejs.org is checked against its SHA-256 from that release's SHASUMS256.txt before unpacking.
@@ -94,8 +91,6 @@ RUN apt-get update \
 USER player
 COPY --from=ghcr.io/astral-sh/uv:0.12.6@sha256:88bc6eb1ccd4b82efd0e1b530caffabddf50dc2bf612e66c14ea25b8ee8a4d3d /uv /usr/local/bin/uv
 ENV UV_PYTHON_DOWNLOADS=never UV_NO_CACHE=1
-COPY --chown=player:player --from=termlab pyproject.toml README.md /home/player/termlab-firstcommit/
-COPY --chown=player:player --from=termlab src /home/player/termlab-firstcommit/src
 COPY --chown=player:player . /home/player/firstcommit
 WORKDIR /home/player/firstcommit
 RUN uv sync --frozen

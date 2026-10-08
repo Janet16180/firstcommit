@@ -1,17 +1,21 @@
-"""Shared test setup: every test gets its own game home, so no test touches the player's ~/.firstcommit; plus the sample level (also with a two-person playground), decks, and typing into a real shell."""
+"""Shared test setup: every test gets its own game home, so no test touches the player's ~/.firstcommit; plus the sample level (also with a two-person playground), decks, typing into a real shell, and a site run on termlab's web server shell."""
 
 import dataclasses
 import os
 import select
+import threading
 import time
 from collections.abc import Callable, Iterator, Mapping, Sequence
+from http.server import ThreadingHTTPServer
 from pathlib import Path
+from typing import Any
 
 import pytest
-from termlab.web import terminal
 
 from firstcommit import cards, kit, runner
+from firstcommit.termlab.web import shell, terminal
 from sample_levels import cargo_sample, cargo_sample_es
+from termlab_helpers import SETTINGS, TERMINAL, Site, dummy_routes, token_of
 
 
 @pytest.fixture(autouse=True)
@@ -181,7 +185,7 @@ Typist = Callable[[Sequence[str], Mapping[str, str], Path, Sequence[tuple[bytes,
 @pytest.fixture
 def typist(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Typist]:
     """
-    Type into a real interactive shell, started as the page's terminal starts it (`termlab.web.terminal.start_shell`).
+    Type into a real interactive shell, started as the page's terminal starts it (`firstcommit.termlab.web.terminal.start_shell`).
 
     The shell's ``HOME`` is always an empty folder of the test's own, so no shell started here
     can read or write the user's real home: a bash started without the game's startup file
@@ -231,3 +235,94 @@ def typist(tmp_path_factory: pytest.TempPathFactory) -> Iterator[Typist]:
 
     yield type_into
     assert (real_history.stat().st_mtime_ns if real_history.exists() else None) == untouched, f"a test shell wrote {real_history}"
+
+
+@pytest.fixture
+def calls() -> list[dict[str, Any]]:
+    """
+    Collect the bodies the dummy echo route receives.
+
+    Returns
+    -------
+    list[dict[str, Any]]
+        Empty at first.
+    """
+    return []
+
+
+@pytest.fixture
+def static_dir(tmp_path: Path) -> Path:
+    """
+    Make a game's static folder, with files next to it that must never be served.
+
+    Parameters
+    ----------
+    tmp_path : Path
+        The test's own folder.
+
+    Returns
+    -------
+    Path
+        A folder holding ``index.html``, ``app.js`` and ``app.css``.
+    """
+    folder = tmp_path / "static"
+    folder.mkdir()
+    (folder / "index.html").write_text("<!doctype html><title>page</title>")
+    (folder / "app.js").write_text('"use strict";')
+    (folder / "app.css").write_text("body { margin: 0; }")
+    (tmp_path / "server.py").write_text("SECRET = 1")
+    (tmp_path / "guides.py").write_text("SECRET = 2")
+    return folder
+
+
+@pytest.fixture
+def start_site(calls: list[dict[str, Any]], static_dir: Path) -> Iterator[Callable[..., Site]]:
+    """
+    Run web servers in this process on free ports, on background threads; stop them all afterwards.
+
+    Parameters
+    ----------
+    calls : list[dict[str, Any]]
+        Receives the bodies of the dummy echo route.
+    static_dir : Path
+        The page's files.
+
+    Yields
+    ------
+    Callable[..., Site]
+        Starts a server with the dummy routes and the test settings; keyword
+        arguments of `shell.create_server` replace some of them.
+    """
+    running: list[tuple[ThreadingHTTPServer, threading.Thread]] = []
+
+    def start(**changes: Any) -> Site:
+        options = {"routes": dummy_routes(calls), "static_dir": static_dir, "terminal": TERMINAL, "settings": SETTINGS}
+        httpd, link = shell.create_server(0, **{**options, **changes})
+        thread = threading.Thread(target=httpd.serve_forever, kwargs={"poll_interval": 0.05}, daemon=True)
+        thread.start()
+        running.append((httpd, thread))
+        return Site(f"http://127.0.0.1:{httpd.server_port}", httpd.server_port, token_of(link))
+
+    yield start
+    for httpd, thread in running:
+        httpd.shutdown()
+        httpd.server_close()
+        thread.join()
+
+
+@pytest.fixture
+def site(start_site: Callable[..., Site]) -> Site:
+    """
+    Run the web server with the test settings.
+
+    Parameters
+    ----------
+    start_site : Callable[..., Site]
+        Starts servers.
+
+    Returns
+    -------
+    Site
+        Base URL (``http://127.0.0.1:<port>``), port and access token.
+    """
+    return start_site()

@@ -12,10 +12,10 @@ from pathlib import Path
 from types import ModuleType
 
 import pytest
-from termlab import sandbox
 
 import sample_levels
 from firstcommit import game, kit, levels, runner
+from firstcommit.termlab import sandbox
 from game_words import unpaired
 
 HOSTILE = [

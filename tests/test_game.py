@@ -13,8 +13,6 @@ from pathlib import Path
 from typing import Any
 
 import pytest
-from termlab import sandbox
-from termlab.web import terminal
 
 from firstcommit import (
     changes,
@@ -37,6 +35,8 @@ from firstcommit import (
 )
 from firstcommit.chapters import BLURBS, CHAPTERS
 from firstcommit.levels import cargo_junk, cargo_selective, mothership_base7
+from firstcommit.termlab import sandbox
+from firstcommit.termlab.web import terminal
 from sample_levels import cargo_sample_es
 
 pytestmark = pytest.mark.usefixtures("sample_decks")

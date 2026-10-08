@@ -19,9 +19,8 @@ from http.server import ThreadingHTTPServer
 from pathlib import Path
 from typing import Any, TypeGuard
 
-from termlab.web import shell, terminal
-
 from firstcommit import game
+from firstcommit.termlab.web import shell, terminal
 
 STATIC = Path(__file__).parent / "static"
 SETTINGS = shell.ShellSettings(name="FirstCommit", command="firstcommit serve", token_header="X-FirstCommit-Token")
