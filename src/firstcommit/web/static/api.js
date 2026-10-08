@@ -81,7 +81,7 @@ const createGameApi = (function () {
   const CARD = record({ level: text, command: text, text: BLOCKS });
   /* The scene pictures the artist has drawn, the moods Rama speaks in, the moments a reaction may
      play and the views of the ladder, in its order (records.Art, Mood, Moment and View). */
-  const ART = oneOf("space", "timeline", "terminal", "planet", "flag", "zones", "conveyor", "capsule", "chain", "orbit", "rocket", "pull", "alarm", "fork", "merge", "collision", "blackbox");
+  const ART = oneOf("space", "timeline", "terminal", "planet", "flag", "zones", "conveyor", "capsule", "chain", "orbit", "rocket", "pull", "alarm", "fork", "merge", "collision", "blackbox", "meteor");
   const MOOD = oneOf("info", "ok", "warn", "err");
   const MOMENT = oneOf("secret-leak", "launch");
   const VIEW = oneOf("station", "crew", "history", "sides", "blackbox", "board", "focus");
