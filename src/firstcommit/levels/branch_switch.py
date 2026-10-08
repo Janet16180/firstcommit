@@ -19,7 +19,6 @@ DIFFICULTY = 2
 XP = 150
 COMMAND = "git switch"
 PAR = 4
-VIEW = "history"
 CARD = kit.CommandCard(
     command="git switch <branch>",
     text="Moves you onto another branch and rewrites the working folder to match it. Edits you have not committed come along; Git refuses only when the switch would overwrite one.",
