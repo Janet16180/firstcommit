@@ -18,7 +18,7 @@ DIFFICULTY = 1
 XP = 100
 COMMAND = "git branch <name> <commit>"
 PAR = 5
-VIEW = "history"
+PICTURES = kit.pictures("chain", mothership=True)
 CARD = kit.CommandCard(
     command="git branch <name> <commit>",
     text="Puts a new name on any commit, given by its hash. You stay where you are, and your folder does not change.",
@@ -86,6 +86,7 @@ REACTIONS = [
 
 DELETE_GUESS = kit.ChoiceStep(
     id="guess-delete",
+    look=("Start the project",),
     text="Predict first.",
     question="You take the name `test-run` off with `git branch -d test-run`. What happens to the Start the project commit?",
     options=("It is deleted too", "It stays"),
@@ -93,6 +94,7 @@ DELETE_GUESS = kit.ChoiceStep(
 )
 NAME_GUESS = kit.ChoiceStep(
     id="guess-name",
+    look=("Plot the route",),
     text="Predict first.",
     question="You put a new name `first-route` on Plot the route, by its hash. What happens to your folder?",
     options=("It shows that commit's files", "Nothing changes"),
