@@ -349,6 +349,7 @@ test("ignored files stay in the workshop, greyed, one chip per folder that says 
   panel.update(observe({ ...one, files: [...one.files, ...ignored] }));
   const workshop = zone(panel, "workshop");
   const chip = workshop.querySelector(".file.is-ignored");
+  assert.ok(chip.classList.contains("art-ignore-field"));
   assert.equal(chip.querySelector(".fname").textContent, "sim-output/");
   assert.equal(chip.querySelector(".ftag").textContent, "3 ignored, still on your disk");
   assert.equal(workshop.querySelector(".z-count").textContent, String(one.files.length));
