@@ -264,7 +264,7 @@
 
   .art-ig-box {
     display: grid;
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: 72px minmax(0, 1fr);
     column-gap: 12px;
     justify-items: start;
     margin: 0;
@@ -275,6 +275,7 @@
   .art-ig-box .art-ig-pic {
     grid-row: 1 / span 4;
     align-self: center;
+    justify-self: center;
   }
 
   .art-ig-move,
