@@ -130,19 +130,22 @@ test("an ignored file is greyed behind a dashed edge, so it reads as still there
   assert.match(rule(".file.is-ignored .ftag"), /flex: 1 1 100%;/);
 });
 
-test("history folds your station's workshop and dock away, and gives the vault and the mothership the row", () => {
+test("history's chart folds your workshop and dock away, and gives the vault and the mothership the row, growing rather than scrolling", () => {
   const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
-  assert.match(css, /\.sky\[data-view="history"\] \.viz-row > :nth-child\(-n \+ 4\),[^{]*\.sky\[data-view="history"\] \.station-row > :not\(\[data-zone\$="vault"\]\),[^{]*\.sky\[data-view="history"\] \.legend \{\s*display: none;/);
-  assert.match(rule('.sky[data-view="history"] .viz-row'), /grid-template-columns: minmax\(0, 1fr\) 42px minmax\(0, 1fr\);/);
-  assert.match(rule('.sky[data-view="history"] .station .station-row'), /grid-template-columns: minmax\(0, 1fr\);/);
+  assert.match(css, /\.viz\.is-chart \.viz-row > \.zone\[data-zone="workshop"\],[^{]*\.viz\.is-chart \.zone\[data-zone="dock"\],[^{]*\.viz\.is-chart \.legend \{\s*display: none;/);
+  assert.match(rule(".viz.is-chart .viz-row"), /grid-template-columns: minmax\(0, 1fr\) 84px minmax\(0, 1fr\);/);
+  assert.match(rule(".viz.is-chart .z-body"), /max-height: none;/);
+  assert.match(rule(".cap-gap"), /height: var\(--row, 40px\);/);
+  assert.match(rule(".tethers line"), /stroke: var\(--z-re\);/);
+  assert.match(rule(".viz-op"), /border: 3px solid var\(--s-mod\);/);
 });
 
-test("in a crew level history takes Alex's mirror off the stage, leaving your vault and the mothership, and the band runs thin above", () => {
+test("in history the strip keeps only what folded, except while the vault's card unrolls, and Alex's band runs thin and dashed above", () => {
   const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
-  assert.match(css, /\n\.sky\[data-view="history"\] \.station\.is-mirror,\n\.sky\[data-view="history"\] \.flow\.is-mirror \{\s*display: none;/);
-  assert.match(rule('.sky[data-view="history"] .viz-crew'), /grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\);/);
+  assert.match(css, /\n\.sky\[data-view="history"\]:not\(\.art-birth-unroll\) > \.strip:not\(\.is-band\) \.strip-card:is\(\[data-zone="vault"\], \[data-zone="remote"\]\) \{\s*display: none;/);
   assert.match(rule(".strip.is-band"), /grid-template-columns: auto repeat\(3, minmax\(0, 1fr\)\);/);
-  assert.match(rule(".strip.is-band .strip-card"), /padding: 2px 6px;/);
+  assert.match(rule(".strip.is-band"), /border: 2px dashed/);
+  assert.match(rule(".strip.is-band .strip-card"), /padding: 1px 6px;/);
 });
 
 test("two sides take the zones' place, and open each conflicted file as a book of two halves in their people's colours", () => {

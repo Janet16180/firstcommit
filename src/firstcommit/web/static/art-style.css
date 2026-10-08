@@ -697,7 +697,7 @@
 
 /* The unroll (data-view "history"): the strip's vault card lights, every vault left on the stage
    (Alex's too, in a crew level) unrolls from the top down like a chart, then the mothership
-   fades in. */
+   fades in, with the tethers that tie it to the vault. */
 .sky.art-birth-unroll .strip-card[data-zone="vault"] {
   animation: art-birth-lit var(--art-birth, 1.4s) steps(1) both;
 }
@@ -717,7 +717,8 @@
   70%, 100% { clip-path: inset(0); }
 }
 
-.sky.art-birth-unroll .viz .zone[data-zone="remote"] {
+.sky.art-birth-unroll .viz .zone[data-zone="remote"],
+.sky.art-birth-unroll .viz .tethers {
   animation: art-birth-after var(--art-birth, 1.4s) steps(4) both;
 }
 

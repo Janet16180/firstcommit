@@ -11,6 +11,12 @@
  * fade in; none of the movement plays when the player asked for reduced motion. In a level with a
  * teammate the zones become two stations, yours and Alex's (each a workshop, a dock and a vault),
  * with the mothership above and between them, and capsules fly between the stations through it.
+ * The panel has three modes: "zones" (the four zones, or the two stations with a teammate), "row"
+ * (your row of four alone, for the black box view) and "chart" (history: your row alone, where
+ * the vault and the mothership line up row by row over both histories, Zones.rows, so a commit
+ * both hold sits level on each side, marked shared and tethered across; in a level with no
+ * mothership, the vault alone). The chart says a paused operation over itself, and a key under
+ * it says what a tether means once one is drawn.
  * Needs dom.js, strings.js, art-sprites.js, typed.js and zones.js. Defines one global, ZonePanel.
  */
 
@@ -65,7 +71,8 @@ const ZonePanel = (function () {
     ];
   }
 
-  const capsule = (zone) => (commit) => el("div", { class: commit.parents.length > 1 ? "cap is-merge" : "cap", "data-key": `${zone}:${commit.hash}` },
+  /* `shared` holds the hashes the other side of the chart holds too. */
+  const capsule = (zone, shared) => (commit) => el("div", { class: ["cap", commit.parents.length > 1 && "is-merge", shared.has(commit.hash) && "is-shared"].filter(Boolean).join(" "), "data-key": `${zone}:${commit.hash}` },
     el("span", { class: "cgutter", "aria-hidden": "true" }, block(commit)),
     el("div", { class: "cinfo" },
       el("div", { class: "cline" }, el("span", { class: "chash" }, commit.short), labelChips(zone, commit.labels)),
@@ -87,23 +94,26 @@ const ZonePanel = (function () {
   }
 
   /* The capsules as a graph: each in its lane, `height` pixels a row, with lines from every
-     commit to its parents. */
-  function capsules(zone, commits, height) {
-    const rows = new Map(commits.map((commit, index) => [commit.hash, index]));
+     commit to its parents. In the chart, `chart` gives each commit's row over both histories
+     ({rows, shared}); a row this side does not hold is left as a gap. */
+  function capsules(zone, commits, height, chart = null) {
+    const rows = chart ? chart.rows : new Map(commits.map((commit, index) => [commit.hash, index]));
+    const own = new Map(commits.map((commit) => [commit.hash, commit]));
     const width = (Math.max(...commits.map((commit) => commit.lane)) + 1) * LANE;
-    const links = commits.flatMap((commit, row) => commit.parents.map((hash, index) => {
-      const parentRow = rows.has(hash) ? rows.get(hash) : commits.length;
-      const parent = rows.has(hash) ? commits[parentRow] : commit;
-      return link(commit, row, parent, parentRow, index === 0, height);
+    const links = commits.flatMap((commit) => commit.parents.map((hash, index) => {
+      const parentRow = own.has(hash) ? rows.get(hash) : rows.size;
+      return link(commit, rows.get(commit.hash), own.get(hash) || commit, parentRow, index === 0, height);
     }));
-    const lines = svg("svg", { class: "links", width, height: commits.length * height, "aria-hidden": "true" }, links);
-    return el("div", { class: "caps", style: `--gutter:${width}px;--row:${height}px` }, lines, commits.map(capsule(zone)));
+    const lines = svg("svg", { class: "links", width, height: rows.size * height, "aria-hidden": "true" }, links);
+    const slots = Array.from({ length: rows.size }, () => el("div", { class: "cap-gap", "aria-hidden": "true" }));
+    for (const commit of commits) slots[rows.get(commit.hash)] = capsule(zone, chart ? chart.shared : new Set())(commit);
+    return el("div", { class: "caps", style: `--gutter:${width}px;--row:${height}px` }, lines, slots);
   }
 
   /* A station's three zones' items, keyed with `prefix` ("" for yours, "crew-" for Alex's), its
-     capsules `height` pixels a row. The files git ignores follow the workshop's own, greyed, and
-     its count leaves them out: git does not see them. */
-  function stationContents(reading, prefix, height) {
+     capsules `height` pixels a row, on the chart's rows when given. The files git ignores follow
+     the workshop's own, greyed, and its count leaves them out: git does not see them. */
+  function stationContents(reading, prefix, height, chart = null) {
     const files = reading.workshop.map((file) => fileChip(file.path, stateTag(file.state), { "data-state": file.state, "data-key": `${prefix}workshop:${file.path}`, title: t(`zones.tip.${file.state}`) }));
     const ignored = reading.ignored.map((group) => fileChip(group.name, (group.count === 1 ? t("zones.ignoredOne") : t("zones.ignored", { count: group.count })), { class: "file is-ignored art-ignore-field", title: t("zones.tip.ignored") }));
     const workshop = [...files, ...ignored];
@@ -111,19 +121,42 @@ const ZonePanel = (function () {
     return {
       [`${prefix}workshop`]: { count: files.length, nodes: workshop },
       [`${prefix}dock`]: reading.dock && { count: dock.length, nodes: dock },
-      [`${prefix}vault`]: reading.vault && { count: reading.vault.length, nodes: reading.vault.length ? [capsules(`${prefix}vault`, reading.vault, height)] : [] },
+      [`${prefix}vault`]: reading.vault && { count: reading.vault.length, nodes: reading.vault.length ? [capsules(`${prefix}vault`, reading.vault, height, chart)] : [] },
     };
   }
 
-  /* Each zone's items, or null when the zone is off; the crew view's narrower zones take taller
-     capsule rows, so a capsule's labels can wrap under its hash. */
-  function contents(zones) {
-    const height = zones.crew ? CREW_ROW : ROW;
+  const hashes = (list) => new Set((list || []).map((commit) => commit.hash));
+
+  /* Each zone's items, or null when the zone is off, drawn for `mode`. The two stations' narrower
+     zones take taller capsule rows, so a capsule's labels can wrap under its hash; the chart puts
+     the vault and the mothership on the same rows. */
+  function contents(zones, mode) {
+    const stations = Boolean(zones.crew) && mode === "zones";
+    const height = stations ? CREW_ROW : ROW;
+    const rows = mode === "chart" ? Zones.rows(zones.vault || [], zones.remote) : null;
+    const yours = rows && { rows, shared: hashes(zones.remote) };
+    const theirs = rows && { rows, shared: hashes(zones.vault) };
     return {
-      ...stationContents(zones, "", height),
-      remote: zones.remote && { count: zones.remote.length, nodes: zones.remote.length ? [capsules("remote", zones.remote, height)] : [] },
-      ...(zones.crew ? stationContents(zones.crew, "crew-", height) : {}),
+      ...stationContents(zones, "", height, yours),
+      remote: zones.remote && { count: zones.remote.length, nodes: zones.remote.length ? [capsules("remote", zones.remote, height, theirs)] : [] },
+      ...(stations ? stationContents(zones.crew, "crew-", height) : {}),
     };
+  }
+
+  /* What a paused operation says: its icon and "merge paused", or nothing. */
+  const pausedLine = (operation) => (operation ? [ArtSprites.icon("merging"), t("zones.paused", { operation })] : []);
+
+  /* The chart's tethers: a line from your vault's edge to the mothership's capsule, on each row
+     both sides hold, measured where the two sides now stand inside `element`. */
+  function tethers(element, vault, remote) {
+    const box = element.getBoundingClientRect();
+    const edge = vault.body.getBoundingClientRect().right - box.left;
+    const lines = [...remote.body.querySelectorAll(".cap.is-shared")].map((row) => {
+      const capsuleBlock = row.querySelector(".cblock").getBoundingClientRect();
+      const y = capsuleBlock.top + capsuleBlock.height / 2 - box.top;
+      return svg("line", { "data-hash": row.dataset.key.slice("remote:".length), x1: edge, y1: y, x2: capsuleBlock.left - box.left, y2: y });
+    });
+    return svg("svg", { class: "tethers", width: box.width, height: box.height, "aria-hidden": "true" }, lines);
   }
 
   /* A zone's frame; `key` names it on the page ("crew-vault" for Alex's vault), `name` its kind. */
@@ -271,24 +304,48 @@ const ZonePanel = (function () {
   /* options: reducedMotion (no flying items; the arrows and zones still light), timers. */
   function create({ reducedMotion = true, timers = window } = {}) {
     const shells = Object.fromEntries([...ZONES, ...CREW].map((key) => [key, zoneShell(key)]));
-    const row = soloRow(shells);
+    let row = soloRow(shells);
+    const banner = el("p", { class: "viz-op", hidden: true });
+    let tied = svg("svg", { class: "tethers" });
     const legend = el("ul", { class: "legend" }, LEGEND.map((state) => el("li", { "data-state": state }, t(`zones.legend.${state}`))));
-    const element = el("section", { class: "viz px", "aria-label": t("zones.label") }, row, legend);
+    const chartKey = el("p", { class: "chart-key", hidden: true }, el("span", { class: "chart-key-tether", "aria-hidden": "true" }), t("zones.chart.shared"));
+    const element = el("section", { class: "viz px", "aria-label": t("zones.label") }, banner, row, legend, chartKey, tied);
     let drawn = null;
     let last = null;
     let crew = false;
-    let alone = false;
+    let mode = "zones";
 
-    /* Two stations while the level has a teammate, else the row of four. */
+    /* Two stations while the level has a teammate and the mode shows them, else the row of four. */
     function arrange(withCrew) {
+      element.classList.toggle("is-chart", mode === "chart");
       if (withCrew === crew) return;
-      element.firstChild.replaceWith(withCrew ? crewRows(shells) : soloRow(shells));
+      const next = withCrew ? crewRows(shells) : soloRow(shells);
+      row.replaceWith(next);
+      row = next;
       element.classList.toggle("is-crew", withCrew);
       crew = withCrew;
     }
 
+    /* The chart's tethers, redrawn where the rows now stand; none outside the chart. */
+    function tether() {
+      const next = mode === "chart" ? tethers(element, shells.vault, shells.remote) : svg("svg", { class: "tethers" });
+      tied.replaceWith(next);
+      tied = next;
+      chartKey.hidden = !next.querySelector("line");
+    }
+
+    /* A merge (or rebase, cherry-pick...) stopped halfway is said over the vault, or over the
+       whole chart, so the chart's two sides keep their rows level. */
+    function sayPaused(operation) {
+      const chart = mode === "chart";
+      shells.vault.operation.hidden = !operation || chart;
+      shells.vault.operation.replaceChildren(...pausedLine(operation));
+      banner.hidden = !operation || !chart;
+      banner.replaceChildren(...pausedLine(operation));
+    }
+
     function draw(zones) {
-      const filled = contents(zones);
+      const filled = contents(zones, mode);
       for (const key of crew ? [...ZONES, ...CREW] : ZONES) {
         const shell = shells[key];
         const zone = filled[key];
@@ -301,21 +358,22 @@ const ZonePanel = (function () {
         if (unnamed) body = [say("zones.unnamed.remote"), say("zones.remote.where")];
         shell.body.replaceChildren(...body);
       }
-      /* A merge (or rebase, cherry-pick...) stopped halfway is said over the vault. */
-      const paused = shells.vault.operation;
-      paused.hidden = !zones.operation;
-      paused.replaceChildren(...(zones.operation ? [ArtSprites.icon("merging"), t("zones.paused", { operation: zones.operation })] : []));
+      sayPaused(zones.operation);
+      element.classList.toggle("no-mothership", zones.remote === null);
+      tether();
     }
+
+    if (typeof ResizeObserver === "function") new ResizeObserver(() => tether()).observe(element);
 
     return {
       element,
 
-      /* Keeps to your row of four even with a teammate (the black box view), or gives the two
-         stations back. */
-      solo(on) {
-        alone = on;
+      /* "zones", "row" (your row of four even with a teammate: the black box view) or "chart"
+         (history). */
+      mode(name) {
+        mode = name;
         if (!last) return;
-        arrange(Boolean(last.crew) && !alone);
+        arrange(Boolean(last.crew) && mode === "zones");
         draw(last);
         drawn = JSON.stringify(last);
       },
@@ -326,7 +384,7 @@ const ZonePanel = (function () {
         const before = places(element);
         const moves = last && Zones.moves(last, zones, Typed.gitCommands(observation.commands), Typed.failedGitCommands(observation.commands));
         last = zones;
-        arrange(Boolean(zones.crew) && !alone);
+        arrange(Boolean(zones.crew) && mode === "zones");
         if (text !== drawn) draw(zones);
         drawn = text;
         if (moves) animate(element, shells, moves, before, { reducedMotion, timers });

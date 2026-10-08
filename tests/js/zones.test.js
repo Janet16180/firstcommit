@@ -308,3 +308,18 @@ test("the mothership is named once the repository knows origin, and naming it wa
   assert.equal(Zones.read(observe(snapshot({ exists: true, remotes: [{ name: "origin", url: "../github/project.git" }] }), github)).named, true);
   assert.deepEqual(Zones.moves(model({ remote: [], named: false }), model({ remote: [], named: true }), ["remote"]).wake, ["remote"]);
 });
+
+/* A drawn capsule, as read() gives it: only its hash and parents matter to the rows. */
+const drawn = (hash, parents = []) => ({ hash, parents });
+
+test("the chart's rows are both histories together, children first: a commit both hold has one row, one only a side holds has its own", () => {
+  const vault = [drawn("mine", ["shared2"]), drawn("shared2", ["shared1"]), drawn("shared1")];
+  const remote = [drawn("theirs", ["shared2"]), drawn("shared2", ["shared1"]), drawn("shared1")];
+  const rows = Zones.rows(vault, remote);
+  assert.deepEqual([...rows], [["mine", 0], ["theirs", 1], ["shared2", 2], ["shared1", 3]]);
+});
+
+test("without a mothership the chart's rows are the vault's own", () => {
+  const rows = Zones.rows([drawn("c2", ["c1"]), drawn("c1")], null);
+  assert.deepEqual([...rows], [["c2", 0], ["c1", 1]]);
+});

@@ -782,14 +782,17 @@ pre.code code {
 }
 
 /* The station strip: each zone folded into one card, in the zone's colour. */
+/* Each strip opens with whose station it is. */
 .strip {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
 .strip-card {
   --zc: var(--z-wd);
+  flex: 1 1 150px;
+  min-width: 0;
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 4px 8px;
@@ -841,10 +844,19 @@ pre.code code {
   background: var(--panel);
 }
 
+/* A file's tag, a small pill in its state's colour, as the zones tag files. */
 .strip-tag {
-  margin-left: 4px;
+  --st: var(--s-mod);
+  margin-left: 6px;
+  padding: 0 4px;
   font-size: 0.8rem;
-  color: var(--s-mod);
+  color: var(--ink);
+  background: color-mix(in srgb, var(--st) 22%, var(--panel));
+  border: 1px solid var(--st);
+}
+
+.strip-tag[data-state="conflicted"] {
+  --st: var(--s-new);
 }
 
 .strip-capsule {
@@ -930,56 +942,195 @@ pre.code code {
   padding: 12px 12px 0;
 }
 
-/* History: your station's workshop and dock folded into the strip above, the vault and the
-   mothership left on the stage. */
-.sky[data-view="history"] .viz-row > :nth-child(-n + 4),
-.sky[data-view="history"] .station-row > :not([data-zone$="vault"]),
-.sky[data-view="history"] .legend {
+/* History: the strip keeps only what folded into it (the workshop and the dock); the vault and
+   the mothership are on the stage as the chart, so their cards leave the strip, except while
+   the vault's card unrolls into the chart (art-style.css). */
+.sky[data-view="history"]:not(.art-birth-unroll) > .strip:not(.is-band) .strip-card:is([data-zone="vault"], [data-zone="remote"]) {
   display: none;
-}
-
-.sky[data-view="history"] .viz-row {
-  grid-template-columns: minmax(0, 1fr) 42px minmax(0, 1fr);
-}
-
-.sky[data-view="history"] .station .station-row {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-/* In a crew level Alex's station leaves the stage for the band above it. */
-.sky[data-view="history"] .station.is-mirror,
-.sky[data-view="history"] .flow.is-mirror {
-  display: none;
-}
-
-.sky[data-view="history"] .viz-crew {
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  grid-template-areas: "you sky";
-}
-
-/* The crew band: Alex's station folded thinner than yours, named for them. */
-.strip.is-band {
-  grid-template-columns: auto repeat(3, minmax(0, 1fr));
-  align-items: center;
-  gap: 6px;
-}
-
-.strip.is-band .strip-card {
-  padding: 2px 6px;
-  border-width: 2px;
-  opacity: 0.85;
 }
 
 .strip-who {
-  font: 700 0.8rem var(--f-ui);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font: 700 0.85rem var(--f-ui);
+  white-space: nowrap;
+}
+
+.strip-who .art-icon {
+  width: 18px;
+  height: 18px;
+}
+
+/* The crew band: Alex's station folded thinner than yours, one muted dashed line, so it reads as
+   theirs and secondary at a glance. */
+.strip.is-band {
+  display: grid;
+  grid-template-columns: auto repeat(3, minmax(0, 1fr));
+  align-items: center;
+  gap: 6px;
+  margin: 0 12px;
+  padding: 4px 8px;
+  border: 2px dashed color-mix(in srgb, var(--ink) 35%, transparent);
+}
+
+.strip.is-band .strip-card {
+  grid-template-columns: auto auto minmax(0, 1fr);
+  align-items: center;
+  padding: 1px 6px;
+  border-width: 2px;
+  opacity: 0.8;
+}
+
+.strip.is-band .strip-items {
+  grid-column: auto;
+  flex-wrap: nowrap;
+  overflow: hidden;
+}
+
+.strip.is-band .strip-name,
+.strip.is-band .strip-who {
+  font-size: 0.78rem;
   color: var(--ink-soft);
 }
 
-.sky > .strip.is-band {
-  padding: 8px 12px 0;
+.strip.is-band .strip-file {
+  font-size: 0.85rem;
 }
 
+.sky > .strip.is-band {
+  margin-top: 8px;
+}
+
+/* On a phone each strip's name takes its own line above the cards. */
+@media (max-width: 640px) {
+  .strip-who {
+    flex-basis: 100%;
+  }
+
+  .strip.is-band {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .strip.is-band .strip-who {
+    grid-column: 1 / -1;
+  }
+}
+
+/* History's chart (zone-panel.js, mode "chart"): the vault and the mothership side by side,
+   rows level across, push and pull at the top between them; the panel grows with the history
+   rather than scrolling it, so every capsule keeps its message in sight. */
+.viz.is-chart .viz-row > .zone[data-zone="workshop"],
+.viz.is-chart .viz-row > .flow,
+.viz.is-chart .zone[data-zone="dock"],
+.viz.is-chart .zone[data-zone="dock"] + .flow,
+.viz.is-chart .legend {
+  display: none;
+}
+
+.viz.is-chart .viz-row {
+  grid-template-columns: minmax(0, 1fr) 84px minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.viz.is-chart .zone {
+  min-height: 0;
+}
+
+/* A level with no mothership: the chart is your vault alone. */
+.viz.is-chart.no-mothership .viz-row {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.viz.is-chart.no-mothership .zone[data-zone="remote"],
+.viz.is-chart.no-mothership .zone[data-zone="vault"] + .flow {
+  display: none;
+}
+
+.viz.is-chart .z-body {
+  max-height: none;
+  overflow: visible;
+}
+
+.viz.is-chart .flow {
+  justify-content: flex-start;
+  padding-top: 14px;
+  gap: 10px;
+}
+
+.viz.is-chart .fl span {
+  writing-mode: horizontal-tb;
+  transform: none;
+}
+
+/* A gap is a row this side does not hold: the other side has a commit there. */
+.cap-gap {
+  height: var(--row, 40px);
+}
+
+/* A commit both sides hold: its row is tinted on each side, and a tether ties the two. */
+.viz.is-chart .cap.is-shared {
+  background: color-mix(in srgb, var(--z-re) 9%, transparent);
+}
+
+.tethers {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.tethers line {
+  stroke: var(--z-re);
+  stroke-width: 3;
+  stroke-dasharray: 6 4;
+}
+
+/* The chart's key, under it in place of the zones' legend: what a tether means. */
+.chart-key {
+  display: none;
+  align-items: center;
+  gap: 8px;
+  margin: 10px 2px 0;
+  font-size: 0.82rem;
+  color: var(--ink-soft);
+}
+
+.viz.is-chart .chart-key:not([hidden]) {
+  display: flex;
+}
+
+.chart-key-tether {
+  width: 28px;
+  border-top: 3px dashed var(--z-re);
+}
+
+/* A paused merge (or rebase...) is said over the whole chart, where it cannot be missed. */
+.viz-op {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 6px 10px;
+  font: 700 1rem var(--f-ui);
+  color: var(--ink);
+  background: color-mix(in srgb, var(--s-mod) 22%, var(--panel));
+  border: 3px solid var(--s-mod);
+}
+
+.viz-op[hidden] {
+  display: none;
+}
+
+.viz-op .art-icon {
+  width: 22px;
+  height: 20px;
+}
+
+/* Positioned, so the chart's tethers (zone-panel.js) can be drawn over it. */
 .viz {
+  position: relative;
   grid-area: viz;
   padding: 12px 12px 10px;
 }
@@ -2022,7 +2173,7 @@ pre.code code {
     gap: 10px;
   }
 
-  .sky[data-view="history"] .viz-row {
+  .viz.is-chart .viz-row {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 
@@ -2039,11 +2190,6 @@ pre.code code {
   .viz-crew {
     grid-template-columns: minmax(0, 1fr) minmax(0, 0.6fr);
     grid-template-areas: "sky sky" "you alex";
-  }
-
-  .sky[data-view="history"] .viz-crew {
-    grid-template-columns: minmax(0, 1fr);
-    grid-template-areas: "sky" "you";
   }
 
   .crew-sky {

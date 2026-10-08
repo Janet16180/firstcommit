@@ -25,6 +25,10 @@
  * - crew: the teammate's station, read from their clone like yours, {repository, workshop, ignored, dock,
  *   vault}, or null when the level has no teammate.
  *
+ * rows(vault, remote) gives the history chart's rows: a Map from each commit's hash to its row, over
+ * both histories together (a reading's `vault` and `remote`, the latter possibly null), children
+ * before parents, so a commit both hold has one row and one that only a side holds has its own.
+ *
  * moves(before, after, typed, refused) says how to animate the change between two such readings:
  * - lit: the arrows to light ("add", "commit", "push", "pull");
  * - flights: the items that fly, {from, to}, each a key: "<zone>:<path or hash>" for a file or
@@ -148,6 +152,12 @@ const Zones = (function () {
     return { ...station(project), operation: project.operation, remote: github ? commits(github, false) : null, named: project.remotes.some((remote) => remote.name === "origin"), crew: teammate ? station(teammate) : null };
   }
 
+  function rows(vault, remote) {
+    const known = new Set(vault.map((commit) => commit.hash));
+    const both = [...vault, ...(remote || []).filter((commit) => !known.has(commit.hash))];
+    return new Map(topological(both).map((commit, index) => [commit.hash, index]));
+  }
+
   /* Each kind of move: the git commands that make it, its arrow, and its flights between two readings. */
   const MOVES = [
     { kind: "add", commands: ["add", "commit", "stage"], arrow: "add", flights: (before, after) => newOnDock(before, after).map((path) => [`workshop:${path}`, `dock:${path}`]) },
@@ -229,5 +239,5 @@ const Zones = (function () {
     return { lit, flights: unique, wake, fades, appears: fresh.filter((key) => !reverts.has(key)), bounces: bounced(after, refused), cracks: cracked(before, after), rises: fresh.filter((key) => reverts.has(key)) };
   }
 
-  return { read, moves };
+  return { read, rows, moves };
 })();

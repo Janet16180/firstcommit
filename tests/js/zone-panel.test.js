@@ -380,14 +380,14 @@ test("the places Git keeps, the dock, the vault and the mothership, are grouped 
 test("with a teammate, the panel can keep to your row of four, the black box group in it, and give the stations back", () => {
   const panel = ZonePanel.create();
   panel.update(crewObservation());
-  panel.solo(true);
+  panel.mode("row");
   assert.equal(panel.element.querySelector(".station"), null);
   assert.ok(!panel.element.classList.contains("is-crew"));
   assert.deepEqual([...panel.element.querySelectorAll(".viz-kept .zone")].map((node) => node.dataset.zone), ["dock", "vault", "remote"]);
   assert.ok(zone(panel, "vault").querySelector(".cap"));
   panel.update(crewObservation());
   assert.equal(panel.element.querySelector(".station"), null);
-  panel.solo(false);
+  panel.mode("zones");
   assert.deepEqual([...panel.element.querySelectorAll(".station")].map((node) => node.dataset.station), ["you", "alex"]);
 });
 
@@ -395,7 +395,7 @@ test("keeping to your row, the panel lets Alex's push go by without the arrows i
   const panel = ZonePanel.create({ reducedMotion: true, timers: createClock() });
   const before = crewObservation();
   panel.update(before);
-  panel.solo(true);
+  panel.mode("row");
   const tip = before.teammate.commits[0];
   const pushed = { ...tip, hash: "f".repeat(40), short: "fffffff", parents: [tip.hash], subject: "Alex's fix" };
   const after = structuredClone(before);
@@ -405,4 +405,101 @@ test("keeping to your row, the panel lets Alex's push go by without the arrows i
   after.github.refs = after.github.refs.map((ref) => (ref.target === tip.hash ? { ...ref, target: pushed.hash } : ref));
   panel.update(after);
   assert.ok(keyed(zone(panel, "remote"), `remote:${pushed.hash}`));
+});
+
+/* The sample crew level's vault holds its first commit; the mothership holds it and Alex's next one. */
+const rowsOf = (panel, name) => [...zone(panel, name).querySelector(".caps").children].filter((row) => !row.classList.contains("links")).map((row) => (row.classList.contains("cap-gap") ? "gap" : row.dataset.key.split(":")[1].slice(0, 7)));
+
+test("history's chart keeps to your row and lines up the vault and the mothership by commit, a gap where a side lacks one", () => {
+  const panel = ZonePanel.create();
+  panel.update(crewObservation());
+  panel.mode("chart");
+  assert.equal(panel.element.querySelector(".station"), null);
+  assert.ok(panel.element.classList.contains("is-chart"));
+  assert.deepEqual(rowsOf(panel, "vault"), ["gap", "de4c885"]);
+  assert.deepEqual(rowsOf(panel, "remote"), ["21e6785", "de4c885"]);
+  assert.match(zone(panel, "vault").querySelector(".caps").getAttribute("style"), /--row:40px/);
+  panel.mode("zones");
+  assert.ok(!panel.element.classList.contains("is-chart"));
+  assert.deepEqual(rowsOf(panel, "vault"), ["de4c885"]);
+});
+
+test("in the chart a commit both sides hold is marked shared on each side and tethered across, once", () => {
+  const panel = ZonePanel.create();
+  panel.update(crewObservation());
+  panel.mode("chart");
+  const shared = (name) => [...zone(panel, name).querySelectorAll(".cap.is-shared")].map((row) => row.dataset.key.split(":")[1].slice(0, 7));
+  assert.deepEqual(shared("vault"), ["de4c885"]);
+  assert.deepEqual(shared("remote"), ["de4c885"]);
+  const tethers = [...panel.element.querySelectorAll("svg.tethers line")];
+  assert.deepEqual(tethers.map((line) => line.dataset.hash.slice(0, 7)), ["de4c885"]);
+  panel.mode("zones");
+  assert.equal(panel.element.querySelectorAll(".cap.is-shared, svg.tethers line").length, 0);
+});
+
+test("the chart says a paused merge over the whole chart, not inside the vault, so both sides' rows stay level", () => {
+  const project = { ...record("snapshots").one, operation: "merge", files: [{ ...record("snapshots").one.files[0], conflicted: true, index_change: "modified" }] };
+  const panel = ZonePanel.create();
+  panel.update(observe(project));
+  const banner = panel.element.querySelector(".viz-op");
+  assert.equal(banner.hidden, true);
+  panel.mode("chart");
+  assert.equal(banner.hidden, false);
+  assert.equal(banner.textContent, "merge paused");
+  assert.ok(banner.querySelector("svg.art-icon--merging"));
+  assert.equal(zone(panel, "vault").querySelector(".z-op").hidden, true);
+  panel.mode("zones");
+  assert.equal(banner.hidden, true);
+  assert.equal(zone(panel, "vault").querySelector(".z-op").hidden, false);
+});
+
+test("a push in the chart flies the capsule across to its own row on the mothership", () => {
+  const proto = Object.getPrototypeOf(document.createElement("div"));
+  const sized = proto.getBoundingClientRect;
+  proto.getBoundingClientRect = () => ({ x: 0, y: 0, top: 0, left: 0, width: 10, height: 10, right: 10, bottom: 10 });
+  proto.animate = () => ({ finished: new Promise(() => {}) });
+  /* A shallow copy is enough here: the test looks only at which item flies. */
+  proto.cloneNode = function () {
+    const copy = document.createElement(this.tagName.toLowerCase());
+    copy.setAttribute("data-key", this.dataset.key);
+    return copy;
+  };
+  try {
+    const panel = ZonePanel.create({ reducedMotion: false, timers: createClock() });
+    const project = { ...named(record("snapshots").one), head: "c2", branch: "main", commits: [capsuleCommit("c2", ["c1"]), capsuleCommit("c1")], refs: [{ name: "main", kind: "branch", target: "c2" }] };
+    const github = { ...record("snapshots").one, bare: true, head: "c1", branch: "main", commits: [capsuleCommit("c1")], refs: [{ name: "main", kind: "branch", target: "c1" }] };
+    panel.update(observe(project, github));
+    panel.mode("chart");
+    assert.deepEqual(rowsOf(panel, "remote"), ["gap", "c1"]);
+    panel.update({ ...observe(project, { ...github, head: "c2", commits: project.commits, refs: project.refs }), commands: [{ line: "git push", status: 0 }] });
+    assert.deepEqual(rowsOf(panel, "remote"), ["c2", "c1"]);
+    const flown = [...document.body.querySelectorAll(".ghost")].map((ghost) => ghost.dataset.key).filter((key) => !key.includes("-ref:"));
+    assert.deepEqual(flown, ["vault:c2"]);
+  } finally {
+    proto.getBoundingClientRect = sized;
+    delete proto.animate;
+    delete proto.cloneNode;
+    for (const ghost of document.body.querySelectorAll(".ghost")) ghost.remove();
+  }
+});
+
+test("under the chart a key says what the tethers mean, once there is one to see", () => {
+  const panel = ZonePanel.create();
+  const key = panel.element.querySelector(".chart-key");
+  assert.equal(key.textContent, "Dashed line: the same commit, in your vault and on the mothership.");
+  assert.ok(key.querySelector(".chart-key-tether"));
+  panel.update(observe(record("observation").project));
+  panel.mode("chart");
+  assert.equal(key.hidden, true);
+  panel.update(crewObservation());
+  assert.equal(key.hidden, false);
+});
+
+test("in a level with no mothership the chart is your vault alone; a mothership not named yet stays on it", () => {
+  const panel = ZonePanel.create();
+  panel.update(observe(record("observation").project));
+  panel.mode("chart");
+  assert.ok(panel.element.classList.contains("no-mothership"));
+  panel.update(observe(record("observation").project, record("snapshots").one));
+  assert.ok(!panel.element.classList.contains("no-mothership"));
 });

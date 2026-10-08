@@ -39,6 +39,9 @@ const LevelScreen = (function () {
   const TAPED = ["history", "blackbox"];
   /* The views that show your station unfolded, so the strip stays away. */
   const UNFOLDED = ["station", "crew", "blackbox"];
+  /* How the zones lay out on each view (zone-panel.js): history is the chart, the black box keeps
+     to your row; every other view shows the zones as they are. */
+  const ZONE_MODES = { history: "chart", blackbox: "row" };
   const SAY = { preparing: "level.preparing", start: "level.start", down: "level.down", back: "level.back", hint: "level.hint", ended: "level.ended", partMet: "level.partMet", predictFirst: "level.predictFirst" };
 
 
@@ -102,7 +105,7 @@ const LevelScreen = (function () {
     const boxed = view === "blackbox";
     ui.strip.element.hidden = !folded;
     ui.band.element.hidden = !(folded || boxed) || !screen.crew;
-    ui.zones.solo(boxed);
+    ui.zones.mode(ZONE_MODES[view] || "zones");
     ui.sides.element.hidden = view !== "sides";
     ui.tape.element.hidden = !screen.taped || !TAPED.includes(view);
     ui.tabs.select(view);
