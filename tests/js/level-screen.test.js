@@ -436,6 +436,16 @@ test("a challenge's goals tick in the order they are met", async () => {
   run.view.dispose();
 });
 
+test("in a challenge a met goal ticks, and Rama only says a part is in place, never what comes next", async () => {
+  const level = { ...seenLevel(), challenge: true, card: null };
+  const run = screen({ active: { ...record("active"), step: 0, done: [] }, replies: { "/api/level": level, "/api/step": { ...correct(1), done: ["stage"], message: para("The next goal is not met yet.") } } });
+  await settle();
+  assert.ok(run.seen.sounds.includes("goal"));
+  assert.equal(run.q(".comms-text").textContent, "One part of the end state is in place.");
+  assert.equal(run.q(".comms").dataset.mood, "ok");
+  run.view.dispose();
+});
+
 test("a solved challenge docks in gold", async () => {
   const level = { ...seenLevel(), challenge: true, card: null };
   const run = screen({ active: { ...record("active"), step: 3, auto_check: true }, replies: { "/api/level": level, "/api/check": record("check_solved") } });

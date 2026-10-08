@@ -23,7 +23,7 @@
 const LevelScreen = (function () {
   const { el } = Dom;
   const { t } = Strings;
-  const SAY = { preparing: "level.preparing", start: "level.start", down: "level.down", back: "level.back", hint: "level.hint", ended: "level.ended" };
+  const SAY = { preparing: "level.preparing", start: "level.start", down: "level.down", back: "level.back", hint: "level.hint", ended: "level.ended", partMet: "level.partMet" };
 
 
   function hud(screen) {
@@ -117,7 +117,9 @@ const LevelScreen = (function () {
 
   /* A quest step's result. A watch step polled without the player shows its message quietly: it
      says what to do next, it is not the player's mistake. A passed step's message is said in
-     `mood`: pleased for a goal met, neutral for a prediction's reveal (any answer passes). */
+     `mood`: pleased for a goal met, neutral for a prediction's reveal (any answer passes). In a
+     challenge Rama speaks only of danger and errors, so a met goal is said without its message,
+     which could tell what comes next; saying it still clears an error the player has fixed. */
   function stepped(screen, result, watched = false, mood = "ok") {
     const { ui, state, ctx } = screen;
     if (!result.correct && watched) screen.mission.note(result.message);
@@ -129,7 +131,7 @@ const LevelScreen = (function () {
     state.step = result.step;
     state.done = result.done;
     state.auto_check = result.quest_done;
-    ui.comms.say(result.message, mood);
+    ui.comms.say(screen.level.challenge ? t(SAY.partMet) : result.message, mood);
     ctx.sound.play("goal");
     screen.mission.setStep(state.step, state.done);
   }
