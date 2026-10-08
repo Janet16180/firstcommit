@@ -749,3 +749,18 @@ push (Rama's error, lost), and a hard reset to the mothership (the checklist los
 | debrief | the second push bounces, one more pull joins Alex's new commit without a conflict | E96 |
 | `ALEX_DROPPED`, `FORCED` (lost) | a forced push drops Alex's commits from the mothership | E68 |
 | `CHECKLIST_LOST` (lost) | `git reset --hard origin/main` leaves the checklist in no commit a ref reaches | the level's test |
+
+### Deck `conflict`
+
+Checked the same way as the vault deck: each `verify` snippet and the predict card's `code` run
+in `tests/test_decks.py`.
+
+| Card | Claim | Evidence |
+|---|---|---|
+| `conflict-fast-forward` | nothing new on `main`: the merge slides the label, no commit | `verify`; E83 |
+| `conflict-two-parents` | both moved on: a merge commit with two parents keeps both changes | `verify`; E84 |
+| `conflict-markers` | line 2 of the conflicted file is your side; the common version is not shown | `code` and `correct`; E86 |
+| `conflict-abort` | `--abort` goes back to before the merge; commit or stash first | `verify`; E91; git-merge(1) `--abort` |
+| `conflict-add-solves` | the file stays unmerged until `git add` | `verify`; E88 |
+| `conflict-add-markers` | `git add` takes markers and all, and marks the conflict solved | `verify`; E90 |
+| notes | as the cards above, plus `--no-edit` and the editor | E85 |
