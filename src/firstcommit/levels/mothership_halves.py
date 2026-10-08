@@ -7,16 +7,11 @@ owns ``engine.cfg``. Alex has already committed the engines, and your navigation
 not committed. The goals: your half committed, then pushed; and your ``main`` holding Alex's
 work, with both halves, after a pull. That pull plays the launch moment.
 
-Alex pushes as soon as your navigation reaches the mothership: the stand-in GitHub's
-``post-receive`` hook has Alex pull it in, which joins the two halves in a merge commit, and push,
-silently and before your ``git push`` returns. So your next ``git pull`` always brings the whole
-ship, however fast the hint's lines are typed (a level event ran only when the page next checked
-the goals). The hook runs once, and only for a push that holds your navigation. It runs for a
-push from your playground button too: git clears the game's ``GIT_CONFIG_COUNT`` settings, which
-turn hooks off, for the receiving side of a local push.
+Alex pushes as soon as your navigation reaches the mothership (`kit.on_push`): Alex pulls it in,
+which joins the two halves in a merge commit, and pushes, before your ``git push`` returns. So
+your next ``git pull`` always brings the whole ship, however fast the hint's lines are typed.
 """
 
-import shlex
 from collections.abc import Callable
 from pathlib import Path
 
@@ -94,19 +89,6 @@ REACTIONS = [
 ]
 
 
-ALEX_PUSHES = """#!/bin/sh
-unset $(git rev-parse --local-env-vars)
-[ "$(git --git-dir={github} show main:{nav})" = {your_half} ] || exit 0
-rm -f "$0"
-git -C {teammate} pull -q --no-rebase --no-edit && git -C {teammate} push -q
-"""
-"""
-The stand-in GitHub's ``post-receive`` hook: once main holds your navigation, Alex pulls and pushes.
-
-It runs inside your push, with the hook's ``GIT_DIR`` and the other repository-local variables
-unset first so Alex's git works in Alex's clone; it removes itself before Alex pushes, so Alex's
-push does not run it again.
-"""
 
 
 
@@ -239,11 +221,7 @@ def setup(lab: kit.Lab) -> kit.State:
     (lab.teammate / ENGINE).write_text(ALEX_HALF)
     kit.git(lab.teammate, "commit", "-q", "-am", "Set the engines", author=ALEX, when="2026-06-21T09:00:00+00:00")
     (lab.project / NAV).write_text(YOUR_HALF)
-    hook = lab.github / "hooks" / "post-receive"
-    hook.parent.mkdir(exist_ok=True)
-    quoted = {name: shlex.quote(str(path)) for name, path in (("github", lab.github), ("teammate", lab.teammate))}
-    hook.write_text(ALEX_PUSHES.format(**quoted, nav=NAV, your_half=shlex.quote(YOUR_HALF.strip())))
-    hook.chmod(0o755)
+    kit.on_push(lab, NAV, YOUR_HALF, ["git pull -q --no-rebase --no-edit", "git push -q"])
     return {"alex": kit.git(lab.teammate, "rev-parse", "HEAD").strip()}
 
 

@@ -68,6 +68,10 @@ the forms that must not appear in any Spanish text.
 | flight recorder | el registro de vuelo |
 | black box | la caja negra |
 | airlock | la esclusa |
+| the chain (the picture of commits) | la cadena |
+| name tag (a branch, as the chain draws it) | la etiqueta |
+| bookmark (`origin/main`) | el marcador |
+| the move log (`git reflog`) | el log de movimientos |
 
 ## Style
 

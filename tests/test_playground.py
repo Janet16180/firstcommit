@@ -1,3 +1,4 @@
+import os
 import shutil
 import stat
 import subprocess
@@ -62,6 +63,46 @@ def test_each_clone_tells_a_newer_git_never_to_bring_origin_head_back_on_a_fetch
     with new_lab() as lab:
         for person in PEOPLE:
             assert gitcmd.output(clone(lab, person), "config", "--local", "remote.origin.followRemoteHEAD").strip() == "never"
+
+
+def test_githubs_first_commit_has_a_fixed_date_so_it_is_the_same_commit_in_every_playground() -> None:
+    with new_lab() as lab:
+        assert gitcmd.output(lab.github, "log", "-1", "--format=%aI %cI", "main").split() == [playground.START_DATE] * 2
+
+
+def push_line(lab: Lab, line: str) -> subprocess.CompletedProcess[str]:
+    """
+    Run one line in your clone as the player's shell would, hooks and all.
+
+    Parameters
+    ----------
+    lab : Lab
+        The lab.
+    line : str
+        The line.
+
+    Returns
+    -------
+    subprocess.CompletedProcess[str]
+        What ran, its output and its errors.
+    """
+    env = {**gitcmd.shell_environment(os.environ, save.home()), "HOME": str(save.home())}
+    return subprocess.run(["bash", "--noprofile", "--norc", "-c", line], cwd=lab.project, env=env, capture_output=True, text=True, check=True)
+
+
+def test_alex_runs_their_lines_inside_the_push_that_brings_the_awaited_file_once_and_silently() -> None:
+    with new_lab() as lab:
+        playground.on_push(lab, "notes.txt", "Notes\nYou: line 2\n", ["git pull -q", "echo x > alex.txt", "git add alex.txt", 'git commit -q -m "Alex adds a file"', "git push -q"])
+        presses(lab, "you", "edit:README.md", "add:README.md", "commit")
+        push_line(lab, "git push -q")
+        assert gitcmd.output(lab.teammate, "log", "-1", "--format=%s").strip() == "Start the project"
+        presses(lab, "you", *COMMIT_NOTES)
+        pushed = push_line(lab, "git push")
+        assert "remote:" not in pushed.stdout + pushed.stderr
+        assert gitcmd.output(lab.github, "log", "-1", "--format=%an %s", "main").strip() == "Alex Alex adds a file"
+        presses(lab, "you", "edit:README.md", "add:README.md", "commit")
+        push_line(lab, "git pull -q --no-rebase --no-edit && git push -q")
+        assert gitcmd.output(lab.github, "log", "-1", "--format=%an", "main").strip() == PLAYER.name
 
 
 def test_only_alexs_clone_has_an_identity_of_its_own() -> None:

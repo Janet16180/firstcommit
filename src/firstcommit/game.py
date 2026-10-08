@@ -75,12 +75,15 @@ from firstcommit.records import (
     Command,
     Commit,
     Conflict,
+    FileTexts,
     Language,
     Moment,
     Mood,
+    Pictures,
     Press,
     ReflogEntry,
     Seen,
+    Target,
     View,
     Who,
 )
@@ -222,6 +225,8 @@ class StepView(TypedDict):
 
     ``question`` is empty unless it is an answer or a choice step; ``placeholder`` is empty unless
     it is an answer step; ``choices`` are a choice step's options, empty for every other kind.
+    ``look`` names what the page rings in gold while the step is current: commit subjects or
+    ``"HEAD"``, empty for most steps.
     """
 
     id: str
@@ -232,6 +237,7 @@ class StepView(TypedDict):
     placeholder: str
     choices: list[Choice]
     more: list[Block]
+    look: list[str]
 
 
 class Solution(TypedDict):
@@ -260,7 +266,9 @@ class LevelView(TypedDict):
     finished the level, filled from its last play, so it shows even when the level was solved
     from the terminal. ``scene`` is empty for a level without one; ``scene_seen`` says whether
     the player has seen it (`see_scene`). ``view`` is the view the level screen opens on, ``tape`` says whether it shows the black box's
-    tape of HEAD's moves (`Observation` ``reflog``), and
+    tape of HEAD's moves (`Observation` ``reflog``), ``pictures`` the teaching pictures the level
+    shows and ``target`` a challenge's target chart (`firstcommit.records.Pictures`, `Target`),
+    each None for a level that keeps its view and tabs, and
     ``solution`` is None unless dev mode is on and the level is in progress (`Solution`).
     ``views_seen`` every view (and the band) the page has shown being born, in the order seen
     (`see_view`), your station from the start, the same for every level. ``challenge`` marks a level whose goals are met in any
@@ -280,6 +288,8 @@ class LevelView(TypedDict):
     scene_seen: bool
     view: View
     tape: bool
+    pictures: Pictures | None
+    target: Target | None
     views_seen: list[Seen]
     solution: Solution | None
     card: CommandCard | None
@@ -359,7 +369,11 @@ class Observation(TypedDict):
     ``conflicts`` gives both sides of each file in conflict in the player's repository
     (`firstcommit.repomap.conflicts`), empty when there is none. ``reflog`` gives HEAD's moves in
     the player's repository, newest first (`firstcommit.repomap.reflog`), and ``ghosts`` the
-    commits only those moves still reach (`firstcommit.repomap.ghosts`).
+    commits only those moves still reach (`firstcommit.repomap.ghosts`). ``texts`` are the
+    folder's and the staging area's texts of the files the level's desk draws
+    (`firstcommit.repomap.file_texts`), empty for a level without; ``graph`` the lines of
+    ``git log --oneline --graph --all`` (`firstcommit.repomap.graph`), None unless the level shows
+    it.
     """
 
     level: str
@@ -374,6 +388,8 @@ class Observation(TypedDict):
     conflicts: list[Conflict]
     reflog: list[ReflogEntry]
     ghosts: list[Commit]
+    texts: list[FileTexts]
+    graph: list[str] | None
 
 
 class PressView(TypedDict):
@@ -563,6 +579,8 @@ def level(level_id: str) -> LevelView:
         "scene_seen": entry.id in progress["scenes"],
         "view": entry.view,
         "tape": entry.tape,
+        "pictures": entry.pictures,
+        "target": entry.target,
         "views_seen": progress["views"],
         "solution": _solution(entry, state) if dev_mode() and playing is not None else None,
         "card": _command_card(entry, language) if finished is not None or not entry.challenge else None,
@@ -925,7 +943,7 @@ def observe() -> Observation:
         else:
             now, typed = _look(entry.id, lab, last, active["typed"])
         messages = _messages(entry, _language())
-        observation = _lost_over_pleased(_observation(last, now, _buttons(lab, now), lab.project, typed, _rules(entry), messages), _loss(entry, active, lab, messages))
+        observation = _lost_over_pleased(_observation(last, now, _buttons(lab, now), lab.project, typed, _rules(entry), messages, entry.pictures), _loss(entry, active, lab, messages))
         if now != last:
             save.write_observed(now)
     return observation
@@ -979,12 +997,12 @@ def press(person: str, button: str) -> PressView:
         active = _catch_up(active)
         messages = _messages(entry, _language())
         then, typed_before = _look(entry.id, lab, last, active["typed"])
-        before = _observation(last, then, _buttons(lab, then), lab.project, typed_before, _rules(entry), messages)
+        before = _observation(last, then, _buttons(lab, then), lab.project, typed_before, _rules(entry), messages, entry.pictures)
         facts = playground.facts(lab, who, _clones(then)[who], then["github"])
         pressed = playground.press(lab, who, which)
         active = _catch_up(active)
         now, typed_during = _look(entry.id, lab, then, active["typed"])
-        observation = _observation(then, now, _buttons(lab, now), lab.project, typed_during, _rules(entry), messages)
+        observation = _observation(then, now, _buttons(lab, now), lab.project, typed_during, _rules(entry), messages, entry.pictures)
         if now != last:
             save.write_observed(now)
     found = explanations.explain(pressed, _clones(then)[who], _clones(now)[who], facts, playground.BUTTON_IDS)
@@ -1472,6 +1490,7 @@ def _observation(
     typed: list[Command],
     rules: tuple[ReactionRule, ...],
     messages: Mapping[str, str],
+    pictures: Pictures | None,
 ) -> Observation:
     """
     Tell what changed in a lab between two observations, and what Rama says about the lines typed in between.
@@ -1492,6 +1511,8 @@ def _observation(
         The level's reaction rules (`_rules`).
     messages : Mapping[str, str]
         The messages in the player's language (`_messages`).
+    pictures : Pictures | None
+        The level's pictures, which say whether to read the desk's texts and git's graph.
 
     Returns
     -------
@@ -1524,6 +1545,8 @@ def _observation(
         "conflicts": repomap.conflicts(project),
         "reflog": repomap.reflog(project),
         "ghosts": repomap.ghosts(project),
+        "texts": repomap.file_texts(project, pictures["lines"]) if pictures is not None else [],
+        "graph": repomap.graph(project) if pictures is not None and pictures["graph"] else None,
     }
 
 
@@ -1924,6 +1947,7 @@ def _step_view(step: kit.Step, text: kit.StepText, state: kit.State) -> StepView
         "placeholder": _fill(text.placeholder, state),
         "choices": [{"value": option, "text": markup.parse(shown)} for option, shown in zip(options, text.options, strict=True)],
         "more": _blocks(text.more, state),
+        "look": list(step.look),
     }
 
 

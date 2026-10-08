@@ -316,30 +316,9 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
     return None
 
 
-def guess(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
-    """
-    Pick the prediction many players make.
-
-    Parameters
-    ----------
-    lab : kit.Lab
-        The level's lab (unused).
-    state : kit.State
-        The level's state (unused).
-    typed : list[kit.Command]
-        The lines typed so far (unused).
-
-    Returns
-    -------
-    str | None
-        One of the options.
-    """
-    return GUESS.options[0]
-
-
 QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]] = {
     "launch": kit.typing("git push -u origin main"),
-    "guess": guess,
+    "guess": kit.picking(GUESS.options[0]),
     "edit": kit.typing(f'echo "{STOP}" >> {ROUTE}'),
     "fizzle": kit.typing("git push"),
     "commit": kit.typing('git commit -am "Add the Phobos stop"'),

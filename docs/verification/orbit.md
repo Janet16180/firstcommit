@@ -773,6 +773,7 @@ push (Rama's error, lost), and a hard reset to the mothership (the checklist los
 | card | `git commit --no-edit` keeps the prepared message and finishes a merge once conflicts are added | E89; git-commit(1) `--no-edit` |
 | debrief | a merge finishes with `git commit --no-edit`, a rebase with `git rebase --continue`; the checklist comes along either way | E95, E96 |
 | debrief | the second push bounces, one more pull joins Alex's new commit without a conflict | E96 |
+| hint 3 | the second pull is a plain `git pull --no-rebase`, as 4-5 taught it, with no `--no-edit`: the game's git never opens an editor (`core.editor = true`), so the merge takes git's message (E66). Changed on 2026-10-08 so the challenge asks only for commands a guided level taught (`tests/test_levels.py`) | E66, E96; the level's test |
 | `ALEX_DROPPED`, `FORCED` (lost) | a forced push drops Alex's commits from the mothership | E68 |
 | `CHECKLIST_LOST` (lost) | `git reset --hard origin/main` leaves the checklist in no commit a ref reaches | the level's test |
 
@@ -888,6 +889,57 @@ deleted side, an add/add with no base) and `tests/levels/test_conflict_collision
 so it silently drops the other side's cleanly merged changes in the same file. 6-3 and 6-4 are only
 safe because their conflicted files have no other changes; a level whose file has them must teach
 another way (found by the conflicts agent, 2026-10-08).
+
+## Sector 5, Name tags (added 2026-10-08)
+
+The levels follow docs/drafts/sector5/ (the scripts and plan); every output in the scripts was
+recorded on real git 2.43.0 by `.scratch/sector7-design/gen.py`. The story's commits have fixed
+dates (`levels/_names_story.py`, and GitHub's first commit, `playground.START_DATE`), so a commit
+keeps its hash from level to level: `tests/levels/test_names_story.py`. The hashes differ from
+the storyboards', whose first commit was dated when they were recorded.
+
+### Level `names-tags` (Name tags, 5-1)
+
+*Re-checked* by `tests/levels/test_names_tags.py`: the start (three commits, `test-run` on the
+first, the bookmark on `main`), a commit moving only `main`, Alex's fix pushed inside your push
+(`kit.on_push`) with your bookmark left behind, the fetch moving the bookmark and not `main`,
+`git status` one behind, a pull in place of the fetch, and Rama on `git branch -v`.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, `LISTED`, `LISTS_NAMES` | `git branch -v` lists each branch with its commit's hash and subject; `*` marks the current branch | git-branch(1) `-v` ("show sha1 and commit subject line for each head"), DESCRIPTION (the current branch "highlighted with an asterisk"); the 5-1 script, beat 5 |
+| `LOGGED`, `LOGGED_AGAIN` | `git log --oneline` in a terminal shows the names on each commit in brackets, `HEAD -> main` for the branch HEAD is on | git-log(1) `--decorate` (`auto`, the default, decorates on a terminal); the script, beats 3 and 9 |
+| prediction 1, `COMMITTED`, debrief | a commit moves only the branch HEAD is on; other branches and `origin/main` stay | git-commit(1) DESCRIPTION ("the current branch is updated to point to it"); the level's test |
+| `PUSHED`, debrief | a push moves `origin/main` with the mothership's `main` | git-push(1) (remote-tracking branches are updated on a successful push); the script, beat 10; the level's test |
+| prediction 2, `FETCHED`, debrief | `git fetch` moves `origin/main` and leaves `main` and the folder as they are | git-fetch(1) DESCRIPTION; the level's test |
+| `STATUS_READ` | `git status` says "behind 'origin/main' by 1 commit, and can be fast-forwarded" | the script, beat 14 (real output) |
+
+### Level `names-any` (A name on any commit, 5-2)
+
+*Re-checked* by `tests/levels/test_names_any.py`: the hint's hash is Plot the route, `test-run`
+taken off while its commit stays in `main`'s history, `first-route` put on by hash with HEAD and
+the folder unchanged, a name on the wrong commit named and moved, and a switch onto it allowed.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| prediction 1, `DELETED`, debrief | `git branch -d` takes a name off; the commit stays; git prints "Deleted branch test-run (was <hash>)" | git-branch(1) `-d`; the 5-2 script, beat 5 (real output); the level's test |
+| `LOGGED`, debrief | each commit records its parent, and `git log` walks from a name down through the parents | git-log(1) DESCRIPTION ("commits that are reachable by following the parent links"); gitglossary(7) parent |
+| card, prediction 2, `NAMED` | `git branch <name> <commit>` makes the name there and does not move HEAD or change the folder | git-branch(1) `<start-point>` ("the new branch is not checked out"); the level's test |
+| `MOVED_ONTO` | `git switch first-route` moves HEAD and rewrites the folder to that commit | git-switch(1) DESCRIPTION; the level's test |
+
+### Level `names-step` (One step, 5-4)
+
+*Re-checked* by `tests/levels/test_names_step.py`: `git switch -c` naming `main`'s commit and
+moving HEAD with no commit, two commands in place of one not counting, the third side line,
+`dim.txt` committed on `main` (lost), the newer forms counting for the older ways' steps, and the
+list read before `night-watch` not counting.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, prediction, `MADE`, debrief | `git switch -c <name>` makes the branch where you are and switches to it; no commit is made; git prints "Switched to a new branch" | git-switch(1) `-c` ("Create a new branch named <new-branch> starting at <start-point> before switching"); the 5-4 script, beat 3 (real output) |
+| `OLDER_WAY`, `NIGHT_MADE`, debrief | `git checkout <name>` and `git checkout -b <name>` do what `git switch` and `git switch -c` do; `checkout` also restores files, and `switch` was added for the branch part | git-checkout(1) DESCRIPTION and `-b`; git-switch(1) DESCRIPTION ("Switch to a specified branch") |
+| `DRAWN` | `git log --oneline --graph --all` draws every branch's line, and each side line closes with `|/` | git-log(1) `--graph`, `--all`; the script, beat 6 (real output) |
+| `LISTED` | `night-watch` and `quiet-engine` name the same commit | the script, beat 10 (real output); the level's test |
 
 ## No `origin/HEAD` in the playground's clones (added 2026-10-08)
 

@@ -41,6 +41,13 @@ def test_a_switch_that_would_overwrite_the_route_note_is_refused_and_rama_names_
     assert "git commit -am" in rule.text and "git restore route.txt" in rule.text
 
 
+def test_a_refused_checkout_counts_as_the_refused_switch() -> None:
+    lab, state = started(level)
+    typed = typed_in(lab, "git checkout scout", NOTE, "git checkout main")
+    assert typed[-1]["status"] == 1
+    assert watch(level, "refused").watch(lab, state, typed) == kit.Verdict(True, level.REFUSED)
+
+
 def test_committing_both_edits_on_scout_solves_the_level_and_main_is_untouched() -> None:
     lab, state = started(level)
     typed = typed_in(lab, "git switch scout", NOTE, "git switch main", KEEP)
