@@ -92,6 +92,42 @@ test("a tagged command card is drawn in full, marked upcoming, with its tag as a
   assertStyled(guide);
 });
 
+test("given open, each command card is a button that opens that command, its words unchanged", () => {
+  const opened = [];
+  const guide = ArtInfographics.commands({ ...COMMANDS, open: (command, button) => opened.push([command, button]) });
+  const buttons = [...guide.querySelectorAll(".art-ig-card .art-ig-open")];
+  assert.equal(buttons.length, 3);
+  assert.equal(buttons[1].getAttribute("type"), "button");
+  assert.equal(buttons[1].getAttribute("aria-haspopup"), "dialog");
+  assert.equal(textOf(buttons[1]), "git logLists the commits, newest first." + SOON);
+  buttons[1].click();
+  assert.deepEqual(opened, [["git log", buttons[1]]]);
+  assertStyled(guide);
+});
+
+test("without open, the command cards are words only, with no button", () => {
+  assert.equal(ArtInfographics.commands(COMMANDS).querySelector("button"), null);
+});
+
+test("in the places and states, a tag is for screen readers only: the item is dimmed instead of badged", () => {
+  for (const guide of [ArtInfographics.places(PLACES), ArtInfographics.states(STATES)]) {
+    const tags = [...guide.querySelectorAll(".art-ig-tag")];
+    assert.ok(tags.length > 0);
+    for (const tag of tags) assert.ok(tag.classList.contains("art-ig-sr"), tag.textContent);
+  }
+  const cards = ArtInfographics.commands(COMMANDS);
+  for (const tag of cards.querySelectorAll(".art-ig-tag")) assert.ok(!tag.classList.contains("art-ig-sr"));
+});
+
+test("a command's short subtitle tells it apart from its neighbours", () => {
+  const groups = [{ title: "x", commands: [{ command: "git branch <name>", short: "a name where you are", what: "y", tag: null }, { command: "git status", what: "z", tag: null }] }];
+  const guide = ArtInfographics.commands({ title: "t", groups });
+  const [first, second] = guide.querySelectorAll(".art-ig-card");
+  assert.equal(first.querySelector(".art-ig-short").textContent, "a name where you are");
+  assert.equal(second.querySelector(".art-ig-short"), null);
+  assertStyled(guide);
+});
+
 test("a tag is a non-empty string or null, and nothing else", () => {
   const card = (tag) => ({ ...COMMANDS, groups: [{ title: "x", commands: [{ command: "git status", what: "y", tag }] }] });
   for (const bad of [undefined, "", true, false]) assert.throws(() => ArtInfographics.commands(card(bad)), TypeError, String(bad));
@@ -161,7 +197,7 @@ test("upcoming items never fade their words: only frames, shafts and pictures ch
 
 test("every arrow names its two ends for screen readers, in the words of the places", () => {
   const guide = ArtInfographics.places(PLACES);
-  const ends = [...guide.querySelectorAll(".art-ig-move")].map((move) => [...move.querySelectorAll(".art-ig-sr")].map(textOf));
+  const ends = [...guide.querySelectorAll(".art-ig-move")].map((move) => [...move.querySelectorAll(".art-ig-end")].map(textOf));
   assert.deepEqual(ends[0], ["Workshop", "Cargo dock"]);
   assert.deepEqual(ends[4], ["Vault", "Mothership"]);
 });

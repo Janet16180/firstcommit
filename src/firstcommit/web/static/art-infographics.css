@@ -55,7 +55,37 @@
   white-space: normal;
 }
 
+.art-ig-open {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.art-ig-card:has(.art-ig-open):hover {
+  border-color: var(--crt-cmd);
+}
+
+.art-ig-open:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 6px;
+}
+
+.art-ig-short {
+  display: block;
+  margin-top: 2px;
+  font: 1.1rem/1.1 var(--f-term);
+  color: var(--crt-soft);
+}
+
 .art-ig-card .art-ig-what {
+  display: block;
   margin: 6px 0 0;
   font-size: 0.88rem;
   line-height: 1.4;
@@ -224,13 +254,71 @@
   white-space: nowrap;
 }
 
+/* On a phone the boxes stand in a column, a picture beside its words, and each move becomes a
+   line of its own under them that names both ends: "Working folder git add -> Staging area". */
 @media (max-width: 640px) {
+  .art-ig-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .art-ig-boxes {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    margin: 0 0 8px;
+  }
+
   .art-ig-box {
-    margin: 0 3px;
-    padding: 8px 4px;
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    column-gap: 12px;
+    justify-items: start;
+    margin: 0;
+    padding: 10px 12px;
+    text-align: left;
+  }
+
+  .art-ig-box .art-ig-pic {
+    grid-row: 1 / span 4;
+    align-self: center;
+    justify-self: center;
+  }
+
+  .art-ig-move,
+  .art-ig-move--back {
+    flex-direction: row;
+    margin: 0;
+  }
+
+  .art-ig-move-text,
+  .art-ig-move--forward .art-ig-move-text {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 8px;
+  }
+
+  .art-ig-move .art-ig-end {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    font-weight: 700;
+  }
+
+  .art-ig-move .art-ig-end + .art-ig-move-label + .art-ig-end::before {
+    content: "> ";
+    color: var(--ink-soft);
+  }
+
+  .art-ig-arrow {
+    display: none;
   }
 
   .art-ig-move-label {
-    font-size: 1rem;
+    padding: 0;
+    font-size: 1.1rem;
   }
 }

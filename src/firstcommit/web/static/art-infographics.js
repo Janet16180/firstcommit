@@ -4,15 +4,17 @@
  * The field guide's three infographics. Every word comes from the data passed in (the shape of
  * InfographicText, each `unlock` replaced by `tag`); this module adds only the pictures, the
  * arrows and the layout. Nothing is ever hidden: every item is drawn in full. An item whose `tag`
- * is a string (the page's localized words, e.g. "Coming up in sector 5") also shows that string
- * as a small quiet badge (.art-ig-tag) and carries the --upcoming modifier (.art-ig-card--upcoming,
+ * is a string (the page's localized words, e.g. "Coming up in sector 5") carries it as a small
+ * quiet badge (.art-ig-tag) on a command card, and for screen readers only in the places and
+ * states, where the dimmed item says it; it carries the --upcoming modifier (.art-ig-card--upcoming,
  * .art-ig-box--upcoming, .art-ig-move--upcoming), slightly muted with its words fully readable.
  * `tag` must be a non-empty string or null; anything else throws a TypeError. Pictures are
  * aria-hidden decoration; all words are real text. Defines one global, ArtInfographics; dom.js
  * and art-pixels.js load first, art-infographics.css styles it.
  *
- * commands({title, groups: [{title, commands: [{command, what, tag}]}]})
- *     a grid of night command cards per group.
+ * commands({title, groups: [{title, commands: [{command, short, what, tag}]}], open})
+ *     a grid of night command cards per group; with open(command, button), each card's words
+ *     are a button that calls it.
  * places({title, places: [{id, space, git, what, tag}], moves: [{from, to, command, tag}]})
  *     the four places (ids workshop, dock, vault, mothership) as zones in their colours.
  * states({title, states: [{id, name, space, what, tag}], moves: [{from, to, how, tag}]})
@@ -61,20 +63,24 @@ const ArtInfographics = (function () {
   /* The item's classes, with its --upcoming modifier when tagged, and its badge (or nothing). */
   const classesOf = (base, tag) => (checkTag(tag) === null ? base : `${base} ${base}--upcoming`);
   const badge = (tag) => (tag === null ? [] : el("span", { class: "art-ig-tag" }, tag));
+  /* In the places and states the tag is heard, not seen: the dimmed item says it visually. */
+  const quietBadge = (tag) => (tag === null ? [] : el("span", { class: "art-ig-tag art-ig-sr" }, tag));
 
-  function commandCard({ command, what, tag }) {
-    return el("li", { class: classesOf("art-ig-card", tag) },
-      el("code", { class: "art-ig-command" }, command),
-      el("p", { class: "art-ig-what" }, what),
-      badge(tag));
+  /* A command card; with `open`, its words sit in a button that calls open(command, button). */
+  function commandCard({ command, short = null, what, tag }, open) {
+    const classes = classesOf("art-ig-card", tag);
+    const words = [el("code", { class: "art-ig-command" }, command), short && el("span", { class: "art-ig-short" }, short), el("span", { class: "art-ig-what" }, what), badge(tag)];
+    if (!open) return el("li", { class: classes }, words);
+    const button = el("button", { type: "button", class: "art-ig-open", "aria-haspopup": "dialog", onclick: () => open(command, button) }, words);
+    return el("li", { class: classes }, button);
   }
 
-  function commands({ title, groups }) {
+  function commands({ title, groups, open = null }) {
     return el("section", { class: "art-ig art-ig--commands" },
       heading(title),
       groups.map((group) => el("section", { class: "art-ig-group" },
         el("h3", { class: "art-ig-group-title" }, group.title),
-        el("ul", { class: "art-ig-cards", role: "list" }, group.commands.map(commandCard)))));
+        el("ul", { class: "art-ig-cards", role: "list" }, group.commands.map((item) => commandCard(item, open))))));
   }
 
   /* One box of the row: {colour, art, name, term, what, tag}. */
@@ -84,7 +90,7 @@ const ArtInfographics = (function () {
       el("h3", { class: "art-ig-name" }, name),
       el("p", { class: "art-ig-term" }, term),
       el("p", { class: "art-ig-what" }, what),
-      badge(tag));
+      quietBadge(tag));
   }
 
   function arrow() {
@@ -131,10 +137,10 @@ const ArtInfographics = (function () {
           const classes = `${classesOf("art-ig-move", move.tag)} art-ig-move--${forward ? "forward" : "back"}`;
           return el("div", { class: classes, style: `grid-column:${first} / ${last};grid-row:${gridRow(arrowPlace)}` },
             el("span", { class: "art-ig-move-text" },
-              el("span", { class: "art-ig-sr" }, nameOf(move.from)),
+              el("span", { class: "art-ig-sr art-ig-end" }, nameOf(move.from)),
               el("span", { class: "art-ig-move-label" }, move.label),
-              el("span", { class: "art-ig-sr" }, nameOf(move.to)),
-              badge(move.tag)),
+              el("span", { class: "art-ig-sr art-ig-end" }, nameOf(move.to)),
+              quietBadge(move.tag)),
             arrow());
         })));
   }

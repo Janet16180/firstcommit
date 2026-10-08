@@ -48,7 +48,7 @@ test("the places carry the zone panel's words, in both languages", () => {
 
 /* Ids and unlocks are said once; any other word is said in both languages. */
 const PLAIN = ["id", "from", "to", "chapter"];
-const COMMAND = /^(?:git|ls)\b[\w\-<>".,\s]*$/;
+const COMMAND = /^(?:(?:git|ls)\b[\w\-<>".,\s]*|\.gitignore)$/;
 
 function words(value, key, found) {
   if (typeof value === "number") return found;
@@ -100,7 +100,7 @@ test("the guide says what git really does, as engine checked it", () => {
   assert.deepEqual(moves(InfographicText.places.moves, "mothership", "workshop"), ["git pull (fetch, then merge or rebase)"]);
   assert.equal(place("workshop"), "Your files as you edit them. Git saves nothing here until you add and commit.");
   assert.equal(place("vault"), "Every commit of your repository, yours and the ones you fetched, on this computer, in the hidden .git folder.");
-  assert.equal(command("git reset <commit>"), "Moves the current branch's label to another commit, and the staging area with it; the working folder keeps its files.");
+  assert.equal(command("git reset --hard <commit>"), "Moves the current branch's label to another commit, and makes the staging area and the working folder match it: edits not committed are gone. Without --hard, your files stay as they are.");
   assert.deepEqual(moves(InfographicText.states.moves, "staged", "modified"), ["git restore --staged (a file the last commit holds)"]);
   assert.deepEqual(moves(InfographicText.states.moves, "staged", "untracked"), ["git rm --cached (before the file's first commit)", "git restore --staged (a new file, once the repository has a commit)"]);
 });
@@ -115,5 +115,5 @@ test("switching is taught in Name tags, and clone on the mothership, where the n
 
 test("the guide lists what Name tags teaches: naming, listing and removing branches, git's tree, and checkout as the older switch", () => {
   const taughtBy = (command) => (items.find((item) => item.command === command) || { taught: {} }).taught.chapter;
-  for (const command of ["git branch -v", "git branch <name> <commit>", "git branch -d <name>", "git log --oneline --graph --all", "git checkout <branch>, git checkout -b <branch>"]) assert.equal(taughtBy(command), "names", command);
+  for (const command of ["git branch -v", "git branch <name> <commit>", "git branch -d <name>", "git log --oneline --graph --all", "git checkout <branch>", "git checkout -b <branch>", "git branch <name>"]) assert.equal(taughtBy(command), "names", command);
 });

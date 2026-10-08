@@ -5,7 +5,8 @@ const test = require("node:test");
 const { installBrowser, load, record } = require("./load");
 
 const document = installBrowser();
-const { FieldGuide, Strings } = load(["dom.js", "strings.js", "art-pixels.js", "art-sprites.js", "art-infographics.js", "infographic-text.js", "field-guide.js"], ["FieldGuide", "Strings"]);
+const { makeEvent } = require("./fakedom");
+const { FieldGuide, Strings } = load(["dom.js", "strings.js", "art-pixels.js", "art-sprites.js", "art-infographics.js", "infographic-text.js", "guide-git.js", "guide-text.js", "guide-pictures.js", "guide-card.js", "guide-conflict.js", "field-guide.js"], ["FieldGuide", "Strings"]);
 
 const level = (id, done) => ({ ...record("status").chapters[1].levels[0], id, title: id, done });
 const status = (chapters) => ({ ...record("status"), chapters });
@@ -30,7 +31,7 @@ test("the guide shows the four places, a file's states and every command, under 
   assert.equal(view.element.querySelector("h1").textContent, "Field guide");
   assert.ok(view.element.querySelector('a[href="#/"]'));
   const titles = [...view.element.querySelectorAll(".art-ig-title")].map((node) => node.textContent);
-  assert.deepEqual(titles, ["Git's four places", "A file's states", "Every command, by what it does"]);
+  assert.deepEqual(titles, ["Git's four places", "A file's states", "Every command, by what it does", "When a merge stops: a conflict"]);
 });
 
 test("everything is readable from the start, nothing locked", () => {
@@ -80,10 +81,90 @@ test("the guide speaks the page's language", () => {
     const view = FieldGuide.create({ status: () => two(true, false) });
     assert.equal(view.element.querySelector("h1").textContent, "Guía de campo");
     assert.match(view.element.querySelector('a[href="#/"]').textContent, /Mapa/);
-    assert.match(view.element.textContent, /Taller/);
+    assert.match(view.element.textContent, /\(taller\)/);
     assert.match(view.element.textContent, /Llega en el sector 2/);
     assert.doesNotMatch(view.element.textContent, /Workshop/);
   } finally {
     Strings.use("en");
   }
+});
+
+test("each place shows its real Git name first, with the game's name in parentheses", () => {
+  const view = FieldGuide.create({ status: () => two(true, false) });
+  const boxes = [...view.element.querySelectorAll(".art-ig--places .art-ig-box")];
+  assert.deepEqual(boxes.map((box) => `${box.querySelector(".art-ig-name").textContent} ${box.querySelector(".art-ig-term").textContent}`), ["Working folder (workshop)", "Staging area (cargo dock)", "Repository (vault)", "Remote (mothership)"]);
+});
+
+const commandButton = (view, command) => [...view.element.querySelectorAll(".art-ig-open")].find((node) => node.querySelector("code").textContent === command);
+const openCard = (view, command) => {
+  document.body.replaceChildren(view.element);
+  commandButton(view, command).click();
+  return view.element.querySelector("dialog.guide-card-dialog");
+};
+
+test("clicking a command opens its card in a dialog, and closing it gives the focus back to the command", () => {
+  const view = FieldGuide.create({ status: () => two(true, false) });
+  const dialog = openCard(view, "git merge <branch>");
+  assert.ok(dialog.open);
+  assert.equal(dialog.querySelector(".gc-command").textContent, "git merge <branch>");
+  assert.match(dialog.querySelector(".gc-term").textContent, /Merge made by the 'ort' strategy\./);
+  dialog.querySelector(".guide-card-close").click();
+  assert.ok(!dialog.open);
+  assert.equal(document.activeElement, commandButton(view, "git merge <branch>"));
+});
+
+test("a related command swaps the card in the same dialog", () => {
+  const view = FieldGuide.create({ status: () => two(true, false) });
+  const dialog = openCard(view, "git add <file>");
+  const related = [...dialog.querySelectorAll(".gc-related button")].find((node) => node.textContent === "git status");
+  related.click();
+  assert.equal(view.element.querySelectorAll("dialog.guide-card-dialog").length, 1);
+  assert.equal(dialog.querySelector(".gc-command").textContent, "git status");
+});
+
+test("a card says where the game teaches the command: its sector, mission and title, its sector, or a sector still to come", () => {
+  const cargo = { id: "cargo", title: "Cargo", blurb: "", cards: 0, levels: [{ ...level("one", false), command: "git add" }, { ...level("two", false), title: "Stowaway", command: "git restore --staged" }] };
+  const view = FieldGuide.create({ status: () => status([{ id: "liftoff", title: "Lift-off", blurb: "", cards: 0, levels: [] }, cargo]) });
+  assert.match(openCard(view, "git restore --staged <file>").textContent, /Sector 2, mission 2: Stowaway/);
+  assert.match(openCard(view, ".gitignore").textContent, /Sector 2: Cargo/);
+  assert.match(openCard(view, "git reflog").textContent, /A sector still to come/);
+});
+
+test("Escape in a card closes the card only, not a guide opened over a level", () => {
+  const view = FieldGuide.create({ status: () => two(true, false) }, { onClose: () => assert.fail("the guide closed") });
+  const dialog = openCard(view, "git status");
+  const cancel = makeEvent("cancel");
+  dialog.dispatchEvent(cancel);
+  assert.ok(cancel.stopped);
+});
+
+test("a merge's card leads to the conflict section and closes itself", () => {
+  const view = FieldGuide.create({ status: () => two(true, false) });
+  const dialog = openCard(view, "git merge <branch>");
+  dialog.querySelector(".gc-conflict").click();
+  assert.ok(!dialog.open);
+  assert.equal(document.activeElement, view.element.querySelector("#guide-conflict"));
+});
+
+test("cards and the conflict speak the page's language", () => {
+  Strings.use("es");
+  try {
+    const view = FieldGuide.create({ status: () => two(true, false) });
+    assert.match(view.element.querySelector(".art-ig--places").textContent, /Carpeta de trabajo\(taller\)/);
+    assert.match(openCard(view, "git add <file>").textContent, /Error común/);
+    assert.match(view.element.querySelector(".guide-conflict").textContent, /Paso 1 de 7/);
+  } finally {
+    Strings.use("en");
+  }
+});
+
+test("a jump bar leads to each part of the guide", () => {
+  const view = FieldGuide.create({ status: () => two(true, false) });
+  document.body.replaceChildren(view.element);
+  const buttons = [...view.element.querySelectorAll(".guide-jump button")];
+  assert.deepEqual(buttons.map((button) => button.textContent), ["Places", "File states", "Commands", "Conflict"]);
+  buttons[2].click();
+  assert.equal(document.activeElement, view.element.querySelector(".art-ig--commands"));
+  buttons[3].click();
+  assert.equal(document.activeElement, view.element.querySelector("#guide-conflict"));
 });
