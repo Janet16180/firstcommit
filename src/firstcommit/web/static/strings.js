@@ -334,6 +334,7 @@ const Strings = (function () {
       "zones.legend.saved": "saved (committed)",
 
       "guide.map": "Map",
+      "guide.close": "Back to the mission",
 
       "cards.all": "All chapters",
       "cards.down": "The game server did not answer. Is it still running? Try again.",
@@ -681,6 +682,7 @@ const Strings = (function () {
       "zones.legend.saved": "guardado (en un commit)",
 
       "guide.map": "Mapa",
+      "guide.close": "Volver a la misión",
 
       "cards.all": "Todos los capítulos",
       "cards.down": "El servidor del juego no respondió. ¿Sigue en marcha? Inténtalo otra vez.",

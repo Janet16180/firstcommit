@@ -21,9 +21,9 @@ const items = [
   ...InfographicText.states.moves,
 ];
 
-test("every item is unlocked by a chapter that exists or is planned, whole or by a number of its levels", () => {
+test("every item is taught by a chapter that exists or is planned, whole or by a number of its levels", () => {
   for (const item of items) {
-    const { chapter, levels, ...rest } = item.unlock;
+    const { chapter, levels, ...rest } = item.taught;
     assert.deepEqual(rest, {}, JSON.stringify(item));
     assert.ok(chaptersPy.includes(`"${chapter}"`) || planned.includes(chapter), JSON.stringify(item));
     assert.ok(levels === undefined || (Number.isInteger(levels) && levels > 0), JSON.stringify(item));
