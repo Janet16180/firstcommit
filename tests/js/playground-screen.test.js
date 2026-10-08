@@ -323,7 +323,7 @@ test("an editor in a terminal shows its strip above that terminal, and the confl
   await run.clock.advance(0);
   const strip = run.q(".pg-term[data-who=\"you\"] .pg-strip");
   assert.ok(strip.hidden);
-  run.shells.titles.you("editor vim checklist.txt");
+  run.shells.titles.you("firstcommit-editor vim checklist.txt");
   assert.equal(strip.hidden, false);
   assert.equal(strip.dataset.editor, "vim");
   assert.ok(run.q(".pg-term[data-who=\"alex\"] .pg-strip").hidden);
@@ -336,7 +336,7 @@ test("an editor in a terminal shows its strip above that terminal, and the confl
 test("Get me out types the editor's quit keys in its own terminal", async () => {
   const run = screen({ playground: Pg.playground({ start: "alex-ahead" }) });
   await run.clock.advance(0);
-  run.shells.titles.alex("editor vim notes.txt insert");
+  run.shells.titles.alex("firstcommit-editor vim notes.txt insert");
   run.q(".pg-term[data-who=\"alex\"] .pg-strip-out").dispatchEvent(makeEvent("click"));
   await settle();
   document.body.querySelector("dialog button.is-confirm").dispatchEvent(makeEvent("click"));

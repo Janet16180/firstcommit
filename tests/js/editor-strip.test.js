@@ -26,10 +26,13 @@ const answer = async (which) => {
 };
 
 test("the terminal's title says which editor runs on which file, and whether vim is typing", () => {
-  assert.deepEqual(EditorStrip.parse("editor nano checklist.txt"), { editor: "nano", path: "checklist.txt", insert: false });
-  assert.deepEqual(EditorStrip.parse("editor vim docs/my notes.txt insert"), { editor: "vim", path: "docs/my notes.txt", insert: true });
-  assert.deepEqual(EditorStrip.parse("editor vim checklist.txt"), { editor: "vim", path: "checklist.txt", insert: false });
-  for (const title of ["", "bash", "editor emacs x", "editor nano"]) assert.equal(EditorStrip.parse(title), null, title);
+  assert.deepEqual(EditorStrip.parse("firstcommit-editor nano checklist.txt"), { editor: "nano", path: "checklist.txt", insert: false });
+  assert.deepEqual(EditorStrip.parse("firstcommit-editor vim checklist.txt insert"), { editor: "vim", path: "checklist.txt", insert: true });
+  assert.deepEqual(EditorStrip.parse("firstcommit-editor vim checklist.txt"), { editor: "vim", path: "checklist.txt", insert: false });
+  assert.deepEqual(EditorStrip.parse("firstcommit-editor vi -R +3 notes.txt"), { editor: "vim", path: "notes.txt", insert: false }, "vi is vim; options are not the file");
+  assert.deepEqual(EditorStrip.parse("firstcommit-editor nano a.txt b.txt"), { editor: "nano", path: "a.txt b.txt", insert: false }, "two files: the whole arguments");
+  assert.deepEqual(EditorStrip.parse("firstcommit-editor vim"), { editor: "vim", path: "", insert: false });
+  for (const title of ["", "bash", "editor nano x", "firstcommit-editor emacs x", "firstcommit-editornano x"]) assert.equal(EditorStrip.parse(title), null, title);
 });
 
 test("with no editor running the strip is hidden", () => {

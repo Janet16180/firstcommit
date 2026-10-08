@@ -406,11 +406,11 @@ test("a playground shell's title reaches the playground, even one set while the 
   };
   const strip = () => page.main.querySelector(".pg-term[data-who=\"you\"] .pg-strip");
   try {
-    page.seen.onTitle[0]("editor nano notes.txt");
+    page.seen.onTitle[0]("firstcommit-editor nano notes.txt");
     assert.equal(strip().hidden, false);
     await go("#/");
     page.seen.onTitle[0]("");
-    page.seen.onTitle[0]("editor vim notes.txt");
+    page.seen.onTitle[0]("firstcommit-editor vim notes.txt");
     await go("#/playground");
     assert.equal(strip().dataset.editor, "vim");
   } finally {

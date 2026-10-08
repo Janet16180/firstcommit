@@ -10,7 +10,8 @@
  * title, which the shell's editor wrappers set. Needs dom.js, strings.js and dialog.js. Defines
  * one global, EditorStrip.
  *
- * parse(title)     {editor, path, insert} for a title "editor <nano|vim> <path>[ insert]", else null.
+ * parse(title)     {editor, path, insert} for a title "firstcommit-editor <nano|vim|vi> <args>[ insert]"
+ *                  (vi is vim), else null.
  * create({onKeys, timers})
  *                  {element, show(editing)}: editing is parse()'s result, null when no editor
  *                  runs; onKeys(keys) sends keys to the terminal as typed, control keys and all.
@@ -22,7 +23,10 @@
 const EditorStrip = (function () {
   const { el } = Dom;
   const { t } = Strings;
-  const TITLE = /^editor (nano|vim) (.+?)( insert)?$/;
+  /* engine's editor wrappers: "firstcommit-editor <nano|vim|vi> <args>", " insert" after them
+     while vim types, "" once the editor exits. */
+  const TITLE = /^firstcommit-editor (nano|vim|vi)\b ?(.*)$/;
+  const INSERT = / insert$/;
   /* The keys each editor shows, the first never folded. */
   const KEYS = { nano: ["save", "quit"], vim: ["save", "type", "leave", "quit"] };
   /* vim leaves without saving from any mode with Esc, :q! and Enter. nano's Ctrl+X asks whether
@@ -32,9 +36,15 @@ const EditorStrip = (function () {
   const NANO_NO = "n";
   const NANO_ASKS_MS = 400;
 
+  /* The file is the one argument that is not an option; with several, all of them as typed. */
   function parse(title) {
     const match = TITLE.exec(title);
-    return match ? { editor: match[1], path: match[2], insert: Boolean(match[3]) } : null;
+    if (!match) return null;
+    const editor = match[1] === "nano" ? "nano" : "vim";
+    const insert = editor === "vim" && INSERT.test(match[2]);
+    const args = match[2].replace(insert ? INSERT : "", "");
+    const files = args.split(/\s+/).filter((word) => word && !/^[-+]/.test(word));
+    return { editor, path: files.join(" "), insert };
   }
 
   function create({ onKeys, timers = window }) {
