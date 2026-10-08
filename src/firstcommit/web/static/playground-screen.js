@@ -10,20 +10,22 @@
  * (playground-summary.js). The move log stays empty until `git reflog` is typed in that
  * repository, then says once that it is live. The view, Alex shown and whose repository are
  * the current start's preferences, saved on the server at each change. With no start yet, it
- * asks where to start. Needs dom.js, strings.js, art-sprites.js, typed.js, poll.js, playground-summary.js and
+ * asks where to start. Needs dom.js, strings.js, art-sprites.js, typed.js, poll.js, editor-strip.js, playground-summary.js and
  * playground-picture.js (with the pictures it draws). Defines one global, PlaygroundScreen.
  *
  * Your terminal is on the right, and Alex's under it while Alex is shown (Show or Hide Alex's
  * terminal, absent where there is no mothership); on a phone one shows at a time, chosen by the
- * same switch that chooses whose repository the picture draws.
+ * same switch that chooses whose repository the picture draws. While an editor runs in a
+ * terminal (its title says so), the editor strip stands above it.
  *
  * create(ctx, route) {element, dispose()}: ctx = {game, timers, page, reducedMotion,
- *   playTerminals: {attach(person, host, started), detach(), type(person, text)}}, the shells kept by the page for
+ *   playTerminals: {attach(person, host, started, onTitle), detach(), type(person, text),
+ *   keys(person, keys)}}, the shells kept by the page for
  *   the start built at `started`; route the playground's address (Route.parse): `picture` names a
  *   view to open on.
  */
 
-/* global Dom, Strings, ArtSprites, Typed, Polling, PlaygroundSummary, PlaygroundPicture */
+/* global Dom, Strings, ArtSprites, Typed, Polling, EditorStrip, PlaygroundSummary, PlaygroundPicture */
 /* exported PlaygroundScreen */
 
 const PlaygroundScreen = (function () {
@@ -87,7 +89,7 @@ const PlaygroundScreen = (function () {
     ui.terms.classList.toggle("is-two", shown);
     if (shown && !screen.alexAttached) {
       screen.alexAttached = true;
-      ctx.playTerminals.attach("alex", ui.frames.alex.host, screen.started);
+      ctx.playTerminals.attach("alex", ui.frames.alex.host, screen.started, titled(screen, "alex"));
     }
     if (ui.alexToggle) {
       ui.alexToggle.setAttribute("aria-checked", String(shown));
@@ -196,14 +198,25 @@ const PlaygroundScreen = (function () {
       el("span", { class: "pg-whose-label" }, t(label)), button("you"), button("alex"));
   }
 
-  const frame = (person) => {
+  /* A terminal's frame: its name, the editor strip while an editor runs in it, and its shell. */
+  function frame(screen, person) {
     const host = el("div", { class: "pg-term-host" });
-    return { host, element: el("section", { class: "pg-term termcol", "data-who": person, "aria-label": t(`pg.term.${person}`) }, el("h2", { class: "pg-term-name" }, t(`pg.term.${person}`)), host) };
+    const strip = EditorStrip.create({ onKeys: (keys) => screen.ctx.playTerminals.keys(person, keys), timers: screen.ctx.timers });
+    const element = el("section", { class: "pg-term termcol", "data-who": person, "aria-label": t(`pg.term.${person}`) }, el("h2", { class: "pg-term-name" }, t(`pg.term.${person}`)), strip.element, host);
+    return { host, strip, element };
+  }
+
+  /* What the terminal's title says runs in it: the strip shows the editor's keys, and the
+     conflict panel waits while the editor has a file. */
+  const titled = (screen, person) => (title) => {
+    screen.editing[person] = EditorStrip.parse(title);
+    screen.ui.frames[person].strip.show(screen.editing[person]);
+    if (screen.picture) refresh(screen);
   };
 
   function termColumn(screen) {
     const { ui, start } = screen;
-    ui.frames = { you: frame("you"), alex: frame("alex") };
+    ui.frames = { you: frame(screen, "you"), alex: frame(screen, "alex") };
     ui.termSwitch = personSwitch(screen, { kind: "pg-termswitch", label: "pg.terminal", words: "pg.who" });
     ui.alexLabel = el("span", { class: "pg-alex-label" });
     ui.alexToggle = start.mothership ? el("button", { type: "button", role: "switch", "aria-checked": "false", class: "pg-alex-toggle", onclick: () => toggleAlex(screen) }, el("span", { class: "pg-switch", "aria-hidden": "true" }), ui.alexLabel) : null;
@@ -241,7 +254,7 @@ const PlaygroundScreen = (function () {
       el("div", { class: "pg-body" },
         el("div", { class: "pg-left" }, viewRow(screen), ui.whose, pictured(screen)),
         termColumn(screen)));
-    screen.ctx.playTerminals.attach("you", ui.frames.you.host, screen.started);
+    screen.ctx.playTerminals.attach("you", ui.frames.you.host, screen.started, titled(screen, "you"));
     drawPicture(screen);
     screen.poll = Polling.start({ tick: () => tick(screen), intervalMs: POLL_MS, timers: screen.ctx.timers, page: screen.ctx.page });
   }

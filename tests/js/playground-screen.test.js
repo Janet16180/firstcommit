@@ -8,7 +8,7 @@ const Pg = require("./playground-records");
 
 const document = installBrowser({ reducedMotion: true });
 const { PlaygroundScreen, PlaygroundSummary, createGameApi } = load(
-  ["dom.js", "strings.js", "places.js", "art-pixels.js", "art-sprites.js", "api.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "keep-panel.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "git-graph.js", "playground-summary.js", "playground-picture.js", "playground-screen.js"],
+  ["dom.js", "strings.js", "places.js", "art-pixels.js", "art-sprites.js", "api.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "dialog.js", "keep-panel.js", "editor-strip.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "git-graph.js", "playground-summary.js", "playground-picture.js", "playground-screen.js"],
   ["PlaygroundScreen", "PlaygroundSummary", "createGameApi"],
 );
 
@@ -25,10 +25,12 @@ function screen({ playground = Pg.playground(), lab = Pg.observation(), route = 
   });
   const shells = { attached: [], detached: 0 };
   const playTerminals = {
-    attach: (person, host, started) => {
+    attach: (person, host, started, onTitle) => {
       shells.attached.push([person, started]);
       shells[person] = host;
+      shells.titles = { ...shells.titles, [person]: onTitle };
     },
+    keys: (person, keys) => (shells.keys = [...(shells.keys || []), [person, keys]]),
     detach: () => (shells.detached += 1),
     type: (person, text) => (shells.typed = [...(shells.typed || []), [person, text]]),
   };
@@ -313,4 +315,31 @@ test("the panel's editor chips type their command in the terminal of the reposit
   await run.clock.advance(0);
   run.click(".keep-chip[data-editor=\"nano\"]");
   assert.deepEqual(run.shells.typed, [["alex", "nano checklist.txt"]]);
+});
+
+test("an editor in a terminal shows its strip above that terminal, and the conflict panel waits for it", async () => {
+  const lab = Pg.observation({ you: Pg.person({ markers: [Pg.marked()] }) });
+  const run = screen({ playground: Pg.playground({ start: "conflict" }), lab });
+  await run.clock.advance(0);
+  const strip = run.q(".pg-term[data-who=\"you\"] .pg-strip");
+  assert.ok(strip.hidden);
+  run.shells.titles.you("editor vim checklist.txt");
+  assert.equal(strip.hidden, false);
+  assert.equal(strip.dataset.editor, "vim");
+  assert.ok(run.q(".pg-term[data-who=\"alex\"] .pg-strip").hidden);
+  assert.ok(run.q(".keep").classList.contains("is-waiting"));
+  run.shells.titles.you("");
+  assert.ok(strip.hidden);
+  assert.equal(run.q(".keep").classList.contains("is-waiting"), false);
+});
+
+test("Get me out types the editor's quit keys in its own terminal", async () => {
+  const run = screen({ playground: Pg.playground({ start: "alex-ahead" }) });
+  await run.clock.advance(0);
+  run.shells.titles.alex("editor vim notes.txt insert");
+  run.q(".pg-term[data-who=\"alex\"] .pg-strip-out").dispatchEvent(makeEvent("click"));
+  await settle();
+  document.body.querySelector("dialog button.is-confirm").dispatchEvent(makeEvent("click"));
+  await settle();
+  assert.deepEqual(run.shells.keys, [["alex", "\x1b:q!\r"]]);
 });

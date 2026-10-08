@@ -260,30 +260,42 @@
      start they were opened for stands, even while the player is elsewhere, and are replaced when
      it is built again. */
   const PLAY_PATHS = { you: "/api/terminal/playground", alex: "/api/terminal/playground-alex" };
-  const play = { you: null, alex: null, started: null };
+  const play = { you: null, alex: null, started: null, titles: {}, listeners: {} };
 
   function disposePlay() {
     for (const person of ["you", "alex"]) {
       if (play[person]) play[person].dispose();
       play[person] = null;
+      play.titles[person] = "";
     }
   }
 
+  /* A shell's title (the editor wrappers set it) goes to the playground showing it; one set while
+     the player was away is told when it is shown again. */
+  function retitle(person, title) {
+    play.titles[person] = title;
+    if (play.listeners[person]) play.listeners[person](title);
+  }
+
   const playTerminals = {
-    attach(person, host, started) {
+    attach(person, host, started, onTitle) {
       if (play.started !== started) disposePlay();
       play.started = started;
       if (!play[person]) {
-        play[person] = createTerminal({ protocol: "firstcommit", token: client.token, command: "firstcommit", path: PLAY_PATHS[person], looks: TERMINAL_LOOKS, labels: terminalLabels(), storagePrefix: `firstcommit.pg-${person}.`, openFromHeight: 0, onUnreachable: probe });
+        play[person] = createTerminal({ protocol: "firstcommit", token: client.token, command: "firstcommit", path: PLAY_PATHS[person], looks: TERMINAL_LOOKS, labels: terminalLabels(), storagePrefix: `firstcommit.pg-${person}.`, openFromHeight: 0, onUnreachable: probe, onTitle: (title) => retitle(person, title) });
         play[person].setLook(shownTheme(), t(`pg.term.${person}`));
       }
+      play.listeners[person] = onTitle;
+      if (play.titles[person]) onTitle(play.titles[person]);
       host.append(play[person].element);
       play[person].start();
     },
     detach() {
+      play.listeners = {};
       for (const person of ["you", "alex"]) if (play[person]) play[person].element.remove();
     },
     type: (person, text) => play[person] && play[person].type(text),
+    keys: (person, keys) => play[person] && play[person].keys(keys),
   };
 
   /* A refused WebSocket looks like a network failure; asking the API tells a stale key apart

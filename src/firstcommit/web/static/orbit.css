@@ -3785,3 +3785,75 @@ pre.code code {
   opacity: 0.4;
   filter: grayscale(1);
 }
+
+/* The editor strip (editor-strip.js): gold, above the terminal an editor runs in, with Get me
+   out in red. On a phone vim's other keys fold behind "more keys", all but Esc while typing. */
+.pg-strip {
+  display: flex;
+  align-items: center;
+  gap: 6px 12px;
+  padding: 6px 10px;
+  background: var(--gold);
+  color: #1F1A3D;
+  font: 700 0.85rem var(--f-ui);
+}
+
+.pg-strip[hidden] {
+  display: none;
+}
+
+.pg-strip-name {
+  font: 1.05rem var(--f-term);
+}
+
+.pg-strip-keys {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.pg-strip-toggle {
+  display: none;
+  padding: 0 4px;
+  background: none;
+  border: 0;
+  color: inherit;
+  font: inherit;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+.pg-strip-out {
+  flex: none;
+  padding: 2px 10px;
+  font-size: 0.85rem;
+}
+
+@media (max-width: 760px) {
+  /* Two lines: the keys, then the editor's name, more keys and Get me out. */
+  .pg-strip {
+    flex-wrap: wrap;
+  }
+
+  .pg-strip-keys {
+    flex-basis: 100%;
+    order: -1;
+  }
+
+  .pg-strip-out {
+    margin-left: auto;
+  }
+
+  .pg-strip-toggle {
+    display: inline;
+  }
+
+  .pg-strip:not(.is-open) .pg-strip-key.is-more:not(.is-always) {
+    display: none;
+  }
+}
