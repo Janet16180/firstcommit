@@ -12,8 +12,13 @@ const commit = (name, parents, subject, time) => ({ hash: hash(name), short: has
 const ref = (name, at, kind = "branch") => ({ name, kind, target: hash(at) });
 const commits = [commit("c", ["b"], "Try bright lights", 3), commit("d", ["b"], "Fix the route", 4), commit("b", ["a"], "Plot the route", 2), commit("a", [], "Start the project", 1)];
 const project = (refs, branch) => ({ exists: true, bare: false, head: refs.find((r) => r.name === branch).target, branch, commits, refs, remotes: [], files: [] });
-/* The captain's chart: where each name should end up, and the one HEAD should ride. */
-const target = { names: [{ name: "main", subject: "Fix the route" }, { name: "release", subject: "Fix the route" }, { name: "lights-v2", subject: "Try bright lights" }], head: "lights-v2" };
+/* The captain's chart as LevelView.target gives it: the goal tree by the level's own labels, the
+   names on it, and the one HEAD should ride. */
+const target = {
+  commits: [{ id: "lights", parents: ["plot"], subject: "Try bright lights" }, { id: "fix", parents: ["plot"], subject: "Fix the route" }, { id: "plot", parents: ["start"], subject: "Plot the route" }, { id: "start", parents: [], subject: "Start the project" }],
+  names: { main: "fix", release: "fix", "lights-v2": "lights" },
+  head: "lights-v2",
+};
 const checks = (chart) => [...chart.element.querySelectorAll(".target-check")].map((check) => [check.textContent, check.classList.contains("is-ok")]);
 
 test("the chart draws the same commits with the names where they should end up, HEAD riding the one it names", () => {

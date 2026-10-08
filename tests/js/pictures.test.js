@@ -76,7 +76,7 @@ test("the goal's look rings its commit on the chain", () => {
 
 test("a challenge's chart stands beside the chain", () => {
   const subject = record("observation").project.commits[0].subject;
-  const pictures = made({ target: { names: [{ name: "main", subject }], head: "main" } });
+  const pictures = made({ target: { commits: [{ id: "tip", parents: [], subject }], names: { main: "tip" }, head: "main" } });
   assert.ok(pictures.element.querySelector(".pictures-pair .target"));
   assert.equal(pictures.element.querySelectorAll(".pictures-pair .chain").length, 2);
 });

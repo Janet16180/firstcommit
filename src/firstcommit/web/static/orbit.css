@@ -2600,6 +2600,10 @@ pre.code code {
   border-color: var(--z-va);
 }
 
+.target .chain-hash {
+  display: none;
+}
+
 .chain-tag.is-placed::before {
   content: "";
   display: inline-block;
