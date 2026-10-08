@@ -43,6 +43,7 @@ The mission is done when `map.txt` is staged, `journal.txt` is not, and you have
 HINTS = [
     "`git add` takes the name of the file: `git add map.txt`.",
     "Look at `git status`: it lists `map.txt` as staged for your next commit, and `journal.txt` as untracked. Why?",
+    "Every line of the mission, in order:\n\n    $ git add map.txt\n    $ git status",
 ]
 
 DEBRIEF = """

@@ -20,6 +20,7 @@ trabajo y hayas mirado la historia con `git log`.
 HINTS = [
     "`git commit` recibe un mensaje con `-m`, entre comillas.",
     'Escribe `git commit -m "Add the map"` y luego `git log`.',
+    'Cada línea de la misión, en orden:\n\n    $ git commit -m "Add the map"\n    $ git log',
 ]
 
 DEBRIEF = """

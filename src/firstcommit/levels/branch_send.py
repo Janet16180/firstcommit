@@ -47,6 +47,7 @@ HINTS = [
     "On `main`, `git push` sends `main` only. Look at what the mothership has afterwards.",
     "Name the branch to send it: `git push -u origin scout` works from any branch.",
     "`git branch -r` lists what your repository knows of the remote's branches, such as `origin/main`.",
+    "Every line of the mission, in order:\n\n    $ git push\n    $ git push -u origin scout\n    $ git branch -r",
 ]
 
 DEBRIEF = """

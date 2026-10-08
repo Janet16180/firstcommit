@@ -19,6 +19,7 @@ esté en ninguna cápsula y siga en la carpeta de trabajo, y `debug.log` esté s
 HINTS = [
     "Son el muelle de carga y la bóveda a la vez: lo que está en el staging area entra en la próxima cápsula.",
     "Primero saca a los polizones del muelle, conserva sus archivos, y luego sella lo que queda.",
+    'Cada línea de la misión, en orden:\n\n    $ git restore --staged keys.txt\n    $ git restore --staged debug.log\n    $ git commit -m "Lower the reactor limit"',
 ]
 
 DEBRIEF = """

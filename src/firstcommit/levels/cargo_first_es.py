@@ -21,6 +21,7 @@ mirado con `git status`.
 HINTS = [
     "`git add` recibe el nombre del archivo: `git add map.txt`.",
     "Mira `git status`: lista `map.txt` en el staging area para tu próximo commit, y `journal.txt` como sin seguimiento. ¿Por qué?",
+    "Cada línea de la misión, en orden:\n\n    $ git add map.txt\n    $ git status",
 ]
 
 DEBRIEF = """

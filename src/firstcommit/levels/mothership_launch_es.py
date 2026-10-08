@@ -20,6 +20,7 @@ haya subido solo después de su commit y lo hayas enviado con un `git push` a se
 HINTS = [
     "El primer push de un branch dice adónde va: `git push -u origin main`.",
     'Haz el commit del cambio antes del push: `git commit -am "Add the Phobos stop"` y luego `git push`.',
+    'Cada línea de la misión, en orden:\n\n    $ git push -u origin main\n    $ echo "Stop: Phobos" >> route.txt\n    $ git push\n    $ git commit -am "Add the Phobos stop"\n    $ git push',
 ]
 
 DEBRIEF = """

@@ -21,6 +21,7 @@ La misión termina cuando hayas listado la carpeta con `ls` y hayas escrito `git
 HINTS = [
     "Escribe `ls` y presiona Enter. Lista lo que hay en la carpeta.",
     "Ahora escribe `git status`. Si muestra un error, bien: lee lo que dice.",
+    "Cada línea de la misión, en orden:\n\n    $ ls\n    $ git status",
 ]
 
 DEBRIEF = """

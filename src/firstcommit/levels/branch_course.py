@@ -46,6 +46,7 @@ HINTS = [
     "`git branch scout` makes the label; `git switch scout` moves you onto it.",
     'On `scout`, write the file and commit it: `echo "Probe: launched" > probe.txt && git add probe.txt && git commit -m "Launch the probe"`.',
     "`git switch main` takes you back; `ls` shows what the folder holds there.",
+    'Every line of the mission, in order:\n\n    $ git branch scout\n    $ git switch scout\n    $ echo "Probe: launched" > probe.txt && git add probe.txt && git commit -m "Launch the probe"\n    $ git switch main\n    $ ls',
 ]
 
 DEBRIEF = """

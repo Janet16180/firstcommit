@@ -507,17 +507,19 @@ a log before the commit, the journal sealed too (lost), and a commit without the
 ### Level `vault-look` (Look before you seal, 3-2)
 
 *Re-checked* by `tests/levels/test_vault_look.py`: the overnight edits as a level event, the
-whole path, the typo named by its file, `git add .` then `git restore --staged engine.cfg`, a
-staged check before the add, the typo committed (lost), and the two diffs after staging the fix.
+whole path, the accidental change named by its file, `git add .` then `git restore --staged
+engine.cfg`, a staged check before the add, the accidental change committed (lost), the two diffs
+after staging the route, and no text in either language calling it a typo (reframed 2026-10-08,
+from the user's playtest: the crew's note says only `route.txt` was meant to change).
 
 | Text | Claim | Evidence |
 |---|---|---|
 | card, debrief | `git diff` shows changes in the working folder not staged; `git diff --staged` what the next commit takes | E56, E57; git-diff(1) |
 | hint 1, `DIFFED` | each changed line twice, `-` before, `+` after | E56 |
-| `TYPO_FOUND`, `ROUTE_IS_FIX` | `power=99999` is the typo; the route gained a stop | setup |
-| `TYPO_STAGED`, `EVERYTHING_STAGED` | `git restore --staged engine.cfg` unstages it, the file keeps the edit | E58 |
-| `CHECKED`, `SEALED`, debrief | after staging the route, `--staged` shows only the new stop; the commit holds the fix, not the typo | E57, E59 |
-| `TYPO_SEALED` (lost) | a commit cannot be taken back until a later chapter | as vault-seal |
+| `ACCIDENT_FOUND`, `ROUTE_IS_MEANT` | `engine.cfg` changed to `power=99999`; the route gained a stop | setup |
+| `ACCIDENT_STAGED`, `EVERYTHING_STAGED` | `git restore --staged engine.cfg` unstages it, the file keeps the edit | E58 |
+| `CHECKED`, `SEALED`, debrief | after staging the route, `--staged` shows only the new stop; the commit holds the route's change, not the other | E57, E59 |
+| `ACCIDENT_SEALED` (lost) | a commit cannot be taken back until a later chapter | as vault-seal |
 
 ### Level `vault-inspection` (Cargo inspection, 3-5, challenge)
 
@@ -764,3 +766,28 @@ in `tests/test_decks.py`.
 | `conflict-add-solves` | the file stays unmerged until `git add` | `verify`; E88 |
 | `conflict-add-markers` | `git add` takes markers and all, and marks the conflict solved | `verify`; E90 |
 | notes | as the cards above, plus `--no-edit` and the editor | E85 |
+
+## No pager, and git's options before a subcommand (added 2026-10-08)
+
+Run in the image (`firstcommit:latest`, git 2.43.0):
+
+| Tag | What ran | Result |
+|---|---|---|
+| E98 | a global `core.pager = less`, `PAGER=less`, and the game's entries `core.editor=true`, `core.pager=cat` as `GIT_CONFIG_COUNT`; 200 commits; `git var GIT_PAGER`, then `git log` and `git --paginate log --oneline` on a terminal (`script`) | `cat`; both print all 200 commits and end at once, no key needed |
+| E99 | the same with `GIT_PAGER=less` set, then without the entries | `less` both times: only `GIT_PAGER` outranks the entries, and without them the global setting wins |
+| E100 | `git -C project log --oneline`, `git --no-pager -C project log --oneline` from the parent folder, `git -c color.ui=never log --oneline` inside | each lists the commit: the options before the subcommand change where or how, not which command runs |
+
+| Text | Claim | Evidence |
+|---|---|---|
+| `gitcmd.PLAYER_SETTINGS` | `core.pager=cat` as a `GIT_CONFIG_COUNT` entry outranks the configuration files and `PAGER`; only `GIT_PAGER` comes first | E98, E99; git-config(1) core.pager, git(1) `GIT_CONFIG_COUNT`, git-var(1) `GIT_PAGER`; *re-checked* by `tests/test_gitcmd.py` on a pseudo-terminal |
+| `reactions.plain` | `git --no-pager log` and `git -C . log` run `git log` | E100; git(1) OPTIONS (`-C`, `-c`, `--no-pager`, `-p`); *re-checked* by `tests/test_reactions.py` |
+
+## Any address that reaches the stand-in GitHub (added 2026-10-08)
+
+| Tag | What ran | Result |
+|---|---|---|
+| E101 | in the image, `git remote add origin` with `../github/project.git/`, `./../github/project.git`, the absolute path and `file:///<absolute path>`, each followed by `git push origin main` and `git fetch origin` | every push and fetch exits 0 |
+
+`kit.reaches_github` reads an address as git does (a relative path from the clone's top folder,
+`file://` stripped) and is *re-checked* by `tests/test_kit.py`; 4-1, 4-5 and 5-1 use it, with their
+level tests trying the other spellings.

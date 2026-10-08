@@ -22,6 +22,7 @@ HINTS = [
     "`git merge --no-edit scout` se detiene con `docking.txt` en conflicto; `cat docking.txt` muestra los dos lados entre marcadores.",
     "La bahía 4 es el lado de `scout`, el que llega: `git restore --theirs docking.txt` lo conserva.",
     "`git add docking.txt` marca el conflicto como resuelto; luego `git commit --no-edit` termina el merge con el mensaje de Git.",
+    "Cada línea de la misión, en orden:\n\n    $ git merge --no-edit scout\n    $ cat docking.txt\n    $ git restore --theirs docking.txt\n    $ git add docking.txt\n    $ git commit --no-edit",
 ]
 
 DEBRIEF = """

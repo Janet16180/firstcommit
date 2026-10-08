@@ -22,6 +22,7 @@ dos archivos estén como los dejó tu commit, y `todo.txt` todavía tenga tu not
 HINTS = [
     "`git status` dice que hay un merge en curso y lista los archivos en conflicto.",
     "`git merge --abort` sale del merge en pausa.",
+    "Cada línea de la misión, en orden:\n\n    $ git status\n    $ git merge --abort",
 ]
 
 DEBRIEF = """

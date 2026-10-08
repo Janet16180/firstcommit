@@ -46,6 +46,7 @@ The mission is done when you have listed the folder with `ls` and typed `git sta
 HINTS = [
     "Type `ls` and press Enter. It lists what is in the folder.",
     "Now type `git status`. If it prints an error, good: read what it says.",
+    "Every line of the mission, in order:\n\n    $ ls\n    $ git status",
 ]
 
 DEBRIEF = """

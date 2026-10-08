@@ -36,6 +36,7 @@ The mission is done when the folder is a repository, you have seen its hidden `.
 HINTS = [
     "The command that makes a repository is `git init`.",
     "Names that start with a dot are hidden. `ls -a` shows them.",
+    "Every line of the mission, in order:\n\n    $ git init\n    $ ls -a\n    $ git status",
 ]
 
 DEBRIEF = """

@@ -23,6 +23,7 @@ HINTS = [
     "`git log` lista todos los commits, del más reciente al más antiguo, con su hash, autor, fecha y mensaje.",
     "Dale a `git log` el nombre del archivo: `git log oxygen.cfg` lista solo los commits que lo cambiaron.",
     "El commit más reciente que lista `git log oxygen.cfg` es el que buscas: su línea `commit` tiene el hash, y su línea `Author`, el nombre.",
+    "Cada línea, en orden; luego escribe el hash de la línea `commit` de la entrada más nueva, y el nombre de su línea `Author`:\n\n    $ git log\n    $ git log oxygen.cfg",
 ]
 
 DEBRIEF = """

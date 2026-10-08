@@ -158,7 +158,7 @@ QUEST: list[kit.Step] = []    # optional; the first level of a chapter has one
 BRIEFING: str                 # the situation and what counts as success
 QUESTION: str = ""            # optional; set it when the level is solved by a typed answer
 PLACEHOLDER: str = ""         # optional; example shape of that answer ("a short hash")
-HINTS: list[str]              # 2-4, from a nudge to almost the answer; each lowers the XP (score.py)
+HINTS: list[str]              # 2-4, from a nudge to the answer; each lowers the XP (score.py); the last shows every line
 DEBRIEF: str                  # shown once solved
 
 def setup(lab: kit.Lab) -> kit.State: ...
@@ -211,6 +211,12 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
   `check` returns `kit.Verdict(False, message, lost=True)`: the message says what was lost, and
   the page offers to start the level again. The game runs `check` on every automatic poll, so a
   loss is reported at once, even during a guided quest.
+- **The last hint gives the whole answer**: a line of prose, then every line that solves the level,
+  in order, each on its own `$ ` line, exactly as the player types it (no comments). A player who
+  is stuck can always finish. `tests/test_levels.py` types those lines in the lab, one shell
+  folder carried from line to line as `cd` leaves it, and asserts every goal passes and `check`
+  solves the level; answers and predictions come from `QUEST_ACTIONS`. In a challenge it comes
+  after the hints that name the chapters and the ideas.
 - **`QUESTION`** is for levels whose goal is something the player finds out ("which commit
   introduced the bug?"). Without it, the page offers no answer box and the level is checked
   against the repository only, with `answer=None`.

@@ -21,6 +21,7 @@ HINTS = [
     "`git branch scout` crea la etiqueta; `git switch scout` te lleva a ella.",
     'En `scout`, escribe el archivo y haz commit: `echo "Probe: launched" > probe.txt && git add probe.txt && git commit -m "Launch the probe"`.',
     "`git switch main` te lleva de vuelta; `ls` muestra qué tiene la carpeta allí.",
+    'Cada línea de la misión, en orden:\n\n    $ git branch scout\n    $ git switch scout\n    $ echo "Probe: launched" > probe.txt && git add probe.txt && git commit -m "Launch the probe"\n    $ git switch main\n    $ ls',
 ]
 
 DEBRIEF = """

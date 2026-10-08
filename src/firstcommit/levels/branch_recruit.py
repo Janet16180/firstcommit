@@ -58,6 +58,7 @@ HINTS = [
     "`git clone` takes the address and makes a folder named after it: `git clone github/project.git` makes `project`.",
     "Go into the clone first: `cd project && git log --oneline` prints one line per commit.",
     "`git branch -a` lists your branches and the remote's, such as `remotes/origin/main`.",
+    "Every line, in order; the answer is the number of lines the log prints:\n\n    $ git clone github/project.git\n    $ cd project && git log --oneline\n    $ git branch -a",
 ]
 
 DEBRIEF = """
@@ -113,7 +114,7 @@ def _is_clone(lab: kit.Lab) -> bool:
     """
     exists = kit.snapshot(lab.project)["exists"]
     url = kit.git_run(lab.project, "remote", "get-url", "origin").stdout.strip() if exists else ""
-    return bool(url) and (lab.project / url).resolve() == lab.github.resolve()
+    return kit.reaches_github(lab, lab.project, url)
 
 
 def watch_clone(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:

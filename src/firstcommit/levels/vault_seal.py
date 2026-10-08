@@ -45,6 +45,7 @@ folder, and you have looked at the history with `git log`.
 HINTS = [
     "`git commit` takes a message with `-m`, in quotes.",
     'Type `git commit -m "Add the map"`, then `git log`.',
+    'Every line of the mission, in order:\n\n    $ git commit -m "Add the map"\n    $ git log',
 ]
 
 DEBRIEF = """

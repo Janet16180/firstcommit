@@ -1,3 +1,5 @@
+import pytest
+
 from firstcommit import kit
 from firstcommit.levels import mothership_contact as level
 from level_helpers import reaction, started, typed_in, watch
@@ -52,3 +54,10 @@ def test_without_a_remote_the_goal_says_how_to_add_one() -> None:
 
 def test_the_prediction_passes_with_any_option() -> None:
     assert all(kit.choose(level.GUESS, option).solved for option in level.GUESS.options)
+
+
+@pytest.mark.parametrize("url", ["../github/project.git/", "./../github/project.git", "{github}", "file://{github}"])
+def test_any_address_that_reaches_the_mothership_makes_contact(url: str) -> None:
+    lab, state = started(level)
+    typed_in(lab, f"git remote add origin {url.format(github=lab.github)}")
+    assert watch(level, "remote").watch(lab, state, []).message == level.CONTACT

@@ -40,6 +40,7 @@ HOSTILE = [
     "x" * 60_000,
 ]
 PLACEHOLDER = re.compile(r"\{\{\s*(\w+)\s*\}\}")
+SHOWN_COMMAND = re.compile(r"^ *\$ (.+)$", re.MULTILINE)
 QuestAction = Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]
 HOSTILE_LINES: list[kit.Command] = [{"line": line, "status": status} for line in HOSTILE for status in (0, 1, 127)]
 
@@ -278,3 +279,82 @@ def test_checks_survive_a_lab_the_player_wrecked(package: ModuleType, level: run
 @pytest.mark.parametrize(("package", "level"), CASES, ids=IDS)
 def test_every_reaction_of_a_level_has_its_spanish(package: ModuleType, level: runner.Level) -> None:
     assert_spoken(level, [kit.Verdict(False, rule.text) for rule in level.reactions])
+
+
+def shown_commands(level: runner.Level, state: kit.State) -> list[str]:
+    """
+    Read the commands a level's last hint shows, its placeholders filled as the page fills them.
+
+    Parameters
+    ----------
+    level : runner.Level
+        The level.
+    state : kit.State
+        Its state.
+
+    Returns
+    -------
+    list[str]
+        Each ``$ `` line of the last English hint, without the ``$ ``.
+    """
+    hint = PLACEHOLDER.sub(lambda match: str(state[match[1]]), level.texts["en"].hints[-1])
+    return SHOWN_COMMAND.findall(hint)
+
+
+def type_in_one_shell(lab: kit.Lab, folder: Path, line: str) -> tuple[kit.Command, Path]:
+    """
+    Type a line in a terminal that is in a folder, and tell where the terminal is afterwards.
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The lab, for a scratch file outside the player's folders.
+    folder : Path
+        Where the terminal is.
+    line : str
+        The line.
+
+    Returns
+    -------
+    tuple[kit.Command, Path]
+        The line as typed with its status, and the terminal's folder after it (a ``cd`` moves it).
+    """
+    where = lab.root.parent / f"{lab.root.name}.cwd"
+    ran = kit.type_line(folder, f'{line}\nstatus=$?; pwd > "{where}"; exit $status')
+    after = Path(where.read_text().strip())
+    where.unlink()
+    return {"line": line, "status": ran["status"]}, after
+
+
+@pytest.mark.parametrize("level", list(runner.catalogue().values()), ids=list(runner.catalogue()))
+def test_the_last_hint_shows_commands_that_solve_the_level_typed_as_written(level: runner.Level, game_home: Path) -> None:
+    state = runner.start_lab(level)
+    lab = runner.lab_of(level.id)
+    fire(level, lab, state, "")
+    actions = quest_actions(levels, level)
+    commands = shown_commands(level, state)
+    assert commands, "the last hint shows the commands that solve the level, each on a `$ ` line"
+    typed: list[kit.Command] = []
+    folder = lab.project if lab.project.is_dir() else lab.root
+    done: list[str] = []
+
+    def advance() -> None:
+        for step in level.quest:
+            if step.id in done or (not level.challenge and len(done) < level.quest.index(step)):
+                continue
+            answer = actions[step.id](lab, state, []) if not isinstance(step, kit.WatchStep) else None
+            verdict = step.watch(lab, state, typed) if isinstance(step, kit.WatchStep) else kit.Verdict(True, "")
+            if isinstance(step, kit.AnswerStep):
+                verdict = step.check(lab, state, answer or "")
+            if verdict.solved:
+                done.append(step.id)
+                fire(level, lab, state, step.id)
+
+    advance()
+    for line in commands:
+        command, folder = type_in_one_shell(lab, folder, line)
+        typed.append(command)
+        advance()
+    answer = level.solve(lab, state, []) if level.texts["en"].question else None
+    assert done == [step.id for step in level.quest] or (level.challenge and sorted(done) == sorted(step.id for step in level.quest))
+    assert level.check(lab, state, answer, typed).solved

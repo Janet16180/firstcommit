@@ -60,6 +60,7 @@ HINTS = [
     "`git log` lists every commit, newest first, with its hash, author, date and message.",
     "Give `git log` the file's name: `git log oxygen.cfg` lists only the commits that changed it.",
     "The newest commit `git log oxygen.cfg` lists is the one you want: its `commit` line holds the hash, its `Author` line the name.",
+    "Every line, in order; then type the hash on the newest entry's `commit` line, and the name on its `Author` line:\n\n    $ git log\n    $ git log oxygen.cfg",
 ]
 
 DEBRIEF = """

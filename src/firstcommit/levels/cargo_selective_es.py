@@ -16,6 +16,7 @@ esté y hayas mirado con `git status`.
 HINTS = [
     "`git add` acepta varios nombres en una misma línea, separados por espacios.",
     "Escribe `git add engine.cfg route.txt` y luego `git status`.",
+    "Cada línea de la misión, en orden:\n\n    $ git add engine.cfg route.txt\n    $ git status",
 ]
 
 DEBRIEF = """

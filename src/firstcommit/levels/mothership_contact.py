@@ -42,6 +42,7 @@ with `git remote -v`.
 HINTS = [
     "`git remote add` takes a name, then the address: `git remote add origin ../github/project.git`.",
     "`git remote -v` lists each remote's name with its address.",
+    "Every line of the mission, in order:\n\n    $ git remote add origin ../github/project.git\n    $ git remote -v",
 ]
 
 DEBRIEF = """
@@ -114,7 +115,7 @@ def watch_remote(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdic
         message = NO_REMOTE
     elif REMOTE not in remotes:
         message = OTHER_NAME
-    elif url != lab.github_url(lab.project):
+    elif not kit.reaches_github(lab, lab.project, url):
         message = WRONG_URL
     return kit.Verdict(message == CONTACT, message)
 

@@ -22,6 +22,7 @@ HINTS = [
     "`git clone` recibe la dirección y crea una carpeta con su nombre: `git clone github/project.git` crea `project`.",
     "Primero entra al clone: `cd project && git log --oneline` muestra una línea por commit.",
     "`git branch -a` lista tus branches y los del remoto, como `remotes/origin/main`.",
+    "Cada línea, en orden; la respuesta es la cantidad de líneas que muestra el log:\n\n    $ git clone github/project.git\n    $ cd project && git log --oneline\n    $ git branch -a",
 ]
 
 DEBRIEF = """

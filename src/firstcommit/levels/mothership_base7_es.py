@@ -22,6 +22,7 @@ de la nave nodriza sea el mismo que el tuyo.
 HINTS = [
     "Son todos los capítulos hasta ahora, en orden: el despegue, el muelle de carga, la bóveda y la nave nodriza.",
     "Primero un repositorio; luego elige la carga por su nombre, séllala, nombra la nave nodriza y lanza.",
+    'Cada línea de la misión, en orden:\n\n    $ git init\n    $ git add blueprint.txt reactor.cfg\n    $ git commit -m "Rebuild Base 7"\n    $ git remote add origin ../github/project.git\n    $ git push -u origin main',
 ]
 
 DEBRIEF = """

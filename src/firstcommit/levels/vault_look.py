@@ -2,12 +2,13 @@
 Look before you seal: ``git diff`` shows what changed, ``git diff --staged`` what the commit will take.
 
 Wave 1, vault 3-2 (docs/drafts/chapters-3-7.md), guided. Setup commits the route and the engine
-settings; the overnight edits (a real fix to the route, a typo in the engine) are a level
-event, run after the page's first look, so the page shows both files changing. The goals: read
-the changes with ``git diff`` (typed), name the file with the typo (an answer), stage only the
-fix and check it with ``git diff --staged`` (typed after the last add), then commit it. The
-stage and commit goals read the blob ids setup saved, so a staged or committed fix counts and
-the typo never may. A typo sealed in a capsule cannot be taken back yet: the level says so and
+settings; the overnight edits (the new stop the crew's note asks for in the route, and an
+accidental change to the engine) are a level event, run after the page's first look, so the page
+shows both files changing. The goals: read the changes with ``git diff`` (typed), name the file
+that changed by accident (an answer), stage only the route and check it with
+``git diff --staged`` (typed after the last add), then commit it. The stage and commit goals read
+the blob ids setup saved, so a staged or committed route counts and the accidental change never
+may. An accidental change sealed in a capsule cannot be taken back yet: the level says so and
 offers to start again.
 """
 
@@ -33,29 +34,34 @@ ROUTE = "route.txt"
 ENGINE = "engine.cfg"
 START = {ROUTE: "Route: Earth, Moon, Mars\n", ENGINE: "power=85\n"}
 OVERNIGHT = {ROUTE: "Route: Earth, Moon, Phobos, Mars\n", ENGINE: "power=99999\n"}
-TYPO_NAMES = ("engine.cfg", "engine")
-FIX_NAMES = ("route.txt", "route")
+ACCIDENT_NAMES = ("engine.cfg", "engine")
+ROUTE_NAMES = ("route.txt", "route")
 DIFF = r"git diff( --no-color)?$"
 STAGED_DIFF = r"git diff( \S+)* (--staged|--cached)\b"
 ADD = r"git add\b"
 
 BRIEFING = """
-Someone edited two files overnight: one change is a real fix, the other a typo. Read the
-changes, then seal only the fix into a capsule.
+Someone edited two files overnight. The night crew left a note: only `route.txt` was meant to
+change, to add a stop. Read the changes, then seal only the route's change into a capsule.
 
-The mission is done when you have read the changes with `git diff`, named the file with the typo,
-checked the staging area with `git diff --staged`, and a new commit holds the fix and not the typo.
+The mission is done when you have read the changes with `git diff`, named the file that changed
+by accident, checked the staging area with `git diff --staged`, and a new commit holds the
+route's change and not the other one.
 """
 
 HINTS = [
     "`git diff` shows each changed line twice: `-` before it, `+` after it.",
-    "Stage only the fix with `git add route.txt`, check it with `git diff --staged`, then commit.",
+    "Stage only the route with `git add route.txt`, check it with `git diff --staged`, then commit.",
+    'Every line of the mission, in order:\n\n    $ git diff\n    $ git add route.txt\n    $ git diff --staged\n    $ git commit -m "Add the Phobos stop"',
 ]
 
 DEBRIEF = """
 `git diff` compared the working folder with the staging area and showed both edits. Once the
 route was staged, `git diff --staged` showed exactly what the commit would take: the new stop,
-and not the typo. The typo is still in `engine.cfg`, in the working folder, sealed in no capsule.
+and not the accidental change. That change is still in `engine.cfg`, in the working folder,
+sealed in no capsule.
+
+At work, a look at `git diff` before each commit catches the edits you never meant to make.
 
 Commands to keep:
 
@@ -67,28 +73,28 @@ NO_REPOSITORY = "This folder is no longer a repository: `.git` is gone. Leave th
 WAITING = "Nothing has changed yet. Wait a moment for the overnight edits."
 DIFFED = "`git diff` shows each changed line: `-` the line before, `+` the line now."
 NOT_DIFFED = "Read the changes first: type `git diff`."
-TYPO_FOUND = "Right: `power=99999` is the typo. The route's change is the real fix."
-ROUTE_IS_FIX = "`route.txt` holds the fix: a new stop on the route. Look again at the line `git diff` shows for `engine.cfg`."
+ACCIDENT_FOUND = "Right: `engine.cfg` changed by accident, to `power=99999`. The note asked only for the route's new stop."
+ROUTE_IS_MEANT = "`route.txt` holds the change the note asks for: a new stop. Look again at the line `git diff` shows for `engine.cfg`."
 NOT_A_FILE = "Type the name of one of the two files `git diff` shows."
-FIX_STAGED = "The fix is staged, and the typo stays in the working folder."
-FIX_NOT_STAGED = "Stage only the fix: `git add route.txt`."
-TYPO_STAGED = "The typo in `engine.cfg` is staged too. `git restore --staged engine.cfg` takes it out; the file keeps the edit."
-TYPO_SEALED = (
-    "The typo in `engine.cfg` is in a commit now. Taking a commit back comes in a later chapter: "
+ROUTE_STAGED = "The route's change is staged, and the accidental one stays in the working folder."
+ROUTE_NOT_STAGED = "Stage only the route: `git add route.txt`."
+ACCIDENT_STAGED = "The accidental change in `engine.cfg` is staged too. `git restore --staged engine.cfg` takes it out; the file keeps the edit."
+ACCIDENT_SEALED = (
+    "The accidental change in `engine.cfg` is in a commit now. Taking a commit back comes in a later chapter: "
     "start the mission again."
 )
 CHECKED = "`git diff --staged` shows what the next commit will take: the route's new stop, and nothing else."
 NOT_CHECKED = "Check what the next commit will take: `git diff --staged`."
-SEALED = "The fix is sealed in a capsule, and the typo is in none."
-NOT_SEALED = 'Seal the fix into a capsule: `git commit -m "Add the Phobos stop"`.'
-EVERYTHING_STAGED = "That staged the typo too. `git diff --staged` shows it; `git restore --staged engine.cfg` takes it back out."
+SEALED = "The route's change is sealed in a capsule, and the accidental one is in none."
+NOT_SEALED = 'Seal the route\'s change into a capsule: `git commit -m "Add the Phobos stop"`.'
+EVERYTHING_STAGED = "That staged the accidental change too. `git diff --staged` shows it; `git restore --staged engine.cfg` takes it back out."
 
 REACTIONS = [kit.ReactionRule(line=r"git add( \S+)* (\.|-A|--all|engine\.cfg)( |$)", mood="warn", text=EVERYTHING_STAGED, event="file-staged")]
 
 
 def overnight_edits(lab: kit.Lab, state: kit.State) -> None:
     """
-    Make the overnight edits: the fix to the route and the typo in the engine settings.
+    Make the overnight edits: the new stop in the route and the accidental change to the engine settings.
 
     Parameters
     ----------
@@ -150,9 +156,9 @@ def watch_diff(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
     return kit.Verdict(message == DIFFED, message)
 
 
-def names_the_typo(lab: kit.Lab, state: kit.State, answer: str) -> kit.Verdict:
+def names_the_accident(lab: kit.Lab, state: kit.State, answer: str) -> kit.Verdict:
     """
-    Pass when the player names the engine settings as the file with the typo.
+    Pass when the player names the engine settings as the file that changed by accident.
 
     Parameters
     ----------
@@ -170,16 +176,16 @@ def names_the_typo(lab: kit.Lab, state: kit.State, answer: str) -> kit.Verdict:
     """
     name = answer.strip().strip("`").lower()
     message = NOT_A_FILE
-    if name in TYPO_NAMES:
-        message = TYPO_FOUND
-    elif name in FIX_NAMES:
-        message = ROUTE_IS_FIX
-    return kit.Verdict(message == TYPO_FOUND, message)
+    if name in ACCIDENT_NAMES:
+        message = ACCIDENT_FOUND
+    elif name in ROUTE_NAMES:
+        message = ROUTE_IS_MEANT
+    return kit.Verdict(message == ACCIDENT_FOUND, message)
 
 
 def watch_stage(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
     """
-    Pass once the staging area holds the fixed route (staged or committed) and the engine as it started.
+    Pass once the staging area holds the new route (staged or committed) and the engine as it started.
 
     Parameters
     ----------
@@ -193,26 +199,26 @@ def watch_stage(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict
     Returns
     -------
     kit.Verdict
-        The step's verdict, with the next thing to do; lost once the typo is in a commit.
+        The step's verdict, with the next thing to do; lost once the accidental change is in a commit.
     """
     exists = kit.snapshot(lab.project)["exists"]
     head, index = _blobs(lab, "head"), _blobs(lab, "index")
-    sealed = head[ENGINE] == state["typo"]
-    message = FIX_STAGED
+    sealed = head[ENGINE] == state["accident"]
+    message = ROUTE_STAGED
     if not exists:
         message = NO_REPOSITORY
     elif sealed:
-        message = TYPO_SEALED
+        message = ACCIDENT_SEALED
     elif index[ENGINE] != state["start"][ENGINE]:
-        message = TYPO_STAGED
-    elif index[ROUTE] != state["fix"]:
-        message = FIX_NOT_STAGED
-    return kit.Verdict(message == FIX_STAGED, message, lost=sealed)
+        message = ACCIDENT_STAGED
+    elif index[ROUTE] != state["route"]:
+        message = ROUTE_NOT_STAGED
+    return kit.Verdict(message == ROUTE_STAGED, message, lost=sealed)
 
 
 def watch_staged_diff(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
     """
-    Pass once ``git diff --staged`` worked after the last ``git add`` that worked, with only the fix staged.
+    Pass once ``git diff --staged`` worked after the last ``git add`` that worked, with only the route staged.
 
     Parameters
     ----------
@@ -236,7 +242,7 @@ def watch_staged_diff(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.V
 
 def watch_commit(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
     """
-    Pass once the last commit holds the fixed route and the engine as it started.
+    Pass once the last commit holds the new route and the engine as it started.
 
     Parameters
     ----------
@@ -253,17 +259,23 @@ def watch_commit(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdic
         The step's verdict; the staging area comes first.
     """
     staged = watch_stage(lab, state, typed)
-    sealed = _blobs(lab, "head")[ROUTE] == state["fix"]
+    sealed = _blobs(lab, "head")[ROUTE] == state["route"]
     verdict = kit.Verdict(sealed, SEALED if sealed else NOT_SEALED)
     return verdict if staged.solved else staged
 
 
 QUEST: list[kit.Step] = [
     kit.WatchStep(id="diff", text="Read what changed overnight.", command="git diff", watch=watch_diff),
-    kit.AnswerStep(id="typo", text="Find the typo.", question="Which file holds the typo?", placeholder="a file name", check=names_the_typo),
-    kit.WatchStep(id="stage", text="Stage only the fix.", command="git add route.txt", watch=watch_stage),
+    kit.AnswerStep(
+        id="accident",
+        text="Find the change nobody asked for.",
+        question="Which file changed by accident?",
+        placeholder="a file name",
+        check=names_the_accident,
+    ),
+    kit.WatchStep(id="stage", text="Stage only the route.", command="git add route.txt", watch=watch_stage),
     kit.WatchStep(id="check", text="Check what the next commit will take.", command="git diff --staged", watch=watch_staged_diff),
-    kit.WatchStep(id="commit", text="Seal the fix into a capsule.", command='git commit -m "Add the Phobos stop"', watch=watch_commit),
+    kit.WatchStep(id="commit", text="Seal the route's change into a capsule.", command='git commit -m "Add the Phobos stop"', watch=watch_commit),
 ]
 
 
@@ -279,7 +291,7 @@ def setup(lab: kit.Lab) -> kit.State:
     Returns
     -------
     kit.State
-        ``start``: each file's blob id as committed; ``fix`` and ``typo``: the route's and the
+        ``start``: each file's blob id as committed; ``route`` and ``accident``: the route's and the
         engine's ids after the overnight edits.
     """
     kit.git(lab.root, "init", "-q", str(lab.project))
@@ -289,12 +301,12 @@ def setup(lab: kit.Lab) -> kit.State:
     kit.git(lab.project, "commit", "-q", "-m", "Set the route and the engine", when="2026-04-01T09:00:00+00:00")
     blob = {name: kit.git(lab.project, "hash-object", "--stdin", stdin=text).strip() for name, text in OVERNIGHT.items()}
     start = {name: kit.git(lab.project, "rev-parse", f"HEAD:{name}").strip() for name in START}
-    return {"start": start, "fix": blob[ROUTE], "typo": blob[ENGINE]}
+    return {"start": start, "route": blob[ROUTE], "accident": blob[ENGINE]}
 
 
 def check(lab: kit.Lab, state: kit.State, answer: str | None, typed: kit.Typed) -> kit.Verdict:
     """
-    Solved once the fix is committed without the typo.
+    Solved once the route's change is committed without the accidental one.
 
     Parameters
     ----------
@@ -338,9 +350,9 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
     return None
 
 
-def name_typo(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
+def name_accident(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
     """
-    Name the file the diff shows the typo in.
+    Name the file the diff shows changed by accident.
 
     Parameters
     ----------
@@ -361,7 +373,7 @@ def name_typo(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str |
 
 QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]] = {
     "diff": kit.typing("git diff"),
-    "typo": name_typo,
+    "accident": name_accident,
     "stage": kit.typing(f"git add {ROUTE}"),
     "check": kit.typing("git diff --staged"),
     "commit": kit.typing('git commit -m "Add the Phobos stop"'),

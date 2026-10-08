@@ -12,6 +12,7 @@ import hashlib
 import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Literal
 
 from firstcommit.commands import type_line
@@ -87,6 +88,7 @@ __all__ = [
     "parse_int",
     "press",
     "reachable",
+    "reaches_github",
     "type_line",
     "typed",
     "typing",
@@ -447,3 +449,30 @@ def answer_is(answer: str | None, expected_digest: str) -> bool:
         True if the answer matches.
     """
     return answer is not None and digest(answer) == expected_digest
+
+
+def reaches_github(lab: Lab, clone: Path, url: str) -> bool:
+    """
+    Tell whether a remote's address leads to the lab's stand-in GitHub, however it is written.
+
+    Git reads a relative path from the clone's top folder, so ``../github/project.git``,
+    ``./../github/project.git``, a trailing slash, the absolute path and a ``file://`` address all
+    reach the same repository.
+
+    Parameters
+    ----------
+    lab : Lab
+        The lab, with its GitHub.
+    clone : Path
+        The top folder of the clone whose remote it is.
+    url : str
+        The remote's address, as ``git remote get-url`` prints it.
+
+    Returns
+    -------
+    bool
+        True when the address names the lab's GitHub folder.
+    """
+    path = Path(url.removeprefix("file://"))
+    target = path if path.is_absolute() else clone / path
+    return bool(url) and target.resolve() == lab.github.resolve()

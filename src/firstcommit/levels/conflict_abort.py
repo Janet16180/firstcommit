@@ -46,6 +46,7 @@ both files are as your commit left them, and `todo.txt` still holds your note.
 HINTS = [
     "`git status` says a merge is in progress and lists the conflicted files.",
     "`git merge --abort` steps back out of the paused merge.",
+    "Every line of the mission, in order:\n\n    $ git status\n    $ git merge --abort",
 ]
 
 DEBRIEF = """
