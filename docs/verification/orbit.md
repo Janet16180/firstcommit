@@ -572,3 +572,41 @@ order, and a local commit after the push.
 | card | `git status` says what is staged, what changed, and how the branch stands against its upstream | E14, E53, E63; git-status(1) |
 | `DEBRIS_SEALED`, `DEBRIS_LAUNCHED` (lost) | a commit cannot be taken back until a later chapter | as vault-seal; `kit.in_history` on both repositories |
 | scene, briefing | the history was lost with the computer; the files survived | setup: a plain folder, no `.git` (E33: the history lives only in `.git`) |
+
+## Wave 2: the branch chapter (added 2026-10-08)
+
+Experiments run in the image (`firstcommit:latest`, git 2.43.0) with the game's configuration, as
+for wave 1, numbered on from E68:
+
+| Tag | What ran | Result |
+|---|---|---|
+| E69 | a bare `github/project.git` with five commits by three people; from its parent folder, `git clone github/project.git` | status 0; the folder `project`; `origin` records the bare repository's absolute path; `git log --oneline` there lists all five, the newest with `(HEAD -> main, origin/main, origin/HEAD)`; `git branch -a` lists `main`, `remotes/origin/HEAD -> origin/main` and `remotes/origin/main`; `git log --reverse --format=%an` starts with the first author |
+| E70 | the same `git clone` again, with `project` there | status 128: the destination exists and is not empty |
+| E71 | in the clone, `git branch scout`, then `ls`, `git log --oneline -1`, `git branch` | status 0; the folder unchanged; `scout` on the same commit as `main`; still on `main` (`* main`) |
+| E72 | `git branch scout` again; `git switch nosuch` | both 128: the branch exists; no such reference |
+| E73 | `git switch scout`, commit `probe.txt`, `git switch main`, `ls`, `git switch scout`, `ls` | all 0; `scout` moves on and `main` stays; on `main` the folder has no `probe.txt`; back on `scout` it does |
+| E74 | `git switch -c side`; `git checkout -b side2` | both 0, each on its new branch |
+| E75 | a clone level with its remote and a local `scout` the remote lacks; on `main`, a plain `git push` | status 0, everything up to date; the remote has `main` only |
+| E76 | on `scout`, a plain `git push` | status 128: `scout` has no upstream; git suggests `--set-upstream origin scout` |
+| E77 | `git push -u origin scout`, from `scout` and, in a fresh setup, from `main`; `git branch -r` | status 0 both ways; the remote has `scout` at the local `scout`; `scout@{upstream}` is `origin/scout`; still on `main` in the second; `-r` lists `origin/main` and `origin/scout` |
+| E78 | `git push --all` | status 0; every local branch reaches the remote |
+| E79 | the playground with `lights.cfg` on `main` and your uncommitted fix to it; Alex pushes a change to `notes.txt`; `git switch -c fix-lights`, `git commit -am`, `git push -u origin fix-lights`, `git switch main`, `git pull` | all 0; the edit came along (` M lights.cfg` on `fix-lights`); the remote's `fix-lights` holds the fix, its `main` only Alex's commit and the start; back on `main` the file is unfixed; the pull fast-forwards to Alex's commit |
+| E80 | the same setup; `git restore lights.cfg` | the fix is gone from the folder, in no commit |
+| E81 | the same setup; `git stash` | the fix is kept in a commit `refs/stash` reaches (`git stash list` shows it) |
+| E82 | from the lab, `bash -c 'cd project && git log --oneline'` | status 0: the line's status is git's |
+
+### Level `branch-recruit` (New recruit, 5-1)
+
+*Re-checked* by `tests/levels/test_branch_recruit.py`: no project folder at the start, the
+history's size and authors, the clone holding every commit, the count right and wrong and not a
+number, a `git log` before the clone and before `cd project` (Rama's two answers), a clone in
+another folder, and a plain repository named `project`.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, debrief, scene | a clone copies the whole history, names the address `origin`, and makes a branch such as `main` to work on | E69; git-clone(1) DESCRIPTION ("creates and checks out an initial branch that is forked from the cloned repository's currently active branch") |
+| briefing, hint 1 | `git clone github/project.git` makes the folder `project` | E69, E70 |
+| hint 2, `RIGHT_COUNT`, `WRONG_COUNT` | `git log --oneline` prints one line per commit | E69 |
+| hint 3, `LISTED`, debrief | `git branch -a` lists your branches and the remote's, as `remotes/origin/main` | E69; git-branch(1) DESCRIPTION ("option -a shows both local and remote branches") |
+| debrief | `origin/main` is the record of the remote's `main` as last heard | git-clone(1) ("remote-tracking branches"); gitglossary(7) remote-tracking branch; E53 |
+| `NOT_CLONED_YET`, `OUTSIDE_THE_CLONE` | a git command in the lab's folder fails, before the clone and after it, until `cd project` | the level's tests (status 128 both times); E82 |
