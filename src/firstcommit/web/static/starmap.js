@@ -4,7 +4,8 @@
  * The map screen: Rama and the game's name, a bar with the stars won, the missions done, the
  * field guide, the cards due and the look and sound buttons, then every chapter as a
  * sector in play order. A sector with missions is a strip of space with its planet and its
- * numbered mission nodes along a route; a chapter with none yet is a sector coming soon.
+ * numbered mission nodes along a route; a chapter with none yet is a sector coming soon. After
+ * the last sector with missions, the Playground, a landmark of its own, open from the start.
  * Choosing a node shows its mission on the card at the bottom (its command and best stars),
  * whose button opens the level. Everything comes from firstcommit/game.py's Status. Needs
  * dom.js, strings.js, art-sprites.js, art-sky.js, progress.js and dialog.js. Defines one
@@ -98,6 +99,16 @@ const StarMap = (function () {
     return el("section", { class: "sector" }, sectorHead(chapter, index), field(chapter, index, options));
   }
 
+  const landmark = () => el("a", { class: "landmark px", href: "#/playground" }, el("b", { class: "landmark-name" }, t("map.playground")), el("span", { class: "landmark-blurb" }, t("map.playgroundBlurb")));
+
+  /* The sectors in play order, the Playground's landmark right after the last one with missions. */
+  function sectors(status, options) {
+    const drawn = status.chapters.map((chapter, index) => sector(chapter, index, options));
+    const after = status.chapters.map((chapter) => chapter.levels.length > 0).lastIndexOf(true);
+    drawn.splice(after + 1, 0, landmark());
+    return drawn;
+  }
+
   function playLabel(level, active) {
     let key = "map.start";
     if (active && active.level === level.id) key = "map.continue";
@@ -153,7 +164,7 @@ const StarMap = (function () {
     const element = el("div", { class: "starmap" },
       head(),
       bar(status, ctx.prefButtons),
-      el("div", { class: "sectors" }, status.chapters.map((chapter, index) => sector(chapter, index, { here, onChoose: choose }))),
+      el("div", { class: "sectors" }, sectors(status, { here, onChoose: choose })),
       el("footer", { class: "map-foot" }, el("button", { type: "button", class: "btn btn-quiet btn-small erase", onclick: () => erase(ctx) }, t("map.erase"))),
       card,
     );

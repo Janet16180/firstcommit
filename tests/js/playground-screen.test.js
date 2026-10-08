@@ -3,17 +3,17 @@
 const assert = require("node:assert/strict");
 const test = require("node:test");
 const { makeEvent } = require("./fakedom");
-const { createClock, fakeServer, installBrowser, load, settle } = require("./load");
+const { createClock, fakeServer, installBrowser, load, record, settle } = require("./load");
 const Pg = require("./playground-records");
 
 const document = installBrowser({ reducedMotion: true });
 const { PlaygroundScreen, PlaygroundSummary, createGameApi } = load(
-  ["dom.js", "strings.js", "places.js", "art-pixels.js", "art-sprites.js", "api.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "dialog.js", "keep-panel.js", "editor-strip.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "git-graph.js", "playground-summary.js", "playground-picture.js", "playground-screen.js"],
+  ["dom.js", "strings.js", "places.js", "art-pixels.js", "art-sprites.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "dialog.js", "keep-panel.js", "editor-strip.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "git-graph.js", "playground-summary.js", "playground-picture.js", "playground-screen.js"],
   ["PlaygroundScreen", "PlaygroundSummary", "createGameApi"],
 );
 
 /* A playground screen: `lab` answers each look at the lab (an observation, or a function giving one). */
-function screen({ playground = Pg.playground(), lab = Pg.observation(), route = {}, replies = {} } = {}) {
+function screen({ playground = Pg.playground(), lab = Pg.observation(), route = {}, replies = {}, back = null } = {}) {
   const clock = createClock();
   const server = fakeServer({
     "/api/playground": playground,
@@ -34,7 +34,7 @@ function screen({ playground = Pg.playground(), lab = Pg.observation(), route = 
     detach: () => (shells.detached += 1),
     type: (person, text) => (shells.typed = [...(shells.typed || []), [person, text]]),
   };
-  const ctx = { game: createGameApi(server.api), timers: clock, page: document, reducedMotion: true, playTerminals };
+  const ctx = { game: createGameApi(server.api), timers: clock, page: document, reducedMotion: true, playTerminals, status: () => record("status"), back: () => back };
   const view = PlaygroundScreen.create(ctx, { view: "playground", start: null, picture: null, tryLine: null, ...route });
   document.body.replaceChildren(view.element);
   const q = (selector) => view.element.querySelector(selector);
@@ -342,4 +342,117 @@ test("Get me out types the editor's quit keys in its own terminal", async () => 
   document.body.querySelector("dialog button.is-confirm").dispatchEvent(makeEvent("click"));
   await settle();
   assert.deepEqual(run.shells.keys, [["alex", "\x1b:q!\r"]]);
+});
+
+/* Answers the dialog the page shows: "confirm" or "cancel". */
+async function answer(which) {
+  await settle();
+  const dialog = document.body.querySelector("dialog");
+  assert.ok(dialog, "a dialog asks first");
+  const text = dialog.textContent;
+  dialog.querySelector(`button.is-${which}`).dispatchEvent(makeEvent("click"));
+  await settle();
+  await settle();
+  return text;
+}
+
+test("the picker names each start, its blurb and the chapter whose commands it uses, none locked", async () => {
+  const run = screen({ playground: Pg.playground({ start: null }) });
+  await settle();
+  assert.equal(run.q(".pg-choose").textContent, "Choose a starting point");
+  const both = run.q(".pg-choice[data-start=\"both\"]");
+  assert.equal(both.querySelector(".pg-choice-title").textContent, "Start both");
+  assert.equal(both.querySelector(".pg-choice-uses").textContent, "uses Collisions");
+  assert.equal(run.q(".pg-choice[data-start=\"empty\"] .pg-choice-uses"), null);
+  assert.ok(run.all(".pg-choice").every((choice) => !choice.disabled));
+  assert.match(run.q(".pg-choose-note").textContent, /Nothing you do here touches your missions/);
+  assert.equal(run.q(".pg-choose-cancel"), null, "nothing to go back to yet");
+});
+
+test("Start over asks first, saying what is erased and what is never touched, then builds the start again with new shells", async () => {
+  const run = screen();
+  await run.clock.advance(0);
+  run.click(".pg-over");
+  const asked = await answer("cancel");
+  assert.match(asked, /Start over\?.*goes back to how "Start branches" began.*Alex's too.*missions are not touched/);
+  assert.equal(run.calls("/api/playground/start").length, 0);
+  run.click(".pg-over");
+  await answer("confirm");
+  assert.deepEqual(run.calls("/api/playground/start").map((call) => call.body), [{ start: "branches" }]);
+  assert.deepEqual(run.shells.attached.at(-1), ["you", "s2"]);
+  assert.ok(run.q(".pg-picture .chain"));
+});
+
+test("Other start opens the picker over the playground; Cancel goes back, a choice asks first", async () => {
+  const run = screen();
+  await run.clock.advance(0);
+  run.click(".pg-other");
+  assert.ok(run.q(".pg-body").hidden);
+  assert.equal(run.all(".pg-choice").length, 7);
+  run.click(".pg-choose-cancel");
+  assert.equal(run.q(".pg-body").hidden, false);
+  assert.equal(run.q(".pg-choices"), null);
+  run.click(".pg-other");
+  run.click(".pg-choice[data-start=\"lost\"]");
+  const asked = await answer("confirm");
+  assert.match(asked, /Start from "Start lost"\?.*erased.*missions are not touched/);
+  assert.deepEqual(run.calls("/api/playground/start").map((call) => call.body), [{ start: "lost" }]);
+  assert.equal(run.q(".pg-start").textContent, "Start lost");
+});
+
+test("an address naming the current start keeps its lab", async () => {
+  const run = screen({ route: { start: "branches" } });
+  await settle();
+  assert.equal(run.calls("/api/playground/start").length, 0);
+  assert.equal(run.q(".pg-start").textContent, "Start branches");
+});
+
+test("an address naming another start asks before it replaces the lab, and keeps the lab if not", async () => {
+  const run = screen({ route: { start: "lost", tryLine: "git reflog" } });
+  await answer("cancel");
+  assert.equal(run.calls("/api/playground/start").length, 0);
+  assert.equal(run.q(".pg-start").textContent, "Start branches");
+  assert.equal(run.q(".pg-try"), null, "the line was for the other start");
+  const yes = screen({ route: { start: "lost" } });
+  await answer("confirm");
+  assert.deepEqual(yes.calls("/api/playground/start").map((call) => call.body), [{ start: "lost" }]);
+});
+
+test("with no start yet, an address naming one builds it without asking", async () => {
+  const run = screen({ playground: Pg.playground({ start: null }), route: { start: "conflict" } });
+  await settle();
+  await settle();
+  assert.equal(document.body.querySelector("dialog"), null);
+  assert.deepEqual(run.calls("/api/playground/start").map((call) => call.body), [{ start: "conflict" }]);
+});
+
+test("a line to try is a chip above your prompt: it types the line without running it, and goes once the line has run", async () => {
+  let lab = Pg.observation();
+  const run = screen({ route: { start: "branches", picture: "chain", tryLine: "git switch -c test" }, lab: () => lab });
+  await run.clock.advance(0);
+  const chip = run.q(".pg-term[data-who=\"you\"] .pg-try");
+  assert.equal(chip.textContent, "Try: git switch -c test");
+  run.click(".pg-try");
+  assert.deepEqual(run.shells.typed, [["you", "git switch -c test"]]);
+  assert.equal(chip.hidden, false);
+  lab = Pg.observation({ you: Pg.person({ commands: [{ line: "git switch -c test", status: 0 }] }) });
+  await run.clock.advance(1500);
+  assert.ok(chip.hidden);
+});
+
+test("opened from a mission, the head leads back to it", async () => {
+  const run = screen({ back: "sample-second" });
+  await settle();
+  const back = run.q(".pg-back");
+  assert.equal(back.textContent, "Back to Mission 2.2");
+  assert.equal(back.getAttribute("href"), "#/level/sample-second");
+  assert.equal(screen().q(".pg-back"), null);
+});
+
+test("a view under More views names itself on the More button", async () => {
+  const run = screen({ route: { picture: "graph" } });
+  await settle();
+  assert.equal(run.q(".pg-more-button").textContent, "More: Graph");
+  run.click(".pg-tab[data-view=\"chain\"]");
+  assert.equal(run.q(".pg-more-button").textContent, "More views");
 });

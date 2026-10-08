@@ -4,9 +4,10 @@
  * Dev mode's level list (#/dev): every sector with its levels, each with its number, title and
  * id, and a link straight to it, so a level can be opened without playing the ones before it.
  * Shown only when the game runs in dev mode (Status.dev); otherwise it says how to turn it on.
+ * Under the sectors, the playground's starting points, each a link that opens it there.
  * Needs dom.js, strings.js and progress.js. Defines one global, DevList.
  *
- * create(ctx) {element}: ctx.status() is the dashboard.
+ * create(ctx) {element}: ctx.status() is the dashboard, ctx.game the API.
  */
 
 /* global Dom, Strings, Progress */
@@ -31,9 +32,18 @@ const DevList = (function () {
       chapter.levels.length ? el("ol", { class: "dev-levels" }, chapter.levels.map((summary) => level(chapters, summary))) : el("p", { class: "dev-none" }, t("dev.none")));
   }
 
+  /* The playground's starting points, each a link that opens it there, once the game names them. */
+  async function playground(ctx, section) {
+    const { starts } = await ctx.game.playground();
+    section.append(el("ol", { class: "dev-levels" }, starts.map((start) => el("li", { class: "dev-level" },
+      el("a", { href: `#/playground?start=${encodeURIComponent(start.id)}` }, start.title), " ", el("code", {}, start.id)))));
+  }
+
   function create(ctx) {
     const status = ctx.status();
-    const body = status.dev ? status.chapters.map((chapter) => sector(status.chapters, chapter)) : [say("dev.off")];
+    const starts = status.dev ? el("section", { class: "dev-playground" }, el("h2", {}, t("pg.title"))) : null;
+    const body = status.dev ? [...status.chapters.map((chapter) => sector(status.chapters, chapter)), starts] : [say("dev.off")];
+    if (starts) playground(ctx, starts);
     return { element: el("section", { class: "panel dev" }, el("h1", {}, t("dev.title")), body) };
   }
 

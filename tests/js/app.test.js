@@ -290,7 +290,7 @@ test("the field guide's address shows the guide under its own head", async () =>
 });
 
 test("dev mode's address lists every level, under the page's top bar", async () => {
-  const page = await boot({ hash: "#/dev", replies: { "/api/status": { ...record("status"), dev: true } } });
+  const page = await boot({ hash: "#/dev", replies: { "/api/status": { ...record("status"), dev: true }, "/api/playground": require("./playground-records").playground() } });
   assert.ok(page.main.querySelector(".dev .dev-level a"));
   assert.equal(page.document.querySelector(".topbar").hidden, false);
   assert.match(page.document.title, /^Dev mode/);
@@ -413,6 +413,29 @@ test("a playground shell's title reaches the playground, even one set while the 
     page.seen.onTitle[0]("editor vim notes.txt");
     await go("#/playground");
     assert.equal(strip().dataset.editor, "vim");
+  } finally {
+    await go("#/");
+  }
+});
+
+test("the playground opened from a mission leads back to it; opened from the map it does not", async () => {
+  const active = record("active");
+  const page = await boot({
+    hash: `#/level/${active.level}`,
+    replies: { "/api/status": { ...record("status"), active }, "/api/level": { ...record("level"), pictures: null }, "/api/view": {}, "/api/observe": record("observation"), "/api/playground": Pg.playground(), "/api/playground/observe": Pg.observation(), "/api/playground/prefs": {} },
+  });
+  const go = async (hash) => {
+    global.location.hash = hash;
+    page.fire("hashchange", {});
+    await settle();
+    await settle();
+  };
+  try {
+    await go("#/playground?start=branches&try=git%20status");
+    assert.equal(page.main.querySelector(".pg-back").getAttribute("href"), `#/level/${active.level}`);
+    await go("#/");
+    await go("#/playground");
+    assert.equal(page.main.querySelector(".pg-back"), null);
   } finally {
     await go("#/");
   }

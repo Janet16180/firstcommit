@@ -528,6 +528,34 @@ pre.code code {
   color: var(--ink-soft);
 }
 
+/* The Playground's landmark, after the sectors: free play, open from the start. */
+.landmark {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 34px;
+  padding: 16px 18px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 3px solid var(--edge);
+  border-left: 10px solid var(--gold);
+  box-shadow: 5px 5px 0 var(--edge);
+  text-decoration: none;
+}
+
+.landmark:hover,
+.landmark:focus-visible {
+  background: var(--panel-2);
+}
+
+.landmark-name {
+  font: 700 1.6rem/1.15 var(--f-px);
+}
+
+.landmark-blurb {
+  color: var(--ink-soft);
+}
+
 .map-foot {
   margin-top: 40px;
   text-align: center;
@@ -3045,6 +3073,13 @@ pre.code code {
     font-size: 1rem;
   }
 
+  /* The playground's head: its name and start on the first row, its buttons wrapping under. */
+  .pg-head .hud-title {
+    flex: 1 1 calc(100% - 60px);
+    flex-wrap: wrap;
+    white-space: normal;
+  }
+
   .z-head .place-game {
     display: none;
   }
@@ -3328,6 +3363,55 @@ pre.code code {
   font-size: 0.9rem;
 }
 
+.pg-choice-uses {
+  margin-top: 2px;
+  padding: 0 6px;
+  border: 2px solid var(--line);
+  color: var(--ink-soft);
+  font: 700 0.8rem var(--f-ui);
+}
+
+.pg-picker {
+  padding-bottom: 28px;
+}
+
+.pg-picker[hidden],
+.pg-body[hidden] {
+  display: none;
+}
+
+.pg-choose-note {
+  max-width: 900px;
+  margin: 0 auto 12px;
+  padding: 0 16px;
+  color: var(--ink-soft);
+}
+
+.pg-choose-cancel {
+  display: block;
+  margin: 0 auto;
+}
+
+/* The line to try, right above your prompt: it types, it does not run. */
+.pg-try {
+  align-self: flex-start;
+  margin: 6px 8px;
+  padding: 1px 10px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 2px dashed var(--gold);
+  font: 1.05rem var(--f-term);
+  cursor: pointer;
+}
+
+.pg-try[hidden] {
+  display: none;
+}
+
+.pg-head .pg-back {
+  border-color: var(--gold);
+}
+
 .pg-starting {
   max-width: 900px;
   margin: 40px auto;
@@ -3499,6 +3583,13 @@ pre.code code {
 .pg-term.termcol {
   height: max(320px, calc(100vh - 210px));
   gap: 0;
+  background: var(--crt);
+  border: 3px solid var(--you);
+  box-shadow: 5px 5px 0 var(--edge);
+}
+
+.pg-term.termcol[data-who="alex"] {
+  border-color: var(--alex);
 }
 
 .pg-terms.is-two .pg-term.termcol {
@@ -3528,13 +3619,10 @@ pre.code code {
   flex-direction: column;
 }
 
+/* The frame draws the border; the pane inside it has none of its own. */
 .pg-term .term-panel {
-  border-color: var(--you);
-  border-top: 0;
-}
-
-.pg-term[data-who="alex"] .term-panel {
-  border-color: var(--alex);
+  border: 0;
+  box-shadow: none;
 }
 
 .pg-term .term-title,

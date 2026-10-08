@@ -10,7 +10,7 @@
  * (playground-summary.js). The move log stays empty until `git reflog` is typed in that
  * repository, then says once that it is live. The view, Alex shown and whose repository are
  * the current start's preferences, saved on the server at each change. With no start yet, it
- * asks where to start. Needs dom.js, strings.js, art-sprites.js, typed.js, poll.js, editor-strip.js, playground-summary.js and
+ * asks where to start. Needs dom.js, strings.js, art-sprites.js, progress.js, dialog.js, typed.js, poll.js, editor-strip.js, playground-summary.js and
  * playground-picture.js (with the pictures it draws). Defines one global, PlaygroundScreen.
  *
  * Your terminal is on the right, and Alex's under it while Alex is shown (Show or Hide Alex's
@@ -25,7 +25,7 @@
  *   view to open on.
  */
 
-/* global Dom, Strings, ArtSprites, Typed, Polling, EditorStrip, PlaygroundSummary, PlaygroundPicture */
+/* global Dom, Strings, ArtSprites, Progress, Dialog, Typed, Polling, EditorStrip, PlaygroundSummary, PlaygroundPicture */
 /* exported PlaygroundScreen */
 
 const PlaygroundScreen = (function () {
@@ -107,8 +107,10 @@ const PlaygroundScreen = (function () {
       button.hidden = !views.includes(button.dataset.view);
       button.setAttribute("aria-selected", String(button.dataset.view === prefs.view));
     }
-    if (MORE.includes(prefs.view)) ui.more.setAttribute("aria-current", "true");
+    const more = MORE.includes(prefs.view);
+    if (more) ui.more.setAttribute("aria-current", "true");
     else ui.more.removeAttribute("aria-current");
+    ui.more.textContent = more ? t("pg.moreOn", { view: t(`pg.view.${prefs.view}`) }) : t("pg.more");
   }
 
   function drawPicture(screen) {
@@ -156,6 +158,8 @@ const PlaygroundScreen = (function () {
       const side = observation[person];
       if (side && Typed.gitCommands(side.commands).includes("reflog")) screen.reflogRead[person] = true;
     }
+    const ran = observation.you.commands.some((command) => command.line.trim() === (screen.tryLine || "").trim());
+    if (ran) screen.ui.frames.you.chip.hidden = true;
     const side = observation[whose(screen)];
     screen.conflictKept = side.markers.length > 0 || (screen.conflictKept && side.project.operation === "merge");
     if (offered(screen).includes(screen.prefs.view)) refresh(screen);
@@ -174,10 +178,19 @@ const PlaygroundScreen = (function () {
     if (observation) take(screen, observation);
   }
 
-  /* The night bar the level screen has, with the way back to the map; the start's name when one is open. */
-  const head = (start) => el("header", { class: "hud pg-head" },
-    el("a", { class: "btn", href: "#/", "aria-label": t("level.mapTip") }, ArtSprites.icon("back"), el("span", { class: "lbl" }, t("level.map"))),
-    el("div", { class: "hud-title" }, el("h1", { class: "hud-name pg-title" }, t("pg.title")), start && el("span", { class: "hud-num pg-start" }, start.title)));
+  /* The night bar the level screen has, with the way back to the map, the start's name, Start over
+     and Other start, and the way back to the mission the playground was opened from. */
+  function head(screen) {
+    const { start, ctx } = screen;
+    const back = ctx.back();
+    const number = back ? Progress.missionNumber(ctx.status().chapters, back) : null;
+    return el("header", { class: "hud pg-head" },
+      el("a", { class: "btn", href: "#/", "aria-label": t("level.mapTip") }, ArtSprites.icon("back"), el("span", { class: "lbl" }, t("level.map"))),
+      el("div", { class: "hud-title" }, el("h1", { class: "hud-name pg-title" }, t("pg.title")), start && el("span", { class: "hud-num pg-start" }, start.title)),
+      start && el("button", { type: "button", class: "btn pg-over", onclick: () => startOver(screen) }, t("pg.over")),
+      start && el("button", { type: "button", class: "btn pg-other", onclick: () => picker(screen) }, t("pg.other")),
+      number && el("a", { class: "btn pg-back", href: `#/level/${encodeURIComponent(back)}` }, t("pg.back", { number: number.number })));
+  }
 
   function viewRow(screen) {
     const { ui } = screen;
@@ -202,8 +215,10 @@ const PlaygroundScreen = (function () {
   function frame(screen, person) {
     const host = el("div", { class: "pg-term-host" });
     const strip = EditorStrip.create({ onKeys: (keys) => screen.ctx.playTerminals.keys(person, keys), timers: screen.ctx.timers });
-    const element = el("section", { class: "pg-term termcol", "data-who": person, "aria-label": t(`pg.term.${person}`) }, el("h2", { class: "pg-term-name" }, t(`pg.term.${person}`)), strip.element, host);
-    return { host, strip, element };
+    const line = person === "you" ? screen.tryLine : null;
+    const chip = line ? el("button", { type: "button", class: "pg-try", onclick: () => screen.ctx.playTerminals.type("you", line) }, t("pg.try", { line })) : null;
+    const element = el("section", { class: "pg-term termcol", "data-who": person, "aria-label": t(`pg.term.${person}`) }, el("h2", { class: "pg-term-name" }, t(`pg.term.${person}`)), strip.element, chip, host);
+    return { host, strip, chip, element };
   }
 
   /* What the terminal's title says runs in it: the strip shows the editor's keys, and the
@@ -241,45 +256,118 @@ const PlaygroundScreen = (function () {
     return ui.pictured;
   }
 
-  /* The playground for the current start: its preferences, a view named by the address first. */
+  /* Everything that belongs to one build of a start, as it is before the first look. */
+  function fresh(screen) {
+    if (screen.poll) screen.poll.stop();
+    Object.assign(screen, {
+      observation: null,
+      picture: null,
+      poll: null,
+      alexAttached: false,
+      conflictKept: false,
+      reflogRead: { you: false, alex: false },
+      editing: { you: null, alex: null },
+      live: { you: "unsaid", alex: "unsaid" },
+    });
+  }
+
+  /* The playground for the current start, on the view its preferences name, or the address's the
+     first time; the address's line to try shows only in the start it was meant for. */
   function build(screen, playground) {
     const { route, ui } = screen;
+    fresh(screen);
+    screen.playground = playground;
     screen.start = playground.starts.find((start) => start.id === playground.current.start);
     screen.started = playground.current.started;
     screen.prefs = { ...playground.prefs };
-    if (route.picture && [...MAIN, ...MORE].includes(route.picture)) screen.prefs.view = route.picture;
+    const meant = !route.start || route.start === screen.start.id;
+    if (meant && [...MAIN, ...MORE].includes(route.picture)) screen.prefs.view = route.picture;
+    screen.tryLine = meant ? route.tryLine : null;
+    screen.route = { ...route, picture: null, tryLine: null };
     ui.down = el("p", { class: "pg-down", role: "alert", hidden: true }, t("pg.down"));
     ui.whose = personSwitch(screen, { kind: "pg-whose", label: "pg.picture", words: "pg.whose" });
-    screen.element.replaceChildren(head(screen.start), ui.down,
-      el("div", { class: "pg-body" },
-        el("div", { class: "pg-left" }, viewRow(screen), ui.whose, pictured(screen)),
-        termColumn(screen)));
+    ui.body = el("div", { class: "pg-body" },
+      el("div", { class: "pg-left" }, viewRow(screen), ui.whose, pictured(screen)),
+      termColumn(screen));
+    screen.element.replaceChildren(head(screen), ui.down, ui.body);
     screen.ctx.playTerminals.attach("you", ui.frames.you.host, screen.started, titled(screen, "you"));
     drawPicture(screen);
     screen.poll = Polling.start({ tick: () => tick(screen), intervalMs: POLL_MS, timers: screen.ctx.timers, page: screen.ctx.page });
   }
 
-  async function choose(screen, id) {
+  async function begin(screen, id) {
+    fresh(screen);
     screen.element.replaceChildren(el("p", { class: "pg-starting", role: "status" }, t("pg.starting")));
     const playground = await screen.ctx.game.playgroundStart(id);
     if (!screen.disposed) build(screen, playground);
   }
 
-  function picker(screen, playground) {
-    screen.element.replaceChildren(
-      head(null),
-      el("h2", { class: "pg-choose" }, t("pg.choose")),
-      el("ul", { class: "pg-choices" }, playground.starts.map((start) => el("li", {},
-        el("button", { type: "button", class: "pg-choice", "data-start": start.id, onclick: () => choose(screen, start.id) },
-          el("b", { class: "pg-choice-title" }, start.title),
-          el("span", { class: "pg-choice-blurb" }, start.blurb))))));
+  /* Asks before a lab is built again over the current one: what goes, and what never does. */
+  function sure(screen, start) {
+    const again = start.id === screen.start.id;
+    const kind = again ? "pg.overAsk" : "pg.otherAsk";
+    return Dialog.confirm({ title: t(`${kind}.title`, { title: start.title }), text: t(`${kind}.text`, { title: start.title }), confirm: t(`${kind}.confirm`), cancel: t("pg.keepPlaying"), danger: true });
   }
 
+  async function startOver(screen) {
+    if (await sure(screen, screen.start)) await begin(screen, screen.start.id);
+  }
+
+  /* A start chosen in the picker: built at once the first time, else after asking. */
+  async function choose(screen, start) {
+    if (screen.start && !(await sure(screen, start))) return;
+    await begin(screen, start.id);
+  }
+
+  function closePicker(screen) {
+    screen.ui.picker.remove();
+    screen.ui.body.hidden = false;
+  }
+
+  /* The starting points, each with the chapters whose commands it uses (none is locked); over the
+     playground, with Cancel, when a start is already open. */
+  function picker(screen) {
+    const { ui, playground } = screen;
+    const choice = (start) => el("li", {},
+      el("button", { type: "button", class: "pg-choice", "data-start": start.id, onclick: () => choose(screen, start) },
+        el("b", { class: "pg-choice-title" }, start.title),
+        el("span", { class: "pg-choice-blurb" }, start.blurb),
+        start.uses && el("span", { class: "pg-choice-uses" }, t("pg.uses", { chapters: start.uses }))));
+    ui.picker = el("section", { class: "pg-picker" },
+      el("h2", { class: "pg-choose" }, t("pg.choose")),
+      el("ul", { class: "pg-choices" }, playground.starts.map(choice)),
+      el("p", { class: "pg-choose-note" }, t("pg.chooseNote")),
+      screen.start && el("button", { type: "button", class: "btn pg-choose-cancel", onclick: () => closePicker(screen) }, t("pg.cancel")));
+    if (!screen.start) {
+      screen.element.replaceChildren(head(screen), ui.picker);
+      return;
+    }
+    ui.body.hidden = true;
+    screen.element.append(ui.picker);
+  }
+
+  /* Opens the current start, or the one the address names (asking first when that replaces
+     another), or asks where to start. */
   async function open(screen) {
     const playground = await screen.ctx.game.playground();
     if (screen.disposed) return;
-    if (playground.current) build(screen, playground);
-    else picker(screen, playground);
+    screen.playground = playground;
+    const { current } = playground;
+    const wanted = playground.starts.find((start) => start.id === screen.route.start);
+    if (!wanted || (current && current.start === wanted.id)) {
+      if (current) build(screen, playground);
+      else picker(screen);
+      return;
+    }
+    if (!current) {
+      await begin(screen, wanted.id);
+      return;
+    }
+    const asked = screen.route;
+    build(screen, playground);
+    if (!(await sure(screen, wanted))) return;
+    screen.route = asked;
+    await begin(screen, wanted.id);
   }
 
   function create(ctx, route) {
@@ -288,19 +376,14 @@ const PlaygroundScreen = (function () {
       route,
       element: el("section", { class: "pg", "aria-label": t("pg.title") }),
       ui: {},
+      playground: null,
       start: null,
       prefs: null,
-      observation: null,
-      picture: null,
-      poll: null,
-      disposed: false,
       started: null,
-      alexAttached: false,
-      conflictKept: false,
-      reflogRead: { you: false, alex: false },
-      editing: { you: null, alex: null },
-      live: { you: "unsaid", alex: "unsaid" },
+      tryLine: null,
+      disposed: false,
     };
+    fresh(screen);
     open(screen);
     return {
       element: screen.element,

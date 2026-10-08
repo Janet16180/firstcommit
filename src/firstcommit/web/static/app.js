@@ -62,7 +62,7 @@
 
   /* client.js removes the fragment when it carries the access key; keep the address part first. */
   const firstAddress = Route.address(location.hash);
-  const app = { status: null, view: null, turn: 0, terminal: null, terminalFor: null, locked: false };
+  const app = { status: null, view: null, turn: 0, terminal: null, terminalFor: null, locked: false, fromLevel: null };
   const client = createClient({ header: "X-FirstCommit-Token", storageKey: "firstcommit.token", command: "firstcommit", onLocked: () => showLocked() });
   const game = createGameApi(client.api);
   const main = document.getElementById("app");
@@ -323,7 +323,15 @@
     reducedMotion: window.matchMedia("(prefers-reduced-motion: reduce)").matches,
     terminal,
     playTerminals,
+    /* The level the player came to the playground from (a field guide card over it), or null. */
+    back: () => app.fromLevel,
   };
+
+  /* Remembers the level being left for the playground, so it can lead back; any other view forgets it. */
+  function noteLevel(route) {
+    if (route.view === "level") app.fromLevel = route.id;
+    else if (route.view !== "playground") app.fromLevel = null;
+  }
 
   /* Shows the view for an address; a newer navigation that starts while this one waits wins. */
   async function show(route) {
@@ -331,6 +339,7 @@
     if (app.view && app.view.dispose) app.view.dispose();
     app.view = null;
     app.turn += 1;
+    noteLevel(route);
     const turn = app.turn;
     try {
       await refresh();
