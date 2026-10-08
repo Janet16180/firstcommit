@@ -687,7 +687,8 @@ def quest_step(answer: str | None) -> StepResult:
     Check the current step of the guided quest, and move on if it passed.
 
     Only the current step is ever checked, so a guided quest is played in order; a challenge's
-    goals are all checked, and any of them may be met first. An answer step is
+    goals are all checked, and any of them may be met first. The message is a loss when one is
+    found, else the first goal met now, else the first goal still unmet. An answer step is
     checked with ``answer`` (a missing or blank one counts as empty), a watch step against the lab
     and every line typed since the level started (the page polls it with None; the log is read
     first), and a read step always passes. Once the quest is done, nothing is checked and the
@@ -720,8 +721,10 @@ def quest_step(answer: str | None) -> StepResult:
             verdicts = [(step.id, _check_step(step, entry.texts[language].steps[step.id], lab, active, _typed(answer), _messages(entry, language))) for step in _pending(active, entry)]
             reached = [step_id for step_id, verdict in verdicts if verdict.solved]
             unmet = sorted((verdict for _, verdict in verdicts if not verdict.solved), key=lambda verdict: not verdict.lost)
+            met = [verdict for _, verdict in verdicts if verdict.solved]
             lost = bool(unmet) and unmet[0].lost
-            message = markup.parse((unmet[0] if unmet else verdicts[-1][1]).message)
+            said = unmet[0] if lost or not met else met[0]
+            message = markup.parse(said.message)
         if reached:
             active["done"] = [step.id for step in entry.quest if step.id in {*active["done"], *reached}]
             active["step"] = len(active["done"])

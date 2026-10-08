@@ -742,7 +742,7 @@ def test_a_challenges_goals_tick_in_any_order(sample_level: runner.Level, game_h
     kit.git(lab_project(game_home), "add", "hello.txt")
     first = game.quest_step(None)
     assert (first["correct"], first["done"], first["step"], first["quest_done"]) == (True, ["stage"], 1, False)
-    assert first["message"] == markup.parse("No commit yet.")
+    assert first["message"] == markup.parse("Staged.")
     kit.git(lab_project(game_home), "commit", "-q", "-m", "Say hello")
     second = game.quest_step(None)
     assert (second["correct"], second["done"], second["quest_done"]) == (True, ["commit", "stage"], True)
@@ -2068,3 +2068,10 @@ def test_a_push_before_any_remote_is_named_gets_rama_s_error_from_the_snapshot(g
     type_lines(game_home, (line, kit.type_line(lab.project, line)["status"]))
     said = game.observe()["reactions"]
     assert [(reaction["line"], reaction["mood"], reaction["text"]) for reaction in said] == [(line, "err", markup.parse(reactions.NO_REMOTE))]
+
+
+def test_a_challenge_poll_that_meets_no_goal_says_the_first_goal_still_unmet(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
+    level = as_challenge(sample_level, monkeypatch)
+    game.start(level.id)
+    waiting = game.quest_step(None)
+    assert (waiting["correct"], waiting["message"]) == (False, markup.parse("No commit yet."))
