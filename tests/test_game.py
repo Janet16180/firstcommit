@@ -34,7 +34,7 @@ from firstcommit import (
     score,
 )
 from firstcommit.chapters import BLURBS, CHAPTERS
-from firstcommit.levels import cargo_selective, mothership_base7
+from firstcommit.levels import cargo_junk, cargo_selective, mothership_base7
 from sample_levels import cargo_sample_es
 
 pytestmark = pytest.mark.usefixtures("sample_decks")
@@ -1999,6 +1999,20 @@ def test_a_push_before_any_remote_is_named_gets_rama_s_error_from_the_snapshot(g
     type_lines(game_home, (line, kit.type_line(lab.project, line)["status"]))
     said = game.observe()["reactions"]
     assert [(reaction["line"], reaction["mood"], reaction["text"]) for reaction in said] == [(line, "err", markup.parse(reactions.NO_REMOTE))]
+
+
+def test_a_status_warns_of_the_junk_until_the_snapshot_shows_ignored_files(game_home: Path) -> None:
+    game.start("cargo-junk")
+    game.observe()
+    lab = runner.lab_of("cargo-junk")
+    type_lines(game_home, ("git status", kit.type_line(lab.project, "git status")["status"]))
+    said = game.observe()["reactions"]
+    assert [(reaction["mood"], reaction["text"], reaction["moment"]) for reaction in said] == [("warn", markup.parse(cargo_junk.WHY_IGNORE), "junk-flood")]
+    kit.type_line(lab.project, 'echo "sim-output/" > .gitignore')
+    game.observe()
+    type_lines(game_home, ("git status", kit.type_line(lab.project, "git status")["status"]))
+    said = game.observe()["reactions"]
+    assert [(reaction["mood"], reaction["text"]) for reaction in said] == [("info", markup.parse(reactions.STATUS))]
 
 
 def test_a_challenge_poll_that_meets_no_goal_says_the_first_goal_still_unmet(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:

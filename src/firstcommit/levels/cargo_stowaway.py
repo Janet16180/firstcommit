@@ -54,7 +54,7 @@ the next commit.
 
 Passwords, API keys and tokens never belong in a repository: once one is in a commit, every copy
 of the history holds it, and deleting the file later leaves the old commit as it was. A file
-named in `.gitignore` stays out of `git add .`; a later chapter teaches it.
+named in `.gitignore` stays out of `git add .`; the last mission of this sector teaches it.
 
 Commands to keep:
 

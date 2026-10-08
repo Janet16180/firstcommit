@@ -830,3 +830,18 @@ address looks like https://github.com/moonbase/project.git". E48 to E101 above r
 | Claim | Says | Evidence |
 |---|---|---|
 | 4-1 brief, `AT_WORK` reaction, debrief, `HTTPS_URL` | the mothership is a folder next to your project; at work the same address looks like `https://github.com/moonbase/project.git` | E106; GitHub's clone addresses have the form `https://github.com/OWNER/REPOSITORY.git` (docs.github.com, "About remote repositories") |
+
+## 2-5 Junk bay (added 2026-10-08)
+
+| Tag | What ran | Result |
+|---|---|---|
+| E107 | on the host (git 2.43.0): a repository with one commit of `nav.cfg`, `nav.cfg` changed, `sim-output/` with three files; `git status --short`; `git add .`; `git restore --staged sim-output`; `git check-ignore -v --no-index sim-output/run-001.log` with nothing, with `sim-output/` in `.git/info/exclude`, with `sim-output` and with `sim-output/` in `.gitignore`; then `git add sim-output` and `git add .` | status lists `?? sim-output/`; `git add .` stages every output file; the restore exits 0, unstages them and keeps the three files; check-ignore exits 1 with no rule, then names `.git/info/exclude:7:sim-output/`, `.gitignore:1:sim-output` and `.gitignore:1:sim-output/` as the source; `git add sim-output` refuses the ignored path ("Use -f"); `git add .` stages only `.gitignore` and `nav.cfg` |
+
+| Claim | Says | Evidence |
+|---|---|---|
+| card, `IGNORE_FIELD`, debrief | Git ignores what `.gitignore` names: `git status` stops listing it and `git add .` skips it; the files stay on disk | E107; gitignore(5) |
+| `WHY_IGNORE`, `JUNK_STAGED` (with the `junk-flood` moment) | before the rule, `git add .` takes every output file; committed files travel to every copy | E107 (the add), E69 (a clone holds every commit) |
+| `JUNK_ABOARD` | `git restore --staged sim-output` unstages the output and keeps the files | E107 |
+| hint 1 | `sim-output/` ignores the whole folder | E107; gitignore(5) PATTERN FORMAT (a trailing slash matches a folder) |
+| `watch_ignore` | only a `.gitignore` counts, not `.git/info/exclude`, which stays in one repository | E107 (check-ignore names the source); gitignore(5) DESCRIPTION; *re-checked* by `tests/levels/test_cargo_junk.py` |
+| debrief | once `.gitignore` is in a commit, everyone who works on the project gets the rule | gitignore(5) DESCRIPTION ("checked into version control and distributed to other repositories via clone") |

@@ -1361,7 +1361,8 @@ def _observation(
     kinds = {event["kind"] for event in events}
     staged = bool(repomap.staged(now["project"]))
     remote = bool(now["project"]["remotes"])
-    said = [(command, reactions.react(command, kinds, now["project"]["exists"], staged, rules, remote=remote)) for command in typed]
+    ignored = any(file["ignored"] for file in now["project"]["files"])
+    said = [(command, reactions.react(command, kinds, now["project"]["exists"], staged, rules, remote=remote, ignored=ignored)) for command in typed]
     return {
         "level": now["level"],
         "project": now["project"],
