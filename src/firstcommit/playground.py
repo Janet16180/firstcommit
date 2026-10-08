@@ -116,6 +116,10 @@ def setup(lab: Lab) -> None:
     Create the playground: GitHub with one commit of `FILES`, and a clone of it for each person.
 
     Each clone reaches GitHub by `Lab.github_url`. Only Alex's clone has an identity of its own.
+    Each has no ``origin/HEAD``, which ``git clone`` makes, so ``git log`` names only ``main`` and
+    ``origin/main``, labels the player has met. A fetch or pull never brings it back: git 2.43 has
+    no way to, and ``remote.origin.followRemoteHEAD=never`` stops a newer host git, whose fetch
+    would create it again by default.
 
     Parameters
     ----------
@@ -139,6 +143,8 @@ def setup(lab: Lab) -> None:
         folder = _clone(lab, person)
         gitcmd.output(folder.parent, "clone", "--quiet", str(lab.github), folder.name)
         gitcmd.output(folder, "remote", "set-url", "origin", lab.github_url(folder))
+        gitcmd.output(folder, "remote", "set-head", "origin", "--delete")
+        gitcmd.output(folder, "config", "remote.origin.followRemoteHEAD", "never")
     gitcmd.output(lab.teammate, "config", "user.name", ALEX.name)
     gitcmd.output(lab.teammate, "config", "user.email", ALEX.email)
 

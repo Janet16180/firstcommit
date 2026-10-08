@@ -47,6 +47,23 @@ def test_each_clone_reaches_github_by_a_path_from_its_top_folder() -> None:
             assert gitcmd.output(folder, "remote", "get-url", "origin").strip() == lab.github_url(folder)
 
 
+def test_each_clone_shows_only_main_and_origin_main_with_no_origin_head_even_after_a_fetch_and_a_pull() -> None:
+    with new_lab() as lab:
+        for person in PEOPLE:
+            assert gitcmd.output(clone(lab, person), "log", "-1", "--format=%D").strip() == "HEAD -> main, origin/main"
+        presses(lab, "alex", *SHARE_NOTES)
+        presses(lab, "you", "fetch", "pull")
+        for person in PEOPLE:
+            assert gitcmd.output(clone(lab, person), "for-each-ref", "--format=%(refname)", "refs/remotes").split() == ["refs/remotes/origin/main"]
+        assert gitcmd.output(lab.project, "log", "-1", "--format=%D").strip() == "HEAD -> main, origin/main"
+
+
+def test_each_clone_tells_a_newer_git_never_to_bring_origin_head_back_on_a_fetch() -> None:
+    with new_lab() as lab:
+        for person in PEOPLE:
+            assert gitcmd.output(clone(lab, person), "config", "--local", "remote.origin.followRemoteHEAD").strip() == "never"
+
+
 def test_only_alexs_clone_has_an_identity_of_its_own() -> None:
     with new_lab() as lab:
         assert gitcmd.run(lab.project, "config", "--local", "user.name").returncode == 1

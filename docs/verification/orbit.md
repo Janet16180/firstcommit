@@ -890,6 +890,21 @@ so it silently drops the other side's cleanly merged changes in the same file. 6
 safe because their conflicted files have no other changes; a level whose file has them must teach
 another way (found by the conflicts agent, 2026-10-08).
 
+## No `origin/HEAD` in the playground's clones (added 2026-10-08)
+
+`playground.setup` runs `git remote set-head origin --delete` in each clone, so `git log` shows
+`(HEAD -> main, origin/main)`, only labels the player has met. On git 2.43.0 (host), a bare hub
+cloned twice, `origin/HEAD` deleted in one clone, then a commit pushed from the other: `git fetch`,
+`git pull`, `git fetch --prune` and `git remote update` each leave `refs/remotes/origin/main` as
+the only remote-tracking ref. A newer git would create it again: git-config(1) (git-scm.com, 2.56.0)
+says `fetch.followRemoteHEAD` defaults to `create`, "Create `remotes/<name>/HEAD` if a ref exists on
+the remote, but not locally", and `never` means "Never create or modify the `remotes/<name>/HEAD`
+symbolic-ref"; `remote.<name>.followRemoteHEAD` overrides it for one remote. So each clone also
+sets `remote.origin.followRemoteHEAD=never`, for players whose host git is newer than the image's
+2.43, which ignores the setting. *Re-checked* by `tests/test_playground.py` (a fetch and a pull
+after Alex pushes; the setting in each clone). The player's own `git clone`
+in 5-1 keeps its `origin/HEAD`, as E69 records: that is what a real clone shows.
+
 ## 4-3: Alex pushes inside your push (added 2026-10-08)
 
 Alex's pull and push run in the stand-in GitHub's `post-receive` hook, so they are done before the
