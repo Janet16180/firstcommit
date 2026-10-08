@@ -78,7 +78,7 @@ const LevelScreen = (function () {
   function layout(screen) {
     const { ui } = screen;
     ui.zones = ZonePanel.create({ reducedMotion: screen.ctx.reducedMotion, timers: screen.ctx.timers });
-    ui.moments = MomentLayer.create({ reducedMotion: screen.ctx.reducedMotion });
+    ui.moments = MomentLayer.create({ reducedMotion: screen.ctx.reducedMotion, timers: screen.ctx.timers });
     ui.comms = Comms.create();
     ui.mission = el("aside", { class: "mission px", "aria-label": t("mission.label") }, el("p", {}, t("level.loading")));
     ui.termcol = el("div", { class: "termcol" }, ui.comms.element);
@@ -120,9 +120,10 @@ const LevelScreen = (function () {
      says what to do next, it is not the player's mistake. A passed step's message is said in
      `mood`: pleased for a goal met, neutral for a prediction's reveal (any answer passes). In a
      challenge Rama speaks only of danger and errors, so a met goal is said without its message,
-     which could tell what comes next; saying it still clears an error the player has fixed. Work
-     lost for good ends the play, whoever asked. */
-  function stepped(screen, result, watched = false, mood = "ok") {
+     which could tell what comes next; saying it still clears an error the player has fixed. When
+     Rama's line must `keep` what it says about the typed lines, the met goal's message goes under
+     the next goal instead. Work lost for good ends the play, whoever asked. */
+  function stepped(screen, result, { watched = false, mood = "ok", keep = false } = {}) {
     const { ui, state, ctx } = screen;
     if (result.lost) {
       lostWork(screen, result.message);
@@ -137,9 +138,11 @@ const LevelScreen = (function () {
     state.step = result.step;
     state.done = result.done;
     state.auto_check = result.quest_done;
-    ui.comms.say(screen.level.challenge ? t(SAY.partMet) : result.message, mood);
-    ctx.sound.play("goal");
     screen.mission.setStep(state.step, state.done);
+    const message = screen.level.challenge ? t(SAY.partMet) : result.message;
+    if (keep) screen.mission.note(message);
+    else ui.comms.say(message, mood);
+    ctx.sound.play("goal");
   }
 
   /* A check's result. A solve says its verdict, so no earlier nudge outlives it; an automatic
@@ -250,6 +253,9 @@ const LevelScreen = (function () {
     screen.ui.comms.say(said.flatMap((reaction) => reaction.text), reactions[reactions.length - 1].mood);
   }
 
+  /* A reaction a met goal must not talk over: a warning, an error, or one that plays a moment. */
+  const kept = (reaction) => reaction.moment !== null || reaction.mood === "warn" || reaction.mood === "err";
+
   function moments(screen, reactions) {
     for (const reaction of reactions) if (reaction.moment) screen.ui.moments.play(reaction.moment);
   }
@@ -278,7 +284,7 @@ const LevelScreen = (function () {
       if (observation.commands.length && !observation.reactions.length && predicting(screen)) screen.ui.comms.say(t(SAY.predictFirst), "info");
       echo(screen, observation.commands);
       if (observation.commands.length) await recount(screen);
-      if (plan.watchStep) stepped(screen, await game.step(null), true);
+      if (plan.watchStep) stepped(screen, await game.step(null), { watched: true, keep: observation.reactions.some(kept) });
       if (plan.autoCheck && !screen.finished) checked(screen, await game.check(null, true), true);
     } catch (error) {
       if (!expected(screen, error)) throw error;
@@ -304,7 +310,7 @@ const LevelScreen = (function () {
       active,
       onAnswer: (answer) => send(screen, () => game.step(answer), stepped),
       onContinue: () => send(screen, () => game.step(null), stepped),
-      onChoose: (value) => send(screen, () => game.step(value), (run, result) => stepped(run, result, false, "info")),
+      onChoose: (value) => send(screen, () => game.step(value), (run, result) => stepped(run, result, { mood: "info" })),
       onCheck: (answer) => send(screen, () => game.check(answer, false), checked),
       onHint: () => send(screen, () => game.hint(), hinted),
       onType: ctx.terminal.type,

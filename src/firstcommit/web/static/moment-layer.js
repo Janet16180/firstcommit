@@ -6,8 +6,10 @@
  * covers the zones until the moment is over, or until a click puts it away. Needs dom.js,
  * strings.js and art-moments.js. Defines one global, MomentLayer.
  *
- * create({reducedMotion}) {element, play(name)}: the layer, hidden until a moment plays; under
+ * create({reducedMotion, timers})
+ *                         {element, play(name)}: the layer, hidden until a moment plays; under
  *                         reduced motion a moment is its still frame, for as long as it lasts.
+ *                         The moments are timed on `timers` (window unless given).
  */
 
 /* global Dom, Strings, ArtMoments */
@@ -20,7 +22,7 @@ const MomentLayer = (function () {
   /* Every what-if shares its heading; the rest are the moment's own. */
   const captions = (name) => ({ whatIf: t("moment.whatIf"), ...group(`moment.${name}.`) });
 
-  function create({ reducedMotion = true } = {}) {
+  function create({ reducedMotion = true, timers = window } = {}) {
     const played = new Set();
     const element = el("div", { class: "moment-layer", hidden: true, onclick: () => hide() });
 
@@ -35,7 +37,7 @@ const MomentLayer = (function () {
       play(name) {
         if (played.has(name)) return;
         played.add(name);
-        const moment = ArtMoments.play(name, { captions: captions(name), reducedMotion });
+        const moment = ArtMoments.play(name, { captions: captions(name), reducedMotion, timers });
         element.replaceChildren(moment.element);
         element.hidden = false;
         moment.finished.then(() => {

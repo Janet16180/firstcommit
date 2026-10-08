@@ -2,7 +2,7 @@
 
 const assert = require("node:assert/strict");
 const test = require("node:test");
-const { installBrowser, load } = require("./load");
+const { createClock, installBrowser, load } = require("./load");
 const { labelOf } = require("./art-check");
 
 installBrowser();
@@ -30,13 +30,13 @@ test("every moment plays in both languages, its captions and the what-if heading
   for (const language of ["en", "es"]) {
     Strings.use(language);
     for (const name of ArtMoments.NAMES) {
-      const layer = MomentLayer.create();
+      const layer = MomentLayer.create({ timers: createClock() });
       layer.play(name);
       assert.equal(labelOf(layer.element.querySelector(".art-moment")), Strings.t(`moment.${name}.caption`), `${language} ${name}`);
     }
   }
   Strings.use("es");
-  const layer = MomentLayer.create();
+  const layer = MomentLayer.create({ timers: createClock() });
   layer.play("force-break");
   assert.ok([...layer.element.querySelectorAll("text")].some((node) => node.textContent === "¿Y SI…?"));
   Strings.use("en");

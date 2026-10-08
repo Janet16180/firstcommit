@@ -162,6 +162,39 @@ test("while a watch goal is current, every tick asks about it, and it passes by 
   run.view.dispose();
 });
 
+/* The sample level with a second watch goal after its first, so a goal met by a typed line has one after it. */
+function twoWatches(reactions) {
+  const level = seenLevel();
+  level.steps = [...level.steps, { ...level.steps[2], id: "commit" }];
+  const met = { ...correct(3, false, ["look", "status", "stage"]), message: para("Staged. Now seal it.") };
+  return screen({ active: { ...record("active"), step: 2 }, replies: { "/api/level": level, "/api/step": met, "/api/observe": { ...quiet(), reactions } } });
+}
+
+test("a goal met by a line Rama warns about leaves the warning on Rama's line, and says itself under the next goal", async () => {
+  const run = twoWatches([{ line: "git add .", mood: "warn", text: para("The keys rode along."), moment: null }]);
+  await settle();
+  assert.equal(run.q(".comms-text").textContent, "The keys rode along.");
+  assert.equal(run.q(".comms").dataset.mood, "warn");
+  assert.equal(run.q(".goal.is-current .goal-note").textContent, "Staged. Now seal it.");
+  run.view.dispose();
+});
+
+test("a goal met by a line whose reaction plays a moment leaves that reaction on Rama's line", async () => {
+  const run = twoWatches([{ line: "git status", mood: "ok", text: para("Why secrets stay out."), moment: "secret-leak" }]);
+  await settle();
+  assert.equal(run.q(".comms-text").textContent, "Why secrets stay out.");
+  assert.equal(run.q(".goal.is-current .goal-note").textContent, "Staged. Now seal it.");
+  run.view.dispose();
+});
+
+test("a goal met by a line with a plain reaction is said on Rama's line, as before", async () => {
+  const run = twoWatches([{ line: "git add notes.txt", mood: "ok", text: para("On the dock."), moment: null }]);
+  await settle();
+  assert.equal(run.q(".comms-text").textContent, "Staged. Now seal it.");
+  assert.ok(!run.q(".goal-note"));
+  run.view.dispose();
+});
+
 test("once the quest is done the mission is checked by itself; a solve stops the polling and docks the lesson at the bottom", async () => {
   const run = screen({ active: { ...record("active"), step: 3, auto_check: true }, replies: { "/api/check": record("check_solved") } });
   await settle();
@@ -315,11 +348,13 @@ test("a reaction that carries a moment plays it over the zones, once however oft
   const reactions = [{ line: "git push", mood: "ok", text: para("Both halves are up."), moment: "launch" }];
   const run = screen({ replies: { "/api/observe": { ...quiet(), reactions } } });
   await settle();
-  await run.clock.advance(5000);
+  await run.clock.advance(4000);
   const layer = run.q(".moment-layer");
   assert.equal(layer.hidden, false);
   assert.equal(run.all(".moment-layer .art-moment").length, 1);
   assert.ok(Boolean(run.q(".moment-layer .art-moment--launch")));
+  await run.clock.advance(6000);
+  assert.equal(layer.hidden, true);
   run.view.dispose();
 });
 
