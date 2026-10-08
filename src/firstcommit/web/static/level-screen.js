@@ -8,16 +8,16 @@
  * Opening a mission that is not in progress starts it, and a level's scene plays the first time
  * it opens. It keeps no game state of its own: the step, the hints, the commands, the stars and
  * whether the mission is solved come from the server's replies, and the page polls the lab while
- * the player works (poll.js). Rama says what the game says about each typed line (the
- * observation's reactions). Expected failures are handled here, by HTTP status: 404 means there
- * is no such level, 409 that it is no longer in progress (solved or ended from the command line
- * or another tab), 0 that the server did not answer. Anything else is a bug and is left to
- * surface. Needs dom.js, strings.js, markup.js, art-sprites.js, progress.js, poll.js, zone-panel.js,
- * mission.js, comms.js, completion.js and scene.js. Defines one global,
- * LevelScreen.
+ * the player works (poll.js). Rama says what the game says about each typed line (the observation's
+ * reactions), and a reaction's moment plays over the zones. Expected failures are handled here, by
+ * HTTP status: 404 means there is no such level, 409 that it is no longer in progress (solved or
+ * ended from the command line or another tab), 0 that the server did not answer. Anything else is a
+ * bug and is left to surface. Needs dom.js, strings.js, markup.js, art-sprites.js, progress.js,
+ * poll.js, zone-panel.js, mission.js, comms.js, completion.js, scene.js and moment-layer.js.
+ * Defines one global, LevelScreen.
  */
 
-/* global Dom, Strings, ArtSprites, Progress, Polling, ZonePanel, Mission, Comms, Completion, ScenePlayer */
+/* global Dom, Strings, ArtSprites, Progress, Polling, ZonePanel, Mission, Comms, Completion, ScenePlayer, MomentLayer */
 /* exported LevelScreen */
 
 const LevelScreen = (function () {
@@ -78,10 +78,11 @@ const LevelScreen = (function () {
   function layout(screen) {
     const { ui } = screen;
     ui.zones = ZonePanel.create({ reducedMotion: screen.ctx.reducedMotion, timers: screen.ctx.timers });
+    ui.moments = MomentLayer.create({ reducedMotion: screen.ctx.reducedMotion });
     ui.comms = Comms.create();
     ui.mission = el("aside", { class: "mission px", "aria-label": t("mission.label") }, el("p", {}, t("level.loading")));
     ui.termcol = el("div", { class: "termcol" }, ui.comms.element);
-    ui.stage = el("main", { class: "stage" }, ui.zones.element, ui.mission, ui.termcol);
+    ui.stage = el("main", { class: "stage" }, el("div", { class: "sky" }, ui.zones.element, ui.moments.element), ui.mission, ui.termcol);
     screen.element.replaceChildren(hud(screen), ui.stage);
   }
 
@@ -249,6 +250,10 @@ const LevelScreen = (function () {
     screen.ui.comms.say(said.flatMap((reaction) => reaction.text), reactions[reactions.length - 1].mood);
   }
 
+  function moments(screen, reactions) {
+    for (const reaction of reactions) if (reaction.moment) screen.ui.moments.play(reaction.moment);
+  }
+
   /* A blip for the lines just typed, or a buzz when one of them failed: the terminal shows both. */
   function echo(screen, typed) {
     if (typed.some((line) => line.status !== 0)) screen.ctx.sound.play("failed");
@@ -269,6 +274,7 @@ const LevelScreen = (function () {
       if (screen.offline) screen.ui.comms.say(t(SAY.back), "info");
       screen.offline = false;
       react(screen, observation.reactions);
+      moments(screen, observation.reactions);
       if (observation.commands.length && !observation.reactions.length && predicting(screen)) screen.ui.comms.say(t(SAY.predictFirst), "info");
       echo(screen, observation.commands);
       if (observation.commands.length) await recount(screen);

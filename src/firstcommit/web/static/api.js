@@ -80,9 +80,11 @@ const createGameApi = (function () {
   const LEVEL_SUMMARY = record({ id: text, title: text, difficulty: number, xp: number, command: text, stars: number, challenge: flag, done: flag, has_lesson: flag, has_quest: flag });
   /* A finished level's command card (records.CommandCard). */
   const CARD = record({ level: text, command: text, text: BLOCKS });
-  /* The scene pictures the artist has drawn and the moods Rama speaks in (records.Art and records.Mood). */
+  /* The scene pictures the artist has drawn, the moods Rama speaks in and the moments a reaction may
+     play (records.Art, records.Mood and records.Moment). */
   const ART = oneOf("space", "timeline", "terminal", "planet", "flag", "zones", "conveyor", "capsule", "chain", "orbit", "rocket", "pull", "alarm", "fork", "merge", "collision", "blackbox");
   const MOOD = oneOf("info", "ok", "warn", "err");
+  const MOMENT = oneOf("secret-leak", "launch");
 
   const STATUS = record({
     xp: number,
@@ -147,7 +149,7 @@ const createGameApi = (function () {
     mapping(list(record({ id: BUTTON, label: text, line: text, off: text })))(value, where);
     for (const person of Object.keys(value)) WHO(person, `${where}'s key`);
   };
-  const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), teammate: nullable(SNAPSHOT), events: EVENTS, teammate_events: EVENTS, buttons: BARS, commands: list(record({ line: text, status: number })), reactions: list(record({ line: text, mood: MOOD, text: BLOCKS })) });
+  const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), teammate: nullable(SNAPSHOT), events: EVENTS, teammate_events: EVENTS, buttons: BARS, commands: list(record({ line: text, status: number })), reactions: list(record({ line: text, mood: MOOD, text: BLOCKS, moment: nullable(MOMENT) })) });
   const PRESSED = record({
     press: record({ person: WHO, button: BUTTON, command: text, status: number, output: text }),
     before: OBSERVATION,

@@ -7,7 +7,7 @@ const { createClock, fakeServer, httpError, installBrowser, load, record, settle
 
 const document = installBrowser({ reducedMotion: true });
 const { LevelScreen, createGameApi } = load(
-  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "level-screen.js"],
+  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "level-screen.js"],
   ["LevelScreen", "createGameApi"],
 );
 
@@ -295,7 +295,7 @@ test("after typed lines the head shows the commands and stars as the game counts
 });
 
 test("Rama says the game's reactions to the typed lines, oldest first, in the newest one's mood", async () => {
-  const reactions = [{ line: "git status", mood: "err", text: para("Not a repository yet.") }, { line: "git init", mood: "ok", text: para("Flag planted.") }];
+  const reactions = [{ line: "git status", mood: "err", text: para("Not a repository yet."), moment: null }, { line: "git init", mood: "ok", text: para("Flag planted."), moment: null }];
   const run = screen({ replies: { "/api/observe": { ...quiet(), reactions } } });
   await settle();
   assert.equal(run.q(".comms-text").textContent, "Not a repository yet.Flag planted.");
@@ -304,10 +304,30 @@ test("Rama says the game's reactions to the typed lines, oldest first, in the ne
 });
 
 test("two typed lines with the same reaction have Rama say it once", async () => {
-  const reactions = [{ line: "git log", mood: "info", text: para("Your history.") }, { line: "git log notes.txt", mood: "info", text: para("Your history.") }];
+  const reactions = [{ line: "git log", mood: "info", text: para("Your history."), moment: null }, { line: "git log notes.txt", mood: "info", text: para("Your history."), moment: null }];
   const run = screen({ replies: { "/api/observe": { ...quiet(), reactions } } });
   await settle();
   assert.equal(run.q(".comms-text").textContent, "Your history.");
+  run.view.dispose();
+});
+
+test("a reaction that carries a moment plays it over the zones, once however often the game repeats it", async () => {
+  const reactions = [{ line: "git push", mood: "ok", text: para("Both halves are up."), moment: "launch" }];
+  const run = screen({ replies: { "/api/observe": { ...quiet(), reactions } } });
+  await settle();
+  await run.clock.advance(5000);
+  const layer = run.q(".moment-layer");
+  assert.equal(layer.hidden, false);
+  assert.equal(run.all(".moment-layer .art-moment").length, 1);
+  assert.ok(Boolean(run.q(".moment-layer .art-moment--launch")));
+  run.view.dispose();
+});
+
+test("a reaction without a moment leaves the zones uncovered", async () => {
+  const reactions = [{ line: "git status", mood: "info", text: para("Clean."), moment: null }];
+  const run = screen({ replies: { "/api/observe": { ...quiet(), reactions } } });
+  await settle();
+  assert.equal(run.q(".moment-layer").hidden, true);
   run.view.dispose();
 });
 

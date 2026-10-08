@@ -137,6 +137,10 @@ def test_the_page_accepts_exactly_the_scene_pictures_and_the_moods_of_rama() -> 
     assert choices_in_api_js("MOOD") == list(get_args(records.Mood))
 
 
+def test_the_page_accepts_exactly_the_moments_a_reaction_can_carry() -> None:
+    assert choices_in_api_js("MOMENT") == list(get_args(records.Moment))
+
+
 def test_a_record_with_a_missing_or_extra_field_is_caught() -> None:
     hint = {"hint": [], "used": 1, "total": 3, "cost": 10}
     assert mismatches(hint, game.HintView, "hint") == []
