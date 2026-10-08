@@ -144,6 +144,8 @@ pre.code,
   border: 2px solid var(--edge);
   border-radius: 0;
   font: 1.1rem/1.25 var(--f-term);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 pre.code code {

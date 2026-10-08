@@ -174,3 +174,9 @@ test("the tape is one scrollable row of ticks, a ghost hollow, the chosen one li
   assert.match(rule(".tape-tick.is-ghost"), /background: transparent;/);
   assert.match(rule('.tape-tick[aria-selected="true"]'), /border-color: var\(--gold\);/);
 });
+
+test("a command example wraps its long lines, so no comment hides behind a sideways scroll", () => {
+  const block = css.slice(css.indexOf("\npre.code,"), css.indexOf("}", css.indexOf("\npre.code,")));
+  assert.match(block, /white-space: pre-wrap;/);
+  assert.match(block, /overflow-wrap: anywhere;/);
+});
