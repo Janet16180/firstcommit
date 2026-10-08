@@ -153,7 +153,7 @@ def watch_contact(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdi
         The goal's verdict.
     """
     url = kit.git_run(lab.project, "remote", "get-url", "origin").stdout.strip() if _exists(lab) else ""
-    contact = url == lab.github_url(lab.project)
+    contact = kit.reaches_github(lab, lab.project, url)
     return kit.Verdict(contact, CONTACT if contact else NO_CONTACT)
 
 

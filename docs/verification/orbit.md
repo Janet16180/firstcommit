@@ -779,3 +779,13 @@ Run in the image (`firstcommit:latest`, git 2.43.0):
 |---|---|---|
 | `gitcmd.PLAYER_SETTINGS` | `core.pager=cat` as a `GIT_CONFIG_COUNT` entry outranks the configuration files and `PAGER`; only `GIT_PAGER` comes first | E98, E99; git-config(1) core.pager, git(1) `GIT_CONFIG_COUNT`, git-var(1) `GIT_PAGER`; *re-checked* by `tests/test_gitcmd.py` on a pseudo-terminal |
 | `reactions.plain` | `git --no-pager log` and `git -C . log` run `git log` | E100; git(1) OPTIONS (`-C`, `-c`, `--no-pager`, `-p`); *re-checked* by `tests/test_reactions.py` |
+
+## Any address that reaches the stand-in GitHub (added 2026-10-08)
+
+| Tag | What ran | Result |
+|---|---|---|
+| E101 | in the image, `git remote add origin` with `../github/project.git/`, `./../github/project.git`, the absolute path and `file:///<absolute path>`, each followed by `git push origin main` and `git fetch origin` | every push and fetch exits 0 |
+
+`kit.reaches_github` reads an address as git does (a relative path from the clone's top folder,
+`file://` stripped) and is *re-checked* by `tests/test_kit.py`; 4-1, 4-5 and 5-1 use it, with their
+level tests trying the other spellings.

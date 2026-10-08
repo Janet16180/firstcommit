@@ -47,3 +47,9 @@ def test_a_commit_pushed_then_a_new_local_commit_is_not_the_same_main() -> None:
     lab, state = started(level)
     typed = typed_in(lab, *REBUILD, "echo more >> blueprint.txt", 'git commit -am "More"')
     assert watch(level, "launch").watch(lab, state, typed).message == level.NOT_LAUNCHED
+
+
+def test_origin_by_the_mothership_s_absolute_path_counts() -> None:
+    lab, state = started(level)
+    typed_in(lab, "git init -q", f"git remote add origin {lab.github}/")
+    assert level.watch_contact(lab, state, []).message == level.CONTACT

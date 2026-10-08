@@ -113,7 +113,7 @@ def _is_clone(lab: kit.Lab) -> bool:
     """
     exists = kit.snapshot(lab.project)["exists"]
     url = kit.git_run(lab.project, "remote", "get-url", "origin").stdout.strip() if exists else ""
-    return bool(url) and (lab.project / url).resolve() == lab.github.resolve()
+    return kit.reaches_github(lab, lab.project, url)
 
 
 def watch_clone(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:

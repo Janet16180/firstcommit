@@ -171,3 +171,22 @@ def test_a_typing_action_types_its_line_in_the_project_and_gives_no_answer(tmp_p
     typed: list[kit.Command] = []
     assert kit.typing("touch made.txt")(lab, {}, typed) is None
     assert typed == [{"line": "touch made.txt", "status": 0}] and (lab.project / "made.txt").exists()
+
+
+@pytest.mark.parametrize(
+    "url",
+    ["../github/project.git", "../github/project.git/", "./../github/project.git", "../github/./project.git", "{github}", "{github}/", "file://{github}"],
+)
+def test_every_address_that_reaches_the_stand_in_github_counts(tmp_path: Path, url: str) -> None:
+    room = lab.Lab(tmp_path)
+    room.github.mkdir(parents=True)
+    room.project.mkdir()
+    assert kit.reaches_github(room, room.project, url.format(github=room.github))
+
+
+@pytest.mark.parametrize("url", ["", "github/project.git", "../github/other.git", "https://github.com/base/project.git", "git@github.com:base/project.git", "../github"])
+def test_an_address_elsewhere_does_not_count(tmp_path: Path, url: str) -> None:
+    room = lab.Lab(tmp_path)
+    room.github.mkdir(parents=True)
+    room.project.mkdir()
+    assert not kit.reaches_github(room, room.project, url)

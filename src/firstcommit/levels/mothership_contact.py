@@ -114,7 +114,7 @@ def watch_remote(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdic
         message = NO_REMOTE
     elif REMOTE not in remotes:
         message = OTHER_NAME
-    elif url != lab.github_url(lab.project):
+    elif not kit.reaches_github(lab, lab.project, url):
         message = WRONG_URL
     return kit.Verdict(message == CONTACT, message)
 
