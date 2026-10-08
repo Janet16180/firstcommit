@@ -116,3 +116,11 @@ test("a picture's words are in the page's language", () => {
     Strings.use("en");
   }
 });
+
+test("the alarm scene opens every challenge, so its words name no one base", () => {
+  for (const language of ["en", "es"]) {
+    const table = Strings.TABLES[language];
+    const words = Object.keys(table).filter((key) => key === "sceneLabel.alarm" || key.startsWith("sceneCaption.alarm.")).map((key) => table[key]);
+    assert.deepEqual(words.filter((text) => /\d/.test(text)), [], language);
+  }
+});
