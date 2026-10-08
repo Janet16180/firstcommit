@@ -109,6 +109,9 @@
     renderSound();
   }
 
+  /* The words of the terminal's status and its hide/show button, in the page's language. */
+  const terminalLabels = () => Object.fromEntries(["connecting", "connected", "hide", "show"].map((name) => [name, t(`terminal.${name}`)]));
+
   /* The page's own words, in the game's language (Status.language); English until the game
      first answers. */
   function applyLanguage(language) {
@@ -123,6 +126,7 @@
     }
     applyTheme();
     renderSound();
+    if (app.terminal) app.terminal.setLabels(terminalLabels());
   }
 
   async function switchLanguage() {
@@ -233,7 +237,7 @@
       const key = app.status.active ? app.status.active.started : null;
       if (app.terminal && app.terminalFor !== key) disposeTerminal();
       if (!app.terminal) {
-        app.terminal = createTerminal({ protocol: "firstcommit", token: client.token, command: "firstcommit", looks: TERMINAL_LOOKS, storagePrefix: "firstcommit.", openFromHeight: 0, onUnreachable: probe });
+        app.terminal = createTerminal({ protocol: "firstcommit", token: client.token, command: "firstcommit", looks: TERMINAL_LOOKS, labels: terminalLabels(), storagePrefix: "firstcommit.", openFromHeight: 0, onUnreachable: probe });
         app.terminalFor = key;
         app.terminal.setLook(shownTheme(), t("terminal.title"));
       }

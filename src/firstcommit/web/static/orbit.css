@@ -1084,6 +1084,13 @@ pre.code code {
   margin-top: 8px;
 }
 
+/* A prediction's choice: one run of text with its commands inline, as wide as the panel. */
+.goal-choice {
+  display: block;
+  width: 100%;
+  text-align: left;
+}
+
 .goal-act input {
   flex: 1;
   min-width: 8em;

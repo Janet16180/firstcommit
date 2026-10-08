@@ -179,6 +179,15 @@ test("once the quest is done the mission is checked by itself; a solve stops the
   run.view.dispose();
 });
 
+test("a solve says the game's verdict on Rama's line, so an earlier nudge never outlives it", async () => {
+  const run = screen({ active: { ...record("active"), step: 3, auto_check: true }, replies: { "/api/check": record("check_solved") } });
+  await settle();
+  await settle();
+  assert.match(run.q(".comms").textContent, /Solved\./);
+  assert.equal(run.q(".comms").dataset.mood, "ok");
+  run.view.dispose();
+});
+
 test("an automatic check that does not solve stays silent", async () => {
   const run = screen({ active: { ...record("active"), step: 3, auto_check: true } });
   await settle();
@@ -294,6 +303,14 @@ test("Rama says the game's reactions to the typed lines, oldest first, in the ne
   run.view.dispose();
 });
 
+test("two typed lines with the same reaction have Rama say it once", async () => {
+  const reactions = [{ line: "git log", mood: "info", text: para("Your history.") }, { line: "git log notes.txt", mood: "info", text: para("Your history.") }];
+  const run = screen({ replies: { "/api/observe": { ...quiet(), reactions } } });
+  await settle();
+  assert.equal(run.q(".comms-text").textContent, "Your history.");
+  run.view.dispose();
+});
+
 test("while a watch goal waits, the game's note shows under the goal, not on Rama's line", async () => {
   const run = screen({ active: { ...record("active"), step: 2 } });
   await settle();
@@ -311,6 +328,17 @@ test("a level's scene plays the first time it opens, and the game is told once i
   dialog.querySelector(".cs-skip").click();
   await settle();
   assert.deepEqual(run.server.calls.filter((call) => call.path === "/api/scene").map((call) => call.body), [{ level: "sample-second" }]);
+  run.view.dispose();
+});
+
+test("the lab is watched only once the scene is over, so what a level stages first happens in view", async () => {
+  const run = screen({ replies: { "/api/level": record("level") } });
+  await settle();
+  await run.clock.advance(5000);
+  assert.equal(run.routes().includes("/api/observe"), false);
+  document.body.querySelector("dialog.cutscene .cs-skip").click();
+  await settle();
+  assert.ok(run.routes().includes("/api/observe"));
   run.view.dispose();
 });
 
@@ -405,6 +433,16 @@ test("a challenge's goals tick in the order they are met", async () => {
   const run = screen({ active: { ...record("active"), step: 0, done: [] }, replies: { "/api/level": level, "/api/step": { ...correct(1), done: ["stage"] } } });
   await settle();
   assert.deepEqual(run.all(".goal").map((goal) => goal.classList.contains("is-done")), [false, false, true]);
+  run.view.dispose();
+});
+
+test("in a challenge a met goal ticks, and Rama only says a part is in place, never what comes next", async () => {
+  const level = { ...seenLevel(), challenge: true, card: null };
+  const run = screen({ active: { ...record("active"), step: 0, done: [] }, replies: { "/api/level": level, "/api/step": { ...correct(1), done: ["stage"], message: para("The next goal is not met yet.") } } });
+  await settle();
+  assert.ok(run.seen.sounds.includes("goal"));
+  assert.equal(run.q(".comms-text").textContent, "One part of the end state is in place.");
+  assert.equal(run.q(".comms").dataset.mood, "ok");
   run.view.dispose();
 });
 

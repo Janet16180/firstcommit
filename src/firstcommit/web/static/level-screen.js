@@ -23,7 +23,7 @@
 const LevelScreen = (function () {
   const { el } = Dom;
   const { t } = Strings;
-  const SAY = { preparing: "level.preparing", start: "level.start", down: "level.down", back: "level.back", hint: "level.hint", ended: "level.ended" };
+  const SAY = { preparing: "level.preparing", start: "level.start", down: "level.down", back: "level.back", hint: "level.hint", ended: "level.ended", partMet: "level.partMet" };
 
 
   function hud(screen) {
@@ -117,7 +117,9 @@ const LevelScreen = (function () {
 
   /* A quest step's result. A watch step polled without the player shows its message quietly: it
      says what to do next, it is not the player's mistake. A passed step's message is said in
-     `mood`: pleased for a goal met, neutral for a prediction's reveal (any answer passes). */
+     `mood`: pleased for a goal met, neutral for a prediction's reveal (any answer passes). In a
+     challenge Rama speaks only of danger and errors, so a met goal is said without its message,
+     which could tell what comes next; saying it still clears an error the player has fixed. */
   function stepped(screen, result, watched = false, mood = "ok") {
     const { ui, state, ctx } = screen;
     if (!result.correct && watched) screen.mission.note(result.message);
@@ -129,12 +131,13 @@ const LevelScreen = (function () {
     state.step = result.step;
     state.done = result.done;
     state.auto_check = result.quest_done;
-    ui.comms.say(result.message, mood);
+    ui.comms.say(screen.level.challenge ? t(SAY.partMet) : result.message, mood);
     ctx.sound.play("goal");
     screen.mission.setStep(state.step, state.done);
   }
 
-  /* A check's result. An automatic check that does not solve says nothing: the player did not ask. */
+  /* A check's result. A solve says its verdict, so no earlier nudge outlives it; an automatic
+     check that does not solve says nothing: the player did not ask. */
   function checked(screen, result, auto = false) {
     if (result.lost) {
       if (screen.finished) return;
@@ -143,6 +146,7 @@ const LevelScreen = (function () {
     } else if (result.solved) {
       if (screen.finished) return;
       stop(screen);
+      screen.ui.comms.say(result.message, "ok");
       won(screen, { debrief: result.debrief, stars: result.stars, card: result.new_card, payout: result.payout });
     } else if (!auto) {
       screen.ui.comms.say(result.message, "err");
@@ -231,10 +235,11 @@ const LevelScreen = (function () {
     screen.element.style.setProperty("--term-top", `${Math.round(top)}px`);
   }
 
-  /* What Rama says about the lines just typed, oldest first, in the mood of the newest. */
+  /* What Rama says about the lines just typed, oldest first, each text once, in the mood of the newest. */
   function react(screen, reactions) {
     if (!reactions.length) return;
-    screen.ui.comms.say(reactions.flatMap((reaction) => reaction.text), reactions[reactions.length - 1].mood);
+    const said = reactions.filter((reaction, index) => reactions.findIndex((other) => JSON.stringify(other.text) === JSON.stringify(reaction.text)) === index);
+    screen.ui.comms.say(said.flatMap((reaction) => reaction.text), reactions[reactions.length - 1].mood);
   }
 
   /* A blip for the lines just typed, or a buzz when one of them failed: the terminal shows both. */
@@ -292,8 +297,13 @@ const LevelScreen = (function () {
     ctx.terminal.attach(ui.termcol);
     screen.attached = true;
     measureTerminal(screen);
-    screen.poller = Polling.start({ tick: () => tick(screen), timers: ctx.timers, page: ctx.page });
-    if (level.scene.length && !level.scene_seen) scene(screen);
+    /* A level may stage a change right after the page first looks at the lab; looking only once
+       the scene is over keeps that change, and its motion, in view. */
+    const watch = () => {
+      if (!screen.disposed && !screen.finished) screen.poller = Polling.start({ tick: () => tick(screen), timers: ctx.timers, page: ctx.page });
+    };
+    if (level.scene.length && !level.scene_seen) scene(screen).then(watch);
+    else watch();
   }
 
   async function load(screen) {
