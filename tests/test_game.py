@@ -1231,6 +1231,7 @@ def test_observing_an_unchanged_lab_does_not_rewrite_the_observation(sample_leve
 @pytest.mark.usefixtures("fake_insight")
 def test_observing_a_lab_with_a_stand_in_github_snapshots_it_too(sample_level: runner.Level, game_home: Path) -> None:
     game.start(sample_level.id)
+    game.observe()
     github = kit.Lab(game_home / "labs" / "cargo-sample").github
     github.mkdir(parents=True)
     first = game.observe()
@@ -1245,7 +1246,6 @@ def test_starting_a_level_forgets_the_last_observation(sample_level: runner.Leve
     (lab_project(game_home) / "notes.txt").write_text("x")
     game.observe()
     game.start(sample_level.id)
-    assert not (game_home / "observed.json").exists()
     assert game.observe()["events"] == []
 
 
@@ -1260,9 +1260,10 @@ def test_the_games_shell_is_bash_with_the_games_own_startup_file(game_home: Path
 
 def test_observing_tells_the_commands_typed_since_the_last_observation_once(sample_level: runner.Level, typist: Callable[..., bytes]) -> None:
     game.start(sample_level.id)
+    assert game.observe()["commands"] == []
     shell, env, folder = game.shell_command(), game.shell_environment(terminal.player_env(os.environ)), Path(game.terminal_folder())
     typist(shell, env, folder, [(b"git status --short\n", b"$ ")])
-    assert game.observe()["commands"] == []
+    assert game.observe()["commands"] == [{"line": "git status --short", "status": 0}]
     typist(shell, env, folder, [(b"git add hello.txt\n", b"$ "), (b"git commit -q\n", b"$ ")])
     observed = game.observe()
     assert observed["commands"] == [{"line": "git add hello.txt", "status": 0}, {"line": "git commit -q", "status": 1}]
@@ -1329,12 +1330,13 @@ def with_events(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch, *ev
     return level
 
 
-def test_an_event_runs_once_right_after_the_first_observations_snapshot_so_the_next_one_tells_its_change(sample_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_an_event_runs_once_when_the_level_starts_yet_the_first_look_shows_the_lab_before_it_and_the_next_tells_its_change(sample_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     level = with_events(sample_level, monkeypatch, kit.LevelEvent(id="arrive", run=write_note))
     game.start(level.id)
+    assert (lab_project(game_home) / "note.txt").read_text() == "x"
     first = game.observe()
     assert [entry["path"] for entry in first["project"]["files"]] == ["hello.txt"]
-    assert (lab_project(game_home) / "note.txt").read_text() == "x"
+    assert first["events"] == []
     assert [event["kind"] for event in game.observe()["events"]] == ["file-created"]
     assert (lab_project(game_home) / "note.txt").read_text() == "x"
     (game_home / "observed.json").unlink()
@@ -1344,13 +1346,21 @@ def test_an_event_runs_once_right_after_the_first_observations_snapshot_so_the_n
     assert active_record()["events"] == ["arrive"]
 
 
-def test_a_player_who_types_right_after_the_first_look_meets_the_lab_as_set_up(game_home: Path) -> None:
+def test_a_player_who_types_before_the_first_look_meets_the_lab_as_set_up(game_home: Path) -> None:
     game.start("mothership-refused")
-    game.observe()
     assert kit.type_line(runner.lab_of("mothership-refused").project, "git push")["status"] != 0
     game.start("vault-inspection")
-    game.observe()
     assert kit.type_line(runner.lab_of("vault-inspection").project, "git restore --staged keys.txt")["status"] == 0
+
+
+def test_lines_typed_before_the_first_look_are_told_with_their_changes_by_the_next_one(sample_level: runner.Level, game_home: Path) -> None:
+    game.start(sample_level.id)
+    kit.git(lab_project(game_home), "add", "hello.txt")
+    type_lines(game_home, ("git add hello.txt", 0))
+    first = game.observe()
+    assert (first["commands"], first["events"]) == ([], [])
+    second = game.observe()
+    assert (second["commands"], [event["kind"] for event in second["events"]]) == ([{"line": "git add hello.txt", "status": 0}], ["file-staged"])
 
 
 def test_an_event_on_a_goal_runs_once_when_that_goal_is_reached(sample_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -1372,10 +1382,9 @@ def test_starting_again_runs_the_events_again(sample_level: runner.Level, game_h
     game.start(level.id)
     game.observe()
     game.observe()
+    (lab_project(game_home) / "note.txt").unlink()
     game.start(level.id)
-    assert active_record()["events"] == []
-    game.observe()
-    game.observe()
+    assert active_record()["events"] == ["arrive"]
     assert (lab_project(game_home) / "note.txt").read_text() == "x"
 
 
@@ -1852,6 +1861,7 @@ def test_a_game_home_inside_a_repository_never_shows_that_repository(sample_leve
     kit.git(tmp_path, "init", "-q", str(outer))
     monkeypatch.setenv("FIRSTCOMMIT_HOME", str(outer / "game-home"))
     game.start(sample_level.id)
+    game.observe()
     sandbox.remove_tree(runner.lab_of(sample_level.id).project / ".git", outer / "game-home")
     assert game.observe()["project"]["exists"] is False
 

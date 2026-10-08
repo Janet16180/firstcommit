@@ -86,7 +86,7 @@ SNAPSHOT: records.Snapshot = {
     "stash": 0,
     "truncated": False,
 }
-OBSERVED: save.Observed = {"level": "liftoff-aboard", "project": SNAPSHOT, "github": {**SNAPSHOT, "bare": True, "files": []}, "teammate": SNAPSHOT, "told": 2}
+OBSERVED: save.Observed = {"level": "liftoff-aboard", "project": SNAPSHOT, "github": {**SNAPSHOT, "bare": True, "files": []}, "teammate": SNAPSHOT, "told": 2, "fresh": False}
 
 
 @pytest.mark.parametrize("observed", [OBSERVED, {**OBSERVED, "github": None, "teammate": None}], ids=["playground", "project only"])
@@ -246,6 +246,8 @@ OBSERVATION_DAMAGE = [
     ("told", ...),
     ("told", -1),
     ("told", "2"),
+    ("fresh", ...),
+    ("fresh", "no"),
 ]
 
 

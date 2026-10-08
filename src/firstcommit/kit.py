@@ -251,8 +251,9 @@ class LevelEvent:
     Something a level makes happen in its lab at a moment of the play: Alex pushing, a staged scenario.
 
     ``run(lab, state)`` makes the change with real git (`git`, `press`), like `setup`. With no
-    ``goal`` it runs right after the snapshot of the level's first observation, before that
-    observation is returned; with a quest step's id, right after the player reaches that goal. Either way the page's next observation tells the change,
+    ``goal`` it runs when the level starts, right after a snapshot of the lab as set up, which the
+    level's first observation shows; with a quest step's id, right after the player reaches that
+    goal. Either way the page's next observation tells the change,
     so it animates what really happened. Each event runs once per play.
     """
 

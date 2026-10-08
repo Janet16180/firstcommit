@@ -157,7 +157,8 @@ class Observed(TypedDict):
 
     ``github`` is None when the level has no stand-in GitHub, and ``teammate`` when it has no
     teammate's clone (`firstcommit.playground`). ``told`` counts the lines of the level's
-    ``Active.typed`` that observations have told already. The snapshots are
+    ``Active.typed`` that observations have told already. ``fresh`` marks the lab as it was set
+    up, before the level's events, snapshotted when the level started and not yet shown. The snapshots are
     checked field by field like every record, so one of another shape (written by another
     version of the game) is dropped on load (`load_observed`).
     """
@@ -167,6 +168,7 @@ class Observed(TypedDict):
     github: Snapshot | None
     teammate: Snapshot | None
     told: int
+    fresh: bool
 
 
 def home() -> Path:
