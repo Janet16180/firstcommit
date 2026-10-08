@@ -52,6 +52,7 @@ from firstcommit import (
     changes,
     commands,
     explanations,
+    freeplay,
     gitcmd,
     kit,
     markup,
@@ -1034,9 +1035,10 @@ def abort() -> str | None:
 
 
 def reset() -> None:
-    """End the level in progress and erase all progress, damaged files included; the game's git configuration starts over too."""
+    """End the level in progress, remove the playground and erase all progress, damaged files included; the game's git configuration starts over too."""
     with save.lock():
         runner.remove_labs()
+        freeplay.remove()
         save.erase()
         gitcmd.ensure_config()
 

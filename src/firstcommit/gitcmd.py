@@ -123,12 +123,12 @@ def isolation(home: Path) -> dict[str, str]:
     -------
     dict[str, str]
         ``GIT_CONFIG_GLOBAL``, ``GIT_CONFIG_NOSYSTEM``, ``GIT_CEILING_DIRECTORIES`` (the labs
-        folder), and `PLAYER_SETTINGS` as ``GIT_CONFIG_COUNT`` entries.
+        folder and the playground's), and `PLAYER_SETTINGS` as ``GIT_CONFIG_COUNT`` entries.
     """
     return {
         "GIT_CONFIG_GLOBAL": str(home / save.GITCONFIG_FILE),
         "GIT_CONFIG_NOSYSTEM": "1",
-        "GIT_CEILING_DIRECTORIES": str(home / save.LABS_FOLDER),
+        "GIT_CEILING_DIRECTORIES": f"{home / save.LABS_FOLDER}:{home / save.PLAYGROUND_FOLDER}",
         **config_entries(PLAYER_SETTINGS),
     }
 

@@ -281,12 +281,31 @@ def test_erasing_removes_every_save_file_and_the_git_config(game_home: Path) -> 
     save.ensure_gitconfig("x\n")
     save.write_shell_startup("PS1='$ '\n")
     save.ensure_hushlogin()
+    save.write_playground(PLAYGROUND)
     for name in (save.COMMANDS_FILE, save.HISTORY_FILE):
         (game_home / name).write_text("typed\n")
     (game_home / "labs").mkdir()
     save.erase()
     save.erase()
     assert sorted(path.name for path in game_home.iterdir()) == ["labs"]
+
+
+PLAYGROUND: save.Playground = {"start": "conflict", "alex_shown": {"conflict": True, "branches": False}, "view": "conflict", "whose": "you"}
+PLAYGROUND_DAMAGE = [("start", "nowhere"), ("alex_shown.conflict", "yes"), ("alex_shown.nowhere", True), ("view", "station"), ("whose", "bob"), ("view", ...)]
+
+
+def test_the_playground_has_no_record_until_one_is_written_and_reads_back_as_written() -> None:
+    assert save.load_playground() is None
+    save.write_playground(PLAYGROUND)
+    assert save.load_playground() == PLAYGROUND
+
+
+@pytest.mark.parametrize(("field", "value"), PLAYGROUND_DAMAGE, ids=[f"{field}={value!r}" for field, value in PLAYGROUND_DAMAGE])
+def test_a_damaged_playground_file_names_the_file_and_the_field(game_home: Path, field: str, value: Any) -> None:
+    (game_home / "playground.json").write_text(json.dumps(damaged(dict(PLAYGROUND), field, value)))
+    with pytest.raises(save.SaveError, match=r"playground\.json") as raised:
+        save.load_playground()
+    assert f"`{field}`" in str(raised.value)
 
 
 def test_erasing_works_when_the_save_files_are_damaged(game_home: Path) -> None:

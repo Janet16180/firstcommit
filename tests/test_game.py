@@ -20,6 +20,7 @@ from firstcommit import (
     changes,
     commands,
     explanations,
+    freeplay,
     game,
     gitcmd,
     kit,
@@ -1658,6 +1659,14 @@ def test_reset_erases_all_progress_and_restores_the_base_git_config(sample_level
     assert save.load_active() is None
     assert not (game_home / "labs").exists()
     assert (game_home / "gitconfig").read_text() == gitcmd.BASE_CONFIG
+
+
+def test_reset_erases_the_playground_and_where_the_player_left_it(game_home: Path) -> None:
+    freeplay.build("branches")
+    save.write_playground({"start": "branches", "alex_shown": {}, "view": "chain", "whose": "you"})
+    game.reset()
+    assert save.load_playground() is None
+    assert not (game_home / "playground").exists()
 
 
 def test_reset_works_on_a_damaged_save(sample_level: runner.Level, game_home: Path) -> None:

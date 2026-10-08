@@ -73,11 +73,11 @@ def test_run_returns_the_failure_instead_of_raising(tmp_path: Path) -> None:
     assert "not a git repository" in result.stderr
 
 
-def test_isolation_names_the_games_config_and_labs(tmp_path: Path) -> None:
+def test_isolation_names_the_games_config_its_labs_and_the_playground(tmp_path: Path) -> None:
     assert gitcmd.isolation(tmp_path) == {
         "GIT_CONFIG_GLOBAL": str(tmp_path / save.GITCONFIG_FILE),
         "GIT_CONFIG_NOSYSTEM": "1",
-        "GIT_CEILING_DIRECTORIES": str(tmp_path / "labs"),
+        "GIT_CEILING_DIRECTORIES": f"{tmp_path / 'labs'}:{tmp_path / 'playground'}",
         **gitcmd.config_entries(gitcmd.PLAYER_SETTINGS),
     }
 

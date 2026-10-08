@@ -361,6 +361,13 @@ Language = Literal["en", "es"]
 
 Who = Literal["you", "alex"]
 """The two people of the playground (`firstcommit.playground`), who share one remote."""
+StartId = Literal["empty", "changes", "branches", "alex-ahead", "both", "conflict", "lost"]
+"""The free playground's starting points, in the picker's order (`firstcommit.freeplay.STARTS`)."""
+PlaygroundView = Literal["chain", "history", "desk", "crew", "conflict", "movelog", "graph"]
+"""
+The free playground's views: the chain, history (your repository beside the mothership), the desk,
+the crew, a conflict's file, the move log (``git reflog``) and git's own graph.
+"""
 Button = Literal["edit", "add", "commit", "push", "fetch", "pull", "pull-no-rebase", "status", "merge-abort", "keep-ours", "keep-theirs"]
 """
 The kinds of the playground's buttons. A button's id is its kind, or ``"<kind>:<file>"`` for a
