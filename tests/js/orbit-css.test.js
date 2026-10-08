@@ -255,3 +255,10 @@ test("a zone's longer real name wraps inside its heading and never pushes the co
   const phone = css.slice(css.indexOf("@media (max-width: 600px)"));
   assert.match(phone.slice(0, phone.indexOf("\n}")), /\.z-head \.place-game {\s*display: none;/);
 });
+
+test("a move log row wraps git's long lines, a clone's path included, rather than cutting them off", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.match(rule(".movelog-line"), /white-space: pre-wrap;/);
+  assert.match(rule(".movelog-line"), /overflow-wrap: anywhere;/);
+  assert.match(rule(".movelog-line"), /min-width: 0;/);
+});
