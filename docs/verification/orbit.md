@@ -896,3 +896,16 @@ deleted side, an add/add with no base) and `tests/levels/test_conflict_collision
 | card, debrief, `GONE` (with the `search-beam` moment), prediction reveal | `git restore <file>` copies the staging area's version over the working folder's; lines never staged or committed have no copy anywhere | E109; git-restore(1) DESCRIPTION (`--worktree` is the default, the source the index) |
 | debrief, `LOOKED` | `git diff` shows what is in the working folder and not staged | E109; git-diff(1) |
 | `NOTES_LOST` (lost) | the staged notes restored away are in no commit | the level's test; E109 (only staged and committed versions are stored) |
+
+## 7-2 Recall the capsule (added 2026-10-08)
+
+| Tag | What ran | Result |
+|---|---|---|
+| E110 | on the host (git 2.43.0), `core.editor = true`: a bare hub, two clones; in one, commits "one" (steady), "strobe", "route", pushed, pulled by the other; `git revert HEAD~1`, `git log --oneline`, `git push`; the other pulls; then `git reset --hard HEAD~2` and a plain `git push` | the revert exits 0 with `Revert "strobe"` on top of `route`, the lights steady and `route.txt` kept; the push exits 0 and the other clone's pull brings steady lights; after the reset the plain push is refused (not a fast-forward) |
+
+| Claim | Says | Evidence |
+|---|---|---|
+| card, debrief, `REVERTED` | revert makes a new commit that undoes one; the earlier commit and those after it stay | E110; git-revert(1) DESCRIPTION |
+| debrief, `PUSHED` | the revert pushes like any commit, and the teammate's pull brings it | E110 |
+| `RESET_SHARED` (with the `force-break` moment), debrief | after a reset of a pushed `main`, only a forced push makes the mothership forget the commits; `git pull` brings them back | E110 (the plain push is refused); E64; the level's test (a pull, then the revert, solves it) |
+| `REWRITTEN` (lost) | a forced push drops the commits Alex pulled from the mothership | the level's test |
