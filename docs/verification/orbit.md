@@ -705,3 +705,17 @@ the merge.
 | card, `MERGED`, debrief | when both moved on, a merge commit with two parents keeps both changes | E84; git-merge(1) TRUE MERGE |
 | debrief, hint 2 | `--no-edit` keeps git's prepared message; without it git opens an editor on a terminal | E85; git-merge(1) `--edit, -e, --no-edit` |
 | `MERGED_BEACON` (lost) | merged after `scout`, `beacon` comes in through a merge commit | the level's test |
+
+### Level `conflict-abort` (Abort the docking, 6-2)
+
+*Re-checked* by `tests/levels/test_conflict_abort.py`: the pull stopping as a level event with both
+files in conflict, the abort keeping the note, a hard reset (Rama's warning, the note lost), the
+merge finished instead (lost), and the merge still paused.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, `BACK`, debrief | `git merge --abort` goes back to before the merge; an edit to a file the merge did not touch stays | E91, E92; git-merge(1) `--abort` |
+| card, debrief | git can rebuild uncommitted changes only in some cases, so commit or stash before a merge | git-merge(1) `--abort` ("will in some cases be unable to reconstruct these changes") |
+| `LOOKED`, hint 1 | `git status` shows the merge in progress and the unmerged files | E86, E91 |
+| `RESET`, `NOTE_LOST`, debrief | `git reset --hard` ends the merge and drops uncommitted changes to tracked files | E91; git-reset(1) `--hard` |
+| scene | the pull stopped with conflicts in two files | the level's test |
