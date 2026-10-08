@@ -18,6 +18,8 @@ STATIC = Path(routes.__file__).parent / "static"
 LEVELS = Path(game.__file__).parent / "levels"
 # The page's own text, which the scans below read; the rest of static/ is fonts and their licences.
 PAGE_TEXT = {".html", ".js", ".css"}
+WORK_ADDRESS = "https://github.com/moonbase/"
+"""Displayed text, never loaded: Rama shows how the mothership's address looks at work."""
 HEADER = "X-FirstCommit-Token"
 
 
@@ -162,8 +164,15 @@ def test_the_page_loads_nothing_from_outside_the_server(site: Site) -> None:
     assert status == 200
     assert "https:" not in headers["Content-Security-Policy"]
     for path in sorted(entry for entry in STATIC.iterdir() if entry.suffix in PAGE_TEXT):
-        text = path.read_text()
+        text = path.read_text().replace(WORK_ADDRESS, "")
         assert not re.search(r"https?://(?!www\.w3\.org/2000/svg|localhost)", text), path.name
+
+
+def test_the_work_address_is_only_shown_never_loaded() -> None:
+    address = re.escape(WORK_ADDRESS)
+    loads = rf"""(src|href)\s*[=:]\s*["'`]?{address}|url\(\s*["']?{address}|(fetch|import)\(\s*["'`]{address}"""
+    for path in sorted(entry for entry in STATIC.iterdir() if entry.suffix in PAGE_TEXT):
+        assert not re.search(loads, path.read_text()), path.name
 
 
 def test_every_static_file_is_page_text_a_font_or_a_font_licence() -> None:
