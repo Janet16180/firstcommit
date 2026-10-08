@@ -45,7 +45,7 @@ test("a move stays locked while the place or state at either end is", () => {
   const view = FieldGuide.create({ status: () => status([{ id: "cargo", title: "Cargo", blurb: "", cards: 0, levels: [level("one", true), level("two", true)] }]) });
   const states = view.element.querySelector(".art-ig--states").textContent;
   assert.match(states, /git rm --cached/);
-  assert.doesNotMatch(states, /git restore --staged/);
+  assert.doesNotMatch(states, /a file the last commit holds/);
 });
 
 test("the guide speaks the page's language", () => {

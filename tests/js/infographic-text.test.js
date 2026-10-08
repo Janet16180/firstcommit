@@ -46,8 +46,8 @@ test("the places carry the zone panel's words, in both languages", () => {
   Strings.use("en");
 });
 
-/* Ids, unlocks and the Git names of things are said once; any other word is said in both languages. */
-const PLAIN = ["id", "from", "to", "chapter", "name"];
+/* Ids and unlocks are said once; any other word is said in both languages. */
+const PLAIN = ["id", "from", "to", "chapter"];
 const COMMAND = /^(?:git|ls)\b[\w\-<>".,\s]*$/;
 
 function words(value, key, found) {
@@ -71,7 +71,7 @@ test("every word is given in English and in Spanish", () => {
 });
 
 test("the states are a file's four, by their Git names", () => {
-  assert.deepEqual(InfographicText.states.states.map((state) => state.name), ["untracked", "staged", "committed", "modified"]);
+  assert.deepEqual(InfographicText.states.states.map((state) => state.name.en), ["untracked", "staged", "committed", "modified"]);
 });
 
 test("every move joins two places or two states that exist", () => {
@@ -88,4 +88,19 @@ test("each command is listed once", () => {
 
 test("the text is frozen data", () => {
   assert.ok(Object.isFrozen(InfographicText));
+});
+
+/* Engine checked these in git 2.43 (docs/verification/orbit.md, "Field guide text"). */
+test("the guide says what git really does, as engine checked it", () => {
+  const command = (name) => InfographicText.commands.groups.flatMap((group) => group.commands).find((item) => item.command === name).what.en;
+  const place = (id) => InfographicText.places.places.find((item) => item.id === id).what.en;
+  const moves = (list, from, to) => list.filter((move) => move.from === from && move.to === to).map((move) => move.command?.en ?? move.how?.en ?? move.command ?? move.how);
+  assert.equal(command("git rm --cached <file>"), "Takes a file out of the staging area and keeps it in the working folder. For a file the last commit holds, the next commit then deletes it from the repository.");
+  assert.equal(command("git pull"), "A fetch, then brings the remote's commits into your branch: a fast-forward when only the remote moved on; when both did, you choose a merge (--no-rebase) or a rebase (--rebase).");
+  assert.deepEqual(moves(InfographicText.places.moves, "mothership", "workshop"), ["git pull (fetch, then merge or rebase)"]);
+  assert.equal(place("workshop"), "Your files as you edit them. Git saves nothing here until you add and commit.");
+  assert.equal(place("vault"), "Every commit of your repository, yours and the ones you fetched, on this computer, in the hidden .git folder.");
+  assert.equal(command("git reset <commit>"), "Moves the current branch's label to another commit, and the staging area with it; the working folder keeps its files.");
+  assert.deepEqual(moves(InfographicText.states.moves, "staged", "modified"), ["git restore --staged (a file the last commit holds)"]);
+  assert.deepEqual(moves(InfographicText.states.moves, "staged", "untracked"), ["git rm --cached (before the file's first commit)", "git restore --staged (a new file, once the repository has a commit)"]);
 });
