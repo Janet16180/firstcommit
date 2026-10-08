@@ -43,6 +43,19 @@ test("a file deleted from the folder shows as deleted, and ignored files and fil
   assert.deepEqual(zones.workshop, [{ path: "gone.txt", state: "deleted" }]);
 });
 
+test("ignored files are still on the disk: grouped by their top folder, with how many each holds, in the snapshot's order", () => {
+  const files = [
+    file("nav.cfg", { folder_change: "modified", head: "a", index: "a" }),
+    ...[1, 2, 3].map((run) => file(`sim-output/run-00${run}.log`, { ignored: true, folder_change: "ignored" })),
+    file("build.log", { ignored: true, folder_change: "ignored" }),
+    file("sim-output/deep/trace.bin", { ignored: true, folder_change: "ignored" }),
+  ];
+  const zones = Zones.read(observe(snapshot({ exists: true, files })));
+  assert.deepEqual(zones.ignored, [{ name: "sim-output/", count: 4 }, { name: "build.log", count: 1 }]);
+  assert.deepEqual(zones.workshop.map((item) => item.path), ["nav.cfg"]);
+  assert.deepEqual(Zones.read(observe(snapshot({ exists: true, files: [file("a.txt")] }))).ignored, []);
+});
+
 test("the dock holds every staged change with its kind, in the snapshot's order", () => {
   const zones = Zones.read(observe(snapshot({ exists: true, files: record("files") })));
   assert.deepEqual(zones.dock.map(({ path, change }) => ({ path, change })), [

@@ -341,3 +341,27 @@ test("a mothership the repository has not named yet says how to name it, and whe
   assert.equal(zone(panel, "remote").classList.contains("is-dormant"), false);
   assert.doesNotMatch(zone(panel, "remote").textContent, /Not named yet/);
 });
+
+test("ignored files stay in the workshop, greyed, one chip per folder that says they are still on your disk; the badge counts what git sees", () => {
+  const panel = ZonePanel.create();
+  const one = record("snapshots").one;
+  const ignored = [1, 2, 3].map((run) => ({ ...one.files[0], path: `sim-output/run-00${run}.log`, head: null, index: null, ignored: true, index_change: null, folder_change: "ignored" }));
+  panel.update(observe({ ...one, files: [...one.files, ...ignored] }));
+  const workshop = zone(panel, "workshop");
+  const chip = workshop.querySelector(".file.is-ignored");
+  assert.equal(chip.querySelector(".fname").textContent, "sim-output/");
+  assert.equal(chip.querySelector(".ftag").textContent, "3 ignored, still on your disk");
+  assert.equal(workshop.querySelector(".z-count").textContent, String(one.files.length));
+});
+
+test("a workshop holding only ignored files says it is empty, and still shows them", () => {
+  const panel = ZonePanel.create();
+  const one = record("snapshots").one;
+  const ignored = { ...one.files[0], path: "build.log", head: null, index: null, ignored: true, index_change: null, folder_change: "ignored" };
+  panel.update(observe({ ...one, files: [ignored] }));
+  const workshop = zone(panel, "workshop");
+  assert.ok(workshop.querySelector(".zone-empty"));
+  assert.equal(workshop.querySelector(".file.is-ignored .fname").textContent, "build.log");
+  assert.equal(workshop.querySelector(".file.is-ignored .ftag").textContent, "ignored, still on your disk");
+  assert.equal(workshop.querySelector(".z-count").textContent, "0");
+});

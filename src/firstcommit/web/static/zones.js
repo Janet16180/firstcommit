@@ -6,11 +6,13 @@
  * (the local repository's history) and the mothership (the level's GitHub). It only reads the
  * snapshots the server sent; nothing here runs or imitates git. Defines one global, Zones.
  *
- * read(observation) gives {repository, operation, workshop, dock, vault, remote, named, crew}:
+ * read(observation) gives {repository, operation, workshop, ignored, dock, vault, remote, named, crew}:
  * - repository: whether the folder holds a repository;
  * - operation: the merge, rebase, cherry-pick, revert or bisect in progress, or null;
  * - workshop: [{path, state}] for every file in the folder that git does not ignore, state one of
  *   "none" (no repository), "conflicted", "new", "edited", "deleted", "staged" or "saved";
+ * - ignored: [{name, count}] for the files git ignores, still on the disk: one per top folder
+ *   ("sim-output/") or file at the top, with how many files it holds, in the snapshot's order;
  * - dock: [{path, change, version}] for every staged change (version: the staged content's hash,
  *   null for a deletion), or null without a repository;
  * - vault: every commit of every branch, children before parents, [{hash, short, subject, author,
@@ -20,7 +22,7 @@
  * - remote: the same for the level's GitHub, or null when the level has none;
  * - named: whether the repository names a remote `origin` (a mothership it cannot name yet is
  *   there, but out of its reach);
- * - crew: the teammate's station, read from their clone like yours, {repository, workshop, dock,
+ * - crew: the teammate's station, read from their clone like yours, {repository, workshop, ignored, dock,
  *   vault}, or null when the level has no teammate.
  *
  * moves(before, after, typed, refused) says how to animate the change between two such readings:
@@ -119,12 +121,24 @@ const Zones = (function () {
     }));
   }
 
+  /* The ignored files, counted by their top folder (or by themselves at the top). */
+  function ignoredGroups(files) {
+    const counts = new Map();
+    for (const file of files.filter((entry) => entry.ignored)) {
+      const slash = file.path.indexOf("/");
+      const name = slash < 0 ? file.path : file.path.slice(0, slash + 1);
+      counts.set(name, (counts.get(name) || 0) + 1);
+    }
+    return [...counts].map(([name, count]) => ({ name, count }));
+  }
+
   /* One clone's three places: its folder, its staging area and its history. */
   function station(snapshot) {
     const repository = snapshot.exists;
     return {
       repository,
       workshop: snapshot.files.filter(inWorkshop).map((file) => ({ path: file.path, state: workshopState(file, repository) })),
+      ignored: ignoredGroups(snapshot.files),
       dock: repository ? snapshot.files.filter((file) => file.index_change).map((file) => ({ path: file.path, change: file.index_change, version: file.index })) : null,
       vault: repository ? commits(snapshot, true) : null,
     };

@@ -122,6 +122,14 @@ test("a moment covers the zones where they stand, its picture filling them, unti
   assert.match(rule(".moment-layer[hidden]"), /display: none;/);
 });
 
+test("an ignored file is greyed behind a dashed edge, so it reads as still there but out of git's sight", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.match(rule(".file.is-ignored"), /border-style: dashed;/);
+  assert.match(rule(".file.is-ignored"), /color: var\(--ink-soft\);/);
+  assert.match(rule(".file.is-ignored"), /flex-wrap: wrap;/);
+  assert.match(rule(".file.is-ignored .ftag"), /flex: 1 1 100%;/);
+});
+
 test("history folds your station's workshop and dock away, and gives the vault and the mothership the row", () => {
   const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
   assert.match(css, /\.sky\[data-view="history"\] \.viz-row > :nth-child\(-n \+ 4\),[^{]*\.sky\[data-view="history"\] \.station-row > :not\(\[data-zone\$="vault"\]\),[^{]*\.sky\[data-view="history"\] \.legend \{\s*display: none;/);

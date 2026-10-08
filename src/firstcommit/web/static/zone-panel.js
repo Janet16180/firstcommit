@@ -101,12 +101,15 @@ const ZonePanel = (function () {
   }
 
   /* A station's three zones' items, keyed with `prefix` ("" for yours, "crew-" for Alex's), its
-     capsules `height` pixels a row. */
+     capsules `height` pixels a row. The files git ignores follow the workshop's own, greyed, and
+     its count leaves them out: git does not see them. */
   function stationContents(reading, prefix, height) {
-    const workshop = reading.workshop.map((file) => fileChip(file.path, stateTag(file.state), { "data-state": file.state, "data-key": `${prefix}workshop:${file.path}`, title: t(`zones.tip.${file.state}`) }));
+    const files = reading.workshop.map((file) => fileChip(file.path, stateTag(file.state), { "data-state": file.state, "data-key": `${prefix}workshop:${file.path}`, title: t(`zones.tip.${file.state}`) }));
+    const ignored = reading.ignored.map((group) => fileChip(group.name, (group.count === 1 ? t("zones.ignoredOne") : t("zones.ignored", { count: group.count })), { class: "file is-ignored", title: t("zones.tip.ignored") }));
+    const workshop = [...files, ...ignored];
     const dock = reading.dock && reading.dock.map((change) => fileChip(change.path, t(`zones.change.${change.change}`), { class: "file is-staged", "data-key": `${prefix}dock:${change.path}` }));
     return {
-      [`${prefix}workshop`]: { count: workshop.length, nodes: workshop },
+      [`${prefix}workshop`]: { count: files.length, nodes: workshop },
       [`${prefix}dock`]: reading.dock && { count: dock.length, nodes: dock },
       [`${prefix}vault`]: reading.vault && { count: reading.vault.length, nodes: reading.vault.length ? [capsules(`${prefix}vault`, reading.vault, height)] : [] },
     };
@@ -287,7 +290,7 @@ const ZonePanel = (function () {
         const unnamed = key === "remote" && zone && !zones.named;
         shell.element.classList.toggle("is-dormant", !zone || unnamed);
         shell.count.textContent = zone && !unnamed ? String(zone.count) : "–";
-        let body = !zone ? [say(OFF[name])] : zone.count ? zone.nodes : [say(EMPTY[name])];
+        let body = !zone ? [say(OFF[name])] : zone.count ? zone.nodes : [say(EMPTY[name]), ...zone.nodes];
         if (unnamed) body = [say("zones.unnamed.remote"), say("zones.remote.where")];
         shell.body.replaceChildren(...body);
       }
