@@ -98,3 +98,26 @@ test("a prediction's choice reads as one line of text, its commands inline, neve
   const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
   assert.match(rule(".goal-choice"), /display: block;/);
 });
+
+test("Alex's mirrored station draws at about 60 percent and takes no clicks, so your zones keep the room", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.match(rule(".station.is-mirror"), /zoom: 0\.6;/);
+  assert.match(rule(".station.is-mirror"), /pointer-events: none;/);
+  assert.match(rule(".viz-crew"), /grid-template-columns: minmax\(0, 1fr\) minmax\(150px, 200px\) minmax\(0, 0\.6fr\);/);
+});
+
+test("a long address in a zone's message wraps inside the zone", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.match(rule(".zone-empty code"), /white-space: normal;\s*overflow-wrap: anywhere;/);
+});
+
+test("a moment covers the zones where they stand, its picture filling them, until it is put away", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.match(rule(".sky"), /grid-area: viz;/);
+  assert.match(rule(".sky"), /position: relative;/);
+  assert.match(rule(".moment-layer"), /position: absolute;/);
+  assert.match(rule(".moment-layer"), /inset: 0;/);
+  assert.match(rule(".moment-layer .art-moment"), /width: 100%;/);
+  assert.match(rule(".moment-layer .art-moment"), /height: 100%;/);
+  assert.match(rule(".moment-layer[hidden]"), /display: none;/);
+});

@@ -4,10 +4,17 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const { createClock, installBrowser, load, record } = require("./load");
 
-installBrowser();
+const document = installBrowser();
 const { ZonePanel } = load(["dom.js", "strings.js", "art-pixels.js", "art-sprites.js", "typed.js", "zones.js", "zone-panel.js"], ["ZonePanel"]);
 
 const observe = (project, github = null) => ({ ...record("observation"), project, github });
+/* A repository that names the mothership `origin`, as a clone does. */
+const named = (project) => ({ ...project, remotes: [{ name: "origin", url: "../github/project.git" }] });
+/* The sample crew level: your clone, the stand-in GitHub and Alex's clone. */
+const crewObservation = () => {
+  const observation = record("press").observation;
+  return { ...observation, project: named(observation.project) };
+};
 const zone = (panel, name) => panel.element.querySelector(`.zone[data-zone="${name}"]`);
 /* The item with a fly-by key, found without a selector (a file name may hold any character). */
 const keyed = (node, key) => [...node.querySelectorAll("[data-key]")].find((item) => item.dataset.key === key);
@@ -63,7 +70,7 @@ test("the vault lists HEAD's history as capsules with their labels and messages"
 
 test("empty zones say what fills them", () => {
   const panel = ZonePanel.create();
-  panel.update(observe(record("snapshots").one, record("snapshots").unborn));
+  panel.update(observe(named(record("snapshots").one), record("snapshots").unborn));
   assert.match(zone(panel, "dock").querySelector(".zone-empty").textContent, /git add/);
   assert.match(zone(panel, "remote").querySelector(".zone-empty").textContent, /git push/);
   assert.equal(zone(panel, "remote").classList.contains("is-dormant"), false);
@@ -148,7 +155,7 @@ test("a single branch keeps one lane: every capsule in the first column, one lin
 test("the mothership draws what the stand-in GitHub holds, every branch included", () => {
   const github = { ...record("snapshots").one, bare: true, head: "g2", branch: "main", commits: [capsuleCommit("g2", ["g1"]), capsuleCommit("t1", ["g1"]), capsuleCommit("g1")], refs: [{ name: "main", kind: "branch", target: "g2" }, { name: "topic", kind: "branch", target: "t1" }] };
   const panel = ZonePanel.create();
-  panel.update(observe(record("snapshots").one, github));
+  panel.update(observe(named(record("snapshots").one), github));
   assert.equal(zone(panel, "remote").querySelectorAll(".cap").length, 3);
   assert.ok(keyed(zone(panel, "remote"), "remote:t1"));
 });
@@ -214,4 +221,123 @@ test("a file that just became conflicted cracks", () => {
   panel.update(observe(one));
   panel.update({ ...observe({ ...one, operation: "merge", files: [{ ...one.files[0], conflicted: true, index_change: "modified" }] }), commands: [{ line: "git merge topic", status: 1 }] });
   assert.ok(keyed(zone(panel, "workshop"), `workshop:${one.files[0].path}`).classList.contains("art-crack"));
+});
+
+test("with a teammate the zones show two stations, yours and Alex's, with the mothership between and above them", () => {
+  const panel = ZonePanel.create();
+  const observation = crewObservation();
+  panel.update(observation);
+  assert.ok(panel.element.classList.contains("is-crew"));
+  const stations = [...panel.element.querySelectorAll(".station")];
+  assert.deepEqual(stations.map((node) => node.dataset.station), ["you", "alex"]);
+  assert.deepEqual(stations.map((node) => node.querySelector(".art-station-name").textContent), ["Your base", "Alex's base"]);
+  assert.deepEqual([...stations[0].querySelectorAll(".zone")].map((node) => node.dataset.zone), ["workshop", "dock", "vault"]);
+  assert.deepEqual([...stations[1].querySelectorAll(".zone")].map((node) => node.dataset.zone), ["crew-vault", "crew-dock", "crew-workshop"]);
+  assert.ok(panel.element.querySelector(".crew-sky .zone[data-zone=remote]"));
+  assert.ok(keyed(zone(panel, "crew-vault"), `crew-vault:${observation.teammate.commits[0].hash}`));
+  assert.ok(panel.element.querySelector('.fl[data-arrow="crew-push"]'));
+});
+
+test("a level without a teammate keeps the four zones in one row, with no stations", () => {
+  const panel = ZonePanel.create();
+  panel.update(record("observation"));
+  assert.equal(panel.element.classList.contains("is-crew"), false);
+  assert.equal(panel.element.querySelector(".station"), null);
+  assert.equal(panel.element.querySelectorAll(".viz-row .zone").length, 4);
+});
+
+test("a teammate's push lights their own push arrow", () => {
+  const clock = createClock();
+  const panel = ZonePanel.create({ timers: clock });
+  const after = crewObservation();
+  const pushed = after.github.commits[0].hash;
+  const older = after.github.commits[1].hash;
+  const before = { ...after, github: { ...after.github, head: older, commits: after.github.commits.slice(1), refs: after.github.refs.map((ref) => ({ ...ref, target: older })) } };
+  panel.update(before);
+  panel.update(after);
+  assert.ok(panel.element.querySelector('.fl[data-arrow="crew-push"]').classList.contains("is-lit"));
+  assert.ok(keyed(zone(panel, "remote"), `remote:${pushed}`));
+});
+
+test("in the crew view capsule rows are taller, so a capsule's labels fit under its hash, and the lines follow them", () => {
+  const crew = ZonePanel.create();
+  crew.update(crewObservation());
+  const caps = zone(crew, "crew-vault").querySelector(".caps");
+  assert.match(caps.getAttribute("style"), /--row:72px/);
+  assert.equal(caps.querySelector("svg.links").getAttribute("height"), "144");
+  const solo = ZonePanel.create();
+  solo.update(record("observation"));
+  assert.match(zone(solo, "vault").querySelector(".caps").getAttribute("style"), /--row:40px/);
+});
+
+test("a capsule with many labels shows the first two and folds the rest into a count that names them", () => {
+  const project = record("snapshots").one;
+  const extra = ["survey", "origin/main", "origin/survey"].map((name) => ({ name, kind: name.startsWith("origin/") ? "remote" : "branch", target: project.head }));
+  const panel = ZonePanel.create();
+  panel.update(observe({ ...project, refs: [...project.refs, ...extra] }));
+  const head = keyed(zone(panel, "vault"), `vault:${project.head}`);
+  assert.equal([...head.querySelectorAll(".ref")].filter((node) => !node.classList.contains("ref-more")).length, 2);
+  const more = head.querySelector(".ref-more");
+  assert.equal(more.textContent, "+2");
+  assert.equal(more.getAttribute("title").split(", ").length, 2);
+});
+
+test("each station wears the artist's frame and its name tab with the station's icon", () => {
+  const panel = ZonePanel.create();
+  panel.update(crewObservation());
+  for (const who of ["you", "alex"]) {
+    const station = panel.element.querySelector(`.station[data-station="${who}"]`);
+    assert.ok(station.classList.contains("art-station") && station.classList.contains(`art-station--${who}`), who);
+    assert.ok(station.querySelector(".art-station-name svg.art-icon"), who);
+  }
+});
+
+test("a capsule flying up to the mothership, or down from it, in the crew view trails a flame", () => {
+  const proto = Object.getPrototypeOf(document.createElement("div"));
+  const sized = proto.getBoundingClientRect;
+  proto.getBoundingClientRect = () => ({ x: 0, y: 0, top: 0, left: 0, width: 10, height: 10, right: 10, bottom: 10 });
+  proto.animate = () => ({ finished: new Promise(() => {}) });
+  /* A shallow copy is enough here: the test looks only at the flying copy's classes. */
+  proto.cloneNode = function () {
+    const copy = document.createElement(this.tagName.toLowerCase());
+    copy.setAttribute("class", this.getAttribute("class") || "");
+    return copy;
+  };
+  try {
+    const panel = ZonePanel.create({ reducedMotion: false, timers: createClock() });
+    const after = crewObservation();
+    const older = after.github.commits[1].hash;
+    panel.update({ ...after, github: { ...after.github, head: older, commits: after.github.commits.slice(1), refs: after.github.refs.map((ref) => ({ ...ref, target: older })) } });
+    panel.update(after);
+    const capsules = [...document.body.querySelectorAll(".ghost")].filter((ghost) => ghost.classList.contains("cap"));
+    assert.ok(capsules.length > 0);
+    assert.ok(capsules.every((ghost) => ghost.classList.contains("art-crew-flight")));
+  } finally {
+    proto.getBoundingClientRect = sized;
+    delete proto.animate;
+    delete proto.cloneNode;
+    for (const ghost of document.body.querySelectorAll(".ghost")) ghost.remove();
+  }
+});
+
+test("Alex's station is a smaller mirror of yours: its vault faces the mothership, its arrows point back", () => {
+  const panel = ZonePanel.create();
+  panel.update(crewObservation());
+  const alex = panel.element.querySelector('.station[data-station="alex"]');
+  assert.ok(alex.classList.contains("is-mirror"));
+  assert.equal(panel.element.querySelector('.station[data-station="you"]').classList.contains("is-mirror"), false);
+  assert.ok([...alex.querySelectorAll(".flow")].every((node) => node.classList.contains("is-mirror")));
+});
+
+test("a mothership the repository has not named yet says how to name it, and where it lives", () => {
+  const panel = ZonePanel.create();
+  const project = { ...record("snapshots").one, remotes: [] };
+  panel.update(observe(project, { ...record("snapshots").empty, exists: true, bare: true }));
+  const remote = zone(panel, "remote");
+  assert.ok(remote.classList.contains("is-dormant"));
+  assert.match(remote.textContent, /Not named yet: git remote add\./);
+  assert.match(remote.textContent, /At work, the same address looks like/);
+  panel.update(observe({ ...project, remotes: [{ name: "origin", url: "../github/project.git" }] }, { ...record("snapshots").empty, exists: true, bare: true }));
+  assert.equal(zone(panel, "remote").classList.contains("is-dormant"), false);
+  assert.doesNotMatch(zone(panel, "remote").textContent, /Not named yet/);
 });

@@ -6,7 +6,9 @@
  * dom.js and art-pixels.js load first, art-style.css animates them.
  *
  * NAMES                   the scenes there are, the values of the engine's `Art`: the design's
- *                         thirteen and fork, merge, collision and blackbox for chapters 5 to 7.
+ *                         thirteen, fork, merge, collision and blackbox for chapters 5 to 7, and
+ *                         meteor for Base 7. alarm, which opens every challenge, is a red beacon
+ *                         on your base; only meteor has the meteorite strike.
  * CAPTIONS                {scene: [key, ...]}: the captions each scene draws, in drawing order.
  *                         Every word or code in a picture comes from them, so a scene speaks
  *                         the page's language.
@@ -20,7 +22,7 @@
 /* exported ArtScenes */
 
 const ArtScenes = (function () {
-  const { tone, draw, place, picture, stars, rama: ramaParts, planet, ARROW, sprite } = ArtPixels;
+  const { tone, draw, place, text, picture, stars, rama: ramaParts, planet, ARROW, sprite, CREW, NIGHT_POLE } = ArtPixels;
   const OUTLINE = tone("art-outline");
 
   const file = (paper = "star") => sprite("file", { p: tone(paper) });
@@ -28,11 +30,6 @@ const ArtScenes = (function () {
   const ramaAt = (x, y) => place(x, y, 2, Dom.svg("g", { class: "art-bob" }, ramaParts()));
   const sky = (name, count) => stars(name, { count, width: 160, height: 71, twinkle: 0.3, tint: 0.25, dim: 0.6 });
   const rect = (x, y, width, height, fill, extra = {}) => Dom.svg("rect", { x, y, width, height, fill, ...extra });
-
-  function text(x, y, words, { fill = tone("star"), size = 8, anchor = "middle", className = null, delay = null } = {}) {
-    const classes = ["art-text", className].filter(Boolean).join(" ");
-    return Dom.svg("text", { x, y, "text-anchor": anchor, "font-size": size, fill, class: classes, style: delay === null ? null : `animation-delay:${delay}s` }, words);
-  }
 
   const timed = (className, delay, children) => Dom.svg("g", { class: className, style: `animation-delay:${delay}s` }, children);
 
@@ -61,9 +58,10 @@ const ArtScenes = (function () {
 
   const ZONE_TONES = ["art-orange", "art-cyan", "art-violet", "art-pink"];
   const NIGHT_PLANET = { a: tone("art-ground-edge"), b: tone("art-ground"), c: tone("art-muted-dk") };
-  const ALEX_CAPSULE = { v: tone("art-pink"), V: tone("art-pink-dk"), h: tone("art-pink-lt") };
-  const CRACK = ["...c....", "...cc...", "....c...", "...cc...", "...c....", "....c...", "....cc..", "...c....", "...cc...", "....c..."];
+  const ALEX_CAPSULE = { v: CREW.alex.a, V: CREW.alex.b, h: CREW.alex.c };
 
+  /* A crew station's dome and flag, 33x24, standing on the ground with its left edge at x. */
+  const stationAt = (x, colours = {}) => place(x, 50, 3, sprite("station", { ...colours, ...NIGHT_POLE }));
   const capsuleAt = (x, y, scale = 2, recolour = {}) => place(x, y, scale, sprite("capsule", recolour));
   const boxLabel = (x, y, width, words, colour) => [rect(x, y, width, 11, tone("crt"), { stroke: tone(colour), "stroke-width": 1 }), text(x + width / 2, y + 8.5, words, { fill: tone(colour), size: 7.5 })];
 
@@ -272,14 +270,10 @@ const ArtScenes = (function () {
         sky("alarm", 30),
         rect(0, 0, 160, 90, tone("art-red"), { opacity: 0.14, class: "art-alarm" }),
         ground(),
-        Dom.svg("g", { class: "art-meteor" }, [
-          place(130, 2, 2, sprite("meteor")),
-          rect(144, 0, 8, 2, tone("art-orange"), { opacity: 0.7 }),
-          rect(146, -2, 10, 2, tone("art-orange"), { opacity: 0.4 }),
-        ]),
-        rect(40, 58, 18, 18, tone("art-orange"), { stroke: tone("art-yellow"), "stroke-width": 2, class: "art-boom" }),
-        text(49, 52, c.base, { size: 9 }),
-        ramaAt(104, 38),
+        stationAt(37, CREW.you),
+        Dom.svg("g", { class: "art-alarm" }, [rect(45, 52, 7, 7, tone("art-red"), { opacity: 0.4 }), rect(46, 53, 5, 5, tone("art-red"))]),
+        text(53, 44, c.base, { size: 9 }),
+        ramaAt(76, 38),
         text(80, 16, c.alert, { fill: tone("art-red"), size: 12, className: "art-alarm" }),
       ],
     },
@@ -320,7 +314,7 @@ const ArtScenes = (function () {
         sky("collision", 20),
         Dom.svg("g", { class: "art-shake" }, [
           place(68, 26, 3, file()),
-          place(68, 26, 3, draw(CRACK, { c: tone("art-red") }), { className: "art-fade", delay: 0.9 }),
+          place(68, 26, 3, sprite("crack"), { className: "art-fade", delay: 0.9 }),
         ]),
         slide(-24, 0, 0.2, capsuleAt(42, 34)),
         slide(24, 0, 0.2, capsuleAt(94, 34, 2, ALEX_CAPSULE)),
@@ -345,6 +339,24 @@ const ArtScenes = (function () {
         rect(88, 46, 2, 5, OUTLINE),
         text(80, 63, c.reflog, { fill: tone("crt"), size: 9 }),
         [58, 74, 90].map((x, index) => timed("art-pop", 1.8 + index * 0.2, capsuleAt(x, 68, 1))),
+      ],
+    },
+    meteor: {
+      captions: ["base", "alert"],
+      draw: (c) => [
+        sky("meteor", 30),
+        rect(0, 0, 160, 90, tone("art-red"), { opacity: 0.14, class: "art-alarm" }),
+        ground(),
+        Dom.svg("g", { class: "art-meteor" }, [
+          place(130, 2, 2, sprite("meteor")),
+          rect(144, 0, 8, 2, tone("art-orange"), { opacity: 0.7 }),
+          rect(146, -2, 10, 2, tone("art-orange"), { opacity: 0.4 }),
+        ]),
+        stationAt(37),
+        rect(45, 56, 18, 18, tone("art-orange"), { stroke: tone("art-yellow"), "stroke-width": 2, class: "art-boom" }),
+        text(53, 44, c.base, { size: 9 }),
+        ramaAt(104, 38),
+        text(80, 16, c.alert, { fill: tone("art-red"), size: 12, className: "art-alarm" }),
       ],
     },
   };

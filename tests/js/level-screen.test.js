@@ -7,7 +7,7 @@ const { createClock, fakeServer, httpError, installBrowser, load, record, settle
 
 const document = installBrowser({ reducedMotion: true });
 const { LevelScreen, createGameApi } = load(
-  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "level-screen.js"],
+  ["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "level-screen.js"],
   ["LevelScreen", "createGameApi"],
 );
 
@@ -162,6 +162,73 @@ test("while a watch goal is current, every tick asks about it, and it passes by 
   run.view.dispose();
 });
 
+/* The sample level with a second watch goal after its first, so a goal met by a typed line has one after it. */
+function twoWatches(reactions) {
+  const level = seenLevel();
+  level.steps = [...level.steps, { ...level.steps[2], id: "commit" }];
+  const met = { ...correct(3, false, ["look", "status", "stage"]), message: para("Staged. Now seal it.") };
+  return screen({ active: { ...record("active"), step: 2 }, replies: { "/api/level": level, "/api/step": met, "/api/observe": { ...quiet(), reactions } } });
+}
+
+test("a goal met by a line Rama warns about leaves the warning on Rama's line, and says itself under the next goal", async () => {
+  const run = twoWatches([{ line: "git add .", mood: "warn", text: para("The keys rode along."), moment: null }]);
+  await settle();
+  assert.equal(run.q(".comms-text").textContent, "The keys rode along.");
+  assert.equal(run.q(".comms").dataset.mood, "warn");
+  assert.equal(run.q(".goal.is-current .goal-note").textContent, "Staged. Now seal it.");
+  run.view.dispose();
+});
+
+test("a goal met by a line whose reaction plays a moment leaves that reaction on Rama's line", async () => {
+  const run = twoWatches([{ line: "git status", mood: "ok", text: para("Why secrets stay out."), moment: "secret-leak" }]);
+  await settle();
+  assert.equal(run.q(".comms-text").textContent, "Why secrets stay out.");
+  assert.equal(run.q(".goal.is-current .goal-note").textContent, "Staged. Now seal it.");
+  run.view.dispose();
+});
+
+test("a goal met by a line with a plain reaction is said on Rama's line, as before", async () => {
+  const run = twoWatches([{ line: "git add notes.txt", mood: "ok", text: para("On the dock."), moment: null }]);
+  await settle();
+  assert.equal(run.q(".comms-text").textContent, "Staged. Now seal it.");
+  assert.ok(!run.q(".goal-note"));
+  run.view.dispose();
+});
+
+test("a solve by a line whose reaction plays a moment keeps that reaction on Rama's line, and the band waits for the moment", async () => {
+  const reactions = [{ line: "git pull", mood: "ok", text: para("The whole ship is in your station."), moment: "launch" }];
+  const run = screen({ active: { ...record("active"), step: 3, auto_check: true }, replies: { "/api/check": record("check_solved"), "/api/observe": { ...quiet(), reactions } } });
+  await settle();
+  await settle();
+  assert.equal(run.q(".comms-text").textContent, "The whole ship is in your station.");
+  assert.ok(!document.querySelector(".band-layer"));
+  assert.ok(!run.q(".dock"));
+  await run.clock.advance(10000);
+  assert.ok(Boolean(run.q(".dock")));
+  assert.equal(run.q(".comms-text").textContent, "The whole ship is in your station.");
+  run.view.dispose();
+});
+
+test("a solve that comes a tick after a moment's reaction, while the moment plays, leaves that reaction on Rama's line", async () => {
+  let observed = 0;
+  let checks = 0;
+  const reactions = [{ line: "git pull", mood: "ok", text: para("The whole ship is in your station."), moment: "launch" }];
+  const run = screen({
+    active: { ...record("active"), step: 3, auto_check: true },
+    replies: {
+      "/api/observe": () => ({ ...quiet(), reactions: (observed += 1) === 1 ? reactions : [] }),
+      "/api/check": () => ((checks += 1) === 1 ? record("check_unsolved") : record("check_solved")),
+    },
+  });
+  await settle();
+  await run.clock.advance(1500);
+  assert.ok(checks >= 2);
+  assert.equal(run.q(".comms-text").textContent, "The whole ship is in your station.");
+  await run.clock.advance(10000);
+  assert.ok(Boolean(run.q(".dock")));
+  run.view.dispose();
+});
+
 test("once the quest is done the mission is checked by itself; a solve stops the polling and docks the lesson at the bottom", async () => {
   const run = screen({ active: { ...record("active"), step: 3, auto_check: true }, replies: { "/api/check": record("check_solved") } });
   await settle();
@@ -295,7 +362,7 @@ test("after typed lines the head shows the commands and stars as the game counts
 });
 
 test("Rama says the game's reactions to the typed lines, oldest first, in the newest one's mood", async () => {
-  const reactions = [{ line: "git status", mood: "err", text: para("Not a repository yet.") }, { line: "git init", mood: "ok", text: para("Flag planted.") }];
+  const reactions = [{ line: "git status", mood: "err", text: para("Not a repository yet."), moment: null }, { line: "git init", mood: "ok", text: para("Flag planted."), moment: null }];
   const run = screen({ replies: { "/api/observe": { ...quiet(), reactions } } });
   await settle();
   assert.equal(run.q(".comms-text").textContent, "Not a repository yet.Flag planted.");
@@ -304,10 +371,32 @@ test("Rama says the game's reactions to the typed lines, oldest first, in the ne
 });
 
 test("two typed lines with the same reaction have Rama say it once", async () => {
-  const reactions = [{ line: "git log", mood: "info", text: para("Your history.") }, { line: "git log notes.txt", mood: "info", text: para("Your history.") }];
+  const reactions = [{ line: "git log", mood: "info", text: para("Your history."), moment: null }, { line: "git log notes.txt", mood: "info", text: para("Your history."), moment: null }];
   const run = screen({ replies: { "/api/observe": { ...quiet(), reactions } } });
   await settle();
   assert.equal(run.q(".comms-text").textContent, "Your history.");
+  run.view.dispose();
+});
+
+test("a reaction that carries a moment plays it over the zones, once however often the game repeats it", async () => {
+  const reactions = [{ line: "git push", mood: "ok", text: para("Both halves are up."), moment: "launch" }];
+  const run = screen({ replies: { "/api/observe": { ...quiet(), reactions } } });
+  await settle();
+  await run.clock.advance(4000);
+  const layer = run.q(".moment-layer");
+  assert.equal(layer.hidden, false);
+  assert.equal(run.all(".moment-layer .art-moment").length, 1);
+  assert.ok(Boolean(run.q(".moment-layer .art-moment--launch")));
+  await run.clock.advance(6000);
+  assert.equal(layer.hidden, true);
+  run.view.dispose();
+});
+
+test("a reaction without a moment leaves the zones uncovered", async () => {
+  const reactions = [{ line: "git status", mood: "info", text: para("Clean."), moment: null }];
+  const run = screen({ replies: { "/api/observe": { ...quiet(), reactions } } });
+  await settle();
+  assert.equal(run.q(".moment-layer").hidden, true);
   run.view.dispose();
 });
 
@@ -417,6 +506,16 @@ test("a prediction sends the choice, shows the reveal on Rama's line in a neutra
   run.view.dispose();
 });
 
+test("a line typed while a prediction waits, that the game has nothing to say about, gets a nudge to answer it first", async () => {
+  const level = seenLevel();
+  level.steps[1] = { ...level.steps[1], kind: "choice", question: para("Where does it go?"), choices: [{ value: "dock", text: para("The dock") }] };
+  const run = screen({ replies: { "/api/level": level, "/api/observe": { ...quiet(), commands: [{ line: "git fetch", status: 0 }] } } });
+  await settle();
+  assert.equal(run.q(".comms-text").textContent, "Answer the prediction first: the goals after it wait for your answer.");
+  assert.equal(run.q(".comms").dataset.mood, "info");
+  run.view.dispose();
+});
+
 test("a challenge says so in the head, hides its command until solved, watches every goal, and docks in gold", async () => {
   const level = { ...seenLevel(), challenge: true, card: null };
   const run = screen({ active: { ...record("active"), step: 0, done: [] }, replies: { "/api/level": level, "/api/step": { ...record("step"), step: 0, done: [] } } });
@@ -468,6 +567,25 @@ test("work lost while a goal is watched stops the level and shows the failure wi
   await run.clock.advance(10000);
   assert.equal(run.server.calls.length, calls);
   run.view.dispose();
+});
+
+test("when the work is lost, the goal's note goes: the lost panel and Rama say what happened", async () => {
+  let ticks = 0;
+  const reply = () => {
+    ticks += 1;
+    return ticks === 1 ? { ...record("step"), step: 2, correct: false, message: para("Unstage the keys.") } : { ...record("step"), step: 2, correct: false, lost: true, message: para("The keys are in a commit now.") };
+  };
+  const run = screen({ active: { ...record("active"), step: 2 }, replies: { "/api/step": reply } });
+  try {
+    await settle();
+    assert.match(run.q(".goal.is-current .goal-note").textContent, /Unstage the keys/);
+    await run.clock.advance(2000);
+    await settle();
+    assert.ok(run.q(".dock.is-lost"));
+    assert.equal(Boolean(run.q(".goal-note")), false);
+  } finally {
+    run.view.dispose();
+  }
 });
 
 test("work lost for good stops the level and shows the failure with Retry, even from an automatic check", async () => {

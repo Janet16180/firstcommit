@@ -333,6 +333,15 @@ test("an observation must carry Rama's reactions, each with its line, a known mo
   await refused("/api/observe", (observation) => delete observation.reactions[0].line, (game) => game.observe());
 });
 
+test("a reaction may carry a moment the page knows, or none", async () => {
+  const observation = record("observation");
+  observation.reactions[0].moment = "secret-leak";
+  const { game } = gameApi({ ...REPLIES, "/api/observe": observation });
+  assert.equal((await game.observe()).reactions[0].moment, "secret-leak");
+  await refused("/api/observe", (seen) => delete seen.reactions[0].moment, (api) => api.observe());
+  await refused("/api/observe", (seen) => (seen.reactions[0].moment = "fireworks"), (api) => api.observe());
+});
+
 test("a quest step may be a choice, with its options as text to show and a value to send back", async () => {
   const level = record("level");
   level.steps[0] = { ...level.steps[0], kind: "choice", choices: [{ value: "a", text: [{ kind: "para", spans: [{ text: "A", code: false }] }] }] };
@@ -356,4 +365,10 @@ test("the level in progress and a step's result say which goals are done", async
 
 test("a check says whether the player's work is lost for good", async () => {
   await refused("/api/check", (check) => delete check.lost, (api) => api.check(null, false));
+});
+
+test("a snapshot names the remotes its repository knows, each with its address", async () => {
+  const observation = record("observation");
+  delete observation.project.remotes;
+  await assert.rejects(gameApi({ "/api/observe": observation }).game.observe(), /project\.remotes/);
 });

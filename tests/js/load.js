@@ -13,9 +13,6 @@ const { createDocument } = require("./fakedom");
 
 const STATIC = path.join(__dirname, "..", "..", "src", "firstcommit", "web", "static");
 const RECORDS = JSON.parse(fs.readFileSync(path.join(__dirname, "records.json"), "utf8"));
-/* StepResult.lost was agreed with engine before its records.json carries it; the sample step
-   gets it here until then. */
-if (!("lost" in RECORDS.step)) RECORDS.step.lost = false;
 
 /* A fresh deep copy of one sample record (tests may change what they get). */
 const record = (name) => structuredClone(RECORDS[name]);

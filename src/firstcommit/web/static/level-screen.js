@@ -8,22 +8,22 @@
  * Opening a mission that is not in progress starts it, and a level's scene plays the first time
  * it opens. It keeps no game state of its own: the step, the hints, the commands, the stars and
  * whether the mission is solved come from the server's replies, and the page polls the lab while
- * the player works (poll.js). Rama says what the game says about each typed line (the
- * observation's reactions). Expected failures are handled here, by HTTP status: 404 means there
- * is no such level, 409 that it is no longer in progress (solved or ended from the command line
- * or another tab), 0 that the server did not answer. Anything else is a bug and is left to
- * surface. Needs dom.js, strings.js, markup.js, art-sprites.js, progress.js, poll.js, zone-panel.js,
- * mission.js, comms.js, completion.js and scene.js. Defines one global,
- * LevelScreen.
+ * the player works (poll.js). Rama says what the game says about each typed line (the observation's
+ * reactions), and a reaction's moment plays over the zones. Expected failures are handled here, by
+ * HTTP status: 404 means there is no such level, 409 that it is no longer in progress (solved or
+ * ended from the command line or another tab), 0 that the server did not answer. Anything else is a
+ * bug and is left to surface. Needs dom.js, strings.js, markup.js, art-sprites.js, progress.js,
+ * poll.js, zone-panel.js, mission.js, comms.js, completion.js, scene.js and moment-layer.js.
+ * Defines one global, LevelScreen.
  */
 
-/* global Dom, Strings, ArtSprites, Progress, Polling, ZonePanel, Mission, Comms, Completion, ScenePlayer */
+/* global Dom, Strings, ArtSprites, Progress, Polling, ZonePanel, Mission, Comms, Completion, ScenePlayer, MomentLayer */
 /* exported LevelScreen */
 
 const LevelScreen = (function () {
   const { el } = Dom;
   const { t } = Strings;
-  const SAY = { preparing: "level.preparing", start: "level.start", down: "level.down", back: "level.back", hint: "level.hint", ended: "level.ended", partMet: "level.partMet" };
+  const SAY = { preparing: "level.preparing", start: "level.start", down: "level.down", back: "level.back", hint: "level.hint", ended: "level.ended", partMet: "level.partMet", predictFirst: "level.predictFirst" };
 
 
   function hud(screen) {
@@ -78,10 +78,11 @@ const LevelScreen = (function () {
   function layout(screen) {
     const { ui } = screen;
     ui.zones = ZonePanel.create({ reducedMotion: screen.ctx.reducedMotion, timers: screen.ctx.timers });
+    ui.moments = MomentLayer.create({ reducedMotion: screen.ctx.reducedMotion, timers: screen.ctx.timers });
     ui.comms = Comms.create();
     ui.mission = el("aside", { class: "mission px", "aria-label": t("mission.label") }, el("p", {}, t("level.loading")));
     ui.termcol = el("div", { class: "termcol" }, ui.comms.element);
-    ui.stage = el("main", { class: "stage" }, ui.zones.element, ui.mission, ui.termcol);
+    ui.stage = el("main", { class: "stage" }, el("div", { class: "sky" }, ui.zones.element, ui.moments.element), ui.mission, ui.termcol);
     screen.element.replaceChildren(hud(screen), ui.stage);
   }
 
@@ -119,9 +120,10 @@ const LevelScreen = (function () {
      says what to do next, it is not the player's mistake. A passed step's message is said in
      `mood`: pleased for a goal met, neutral for a prediction's reveal (any answer passes). In a
      challenge Rama speaks only of danger and errors, so a met goal is said without its message,
-     which could tell what comes next; saying it still clears an error the player has fixed. Work
-     lost for good ends the play, whoever asked. */
-  function stepped(screen, result, watched = false, mood = "ok") {
+     which could tell what comes next; saying it still clears an error the player has fixed. When
+     Rama's line must `keep` what it says about the typed lines, the met goal's message goes under
+     the next goal instead. Work lost for good ends the play, whoever asked. */
+  function stepped(screen, result, { watched = false, mood = "ok", keep = false } = {}) {
     const { ui, state, ctx } = screen;
     if (result.lost) {
       lostWork(screen, result.message);
@@ -136,20 +138,23 @@ const LevelScreen = (function () {
     state.step = result.step;
     state.done = result.done;
     state.auto_check = result.quest_done;
-    ui.comms.say(screen.level.challenge ? t(SAY.partMet) : result.message, mood);
-    ctx.sound.play("goal");
     screen.mission.setStep(state.step, state.done);
+    const message = screen.level.challenge ? t(SAY.partMet) : result.message;
+    if (keep) screen.mission.note(message);
+    else ui.comms.say(message, mood);
+    ctx.sound.play("goal");
   }
 
-  /* A check's result. A solve says its verdict, so no earlier nudge outlives it; an automatic
-     check that does not solve says nothing: the player did not ask. */
-  function checked(screen, result, auto = false) {
+  /* A check's result. A solve says its verdict, so no earlier nudge outlives it, unless Rama's line
+     must `keep` what it says about the typed lines; an automatic check that does not solve says
+     nothing: the player did not ask. */
+  function checked(screen, result, { auto = false, keep = false } = {}) {
     if (result.lost) {
       lostWork(screen, result.message);
     } else if (result.solved) {
       if (screen.finished) return;
       stop(screen);
-      screen.ui.comms.say(result.message, "ok");
+      if (!keep) screen.ui.comms.say(result.message, "ok");
       won(screen, { debrief: result.debrief, stars: result.stars, card: result.new_card, payout: result.payout });
     } else if (!auto) {
       screen.ui.comms.say(result.message, "err");
@@ -166,10 +171,11 @@ const LevelScreen = (function () {
   }
 
   /* The player's work is gone for good: the play stops and the game says why, in the dock's
-     place, with Retry. */
+     place, with Retry; a goal's note from before the loss would only contradict it. */
   function lostWork(screen, message) {
     if (screen.finished) return;
     stop(screen);
+    screen.mission.clearNote();
     screen.ctx.sound.play("wrong");
     const panel = Completion.lost({ message, onRetry: () => restart(screen) });
     screen.element.append(panel);
@@ -185,10 +191,12 @@ const LevelScreen = (function () {
     return line;
   }
 
-  /* A solve: `debrief` (the lesson), `stars` won, the new command `card` or null, the `payout`. */
+  /* A solve: `debrief` (the lesson), `stars` won, the new command `card` or null, the `payout`.
+     The band waits for a moment still playing over the zones. */
   async function won(screen, { debrief, stars, card, payout }) {
     const { ctx, levelId } = screen;
     screen.mission.solved();
+    await screen.ui.moments.idle();
     const status = await ctx.refresh();
     const next = Progress.nextLevel(status.chapters, levelId);
     ctx.sound.play("complete");
@@ -248,11 +256,23 @@ const LevelScreen = (function () {
     screen.ui.comms.say(said.flatMap((reaction) => reaction.text), reactions[reactions.length - 1].mood);
   }
 
+  /* A reaction a met goal must not talk over: a warning, an error, or one that plays a moment (nor,
+     while that moment plays, a goal met a tick later). */
+  const kept = (reaction) => reaction.moment !== null || reaction.mood === "warn" || reaction.mood === "err";
+
+  function moments(screen, reactions) {
+    for (const reaction of reactions) if (reaction.moment) screen.ui.moments.play(reaction.moment);
+  }
+
   /* A blip for the lines just typed, or a buzz when one of them failed: the terminal shows both. */
   function echo(screen, typed) {
     if (typed.some((line) => line.status !== 0)) screen.ctx.sound.play("failed");
     else if (typed.length) screen.ctx.sound.play("command");
   }
+
+  /* Whether the current goal is a prediction: the goals after it are not looked at until it is
+     answered, so lines typed meanwhile may get no word from the game. */
+  const predicting = ({ level, state }) => state.step < level.steps.length && level.steps[state.step].kind === "choice";
 
   async function tick(screen) {
     const { game } = screen.ctx;
@@ -264,10 +284,13 @@ const LevelScreen = (function () {
       if (screen.offline) screen.ui.comms.say(t(SAY.back), "info");
       screen.offline = false;
       react(screen, observation.reactions);
+      moments(screen, observation.reactions);
+      if (observation.commands.length && !observation.reactions.length && predicting(screen)) screen.ui.comms.say(t(SAY.predictFirst), "info");
       echo(screen, observation.commands);
       if (observation.commands.length) await recount(screen);
-      if (plan.watchStep) stepped(screen, await game.step(null), true);
-      if (plan.autoCheck && !screen.finished) checked(screen, await game.check(null, true), true);
+      const keep = observation.reactions.some(kept) || screen.ui.moments.showing();
+      if (plan.watchStep) stepped(screen, await game.step(null), { watched: true, keep });
+      if (plan.autoCheck && !screen.finished) checked(screen, await game.check(null, true), { auto: true, keep });
     } catch (error) {
       if (!expected(screen, error)) throw error;
     }
@@ -292,7 +315,7 @@ const LevelScreen = (function () {
       active,
       onAnswer: (answer) => send(screen, () => game.step(answer), stepped),
       onContinue: () => send(screen, () => game.step(null), stepped),
-      onChoose: (value) => send(screen, () => game.step(value), (run, result) => stepped(run, result, false, "info")),
+      onChoose: (value) => send(screen, () => game.step(value), (run, result) => stepped(run, result, { mood: "info" })),
       onCheck: (answer) => send(screen, () => game.check(answer, false), checked),
       onHint: () => send(screen, () => game.hint(), hinted),
       onType: ctx.terminal.type,

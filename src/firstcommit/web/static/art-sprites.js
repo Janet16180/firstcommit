@@ -17,6 +17,8 @@
  *                         default colour: "conflict" (a cracked file) --s-new, "merging" (two
  *                         arrows meeting at a blinking pause bar) --s-mod, and "inverted" (a
  *                         .cblock turned over, outlined in --edge) the zone's --zc.
+ *                         "station-you" and "station-alex" are a crew member's base dome and
+ *                         flag, in ArtPixels.CREW colours (violet, and pink like Alex's capsule).
  * planet(index, {label})  the planet of the sector at 0-based `index`: orange, cyan with a ring,
  *                         violet, pink with a ring, then again. Square; the page sets its size.
  */
@@ -25,7 +27,7 @@
 /* exported ArtSprites */
 
 const ArtSprites = (function () {
-  const { tone, draw, picture, rama: ramaParts, planet: planetParts, ARROW } = ArtPixels;
+  const { tone, draw, picture, rama: ramaParts, planet: planetParts, ARROW, shape, CREW } = ArtPixels;
 
   const RAMA_SIZES = { header: [84, 94], comms: [52, 58], here: [32, 36] };
 
@@ -48,12 +50,12 @@ const ArtSprites = (function () {
   ];
 
   function star(on, { label = "", pop = false, delay = 0 } = {}) {
-    const shape = on
+    const drawn = on
       ? [Dom.svg("g", { transform: "translate(1 1)" }, draw(STAR, { s: tone("edge") })), draw(STAR, { s: tone("gold") })]
       : draw(STAR, { s: tone("s-clean") });
     const popping = on && pop;
     const className = ["art-star", on ? "art-star--on" : "art-star--off", popping && "art-pop"].filter(Boolean).join(" ");
-    return picture({ class: className, viewBox: "0 0 10 10", width: "1em", height: "1em", style: popping ? `animation-delay:${delay}s` : null }, label, shape);
+    return picture({ class: className, viewBox: "0 0 10 10", width: "1em", height: "1em", style: popping ? `animation-delay:${delay}s` : null }, label, drawn);
   }
 
   function stars(earned, { label = "", pop = false } = {}) {
@@ -66,6 +68,11 @@ const ArtSprites = (function () {
   const FAINT = { fill: INK, "fill-opacity": "0.45" };
   const PLAIN = { c: INK, d: FAINT };
   const plain = (rows) => [[rows, PLAIN]];
+
+  function station(colours) {
+    const { rows, palette } = shape("station", colours);
+    return [[rows, palette]];
+  }
 
   /* Each icon is layers of [rows, palette], drawn in order. */
   const ICONS = {
@@ -107,6 +114,8 @@ const ArtSprites = (function () {
       [[".........", ".sssssss.", ".sssssss.", ".ss......", ".ss......", ".ss......", ".ss......", ".ss......"], { s: { fill: tone("edge"), "fill-opacity": "0.3" } }],
       [["", "", "", "...h...h", "....h.h.", ".....h.."], { h: tone("panel") }],
     ],
+    "station-you": station(CREW.you),
+    "station-alex": station(CREW.alex),
   };
 
   function icon(name, { label = "" } = {}) {

@@ -130,6 +130,11 @@ const Mission = (function () {
         else text.append(note);
       },
 
+      /* Takes the game's note off the goals, once something else says what happened. */
+      clearNote() {
+        for (const note of list.querySelectorAll(".goal-note")) note.remove();
+      },
+
       /* Every goal checked: the level is solved. */
       solved() {
         current = Infinity;

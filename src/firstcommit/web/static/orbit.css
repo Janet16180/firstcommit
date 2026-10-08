@@ -579,6 +579,110 @@ pre.code code {
   white-space: nowrap;
 }
 
+/* The station strip: each zone folded into one card, in the zone's colour. */
+.strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.strip-card {
+  --zc: var(--z-wd);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 8px;
+  padding: 6px 8px;
+  text-align: left;
+  background: color-mix(in srgb, var(--zc) 11%, var(--panel));
+  color: var(--ink);
+  border: 3px solid var(--zc);
+  cursor: pointer;
+}
+
+.strip-card[data-zone="dock"] {
+  --zc: var(--z-st);
+}
+
+.strip-card[data-zone="vault"] {
+  --zc: var(--z-va);
+}
+
+.strip-card[data-zone="remote"] {
+  --zc: var(--z-re);
+}
+
+.strip-card.is-off {
+  opacity: 0.55;
+}
+
+.strip-name {
+  font: 700 0.85rem var(--f-ui);
+}
+
+.strip-count {
+  font: 1rem var(--f-term);
+}
+
+.strip-items {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+
+.strip-file {
+  font: 0.95rem var(--f-term);
+  padding: 0 4px;
+  border: 2px solid var(--edge);
+  background: var(--panel);
+}
+
+.strip-tag {
+  margin-left: 4px;
+  font-size: 0.8rem;
+  color: var(--s-mod);
+}
+
+.strip-capsule {
+  width: 14px;
+  height: 14px;
+  background: var(--z-va);
+  border: 2px solid var(--edge);
+}
+
+.strip-capsule[data-author="alex"] {
+  background: var(--z-re);
+}
+
+.strip-more {
+  font: 0.9rem var(--f-term);
+  color: var(--ink-soft);
+}
+
+/* The row of views over the stage: the chosen view's tab joins the stage below it. */
+.view-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 18px 0;
+}
+
+.view-tab {
+  font: 700 0.9rem var(--f-ui);
+  padding: 4px 12px;
+  background: var(--panel);
+  color: var(--ink-soft);
+  border: 2px solid var(--edge);
+  border-bottom: 0;
+  cursor: pointer;
+}
+
+.view-tab[aria-selected="true"] {
+  background: var(--panel-2);
+  color: var(--ink);
+}
+
 .hud-stars {
   font-size: 20px;
   line-height: 1;
@@ -610,9 +714,32 @@ pre.code code {
   align-items: start;
 }
 
+.sky {
+  grid-area: viz;
+  position: relative;
+  min-width: 0;
+}
+
 .viz {
   grid-area: viz;
   padding: 12px 12px 10px;
+}
+
+/* A reaction's moment, over the zones until it is over or clicked away. */
+.moment-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  cursor: pointer;
+}
+
+.moment-layer[hidden] {
+  display: none;
+}
+
+.moment-layer .art-moment {
+  width: 100%;
+  height: 100%;
 }
 
 .viz-row {
@@ -632,11 +759,13 @@ pre.code code {
   border: 3px solid var(--zc);
 }
 
-.zone[data-zone="dock"] {
+.zone[data-zone="dock"],
+.zone[data-zone="crew-dock"] {
   --zc: var(--z-st);
 }
 
-.zone[data-zone="vault"] {
+.zone[data-zone="vault"],
+.zone[data-zone="crew-vault"] {
   --zc: var(--z-va);
 }
 
@@ -740,6 +869,12 @@ pre.code code {
   color: var(--ink-soft);
 }
 
+/* A long address in a zone's message breaks across lines rather than past the zone's edge. */
+.zone-empty code {
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
 .flow {
   display: flex;
   flex-direction: column;
@@ -774,6 +909,98 @@ pre.code code {
 
 .fl.is-back .art-icon {
   transform: scaleX(-1);
+}
+
+.flow.is-mirror .fl .art-icon {
+  transform: scaleX(-1);
+}
+
+.flow.is-mirror .fl.is-back .art-icon {
+  transform: none;
+}
+
+/* The crew view: your station, the mothership between and raised, and Alex's station, each
+   station with its workshop, dock and vault. */
+.viz-crew {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(150px, 200px) minmax(0, 0.6fr);
+  grid-template-areas: "you sky alex";
+  gap: 8px;
+  align-items: start;
+}
+
+.station[data-station="you"] {
+  grid-area: you;
+}
+
+.station[data-station="alex"] {
+  grid-area: alex;
+}
+
+.crew-sky {
+  grid-area: sky;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.crew-flows {
+  display: flex;
+  justify-content: space-between;
+}
+
+/* The vault holds the widest items (a capsule's hash and labels), so it takes the most room. */
+.station-row {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) 24px minmax(0, 0.8fr) 24px minmax(0, 1.4fr);
+}
+
+/* Alex's station: a mirror of yours drawn at about 60 percent, laid out at full size inside so
+   its capsules and flights line up, and only looked at. */
+.station.is-mirror {
+  zoom: 0.6;
+  pointer-events: none;
+}
+
+.station.is-mirror .station-row {
+  grid-template-columns: minmax(0, 1.4fr) 24px minmax(0, 0.8fr) 24px minmax(0, 0.8fr);
+}
+
+.viz.is-crew .zone {
+  min-height: 140px;
+}
+
+.viz.is-crew .z-body {
+  max-height: 160px;
+}
+
+.viz.is-crew .cline {
+  flex-wrap: wrap;
+}
+
+.viz.is-crew .ref {
+  font-size: 0.8rem;
+  padding: 1px 3px;
+}
+
+.crew-flows .fl {
+  flex-direction: row;
+  gap: 4px;
+}
+
+.crew-flows .flow {
+  align-items: flex-start;
+  gap: 4px;
+}
+
+.crew-flows .flow.is-mirror {
+  align-items: flex-end;
+}
+
+.crew-flows .fl span {
+  font-size: 0.9rem;
+  writing-mode: horizontal-tb;
+  transform: none;
 }
 
 .fl.is-lit {
@@ -894,7 +1121,7 @@ pre.code code {
   grid-template-columns: var(--gutter, 16px) minmax(0, 1fr);
   gap: 8px;
   align-items: start;
-  height: 40px;
+  height: var(--row, 40px);
 }
 
 .cgutter {
@@ -921,9 +1148,11 @@ pre.code code {
   min-width: 0;
 }
 
+/* One line, clipped rather than wrapped, so a capsule never grows past its row. */
 .cline {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  overflow: hidden;
   align-items: center;
   gap: 4px;
 }
@@ -933,6 +1162,8 @@ pre.code code {
 }
 
 .ref {
+  flex: none;
+  white-space: nowrap;
   font: 0.95rem/1 var(--f-term);
   padding: 2px 5px;
   background: var(--zc);
@@ -1536,6 +1767,21 @@ pre.code code {
     display: none;
   }
 
+  .viz-crew {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 0.6fr);
+    grid-template-areas: "sky sky" "you alex";
+  }
+
+  .crew-sky {
+    justify-self: center;
+    width: min(100%, 320px);
+  }
+
+  .station-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 6px;
+  }
+
   .zone {
     min-height: 150px;
   }
@@ -1546,6 +1792,11 @@ pre.code code {
 }
 
 @media (max-width: 760px) {
+  .viz-crew {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "sky" "you" "alex";
+  }
+
   .dock {
     grid-template-columns: auto minmax(0, 1fr);
     padding: 10px 12px;

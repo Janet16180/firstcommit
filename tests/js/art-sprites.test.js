@@ -53,7 +53,7 @@ test("a row of stars is named by what was earned, its stars hidden, and earned o
 });
 
 test("every plain icon is drawn in currentColor, 1em, hidden unless labelled", () => {
-  assert.deepEqual(ArtSprites.ICONS, ["lock", "arrow", "back", "replay", "restart", "hint", "conflict", "merging", "inverted"]);
+  assert.deepEqual(ArtSprites.ICONS, ["lock", "arrow", "back", "replay", "restart", "hint", "conflict", "merging", "inverted", "station-you", "station-alex"]);
   for (const name of ArtSprites.ICONS) {
     const icon = ArtSprites.icon(name);
     assert.equal(icon.getAttribute("height"), "1em");
@@ -114,4 +114,12 @@ test("the sector planets cycle orange, ringed cyan, violet, ringed pink, in a sq
   }
   assert.equal(labelOf(ArtSprites.planet(0, { label: "Sector 1" })), "Sector 1");
   assert.throws(() => ArtSprites.planet(-1), RangeError);
+});
+
+test("each crew station is a dome with a flag in that crew member's colours, Alex's matching their capsule", () => {
+  const fills = (name) => new Set([...ArtSprites.icon(name).querySelectorAll("rect")].map((rect) => rect.getAttribute("fill")));
+  assert.ok(fills("station-you").has("var(--art-violet)") && !fills("station-you").has("var(--art-pink)"));
+  assert.ok(fills("station-alex").has("var(--art-pink)") && !fills("station-alex").has("var(--art-violet)"));
+  assert.ok(fills("station-alex").has("var(--art-yellow)"), "the flag");
+  assert.equal(labelOf(ArtSprites.icon("station-alex", { label: "Alex's station" })), "Alex's station");
 });
