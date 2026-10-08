@@ -60,7 +60,7 @@
   const OWN_HEAD = ["home", "level", "guide"];
 
   /* client.js removes the fragment when it carries the access key; keep the address part first. */
-  const firstAddress = location.hash.split("&")[0];
+  const firstAddress = Route.address(location.hash);
   const app = { status: null, view: null, turn: 0, terminal: null, terminalFor: null, locked: false };
   const client = createClient({ header: "X-FirstCommit-Token", storageKey: "firstcommit.token", command: "firstcommit", onLocked: () => showLocked() });
   const game = createGameApi(client.api);
