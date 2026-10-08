@@ -190,3 +190,11 @@ test("a WHAT IF draws the same chain without the given names: in grey, under the
   assert.equal(real.element.querySelector(".chain-whatif"), null);
   assert.equal(real.element.querySelector(".chain-row.is-ghost"), null);
 });
+
+test("a bookmark or the mothership ahead of main on main's own line keeps main's column, so a fast-forward reads straight", () => {
+  const ahead = snapshot({ commits: [commit("x", ["c"], 9), ...forked().commits], refs: [ref("main", "c"), ref("origin/main", "x", "remote")] });
+  assert.equal(rowOf(drawn(ahead), "x").querySelector(".chain-cap").style.getPropertyValue("--column"), "0");
+  const github = snapshot({ commits: [commit("y", ["c"], 9), ...forked().commits], refs: [ref("main", "y")] });
+  const chain = drawn(forked(), { github, show: { mothership: true, alex: false, ghosts: false } });
+  assert.equal(rowOf(chain, "y").querySelector(".chain-cap").style.getPropertyValue("--column"), "0");
+});

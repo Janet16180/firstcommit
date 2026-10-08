@@ -151,6 +151,22 @@ const Chain = (function () {
     ].filter(Boolean));
   }
 
+  /* The tip whose first-parent line takes the first column: main's, or a tip further along that
+     same line (origin/main or the mothership's main ahead of it, a fast-forward away); without
+     main, origin/main's, else HEAD's. */
+  function trunkOf(project, byHash, github) {
+    const tip = (name, snapshot = project) => (snapshot.refs.find((ref) => ref.name === name) || {}).target;
+    const motherMain = github ? tip("main", github) : null;
+    const line = (from) => {
+      const path = [];
+      for (let at = from; at && byHash.has(at) && !path.includes(at); at = byHash.get(at).parents[0]) path.push(at);
+      return path;
+    };
+    const base = tip("main") || tip("origin/main") || project.head;
+    const ahead = [tip("origin/main"), motherMain].filter((other) => other && line(other).includes(base));
+    return ahead.reduce((best, other) => (line(other).length > line(best).length ? other : best), base);
+  }
+
   /* HEAD's commit and its first parents, the path git log walks. */
   function walkFrom(project, byHash) {
     const path = [];
@@ -194,8 +210,7 @@ const Chain = (function () {
       const commits = [...project.commits, ...motherOnly, ...lost];
       const byHash = new Map(commits.map((commit) => [commit.hash, commit]));
       const styles = new Map([...motherOnly.map((commit) => [commit.hash, "mothership"]), ...[...lost, ...orphaned].map((commit) => [commit.hash, "ghost"])]);
-      const tip = (name) => (project.refs.find((ref) => ref.name === name) || {}).target;
-      const trunk = tip("main") || tip("origin/main") || project.head;
+      const trunk = trunkOf(project, byHash, show.mothership ? github : null);
       const { rows, columns } = layout(commits, trunk ? [trunk] : []);
       const pieces = wires(rows, styles, walk ? walkFrom(project, byHash) : []);
       const looked = new Set(look);
