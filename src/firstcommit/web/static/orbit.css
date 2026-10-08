@@ -579,6 +579,100 @@ pre.code code {
   white-space: nowrap;
 }
 
+/* Two sides: each conflicted file opened like a book, your half and theirs in their colours. */
+.sky[data-view="sides"] .viz {
+  display: none;
+}
+
+.sides {
+  display: grid;
+  gap: 12px;
+  padding: 12px;
+}
+
+.sides-book {
+  padding: 10px 12px 12px;
+  background: var(--panel);
+  border: 3px solid var(--edge);
+  box-shadow: 6px 6px 0 var(--edge);
+}
+
+.sides-path {
+  margin: 0 0 8px;
+  font: 1.15rem var(--f-term);
+}
+
+.sides-pages {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0;
+}
+
+.sides-half {
+  --side: var(--z-va);
+  min-width: 0;
+  padding: 8px 10px;
+  border: 3px solid var(--side);
+  background: color-mix(in srgb, var(--side) 9%, var(--panel));
+}
+
+.sides-half[data-author="alex"] {
+  --side: var(--z-re);
+}
+
+.sides-head {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.sides-who {
+  font: 700 0.95rem var(--f-ui);
+}
+
+.sides-branch {
+  font: 0.95rem var(--f-term);
+  color: var(--ink-soft);
+}
+
+.sides-lines {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sides-line {
+  font: 1.05rem/1.25 var(--f-term);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.sides-deleted,
+.sides-none {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.sides-base {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  margin-top: 8px;
+  color: var(--ink-soft);
+}
+
+.sides-base-name {
+  font: 700 0.8rem var(--f-ui);
+}
+
+@media (max-width: 640px) {
+  .sides-pages {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
 /* A file git ignores: still on the disk, out of git's sight. */
 .file.is-ignored {
   flex-wrap: wrap;

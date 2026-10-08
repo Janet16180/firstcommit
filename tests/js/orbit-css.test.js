@@ -144,3 +144,11 @@ test("in a crew level history takes Alex's mirror off the stage, leaving your va
   assert.match(rule(".strip.is-band"), /grid-template-columns: auto repeat\(3, minmax\(0, 1fr\)\);/);
   assert.match(rule(".strip.is-band .strip-card"), /padding: 2px 6px;/);
 });
+
+test("two sides take the zones' place, and open each conflicted file as a book of two halves in their people's colours", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.match(rule('.sky[data-view="sides"] .viz'), /display: none;/);
+  assert.match(rule(".sides-pages"), /grid-template-columns: minmax\(0, 1fr\) minmax\(0, 1fr\);/);
+  assert.match(rule('.sides-half[data-author="alex"]'), /--side: var\(--z-re\);/);
+  assert.match(rule(".sides-line"), /white-space: pre-wrap;/);
+});
