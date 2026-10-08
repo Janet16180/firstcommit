@@ -11,8 +11,9 @@
  * aria-hidden decoration; all words are real text. Defines one global, ArtInfographics; dom.js
  * and art-pixels.js load first, art-infographics.css styles it.
  *
- * commands({title, groups: [{title, commands: [{command, what, tag}]}]})
- *     a grid of night command cards per group.
+ * commands({title, groups: [{title, commands: [{command, what, tag}]}], open})
+ *     a grid of night command cards per group; with open(command, button), each card's words
+ *     are a button that calls it.
  * places({title, places: [{id, space, git, what, tag}], moves: [{from, to, command, tag}]})
  *     the four places (ids workshop, dock, vault, mothership) as zones in their colours.
  * states({title, states: [{id, name, space, what, tag}], moves: [{from, to, how, tag}]})
@@ -62,19 +63,21 @@ const ArtInfographics = (function () {
   const classesOf = (base, tag) => (checkTag(tag) === null ? base : `${base} ${base}--upcoming`);
   const badge = (tag) => (tag === null ? [] : el("span", { class: "art-ig-tag" }, tag));
 
-  function commandCard({ command, what, tag }) {
-    return el("li", { class: classesOf("art-ig-card", tag) },
-      el("code", { class: "art-ig-command" }, command),
-      el("p", { class: "art-ig-what" }, what),
-      badge(tag));
+  /* A command card; with `open`, its words sit in a button that calls open(command, button). */
+  function commandCard({ command, what, tag }, open) {
+    const classes = classesOf("art-ig-card", tag);
+    const words = [el("code", { class: "art-ig-command" }, command), el("span", { class: "art-ig-what" }, what), badge(tag)];
+    if (!open) return el("li", { class: classes }, words);
+    const button = el("button", { type: "button", class: "art-ig-open", "aria-haspopup": "dialog", onclick: () => open(command, button) }, words);
+    return el("li", { class: classes }, button);
   }
 
-  function commands({ title, groups }) {
+  function commands({ title, groups, open = null }) {
     return el("section", { class: "art-ig art-ig--commands" },
       heading(title),
       groups.map((group) => el("section", { class: "art-ig-group" },
         el("h3", { class: "art-ig-group-title" }, group.title),
-        el("ul", { class: "art-ig-cards", role: "list" }, group.commands.map(commandCard)))));
+        el("ul", { class: "art-ig-cards", role: "list" }, group.commands.map((item) => commandCard(item, open))))));
   }
 
   /* One box of the row: {colour, art, name, term, what, tag}. */

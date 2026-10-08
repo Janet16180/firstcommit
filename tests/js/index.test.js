@@ -27,8 +27,8 @@ test("the page loads every script another script needs, before it", () => {
 
 const styles = [...page.matchAll(/<link rel="stylesheet" href="\/static\/([^"]+)">/g)].map((match) => match[1]);
 
-test("the page wears the Orbit look: the shipped fonts, the art's styles and the design's stylesheet last, over app.css", () => {
-  assert.deepEqual(styles.slice(styles.indexOf("app.css")), ["app.css", "fonts.css", "art-style.css", "art-infographics.css", "orbit.css"]);
+test("the page wears the Orbit look: the shipped fonts, the art's styles, the design's stylesheet over app.css, then the field guide's", () => {
+  assert.deepEqual(styles.slice(styles.indexOf("app.css")), ["app.css", "fonts.css", "art-style.css", "art-infographics.css", "orbit.css", "guide.css"]);
 });
 
 test("the page loads nothing from the network", () => {
@@ -42,5 +42,5 @@ test("the old level page, its lessons and the time theme are gone", () => {
 });
 
 test("the page loads the map screen, the level screen and their parts", () => {
-  for (const name of ["places.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "typed.js", "scene.js", "art-infographics.js", "infographic-text.js", "field-guide.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "art-moments.js", "moment-layer.js", "view-tabs.js", "strip.js", "sides.js", "tape.js", "births.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "target-chart.js", "git-graph.js", "pictures.js", "level-screen.js", "starmap.js", "dev.js"]) assert.ok(scripts.includes(name), name);
+  for (const name of ["places.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "typed.js", "scene.js", "art-infographics.js", "infographic-text.js", "guide-git.js", "guide-text.js", "guide-pictures.js", "guide-card.js", "guide-conflict.js", "field-guide.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "art-moments.js", "moment-layer.js", "view-tabs.js", "strip.js", "sides.js", "tape.js", "births.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "target-chart.js", "git-graph.js", "pictures.js", "level-screen.js", "starmap.js", "dev.js"]) assert.ok(scripts.includes(name), name);
 });

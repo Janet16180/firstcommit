@@ -1,0 +1,719 @@
+/*
+ * The field guide's command cards (guide-card.js, in their dialog), their small pictures
+ * (guide-pictures.js, gp-) and the merge conflict (guide-conflict.js, gx-). Links after
+ * orbit.css and paints only with its tokens, so light and dark come from them. Terminals and
+ * files are night, like the game's terminal. You are violet (--z-va), Alex green (--alex), the
+ * mothership pink (--z-re), a conflict red (--s-new), and gold means "look here".
+ */
+
+.guide-card-dialog {
+  width: min(760px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  padding: 0;
+  background: var(--panel);
+  color: var(--ink);
+  border: 3px solid var(--edge);
+  box-shadow: 8px 8px 0 var(--edge);
+}
+
+.guide-card-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.guide-card-dialog::backdrop {
+  background: color-mix(in srgb, var(--night-edge) 60%, transparent);
+}
+
+/* Close stays in reach while the card scrolls, over the card's head (which leaves it room). */
+.guide-card-close {
+  position: sticky;
+  top: 10px;
+  z-index: 1;
+  align-self: flex-end;
+  margin: 10px 10px -52px 0;
+}
+
+.guide-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px 22px;
+}
+
+.gc-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: baseline;
+  padding-right: 120px;
+}
+
+.gc-command {
+  margin: 0;
+}
+
+.gc-command code {
+  padding: 0;
+  font: 2rem/1.05 var(--f-term);
+  color: var(--ink);
+  background: none;
+  overflow-wrap: anywhere;
+}
+
+.gc-tag {
+  padding: 3px 6px 2px;
+  font: 400 0.8rem/1.15 var(--f-px);
+  color: var(--ink-soft);
+  background: var(--panel-2);
+  border: 2px solid var(--ink-soft);
+}
+
+.gc-meaning {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.gc-pictures {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.gc-pictures:has(> :only-child) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.gc-figure {
+  margin: 0;
+  padding: 8px 10px 10px;
+  background: var(--panel-2);
+  border: 2px solid var(--line);
+  align-self: stretch;
+}
+
+.gc-figure figcaption {
+  margin-bottom: 6px;
+  font: 400 0.85rem/1.2 var(--f-px);
+  color: var(--ink-soft);
+}
+
+/* The arrow from before to after: a pixel triangle drawn with borders. */
+.gc-then {
+  width: 0;
+  height: 0;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-left: 14px solid var(--ink-soft);
+}
+
+.gc-part h3 {
+  margin: 0 0 6px;
+  font: 400 1rem/1.2 var(--f-px);
+  color: var(--ink-soft);
+}
+
+.gc-part p {
+  margin: 0;
+}
+
+.gc-term {
+  margin: 0;
+  padding: 10px 12px;
+  overflow-x: auto;
+  font: 1.15rem/1.25 var(--f-term);
+  color: var(--crt-ink);
+  background: var(--crt);
+  border: 3px solid var(--edge);
+  white-space: pre;
+}
+
+.gc-prompt,
+.gc-silent {
+  color: var(--crt-soft);
+}
+
+.gc-typed {
+  color: var(--crt-cmd);
+}
+
+.gc-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gc-related .btn {
+  font: 1.15rem/1.1 var(--f-term);
+}
+
+.gc-conflict {
+  align-self: flex-start;
+}
+
+/* The small pictures. */
+.gp-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.gp-desk {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.gp-place {
+  flex: 1 1 110px;
+  min-width: 0;
+  padding: 6px 8px;
+  background: var(--panel);
+  border: 3px solid var(--tone, var(--line));
+}
+
+.gp-place--folder { --tone: var(--z-wd); }
+.gp-place--staging { --tone: var(--z-st); }
+.gp-place--vault { --tone: var(--z-va); }
+.gp-place--remote { --tone: var(--z-re); }
+
+.gp-place--absent {
+  border-style: dashed;
+}
+
+.gp-place-name {
+  margin: 0 0 4px;
+  font: 700 0.78rem/1.2 var(--f-body);
+  color: var(--ink);
+}
+
+.gp-none {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.gp-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gp-chip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 6px;
+  align-items: baseline;
+  padding: 1px 6px;
+  font: 1.1rem/1.1 var(--f-term);
+  background: var(--panel-2);
+  border-left: 5px solid var(--tone, var(--ink-soft));
+}
+
+.gp-chip--new,
+.gp-chip--conflict { --tone: var(--s-new); }
+.gp-chip--edited { --tone: var(--s-mod); }
+.gp-chip--clean,
+.gp-chip--ignored { --tone: var(--s-clean); }
+
+.gp-chip--ignored .gp-file {
+  color: var(--ink-soft);
+}
+.gp-place--staging .gp-chip { --tone: var(--z-st); }
+.gp-place--vault .gp-chip,
+.gp-place--remote .gp-chip { --tone: var(--z-va); }
+
+.gp-state {
+  font: 0.75rem/1.1 var(--f-body);
+  color: var(--ink-soft);
+}
+
+.gp-fresh {
+  outline: 3px solid var(--gold);
+  outline-offset: 1px;
+}
+
+/* The chain, in chain.js's look (orbit.css .chain-*), so the two can become one renderer. */
+.gp-chain {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  padding: 4px 6px;
+  background: color-mix(in srgb, var(--z-va) 7%, var(--panel));
+}
+
+.gp-lane {
+  display: block;
+  overflow: visible;
+}
+
+.gp-link {
+  fill: none;
+  stroke: var(--z-va);
+  stroke-width: 3;
+}
+
+.gp-link--ghost {
+  stroke-dasharray: 4 3;
+  opacity: 0.6;
+}
+
+.gp-link--mothership {
+  stroke: var(--z-re);
+  stroke-dasharray: 1 3;
+}
+
+.gp-capsule {
+  fill: var(--z-va);
+  stroke: var(--edge);
+  stroke-width: 2;
+}
+
+.gp-capsule--ghost {
+  fill: var(--panel);
+  stroke: var(--z-va);
+  stroke-dasharray: 3 2;
+  opacity: 0.8;
+}
+
+.gp-capsule--mothership {
+  fill: var(--panel);
+  stroke: var(--z-re);
+  stroke-width: 3;
+  stroke-dasharray: 1 2;
+}
+
+.gp-capsule.gp-fresh {
+  outline: none;
+  stroke: var(--gold);
+  stroke-width: 3;
+}
+
+.gp-rows {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gp-row {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 4px 6px;
+  align-items: center;
+  height: 36px;
+  min-width: 0;
+}
+
+.gp-rides {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.gp-tag {
+  padding: 0 5px;
+  font: 0.95rem/1.2 var(--f-term);
+  white-space: nowrap;
+  color: var(--ink);
+  background: var(--panel);
+  border: 2px solid var(--ink);
+}
+
+.gp-tag--head {
+  color: var(--on-accent);
+  background: var(--z-va);
+}
+
+.gp-tag--remote {
+  border-style: dashed;
+}
+
+.gp-tag--mothership {
+  padding: 1px 7px;
+  font: 700 0.75rem var(--f-body);
+  color: var(--on-accent);
+  background: var(--z-re);
+  border: 0;
+  border-radius: 9px;
+}
+
+.gp-head {
+  font: 700 0.8rem var(--f-body);
+  white-space: nowrap;
+  color: var(--z-va);
+}
+
+/* The merge conflict. */
+.gx-lede {
+  margin: -6px 0 12px;
+  color: var(--ink-soft);
+}
+
+.gx-story {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px 14px;
+  align-items: center;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  background: var(--panel);
+  border: 3px solid var(--edge);
+  box-shadow: 4px 4px 0 var(--edge);
+}
+
+.gx-count {
+  font: 400 0.9rem/1.2 var(--f-px);
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.gx-sentence {
+  margin: 0;
+  font-weight: 700;
+}
+
+.gx-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.gx-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.gx-column {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.gx-editor,
+.gx-explain,
+.gx-legend,
+.gx-keep,
+.gx-diamond-wrap {
+  background: var(--panel);
+  border: 3px solid var(--edge);
+  box-shadow: 4px 4px 0 var(--edge);
+}
+
+.gx-editor {
+  background: var(--crt);
+}
+
+.gx-editor-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 12px;
+  font: 1.1rem var(--f-term);
+  color: var(--crt-soft);
+  border-bottom: 3px solid var(--edge);
+}
+
+.gx-state {
+  color: var(--crt-err);
+}
+
+.gx-state--ok {
+  color: var(--crt-ok);
+}
+
+.gx-file {
+  margin: 0;
+  padding: 8px 0;
+  list-style: none;
+}
+
+.gx-file li {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 10px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1px 10px 1px 12px;
+  font: 1.35rem/1.25 var(--f-term);
+  color: var(--crt-ink);
+  white-space: pre-wrap;
+  border-left: 6px solid transparent;
+  outline: none;
+}
+
+.gx-file li:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+
+.gx-file li.dim {
+  opacity: 0.4;
+}
+
+.gx-file li.marker {
+  color: var(--crt-err);
+}
+
+.gx-file li.frame {
+  box-shadow: inset 3px 0 0 var(--crt-err), inset -3px 0 0 var(--crt-err);
+}
+
+.gx-file li.on[data-part="ours"],
+.gx-file li.on[data-part="ours-start"] {
+  background: color-mix(in srgb, var(--z-va) 30%, var(--crt));
+  border-left-color: var(--z-va);
+}
+
+.gx-file li.on[data-part="theirs"],
+.gx-file li.on[data-part="theirs-end"] {
+  background: color-mix(in srgb, var(--alex) 30%, var(--crt));
+  border-left-color: var(--alex);
+}
+
+.gx-file li.on[data-part="fence"] {
+  background: color-mix(in srgb, var(--crt-err) 22%, var(--crt));
+  border-left-color: var(--crt-err);
+}
+
+.gx-file li.on[data-from="you"],
+.gx-file li.merged[data-from="you"] {
+  border-left-color: var(--z-va);
+}
+
+.gx-file li.on[data-from="alex"],
+.gx-file li.merged[data-from="alex"] {
+  border-left-color: var(--alex);
+}
+
+.gx-file li.pick {
+  cursor: pointer;
+}
+
+.gx-file li.pick[data-part="ours"] {
+  border-left-color: var(--z-va);
+}
+
+.gx-file li.pick[data-part="theirs"] {
+  border-left-color: var(--alex);
+}
+
+.gx-file li.pick:hover {
+  background: color-mix(in srgb, var(--crt-ink) 10%, var(--crt));
+}
+
+.gx-file li.pick[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--gold) 18%, var(--crt));
+  box-shadow: inset 0 0 0 3px var(--gold);
+}
+
+.gx-file li.kept {
+  background: color-mix(in srgb, var(--gold) 14%, var(--crt));
+  border-left-color: var(--gold);
+}
+
+.gx-note {
+  padding: 0 6px;
+  font: 700 0.75rem/1.5 var(--f-body);
+  white-space: nowrap;
+  color: var(--night-edge);
+  background: var(--tone, var(--crt-soft));
+}
+
+.gx-note--you { --tone: var(--art-violet); }
+.gx-note--alex { --tone: var(--art-green); }
+.gx-note--gold { --tone: var(--gold); }
+
+.gx-note--merged {
+  font: 1rem/1.2 var(--f-term);
+  color: var(--crt-ok);
+  background: none;
+}
+
+.gx-empty {
+  margin: 0;
+  padding: 10px 12px;
+  color: var(--crt-soft);
+}
+
+.gx-explain,
+.gx-legend,
+.gx-keep {
+  padding: 12px 14px;
+}
+
+.gx-explain {
+  min-height: 9em;
+  border-left: 8px solid var(--tone, var(--ink-soft));
+}
+
+.gx-explain--ours-start,
+.gx-explain--ours,
+.gx-explain--clean-you { --tone: var(--z-va); }
+.gx-explain--theirs,
+.gx-explain--theirs-end,
+.gx-explain--clean-alex { --tone: var(--alex); }
+.gx-explain--fence { --tone: var(--s-new); }
+
+.gx-explain h3,
+.gx-keep h3 {
+  margin: 0 0 6px;
+  font: 400 1.05rem/1.2 var(--f-px);
+}
+
+.gx-explain p,
+.gx-keep p {
+  margin: 0 0 6px;
+}
+
+.gx-hint {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+.gx-legend {
+  display: grid;
+  gap: 6px;
+}
+
+.gx-legend div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+}
+
+.gx-mark {
+  padding: 0 4px;
+  font: 1.2rem var(--f-term);
+  white-space: nowrap;
+  background: var(--crt);
+  color: var(--crt-err);
+  border-left: 5px solid var(--tone, var(--crt-err));
+}
+
+.gx-mark--you { --tone: var(--z-va); }
+.gx-mark--alex { --tone: var(--alex); }
+
+.gx-keep {
+  display: grid;
+  gap: 8px;
+}
+
+.gx-keep-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gx-keep-buttons .btn[aria-pressed="true"] {
+  color: var(--edge);
+  background: var(--gold);
+}
+
+.gx-warn {
+  padding: 8px 10px;
+  border: 3px solid var(--gold);
+}
+
+.gx-diamond-wrap {
+  padding: 8px;
+  background: var(--crt);
+}
+
+.gx-diamond {
+  display: block;
+  width: 100%;
+  height: auto;
+  font: 1.25rem var(--f-term);
+}
+
+.gx-wire {
+  fill: none;
+  stroke-width: 5;
+}
+
+.gx-wire--base { stroke: var(--crt-soft); stroke-width: 4; }
+.gx-wire--you { stroke: var(--art-violet); }
+.gx-wire--alex { stroke: var(--art-green); }
+
+.gx-capsule {
+  stroke: var(--night-edge);
+  stroke-width: 3;
+}
+
+.gx-capsule--base { fill: var(--crt-soft); }
+.gx-capsule--you { fill: var(--art-violet); }
+.gx-capsule--alex { fill: var(--art-green); }
+
+.gx-capsule--merge {
+  fill: var(--art-violet);
+  stroke: var(--gold);
+  stroke-width: 4;
+}
+
+.gx-hash {
+  fill: var(--night-edge);
+}
+
+.gx-label {
+  font-size: 1.05rem;
+  fill: var(--crt-soft);
+}
+
+.gx-label--top { fill: var(--gold); }
+.gx-label--you { fill: var(--art-violet); }
+.gx-label--alex { fill: var(--art-green); }
+
+.guide-conflict:focus {
+  outline: none;
+}
+
+.guide-conflict:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 6px;
+}
+
+@media (max-width: 760px) {
+  .gx-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gx-story {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gx-file li {
+    font-size: 1.1rem;
+  }
+
+  .gc-pictures {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gc-then {
+    justify-self: center;
+    transform: rotate(90deg);
+  }
+
+  .gc-head {
+    padding-right: 0;
+  }
+
+  .guide-card-close {
+    margin-bottom: 0;
+  }
+}
