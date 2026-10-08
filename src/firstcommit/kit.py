@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 from firstcommit.commands import type_line
-from firstcommit.gitcmd import GAME, Person
+from firstcommit.gitcmd import GAME, PLAYER, Person
 from firstcommit.gitcmd import output as git
 from firstcommit.gitcmd import run as git_run
 from firstcommit.lab import Lab
@@ -46,6 +46,7 @@ __all__ = [
     "GAME",
     "LIST_HIDDEN",
     "PICK_ONE",
+    "PLAYER",
     "AnswerCheck",
     "AnswerStep",
     "ChoiceStep",

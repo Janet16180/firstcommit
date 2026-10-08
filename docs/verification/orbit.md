@@ -328,6 +328,11 @@ E33:
 | E61 | `git push -u origin main` | status 0; GitHub gets `main`; `main@{upstream}` is `origin/main` |
 | E62 | `echo "Stop: Phobos" >> route.txt`, then `git push` | status 0, "Everything up-to-date"; GitHub's `route.txt` unchanged |
 | E63 | `git commit -am "Add the Phobos stop"`, then `git push` | the commit takes the tracked, changed `route.txt`; the push sends it; GitHub's `main` equals yours, up to date again |
+| E64 | GitHub with one commit, your clone with a commit of `route.txt`, Alex's clone pushes a change to `notes.txt`; your `git push` | status 1, rejected (fetch first); git's hint says to pull before pushing again |
+| E65 | then a plain `git pull` (`pull.rebase` unset) | status 128: git asks how to reconcile divergent branches |
+| E66 | `git pull --no-rebase`, then `git push` | both 0; a merge commit with two parents and git's message, no editor; GitHub's `main` lists the merge, your route and Alex's commit |
+| E67 | `git pull --rebase`, then `git push` | both 0; your commit replayed on top of Alex's, authored by Cadet |
+| E68 | `git push --force` instead | status 0, a forced update: GitHub's `main` drops Alex's commit; GitHub's reflog keeps it as `main@{1}` |
 | E43 | `git restore --staged .` | status 0; nothing staged; the two files keep their changes in the folder, `keys.txt` untracked |
 
 ### Level `cargo-selective` (Selective cargo, 2-2)
@@ -541,3 +546,16 @@ was, and the quest waiting when the edit is committed before the empty push.
 | prediction reveal, `FIZZLED`, scene | a push sends commits; an edit in no commit is not sent | E62 |
 | hint 2 | `git commit -am` commits the edit | E63; git-commit(1) `-a` ("automatically stage files that have been modified and deleted") |
 | `COMMITTED_EDIT` | the commit is ahead of `origin/main` | E63 (status says ahead by 1 before the push) |
+
+### Level `mothership-refused` (Push refused, 4-4)
+
+*Re-checked* by `tests/levels/test_mothership_refused.py`: Alex's push as a level event, the
+refused push changing neither side, both pulls passing, the plain pull's question and Rama's
+answer, and a forced push (Rama's error, lost).
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, hint 2, debrief, `CHOOSE` | `--no-rebase` joins the histories with a merge commit; `--rebase` replays your commits on top; a plain pull asks which | E65, E66, E67; git-pull(1) `--rebase`, `--no-rebase` |
+| `BOUNCED`, debrief, hint 1 | the push was refused because the mothership has a commit your `main` lacks; nothing was lost | E64; the test's tips unchanged; git-push(1) NOTE ABOUT FAST-FORWARDS |
+| `FORCED`, `ALEX_DROPPED` (lost) | `--force` replaced the mothership's `main`, Alex's commit gone from it | E68 |
+| scene | the mothership keeps the first capsule and refuses to drop it | E64 |
