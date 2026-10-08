@@ -42,10 +42,10 @@ test("each action calls its route with the body the server expects", async () =>
   await game.observe();
   await game.abort();
   await game.reset();
-  await game.cards("basics", 10);
+  await game.cards("cargo", 10);
   await game.cards(null, 5);
   await game.card("card-1", "The staging area");
-  await game.notes("basics");
+  await game.notes("cargo");
   await game.press("alex", "push");
   await game.scene("lvl");
   await game.language("es");
@@ -60,10 +60,10 @@ test("each action calls its route with the body the server expects", async () =>
     ["/api/observe", undefined],
     ["/api/abort", {}],
     ["/api/reset", { confirm: true }],
-    ["/api/cards?chapter=basics&limit=10", undefined],
+    ["/api/cards?chapter=cargo&limit=10", undefined],
     ["/api/cards?limit=5", undefined],
     ["/api/card", { id: "card-1", reply: "The staging area" }],
-    ["/api/notes?chapter=basics", undefined],
+    ["/api/notes?chapter=cargo", undefined],
     ["/api/press", { person: "alex", button: "push" }],
     ["/api/scene", { level: "lvl" }],
     ["/api/language", { language: "es" }],
@@ -148,8 +148,8 @@ test("a server error keeps its HTTP status for the page to act on", async () => 
 });
 
 test("a contract error carries no HTTP status", async () => {
-  const { game } = gameApi({ "/api/notes": { chapter: "basics" } });
-  await assert.rejects(game.notes("basics"), (error) => error.status === undefined && /\/api\/notes/.test(error.message));
+  const { game } = gameApi({ "/api/notes": { chapter: "cargo" } });
+  await assert.rejects(game.notes("cargo"), (error) => error.status === undefined && /\/api\/notes/.test(error.message));
 });
 
 test("a level reply must carry its question, the hints shown so far and its debrief", async () => {

@@ -129,8 +129,8 @@ test("with a key the map shows, and the header keeps the rank, the XP and the ca
 });
 
 test("the address in the link that carried the key is opened", async () => {
-  const page = await boot({ hash: "#/notes/basics&token=KEY" });
-  assert.equal(global.location.hash, "#/notes/basics");
+  const page = await boot({ hash: "#/notes/cargo&token=KEY" });
+  assert.equal(global.location.hash, "#/notes/cargo");
   assert.ok(page.main.querySelector(".notes-page"));
 });
 

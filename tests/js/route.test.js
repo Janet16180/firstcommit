@@ -18,8 +18,8 @@ test("a level address names the level", () => {
 
 test("cards and notes may name a chapter", () => {
   assert.deepEqual(Route.parse("#/cards"), { view: "cards", chapter: null });
-  assert.deepEqual(Route.parse("#/cards/basics"), { view: "cards", chapter: "basics" });
-  assert.deepEqual(Route.parse("#/notes/hash"), { view: "notes", chapter: "hash" });
+  assert.deepEqual(Route.parse("#/cards/cargo"), { view: "cards", chapter: "cargo" });
+  assert.deepEqual(Route.parse("#/notes/vault"), { view: "notes", chapter: "vault" });
 });
 
 test("the access key a link may carry after the address is not part of it", () => {

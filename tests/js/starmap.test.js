@@ -42,7 +42,7 @@ test("each chapter is a sector in order; one with missions has a star field with
   const run = starMap();
   assert.deepEqual(run.all(".sector .snum").map((node) => node.textContent), ["Sector 1", "Sector 2", "Sector 3"]);
   const sector = run.all(".sector")[1];
-  assert.equal(sector.querySelector("h2").textContent, "The three areas");
+  assert.equal(sector.querySelector("h2").textContent, "The cargo dock");
   assert.ok(sector.querySelector(".field svg.art-field"));
   assert.ok(sector.querySelector(".field svg.art-planet"));
   assert.ok(sector.querySelector(".route polyline"));
@@ -107,7 +107,7 @@ test("a map with no missions at all shows no card", () => {
 test("a sector with cards links its notes and its cards", () => {
   const run = starMap();
   const links = [...run.all(".sector")[1].querySelectorAll(".sector-links a")].map((link) => link.getAttribute("href"));
-  assert.deepEqual(links, ["#/notes/basics", "#/cards/basics"]);
+  assert.deepEqual(links, ["#/notes/cargo", "#/cards/cargo"]);
 });
 
 test("nothing on the map is a typed star or icon character", () => {

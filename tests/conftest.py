@@ -145,8 +145,8 @@ def sample_decks(tmp_path_factory: pytest.TempPathFactory, monkeypatch: pytest.M
         The deck folder.
     """
     folder = tmp_path_factory.mktemp("decks")
-    basics = 'notes = """\nThe `three` areas.\n"""\n' + "".join(choice_card(f"cargo-c{number:02}") for number in range(1, CHOICE_CARDS + 1))
-    basics += """
+    cargo = 'notes = """\nThe `three` areas.\n"""\n' + "".join(choice_card(f"cargo-c{number:02}") for number in range(1, CHOICE_CARDS + 1))
+    cargo += """
 [[card]]
 id = "cargo-predict"
 kind = "predict"
@@ -168,7 +168,7 @@ placeholder = "a branch"
 explain = "The game sets it."
 source = "git-init(1)"
 """
-    (folder / "cargo.toml").write_text(basics)
+    (folder / "cargo.toml").write_text(cargo)
     (folder / "vault.toml").write_text(choice_card("vault-c01"))
     monkeypatch.setattr(cards, "DECKS", folder)
     return folder

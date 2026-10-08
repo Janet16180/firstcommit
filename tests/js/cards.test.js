@@ -10,7 +10,7 @@ const { CardsView, createGameApi } = load(["dom.js", "strings.js", "markup.js", 
 
 const wrong = { ...record("card_result"), correct: false, xp: 0, streak: 0 };
 
-function cards({ list = record("cards"), result = record("card_result"), chapter = "basics" } = {}) {
+function cards({ list = record("cards"), result = record("card_result"), chapter = "cargo" } = {}) {
   const server = fakeServer({ "/api/cards": { cards: list }, "/api/card": result });
   const seen = { refreshed: 0 };
   const ctx = { game: createGameApi(server.api), status: () => record("status"), refresh: async () => (seen.refreshed += 1), sound: { play() {} } };
@@ -24,8 +24,8 @@ const press = (run, key) => run.view.keydown(makeEvent("keydown", { key, target:
 test("the first card shows its prompt and numbered choices", async () => {
   const run = cards();
   await settle();
-  assert.deepEqual(run.server.calls[0].path, "/api/cards?chapter=basics&limit=10");
-  assert.match(run.q(".card-count").textContent, /Card 1 of 3 · The three areas/);
+  assert.deepEqual(run.server.calls[0].path, "/api/cards?chapter=cargo&limit=10");
+  assert.match(run.q(".card-count").textContent, /Card 1 of 3 · The cargo dock/);
   assert.match(run.q(".card-prompt").textContent, /What does git add change\?/);
   assert.deepEqual(run.all("button.choice").map((button) => button.textContent), ["1The staging area", "2The last commit", "3The remote", "4Nothing until you push"]);
 });

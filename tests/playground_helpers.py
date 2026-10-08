@@ -11,7 +11,7 @@ from firstcommit.lab import Lab
 
 PEOPLE: tuple[records.Who, ...] = get_args(records.Who)
 PLAYER = gitcmd.Person("Robin Park", "robin@example.com")
-"""The player's identity, in the game's global configuration as the basics chapter sets it."""
+"""The player's own identity, in the game's global configuration."""
 NOTES = "notes.txt"
 COMMIT_NOTES: tuple[str, ...] = ("edit:notes.txt", "add:notes.txt", "commit")
 SHARE_NOTES: tuple[str, ...] = (*COMMIT_NOTES, "push")

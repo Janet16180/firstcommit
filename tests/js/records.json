@@ -17,9 +17,9 @@
     "cards": 0
    },
    {
-    "id": "basics",
-    "title": "The three areas",
-    "blurb": "The working folder, the staging area and your first commits.",
+    "id": "cargo",
+    "title": "The cargo dock",
+    "blurb": "The staging area: you choose what goes into your next commit.",
     "levels": [
      {
       "id": "sample-first",
@@ -47,9 +47,9 @@
     "cards": 12
    },
    {
-    "id": "hash",
-    "title": "Fingerprints",
-    "blurb": "How Git names every file and commit by its content.",
+    "id": "vault",
+    "title": "The time vault",
+    "blurb": "Commits: sealed capsules of your project, and the history they make.",
     "levels": [],
     "cards": 0
    }
@@ -98,8 +98,8 @@
  },
  "level": {
   "id": "sample-second",
-  "chapter": "basics",
-  "chapter_title": "The three areas",
+  "chapter": "cargo",
+  "chapter_title": "The cargo dock",
   "title": "A message that helps",
   "difficulty": 2,
   "xp": 150,
@@ -743,7 +743,7 @@
  "cards": [
   {
    "id": "sample-card-choice",
-   "chapter": "basics",
+   "chapter": "cargo",
    "kind": "choice",
    "level": 1,
    "prompt": [
@@ -830,7 +830,7 @@
   },
   {
    "id": "sample-card-text",
-   "chapter": "basics",
+   "chapter": "cargo",
    "kind": "text",
    "level": 2,
    "prompt": [
@@ -852,7 +852,7 @@
   },
   {
    "id": "sample-card-predict",
-   "chapter": "basics",
+   "chapter": "cargo",
    "kind": "predict",
    "level": 2,
    "prompt": [
@@ -935,8 +935,8 @@
   "bonus": 0
  },
  "notes": {
-  "chapter": "basics",
-  "title": "The three areas",
+  "chapter": "cargo",
+  "title": "The cargo dock",
   "notes": [
    {
     "kind": "para",
@@ -1247,7 +1247,7 @@
    "output": "Enumerating objects: 5, done.\nCounting objects: 100% (5/5), done.\nDelta compression using up to 8 threads\nCompressing objects: 100% (2/2), done.\nWriting objects: 100% (3/3), 294 bytes | 294.00 KiB/s, done.\nTotal 3 (delta 0), reused 0 (delta 0), pack-reused 0\nTo ../../github/project.git\n   de4c885..21e6785  main -> main\n"
   },
   "before": {
-   "level": "basics-sample",
+   "level": "cargo-sample",
    "project": {
     "exists": true,
     "bare": false,
@@ -1533,7 +1533,7 @@
    "reactions": []
   },
   "observation": {
-   "level": "basics-sample",
+   "level": "cargo-sample",
    "project": {
     "exists": true,
     "bare": false,
