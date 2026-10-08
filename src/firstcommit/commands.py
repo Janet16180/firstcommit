@@ -40,6 +40,11 @@ PROMPT = r"\W $ "
 """The game's prompt: the folder's name, never the user's or the machine's, such as ``project $``."""
 ALEX_PROMPT = r"\[\e[32m\]alex: \W\[\e[0m\] $ "
 """The prompt of Alex's shell in the playground: ``alex: project $``, with ``alex: project`` in green."""
+EDITOR_TITLE = "firstcommit-editor"
+"""
+The first word of the terminal title the shell sets while ``nano``, ``vim`` or ``vi`` runs, such
+as ``firstcommit-editor vim checklist.txt``; the page shows that editor's keys while it does.
+"""
 
 STARTUP = r"""
 HOME=${{{player_home}:-$HOME}}
@@ -64,6 +69,17 @@ __firstcommit_log() {{
     __firstcommit_seen=${{number:-0}}
 }}
 PROMPT_COMMAND=__firstcommit_log
+__firstcommit_editor() {{
+    local status shown="$*"
+    printf '\033]0;{editor_title} %s\007' "${{shown//[[:cntrl:]]/}}"
+    command "$@"
+    status=$?
+    printf '\033]0;\007'
+    return $status
+}}
+nano() {{ __firstcommit_editor nano "$@"; }}
+vim() {{ __firstcommit_editor vim "$@"; }}
+vi() {{ __firstcommit_editor vi "$@"; }}
 {banner}"""
 """
 The startup file, with the history file, the log, the tab completion, the prompt and a first line to fill in.
@@ -79,6 +95,11 @@ shell never logs what an earlier one typed. After that, a prompt logs the newest
 its number changed. The history is not filtered (``HISTCONTROL`` and ``HISTIGNORE`` unset), so
 every line typed gets a number of its own. A log that cannot be written is skipped silently,
 rather than printing an error at every prompt.
+
+``nano``, ``vim`` and ``vi`` are wrapped so that, while one runs, the terminal title names it and
+its arguments after `EDITOR_TITLE` (control characters dropped, so a file name cannot end the
+title early), and is cleared when it exits; the wrapper keeps the editor's exit status. Git
+itself never opens an editor (``core.editor`` is ``true``): only the player does.
 """
 
 
@@ -110,6 +131,7 @@ def startup(log: Path, history: Path, prompt: str = PROMPT, banner: str = "") ->
         player_home=PLAYER_HOME,
         prompt=shlex.quote(prompt),
         banner=first_line,
+        editor_title=EDITOR_TITLE,
     )
 
 
