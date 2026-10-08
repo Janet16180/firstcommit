@@ -110,6 +110,17 @@ NO_MESSAGE = (
 )
 NOT_COMMITTED = "No commit was made. Read Git's message; usually nothing new is staged: `git add` your changes first, or `git commit -am` stages the files Git already tracks."
 NO_REMOTE = "Your repository knows no remote yet, so the push had nowhere to go. Name one first: `git remote add origin` and its address."
+FETCHED = (
+    "Fetched: the mothership's new commits are in your repository now, under remote-tracking branches such as `origin/main`. "
+    "Your own branches and your files did not move."
+)
+FETCHED_NOTHING = "Nothing new on the mothership: your repository already had every commit it has."
+PULLED_FAST_FORWARD = (
+    "Pulled with a fast-forward: you had no new commits of your own, so Git only moved your branch up to the mothership's newest commit. "
+    "No merge commit was needed."
+)
+PULLED_MERGE = "Pulled: you and the mothership both had new commits, so Git joined them in a merge commit with two parents."
+PULLED_NOTHING = "Already up to date: the mothership had nothing your branch lacks."
 LOG_FILE = "Only the commits that changed that file, newest first: the history of one file, out of the whole history."
 LOG = "Your history, newest commit first. Each commit records its author, its date and its message, and Git names it by its hash."
 HIDDEN_GIT = "See `.git`? That hidden folder is the repository: Git keeps the whole history in it. A plain `ls` hides names that start with a dot."
@@ -142,6 +153,11 @@ RULES: tuple[ReactionRule, ...] = (
     ReactionRule(line=LOG_FILE_LINE, mood="info", text=LOG_FILE, outcome="ok"),
     ReactionRule(line=r"git log\b", mood="info", text=LOG, outcome="ok"),
     ReactionRule(line=r"git push\b", mood="err", text=NO_REMOTE, outcome="failed", repository=True, remote=False),
+    ReactionRule(line=r"git fetch\b", mood="ok", text=FETCHED, outcome="ok", event="remote-updated"),
+    ReactionRule(line=r"git fetch\b", mood="info", text=FETCHED_NOTHING, outcome="ok"),
+    ReactionRule(line=r"git pull\b", mood="ok", text=PULLED_MERGE, outcome="ok", event="merge-commit-created"),
+    ReactionRule(line=r"git pull\b", mood="ok", text=PULLED_FAST_FORWARD, outcome="ok", event="branch-moved"),
+    ReactionRule(line=r"git pull\b", mood="info", text=PULLED_NOTHING, outcome="ok"),
     ReactionRule(line=LIST_HIDDEN, mood="info", text=HIDDEN_GIT, outcome="ok", repository=True),
     ReactionRule(line=r"ls\b", mood="info", text=LS_IN_REPOSITORY, outcome="ok", repository=True),
     ReactionRule(line=r"ls\b", mood="info", text=LS_NO_REPOSITORY, outcome="ok", repository=False),

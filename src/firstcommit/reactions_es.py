@@ -24,6 +24,17 @@ NO_MESSAGE = (
 )
 NOT_COMMITTED = "No se hizo ningún commit. Lee el mensaje de Git; lo habitual es que no haya nada nuevo en el staging area: primero haz `git add` de tus cambios, o `git commit -am` agrega los archivos que Git ya sigue."
 NO_REMOTE = "Tu repositorio todavía no conoce ningún remoto, así que el push no tenía adónde ir. Primero nombra uno: `git remote add origin` y su dirección."
+FETCHED = (
+    "Fetch hecho: los commits nuevos de la nave nodriza ya están en tu repositorio, en branches como `origin/main`. "
+    "Tus propios branches y tus archivos no se movieron."
+)
+FETCHED_NOTHING = "Nada nuevo en la nave nodriza: tu repositorio ya tenía todos sus commits."
+PULLED_FAST_FORWARD = (
+    "Pull hecho con un fast-forward: no tenías commits nuevos propios, así que Git solo movió tu branch hasta el commit más reciente de la nave nodriza. "
+    "No hizo falta un commit de merge."
+)
+PULLED_MERGE = "Pull hecho: tú y la nave nodriza tenían commits nuevos, así que Git los unió en un commit de merge con dos padres."
+PULLED_NOTHING = "Ya estaba al día: la nave nodriza no tenía nada que le faltara a tu branch."
 LOG_FILE = "Solo los commits que cambiaron ese archivo, del más reciente al más antiguo: la historia de un archivo, dentro de toda la historia."
 LOG = "Tu historia, del commit más reciente al más antiguo. Cada commit guarda su autor, su fecha y su mensaje, y Git lo nombra por su hash."
 HIDDEN_GIT = "¿Ves `.git`? Esa carpeta oculta es el repositorio: Git guarda en ella toda la historia. Un `ls` a secas oculta los nombres que empiezan con punto."

@@ -4,7 +4,8 @@ from collections.abc import Collection
 
 import pytest
 
-from firstcommit import markup, reactions
+from firstcommit import markup, reactions, runner
+from firstcommit.levels import mothership_halves
 from firstcommit.reactions import ReactionRule
 from firstcommit.records import Command
 
@@ -244,3 +245,25 @@ def test_a_failed_commit_never_blames_a_missing_name_and_email() -> None:
 def test_a_push_from_a_repository_with_no_remote_says_to_name_one_first(line: str, status: int) -> None:
     assert said(line, status, remote=False) == f"err: {reactions.NO_REMOTE}"
     assert said(line, status, remote=True) != f"err: {reactions.NO_REMOTE}"
+
+
+@pytest.mark.parametrize("line", ["git fetch", "git fetch origin", "git -C . fetch --all"])
+def test_a_fetch_that_brought_commits_says_your_branches_did_not_move(line: str) -> None:
+    assert said(line, kinds={"remote-updated"}) == f"ok: {reactions.FETCHED}"
+    assert said(line) == f"info: {reactions.FETCHED_NOTHING}"
+
+
+def test_a_pull_says_whether_it_fast_forwarded_or_made_a_merge_commit() -> None:
+    assert said("git pull", kinds={"remote-updated", "branch-moved"}) == f"ok: {reactions.PULLED_FAST_FORWARD}"
+    assert said("git pull origin main", kinds={"remote-updated", "merge-commit-created"}) == f"ok: {reactions.PULLED_MERGE}"
+    assert said("git pull") == f"info: {reactions.PULLED_NOTHING}"
+
+
+@pytest.mark.parametrize("line", ["git fetch", "git pull"])
+def test_a_failed_fetch_or_pull_gets_no_pleased_reaction(line: str) -> None:
+    assert said(line, 1, kinds={"remote-updated"}) is None
+
+
+def test_a_levels_own_pull_reaction_comes_before_the_shared_one() -> None:
+    rules = (*runner.catalogue()["mothership-halves"].reactions, *reactions.RULES)
+    assert said("git pull", kinds={"remote-updated", "branch-moved"}, rules=rules) == f"ok: {mothership_halves.TWO_HALVES}"
