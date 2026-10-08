@@ -8,7 +8,7 @@ const Pg = require("./playground-records");
 
 const document = installBrowser({ reducedMotion: true });
 const { PlaygroundScreen, PlaygroundSummary, createGameApi } = load(
-  ["dom.js", "strings.js", "places.js", "art-pixels.js", "art-sprites.js", "api.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "sides.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "git-graph.js", "playground-summary.js", "playground-picture.js", "playground-screen.js"],
+  ["dom.js", "strings.js", "places.js", "art-pixels.js", "art-sprites.js", "api.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "keep-panel.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "git-graph.js", "playground-summary.js", "playground-picture.js", "playground-screen.js"],
   ["PlaygroundScreen", "PlaygroundSummary", "createGameApi"],
 );
 
@@ -19,6 +19,7 @@ function screen({ playground = Pg.playground(), lab = Pg.observation(), route = 
     "/api/playground": playground,
     "/api/playground/start": (body) => Pg.playground({ start: body.start, started: "s2" }),
     "/api/playground/prefs": {},
+    "/api/playground/resolve": {},
     "/api/playground/observe": typeof lab === "function" ? lab : () => lab,
     ...replies,
   });
@@ -29,6 +30,7 @@ function screen({ playground = Pg.playground(), lab = Pg.observation(), route = 
       shells[person] = host;
     },
     detach: () => (shells.detached += 1),
+    type: (person, text) => (shells.typed = [...(shells.typed || []), [person, text]]),
   };
   const ctx = { game: createGameApi(server.api), timers: clock, page: document, reducedMotion: true, playTerminals };
   const view = PlaygroundScreen.create(ctx, { view: "playground", start: null, picture: null, tryLine: null, ...route });
@@ -289,4 +291,26 @@ test("leaving the playground takes its terminals off the page without closing th
   await settle();
   run.view.dispose();
   assert.equal(run.shells.detached, 1);
+});
+
+test("the Conflict view is click to keep: Write goes to the server for your repository and the lab is looked at again at once", async () => {
+  const lab = Pg.observation({ you: Pg.person({ markers: [Pg.marked()], project: Pg.snapshot({ operation: "merge" }) }) });
+  const run = screen({ playground: Pg.playground({ start: "conflict" }), lab });
+  await run.clock.advance(0);
+  assert.ok(run.q(".pg-picture .keep"));
+  const looks = run.calls("/api/playground/observe").length;
+  run.click(".keep-pick[data-choice=\"yours\"]");
+  run.click(".keep-write");
+  await settle();
+  await settle();
+  assert.deepEqual(run.calls("/api/playground/resolve").map((call) => call.body), [{ person: "you", file: "checklist.txt", read: "r1", choices: ["yours"] }]);
+  assert.equal(run.calls("/api/playground/observe").length, looks + 1);
+});
+
+test("the panel's editor chips type their command in the terminal of the repository it shows", async () => {
+  const lab = Pg.observation({ you: Pg.person({ markers: [Pg.marked()] }), alex: Pg.person({ markers: [Pg.marked()] }) });
+  const run = screen({ playground: Pg.playground({ start: "conflict", prefs: { whose: "alex" } }), lab });
+  await run.clock.advance(0);
+  run.click(".keep-chip[data-editor=\"nano\"]");
+  assert.deepEqual(run.shells.typed, [["alex", "nano checklist.txt"]]);
 });

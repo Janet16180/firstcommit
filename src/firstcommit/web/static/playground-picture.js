@@ -6,18 +6,21 @@
  * one repository, yours or Alex's (`whose`); History and Crew always show both people. The views
  * are the levels' own pictures: chain.js (with a line naming the work in no commit yet), desk.js,
  * move-log.js, git-graph.js, zone-panel.js for History (the chart, stacked where the screen
- * stacks it) and Crew, and sides.js for Conflict. Needs those and dom.js and strings.js. Defines
- * one global, PlaygroundPicture.
+ * stacks it) and Crew, and keep-panel.js for Conflict. Needs those and dom.js and strings.js.
+ * Defines one global, PlaygroundPicture.
  *
  * MAIN, MORE              the views on the tab row, and those under More views, in order.
  * PER_PERSON              the views that draw one person's repository.
- * create(view, {stacked, timers, reducedMotion})
+ * create(view, {stacked, timers, reducedMotion, onWrite, onType})
  *                         {element, refresh(now)}: `stacked` says whether History stacks its
- *                         sides; now = {observation (PlaygroundObservation), whose ("you" or
- *                         "alex"), alexShown, reflogRead (git reflog typed in that repository)}.
+ *                         sides; Conflict writes picks with onWrite({person, file, read, choices})
+ *                         and types at a prompt with onType(person, line); now = {observation
+ *                         (PlaygroundObservation), whose ("you" or "alex"), alexShown, reflogRead
+ *                         (git reflog typed in that repository), editing ({you, alex}: the
+ *                         editor each terminal runs, {editor, path}, or null)}.
  */
 
-/* global Dom, Strings, Chain, Desk, MoveLog, GitGraph, ZonePanel, Sides */
+/* global Dom, Strings, Chain, Desk, MoveLog, GitGraph, ZonePanel, KeepPanel */
 /* exported PlaygroundPicture */
 
 const PlaygroundPicture = (function () {
@@ -110,14 +113,21 @@ const PlaygroundPicture = (function () {
       };
     },
 
-    conflict() {
-      const sides = Sides.create();
-      return { elements: [sides.element], refresh: ({ observation, whose }) => sides.update(observation[whose].conflicts) };
+    conflict({ onWrite, onType }) {
+      let person = "you";
+      const keep = KeepPanel.create({ onWrite: (request) => onWrite({ person, ...request }), onType: (line) => onType(person, line) });
+      return {
+        elements: [keep.element],
+        refresh({ observation, whose, editing }) {
+          person = whose;
+          keep.update({ person, markers: observation[whose].markers, texts: observation[whose].texts, editing: editing[whose] });
+        },
+      };
     },
   };
 
-  function create(view, { stacked = false, timers = window, reducedMotion = true } = {}) {
-    const built = BUILD[view]({ stacked, timers, reducedMotion });
+  function create(view, { stacked = false, timers = window, reducedMotion = true, onWrite = null, onType = null } = {}) {
+    const built = BUILD[view]({ stacked, timers, reducedMotion, onWrite, onType });
     const element = el("div", { class: "pg-picture", "data-view": view }, built.elements);
     return { element, refresh: built.refresh };
   }

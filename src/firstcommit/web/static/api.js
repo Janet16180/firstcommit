@@ -256,6 +256,8 @@ const createGameApi = (function () {
       playgroundStart: (start) => checked(PLAYGROUND, "/api/playground/start", { start }, startTimeoutMs),
       playgroundPrefs: ({ view, alex, whose }) => checked(NOTHING, "/api/playground/prefs", { view, alex, whose }),
       playgroundObserve: () => checked(PG_OBSERVATION, "/api/playground/observe"),
+      /* Writes click-to-keep's picks into a file's marker blocks; a 409 says the file changed since `read`. */
+      playgroundResolve: ({ person, file, read, choices }) => checked(NOTHING, "/api/playground/resolve", { person, file, read, choices }),
     };
   };
 })();

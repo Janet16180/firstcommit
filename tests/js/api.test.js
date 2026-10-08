@@ -476,3 +476,9 @@ test("each person in the playground's observation carries the conflict markers t
   const noGraph = Pg.observation({ you: Pg.person({ graph: null }) });
   await assert.rejects(gameApi({ "/api/playground/observe": noGraph }).game.playgroundObserve(), /you\.graph/);
 });
+
+test("a click-to-keep write names the person, the file, the text it was read from and a choice per block", async () => {
+  const { game, calls } = gameApi({ "/api/playground/resolve": {} });
+  await game.playgroundResolve({ person: "you", file: "checklist.txt", read: "r1", choices: ["yours", "both"] });
+  assert.deepEqual(calls.map((call) => [call.path, call.body]), [["/api/playground/resolve", { person: "you", file: "checklist.txt", read: "r1", choices: ["yours", "both"] }]]);
+});

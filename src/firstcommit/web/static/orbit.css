@@ -3569,3 +3569,219 @@ pre.code code {
     height: max(320px, calc(100vh - 260px));
   }
 }
+
+/* Click to keep (keep-panel.js): the real file in a code box, your side violet and Alex's green
+   (in Alex's repository the HEAD side is Alex's), the picks under each block, Write in gold. */
+.keep {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  font-size: 0.9rem;
+}
+
+.keep-file {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.keep-outside,
+.keep-none {
+  margin: 0;
+  color: var(--ink-soft);
+}
+
+.keep-box {
+  background: var(--panel);
+  border: 3px solid var(--edge);
+}
+
+.keep-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 0;
+  padding: 4px 10px;
+  background: var(--edge);
+  color: var(--crt-ink);
+  font: 700 1rem var(--f-term);
+}
+
+.keep-state {
+  margin-left: auto;
+  color: #FF8A78;
+}
+
+.keep-state.is-ok {
+  color: #9EF0A0;
+}
+
+.keep-lines {
+  margin: 0;
+  padding: 4px 0;
+  list-style: none;
+  font: 1.05rem/1.45 var(--f-term);
+}
+
+.keep-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 8px;
+  padding: 0 10px;
+}
+
+.keep-text {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.keep-line.is-marker {
+  color: var(--ink-soft);
+}
+
+.keep-line.is-gone,
+.keep-line.is-dropped {
+  text-decoration: line-through;
+  opacity: 0.45;
+}
+
+.keep-line[data-part="ours"] {
+  --side: var(--you);
+}
+
+.keep-line[data-part="theirs"] {
+  --side: var(--alex);
+}
+
+.keep[data-person="alex"] .keep-line[data-part="ours"] {
+  --side: var(--alex);
+}
+
+.keep[data-person="alex"] .keep-line[data-part="theirs"] {
+  --side: var(--you);
+}
+
+.keep-line[data-part="ours"],
+.keep-line[data-part="theirs"] {
+  background: color-mix(in srgb, var(--side) 14%, var(--panel));
+  box-shadow: inset 5px 0 0 var(--side);
+}
+
+.keep-tag {
+  padding: 0 6px;
+  border-radius: 8px;
+  background: var(--you);
+  color: var(--on-accent);
+  font: 700 0.7rem var(--f-ui);
+}
+
+.keep-tag[data-who="alex"] {
+  background: var(--alex);
+}
+
+.keep-choose {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-top: 2px dashed var(--line);
+  border-bottom: 2px dashed var(--line);
+  font: 700 0.85rem var(--f-ui);
+}
+
+.keep-pick {
+  padding: 3px 10px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 2px solid var(--edge);
+  font: 700 0.85rem var(--f-ui);
+  cursor: pointer;
+}
+
+.keep-pick[aria-pressed="true"] {
+  background: var(--you);
+  color: var(--on-accent);
+}
+
+.keep-pick[data-who="alex"][aria-pressed="true"] {
+  background: var(--alex);
+}
+
+.keep-pick[data-who="both"][aria-pressed="true"] {
+  background: var(--gold);
+  color: #1F1A3D;
+}
+
+.keep-pick:disabled,
+.keep-chip:disabled {
+  cursor: default;
+}
+
+.keep-act {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.keep-write {
+  background: var(--gold);
+  color: #1F1A3D;
+}
+
+.keep-write:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.keep-message {
+  margin: 0;
+  padding: 6px 10px;
+  border: 2px solid var(--edge);
+}
+
+.keep-message.is-ok {
+  border-color: var(--z-st);
+}
+
+.keep-message.is-error {
+  border-color: var(--s-new);
+}
+
+.keep-message.is-waiting {
+  border-color: var(--gold);
+}
+
+.keep-or {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  border: 2px solid var(--edge);
+  background: var(--panel-2);
+}
+
+.keep-or p {
+  margin: 0;
+  flex-basis: 100%;
+}
+
+.keep-chip {
+  padding: 1px 8px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 2px dashed var(--gold);
+  font: 1rem var(--f-term);
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* An editor has the file: the panel waits, greyed, all but its message. */
+.keep.is-waiting .keep-box,
+.keep.is-waiting .keep-act,
+.keep.is-waiting .keep-or {
+  opacity: 0.4;
+  filter: grayscale(1);
+}

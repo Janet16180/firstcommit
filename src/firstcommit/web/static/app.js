@@ -283,6 +283,7 @@
     detach() {
       for (const person of ["you", "alex"]) if (play[person]) play[person].element.remove();
     },
+    type: (person, text) => play[person] && play[person].type(text),
   };
 
   /* A refused WebSocket looks like a network failure; asking the API tells a stale key apart

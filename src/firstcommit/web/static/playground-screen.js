@@ -18,7 +18,7 @@
  * same switch that chooses whose repository the picture draws.
  *
  * create(ctx, route) {element, dispose()}: ctx = {game, timers, page, reducedMotion,
- *   playTerminals: {attach(person, host, started), detach()}}, the shells kept by the page for
+ *   playTerminals: {attach(person, host, started), detach(), type(person, text)}}, the shells kept by the page for
  *   the start built at `started`; route the playground's address (Route.parse): `picture` names a
  *   view to open on.
  */
@@ -111,7 +111,16 @@ const PlaygroundScreen = (function () {
 
   function drawPicture(screen) {
     const { ui, prefs, ctx } = screen;
-    screen.picture = PlaygroundPicture.create(prefs.view, { stacked: window.matchMedia(PHONE).matches, timers: ctx.timers, reducedMotion: ctx.reducedMotion });
+    screen.picture = PlaygroundPicture.create(prefs.view, {
+      stacked: window.matchMedia(PHONE).matches,
+      timers: ctx.timers,
+      reducedMotion: ctx.reducedMotion,
+      onWrite: async (request) => {
+        await ctx.game.playgroundResolve(request);
+        await tick(screen);
+      },
+      onType: (person, line) => ctx.playTerminals.type(person, line),
+    });
     ui.slot.replaceChildren(screen.picture.element);
     refresh(screen);
     const chosen = [...ui.tabs.querySelectorAll(".pg-tab")].find((button) => button.dataset.view === prefs.view);
@@ -130,7 +139,7 @@ const PlaygroundScreen = (function () {
     if (!observation) return;
     const reflogRead = screen.reflogRead[person];
     if (prefs.view === "movelog" && reflogRead && screen.live[person] === "unsaid") screen.live[person] = "saying";
-    screen.picture.refresh({ observation, whose: person, alexShown: alexShown(screen), reflogRead });
+    screen.picture.refresh({ observation, whose: person, alexShown: alexShown(screen), reflogRead, editing: screen.editing });
     ui.live.hidden = !(prefs.view === "movelog" && screen.live[person] === "saying");
     if (ui.live.hidden) ui.live.remove();
     else ui.slot.append(ui.live);
@@ -276,6 +285,7 @@ const PlaygroundScreen = (function () {
       alexAttached: false,
       conflictKept: false,
       reflogRead: { you: false, alex: false },
+      editing: { you: null, alex: null },
       live: { you: "unsaid", alex: "unsaid" },
     };
     open(screen);
