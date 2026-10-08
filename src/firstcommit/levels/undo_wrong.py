@@ -21,6 +21,7 @@ DIFFICULTY = 2
 XP = 150
 COMMAND = "git reset --hard"
 PAR = 2
+TAPE = True
 VIEW = "history"
 CARD = kit.CommandCard(
     command="git reset --hard <commit>",

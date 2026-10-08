@@ -411,9 +411,10 @@ def test_a_scene_stays_seen_once_the_player_saw_it_until_a_reset(sample_level: r
 
 def test_a_level_page_names_its_main_view_and_the_views_the_player_has_seen(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:
     assert (game.level(sample_level.id)["view"], game.level(sample_level.id)["views_seen"]) == ("station", ["station"])
-    level = replaced(sample_level, view="history")
+    assert game.level(sample_level.id)["tape"] is False
+    level = replaced(sample_level, view="history", tape=True)
     monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
-    assert game.level(level.id)["view"] == "history"
+    assert (game.level(level.id)["view"], game.level(level.id)["tape"]) == ("history", True)
 
 
 def test_a_view_stays_seen_in_the_order_seen_until_a_reset(sample_level: runner.Level) -> None:

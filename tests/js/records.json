@@ -141,6 +141,7 @@
   ],
   "scene_seen": false,
   "view": "history",
+  "tape": false,
   "views_seen": [
    "station",
    "crew"

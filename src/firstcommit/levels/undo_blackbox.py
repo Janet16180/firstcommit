@@ -20,6 +20,7 @@ DIFFICULTY = 3
 XP = 250
 COMMAND = "git reflog"
 PAR = 3
+TAPE = True
 VIEW = "blackbox"
 CHALLENGE = True
 CARD = kit.CommandCard(

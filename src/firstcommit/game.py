@@ -237,7 +237,8 @@ class LevelView(TypedDict):
     so a reloaded page can show what the player paid for. ``debrief`` is set once the player has
     finished the level, filled from its last play, so it shows even when the level was solved
     from the terminal. ``scene`` is empty for a level without one; ``scene_seen`` says whether
-    the player has seen it (`see_scene`). ``view`` is the view the level screen opens on, and
+    the player has seen it (`see_scene`). ``view`` is the view the level screen opens on, ``tape`` says whether it shows the black box's
+    tape of HEAD's moves (`Observation` ``reflog``), and
     ``views_seen`` every view (and the band) the page has shown being born, in the order seen
     (`see_view`), your station from the start, the same for every level. ``challenge`` marks a level whose goals are met in any
     order, with no guidance; its ``card`` is None until the player has solved it once, since the
@@ -255,6 +256,7 @@ class LevelView(TypedDict):
     scene: list[SceneFrameView]
     scene_seen: bool
     view: View
+    tape: bool
     views_seen: list[Seen]
     card: CommandCard | None
     challenge: bool
@@ -535,6 +537,7 @@ def level(level_id: str) -> LevelView:
         "scene": [{"art": frame.art, "text": markup.parse(text)} for frame, text in zip(entry.scene, texts.scene, strict=True)],
         "scene_seen": entry.id in progress["scenes"],
         "view": entry.view,
+        "tape": entry.tape,
         "views_seen": progress["views"],
         "card": _command_card(entry, language) if finished is not None or not entry.challenge else None,
         "challenge": entry.challenge,

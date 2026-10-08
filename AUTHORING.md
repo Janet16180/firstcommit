@@ -157,6 +157,7 @@ PAR: int                      # lines a good play types; more than PAR + 3 costs
 CARD: kit.CommandCard         # the command card the player collects: command and what it does
 SCENE: list[kit.SceneFrame] = []        # optional; Rama's scene the first time the level opens
 VIEW: View = "station"                  # optional; the level screen's main view (records.View)
+TAPE: bool = False                      # optional; True to show the black box's tape of HEAD's moves
 REACTIONS: list[kit.ReactionRule] = []  # optional; tried before the shared ones
 EVENTS: list[kit.LevelEvent] = []       # optional; changes the level makes during the play
 CHALLENGE: bool = False                 # optional; True for a challenge (any order, no guidance)
