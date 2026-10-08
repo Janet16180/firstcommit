@@ -52,11 +52,27 @@ CMD ["firstcommit", "serve"]
 # source resolves. Dependencies come from PyPI while building; the tests then run offline, on
 # the image's own Python.
 FROM player AS test
-# Ubuntu's nodejs runs the page's node tests (built 2026-10-06 with nodejs 18.19.1+dfsg-6ubuntu5).
+# Node 24 LTS runs the page's node tests (Ubuntu's nodejs 18 broke one). The release tarball from
+# nodejs.org is checked against its SHA-256 from that release's SHASUMS256.txt before unpacking.
+ARG NODE_VERSION=24.21.0
+ARG NODE_SHA256_X64=fd8e59d5a511510f6a298afb548f18c7d2b1be404d8b4a27d94fbe49f56cb2d6
+ARG NODE_SHA256_ARM64=6ad1325edbdb5649c379b75a237147a666c95d4f9ae8d340fef2d1575d289ad2
+ARG TARGETARCH
 USER root
 RUN apt-get update \
- && DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends nodejs \
- && rm -rf /var/lib/apt/lists/*
+ && DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends ca-certificates curl xz-utils \
+ && rm -rf /var/lib/apt/lists/* \
+ && case "$TARGETARCH" in \
+      amd64) arch=x64 sum=$NODE_SHA256_X64 ;; \
+      arm64) arch=arm64 sum=$NODE_SHA256_ARM64 ;; \
+      *) echo "no Node build pinned for $TARGETARCH" >&2; exit 1 ;; \
+    esac \
+ && tarball=node-v$NODE_VERSION-linux-$arch.tar.xz \
+ && curl -fsSLo /tmp/$tarball https://nodejs.org/dist/v$NODE_VERSION/$tarball \
+ && echo "$sum  /tmp/$tarball" | sha256sum --check --quiet \
+ && tar -xJf /tmp/$tarball -C /usr/local --strip-components=1 --no-same-owner \
+ && rm /tmp/$tarball \
+ && node --version | grep "^v$NODE_VERSION$"
 USER player
 COPY --from=ghcr.io/astral-sh/uv:0.12.6@sha256:88bc6eb1ccd4b82efd0e1b530caffabddf50dc2bf612e66c14ea25b8ee8a4d3d /uv /usr/local/bin/uv
 ENV UV_PYTHON_DOWNLOADS=never UV_NO_CACHE=1

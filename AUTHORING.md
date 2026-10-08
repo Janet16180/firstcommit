@@ -72,9 +72,12 @@ For every sentence that states a fact, in a scene, step, briefing, hint, debrief
 - Test names are sentences about behaviour and need no docstring; test helpers do.
 - Minimal comments, only for a non-obvious why. No section dividers, no emojis anywhere.
 - Standard library only at runtime, plus termlab.
-- The page tests (`tests/js`) must pass on the container's Node 18 as well as a newer local Node:
-  no version-specific test APIs such as `mock.timers`; give the code a `timers` option and drive it
-  with `createClock()` from `tests/js/load.js`.
+- The page tests (`tests/js`) run on Node 24 LTS or newer: the test image pins Node by version and
+  SHA-256 (`ARG NODE_VERSION` in `deploy/docker/Dockerfile`), and `tests/test_page_scripts.py`
+  fails on an older local Node. Run them as `node --test tests/js/*.test.js` (Node 24 reads a
+  folder argument as a file). Drive timers with a `timers` option and `createClock()` from
+  `tests/js/load.js`, never `mock.timers`. To move to a newer Node, change the version and both
+  checksums from that release's `SHASUMS256.txt` on nodejs.org.
 - **Nothing in the package may know where it runs** (WSL, Docker or a VM): it reads only
   `FIRSTCOMMIT_HOME` and the port it is given.
 

@@ -16,6 +16,7 @@ from firstcommit.repomap import Snapshot
 JS_TESTS = Path(__file__).parent / "js"
 RECORDS = JS_TESTS / "records.json"
 API_JS = Path(__file__).parents[1] / "src" / "firstcommit" / "web" / "static" / "api.js"
+DOCKERFILE = Path(__file__).parents[1] / "deploy" / "docker" / "Dockerfile"
 NODE = shutil.which("node")
 RECORD_TYPES: dict[str, Any] = {
     "status": game.Status,
@@ -145,3 +146,12 @@ def test_a_record_with_a_missing_or_extra_field_is_caught() -> None:
     assert mismatches({**hint, "extra": 1}, game.HintView, "hint") != []
     assert mismatches({**hint, "used": True}, game.HintView, "hint") != []
     assert mismatches({**hint, "hint": [{"kind": "para", "spans": [{"text": "a"}]}]}, game.HintView, "hint") != []
+
+
+@pytest.mark.skipif(NODE is None, reason="node is not installed")
+def test_the_page_tests_run_on_the_node_major_the_test_image_pins() -> None:
+    assert NODE is not None
+    pinned = re.search(r"^ARG NODE_VERSION=(\d+)\.\d+\.\d+$", DOCKERFILE.read_text(), re.MULTILINE)
+    assert pinned is not None, "the Dockerfile pins Node with ARG NODE_VERSION=<major>.<minor>.<patch>"
+    version = subprocess.run([NODE, "--version"], capture_output=True, text=True, check=True).stdout
+    assert int(version.removeprefix("v").split(".")[0]) >= int(pinned[1]), f"the page tests need Node {pinned[1]} or newer, not {version.strip()}"
