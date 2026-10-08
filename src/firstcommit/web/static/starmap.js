@@ -2,7 +2,7 @@
 
 /*
  * The map screen: Rama and the game's name, a bar with the stars won, the missions done, the
- * field guide, the cards due and the look and sound buttons, then every chapter as a
+ * field guide, the playground, the cards due and the look and sound buttons, then every chapter as a
  * sector in play order. A sector with missions is a strip of space with its planet and its
  * numbered mission nodes along a route; a chapter with none yet is a sector coming soon. After
  * the last sector with missions, the Playground, a landmark of its own, open from the start.
@@ -49,6 +49,7 @@ const StarMap = (function () {
       el("span", { class: "counter px" }, `${t("map.missions")} `, el("b", {}, `${done}/${levels.length}`)),
       el("span", { class: "spacer" }),
       el("a", { class: "btn field-guide-open", href: "#/guide" }, t("map.guide")),
+      el("a", { class: "btn playground-open", href: "#/playground" }, t("map.playground")),
       status.cards_due > 0 && el("a", { class: "btn", href: "#/cards" }, t("map.review", { count: status.cards_due })),
       prefButtons(),
     );

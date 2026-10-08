@@ -7,7 +7,7 @@
  * is not changed. Needs dom.js and strings.js. Defines one global, PastPanel.
  *
  * create() {element, update({file, past})}: file is the level's file (LevelView.pictures.past),
- *   past the latest read (Observation.past), null before any.
+ *   past the latest read (Observation.past.read: {rev, commit, subject, text}), null before any.
  */
 
 /* global Dom, Strings */
@@ -20,9 +20,9 @@ const PastPanel = (function () {
 
   function body(file, past) {
     if (!past) return ["empty", [el("p", { class: "past-empty" }, said("past.empty", { file }))]];
-    if (!past.hash) return ["missing", [el("p", { class: "past-missing" }, said("past.unknown", { rev: past.rev }))]];
-    if (past.printed === null) return ["missing", [el("p", { class: "past-missing" }, said("past.missing", { file: past.path }))]];
-    return ["read", [el("pre", { class: "past-text" }, past.printed.replace(/\n$/, "")), el("p", { class: "past-note" }, t("past.note"))]];
+    if (!past.commit) return ["missing", [el("p", { class: "past-missing" }, said("past.unknown", { rev: past.rev }))]];
+    if (past.text === null) return ["missing", [el("p", { class: "past-missing" }, said("past.missing", { file }))]];
+    return ["read", [el("pre", { class: "past-text" }, past.text.replace(/\n$/, "")), el("p", { class: "past-note" }, t("past.note"))]];
   }
 
   function create() {
@@ -32,7 +32,7 @@ const PastPanel = (function () {
 
       update({ file, past }) {
         const [state, shown] = body(file, past);
-        const title = past && past.subject ? t("past.title", { file: past.path, subject: past.subject }) : t("past.then", { file });
+        const title = past && past.subject ? t("past.title", { file, subject: past.subject }) : t("past.then", { file });
         element.dataset.state = state;
         element.replaceChildren(el("h3", { class: "past-title" }, title), ...shown);
       },
