@@ -6,7 +6,9 @@
  * dom.js and art-pixels.js load first, art-style.css animates them.
  *
  * NAMES                   the scenes there are, the values of the engine's `Art`: the design's
- *                         thirteen and fork, merge, collision and blackbox for chapters 5 to 7.
+ *                         thirteen, fork, merge, collision and blackbox for chapters 5 to 7, and
+ *                         meteor for Base 7. alarm, which opens every challenge, is a red beacon
+ *                         on your base; only meteor has the meteorite strike.
  * CAPTIONS                {scene: [key, ...]}: the captions each scene draws, in drawing order.
  *                         Every word or code in a picture comes from them, so a scene speaks
  *                         the page's language.
@@ -59,6 +61,8 @@ const ArtScenes = (function () {
   const ALEX_CAPSULE = { v: CREW.alex.a, V: CREW.alex.b, h: CREW.alex.c };
   const CRACK = ["...c....", "...cc...", "....c...", "...cc...", "...c....", "....c...", "....cc..", "...c....", "...cc...", "....c..."];
 
+  /* A crew station's dome and flag, 33x24, standing on the ground with its left edge at x. */
+  const stationAt = (x, colours = {}) => place(x, 50, 3, sprite("station", colours));
   const capsuleAt = (x, y, scale = 2, recolour = {}) => place(x, y, scale, sprite("capsule", recolour));
   const boxLabel = (x, y, width, words, colour) => [rect(x, y, width, 11, tone("crt"), { stroke: tone(colour), "stroke-width": 1 }), text(x + width / 2, y + 8.5, words, { fill: tone(colour), size: 7.5 })];
 
@@ -267,14 +271,10 @@ const ArtScenes = (function () {
         sky("alarm", 30),
         rect(0, 0, 160, 90, tone("art-red"), { opacity: 0.14, class: "art-alarm" }),
         ground(),
-        Dom.svg("g", { class: "art-meteor" }, [
-          place(130, 2, 2, sprite("meteor")),
-          rect(144, 0, 8, 2, tone("art-orange"), { opacity: 0.7 }),
-          rect(146, -2, 10, 2, tone("art-orange"), { opacity: 0.4 }),
-        ]),
-        rect(40, 58, 18, 18, tone("art-orange"), { stroke: tone("art-yellow"), "stroke-width": 2, class: "art-boom" }),
-        text(49, 52, c.base, { size: 9 }),
-        ramaAt(104, 38),
+        stationAt(37, CREW.you),
+        Dom.svg("g", { class: "art-alarm" }, [rect(45, 52, 7, 7, tone("art-red"), { opacity: 0.4 }), rect(46, 53, 5, 5, tone("art-red"))]),
+        text(53, 44, c.base, { size: 9 }),
+        ramaAt(72, 38),
         text(80, 16, c.alert, { fill: tone("art-red"), size: 12, className: "art-alarm" }),
       ],
     },
@@ -340,6 +340,24 @@ const ArtScenes = (function () {
         rect(88, 46, 2, 5, OUTLINE),
         text(80, 63, c.reflog, { fill: tone("crt"), size: 9 }),
         [58, 74, 90].map((x, index) => timed("art-pop", 1.8 + index * 0.2, capsuleAt(x, 68, 1))),
+      ],
+    },
+    meteor: {
+      captions: ["base", "alert"],
+      draw: (c) => [
+        sky("meteor", 30),
+        rect(0, 0, 160, 90, tone("art-red"), { opacity: 0.14, class: "art-alarm" }),
+        ground(),
+        Dom.svg("g", { class: "art-meteor" }, [
+          place(130, 2, 2, sprite("meteor")),
+          rect(144, 0, 8, 2, tone("art-orange"), { opacity: 0.7 }),
+          rect(146, -2, 10, 2, tone("art-orange"), { opacity: 0.4 }),
+        ]),
+        stationAt(37),
+        rect(45, 56, 18, 18, tone("art-orange"), { stroke: tone("art-yellow"), "stroke-width": 2, class: "art-boom" }),
+        text(53, 44, c.base, { size: 9 }),
+        ramaAt(104, 38),
+        text(80, 16, c.alert, { fill: tone("art-red"), size: 12, className: "art-alarm" }),
       ],
     },
   };
