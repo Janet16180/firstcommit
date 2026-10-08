@@ -183,13 +183,15 @@ class Playground(TypedDict):
     """
     Where the player left the free playground.
 
-    ``start`` is the starting point its lab was last built from, and ``view`` and ``whose`` the
-    view shown and whose repository it draws. ``alex_shown`` holds, for each start the player
+    ``start`` is the starting point its lab was last built from, and ``started`` when it was
+    built, which tells one build from the next, a Start over included. ``view`` and ``whose`` are
+    the view shown and whose repository it draws. ``alex_shown`` holds, for each start the player
     has been in, whether Alex's terminal was shown; a start missing from it shows Alex as the
     start's default does (`firstcommit.freeplay.Start.alex`).
     """
 
     start: StartId
+    started: IsoTime
     alex_shown: dict[StartId, bool]
     view: PlaygroundView
     whose: Who

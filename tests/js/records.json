@@ -2148,6 +2148,7 @@
    {
     "id": "empty",
     "title": "Empty folder",
+    "blurb": "Two files and no repository yet.",
     "banner": "No repository here yet. Try: git init",
     "view": "desk",
     "mothership": false,
@@ -2157,6 +2158,7 @@
    {
     "id": "changes",
     "title": "Uncommitted changes",
+    "blurb": "notes.txt edited on main, and a branch to switch to.",
     "banner": "notes.txt is edited and not committed. Try: git status",
     "view": "desk",
     "mothership": true,
@@ -2175,6 +2177,7 @@
    {
     "id": "branches",
     "title": "Two branches",
+    "blurb": "Two experiments forked off main.",
     "banner": "Try: git switch bright-lights, then pick another view.",
     "view": "chain",
     "mothership": true,
@@ -2189,6 +2192,7 @@
    {
     "id": "alex-ahead",
     "title": "Alex is ahead",
+    "blurb": "Alex pushed two commits you have not fetched.",
     "banner": "Alex sent two commits. Try: git status, then git fetch.",
     "view": "history",
     "mothership": true,
@@ -2203,6 +2207,7 @@
    {
     "id": "both",
     "title": "Both committed",
+    "blurb": "You and Alex each committed a different file: a merge with no conflict.",
     "banner": "You and Alex each made a commit. Try: git status, then git pull --no-rebase.",
     "view": "history",
     "mothership": true,
@@ -2217,6 +2222,7 @@
    {
     "id": "conflict",
     "title": "Conflict",
+    "blurb": "You and Alex changed the same line, and your pull stopped on it.",
     "banner": "Your pull stopped on a conflict in checklist.txt. Try: git status",
     "view": "conflict",
     "mothership": true,
@@ -2231,6 +2237,7 @@
    {
     "id": "lost",
     "title": "Something lost",
+    "blurb": "A branch with two commits, deleted.",
     "banner": "A branch was deleted. Try: git log --oneline --all, then git reflog",
     "view": "movelog",
     "mothership": true,
@@ -2245,6 +2252,7 @@
   ],
   "current": {
    "start": "conflict",
+   "started": "2026-10-08T21:21:10.293444+00:00",
    "view": "conflict",
    "alex": true,
    "whose": "you"
@@ -2252,6 +2260,7 @@
  },
  "playground_observation": {
   "start": "conflict",
+  "started": "2026-10-08T21:21:10.293444+00:00",
   "project": {
    "exists": true,
    "bare": false,

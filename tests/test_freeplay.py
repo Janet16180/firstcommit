@@ -53,7 +53,7 @@ def test_the_registry_holds_the_seven_starting_points_in_picker_order() -> None:
 def test_every_start_has_a_title_and_a_one_line_suggestion_in_every_language() -> None:
     languages = set(get_args(records.Language))
     for start in freeplay.STARTS.values():
-        for texts in (start.title, start.banner):
+        for texts in (start.title, start.blurb, start.banner):
             assert set(texts) == languages
             assert all(text.strip() and "\n" not in text for text in texts.values())
 

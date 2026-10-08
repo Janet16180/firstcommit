@@ -43,6 +43,8 @@ class Start:
     ----------
     title : dict[Language, str]
         Its name in the picker and the header.
+    blurb : dict[Language, str]
+        One line on the picker's card saying what it holds.
     banner : dict[Language, str]
         The one suggestion your terminal prints first; the only guidance free play gives.
     view : PlaygroundView
@@ -58,6 +60,7 @@ class Start:
     """
 
     title: dict[Language, str]
+    blurb: dict[Language, str]
     banner: dict[Language, str]
     view: PlaygroundView
     mothership: bool
@@ -235,6 +238,7 @@ def _lost(lab: Lab) -> None:
 STARTS: dict[StartId, Start] = {
     "empty": Start(
         title={"en": "Empty folder", "es": "Carpeta vacía"},
+        blurb={"en": "Two files and no repository yet.", "es": "Dos archivos y todavía ningún repositorio."},
         banner={"en": "No repository here yet. Try: git init", "es": "Aquí todavía no hay repositorio. Prueba: git init"},
         view="desk",
         mothership=False,
@@ -244,6 +248,7 @@ STARTS: dict[StartId, Start] = {
     ),
     "changes": Start(
         title={"en": "Uncommitted changes", "es": "Cambios sin commit"},
+        blurb={"en": "notes.txt edited on main, and a branch to switch to.", "es": "notes.txt editado en main, y un branch al que cambiar."},
         banner={
             "en": "notes.txt is edited and not committed. Try: git status",
             "es": "notes.txt está editado y sin commit. Prueba: git status",
@@ -256,6 +261,7 @@ STARTS: dict[StartId, Start] = {
     ),
     "branches": Start(
         title={"en": "Two branches", "es": "Dos branches"},
+        blurb={"en": "Two experiments forked off main.", "es": "Dos experimentos que salen de main."},
         banner={
             "en": "Try: git switch bright-lights, then pick another view.",
             "es": "Prueba: git switch bright-lights, y luego elige otra vista.",
@@ -268,6 +274,7 @@ STARTS: dict[StartId, Start] = {
     ),
     "alex-ahead": Start(
         title={"en": "Alex is ahead", "es": "Alex va adelante"},
+        blurb={"en": "Alex pushed two commits you have not fetched.", "es": "Alex hizo push de dos commits que todavía no trajiste."},
         banner={
             "en": "Alex sent two commits. Try: git status, then git fetch.",
             "es": "Alex envió dos commits. Prueba: git status, y luego git fetch.",
@@ -280,6 +287,7 @@ STARTS: dict[StartId, Start] = {
     ),
     "both": Start(
         title={"en": "Both committed", "es": "Los dos hicieron commit"},
+        blurb={"en": "You and Alex each committed a different file: a merge with no conflict.", "es": "Tú y Alex hicieron commit de archivos distintos: un merge sin conflicto."},
         banner={
             "en": "You and Alex each made a commit. Try: git status, then git pull --no-rebase.",
             "es": "Tú y Alex hicieron un commit cada uno. Prueba: git status, y luego git pull --no-rebase.",
@@ -292,6 +300,7 @@ STARTS: dict[StartId, Start] = {
     ),
     "conflict": Start(
         title={"en": "Conflict", "es": "Conflicto"},
+        blurb={"en": "You and Alex changed the same line, and your pull stopped on it.", "es": "Tú y Alex cambiaron la misma línea, y tu pull se detuvo ahí."},
         banner={
             "en": "Your pull stopped on a conflict in checklist.txt. Try: git status",
             "es": "Tu pull se detuvo en un conflicto en checklist.txt. Prueba: git status",
@@ -304,6 +313,7 @@ STARTS: dict[StartId, Start] = {
     ),
     "lost": Start(
         title={"en": "Something lost", "es": "Algo perdido"},
+        blurb={"en": "A branch with two commits, deleted.", "es": "Un branch con dos commits, borrado."},
         banner={
             "en": "A branch was deleted. Try: git log --oneline --all, then git reflog",
             "es": "Se borró un branch. Prueba: git log --oneline --all, y luego git reflog",

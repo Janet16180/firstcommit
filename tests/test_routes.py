@@ -744,7 +744,7 @@ def test_a_resolve_of_a_changed_file_conflicts_and_a_wrong_number_of_choices_is_
 
 def test_the_real_free_playground_starts_and_is_observed(site: Site) -> None:
     status, started = api(site, "/api/playground/start", {"start": "alex-ahead"})
-    assert (status, started["current"]) == (200, {"start": "alex-ahead", "view": "history", "alex": True, "whose": "you"})
+    assert (status, started["current"]) == (200, {"start": "alex-ahead", "started": started["current"]["started"], "view": "history", "alex": True, "whose": "you"})
     status, seen = api(site, "/api/playground/observe")
     assert status == 200 and seen["alex"] is not None
     api(site, "/api/playground/start", {"start": "conflict"})

@@ -1296,7 +1296,7 @@ def test_each_playground_shell_is_bash_with_a_startup_file_log_history_and_quiet
 
 
 def test_your_playground_shell_first_prints_the_starts_suggestion_in_the_players_language(game_home: Path) -> None:
-    save.write_playground({"start": "lost", "alex_shown": {}, "view": "movelog", "whose": "you"})
+    save.write_playground({"start": "lost", "started": "2026-10-08T12:00:00+00:00", "alex_shown": {}, "view": "movelog", "whose": "you"})
     game.set_language("es")
     game.playground_shell_command("you")
     game.playground_shell_command("alex")
@@ -1345,6 +1345,7 @@ def test_the_playground_lists_its_starts_in_the_players_language_and_no_current_
     assert changes == {
         "id": "changes",
         "title": "Cambios sin commit",
+        "blurb": freeplay.STARTS["changes"].blurb["es"],
         "banner": freeplay.STARTS["changes"].banner["es"],
         "view": "desk",
         "mothership": True,
@@ -1357,10 +1358,20 @@ def test_starting_the_playground_builds_the_start_on_its_view_with_alex_as_it_wa
     for person in ("you", "alex"):
         log = save.ensure_playground_shell(person) / save.COMMANDS_FILE
         log.write_bytes(b"1\t0\tgit status\0")
-    assert current(game.start_playground("conflict")) == {"start": "conflict", "view": "conflict", "alex": True, "whose": "you"}
+    started = current(game.start_playground("conflict"))
+    assert started == {"start": "conflict", "started": started["started"], "view": "conflict", "alex": True, "whose": "you"}
     assert (game_home / "playground" / "project" / "checklist.txt").exists()
     assert (game.playground_typed("you"), game.playground_typed("alex")) == ([], [])
-    assert save.load_playground() == {"start": "conflict", "alex_shown": {}, "view": "conflict", "whose": "you"}
+    assert save.load_playground() == {"start": "conflict", "started": started["started"], "alex_shown": {}, "view": "conflict", "whose": "you"}
+
+
+def test_each_build_of_the_playground_has_a_started_stamp_of_its_own_that_the_observation_carries() -> None:
+    first = current(game.start_playground("branches"))["started"]
+    assert current(game.set_playground_prefs(view="desk", alex=None, whose=None))["started"] == first
+    assert game.observe_playground()["started"] == first
+    again = current(game.start_playground("branches"))["started"]
+    assert again != first
+    assert game.observe_playground()["started"] == again
 
 
 def current(status: game.PlaygroundStatus) -> game.PlaygroundPrefs:
@@ -1384,10 +1395,10 @@ def current(status: game.PlaygroundStatus) -> game.PlaygroundPrefs:
 def test_the_playground_remembers_the_view_whose_repository_and_alex_for_each_start() -> None:
     game.start_playground("conflict")
     chosen = current(game.set_playground_prefs(view="chain", alex=False, whose="alex"))
-    assert chosen == {"start": "conflict", "view": "chain", "alex": False, "whose": "alex"}
+    assert chosen == {"start": "conflict", "started": chosen["started"], "view": "chain", "alex": False, "whose": "alex"}
     assert current(game.set_playground_prefs(view=None, alex=None, whose="you")) == {**chosen, "whose": "you"}
-    game.start_playground("branches")
-    assert current(game.playground_status()) == {"start": "branches", "view": "chain", "alex": False, "whose": "you"}
+    branches = current(game.start_playground("branches"))
+    assert branches == {"start": "branches", "started": branches["started"], "view": "chain", "alex": False, "whose": "you"}
     game.set_playground_prefs(view=None, alex=True, whose=None)
     assert current(game.start_playground("conflict"))["alex"] is False
     assert current(game.start_playground("branches"))["alex"] is True
@@ -1881,7 +1892,7 @@ def test_reset_erases_all_progress_and_restores_the_base_git_config(sample_level
 
 def test_reset_erases_the_playground_and_where_the_player_left_it(game_home: Path) -> None:
     freeplay.build("branches")
-    save.write_playground({"start": "branches", "alex_shown": {}, "view": "chain", "whose": "you"})
+    save.write_playground({"start": "branches", "started": "2026-10-08T12:00:00+00:00", "alex_shown": {}, "view": "chain", "whose": "you"})
     game.reset()
     assert save.load_playground() is None
     assert not (game_home / "playground").exists()

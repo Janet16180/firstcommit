@@ -43,7 +43,7 @@ import shlex
 import subprocess
 import sys
 from collections.abc import Callable, Iterable, Mapping, Sequence
-from datetime import date, datetime
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any, Literal, TypedDict, get_args
 
@@ -421,6 +421,7 @@ class StartView(TypedDict):
 
     id: StartId
     title: str
+    blurb: str
     banner: str
     view: PlaygroundView
     mothership: bool
@@ -432,11 +433,13 @@ class PlaygroundPrefs(TypedDict):
     """
     Where the player is in the free playground: the start, the view, whether Alex's terminal is shown, and whose repository the view draws.
 
-    ``alex`` is remembered for each start; ``view`` and ``whose`` go back to the start's own view
+    ``started`` changes each time the start is built, a Start over included, so the page knows to
+    open new terminals in the new clones. ``alex`` is remembered for each start; ``view`` and ``whose`` go back to the start's own view
     and to you when a start is built.
     """
 
     start: StartId
+    started: str
     view: PlaygroundView
     alex: bool
     whose: Who
@@ -474,11 +477,12 @@ class PlaygroundObservation(TypedDict):
     """
     The free playground as it is now: each repository's snapshot, and each person's repository as the views draw it.
 
-    ``github`` and ``teammate`` (Alex's clone) are None in a start without a mothership, and
-    ``alex`` with them.
+    ``started`` is the build it was read from (`PlaygroundPrefs`). ``github`` and ``teammate``
+    (Alex's clone) are None in a start without a mothership, and ``alex`` with them.
     """
 
     start: StartId
+    started: str
     project: Snapshot
     github: Snapshot | None
     teammate: Snapshot | None
@@ -1414,6 +1418,7 @@ def playground_status() -> PlaygroundStatus:
         {
             "id": start_id,
             "title": start.title[language],
+            "blurb": start.blurb[language],
             "banner": start.banner[language],
             "view": start.view,
             "mothership": start.mothership,
@@ -1455,7 +1460,8 @@ def start_playground(start_id: str) -> PlaygroundStatus:
             (save.ensure_playground_shell(person) / save.COMMANDS_FILE).unlink(missing_ok=True)
         left = save.load_playground()
         shown = left["alex_shown"] if left is not None else {}
-        save.write_playground({"start": start, "alex_shown": shown, "view": freeplay.STARTS[start].view, "whose": "you"})
+        started = datetime.now(UTC).isoformat()
+        save.write_playground({"start": start, "started": started, "alex_shown": shown, "view": freeplay.STARTS[start].view, "whose": "you"})
     return playground_status()
 
 
@@ -1496,7 +1502,7 @@ def set_playground_prefs(view: str | None, alex: bool | None, whose: str | None)
         if not start.mothership and (alex or chosen_whose == "alex"):
             raise NoAlexError(f"{start.title['en']} has no mothership, so no Alex")
         shown = {**left["alex_shown"], left["start"]: alex} if alex is not None else left["alex_shown"]
-        save.write_playground({"start": left["start"], "alex_shown": shown, "view": chosen_view or left["view"], "whose": chosen_whose or left["whose"]})
+        save.write_playground({**left, "alex_shown": shown, "view": chosen_view or left["view"], "whose": chosen_whose or left["whose"]})
     return playground_status()
 
 
@@ -1523,6 +1529,7 @@ def observe_playground() -> PlaygroundObservation:
     teammate = repomap.snapshot(lab.teammate) if has_alex else None
     return {
         "start": left["start"],
+        "started": left["started"],
         "project": project,
         "github": repomap.snapshot(lab.github) if has_alex else None,
         "teammate": teammate,
@@ -1715,7 +1722,7 @@ def _prefs(left: save.Playground) -> PlaygroundPrefs:
         as the start wants.
     """
     start = left["start"]
-    return {"start": start, "view": left["view"], "alex": left["alex_shown"].get(start, freeplay.STARTS[start].alex), "whose": left["whose"]}
+    return {"start": start, "started": left["started"], "view": left["view"], "alex": left["alex_shown"].get(start, freeplay.STARTS[start].alex), "whose": left["whose"]}
 
 
 def _clone_view(folder: Path, snap: Snapshot, person: Who) -> CloneView:

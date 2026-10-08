@@ -291,8 +291,8 @@ def test_erasing_removes_every_save_file_and_the_git_config(game_home: Path) -> 
     assert sorted(path.name for path in game_home.iterdir()) == ["labs"]
 
 
-PLAYGROUND: save.Playground = {"start": "conflict", "alex_shown": {"conflict": True, "branches": False}, "view": "conflict", "whose": "you"}
-PLAYGROUND_DAMAGE = [("start", "nowhere"), ("alex_shown.conflict", "yes"), ("alex_shown.nowhere", True), ("view", "station"), ("whose", "bob"), ("view", ...)]
+PLAYGROUND: save.Playground = {"start": "conflict", "started": "2026-10-08T12:00:00+00:00", "alex_shown": {"conflict": True, "branches": False}, "view": "conflict", "whose": "you"}
+PLAYGROUND_DAMAGE = [("start", "nowhere"), ("started", "yesterday"), ("alex_shown.conflict", "yes"), ("alex_shown.nowhere", True), ("view", "station"), ("whose", "bob"), ("view", ...)]
 
 
 def test_the_playground_has_no_record_until_one_is_written_and_reads_back_as_written() -> None:
