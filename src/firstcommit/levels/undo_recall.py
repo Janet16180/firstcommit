@@ -1,9 +1,10 @@
 """
 Recall the capsule: ``git revert`` undoes a shared commit by adding one, and everyone gets the undo by pulling.
 
-Wave 2, undo 7-2 (docs/drafts/chapters-5-9.md), a situation. Setup builds the playground: you
-pushed a commit that set the lights to strobe, then a good one with a night route, and Alex
-pulled both. The goals: the history read with ``git log`` (typed); a commit on your ``main``
+Time travel 8-2 (docs/drafts/sector8/8-2-script.md), guided, with a prediction. Setup builds the
+playground: you pushed a commit that set the lights to strobe, then a good one with a night
+route, and Alex pulled both. The goals: the prediction (how many commits after a revert); the
+history read with ``git log`` (typed); a commit on your ``main``
 that undoes the strobe while every shared commit stays in the history; and the mothership's
 ``main`` holding it. Once it is pushed, a level event has Alex pull, so the undo reaches Alex's
 station the normal way. A forced push that drops the shared commits is lost for this play; a
@@ -20,14 +21,13 @@ DIFFICULTY = 2
 XP = 150
 COMMAND = "git revert"
 PAR = 3
-VIEW = "history"
+PICTURES = kit.pictures("chain", mothership=True, alex=True)
 CARD = kit.CommandCard(
     command="git revert <commit>",
     text="Makes a new commit that undoes an earlier one. The earlier commit stays in the history, so it is safe on a branch others have pulled.",
 )
 SCENE = [
-    kit.SceneFrame(art="capsule", text="A capsule you launched set the station's lights to strobe, and Alex already has it."),
-    kit.SceneFrame(art="chain", text="Capsules others have pulled stay in the chain. To take one back, you send a new capsule that undoes it."),
+    kit.SceneFrame(art="chain", text="Yesterday you pushed the strobe commit, then the night route. The pins show the mothership and Alex have both."),
 ]
 
 LIGHTS = "lights.cfg"
@@ -40,8 +40,8 @@ ROBIN = kit.Person("Robin Park", "robin@example.com")
 
 BRIEFING = """
 Yesterday you pushed a commit that set the station's lights to strobe, then a good one with the
-night route. Alex has pulled both, and the strobe is giving everyone headaches. Undo the strobe for
-the whole crew, and keep the night route.
+night route. Alex pulled both, and the strobe is giving everyone headaches. Undo the strobe for the
+whole crew, and keep the night route.
 
 The mission is done when you have read the history with `git log`, your `main` has a commit that
 undoes the strobe, and the mothership's `main` has it too.
@@ -54,14 +54,16 @@ HINTS = [
 ]
 
 DEBRIEF = """
-`git revert HEAD~1` did not remove the strobe commit: it made a new commit that does the opposite,
-and the night route after it stayed. The history now tells the whole story: the strobe, and its
-undo.
+`git revert HEAD~1` did not remove the strobe commit: it made a new commit that does the opposite.
+The history now tells the whole story, the strobe and its undo.
 
-Because nothing in the shared history changed, `git push` went through like any other push, and
-Alex's next `git pull` brought the undo to Alex's station. That is why revert is the tool for a
-commit others already have. Moving `main` back with `git reset` would have needed a forced push,
-which breaks everyone else's copy.
+Because nothing in the shared history changed, `git push` went through, and Alex's next `git pull`
+brought the undo. That is why revert is the undo for a commit others already have. The next
+mission's `git reset` is for commits only you have.
+
+In the game, `git revert` keeps the message Git suggests (`Revert "Try strobe lights"`). On your
+own computer it first opens an editor showing that message: save and close it, or type
+`git revert --no-edit HEAD~1` to skip the editor.
 
 Commands to keep:
 
@@ -71,15 +73,21 @@ Commands to keep:
 """
 
 NO_REPOSITORY = "This folder is no longer a repository: `.git` is gone. Leave the level and start it again to get it back."
-LOOKED = "`git log` lists the strobe commit, with the night route after it."
+LOOKED = "Newest first. The strobe commit is second from the top. Git can name it from `HEAD`: `HEAD~1` is one step back along the parents, the commit just before the one you are on."
 NOT_LOOKED = "Read the history first: `git log --oneline`."
 NOT_REVERTED = "The lights are still on strobe in your `main`. Undo that commit with a new one: `git revert HEAD~1`."
 BEHIND = "Your `main` no longer holds the shared commits; the mothership still has them. `git pull` brings them back, then revert."
 PAUSED = "A revert is paused. Finish it with `git revert --continue`, or call it off with `git revert --abort`."
 ROUTE_LOST = "The night route is gone from your `main`. Only the strobe should be undone: `git revert HEAD~1` undoes that one commit."
-REVERTED = "Your `main` has a commit that undoes the strobe, and the shared history is all still there."
+REVERTED = (
+    "A new commit landed on top, the mirror of the strobe one. The strobe commit is still there, and so is the night route. "
+    "`main` and `HEAD` moved up onto the new commit; the mothership's pin and Alex's pin did not, because they don't have it yet."
+)
 NOT_PUSHED = "The mothership's `main` does not have your undo yet: `git push`."
-PUSHED = "The mothership's `main` has your undo, so everyone gets it with their next pull."
+PUSHED = (
+    "The mothership has your undo: your push only added a commit on top of what it already had. Alex pulls next, and the "
+    "undo reaches Alex's station the normal way: everyone's lights are steady again."
+)
 REWRITTEN = (
     "The mothership's `main` no longer holds the commits Alex pulled: a forced push rewrote shared history. "
     "Start the mission again."
@@ -241,10 +249,19 @@ def watch_push(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
     return verdict if reverted.solved else reverted
 
 
+GUESS = kit.ChoiceStep(
+    id="guess",
+    text="Predict first.",
+    question="`main` has 4 commits now. You undo the strobe with `git revert`. How many will it have afterwards?",
+    options=("3: the strobe commit is taken out", "4: the strobe commit is replaced", "5: a new commit is added"),
+    reveal="5. `git revert` never takes a commit out. It adds a new one that does the opposite, so the history Alex already has stays true.",
+)
+
 QUEST: list[kit.Step] = [
-    kit.WatchStep(id="look", text="Find the strobe commit in the history.", command="git log --oneline", watch=watch_look),
-    kit.WatchStep(id="revert", text="Undo the strobe with a new commit, and keep the night route.", command="git revert HEAD~1", watch=watch_revert),
-    kit.WatchStep(id="push", text="Send the undo to the mothership.", command="git push", watch=watch_push),
+    GUESS,
+    kit.WatchStep(id="look", text="Find the strobe commit.", command="git log --oneline", watch=watch_look),
+    kit.WatchStep(id="revert", text="Undo it with a new commit.", command="git revert HEAD~1", watch=watch_revert, look=(BAD_MESSAGE,)),
+    kit.WatchStep(id="push", text="Send the undo up.", command="git push", watch=watch_push),
 ]
 
 
@@ -325,6 +342,7 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
 
 
 QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]] = {
+    "guess": kit.picking(GUESS.options[0]),
     "look": kit.typing("git log --oneline"),
     "revert": kit.typing("git revert HEAD~1"),
     "push": kit.typing("git push"),

@@ -322,12 +322,6 @@ def command_shape(line: str) -> str | None:
     return shape
 
 
-KNOWN_GAPS = {
-    "undo-blackbox": ["branch HEAD@{n}", "reflog"],
-}
-"""Commands a challenge asks for before a guided level teaches them: 8-4 The move log teaches the reflog, once it is built."""
-
-
 def test_a_challenge_only_asks_for_commands_an_earlier_guided_level_taught() -> None:
     taught: set[str] = set()
     untaught = {}
@@ -337,7 +331,7 @@ def test_a_challenge_only_asks_for_commands_an_earlier_guided_level_taught() -> 
             untaught[level.id] = sorted(shapes - taught)
         if not level.challenge:
             taught |= shapes
-    assert untaught == KNOWN_GAPS
+    assert untaught == {}
 
 
 def test_a_commands_shape_keeps_its_options_and_drops_its_names() -> None:
@@ -350,10 +344,6 @@ def test_a_commands_shape_keeps_its_options_and_drops_its_names() -> None:
 def test_every_level_that_asks_its_own_question_says_how_to_read_the_answer() -> None:
     asking = [level.id for level in runner.catalogue().values() if level.texts["en"].question]
     assert asking and all(runner.catalogue()[level_id].answer is not None for level_id in asking)
-
-
-def test_the_tape_shows_from_wrong_course_on() -> None:
-    assert sorted(level.id for level in runner.catalogue().values() if level.tape) == ["undo-blackbox", "undo-wrong"]
 
 
 def test_the_name_tags_levels_draw_the_chain() -> None:
@@ -383,8 +373,4 @@ def test_each_level_opens_on_the_main_view_of_the_plan() -> None:
         "conflict-abort": "history",
         "conflict-collision": "sides",
         "conflict-docking": "history",
-        "undo-blackbox": "blackbox",
-        "undo-recall": "history",
-        "undo-scrap": "blackbox",
-        "undo-wrong": "history",
     }

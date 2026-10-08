@@ -5,8 +5,7 @@ from firstcommit import kit
 TITLE = "Retira la cápsula"
 CARD = "Crea un commit nuevo que deshace uno anterior. El commit anterior se queda en la historia, así que es seguro en un branch que otros ya trajeron con pull."
 SCENE = [
-    "Una cápsula que lanzaste puso las luces de la estación en modo estroboscópico, y Alex ya la tiene.",
-    "Las cápsulas que otros ya trajeron se quedan en la cadena. Para retirar una, envías una cápsula nueva que la deshace.",
+    "Ayer hiciste push del commit de las luces estroboscópicas y después de la ruta nocturna. Los pines muestran que la nave nodriza y Alex tienen los dos.",
 ]
 
 BRIEFING = """
@@ -25,14 +24,16 @@ HINTS = [
 ]
 
 DEBRIEF = """
-`git revert HEAD~1` no quitó el commit de las luces: creó un commit nuevo que hace lo contrario, y
-la ruta nocturna que vino después se quedó. Ahora la historia cuenta todo: las luces, y cómo se
-deshicieron.
+`git revert HEAD~1` no quitó el commit de las luces: creó un commit nuevo que hace lo contrario.
+Ahora la historia cuenta todo, las luces y cómo se deshicieron.
 
-Como nada de la historia compartida cambió, `git push` funcionó como cualquier otro push, y el
-siguiente `git pull` de Alex llevó el cambio a su estación. Por eso revert es la herramienta para
-un commit que otros ya tienen. Mover `main` hacia atrás con `git reset` habría necesitado un push
-forzado, y eso rompe la copia de todos los demás.
+Como nada de la historia compartida cambió, `git push` funcionó, y el siguiente `git pull` de Alex
+trajo el cambio. Por eso revert es la forma de deshacer un commit que otros ya tienen. El
+`git reset` de la próxima misión es para commits que solo tienes tú.
+
+En el juego, `git revert` conserva el mensaje que Git sugiere (`Revert "Try strobe lights"`). En tu
+propia computadora primero abre un editor con ese mensaje: guárdalo y ciérralo, o escribe
+`git revert --no-edit HEAD~1` para saltarte el editor.
 
 Comandos para recordar:
 
@@ -42,21 +43,33 @@ Comandos para recordar:
 """
 
 STEPS = {
-    "look": kit.StepText(text="Encuentra en la historia el commit de las luces."),
-    "revert": kit.StepText(text="Deshaz las luces con un commit nuevo, y conserva la ruta nocturna."),
-    "push": kit.StepText(text="Envía el cambio a la nave nodriza."),
+    "guess": kit.StepText(
+        text="Primero, predice.",
+        question="`main` tiene 4 commits ahora. Deshaces las luces con `git revert`. ¿Cuántos tendrá después?",
+        options=("3: se quita el commit de las luces", "4: se reemplaza el commit de las luces", "5: se agrega un commit nuevo"),
+        reveal="5. `git revert` nunca quita un commit. Agrega uno nuevo que hace lo contrario, así que la historia que Alex ya tiene sigue siendo cierta.",
+    ),
+    "look": kit.StepText(text="Encuentra el commit de las luces."),
+    "revert": kit.StepText(text="Deshazlo con un commit nuevo."),
+    "push": kit.StepText(text="Envía el cambio."),
 }
 
 NO_REPOSITORY = "Esta carpeta ya no es un repositorio: `.git` desapareció. Sal del nivel y vuelve a empezarlo para recuperarlo."
-LOOKED = "`git log` lista el commit de las luces, con la ruta nocturna después."
+LOOKED = "Del más nuevo al más viejo. El commit de las luces es el segundo desde arriba. Git puede nombrarlo desde `HEAD`: `HEAD~1` es un paso atrás por los padres, el commit justo antes del que estás."
 NOT_LOOKED = "Primero lee la historia: `git log --oneline`."
 NOT_REVERTED = "Las luces siguen en modo estroboscópico en tu `main`. Deshaz ese commit con uno nuevo: `git revert HEAD~1`."
 BEHIND = "Tu `main` ya no tiene los commits compartidos; la nave nodriza todavía los tiene. `git pull` los trae de vuelta, y después haz revert."
 PAUSED = "Hay un revert en pausa. Termínalo con `git revert --continue`, o cancélalo con `git revert --abort`."
 ROUTE_LOST = "La ruta nocturna ya no está en tu `main`. Solo hay que deshacer las luces: `git revert HEAD~1` deshace ese único commit."
-REVERTED = "Tu `main` tiene un commit que deshace las luces, y toda la historia compartida sigue ahí."
+REVERTED = (
+    "Un commit nuevo llegó arriba, el reflejo del de las luces. El commit de las luces sigue ahí, y la ruta nocturna también. "
+    "`main` y `HEAD` subieron al commit nuevo; el pin de la nave nodriza y el de Alex no, porque todavía no lo tienen."
+)
 NOT_PUSHED = "El `main` de la nave nodriza todavía no tiene tu cambio: `git push`."
-PUSHED = "El `main` de la nave nodriza tiene tu cambio, así que todos lo recibirán en su próximo pull."
+PUSHED = (
+    "La nave nodriza tiene tu cambio: tu push solo agregó un commit encima de lo que ya tenía. Ahora Alex hace pull, y el "
+    "cambio llega a su estación de la forma normal: las luces de todos vuelven a estar fijas."
+)
 REWRITTEN = (
     "El `main` de la nave nodriza ya no tiene los commits que Alex trajo: un push forzado reescribió la historia "
     "compartida. Vuelve a empezar la misión."
