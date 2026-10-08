@@ -119,9 +119,14 @@ const LevelScreen = (function () {
      says what to do next, it is not the player's mistake. A passed step's message is said in
      `mood`: pleased for a goal met, neutral for a prediction's reveal (any answer passes). In a
      challenge Rama speaks only of danger and errors, so a met goal is said without its message,
-     which could tell what comes next; saying it still clears an error the player has fixed. */
+     which could tell what comes next; saying it still clears an error the player has fixed. Work
+     lost for good ends the play, whoever asked. */
   function stepped(screen, result, watched = false, mood = "ok") {
     const { ui, state, ctx } = screen;
+    if (result.lost) {
+      lostWork(screen, result.message);
+      return;
+    }
     if (!result.correct && watched) screen.mission.note(result.message);
     if (!result.correct && !watched) {
       ui.comms.say(result.message, "err");
@@ -140,8 +145,6 @@ const LevelScreen = (function () {
      check that does not solve says nothing: the player did not ask. */
   function checked(screen, result, auto = false) {
     if (result.lost) {
-      if (screen.finished) return;
-      stop(screen);
       lostWork(screen, result.message);
     } else if (result.solved) {
       if (screen.finished) return;
@@ -162,8 +165,11 @@ const LevelScreen = (function () {
     return recount(screen);
   }
 
-  /* The player's work is gone for good: the game says why, in the dock's place, with Retry. */
+  /* The player's work is gone for good: the play stops and the game says why, in the dock's
+     place, with Retry. */
   function lostWork(screen, message) {
+    if (screen.finished) return;
+    stop(screen);
     screen.ctx.sound.play("wrong");
     const panel = Completion.lost({ message, onRetry: () => restart(screen) });
     screen.element.append(panel);

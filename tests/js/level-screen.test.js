@@ -12,7 +12,7 @@ const { LevelScreen, createGameApi } = load(
 );
 
 const para = (text) => [{ kind: "para", spans: [{ text, code: false }] }];
-const correct = (step, questDone = false, done = []) => ({ correct: true, message: para("Right."), step, quest_done: questDone, done });
+const correct = (step, questDone = false, done = []) => ({ correct: true, message: para("Right."), step, quest_done: questDone, done, lost: false });
 
 /* The sample level, its scene already seen unless the test says otherwise. */
 const seenLevel = () => ({ ...record("level"), scene_seen: true });
@@ -453,6 +453,20 @@ test("a solved challenge docks in gold", async () => {
   await settle();
   assert.ok(run.q(".dock").classList.contains("is-challenge"));
   assert.match(run.q(".dock-title").textContent, /^Challenge complete/);
+  run.view.dispose();
+});
+
+test("work lost while a goal is watched stops the level and shows the failure with Retry", async () => {
+  const lost = { ...record("step"), step: 2, correct: false, lost: true, message: para("The keys are in a commit now.") };
+  const run = screen({ active: { ...record("active"), step: 2 }, replies: { "/api/step": lost } });
+  await settle();
+  await settle();
+  assert.ok(run.q(".dock.is-lost"));
+  assert.match(run.q(".dock.is-lost").textContent, /The keys are in a commit now\./);
+  assert.ok(run.seen.sounds.includes("wrong"));
+  const calls = run.server.calls.length;
+  await run.clock.advance(10000);
+  assert.equal(run.server.calls.length, calls);
   run.view.dispose();
 });
 
