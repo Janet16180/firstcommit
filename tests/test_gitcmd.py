@@ -274,9 +274,65 @@ def test_the_games_git_never_asks_for_a_password(tmp_path: Path, password_server
     assert "terminal prompts disabled" in result.stderr
 
 
+UNSIGNED_CONFIG = gitcmd.BASE_CONFIG.replace(f"\tname = {gitcmd.PLAYER.name}\n\temail = {gitcmd.PLAYER.email}\n", "")
+"""A game configuration from before the game signed the player's commits."""
+
+
+def commit_author(game_home: Path, tmp_path: Path) -> str:
+    """
+    Commit in a new repository from the player's shell, and give the commit's author.
+
+    Parameters
+    ----------
+    game_home : Path
+        The game home.
+    tmp_path : Path
+        A folder for the repository.
+
+    Returns
+    -------
+    str
+        ``Name <email>`` of the commit.
+    """
+    repo = tmp_path / "repo"
+    repo.mkdir(parents=True)
+    gitcmd.output(repo, "init", "-q")
+    shell = gitcmd.shell_environment({"PATH": os.environ["PATH"], "HOME": str(tmp_path)}, game_home)
+    subprocess.run(["git", "commit", "-q", "--allow-empty", "-m", "First"], cwd=repo, env=shell, check=True)
+    return gitcmd.output(repo, "log", "-1", "--format=%an <%ae>").strip()
+
+
+def test_the_player_commits_as_the_cadet_until_they_set_their_own_name(game_home: Path, tmp_path: Path) -> None:
+    gitcmd.ensure_config()
+    assert commit_author(game_home, tmp_path / "one") == "Cadet <cadet@example.com>"
+    shell = gitcmd.shell_environment({"PATH": os.environ["PATH"], "HOME": str(tmp_path)}, game_home)
+    for key, value in (("user.name", "Robin Park"), ("user.email", "robin@example.com")):
+        subprocess.run(["git", "config", "--global", key, value], cwd=tmp_path, env=shell, check=True)
+    gitcmd.ensure_config()
+    assert commit_author(game_home, tmp_path / "two") == "Robin Park <robin@example.com>"
+
+
+def test_an_older_game_config_without_an_identity_is_signed_once_and_keeps_the_rest(game_home: Path, tmp_path: Path) -> None:
+    (game_home / "gitconfig").write_text(UNSIGNED_CONFIG + "[color]\n\tui = always\n")
+    gitcmd.ensure_config()
+    gitcmd.ensure_config()
+    path = game_home / "gitconfig"
+    names = gitcmd.output(tmp_path, "config", "--file", str(path), "--get-all", "user.name").split("\n")
+    assert names == ["Cadet", ""]
+    for key, value in (("user.useConfigOnly", "true"), ("color.ui", "always"), ("user.email", "cadet@example.com")):
+        assert gitcmd.output(tmp_path, "config", "--file", str(path), "--get", key).strip() == value
+
+
+def test_a_game_config_with_only_a_name_is_left_alone(game_home: Path, tmp_path: Path) -> None:
+    text = UNSIGNED_CONFIG + "[user]\n\tname = Sam Lee\n"
+    (game_home / "gitconfig").write_text(text)
+    gitcmd.ensure_config()
+    assert (game_home / "gitconfig").read_text() == text
+
+
 @pytest.mark.parametrize("email_variable", [{}, {"EMAIL": "sam@example.com"}], ids=["no EMAIL", "EMAIL set"])
 def test_a_commit_with_a_name_but_no_email_stops_instead_of_guessing_one(game_home: Path, tmp_path: Path, email_variable: dict[str, str]) -> None:
-    save.ensure_gitconfig(gitcmd.BASE_CONFIG)
+    save.ensure_gitconfig(UNSIGNED_CONFIG)
     repo = tmp_path / "repo"
     gitcmd.output(tmp_path, "init", "-q", str(repo))
     gitcmd.output(repo, "config", "user.name", "Sam Lee")

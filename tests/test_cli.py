@@ -89,8 +89,11 @@ def test_a_relative_game_home_stops_any_command_before_it_starts(served: list[in
 
 def test_the_shell_starts_in_the_lab_with_the_games_git_settings(sample_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
     calls: list[dict[str, Any]] = []
+    real_run = subprocess.run
 
     def fake_run(args: list[str], **options: Any) -> subprocess.CompletedProcess[str]:
+        if args[0] == "git":
+            return real_run(args, **options)
         calls.append({"args": args, **options})
         return subprocess.CompletedProcess(args, 3)
 
@@ -112,8 +115,11 @@ def test_the_shell_starts_in_the_lab_with_the_games_git_settings(sample_level: r
 @pytest.mark.parametrize("player_shell", ["/bin/zsh", None])
 def test_the_shell_is_the_games_bash_whatever_shell_the_player_uses(sample_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str], player_shell: str | None) -> None:
     calls: list[list[str]] = []
+    real_run = subprocess.run
 
     def fake_run(args: list[str], **options: Any) -> subprocess.CompletedProcess[str]:
+        if args[0] == "git":
+            return real_run(args, **options)
         calls.append(args)
         return subprocess.CompletedProcess(args, 0)
 

@@ -1,0 +1,113 @@
+notes = """
+Un commit sella lo que hay en el staging area: una instantánea del proyecto, con su autor,
+su fecha y su mensaje, que se nombra por su hash. Va a tu repositorio, en esta computadora: nada
+sale de aquí hasta que haces push. Los archivos que no agregaste al staging area se quedan como
+están en la carpeta de trabajo.
+
+Todo commit necesita un mensaje. En el juego no se abre ningún editor, así que dalo en la misma
+línea con `-m`. `git diff` muestra lo que cambió en la carpeta de trabajo desde que lo agregaste al staging area;
+`git diff --staged` muestra lo que se llevará el próximo commit. `git log` lista la historia, del
+commit más reciente al más antiguo, y `git log <file>` solo los commits que cambiaron ese archivo.
+
+    $ git commit -m "Add the map"   # sella el staging area en un commit
+    $ git diff                      # carpeta de trabajo frente al staging area
+    $ git diff --staged             # staging area frente al último commit
+    $ git log                       # todos los commits, del más reciente al más antiguo
+    $ git log oxygen.cfg            # solo los commits que cambiaron este archivo
+"""
+
+[[card]]
+id = "vault-commit-local"
+prompt = 'Tu repositorio tiene un remoto, `origin`. Ejecutas `git commit -m "Add the map"`. ¿Dónde está el commit nuevo?'
+correct = "Solo en tu repositorio, en esta computadora"
+wrong = [
+    "En tu repositorio, y a la vez una copia en el remoto",
+    "Solo en el remoto, hasta que hagas pull",
+    "En ningún sitio todavía: `git log` lo guarda",
+]
+explain = """
+`git commit` escribe el commit en tu propio repositorio y en ningún otro sitio: un remoto recibe
+commits solo cuando haces push. `git log` solo lista commits; no guarda nada. Hasta que hagas
+push, el remoto no sabe nada del commit nuevo.
+"""
+
+[[card]]
+id = "vault-commit-takes-staged"
+prompt = '`map.txt` está en el staging area y `journal.txt` está sin seguimiento. Ejecutas `git commit -m "Map"`. ¿Qué contiene el commit?'
+correct = "Solo `map.txt`"
+wrong = [
+    "`map.txt` y `journal.txt`",
+    "Nada, hasta que `journal.txt` esté en el staging area",
+    "Todos los archivos de la carpeta de trabajo",
+]
+explain = """
+Un commit se lleva lo que hay en el staging area, y solo eso. `journal.txt` nunca se agregó, así
+que se queda en la carpeta de trabajo, sin seguimiento, y el commit no lo contiene. Para que el
+commit funcione basta con agregar al staging area los archivos que quieres en él.
+"""
+
+[[card]]
+id = "vault-log-order"
+prompt = "¿Qué imprime el último comando?"
+explain = """
+`git log` lista la historia del commit más reciente al más antiguo, y `--format=%s` imprime solo
+el mensaje de cada commit (su asunto). Salen los tres commits: `git log` muestra toda la historia
+a la que llega, no solo el último commit.
+"""
+
+[[card]]
+id = "vault-diff-after-add"
+prompt = "Cambias `route.txt` y lo agregas al staging area con `git add`. ¿Qué muestra ahora un `git diff` a secas para `route.txt`?"
+correct = "Nada para `route.txt`"
+wrong = [
+    "El cambio que acabas de agregar",
+    "Todos los cambios desde el último commit",
+    "La diferencia entre los dos últimos commits",
+]
+explain = """
+Un `git diff` a secas compara la carpeta de trabajo con el staging area. Una vez que agregas el
+archivo, los dos coinciden, así que no muestra nada para `route.txt`. Para ver lo que se llevará
+el próximo commit, usa `git diff --staged`, que compara el staging area con el último commit.
+"""
+
+[[card]]
+id = "vault-bare-commit"
+prompt = "En la terminal del juego, `map.txt` está en el staging area y escribes un `git commit` a secas, sin mensaje. ¿Qué pasa?"
+correct = "No se hace ningún commit, y `map.txt` sigue en el staging area"
+wrong = [
+    "Git hace el commit con un mensaje vacío",
+    "Se abre un editor, y el commit espera a tu mensaje",
+    "Git hace el commit con un mensaje inventado",
+]
+explain = """
+Todo commit necesita un mensaje. El juego no abre ningún editor, así que un `git commit` a secas
+se detiene sin mensaje y no hace ningún commit; el staging area conserva `map.txt`. Da el
+mensaje en la misma línea: `git commit -m "Add the map"`. Fuera del juego, git abre tu editor
+para escribirlo.
+"""
+
+[[card]]
+id = "vault-log-file"
+prompt = "¿Qué comando lista solo los commits que cambiaron `oxygen.cfg`? Escribe el comando completo."
+accept = ["git log oxygen.cfg", "git log -- oxygen.cfg", "git log -p oxygen.cfg", "git log --oneline oxygen.cfg"]
+placeholder = "un comando de git"
+explain = """
+Si le das a `git log` el nombre de un archivo, lista solo los commits que cambiaron ese archivo,
+del más reciente al más antiguo. `--` antes del nombre le dice a git que es un archivo, no un
+branch. `-p` agrega cada cambio, y `--oneline` muestra una línea corta por commit.
+"""
+
+[[card]]
+id = "vault-short-hash"
+prompt = "`git log --oneline` muestra `3f9a2c1 Night tweaks`. ¿Puedes nombrar ese commit con `3f9a2c1` en otros comandos de git?"
+correct = "Sí, mientras ningún otro objeto tenga un hash que empiece igual"
+wrong = [
+    "No: los demás comandos necesitan siempre el hash completo de 40 caracteres",
+    "Solo en `git log`, en ningún otro sitio",
+    "Solo si agregas `--short` al comando",
+]
+explain = """
+Git acepta el principio de un hash allí donde espera un commit, si ningún otro objeto del
+repositorio tiene un hash que empiece igual. `git log --oneline` imprime un principio lo bastante
+largo para ser único. El hash completo también funciona siempre.
+"""

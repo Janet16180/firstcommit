@@ -15,7 +15,7 @@ from dataclasses import dataclass
 from typing import Any, Literal
 
 from firstcommit.commands import type_line
-from firstcommit.gitcmd import GAME, Person
+from firstcommit.gitcmd import GAME, PLAYER, Person
 from firstcommit.gitcmd import output as git
 from firstcommit.gitcmd import run as git_run
 from firstcommit.lab import Lab
@@ -46,6 +46,7 @@ __all__ = [
     "GAME",
     "LIST_HIDDEN",
     "PICK_ONE",
+    "PLAYER",
     "AnswerCheck",
     "AnswerStep",
     "ChoiceStep",
@@ -88,6 +89,7 @@ __all__ = [
     "reachable",
     "type_line",
     "typed",
+    "typing",
     "setup_github",
     "setup_playground",
     "snapshot",
@@ -320,6 +322,29 @@ def after(lines: Typed, pattern: str) -> list[Command]:
     """
     worked = [index for index, line in enumerate(lines) if matches(line, pattern, "ok")]
     return list(lines[worked[-1] + 1 :] if worked else lines)
+
+
+def typing(line: str) -> Callable[[Lab, State, list[Command]], str | None]:
+    """
+    Make a quest action that types one line in the project folder, for a level's ``QUEST_ACTIONS``.
+
+    Parameters
+    ----------
+    line : str
+        The line, as the player types it.
+
+    Returns
+    -------
+    Callable[[Lab, State, list[Command]], str | None]
+        The action: it types the line with `type_line`, adds it to the lines typed, and returns
+        None, as a watch step takes no answer.
+    """
+
+    def act(lab: Lab, state: State, typed: list[Command]) -> str | None:
+        typed.append(type_line(lab.project, line))
+        return None
+
+    return act
 
 
 PICK_ONE = "Pick one of the options."

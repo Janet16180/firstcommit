@@ -5,7 +5,7 @@ from firstcommit.records import Language
 CHAPTERS: dict[str, dict[Language, str]] = {
     "liftoff": {"en": "Lift-off", "es": "Despegue"},
     "cargo": {"en": "The cargo dock", "es": "El muelle de carga"},
-    "vault": {"en": "The time vault", "es": "La cámara del tiempo"},
+    "vault": {"en": "The time vault", "es": "La bóveda del tiempo"},
     "mothership": {"en": "The mothership", "es": "La nave nodriza"},
     "branch": {"en": "Parallel universes", "es": "Universos paralelos"},
     "conflict": {"en": "Collisions", "es": "Colisiones"},
@@ -26,7 +26,7 @@ BLURBS: dict[str, dict[Language, str]] = {
     },
     "cargo": {
         "en": "The staging area: you choose what goes into your next commit.",
-        "es": "El área de preparación: tú eliges qué entra en tu próximo commit.",
+        "es": "El staging area: tú eliges qué entra en tu próximo commit.",
     },
     "vault": {
         "en": "Commits: sealed capsules of your project, and the history they make.",
@@ -38,7 +38,7 @@ BLURBS: dict[str, dict[Language, str]] = {
     },
     "branch": {
         "en": "Branches are labels: work on a second course without touching main.",
-        "es": "Las ramas son etiquetas: sigue otro rumbo sin tocar main.",
+        "es": "Los branches son etiquetas: sigue otro rumbo sin tocar main.",
     },
     "conflict": {
         "en": "Merges, and what to do when two changes touch the same part of a file.",
@@ -58,7 +58,7 @@ BLURBS: dict[str, dict[Language, str]] = {
     },
     "github": {
         "en": "Branches, pull requests and reviews: the GitHub flow.",
-        "es": "Ramas, pull requests y revisiones: el flujo de GitHub.",
+        "es": "Branches, pull requests y revisiones: el flujo de GitHub.",
     },
     "hygiene": {
         "en": "What stays out of a repository: generated files, big binaries, secrets.",

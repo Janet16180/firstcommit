@@ -88,7 +88,7 @@ CHALLENGE_MOODS = ("warn", "err")
 QUEST_FIRST = "The guided quest is not finished yet: step {step} of {steps} is next."
 LANGUAGES: tuple[Language, ...] = get_args(Language)
 SPANISH = {
-    QUEST_FIRST: "La misión guiada aún no ha terminado: el siguiente es el paso {step} de {steps}.",
+    QUEST_FIRST: "La misión guiada todavía no termina: el siguiente es el paso {step} de {steps}.",
     kit.PICK_ONE: "Elige una de las opciones.",
 }
 """The game's own messages in Spanish, by their English text."""
@@ -937,7 +937,7 @@ def reset() -> None:
     with save.lock():
         runner.remove_labs()
         save.erase()
-        save.ensure_gitconfig(gitcmd.BASE_CONFIG)
+        gitcmd.ensure_config()
 
 
 def due_cards(chapter: str | None, limit: int) -> list[CardView]:
@@ -969,7 +969,7 @@ def due_cards(chapter: str | None, limit: int) -> list[CardView]:
         _chapter(chapter, progress["language"])
     today = date.today()
     rng = random.Random()
-    return [_card_view(card, cards.is_due(progress["cards"].get(card.id), today), rng) for card in _cards_to_review(chapter, progress, limit)]
+    return [_card_view(card, cards.is_due(progress["cards"].get(card.id), today), rng, progress["language"]) for card in _cards_to_review(chapter, progress, limit)]
 
 
 def answer_card(card_id: str, reply: str) -> CardResult:
@@ -1058,7 +1058,7 @@ def shell_environment(base: Mapping[str, str]) -> dict[str, str]:
     dict[str, str]
         ``base`` without its git variables, plus the game's isolation.
     """
-    save.ensure_gitconfig(gitcmd.BASE_CONFIG)
+    gitcmd.ensure_config()
     return gitcmd.shell_environment(base, save.home())
 
 
@@ -1783,7 +1783,7 @@ def _step_view(step: kit.Step, text: kit.StepText, state: kit.State) -> StepView
     }
 
 
-def _card_view(card: cards.Card, pays: bool, rng: random.Random) -> CardView:
+def _card_view(card: cards.Card, pays: bool, rng: random.Random, language: Language) -> CardView:
     """
     Show a card without its answer.
 
@@ -1795,6 +1795,8 @@ def _card_view(card: cards.Card, pays: bool, rng: random.Random) -> CardView:
         Whether a right answer would earn XP (the card is new or due).
     rng : random.Random
         Shuffles the choices.
+    language : Language
+        The language of its level's name.
 
     Returns
     -------
@@ -1806,7 +1808,7 @@ def _card_view(card: cards.Card, pays: bool, rng: random.Random) -> CardView:
         "chapter": card.chapter,
         "kind": card.kind,
         "level": card.level,
-        "level_name": cards.LEVEL_NAMES[card.level],
+        "level_name": cards.LEVEL_NAMES[language][card.level],
         "prompt": markup.parse(card.prompt),
         "code": card.code,
         "choices": [{"value": option, "text": _option_text(card, option)} for option in cards.choices(card, rng)],

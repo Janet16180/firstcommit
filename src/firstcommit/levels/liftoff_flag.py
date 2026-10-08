@@ -200,31 +200,9 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
     return None
 
 
-def typing_action(line: str) -> Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]:
-    """
-    Make a quest action that types one line in the project folder.
-
-    Parameters
-    ----------
-    line : str
-        The line the player types.
-
-    Returns
-    -------
-    Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]
-        The action: it types the line, adds it to the typed lines, and gives no answer.
-    """
-
-    def act(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
-        typed.append(kit.type_line(lab.project, line))
-        return None
-
-    return act
-
-
 QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str | None]] = {
-    "init": typing_action("git init"),
-    "hidden": typing_action("ls -a"),
-    "status": typing_action("git status"),
+    "init": kit.typing("git init"),
+    "hidden": kit.typing("ls -a"),
+    "status": kit.typing("git status"),
 }
 """The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game never reads it."""

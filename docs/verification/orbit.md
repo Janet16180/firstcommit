@@ -287,6 +287,288 @@ Where the Spanish words it differently from a word-for-word translation:
 | `cargo` deck, `cargo-unstage-before-commit` | "`git commit journal.txt` would commit it" | "`git commit journal.txt` haría un commit con él" | the same claim |
 | `chapters.CHAPTERS["rebase"]` | "Keeping up to date" | "Al día con los demás" | a coming chapter; names the same idea |
 
-Words, as AUTHORING section 7 lists them: área de preparación (staging area; git's own `index`
-is named once in the cargo notes, as in English), carpeta de trabajo, repositorio, commit (noun)
-and hacer un commit (verb), preparar (stage), sin seguimiento (untracked), rama, hash.
+Words: `docs/i18n-glossary.md` (neutral Latin American Spanish; Git's terms kept in English, such
+as commit, push, branch and staging area). Re-read after the glossary sweep: the sweep changed
+words and tenses, never a claim.
+
+## Wave 1 of chapters 3 to 7 (added 2026-10-07)
+
+Experiments run in the image (`firstcommit:latest`, git 2.43.0) with the game's configuration
+(`init.defaultBranch = main`, `core.editor = true`, `user.useConfigOnly = true`), numbered on from
+E33:
+
+| Tag | What ran | Result |
+|---|---|---|
+| E34 | a new repository with `engine.cfg`, `route.txt` and `keys.txt`; `git add engine.cfg route.txt` | status 0; `A  engine.cfg`, `A  route.txt`, `?? keys.txt` |
+| E35 | `git add .` there, then `git rm --cached keys.txt` | both 0; all three staged, then `keys.txt` untracked again and still in the folder |
+| E36 | `git add engine.cfg nosuch.txt` | status 128; nothing new staged |
+| E37 | one commit of `engine.cfg` and `route.txt`, both changed since, `keys.txt` new; `git add .`; `git status` | all three staged; git's hint for unstaging names `git restore --staged <file>...` |
+| E38 | then `git restore --staged keys.txt` | status 0; `keys.txt` untracked and still in the folder; the other two still staged |
+| E39 | the same with `git rm --cached keys.txt` | status 0; the same result |
+| E40 | the same with `git rm keys.txt` | status 1; git refuses (the file has staged changes, use `--cached` to keep it); nothing changed |
+| E41 | `rm keys.txt` (the shell), then `git restore keys.txt` | after `rm`: `AD keys.txt`; the restore exits 0 and the file is back, as staged |
+| E42 | `rm keys.txt`, then `git restore --staged keys.txt`, then `git restore keys.txt` | the first restore exits 0, and the file is in no area; the second exits 1: git knows no such path |
+| E44 | four commits, two of them changing `oxygen.cfg`; `git log oxygen.cfg` and `git log -- oxygen.cfg` | both exit 0 and list only those two, newest first, the commit that created the file among them |
+| E45 | `git log -1` | a `commit` line with the full hash, then `Author:` and `Date:` lines, then the message |
+| E46 | `git log -p -1 oxygen.cfg` | the change itself: `-O2=21`, `+O2=17` |
+| E47 | `git log nosuch.txt` | status 128: git cannot tell it from a revision and suggests `--` |
+| E48 | a repository with two commits next to an empty bare `../github/project.git`; `git remote add origin ../github/project.git`, then `git remote -v` | both exit 0; `-v` lists `origin` twice, `(fetch)` and `(push)`; the bare repository still has no ref |
+| E49 | `git remote add origin ...` again | status 3: the remote already exists |
+| E50 | `git remote set-url origin https://...`, then back to `../github/project.git` | both exit 0; `-v` shows each address in turn |
+| E51 | `git remote add mothership ...`, then `git remote remove mothership` | both exit 0; `git remote` lists the names |
+| E52 | GitHub with one commit, two clones; Alex (in one clone) commits a line to `notes.txt` and pushes; in the other, `git status` | `Your branch is up to date with 'origin/main'` |
+| E53 | then `git fetch`, `git status` | fetch 0, `origin/main` moves to Alex's commit; status says behind `origin/main` by 1 commit and can be fast-forwarded, and suggests `git pull` |
+| E54 | then `git pull`, with no name or email set | status 0, a fast-forward: `main` at Alex's commit, Alex's line in `notes.txt`; up to date again. A fast-forward makes no commit, so it needs no identity |
+| E55 | the game's configuration with the Cadet identity; `map.txt` staged, `journal.txt` untracked, an empty bare GitHub no remote names; bare `git commit`, then `git commit -m "Add the map"`, `git log`, `git status --short` | bare commit 1 (empty message aborted); commit 0, a root commit holding only `map.txt`, author `Cadet <cadet@example.com>`; `git log` shows the hash, author, date and message; `?? journal.txt`; GitHub still has no ref |
+| E56 | one commit of `route.txt` and `engine.cfg`; both edited (a new stop; `power=99999`); `git diff` | status 0; both files, each line twice: `-` before, `+` after |
+| E57 | then `git add route.txt`; `git diff`; `git diff --staged` | `git diff` shows only `engine.cfg`; `--staged` only `route.txt` |
+| E58 | `git add engine.cfg`, then `git restore --staged engine.cfg` | status 0; ` M engine.cfg`, the file keeps `power=99999` |
+| E59 | then `git commit -m "Add the Phobos stop"` | the commit changes only `route.txt`; ` M engine.cfg` stays |
+| E60 | two commits, `origin` set, an empty bare GitHub; a plain `git push` | status 128: `main` has no upstream; git suggests `--set-upstream origin main` |
+| E61 | `git push -u origin main` | status 0; GitHub gets `main`; `main@{upstream}` is `origin/main` |
+| E62 | `echo "Stop: Phobos" >> route.txt`, then `git push` | status 0, "Everything up-to-date"; GitHub's `route.txt` unchanged |
+| E63 | `git commit -am "Add the Phobos stop"`, then `git push` | the commit takes the tracked, changed `route.txt`; the push sends it; GitHub's `main` equals yours, up to date again |
+| E64 | GitHub with one commit, your clone with a commit of `route.txt`, Alex's clone pushes a change to `notes.txt`; your `git push` | status 1, rejected (fetch first); git's hint says to pull before pushing again |
+| E65 | then a plain `git pull` (`pull.rebase` unset) | status 128: git asks how to reconcile divergent branches |
+| E66 | `git pull --no-rebase`, then `git push` | both 0; a merge commit with two parents and git's message, no editor; GitHub's `main` lists the merge, your route and Alex's commit |
+| E67 | `git pull --rebase`, then `git push` | both 0; your commit replayed on top of Alex's, authored by Cadet |
+| E68 | `git push --force` instead | status 0, a forced update: GitHub's `main` drops Alex's commit; GitHub's reflog keeps it as `main@{1}` |
+| E43 | `git restore --staged .` | status 0; nothing staged; the two files keep their changes in the folder, `keys.txt` untracked |
+
+### Level `cargo-selective` (Selective cargo, 2-2)
+
+*Re-checked* by `tests/levels/test_cargo_selective.py`: naming the two files, one at a time,
+`git add .` and `git rm --cached keys.txt`, `git restore --staged` failing with 128 before the
+first commit, and keys that reach a commit.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card | `git add <file> <file>` stages the files named, and only those; the others stay as they are | E34; git-add(1) `<pathspec>...` |
+| hints | `git add` takes several names on one line, separated by spaces | E34 |
+| debrief, `LOADED`, `LOOKED` | the two files staged by name; `keys.txt` untracked in the working folder; `git add .` would have taken the keys too | E34, E35 |
+| `KEYS_STAGED`, `EVERYTHING_STAGED` | `git add .` stages every file, `keys.txt` too; `git rm --cached keys.txt` takes it out and the file stays | E16, E35; git-rm(1) `--cached` |
+| `NOTHING_TO_RESTORE` | as cargo-first's: `git restore --staged` fails before the first commit | E15 |
+| `KEYS_COMMITTED` (lost) | a committed `keys.txt` is in the history; taking a commit back is taught later | `kit.in_history` (every ref); chapters-3-7 puts revert and reset in chapter 7 |
+| `NO_REPOSITORY` | as cargo-first's | E32 |
+
+### Level `cargo-stowaway` (Stowaway, 2-3)
+
+*Re-checked* by `tests/levels/test_cargo_stowaway.py`: the night shift's add (a level event), both
+ways to unstage, `git rm` refused, the deleted file restored from the staging area, the deleted
+and unstaged file lost, `git restore --staged .`, and keys that reach a commit.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card | `git restore --staged <file>` takes the file out of the staging area, back to its version in the last commit; the working folder keeps the file | E38; git-restore(1) ("restored from HEAD", "Specifying --staged will only restore the index") |
+| briefing | `git add .` staged the keys with the engine and the route | E37 |
+| hint 1, `LOOKED` | `git status` names the command that unstages a file | E37 |
+| debrief | the last commit has no `keys.txt`, so restoring the staging area from it takes the keys out; the folder untouched, the file untracked; the other two still staged | E38; git-restore(1) |
+| `RM_REFUSED` (`git rm` without `--cached`, failed) | Git refused; without `--cached`, `git rm` deletes the file from the working folder too; `git restore --staged` unstages only | E40; git-rm(1) ("remove files from the working tree and from the index", `--cached`) |
+| `DELETED` | after `rm keys.txt` the file is still staged; `git restore keys.txt` copies it back from the staging area | E41; git-restore(1) ("otherwise from the index") |
+| `KEYS_LOST` (lost) | in neither area and in no commit, that copy is lost; unstaging never needs deleting | E42 (the blob may linger in the object database, but nothing names it; recovering it is not taught, so the scope is "that copy") |
+| `CARGO_UNSTAGED` | `git add engine.cfg route.txt` stages them again | E43, E34 |
+| `KEYS_COMMITTED`, `NO_REPOSITORY` | as cargo-selective's | `kit.in_history`; E32 |
+
+### Level `vault-recorder` (Flight recorder, 3-3)
+
+*Re-checked* by `tests/levels/test_vault_recorder.py`: seven commits, only the first and the
+culprit touch `oxygen.cfg`; the culprit's place moves between plays; whole, abbreviated and
+upper-case hashes pass; the first commit, the decoy whose message names the oxygen, text that is
+no hash and a hash of no commit each get their own message; the author by full or first name.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, hint 2, debrief | `git log <file>` lists only the commits that changed the file, newest first, each with hash, author, date and message | E44, E45; git-log(1) `[--] <path>...` ("Show only commits that are enough to explain how the files that match the specified paths came to be") |
+| hint 1, `READ` | `git log` lists every commit newest first, with hash, author, date and message | E30, E45 |
+| hint 3 | the `commit` line holds the hash, the `Author` line the name | E45 |
+| `SET_UP` | the first commit created `oxygen.cfg` with the right setting | setup; E44 lists it |
+| `OTHER_COMMIT` | that commit did not touch `oxygen.cfg` | the check answers it only for a commit `git log oxygen.cfg` does not list (setup) |
+| `NOT_A_HASH` | at least the first 4 characters of the hash | `kit.MIN_HASH_PREFIX`; git-rev-parse(1) accepts a unique prefix of 4 or more |
+| debrief | a message can say little or mislead; the changes never do | the decoy commit; E46 shows the change itself |
+| scene | someone changed the setting some days ago; every commit records who changed what and when | setup's dates; E31 (author, committer) |
+
+### Level `mothership-contact` (Make contact, 4-1)
+
+*Re-checked* by `tests/levels/test_mothership_contact.py`: adding and listing, the mothership still
+empty afterwards, a list before the add, an `https://` address fixed with `set-url`, a second add
+refused with status 3, another name.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card | `git remote add` gives another repository's address a short name in yours; nothing is sent | E48; git-remote(1) `add` ("Add a remote named <name> for the repository at <URL>") |
+| prediction reveal, debrief | naming a remote only writes its address in your repository's configuration; nothing travels | E48 (no ref on the bare repository); git-remote(1) |
+| hint 2, `LISTED` | `git remote -v` lists each remote's name with its address, once for fetching and once for pushing | E48 |
+| `REMOTE_EXISTS` | `origin` already exists; `git remote set-url` changes its address | E49, E50 |
+| `WRONG_URL`, `HTTPS_URL` | `set-url` points `origin` at the mothership | E50 |
+| debrief | at work the address is the one GitHub shows for the project, such as `https://github.com/<you>/<project>.git`; `origin` is the usual name | GitHub's docs, "About remote repositories" (HTTPS URLs); git-clone(1) names the remote `origin` by default |
+
+### Level `mothership-incoming` (Incoming transmission, 4-3)
+
+*Re-checked* by `tests/levels/test_mothership_incoming.py`: Alex's push as a level event, your
+`origin/main` left behind, nothing counting before the push, status, fetch, status, pull, the
+second look before the fetch not counting, and a pull first.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card | `git fetch` updates `origin/main`; your `main` and files stay as they are | E53; git-fetch(1) ("Fetch branches and/or tags ... from one or more other repositories"; remote-tracking branches are updated) |
+| prediction reveal, `LOOKED`, hint 1 | `git status` compares your `main` with `origin/main`, which changes only when you fetch (or pull) | E52, E53; git-status(1) `--ahead-behind` (compares with the upstream branch) |
+| `FETCHED`, `BEHIND`, debrief | after the fetch, `git status` says behind by one | E53 |
+| hint 2, `PULLED`, debrief | `git pull` fetches again and brings Alex's commit into `main`, and Alex's line into `notes.txt` | E54; git-pull(1) ("Incorporates changes from a remote repository into the current branch ... runs git fetch") |
+| scene | your repository knows only what it heard the last time it asked | E52, E53 |
+
+### Deck `vault`
+
+Every choice and text card carries a `verify` snippet and the predict card its `code`;
+`tests/test_decks.py` runs them with bash in an empty folder with the lessons' environment, so
+each claim is *re-checked* on every run of the deck tests (with this machine's git, 2.43.0 on WSL like the image's).
+
+| Card | Claim | Evidence |
+|---|---|---|
+| `vault-commit-local` | a commit is only in your repository until you push | `verify`: the bare remote has no ref after the commit; git-push(1) |
+| `vault-commit-takes-staged` | a commit takes the staging area only; an untracked file stays out | `verify`; git-commit(1) ("the current contents of the index") |
+| `vault-log-order` | `git log` lists newest first; `--format=%s` prints the subjects | `code` and `correct`; E30 |
+| `vault-diff-after-add` | a plain `git diff` compares the working folder with the staging area; `--staged` the staging area with the last commit | `verify`; git-diff(1) ("changes relative to the index", `--staged` "relative to the named <commit>", HEAD by default) |
+| `vault-bare-commit` | in the game a bare `git commit` makes no commit and the file stays staged; outside, git opens an editor | `verify` with `core.editor=true`; the "No editor" section above |
+| `vault-log-file` | `git log <file>` lists only the commits that changed it; `--` marks a file; `-p` and `--oneline` | `verify`; E44, E46; git-log(1) |
+| `vault-short-hash` | a unique start of a hash names the commit; `--oneline` prints one long enough | `verify`; gitrevisions(7) `<sha1>` ("a leading substring that is unique within the repository") |
+| notes | as the cards above, plus `-m` gives the message on the line | git-commit(1) `-m` |
+
+### Deck `mothership`
+
+Checked the same way as the vault deck: each `verify` snippet runs in `tests/test_decks.py`.
+
+| Card | Claim | Evidence |
+|---|---|---|
+| `mothership-remote-add` | `git remote add` only names the address; nothing reaches the remote | `verify`; E48 |
+| `mothership-push-commits` | an edit in no commit is not sent; the remote's `main` stays | `verify`: the remote's `main` and its `route.txt` unchanged after the push |
+| `mothership-status-stale` | `git status` compares with `origin/main` as of the last fetch, so it says up to date until a fetch | `verify` (counted with `git rev-list`, not git's wording); E52, E53 |
+| `mothership-fetch-changes` | `git fetch` moves `origin/main`; `main` and the files stay; `git pull` brings the commits in | `verify`; E53, E54 |
+| `mothership-push-upstream` | `git push -u origin main` records `origin/main` as the upstream; `--set-upstream` is the long name | `verify`; git-push(1) `-u, --set-upstream` |
+| `mothership-refused-push` | a refused push changes nothing here or on the remote; pull first, then push | `verify`: both tips unchanged; git-push(1) NOTE ABOUT FAST-FORWARDS |
+| notes | as the cards above; a remote is GitHub at work and a folder in the game | `Lab.github_url`; the cards |
+
+## The player signs as Cadet (added 2026-10-07)
+
+`gitcmd.BASE_CONFIG` sets `user.name = Cadet` and `user.email = cadet@example.com` and keeps
+`user.useConfigOnly = true`; `gitcmd.ensure_config` adds both to an older game config that has
+neither. *Re-checked* by `tests/test_gitcmd.py`: a commit in the player's shell is by
+`Cadet <cadet@example.com>`; after `git config --global user.name` and `user.email` in that shell
+(they write the game's config, E22), the next commit is by the player's name; an older config is
+signed once and keeps its other settings; one with only a name is left alone. With the identity
+unset (the playground tests), a commit still stops as before (E21).
+
+## Field guide text (`web/static/infographic-text.js`, frontend's file; checked 2026-10-07)
+
+Run in the image (`firstcommit:latest`, git 2.43.0) with the game's configuration:
+
+| Tag | What ran | Result |
+|---|---|---|
+| G1 | `git rm --cached map.txt` on a file the last commit holds, then `git commit` | status 0; `D  map.txt` and `?? map.txt`: the deletion is staged, the file stays; the next commit no longer holds it |
+| G2 | `git pull` with diverged branches, `pull.rebase` unset | the fetch happens, then status 128: git asks how to reconcile (`--rebase`, `--no-rebase` or `--ff-only`) and merges nothing |
+| G3 | `git reset HEAD~1` (no option) with a change staged | `f` back to unstaged (` M f`), the working folder keeps `3`: the default `--mixed` resets the staging area too |
+| G4 | a conflicting `git merge side`, then `git merge --abort` | merge 1, abort 0; the file back to `main`'s version, nothing to commit |
+| E38 | `git restore --staged keys.txt` for a file the last commit does not hold | the file becomes untracked, not modified |
+| E52-E54 | `git status`, `git fetch`, `git pull` | git looks at the files only when a command runs: `git status` knew nothing of a push until a fetch |
+
+Texts that are right as written: `ls`, `git status`, `git diff`, `git log`, `git init`,
+`git clone`, `git add`, `git commit`, `git remote add`, `git push`, `git fetch`, `git switch -c`,
+`git merge`, `git merge --abort` (G4), `git revert`, `git reflog`, the dock, the mothership, the
+states untracked, staged, committed and modified, and every move but the ones below.
+
+Wrong or misleading, with the correction sent to frontend:
+
+| Item | Now | Why | Correction |
+|---|---|---|---|
+| command `git rm --cached <file>` | "Takes a file out of the staging area and leaves it in the working folder." | true for a new file; for a file the last commit holds it stages its deletion, so the next commit drops it (G1) | "Takes a file out of the staging area and keeps it in the working folder. For a file the last commit holds, the next commit then deletes it from the repository." |
+| command `git pull` | "A fetch, then a merge of the remote's branch into yours: your files update too." | with `pull.rebase` unset and both sides moved on, git merges nothing and asks you to choose (G2); when only the remote moved, it fast-forwards (E54) | "A fetch, then brings the remote's commits into your branch: a fast-forward when only the remote moved on; when both did, you choose a merge (--no-rebase) or a rebase (--rebase)." |
+| move mothership to workshop | "git pull (fetch, then merge)" | G2 | "git pull (fetch, then merge or rebase)" |
+| place workshop | "Your files as you edit them. Git watches but does not save them." | Git does not watch: it looks only when a command runs (E52-E54), the very lesson of 4-3 | "Your files as you edit them. Git saves nothing here until you add and commit." |
+| place vault | "Every commit you made, on this computer only, in the hidden .git folder." | it also holds the commits you fetched or cloned | "Every commit of your repository, yours and the ones you fetched, on this computer, in the hidden .git folder." |
+| command `git reset <commit>` | "Moves the current branch's label back to an earlier commit." | the default also resets the staging area (G3); the target need not be earlier | "Moves the current branch's label to another commit, and the staging area with it; the working folder keeps its files." |
+| state move staged to modified | "git restore --staged" | only for a file the last commit holds; a new file becomes untracked (E38) | "git restore --staged (a file the last commit holds)", and a second move staged to untracked: "git restore --staged (a new file, once the repository has a commit)" |
+
+### Level `vault-seal` (Seal the capsule, 3-1)
+
+*Re-checked* by `tests/levels/test_vault_seal.py`: commit and log, the commit by Cadet, the
+journal untracked and GitHub empty afterwards, a bare commit (status 1, the shared `NO_MESSAGE`),
+a log before the commit, the journal sealed too (lost), and a commit without the map.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, scene, debrief | a commit seals what is in the staging area, with message, author and hash; it stays on this computer until you push | E55; git-commit(1); git-push(1) |
+| prediction reveal | a commit goes into your repository; nothing reaches the mothership until you push | E55 (GitHub has no ref) |
+| scene `chain` | each new commit hangs on the one before it | E31 (`parent`) |
+| hints | `git commit` takes the message with `-m`, in quotes | E55; git-commit(1) `-m` |
+| debrief, `SEALED` | the journal was never staged, so it stays untracked | E55 |
+| `LOOKED` | `git log` lists the commit with hash, name, date and message | E55, E45 |
+| `JOURNAL_SEALED` (lost) | a commit cannot be taken back until a later chapter | chapters-3-7 (revert and reset in chapter 7) |
+| `MAP_MISSING` | stage the map, then commit again | E13, E55 |
+
+### Level `vault-look` (Look before you seal, 3-2)
+
+*Re-checked* by `tests/levels/test_vault_look.py`: the overnight edits as a level event, the
+whole path, the typo named by its file, `git add .` then `git restore --staged engine.cfg`, a
+staged check before the add, the typo committed (lost), and the two diffs after staging the fix.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, debrief | `git diff` shows changes in the working folder not staged; `git diff --staged` what the next commit takes | E56, E57; git-diff(1) |
+| hint 1, `DIFFED` | each changed line twice, `-` before, `+` after | E56 |
+| `TYPO_FOUND`, `ROUTE_IS_FIX` | `power=99999` is the typo; the route gained a stop | setup |
+| `TYPO_STAGED`, `EVERYTHING_STAGED` | `git restore --staged engine.cfg` unstages it, the file keeps the edit | E58 |
+| `CHECKED`, `SEALED`, debrief | after staging the route, `--staged` shows only the new stop; the commit holds the fix, not the typo | E57, E59 |
+| `TYPO_SEALED` (lost) | a commit cannot be taken back until a later chapter | as vault-seal |
+
+### Level `vault-inspection` (Cargo inspection, 3-5, challenge)
+
+*Re-checked* by `tests/levels/test_vault_inspection.py`: `git add .` as a level event, both ways
+to unstage, goals in any order, a commit at once (lost), the keys deleted then unstaged (lost),
+a deleted log (asked back, not lost), and the `git add .` warning kept in the challenge.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, debrief | `git diff --staged` shows exactly what the next commit takes; a capsule holds what was staged when sealed | E57, E59; git-commit(1) |
+| briefing | `git add .` staged the patch, the keys and the log | E37 (the same setup shape) |
+| hints, debrief | unstage the keys and the log, keep the files, then commit | E38, E39, E43 (per file), E59 |
+| `KEYS_DELETED`, `KEYS_LOST`, `LOG_DELETED` | a staged file deleted from the folder is still staged; unstaged then, it is in no area | E41, E42 |
+| `KEYS_SEALED`, `LOG_SEALED` (lost) | a commit cannot be taken back until a later chapter | as vault-seal |
+
+### Level `mothership-launch` (Launch, 4-2)
+
+*Re-checked* by `tests/levels/test_mothership_launch.py`: the whole path, a plain first push
+(128, the level's reaction), a push without `-u`, the empty push leaving GitHub's route as it
+was, and the quest waiting when the edit is committed before the empty push.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, hint 1, debrief | `git push -u origin main` sends `main`'s commits and makes `origin/main` its upstream; a plain push then knows where to go | E61, E63; git-push(1) `-u` |
+| `NO_UPSTREAM` | a plain first push stops because `main` has no upstream | E60 |
+| prediction reveal, `FIZZLED`, scene | a push sends commits; an edit in no commit is not sent | E62 |
+| hint 2 | `git commit -am` commits the edit | E63; git-commit(1) `-a` ("automatically stage files that have been modified and deleted") |
+| `COMMITTED_EDIT` | the commit is ahead of `origin/main` | E63 (status says ahead by 1 before the push) |
+
+### Level `mothership-refused` (Push refused, 4-4)
+
+*Re-checked* by `tests/levels/test_mothership_refused.py`: Alex's push as a level event, the
+refused push changing neither side, both pulls passing, the plain pull's question and Rama's
+answer, and a forced push (Rama's error, lost).
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, hint 2, debrief, `CHOOSE` | `--no-rebase` joins the histories with a merge commit; `--rebase` replays your commits on top; a plain pull asks which | E65, E66, E67; git-pull(1) `--rebase`, `--no-rebase` |
+| `BOUNCED`, debrief, hint 1 | the push was refused because the mothership has a commit your `main` lacks; nothing was lost | E64; the test's tips unchanged; git-push(1) NOTE ABOUT FAST-FORWARDS |
+| `FORCED`, `ALEX_DROPPED` (lost) | `--force` replaced the mothership's `main`, Alex's commit gone from it | E68 |
+| scene | the mothership keeps the first capsule and refuses to drop it | E64 |
+
+### Level `mothership-base7` (Base 7, 4-5, boss)
+
+*Re-checked* by `tests/levels/test_mothership_base7.py`: the whole loop from a plain folder,
+the debris deleted then `git add .`, the debris sealed (lost) and pushed (lost), goals in any
+order, and a local commit after the push.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| debrief | the loop: `git init`, `git add` by name, `git commit`, `git remote add`, `git push -u` | E5, E34, E55, E48, E61 |
+| card | `git status` says what is staged, what changed, and how the branch stands against its upstream | E14, E53, E63; git-status(1) |
+| `DEBRIS_SEALED`, `DEBRIS_LAUNCHED` (lost) | a commit cannot be taken back until a later chapter | as vault-seal; `kit.in_history` on both repositories |
+| scene, briefing | the history was lost with the computer; the files survived | setup: a plain folder, no `.git` (E33: the history lives only in `.git`) |

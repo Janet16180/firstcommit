@@ -129,6 +129,26 @@ def texts(level: runner.Level) -> list[str]:
     return found
 
 
+def fire(level: runner.Level, lab: kit.Lab, state: kit.State, goal: str) -> None:
+    """
+    Run a level's events for a moment of the play, as the game does.
+
+    Parameters
+    ----------
+    level : runner.Level
+        The level.
+    lab : kit.Lab
+        Its lab.
+    state : kit.State
+        Its state.
+    goal : str
+        Empty for right after the first look at the lab, else the goal just reached.
+    """
+    for event in level.events:
+        if event.goal == goal:
+            event.run(lab, state)
+
+
 def assert_spoken(level: runner.Level, verdicts: list[kit.Verdict]) -> None:
     """
     Check that every message a level gave has its Spanish.
@@ -207,6 +227,7 @@ def test_each_quest_step_passes_only_after_the_players_action(package: ModuleTyp
     actions = quest_actions(package, level)
     typed: list[kit.Command] = []
     verdicts = []
+    fire(level, lab, state, "")
     for step in level.quest:
         if isinstance(step, kit.WatchStep):
             verdicts.append(step.watch(lab, state, typed))
@@ -221,6 +242,7 @@ def test_each_quest_step_passes_only_after_the_players_action(package: ModuleTyp
             assert not step.check(lab, state, "").solved, f"step {step.id} passed with an empty answer"
             assert answer is not None and step.check(lab, state, answer).solved, f"step {step.id} refused the player's answer {answer!r}"
             verdicts += [step.check(lab, state, ""), step.check(lab, state, answer)]
+        fire(level, lab, state, step.id)
     verdicts.append(level.check(lab, state, None, typed))
     assert_spoken(level, verdicts)
 
@@ -230,6 +252,7 @@ def test_the_reference_solution_solves_the_level_and_the_lab_is_removed_afterwar
     state = runner.start_lab(level)
     lab = runner.lab_of(level.id)
     typed: list[kit.Command] = []
+    fire(level, lab, state, "")
     answer = level.solve(lab, state, typed)
     assert (answer is not None) == bool(level.texts["en"].question), "solve returns an answer exactly when the level asks a QUESTION"
     verdict = level.check(lab, state, answer, typed)

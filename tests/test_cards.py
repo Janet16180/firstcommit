@@ -2,12 +2,14 @@ import random
 import re
 from datetime import date, timedelta
 from pathlib import Path
+from typing import get_args
 
 import pytest
 from hypothesis import given, settings
 from hypothesis import strategies as st
 
 from firstcommit import cards, score
+from firstcommit.records import Language
 from firstcommit.save import CardEntry
 
 TODAY = date(2026, 10, 6)
@@ -439,10 +441,12 @@ def test_the_answer_shown_is_the_right_option_or_the_first_accepted_spelling() -
     assert cards.answer(card(kind="text")) == "Main Branch"
 
 
-def test_every_card_level_has_one_name() -> None:
-    assert set(cards.LEVEL_NAMES) == set(cards.LEVELS)
-    assert len(set(cards.LEVEL_NAMES.values())) == len(cards.LEVEL_NAMES)
-    assert all(name.strip() for name in cards.LEVEL_NAMES.values())
+def test_every_card_level_has_one_name_in_each_language() -> None:
+    assert set(cards.LEVEL_NAMES) == set(get_args(Language))
+    for names in cards.LEVEL_NAMES.values():
+        assert set(names) == set(cards.LEVELS)
+        assert len(set(names.values())) == len(names)
+        assert all(name.strip() for name in names.values())
 
 
 def test_every_card_level_pays_xp() -> None:

@@ -47,7 +47,13 @@ the snapshot polled every 1.5 s never starts a file system monitor, a hook or a 
 program from a lab's ``.git/config``. The player's shell keeps the repository's settings.
 """
 
-BASE_CONFIG = "[init]\n\tdefaultBranch = main\n[core]\n\tpager = less -FRX\n\teditor = true\n\texcludesFile =\n\tattributesFile =\n[user]\n\tuseConfigOnly = true\n"
+PLAYER = Person("Cadet", "cadet@example.com")
+"""The player's identity until they set their own (the "Your real setup" chapter teaches ``git config``)."""
+
+BASE_CONFIG = (
+    "[init]\n\tdefaultBranch = main\n[core]\n\tpager = less -FRX\n\teditor = true\n\texcludesFile =\n\tattributesFile =\n"
+    f"[user]\n\tname = {PLAYER.name}\n\temail = {PLAYER.email}\n\tuseConfigOnly = true\n"
+)
 """
 The game's global git configuration when it starts: the player's shell and the lessons share it.
 
@@ -61,7 +67,9 @@ every machine. A chapter that teaches a global ignore file sets ``core.excludesF
 ``VISUAL`` (git-var(1): ``core.editor`` comes before both): a bare ``git commit`` stops with an
 empty message and commits nothing, while ``git merge``, a merging ``git pull``, ``git revert`` and
 ``git commit --no-edit`` keep the message git prepared.
-``user.useConfigOnly`` makes a commit without a configured name or email stop with the same
+``user.name`` and ``user.email`` sign the player's commits as `PLAYER`, so the first commit is
+about the staging area, not about an identity; the player's own ``git config --global`` replaces
+them. ``user.useConfigOnly`` makes a commit without a configured name or email stop with the same
 message on every machine, ``EMAIL`` ignored, instead of using a guessed address built from the
 login and host names: no machine-dependent identity, and no login or host name in a pushed
 commit.
@@ -77,6 +85,27 @@ they reach a game home whose configuration is older than the setting, and outran
 
 TERMINAL_SETTINGS = {**NO_PROGRAMS, "color.ui": "never"}
 """Settings of `run_on_terminal`: `NO_PROGRAMS` and no colours, as ``GIT_CONFIG_COUNT`` entries that outrank every configuration file."""
+
+
+def ensure_config() -> Path:
+    """
+    Create the game's global git configuration if it is missing, and sign an older one as `PLAYER`.
+
+    A configuration made before the game set an identity has neither ``user.name`` nor
+    ``user.email``; both are added to it, once. One that has either is left as it is, so a name
+    the player set is never replaced.
+
+    Returns
+    -------
+    Path
+        The configuration file.
+    """
+    path = save.ensure_gitconfig(BASE_CONFIG)
+    unsigned = all(run(path.parent, "config", "--file", str(path), "--get", key).returncode != 0 for key in ("user.name", "user.email"))
+    if unsigned:
+        output(path.parent, "config", "--file", str(path), "user.name", PLAYER.name)
+        output(path.parent, "config", "--file", str(path), "user.email", PLAYER.email)
+    return path
 
 
 def isolation(home: Path) -> dict[str, str]:

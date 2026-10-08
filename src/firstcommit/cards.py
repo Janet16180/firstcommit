@@ -28,8 +28,11 @@ DECKS = Path(__file__).parent / "content" / "cards"
 KINDS: tuple[CardKind, ...] = ("choice", "text", "predict")
 LEVELS = tuple(score.CARD_XP)
 """Card levels: exactly the levels the scoring pays for (`firstcommit.score.CARD_XP`)."""
-LEVEL_NAMES = {1: "basic", 2: "deeper", 3: "advanced"}
-"""What each card level is called where the player sees it."""
+LEVEL_NAMES: dict[Language, dict[int, str]] = {
+    "en": {1: "basic", 2: "deeper", 3: "advanced"},
+    "es": {1: "básico", 2: "intermedio", 3: "avanzado"},
+}
+"""What each card level is called where the player sees it, in each language."""
 MIN_WRONG = 2
 MAX_WRONG = 5
 INTERVALS = (0, 1, 3, 7, 16, 35)

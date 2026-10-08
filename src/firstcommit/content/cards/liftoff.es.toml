@@ -4,7 +4,7 @@ guarda nada de ella, y `git status`, como la mayoría de los comandos de Git, so
 de un repositorio: en una carpeta normal se detiene con un error y no cambia nada.
 
 `git init` convierte la carpeta actual en un repositorio: crea una carpeta oculta `.git`, y ahí
-vive toda la historia. Los nombres que empiezan por punto no aparecen con un `ls` a secas;
+vive toda la historia. Los nombres que empiezan con punto no aparecen con un `ls` a secas;
 `ls -a` también los lista. Volver a ejecutar `git init` en un repositorio no tiene riesgo: no
 sobrescribe nada.
 
@@ -19,13 +19,13 @@ id = "liftoff-ls-lists"
 prompt = "¿Qué muestra un `ls` a secas?"
 correct = "Los nombres de los archivos de la carpeta actual"
 wrong = [
-    "Los commits que Git ha guardado de esta carpeta",
-    "Los archivos que Git ha preparado para el próximo commit",
+    "Los commits que Git guardó de esta carpeta",
+    "Los archivos que Git tiene en el staging area para el próximo commit",
     "Todos los archivos de la computadora, también los ocultos",
 ]
 explain = """
 `ls` lista lo que hay en la carpeta actual, y un `ls` a secas deja fuera lo oculto, cuyos nombres
-empiezan por punto. No sabe nada de Git: los commits y el área de preparación son cosa de Git, y
+empiezan con punto. No sabe nada de Git: los commits y el staging area son cosa de Git, y
 los muestran `git log` y `git status`. Para ver también los nombres ocultos, como `.git`, usa
 `ls -a`.
 """
@@ -67,8 +67,8 @@ wrong = [
 ]
 explain = """
 `git init` crea la carpeta `.git`: el repositorio, todavía sin commits. No hace ningún commit ni
-copia tus archivos: se quedan como están en la carpeta de trabajo hasta que los prepares y hagas
-un commit. Tampoco crea ningún `README.md`; un `ls` a secas muestra los mismos archivos que antes,
+copia tus archivos: se quedan como están en la carpeta de trabajo hasta que los agregues al
+staging area y hagas un commit. Tampoco crea ningún `README.md`; un `ls` a secas muestra los mismos archivos que antes,
 y `ls -a` muestra `.git` entre ellos.
 """
 
@@ -78,7 +78,7 @@ prompt = "¿Qué opción hace que `ls` liste también la carpeta oculta `.git`? 
 accept = ["-a", "-A", "-la", "-al", "-lA", "-Al", "--all", "--almost-all"]
 placeholder = "una opción, como -l"
 explain = """
-Los nombres que empiezan por punto no aparecen con un `ls` a secas. `ls -a` también los lista,
+Los nombres que empiezan con punto no aparecen con un `ls` a secas. `ls -a` también los lista,
 junto con `.` y `..` (la propia carpeta y la de arriba); `ls -A` los lista sin esos dos.
 Combinadas con `-l`, también muestran detalles, un nombre por línea.
 """
@@ -94,7 +94,7 @@ wrong = [
 ]
 explain = """
 Ejecutar `git init` en un repositorio que ya existe no tiene riesgo: no sobrescribe nada de lo que
-ya hay. Los commits, la rama y tus archivos siguen como estaban, y el comando termina bien. Una
+ya hay. Los commits, el branch y tus archivos siguen como estaban, y el comando termina bien. Una
 carpeta tiene una sola `.git`; `git init` la reutiliza en vez de crear otra. Para empezar una
 historia de cero tendrías que borrar `.git` tú, y con ella se borraría la historia anterior.
 """

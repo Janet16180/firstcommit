@@ -283,7 +283,8 @@ The shared reactions' Spanish is `reactions_es.py`, a deck's `content/cards/<cha
 game's own messages in `game.SPANISH`. Lessons, the changes the page animates and the
 playground's explanations stay English.
 
-Write the Spanish as a Spanish-speaking teacher would, not word for word (section 7). Commands,
+Write the Spanish as a Latin American teacher would, not word for word, with the words of
+`docs/i18n-glossary.md` (section 7). Commands,
 file names, branch names, commit messages and git's own output stay as they are.
 
 ### 3.4 Reading the lab
@@ -424,6 +425,15 @@ one list of typed lines through the whole walk, as the game does. For each step 
 order, the harness asserts that a watch step fails before its action and passes after it, and
 that an answer step refuses the empty answer and accepts the action's answer. So each watch must
 notice the very thing its step asks for, and not pass early because of an earlier step.
+`kit.typing("git status")` is the action that types one line, the common case.
+
+The harness runs the level's `EVENTS` as the game does: those with no goal before the walk and
+before `solve`, the others right after their goal's step. A challenge's goals are walked in
+quest order too, so order them so that each one is met by its own action: a goal that already
+holds at the start is a constraint, and belongs in another goal's text. Setup commits made "by
+the player" use `author=kit.PLAYER`, the identity the game's configuration gives the player.
+Shared helpers for a level's own tests (start a lab, run its first events, type lines, find a
+step, ask Rama) are in `tests/level_helpers.py`.
 
 Two patterns from the Orbit levels (`levels/liftoff_flag.py`, `levels/cargo_first.py`) keep a
 level short and consistent:
@@ -542,16 +552,6 @@ Beginners learn the words with the ideas, so use one word for one thing, everywh
 - Short sentences, active voice. No "simply", "just", "obviously" or "easy".
 - English, and Spanish beside it (section 3.7). No emojis.
 
-In Spanish, address the player as `tú`, and keep the same one word for one thing:
-
-| English | Spanish |
-|---|---|
-| working folder | carpeta de trabajo |
-| staging area | área de preparación |
-| stage, unstage | preparar, sacar del área de preparación |
-| repository | repositorio |
-| commit (noun); to commit | commit; hacer un commit |
-| branch | rama |
-| hash | hash |
-| untracked | sin seguimiento |
-| remote | remoto |
+In Spanish, follow `docs/i18n-glossary.md`: neutral Latin American Spanish, `tú`, the simple
+past, and Git's terms in English (commit, push, branch, staging area...). `tests/test_translations.py`
+refuses the forms it rules out.

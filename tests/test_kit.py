@@ -1,4 +1,5 @@
 import typing
+from pathlib import Path
 
 import pytest
 from hypothesis import given
@@ -162,3 +163,11 @@ def test_a_verdict_may_say_the_work_is_lost_for_good_but_never_while_solved() ->
 
 def test_a_level_reads_history_and_ancestry_through_the_toolkit() -> None:
     assert (kit.in_history, kit.is_ancestor, kit.reachable) == (repomap.in_history, repomap.is_ancestor, repomap.reachable)
+
+
+def test_a_typing_action_types_its_line_in_the_project_and_gives_no_answer(tmp_path: Path) -> None:
+    lab = kit.Lab(tmp_path)
+    lab.project.mkdir()
+    typed: list[kit.Command] = []
+    assert kit.typing("touch made.txt")(lab, {}, typed) is None
+    assert typed == [{"line": "touch made.txt", "status": 0}] and (lab.project / "made.txt").exists()

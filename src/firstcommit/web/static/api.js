@@ -80,7 +80,7 @@ const createGameApi = (function () {
   /* A finished level's command card (records.CommandCard). */
   const CARD = record({ level: text, command: text, text: BLOCKS });
   /* The scene pictures the artist has drawn and the moods Rama speaks in (records.Art and records.Mood). */
-  const ART = oneOf("space", "timeline", "terminal", "planet", "flag", "zones", "conveyor");
+  const ART = oneOf("space", "timeline", "terminal", "planet", "flag", "zones", "conveyor", "capsule", "chain", "orbit", "rocket", "pull", "alarm", "fork", "merge", "collision", "blackbox");
   const MOOD = oneOf("info", "ok", "warn", "err");
 
   const STATUS = record({

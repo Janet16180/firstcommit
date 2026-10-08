@@ -78,7 +78,10 @@ def test_empty_lines_and_lines_dropped_at_the_prompt_are_not_logged_but_a_repeat
         logging_shell(tmp_path),
         {**terminal.player_env(os.environ), "HISTCONTROL": "ignoreboth", "HISTIGNORE": "true"},
         project(tmp_path),
-        [(b"\n", b"$ "), (b"true\n", b"$ "), (b"\n", b"$ "), (b"half typed\x03", b"$ "), (b"   \n", b"$ "), (b"true\n", b"$ ")],
+        # The half-typed line is dropped with Ctrl-U, not Ctrl-C: on a busy machine bash sometimes
+        # leaves a Ctrl-C unhandled until the next key, and the test then waited for a prompt that
+        # never came. Either way the line never reaches the history, which is what is tested here.
+        [(b"\n", b"$ "), (b"true\n", b"$ "), (b"\n", b"$ "), (b"half typed", b"half typed"), (b"\x15\n", b"$ "), (b"   \n", b"$ "), (b"true\n", b"$ ")],
     )
     assert commands.since(tmp_path / "commands.log", 0)[0] == [{"line": "true", "status": 0}, {"line": "true", "status": 0}]
 
