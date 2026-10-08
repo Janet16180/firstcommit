@@ -145,8 +145,8 @@ const ZonePanel = (function () {
   const soloRow = (shells) => el("div", { class: "viz-row" }, ZONES.map((name, index) => [shells[name].element, index < FLOWS.length && flow(FLOWS[index])]));
 
   /* One person's station: their workshop, dock and vault, with the arrows between them. */
-  const station = (shells, who, prefix) => el("section", { class: "station", "data-station": who, "aria-label": t(`zones.station.${who}`) },
-    el("p", { class: "station-name" }, t(`zones.station.${who}`)),
+  const station = (shells, who, prefix) => el("section", { class: `station art-station art-station--${who}`, "data-station": who, "aria-label": t(`zones.station.${who}`) },
+    el("p", { class: "art-station-name" }, ArtSprites.icon(`station-${who}`), t(`zones.station.${who}`)),
     el("div", { class: "station-row" }, shells[`${prefix}workshop`].element, flow([[`${prefix}add`, false]]), shells[`${prefix}dock`].element, flow([[`${prefix}commit`, false]]), shells[`${prefix}vault`].element));
 
   /* Your station, the mothership between the two with each station's push and pull under it
@@ -169,13 +169,13 @@ const ZonePanel = (function () {
     return new Map([...element.querySelectorAll("[data-key]")].map((node) => [node.dataset.key, { node, rect: node.getBoundingClientRect() }]));
   }
 
-  /* A copy of the item that moved flies from where it was to where it is now; the item shows once
-     the copy lands. */
-  function fly(from, to, delay) {
+  /* A copy of the item that moved flies from where it was to where it is now, wearing `looks`
+     (classes); the item shows once the copy lands. */
+  function fly(from, to, delay, looks) {
     const target = to.getBoundingClientRect();
     if (!from.rect.width) return;
     const ghost = from.node.cloneNode(true);
-    ghost.classList.add("ghost");
+    ghost.classList.add("ghost", ...looks);
     Object.assign(ghost.style, { left: `${from.rect.left}px`, top: `${from.rect.top}px`, width: `${from.rect.width}px`, height: `${from.rect.height}px` });
     document.body.append(ghost);
     to.style.opacity = "0";
@@ -223,12 +223,21 @@ const ZonePanel = (function () {
 
   const find = (element, key) => [...element.querySelectorAll("[data-key]")].find((node) => node.dataset.key === key);
 
+  /* In the crew view a capsule rising to the mothership trails a flame, and one landing from it
+     a flame above. */
+  function trail(element, flight) {
+    let classes = [];
+    if (element.classList.contains("is-crew") && flight.to.startsWith("remote:")) classes = ["art-crew-flight"];
+    else if (element.classList.contains("is-crew") && flight.from.startsWith("remote:")) classes = ["art-crew-flight", "art-crew-flight--down"];
+    return classes;
+  }
+
   /* Shows what moved: flights, fades, appearances, bounces, cracks and rises. */
   function move(element, shells, moves, before, timers) {
     moves.flights.forEach((flight, index) => {
       const from = before.get(flight.from);
       const to = find(element, flight.to);
-      if (from && to) fly(from, to, index * 120);
+      if (from && to) fly(from, to, index * 120, trail(element, flight));
     });
     for (const key of moves.fades) if (before.has(key)) fade(before.get(key));
     for (const key of moves.appears) if (find(element, key)) appear(find(element, key));

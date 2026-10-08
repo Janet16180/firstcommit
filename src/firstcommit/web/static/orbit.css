@@ -816,18 +816,6 @@ pre.code code {
   justify-content: space-between;
 }
 
-.station {
-  min-width: 0;
-  padding: 4px 6px 6px;
-  border: 2px dashed var(--edge);
-}
-
-.station-name {
-  margin: 0 0 4px;
-  font: 700 0.85rem var(--f-ui);
-  color: var(--ink-soft);
-}
-
 /* The vault holds the widest items (a capsule's hash and labels), so it takes the most room. */
 .station-row {
   display: grid;

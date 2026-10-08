@@ -4,7 +4,7 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const { createClock, installBrowser, load, record } = require("./load");
 
-installBrowser();
+const document = installBrowser();
 const { ZonePanel } = load(["dom.js", "strings.js", "art-pixels.js", "art-sprites.js", "typed.js", "zones.js", "zone-panel.js"], ["ZonePanel"]);
 
 const observe = (project, github = null) => ({ ...record("observation"), project, github });
@@ -223,7 +223,7 @@ test("with a teammate the zones show two stations, yours and Alex's, with the mo
   assert.ok(panel.element.classList.contains("is-crew"));
   const stations = [...panel.element.querySelectorAll(".station")];
   assert.deepEqual(stations.map((node) => node.dataset.station), ["you", "alex"]);
-  assert.deepEqual(stations.map((node) => node.querySelector(".station-name").textContent), ["Your base", "Alex's base"]);
+  assert.deepEqual(stations.map((node) => node.querySelector(".art-station-name").textContent), ["Your base", "Alex's base"]);
   assert.deepEqual([...stations[0].querySelectorAll(".zone")].map((node) => node.dataset.zone), ["workshop", "dock", "vault"]);
   assert.deepEqual([...stations[1].querySelectorAll(".zone")].map((node) => node.dataset.zone), ["crew-workshop", "crew-dock", "crew-vault"]);
   assert.ok(panel.element.querySelector(".crew-sky .zone[data-zone=remote]"));
@@ -273,4 +273,42 @@ test("a capsule with many labels shows the first two and folds the rest into a c
   const more = head.querySelector(".ref-more");
   assert.equal(more.textContent, "+2");
   assert.equal(more.getAttribute("title").split(", ").length, 2);
+});
+
+test("each station wears the artist's frame and its name tab with the station's icon", () => {
+  const panel = ZonePanel.create();
+  panel.update(record("press").observation);
+  for (const who of ["you", "alex"]) {
+    const station = panel.element.querySelector(`.station[data-station="${who}"]`);
+    assert.ok(station.classList.contains("art-station") && station.classList.contains(`art-station--${who}`), who);
+    assert.ok(station.querySelector(".art-station-name svg.art-icon"), who);
+  }
+});
+
+test("a capsule flying up to the mothership, or down from it, in the crew view trails a flame", () => {
+  const proto = Object.getPrototypeOf(document.createElement("div"));
+  const sized = proto.getBoundingClientRect;
+  proto.getBoundingClientRect = () => ({ x: 0, y: 0, top: 0, left: 0, width: 10, height: 10, right: 10, bottom: 10 });
+  proto.animate = () => ({ finished: new Promise(() => {}) });
+  /* A shallow copy is enough here: the test looks only at the flying copy's classes. */
+  proto.cloneNode = function () {
+    const copy = document.createElement(this.tagName.toLowerCase());
+    copy.setAttribute("class", this.getAttribute("class") || "");
+    return copy;
+  };
+  try {
+    const panel = ZonePanel.create({ reducedMotion: false, timers: createClock() });
+    const after = record("press").observation;
+    const older = after.github.commits[1].hash;
+    panel.update({ ...after, github: { ...after.github, head: older, commits: after.github.commits.slice(1), refs: after.github.refs.map((ref) => ({ ...ref, target: older })) } });
+    panel.update(after);
+    const capsules = [...document.body.querySelectorAll(".ghost")].filter((ghost) => ghost.classList.contains("cap"));
+    assert.ok(capsules.length > 0);
+    assert.ok(capsules.every((ghost) => ghost.classList.contains("art-crew-flight")));
+  } finally {
+    proto.getBoundingClientRect = sized;
+    delete proto.animate;
+    delete proto.cloneNode;
+    for (const ghost of document.body.querySelectorAll(".ghost")) ghost.remove();
+  }
 });
