@@ -2608,6 +2608,156 @@ pre.code code {
   background: var(--z-st);
 }
 
+/* The desk (desk.js): the folder, then "Git has a copy" round the staging area and the commits,
+   drawn in neutral ink so green stays Alex's. */
+.desk {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 14px;
+  min-width: 0;
+}
+
+.desk-zone {
+  --zc: var(--ink);
+  min-width: 0;
+  padding: 8px 10px;
+  background: color-mix(in srgb, var(--zc) 9%, var(--panel));
+  border: 3px solid var(--zc);
+}
+
+.desk-zone h3 {
+  margin: 0 0 6px;
+  font: 700 0.95rem var(--f-body);
+}
+
+.desk-zone.is-folder {
+  --zc: var(--z-wd);
+  flex: 1 1 220px;
+}
+
+.desk-zone.is-staging {
+  --zc: var(--z-st);
+  flex: 1 1 150px;
+}
+
+.desk-zone.is-commits {
+  --zc: var(--z-va);
+  flex: 1 1 170px;
+}
+
+.desk-kept {
+  position: relative;
+  display: flex;
+  flex: 2 1 340px;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 18px 10px 10px;
+  border: 3px dashed transparent;
+}
+
+.desk-kept.is-on {
+  border-color: var(--ink-soft);
+}
+
+.desk-kept-name {
+  position: absolute;
+  top: -12px;
+  left: 10px;
+  padding: 0 6px;
+  background: var(--panel);
+  font: 700 0.9rem var(--f-body);
+}
+
+.desk-file {
+  margin: 0 0 6px;
+  padding: 4px 6px;
+  background: var(--panel);
+  border: 2px solid var(--ink);
+  font: 1rem var(--f-term);
+  overflow-wrap: anywhere;
+}
+
+.desk-name {
+  font-weight: 700;
+}
+
+.desk-tag {
+  margin-left: 6px;
+  color: var(--ink-soft);
+  font: 0.75rem var(--f-body);
+}
+
+.desk-line {
+  display: block;
+  padding-left: 10px;
+}
+
+.desk-line.is-only {
+  color: var(--s-new);
+  font-weight: 700;
+}
+
+.desk-line.is-blink {
+  animation: desk-blink 1s steps(2) 3;
+}
+
+@keyframes desk-blink {
+  50% {
+    background: var(--gold);
+  }
+}
+
+.desk-line.is-gone {
+  color: var(--s-new);
+  text-decoration: line-through;
+  opacity: 0.45;
+  animation: desk-dissolve 1.6s steps(4);
+}
+
+@keyframes desk-dissolve {
+  from {
+    opacity: 1;
+  }
+}
+
+.desk-only {
+  margin-left: 8px;
+  font: 400 0.75rem var(--f-body);
+}
+
+.desk-empty {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+.desk-commit {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 4px;
+  font-size: 0.9rem;
+}
+
+.desk-cap {
+  flex: none;
+  width: 14px;
+  height: 14px;
+  background: var(--z-va);
+  border: 2px solid var(--edge);
+}
+
+.desk-subject {
+  font-weight: 700;
+}
+
+.desk-head {
+  color: var(--z-va);
+  font: 700 0.8rem var(--f-body);
+}
+
 @media (max-width: 980px) {
   .stage {
     grid-template-columns: minmax(0, 1fr);
@@ -2736,6 +2886,8 @@ pre.code code {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .desk-line.is-blink,
+  .desk-line.is-gone,
   .movelog-row.is-lit,
   .movelog-row.is-fresh,
   .chain-wire.is-walk,
