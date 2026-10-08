@@ -34,6 +34,8 @@ RECORD_TYPES: dict[str, Any] = {
     "files": list[records.FileEntry],
     "press": game.PressView,
     "board": list[records.PullView],
+    "playground": game.PlaygroundStatus,
+    "playground_observation": game.PlaygroundObservation,
 }
 
 

@@ -55,6 +55,7 @@ from firstcommit import (
     freeplay,
     gitcmd,
     kit,
+    markers,
     markup,
     playground,
     reactions,
@@ -78,12 +79,15 @@ from firstcommit.records import (
     Conflict,
     FileTexts,
     Language,
+    MarkedFile,
     Moment,
     Mood,
     Pictures,
+    PlaygroundView,
     Press,
     ReflogEntry,
     Seen,
+    StartId,
     Target,
     View,
 )
@@ -108,6 +112,10 @@ CHALLENGE_MOODS = ("warn", "err")
 QUEST_FIRST = "The guided quest is not finished yet: step {step} of {steps} is next."
 LANGUAGES: tuple[Language, ...] = get_args(Language)
 SEEN: tuple[Seen, ...] = get_args(Seen)
+PLAYGROUND_VIEWS: tuple[PlaygroundView, ...] = get_args(PlaygroundView)
+"""The free playground's views."""
+PEOPLE: tuple[Who, ...] = get_args(Who)
+"""The free playground's two people: you and Alex."""
 SPANISH = {
     QUEST_FIRST: "La misión guiada todavía no termina: el siguiente es el paso {step} de {steps}.",
     kit.PICK_ONE: "Elige una de las opciones.",
@@ -393,6 +401,88 @@ class Observation(TypedDict):
     graph: list[str] | None
 
 
+class ChapterName(TypedDict):
+    """A chapter's id and its title in the player's language."""
+
+    id: str
+    title: str
+
+
+class StartView(TypedDict):
+    """
+    One starting point of the free playground, in the player's language (`firstcommit.freeplay.Start`).
+
+    ``alex`` says whether Alex's terminal is shown at first, and ``uses`` the chapters whose
+    commands the start uses, in order; none of them locks it.
+    """
+
+    id: StartId
+    title: str
+    banner: str
+    view: PlaygroundView
+    mothership: bool
+    alex: bool
+    uses: list[ChapterName]
+
+
+class PlaygroundPrefs(TypedDict):
+    """
+    Where the player is in the free playground: the start, the view, whether Alex's terminal is shown, and whose repository the view draws.
+
+    ``alex`` is remembered for each start; ``view`` and ``whose`` go back to the start's own view
+    and to you when a start is built.
+    """
+
+    start: StartId
+    view: PlaygroundView
+    alex: bool
+    whose: Who
+
+
+class PlaygroundStatus(TypedDict):
+    """The free playground's starts and where the player left it, None before the first visit."""
+
+    starts: list[StartView]
+    current: PlaygroundPrefs | None
+
+
+class CloneView(TypedDict):
+    """
+    One person's repository in the free playground, as the views draw it beside its snapshot.
+
+    ``conflicts`` are its files in conflict (`firstcommit.repomap.conflicts`) and ``marked`` the
+    same files read for their conflict blocks (`firstcommit.markers`), for those that are plain
+    files of at most `firstcommit.repomap.MAX_TEXT` bytes. ``texts`` are every file of the working
+    folder (`firstcommit.repomap.file_texts`). ``graph`` is ``git log --oneline --graph --all``,
+    None without a repository. ``typed`` are the lines typed in that person's terminal since the
+    start was built, oldest first.
+    """
+
+    conflicts: list[Conflict]
+    marked: list[MarkedFile]
+    reflog: list[ReflogEntry]
+    ghosts: list[Commit]
+    texts: list[FileTexts]
+    graph: list[str] | None
+    typed: list[Command]
+
+
+class PlaygroundObservation(TypedDict):
+    """
+    The free playground as it is now: each repository's snapshot, and each person's repository as the views draw it.
+
+    ``github`` and ``teammate`` (Alex's clone) are None in a start without a mothership, and
+    ``alex`` with them.
+    """
+
+    start: StartId
+    project: Snapshot
+    github: Snapshot | None
+    teammate: Snapshot | None
+    you: CloneView
+    alex: CloneView | None
+
+
 class PressView(TypedDict):
     """
     One press of a playground button: the command and what it printed, the lab before and after it, and what it shows.
@@ -466,6 +556,14 @@ class UnknownIdError(LookupError):
 
 class NotPlayingError(Exception):
     """No level is in progress, for an action that needs one (the web routes answer 409)."""
+
+
+class PlaygroundNotOpenError(Exception):
+    """The free playground was asked about before any start was built in it."""
+
+
+class NoAlexError(Exception):
+    """Alex was asked for in a free playground start without a mothership, so without Alex."""
 
 
 class NoPlaygroundError(Exception):
@@ -1283,6 +1381,139 @@ def playground_typed(person: Who) -> list[Command]:
     return commands.since(save.home() / save.PLAYGROUND_SHELLS_FOLDER / person / save.COMMANDS_FILE, 0)[0]
 
 
+def playground_status() -> PlaygroundStatus:
+    """
+    Give the free playground's starts and where the player left it.
+
+    Returns
+    -------
+    PlaygroundStatus
+        Every start in the picker's order, in the player's language, and the current one, None
+        before the first visit.
+    """
+    language = _language()
+    left = save.load_playground()
+    starts: list[StartView] = [
+        {
+            "id": start_id,
+            "title": start.title[language],
+            "banner": start.banner[language],
+            "view": start.view,
+            "mothership": start.mothership,
+            "alex": start.alex,
+            "uses": [{"id": chapter, "title": CHAPTERS[chapter][language]} for chapter in start.uses],
+        }
+        for start_id, start in freeplay.STARTS.items()
+    ]
+    return {"starts": starts, "current": _prefs(left) if left is not None else None}
+
+
+def start_playground(start_id: str) -> PlaygroundStatus:
+    """
+    Build the free playground afresh from a starting point, as Start over and Choose another do.
+
+    The view goes back to the start's own, the view draws your repository, and Alex's terminal
+    is shown as the player last had it in this start, else as the start wants. The lines typed
+    in either terminal before are forgotten, so `observe_playground` tells only this start's.
+
+    Parameters
+    ----------
+    start_id : str
+        The start the page sent.
+
+    Returns
+    -------
+    PlaygroundStatus
+        The starts and the new current one.
+
+    Raises
+    ------
+    UnknownIdError
+        If there is no such start.
+    """
+    start = _playground_id(start_id, freeplay.STARTS, "start")
+    with save.lock():
+        freeplay.build(start)
+        for person in PEOPLE:
+            (save.ensure_playground_shell(person) / save.COMMANDS_FILE).unlink(missing_ok=True)
+        left = save.load_playground()
+        shown = left["alex_shown"] if left is not None else {}
+        save.write_playground({"start": start, "alex_shown": shown, "view": freeplay.STARTS[start].view, "whose": "you"})
+    return playground_status()
+
+
+def set_playground_prefs(view: str | None, alex: bool | None, whose: str | None) -> PlaygroundStatus:
+    """
+    Remember the view, whether Alex's terminal is shown in the current start, and whose repository the view draws.
+
+    Parameters
+    ----------
+    view : str | None
+        The view the page sent, or None to keep the current one.
+    alex : bool | None
+        Whether Alex's terminal is shown, or None to keep it as it is.
+    whose : str | None
+        ``"you"`` or ``"alex"``, or None to keep it.
+
+    Returns
+    -------
+    PlaygroundStatus
+        The starts and the current one, changed.
+
+    Raises
+    ------
+    UnknownIdError
+        If there is no such view or person.
+    PlaygroundNotOpenError
+        If no start was built yet.
+    NoAlexError
+        If Alex is asked for in a start without a mothership.
+    """
+    chosen_view = _playground_id(view, PLAYGROUND_VIEWS, "view") if view is not None else None
+    chosen_whose = _playground_id(whose, PEOPLE, "person") if whose is not None else None
+    with save.lock():
+        left = save.load_playground()
+        if left is None:
+            raise PlaygroundNotOpenError("the playground has no start yet: start one first")
+        start = freeplay.STARTS[left["start"]]
+        if not start.mothership and (alex or chosen_whose == "alex"):
+            raise NoAlexError(f"{start.title['en']} has no mothership, so no Alex")
+        shown = {**left["alex_shown"], left["start"]: alex} if alex is not None else left["alex_shown"]
+        save.write_playground({"start": left["start"], "alex_shown": shown, "view": chosen_view or left["view"], "whose": chosen_whose or left["whose"]})
+    return playground_status()
+
+
+def observe_playground() -> PlaygroundObservation:
+    """
+    Read the free playground as it is now.
+
+    Returns
+    -------
+    PlaygroundObservation
+        Each repository's snapshot, and your repository and Alex's as the views draw them.
+
+    Raises
+    ------
+    PlaygroundNotOpenError
+        If no start was built yet.
+    """
+    left = save.load_playground()
+    if left is None:
+        raise PlaygroundNotOpenError("the playground has no start yet: start one first")
+    lab = freeplay.lab()
+    has_alex = freeplay.STARTS[left["start"]].mothership
+    project = repomap.snapshot(lab.project)
+    teammate = repomap.snapshot(lab.teammate) if has_alex else None
+    return {
+        "start": left["start"],
+        "project": project,
+        "github": repomap.snapshot(lab.github) if has_alex else None,
+        "teammate": teammate,
+        "you": _clone_view(lab.project, project, "you"),
+        "alex": _clone_view(lab.teammate, teammate, "alex") if teammate is not None else None,
+    }
+
+
 def terminal_folder() -> str:
     """
     Give the folder a new terminal opens in: the lab's project, else the lab, else the player's home.
@@ -1392,9 +1623,59 @@ def _card(card_id: str) -> cards.Card:
     return card
 
 
+def _prefs(left: save.Playground) -> PlaygroundPrefs:
+    """
+    Read where the player is in the free playground from its record.
+
+    Parameters
+    ----------
+    left : save.Playground
+        The record.
+
+    Returns
+    -------
+    PlaygroundPrefs
+        The start, view and whose, and whether Alex is shown: as remembered for this start, else
+        as the start wants.
+    """
+    start = left["start"]
+    return {"start": start, "view": left["view"], "alex": left["alex_shown"].get(start, freeplay.STARTS[start].alex), "whose": left["whose"]}
+
+
+def _clone_view(folder: Path, snap: Snapshot, person: Who) -> CloneView:
+    """
+    Read one person's repository in the free playground as the views draw it.
+
+    Parameters
+    ----------
+    folder : Path
+        That person's working folder.
+    snap : Snapshot
+        Its snapshot now.
+    person : Who
+        Whose it is, for the lines typed in that person's terminal.
+
+    Returns
+    -------
+    CloneView
+        Its conflicts, marked files, reflog, ghosts, texts, graph and typed lines.
+    """
+    conflicts = repomap.conflicts(folder)
+    read = [(conflict["path"], repomap.folder_bytes(folder / conflict["path"])) for conflict in conflicts]
+    return {
+        "conflicts": conflicts,
+        "marked": [markers.marked(path, data) for path, data in read if data is not None and len(data) <= repomap.MAX_TEXT],
+        "reflog": repomap.reflog(folder),
+        "ghosts": repomap.ghosts(folder),
+        "texts": repomap.file_texts(folder, [file["path"] for file in snap["files"]]),
+        "graph": repomap.graph(folder) if snap["exists"] else None,
+        "typed": playground_typed(person),
+    }
+
+
 def _playground_id[Name: str](name: str, names: Iterable[Name], what: str) -> Name:
     """
-    Look a playground person or button up by its name.
+    Look a playground person, button, start or view up by its name.
 
     Parameters
     ----------
@@ -1403,7 +1684,7 @@ def _playground_id[Name: str](name: str, names: Iterable[Name], what: str) -> Na
     names : Iterable[Name]
         The playground's names of that kind.
     what : str
-        The kind, for the message: ``"person"`` or ``"button"``.
+        The kind, for the message, such as ``"person"`` or ``"start"``.
 
     Returns
     -------

@@ -662,6 +662,57 @@ def test_a_press_with_no_level_in_progress_conflicts_without_a_kind(site: Site, 
     assert api(site, "/api/press", {"person": "you", "button": "push"}) == (409, {"error": "no level is in progress"})
 
 
+def test_the_free_playground_routes_call_the_game_with_what_the_page_sent(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
+    status: dict[str, Any] = {"starts": [], "current": None}
+    calls = {name: record(monkeypatch, name, status) for name in ("playground_status", "start_playground", "set_playground_prefs", "observe_playground")}
+    assert api(site, "/api/playground") == (200, status)
+    assert api(site, "/api/playground/start", {"start": "conflict"}) == (200, status)
+    assert api(site, "/api/playground/prefs", {"view": "chain", "alex": True}) == (200, status)
+    assert api(site, "/api/playground/prefs", {"whose": "alex"}) == (200, status)
+    assert api(site, "/api/playground/observe") == (200, status)
+    assert calls == {
+        "playground_status": [()],
+        "start_playground": [("conflict",)],
+        "set_playground_prefs": [("chain", True, None), (None, None, "alex")],
+        "observe_playground": [()],
+    }
+
+
+@pytest.mark.parametrize(
+    ("path", "body"),
+    [
+        ("/api/playground/start", {}),
+        ("/api/playground/start", {"start": 3}),
+        ("/api/playground/prefs", {}),
+        ("/api/playground/prefs", {"view": 1}),
+        ("/api/playground/prefs", {"alex": "yes"}),
+        ("/api/playground/prefs", {"whose": None}),
+        ("/api/playground/prefs", {"view": "x" * 101}),
+    ],
+)
+def test_the_free_playground_routes_refuse_a_body_the_page_never_sends(site: Site, monkeypatch: pytest.MonkeyPatch, path: str, body: dict[str, Any]) -> None:
+    calls = [record(monkeypatch, name, {}) for name in ("start_playground", "set_playground_prefs")]
+    assert api(site, path, body)[0] == 400
+    assert calls == [[], []]
+
+
+def test_an_unknown_start_or_view_is_not_found_and_prefs_before_a_start_or_alex_where_there_is_none_conflict(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
+    record(monkeypatch, "start_playground", error=game.UnknownIdError("no start 'nowhere'"))
+    assert api(site, "/api/playground/start", {"start": "nowhere"}) == (404, {"error": "no start 'nowhere'"})
+    for error in (game.PlaygroundNotOpenError("the playground has no start yet"), game.NoAlexError("Empty folder has no Alex")):
+        record(monkeypatch, "set_playground_prefs", error=error)
+        assert api(site, "/api/playground/prefs", {"alex": True}) == (409, {"error": str(error)})
+    record(monkeypatch, "observe_playground", error=game.PlaygroundNotOpenError("the playground has no start yet"))
+    assert api(site, "/api/playground/observe") == (409, {"error": "the playground has no start yet"})
+
+
+def test_the_real_free_playground_starts_and_is_observed(site: Site) -> None:
+    status, started = api(site, "/api/playground/start", {"start": "alex-ahead"})
+    assert (status, started["current"]) == (200, {"start": "alex-ahead", "view": "history", "alex": True, "whose": "you"})
+    status, seen = api(site, "/api/playground/observe")
+    assert status == 200 and seen["alex"] is not None
+
+
 def test_the_real_playground_runs_each_press_and_a_failed_command_is_an_answer_not_an_error(site: Site, playground_level: runner.Level) -> None:
     assert api(site, "/api/start", {"level": playground_level.id})[0] == 200
     assert api(site, "/api/observe")[1]["teammate"] is not None
@@ -712,5 +763,9 @@ def test_every_route_is_a_get_or_post_under_api() -> None:
         ("POST", "/api/scene"),
         ("POST", "/api/language"),
         ("POST", "/api/view"),
+        ("GET", "/api/playground"),
+        ("POST", "/api/playground/start"),
+        ("POST", "/api/playground/prefs"),
+        ("GET", "/api/playground/observe"),
     }
     assert set(routes.ROUTES) == expected

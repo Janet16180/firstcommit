@@ -1335,6 +1335,105 @@ def test_alex_commits_as_alex_in_alexs_shell_and_each_shell_logs_only_its_own_li
     assert game.playground_typed("you") == [{"line": "git status --short", "status": 0}]
 
 
+def test_the_playground_lists_its_starts_in_the_players_language_and_no_current_one_before_the_first_visit() -> None:
+    status = game.playground_status()
+    assert [start["id"] for start in status["starts"]] == list(freeplay.STARTS)
+    assert status["current"] is None
+    game.set_language("es")
+    changes = game.playground_status()["starts"][1]
+    assert changes == {
+        "id": "changes",
+        "title": "Cambios sin commit",
+        "banner": freeplay.STARTS["changes"].banner["es"],
+        "view": "desk",
+        "mothership": True,
+        "alex": False,
+        "uses": [{"id": "branch", "title": CHAPTERS["branch"]["es"]}, {"id": "undo", "title": CHAPTERS["undo"]["es"]}],
+    }
+
+
+def test_starting_the_playground_builds_the_start_on_its_view_with_alex_as_it_wants_and_forgets_the_lines_typed_before(game_home: Path) -> None:
+    for person in ("you", "alex"):
+        log = save.ensure_playground_shell(person) / save.COMMANDS_FILE
+        log.write_bytes(b"1\t0\tgit status\0")
+    assert current(game.start_playground("conflict")) == {"start": "conflict", "view": "conflict", "alex": True, "whose": "you"}
+    assert (game_home / "playground" / "project" / "checklist.txt").exists()
+    assert (game.playground_typed("you"), game.playground_typed("alex")) == ([], [])
+    assert save.load_playground() == {"start": "conflict", "alex_shown": {}, "view": "conflict", "whose": "you"}
+
+
+def current(status: game.PlaygroundStatus) -> game.PlaygroundPrefs:
+    """
+    Give where the player is in the playground, which a test expects to be somewhere.
+
+    Parameters
+    ----------
+    status : game.PlaygroundStatus
+        What a playground call gave.
+
+    Returns
+    -------
+    game.PlaygroundPrefs
+        Its current start.
+    """
+    assert status["current"] is not None
+    return status["current"]
+
+
+def test_the_playground_remembers_the_view_whose_repository_and_alex_for_each_start() -> None:
+    game.start_playground("conflict")
+    chosen = current(game.set_playground_prefs(view="chain", alex=False, whose="alex"))
+    assert chosen == {"start": "conflict", "view": "chain", "alex": False, "whose": "alex"}
+    assert current(game.set_playground_prefs(view=None, alex=None, whose="you")) == {**chosen, "whose": "you"}
+    game.start_playground("branches")
+    assert current(game.playground_status()) == {"start": "branches", "view": "chain", "alex": False, "whose": "you"}
+    game.set_playground_prefs(view=None, alex=True, whose=None)
+    assert current(game.start_playground("conflict"))["alex"] is False
+    assert current(game.start_playground("branches"))["alex"] is True
+
+
+def test_the_playground_refuses_an_unknown_start_or_view_prefs_before_any_start_and_alex_where_there_is_none() -> None:
+    with pytest.raises(game.UnknownIdError, match="nowhere"):
+        game.start_playground("nowhere")
+    with pytest.raises(game.PlaygroundNotOpenError):
+        game.set_playground_prefs(view="chain", alex=None, whose=None)
+    with pytest.raises(game.PlaygroundNotOpenError):
+        game.observe_playground()
+    game.start_playground("empty")
+    with pytest.raises(game.UnknownIdError, match="view 'station'"):
+        game.set_playground_prefs(view="station", alex=None, whose=None)
+    with pytest.raises(game.UnknownIdError, match="person 'bob'"):
+        game.set_playground_prefs(view=None, alex=None, whose="bob")
+    with pytest.raises(game.NoAlexError):
+        game.set_playground_prefs(view=None, alex=True, whose=None)
+    with pytest.raises(game.NoAlexError):
+        game.set_playground_prefs(view=None, alex=None, whose="alex")
+    assert current(game.set_playground_prefs(view=None, alex=False, whose="you"))["alex"] is False
+
+
+def test_observing_the_playground_gives_each_persons_repository_its_conflicts_marked_files_texts_graph_and_typed_lines() -> None:
+    game.start_playground("conflict")
+    seen = game.observe_playground()
+    assert seen["start"] == "conflict"
+    assert seen["project"]["exists"] and seen["github"] is not None and seen["teammate"] is not None
+    you, alex = seen["you"], seen["alex"]
+    assert alex is not None
+    assert [conflict["path"] for conflict in you["conflicts"]] == ["checklist.txt"]
+    assert [(file["path"], [part["kind"] for part in file["parts"]]) for file in you["marked"]] == [("checklist.txt", ["clean", "block", "clean"])]
+    assert "checklist.txt" in [text["path"] for text in you["texts"]]
+    assert you["graph"] and alex["graph"]
+    assert you["reflog"][0]["line"].endswith("HEAD@{0}: commit: Head for the Moon")
+    assert (alex["conflicts"], alex["marked"], you["typed"], alex["typed"]) == ([], [], [], [])
+
+
+def test_observing_the_empty_start_has_no_mothership_no_alex_and_no_graph() -> None:
+    game.start_playground("empty")
+    seen = game.observe_playground()
+    assert (seen["github"], seen["teammate"], seen["alex"], seen["you"]["graph"]) == (None, None, None, None)
+    assert seen["project"]["exists"] is False
+    assert [text["path"] for text in seen["you"]["texts"]] == ["README.md", "notes.txt"]
+
+
 def test_observing_tells_the_commands_typed_since_the_last_observation_once(sample_level: runner.Level, typist: Callable[..., bytes]) -> None:
     game.start(sample_level.id)
     assert game.observe()["commands"] == []
