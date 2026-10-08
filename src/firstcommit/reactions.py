@@ -104,7 +104,7 @@ NO_MESSAGE = (
     "No commit was made: every commit needs a message, and in the game no editor opens to write one. "
     'Give it on the line: `git commit -m "Add the map"`.'
 )
-NOT_COMMITTED = "No commit was made. Read Git's message: nothing new in the staging area, or no name and email set yet, are the usual causes."
+NOT_COMMITTED = "No commit was made. Read Git's message; usually nothing new is staged: `git add` your changes first, or `git commit -am` stages the files Git already tracks."
 LOG_FILE = "Only the commits that changed that file, newest first: the history of one file, out of the whole history."
 LOG = "Your history, newest commit first. Each commit records its author, its date and its message, and Git names it by its hash."
 HIDDEN_GIT = "See `.git`? That hidden folder is the repository: Git keeps the whole history in it. A plain `ls` hides names that start with a dot."

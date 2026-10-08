@@ -50,3 +50,11 @@ def test_committing_and_pushing_before_the_empty_push_skips_the_lesson_and_the_q
 
 def test_the_prediction_passes_with_any_option() -> None:
     assert all(kit.choose(level.GUESS, option).solved for option in level.GUESS.options)
+
+
+def test_a_commit_with_nothing_staged_names_the_add_or_the_a_option() -> None:
+    lab, state = started(level)
+    typed = typed_in(lab, *PATH[:3], "git commit -m 'Add the stop'")
+    assert typed[-1]["status"] == 1
+    rule = reaction(level, typed[-1], set(), True, False)
+    assert rule is not None and (rule.mood, rule.text) == ("err", level.NOTHING_STAGED)

@@ -61,3 +61,4 @@ COMMITTED_EDIT = "El cambio ya está en un commit, por delante de `origin/main`.
 EDIT_NOT_COMMITTED = 'Haz el commit del cambio: `git commit -am "Add the Phobos stop"`.'
 SENT = "El `main` de la nave nodriza tiene el commit del cambio."
 NOT_SENT = "Sube el commit nuevo: `git push`."
+NOTHING_STAGED = 'No hay nada en el staging area, así que no había nada para el commit. Primero `git add route.txt`, o `git commit -am "Add the Phobos stop"` agrega por ti la ruta, que Git ya sigue.'

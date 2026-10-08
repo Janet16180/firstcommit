@@ -226,3 +226,7 @@ def test_a_commit_that_brings_its_own_message_never_gets_the_message_lesson(line
 
 def test_a_bare_commit_with_nothing_staged_is_the_usual_failed_commit() -> None:
     assert said("git commit", 1, staged=False) == f"err: {reactions.NOT_COMMITTED}"
+
+
+def test_a_failed_commit_never_blames_a_missing_name_and_email() -> None:
+    assert "email" not in reactions.NOT_COMMITTED and "correo" not in reactions.SPANISH[reactions.NOT_COMMITTED]
