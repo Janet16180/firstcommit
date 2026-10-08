@@ -985,6 +985,21 @@ test("in dev mode, Solve runs the solution's lines in the terminal one at a time
   run.view.dispose();
 });
 
+test("leaving the level stops Solve: no later line runs and the game is asked nothing more", async () => {
+  const run = solving({ lines: ["git status", "git add notes.txt"], answers: { status: "notes.txt" }, answer: null });
+  await settle();
+  run.q(".hud .solve").click();
+  await settle();
+  run.view.dispose();
+  const refreshed = run.seen.refreshed;
+  const calls = run.server.calls.length;
+  await run.clock.advance(5000);
+  await settle();
+  assert.deepEqual(run.seen.ran, ["git status"]);
+  assert.equal(run.seen.refreshed, refreshed);
+  assert.equal(run.server.calls.length, calls);
+});
+
 test("after the lines, Solve answers the goals that ask, with the solution's answers read again from the game", async () => {
   let asked = 0;
   const first = { lines: ["git status"], answers: { status: null }, answer: null };

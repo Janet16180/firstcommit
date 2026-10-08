@@ -385,12 +385,21 @@ const LevelScreen = (function () {
 
   const typedCount = async (ctx) => ((await ctx.refresh()).active || { commands: 0 }).commands;
 
-  /* Runs a line in the terminal and waits until the game has counted it, so the next follows it. */
+  /* Runs a line in the terminal and waits until the game has counted it, so the next follows it;
+     false when it never is. */
   async function runLine(screen, line) {
     const { ctx } = screen;
     const before = await typedCount(ctx);
     ctx.terminal.run(line);
-    await until(screen, async () => (await typedCount(ctx)) > before, LINE_MS);
+    return until(screen, async () => (await typedCount(ctx)) > before, LINE_MS);
+  }
+
+  /* Runs the lines in order; stops at a line the game never counts, or once the level is left. */
+  async function runLines(screen, lines) {
+    for (const line of lines) {
+      if (!(await runLine(screen, line))) return false;
+    }
+    return true;
   }
 
   /* The goals still open, met in order with the solution's answers; a watch goal is left to the
@@ -413,8 +422,8 @@ const LevelScreen = (function () {
   async function solve(screen) {
     const { ctx, levelId, ui } = screen;
     ui.solve.disabled = true;
-    for (const line of (await ctx.game.level(levelId)).solution.lines) await runLine(screen, line);
-    await answerGoals(screen, (await ctx.game.level(levelId)).solution);
+    const ran = await runLines(screen, (await ctx.game.level(levelId)).solution.lines);
+    if (ran) await answerGoals(screen, (await ctx.game.level(levelId)).solution);
     ui.solve.disabled = false;
   }
 
