@@ -115,3 +115,10 @@ test("a long caption breaks onto two lines at a space near its middle", () => {
   assert.equal(lines.join(" "), long);
   assert.ok(Math.abs(lines[0].length - lines[1].length) <= 5);
 });
+
+test("the stations' flag poles show against the night", () => {
+  const { element } = ArtMoments.play("launch", { captions: ENGLISH.launch });
+  const domes = [...walk(element)].filter((node) => /scale\(2\)$/.test(node.getAttribute("transform") || "") && node.querySelector("rect[fill=\"var(--art-yellow)\"]"));
+  assert.equal(domes.length, 2);
+  for (const dome of domes) assert.ok(dome.querySelector("rect[fill=\"var(--star)\"]"));
+});

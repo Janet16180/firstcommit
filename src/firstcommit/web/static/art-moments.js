@@ -20,7 +20,7 @@
 /* exported ArtMoments */
 
 const ArtMoments = (function () {
-  const { tone, draw, place, text, picture, stars, sprite, CREW } = ArtPixels;
+  const { tone, draw, place, text, picture, stars, sprite, CREW, NIGHT_POLE } = ArtPixels;
 
   const WIDTH = 400;
   const HEIGHT = 100;
@@ -63,7 +63,7 @@ const ArtMoments = (function () {
   ];
 
   /* A crew station, its dome 22x16 standing on the ground with its left edge at x. */
-  const station = (x, colours) => place(x, GROUND - 16, 2, sprite("station", colours));
+  const station = (x, colours) => place(x, GROUND - 16, 2, sprite("station", { ...colours, ...NIGHT_POLE }));
 
   const KEY = ["rrr....", "r.rrrrr", "rrr.r.r"];
   const keyAt = (x, y) => place(x, y, 1, draw(KEY, { r: tone("art-red") }));

@@ -102,3 +102,9 @@ test("the crew colours are violet for you and pink for Alex, in art tokens", () 
   assert.deepEqual({ ...ArtPixels.CREW.you }, { a: "var(--art-violet)", b: "var(--art-violet-dk)", c: "var(--art-violet-lt)" });
   assert.deepEqual({ ...ArtPixels.CREW.alex }, { a: "var(--art-pink)", b: "var(--art-pink-dk)", c: "var(--art-pink-lt)" });
 });
+
+test("a station's flag pole is the outline colour unless the night palette lights it", () => {
+  const poleFills = (recolour) => ArtPixels.sprite("station", recolour).filter((rect) => rect.getAttribute("x") === "5" && Number(rect.getAttribute("y")) < 3).map((rect) => rect.getAttribute("fill"));
+  assert.deepEqual(poleFills({}), ["var(--art-outline)", "var(--art-outline)", "var(--art-outline)"]);
+  assert.deepEqual(poleFills(ArtPixels.NIGHT_POLE), ["var(--star)", "var(--star)", "var(--star)"]);
+});

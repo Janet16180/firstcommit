@@ -22,7 +22,7 @@
 /* exported ArtScenes */
 
 const ArtScenes = (function () {
-  const { tone, draw, place, text, picture, stars, rama: ramaParts, planet, ARROW, sprite, CREW } = ArtPixels;
+  const { tone, draw, place, text, picture, stars, rama: ramaParts, planet, ARROW, sprite, CREW, NIGHT_POLE } = ArtPixels;
   const OUTLINE = tone("art-outline");
 
   const file = (paper = "star") => sprite("file", { p: tone(paper) });
@@ -62,7 +62,7 @@ const ArtScenes = (function () {
   const CRACK = ["...c....", "...cc...", "....c...", "...cc...", "...c....", "....c...", "....cc..", "...c....", "...cc...", "....c..."];
 
   /* A crew station's dome and flag, 33x24, standing on the ground with its left edge at x. */
-  const stationAt = (x, colours = {}) => place(x, 50, 3, sprite("station", colours));
+  const stationAt = (x, colours = {}) => place(x, 50, 3, sprite("station", { ...colours, ...NIGHT_POLE }));
   const capsuleAt = (x, y, scale = 2, recolour = {}) => place(x, y, scale, sprite("capsule", recolour));
   const boxLabel = (x, y, width, words, colour) => [rect(x, y, width, 11, tone("crt"), { stroke: tone(colour), "stroke-width": 1 }), text(x + width / 2, y + 8.5, words, { fill: tone(colour), size: 7.5 })];
 
@@ -274,7 +274,7 @@ const ArtScenes = (function () {
         stationAt(37, CREW.you),
         Dom.svg("g", { class: "art-alarm" }, [rect(45, 52, 7, 7, tone("art-red"), { opacity: 0.4 }), rect(46, 53, 5, 5, tone("art-red"))]),
         text(53, 44, c.base, { size: 9 }),
-        ramaAt(72, 38),
+        ramaAt(76, 38),
         text(80, 16, c.alert, { fill: tone("art-red"), size: 12, className: "art-alarm" }),
       ],
     },

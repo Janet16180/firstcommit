@@ -31,6 +31,7 @@
  * shape(name, recolour)         a shared sprite's {rows, palette}, for pictures that draw it in layers.
  * CREW                          each crew member's colours as {a, b, c} (body, shade, light): `you`
  *                               violet, `alex` pink. The station's dome takes them as they are.
+ * NIGHT_POLE                    the station recolouring that lights its flag pole against the night.
  */
 
 /* global Dom */
@@ -193,10 +194,11 @@ const ArtPixels = (function () {
       palette: { k: OUTLINE, m: tone("art-muted"), M: tone("art-muted-dk") },
     },
     probe: { rows: ["...kkk..", "okkgggk.", "ookggggk", "okkgggk.", "...kkk.."], palette: { k: OUTLINE, g: tone("art-yellow"), o: tone("art-orange") } },
-    /* A base dome with a flag; recolour a, b and c with a CREW member's colours. */
+    /* A base dome with a flag; recolour a, b and c with a CREW member's colours, and the pole p
+       with NIGHT_POLE where the dome stands against the night sky. */
     station: {
-      rows: [".....kfff..", ".....kff...", ".....k.....", "...kkkkk...", "..kccaaak..", ".kcaaaaabk.", ".kaaaaabbk.", "kkkkkkkkkkk"],
-      palette: { k: OUTLINE, a: tone("art-hull"), b: tone("art-hull-shade"), c: tone("star"), f: tone("art-yellow") },
+      rows: [".....pfff..", ".....pff...", ".....p.....", "...kkkkk...", "..kccaaak..", ".kcaaaaabk.", ".kaaaaabbk.", "kkkkkkkkkkk"],
+      palette: { k: OUTLINE, p: OUTLINE, a: tone("art-hull"), b: tone("art-hull-shade"), c: tone("star"), f: tone("art-yellow") },
     },
   };
 
@@ -205,6 +207,8 @@ const ArtPixels = (function () {
     const { rows, palette } = SHEET[name];
     return { rows, palette: { ...palette, ...recolour } };
   }
+
+  const NIGHT_POLE = Object.freeze({ p: tone("star") });
 
   const CREW = Object.freeze({
     you: Object.freeze({ a: tone("art-violet"), b: tone("art-violet-dk"), c: tone("art-violet-lt") }),
@@ -216,5 +220,5 @@ const ArtPixels = (function () {
     return draw(rows, palette);
   }
 
-  return { tone, draw, place, text, picture, random, stars, rama, planet, ARROW, SPRITES: Object.freeze(Object.keys(SHEET)), sprite, shape, CREW };
+  return { tone, draw, place, text, picture, random, stars, rama, planet, ARROW, SPRITES: Object.freeze(Object.keys(SHEET)), sprite, shape, CREW, NIGHT_POLE };
 })();

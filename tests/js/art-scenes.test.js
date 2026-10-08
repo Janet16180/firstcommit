@@ -114,3 +114,17 @@ test("the meteor strikes a dome under the base's label", () => {
   assert.ok(fillsOf(meteor).has("var(--art-hull)"), "the dome");
   assert.ok(meteor.querySelector(".art-meteor") && meteor.querySelector(".art-boom"));
 });
+
+test("the alarm and meteor domes have a pole that shows against the night", () => {
+  for (const name of ["alarm", "meteor"]) {
+    const dome = [...walk(ArtScenes.scene(name, { captions: ENGLISH[name] }))].find((node) => node.getAttribute("transform") === "translate(37 50) scale(3)");
+    assert.ok(fillsOf(dome).has("var(--star)"), name);
+  }
+});
+
+test("in the alarm, your base's label keeps clear of Rama", () => {
+  const alarm = ArtScenes.scene("alarm", { captions: ENGLISH.alarm });
+  const rama = [...walk(alarm)].find((node) => /^translate\(\d+ 38\) scale\(2\)$/.test(node.getAttribute("transform") || ""));
+  const ramaLeft = Number(rama.getAttribute("transform").match(/translate\((\d+)/)[1]);
+  assert.ok(ramaLeft >= 75, `Rama starts at ${ramaLeft}`);
+});
