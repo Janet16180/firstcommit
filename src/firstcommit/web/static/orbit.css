@@ -579,6 +579,28 @@ pre.code code {
   white-space: nowrap;
 }
 
+/* The row of views over the stage: the chosen view's tab joins the stage below it. */
+.view-tabs {
+  display: flex;
+  gap: 4px;
+  padding: 8px 18px 0;
+}
+
+.view-tab {
+  font: 700 0.9rem var(--f-ui);
+  padding: 4px 12px;
+  background: var(--panel);
+  color: var(--ink-soft);
+  border: 2px solid var(--edge);
+  border-bottom: 0;
+  cursor: pointer;
+}
+
+.view-tab[aria-selected="true"] {
+  background: var(--panel-2);
+  color: var(--ink);
+}
+
 .hud-stars {
   font-size: 20px;
   line-height: 1;
