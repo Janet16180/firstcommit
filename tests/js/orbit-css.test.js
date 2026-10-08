@@ -180,3 +180,9 @@ test("a command example wraps its long lines, so no comment hides behind a sidew
   assert.match(block, /white-space: pre-wrap;/);
   assert.match(block, /overflow-wrap: anywhere;/);
 });
+
+test("dev mode's list sits padded in its panel, its levels without list numbers, since each shows its own", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.match(rule(".dev"), /padding: 20px 24px;/);
+  assert.match(rule(".dev-levels"), /list-style: none;/);
+});

@@ -769,6 +769,38 @@ pre.code code {
   color: var(--ink-soft);
 }
 
+/* Dev mode's list of every level: each sector, its levels with their numbers and ids. */
+.dev {
+  max-width: 900px;
+  margin: 24px auto;
+  padding: 20px 24px;
+}
+
+.dev h2 {
+  margin: 18px 0 6px;
+  font-size: 1.2rem;
+}
+
+.dev-levels {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+}
+
+.dev-level {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.dev-num {
+  font: 1.05rem var(--f-term);
+  color: var(--ink-soft);
+}
+
 /* A file git ignores: still on the disk, out of git's sight. */
 .file.is-ignored {
   flex-wrap: wrap;
