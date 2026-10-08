@@ -23,6 +23,7 @@ sea igual al tuyo.
 HINTS = [
     "Es la nave nodriza y este capítulo: un push rechazado, un pull, un conflicto que responder y un push.",
     "Tu push se rechaza hasta que tu `main` tenga el commit de Alex. Haz pull, responde el conflicto con la bahía de Alex, agrega, haz commit y push; si Alex volvió a avanzar, haz pull una vez más.",
+    "Cada línea, en orden; Alex vuelve a hacer push después de tu merge, así que el segundo push rebota y el pull siguiente lo resuelve:\n\n    $ git push\n    $ git pull --no-rebase\n    $ git restore --theirs docking.txt\n    $ git add docking.txt\n    $ git commit --no-edit\n    $ git push\n    $ git pull --no-rebase --no-edit\n    $ git push",
 ]
 
 DEBRIEF = """

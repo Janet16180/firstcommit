@@ -50,6 +50,7 @@ checked the staging area with `git diff --staged`, and a new commit holds the fi
 HINTS = [
     "`git diff` shows each changed line twice: `-` before it, `+` after it.",
     "Stage only the fix with `git add route.txt`, check it with `git diff --staged`, then commit.",
+    'Every line of the mission, in order:\n\n    $ git diff\n    $ git add route.txt\n    $ git diff --staged\n    $ git commit -m "Add the Phobos stop"',
 ]
 
 DEBRIEF = """

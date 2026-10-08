@@ -22,6 +22,7 @@ HINTS = [
     "Primero `git merge beacon`: `main` no tiene nada que le falte a `beacon`, así que su etiqueta solo avanza.",
     "Luego `git merge --no-edit scout`: los dos lados tienen commits nuevos, así que Git crea un commit de merge y conserva el mensaje que preparó.",
     "`git log --oneline --graph` dibuja las dos líneas y dónde se juntan.",
+    "Cada línea de la misión, en orden:\n\n    $ git merge beacon\n    $ git merge --no-edit scout\n    $ git log --oneline --graph",
 ]
 
 DEBRIEF = """

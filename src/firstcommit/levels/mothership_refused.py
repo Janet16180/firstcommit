@@ -46,6 +46,7 @@ mothership holds both commits.
 HINTS = [
     "A refused push loses nothing: bring Alex's commit into your `main` first, then push again.",
     "`git pull --no-rebase` joins the two histories with a merge commit; `git pull --rebase` puts your commit on top of Alex's. Then `git push`.",
+    "Every line of the mission, in order:\n\n    $ git push\n    $ git pull --no-rebase\n    $ git push",
 ]
 
 DEBRIEF = """

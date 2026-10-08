@@ -58,6 +58,7 @@ HINTS = [
     "`git clone` takes the address and makes a folder named after it: `git clone github/project.git` makes `project`.",
     "Go into the clone first: `cd project && git log --oneline` prints one line per commit.",
     "`git branch -a` lists your branches and the remote's, such as `remotes/origin/main`.",
+    "Every line, in order; the answer is the number of lines the log prints:\n\n    $ git clone github/project.git\n    $ cd project && git log --oneline\n    $ git branch -a",
 ]
 
 DEBRIEF = """

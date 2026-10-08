@@ -44,6 +44,7 @@ up only once it was committed, and you pushed it with a plain `git push`.
 HINTS = [
     "The first push of a branch names where it goes: `git push -u origin main`.",
     'Commit the edit before you push it: `git commit -am "Add the Phobos stop"`, then `git push`.',
+    'Every line of the mission, in order:\n\n    $ git push -u origin main\n    $ echo "Stop: Phobos" >> route.txt\n    $ git push\n    $ git commit -am "Add the Phobos stop"\n    $ git push',
 ]
 
 DEBRIEF = """

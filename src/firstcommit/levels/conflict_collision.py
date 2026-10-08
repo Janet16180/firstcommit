@@ -48,6 +48,7 @@ HINTS = [
     "`git merge --no-edit scout` stops with `docking.txt` in conflict; `cat docking.txt` shows both sides between markers.",
     "Bay 4 is `scout`'s side, the incoming one: `git restore --theirs docking.txt` keeps it.",
     "`git add docking.txt` marks the conflict solved; `git commit --no-edit` then finishes the merge with Git's message.",
+    "Every line of the mission, in order:\n\n    $ git merge --no-edit scout\n    $ cat docking.txt\n    $ git restore --theirs docking.txt\n    $ git add docking.txt\n    $ git commit --no-edit",
 ]
 
 DEBRIEF = """

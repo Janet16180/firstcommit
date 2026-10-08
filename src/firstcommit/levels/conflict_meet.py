@@ -45,6 +45,7 @@ HINTS = [
     "`git merge beacon` first: `main` has nothing `beacon` lacks, so its label only slides up.",
     "Then `git merge --no-edit scout`: both sides have new commits, so Git makes a merge commit and keeps its prepared message.",
     "`git log --oneline --graph` draws the two lines and where they join.",
+    "Every line of the mission, in order:\n\n    $ git merge beacon\n    $ git merge --no-edit scout\n    $ git log --oneline --graph",
 ]
 
 DEBRIEF = """

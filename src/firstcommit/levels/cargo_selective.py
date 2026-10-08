@@ -41,6 +41,7 @@ looked with `git status`.
 HINTS = [
     "`git add` takes several names on one line, separated by spaces.",
     "Type `git add engine.cfg route.txt`, then `git status`.",
+    "Every line of the mission, in order:\n\n    $ git add engine.cfg route.txt\n    $ git status",
 ]
 
 DEBRIEF = """

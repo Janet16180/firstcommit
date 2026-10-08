@@ -21,6 +21,7 @@ no tenga ningún commit tuyo, y tu `main` sea igual al de la nave nodriza.
 HINTS = [
     "Es la bóveda, la nave nodriza y este capítulo: un commit, un push y un pull, y un branch propio.",
     "Tu cambio todavía no está en ningún branch: un branch nuevo creado ahora lo lleva consigo. Haz commit allí, envía ese branch por su nombre y luego pon tu `main` al día con el de la nave nodriza.",
+    'Cada línea de la misión, en orden:\n\n    $ git switch -c fix-lights\n    $ git commit -am "Fix the hall lights"\n    $ git push -u origin fix-lights\n    $ git switch main\n    $ git pull',
 ]
 
 DEBRIEF = """

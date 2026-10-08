@@ -47,6 +47,7 @@ and still in the working folder, and `debug.log` is untracked.
 HINTS = [
     "This is the cargo dock and the vault together: what is staged goes into the next capsule.",
     "Take the stowaways off the dock first, keep their files, then seal what is left.",
+    'Every line of the mission, in order:\n\n    $ git restore --staged keys.txt\n    $ git restore --staged debug.log\n    $ git commit -m "Lower the reactor limit"',
 ]
 
 DEBRIEF = """

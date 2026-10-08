@@ -20,6 +20,7 @@ commit de Alex esté en tu `main`.
 HINTS = [
     "`git status` compara tu `main` con `origin/main`, que solo cambia cuando haces fetch.",
     "`git fetch` trae las noticias; `git pull` trae el commit de Alex a tu `main`.",
+    "Cada línea de la misión, en orden:\n\n    $ git status\n    $ git fetch\n    $ git status\n    $ git pull",
 ]
 
 DEBRIEF = """

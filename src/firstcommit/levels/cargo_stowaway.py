@@ -43,6 +43,7 @@ and still in the working folder, and `engine.cfg` and `route.txt` are still stag
 HINTS = [
     "`git status` names the command that takes a file out of the staging area.",
     "Type `git restore --staged keys.txt`. It keeps the file in the working folder.",
+    "Every line of the mission, in order:\n\n    $ git status\n    $ git restore --staged keys.txt",
 ]
 
 DEBRIEF = """

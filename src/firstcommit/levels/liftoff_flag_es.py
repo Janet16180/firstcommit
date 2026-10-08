@@ -20,6 +20,7 @@ La misión termina cuando la carpeta sea un repositorio, hayas visto su carpeta 
 HINTS = [
     "El comando que crea un repositorio es `git init`.",
     "Los nombres que empiezan con punto están ocultos. `ls -a` los muestra.",
+    "Cada línea de la misión, en orden:\n\n    $ git init\n    $ ls -a\n    $ git status",
 ]
 
 DEBRIEF = """

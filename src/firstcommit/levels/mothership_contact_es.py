@@ -20,6 +20,7 @@ con `git remote -v`.
 HINTS = [
     "`git remote add` recibe un nombre y luego la dirección: `git remote add origin ../github/project.git`.",
     "`git remote -v` lista el nombre de cada remoto con su dirección.",
+    "Cada línea de la misión, en orden:\n\n    $ git remote add origin ../github/project.git\n    $ git remote -v",
 ]
 
 DEBRIEF = """

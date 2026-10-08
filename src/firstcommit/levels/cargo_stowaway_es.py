@@ -17,6 +17,7 @@ siga en la carpeta de trabajo, y `engine.cfg` y `route.txt` sigan en el staging 
 HINTS = [
     "`git status` nombra el comando que saca un archivo del staging area.",
     "Escribe `git restore --staged keys.txt`. Conserva el archivo en la carpeta de trabajo.",
+    "Cada línea de la misión, en orden:\n\n    $ git status\n    $ git restore --staged keys.txt",
 ]
 
 DEBRIEF = """

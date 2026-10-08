@@ -45,6 +45,7 @@ The mission is done when the folder is a repository, a capsule holds `blueprint.
 HINTS = [
     "This is every chapter so far, in order: lift-off, the cargo dock, the vault and the mothership.",
     "A repository first; then choose the cargo by name, seal it, name the mothership and launch.",
+    'Every line of the mission, in order:\n\n    $ git init\n    $ git add blueprint.txt reactor.cfg\n    $ git commit -m "Rebuild Base 7"\n    $ git remote add origin ../github/project.git\n    $ git push -u origin main',
 ]
 
 DEBRIEF = """

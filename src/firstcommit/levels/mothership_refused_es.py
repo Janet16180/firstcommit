@@ -20,6 +20,7 @@ nave nodriza tenga los dos commits.
 HINTS = [
     "Un push rechazado no pierde nada: primero trae el commit de Alex a tu `main` y luego vuelve a hacer push.",
     "`git pull --no-rebase` junta las dos historias con un commit de merge; `git pull --rebase` pone tu commit encima del de Alex. Luego `git push`.",
+    "Cada línea de la misión, en orden:\n\n    $ git push\n    $ git pull --no-rebase\n    $ git push",
 ]
 
 DEBRIEF = """

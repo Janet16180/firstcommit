@@ -54,6 +54,7 @@ there docks at bay 4 with no conflict markers, and the mothership's `main` is th
 HINTS = [
     "This is the mothership and this chapter: a refused push, a pull, a conflict to answer, and a push.",
     "Your push is refused until your `main` holds Alex's commit. Pull, answer the conflict with Alex's bay, add, commit, and push; if Alex moved again, pull once more.",
+    "Every line, in order; Alex pushes again after your merge, so the second push bounces and the next pull fixes it:\n\n    $ git push\n    $ git pull --no-rebase\n    $ git restore --theirs docking.txt\n    $ git add docking.txt\n    $ git commit --no-edit\n    $ git push\n    $ git pull --no-rebase --no-edit\n    $ git push",
 ]
 
 DEBRIEF = """

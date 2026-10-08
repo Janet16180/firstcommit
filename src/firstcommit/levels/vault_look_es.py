@@ -20,6 +20,7 @@ corrección y no la errata.
 HINTS = [
     "`git diff` muestra cada línea cambiada dos veces: `-` antes, `+` después.",
     "Agrega solo la corrección con `git add route.txt`, revísala con `git diff --staged` y haz el commit.",
+    'Cada línea de la misión, en orden:\n\n    $ git diff\n    $ git add route.txt\n    $ git diff --staged\n    $ git commit -m "Add the Phobos stop"',
 ]
 
 DEBRIEF = """

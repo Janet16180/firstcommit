@@ -50,6 +50,7 @@ holds no commit of yours, and your `main` is the same as the mothership's.
 HINTS = [
     "This is the vault, the mothership and this chapter: a commit, a push and a pull, and a branch of your own.",
     "Your edit is on no branch yet: a new branch made now takes it along. Commit it there, send that branch by name, then bring your `main` up to the mothership's.",
+    'Every line of the mission, in order:\n\n    $ git switch -c fix-lights\n    $ git commit -am "Fix the hall lights"\n    $ git push -u origin fix-lights\n    $ git switch main\n    $ git pull',
 ]
 
 DEBRIEF = """
