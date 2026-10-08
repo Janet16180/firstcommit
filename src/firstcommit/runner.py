@@ -26,7 +26,7 @@ from termlab import sandbox
 
 from firstcommit import gitcmd, kit, levels, reactions, save
 from firstcommit.chapters import CHAPTERS, PLAY_ORDER
-from firstcommit.records import Art, Language, Mood, View
+from firstcommit.records import Art, Language, Mood, Picture, Pictures, Target, View
 
 MODULE_NAME = re.compile(r"([a-z]+)_[a-z0-9_]+")
 DIFFICULTIES = (1, 2, 3)
@@ -81,7 +81,9 @@ class Level:
     first ``_``. The other fields are the module's names of AUTHORING.md section 3.3;
     ``scene``, ``reactions`` and ``events`` are empty for a level without them, and ``view``, the
     level screen's main view, is your station for a level that names none; ``tape`` says whether
-    the level shows the black box's tape of HEAD's moves; ``actions`` is the module's
+    the level shows the black box's tape of HEAD's moves; ``pictures`` are the teaching pictures
+    it shows (`kit.pictures`) and ``target`` a challenge's target chart, each None for a level
+    without (the level then keeps its view and tabs); ``actions`` is the module's
     ``QUEST_ACTIONS``, the player's part of each step, read by the level tests and by dev mode;
     ``answer`` the module's ``ANSWER`` for a level that asks its own question, else None. ``challenge``
     marks a level whose quest is goals met in any order, with no guidance. ``texts`` holds every
@@ -99,6 +101,8 @@ class Level:
     scene: tuple[kit.SceneFrame, ...]
     view: View
     tape: bool
+    pictures: Pictures | None
+    target: Target | None
     actions: Mapping[str, QuestAction]
     answer: Answer | None
     reactions: tuple[kit.ReactionRule, ...]
@@ -140,6 +144,8 @@ def load(module: ModuleType, spanish: ModuleType | None = None) -> Level:
     scene = getattr(module, "SCENE", [])
     view: Any = getattr(module, "VIEW", "station")
     tape = getattr(module, "TAPE", False)
+    pictures = getattr(module, "PICTURES", None)
+    target = getattr(module, "TARGET", None)
     actions = getattr(module, "QUEST_ACTIONS", {})
     answer = getattr(module, "ANSWER", None)
     level_reactions = getattr(module, "REACTIONS", [])
@@ -164,6 +170,8 @@ def load(module: ModuleType, spanish: ModuleType | None = None) -> Level:
             or (None if answer is None or (callable(answer) and question) else "ANSWER must be a function, for a level with a QUESTION")
             or _reactions_problem(level_reactions)
             or _quest_problem(quest)
+            or _pictures_problem(pictures, quest)
+            or _target_problem(target)
             or _events_problem(events, quest)
             or _challenge_problem(challenge, quest)
         )
@@ -193,6 +201,8 @@ def load(module: ModuleType, spanish: ModuleType | None = None) -> Level:
         scene=tuple(scene),
         view=view,
         tape=tape,
+        pictures=pictures,
+        target=target,
         actions=MappingProxyType(dict(actions)),
         answer=answer,
         reactions=tuple(level_reactions),
@@ -576,7 +586,89 @@ def _quest_problem(quest: Any) -> str | None:
         problem = f"step {marked[0]!r}: its placeholder is plain text: no backticks"
     if problem is None:
         problem = next((found for step in choices if (found := _choice_problem(step)) is not None), None)
+    if problem is None:
+        problem = next((f"step {step.id!r}: its look must be a tuple of commit subjects or HEAD" for step in quest if not _texts(step.look, tuple)), None)
     return problem
+
+
+def _texts(value: Any, kind: type[list[Any]] | type[tuple[Any, ...]]) -> bool:
+    """
+    Tell whether a value is a list or tuple of texts that are not blank.
+
+    Parameters
+    ----------
+    value : Any
+        The value.
+    kind : type
+        ``list`` or ``tuple``.
+
+    Returns
+    -------
+    bool
+        True when it is one of ``kind`` and holds only texts that are not blank.
+    """
+    return isinstance(value, kind) and all(_is_text(item) for item in value)
+
+
+def _pictures_problem(pictures: Any, quest: list[kit.Step]) -> str | None:
+    """
+    Check a level's pictures: built with `kit.pictures`, of pictures the page draws, their steps in the quest.
+
+    Parameters
+    ----------
+    pictures : Any
+        The module's ``PICTURES``, or None.
+    quest : list[kit.Step]
+        The module's quest, already checked.
+
+    Returns
+    -------
+    str | None
+        What is wrong, or None.
+    """
+    if pictures is None:
+        return None
+    steps = {step.id for step in quest}
+    whatif = pictures.get("whatif") if isinstance(pictures, dict) else None
+    fine = (
+        isinstance(pictures, dict)
+        and set(pictures) == set(Pictures.__annotations__)
+        and pictures["large"] in typing.get_args(Picture)
+        and pictures["small"] in (None, "chain", "desk")
+        and all(isinstance(pictures[flag], bool) for flag in ("folder", "mothership", "alex", "ghosts", "graph"))
+        and (pictures["kept"] is None or pictures["kept"] in steps)
+        and _texts(pictures["lines"], list)
+        and (whatif is None or (isinstance(whatif, dict) and _texts(whatif.get("without"), list) and bool(whatif["without"]) and whatif.get("after") in steps))
+    )
+    return None if fine else "PICTURES must come from kit.pictures, with pictures the page draws and steps the quest has"
+
+
+def _target_problem(target: Any) -> str | None:
+    """
+    Check a challenge's target chart: commits by label whose parents it lists, names on its commits, and HEAD on one of the names.
+
+    Parameters
+    ----------
+    target : Any
+        The module's ``TARGET``, or None.
+
+    Returns
+    -------
+    str | None
+        What is wrong, or None.
+    """
+    if target is None:
+        return None
+    commits = target.get("commits") if isinstance(target, dict) else None
+    labels = {commit.get("id") for commit in commits if isinstance(commit, dict)} if isinstance(commits, list) else set()
+    fine = (
+        isinstance(commits, list)
+        and all(isinstance(commit, dict) and _is_text(commit.get("id")) and _is_text(commit.get("subject")) and _texts(commit.get("parents"), list) and set(commit["parents"]) <= labels for commit in commits)
+        and isinstance(target.get("names"), dict)
+        and all(_is_text(name) and at in labels for name, at in target["names"].items())
+        and target.get("head") in target["names"]
+    )
+    return None if fine else "TARGET must list commits by label with their parents, names on those commits, and HEAD on one of the names"
 
 
 def _challenge_problem(challenge: Any, quest: list[kit.Step]) -> str | None:

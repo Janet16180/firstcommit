@@ -14,7 +14,7 @@ import re
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 from firstcommit.commands import type_line
 from firstcommit.gitcmd import GAME, PLAYER, Person
@@ -25,7 +25,7 @@ from firstcommit.markup import code
 from firstcommit.playground import on_push, press, setup_github
 from firstcommit.playground import setup as setup_playground
 from firstcommit.reactions import LIST_HIDDEN, Outcome, ReactionRule, matches
-from firstcommit.records import Art, Command
+from firstcommit.records import Art, Command, Picture, Pictures, Target, WhatIf
 from firstcommit.repomap import (
     Commit,
     FileEntry,
@@ -62,11 +62,13 @@ __all__ = [
     "Lab",
     "LevelEvent",
     "Person",
+    "Pictures",
     "ReactionRule",
     "ReadStep",
     "Ref",
     "SceneFrame",
     "StepText",
+    "Target",
     "Snapshot",
     "State",
     "Step",
@@ -92,6 +94,7 @@ __all__ = [
     "nested",
     "on_push",
     "parse_int",
+    "pictures",
     "picking",
     "press",
     "reachable",
@@ -173,6 +176,9 @@ class AnswerStep:
     """
     A quest step that asks the player a question about what they saw.
 
+    Every step kind may name a ``look``: the commits (by subject) or ``"HEAD"`` the page rings in
+    gold while the step is current; none by default.
+
     ``check`` judges the answer. ``command`` is a suggestion the page can type into the terminal
     (never with Enter); ``placeholder`` is plain text shown in the empty answer box; ``more`` is
     optional text the page folds under "More", below ``text``.
@@ -185,6 +191,7 @@ class AnswerStep:
     command: str = ""
     placeholder: str = ""
     more: str = ""
+    look: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -201,6 +208,7 @@ class WatchStep:
     watch: Watch
     command: str = ""
     more: str = ""
+    look: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -211,6 +219,7 @@ class ReadStep:
     text: str
     command: str = ""
     more: str = ""
+    look: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -230,6 +239,7 @@ class ChoiceStep:
     reveal: str
     command: str = ""
     more: str = ""
+    look: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -352,6 +362,63 @@ def creating(branch: str | None = None) -> str:
     """
     name = rf" {re.escape(branch)}( |$)" if branch is not None else r"\b"
     return rf"git {CREATE_OPTIONS}{name}"
+
+
+def pictures(
+    large: Picture,
+    small: Literal["chain", "desk"] | None = None,
+    folder: bool = False,
+    mothership: bool = False,
+    alex: bool = False,
+    ghosts: bool = False,
+    kept: str | None = None,
+    lines: Sequence[str] = (),
+    graph: bool = False,
+    whatif: WhatIf | None = None,
+) -> Pictures:
+    """
+    Name the pictures a level shows, for its ``PICTURES``, every mark off unless given.
+
+    Parameters
+    ----------
+    large : Picture
+        The main picture.
+    small : Literal["chain", "desk"] | None
+        A second, smaller picture, or None.
+    folder : bool
+        Whether the working-folder row is drawn under the chain.
+    mothership : bool
+        Whether the mothership's pins and the commits only it has are drawn.
+    alex : bool
+        Whether Alex's pins are drawn.
+    ghosts : bool
+        Whether the commits only the reflog reaches are drawn.
+    kept : str | None
+        The step after which the desk outlines Git's copy, or None.
+    lines : Sequence[str]
+        The files whose lines the desk draws.
+    graph : bool
+        Whether git's own ``git log --oneline --graph --all`` is shown beside the chain.
+    whatif : WhatIf | None
+        The chain's WHAT IF, or None.
+
+    Returns
+    -------
+    Pictures
+        The record the page reads (`firstcommit.records.Pictures`).
+    """
+    return {
+        "large": large,
+        "small": small,
+        "folder": folder,
+        "mothership": mothership,
+        "alex": alex,
+        "ghosts": ghosts,
+        "kept": kept,
+        "lines": list(lines),
+        "graph": graph,
+        "whatif": whatif,
+    }
 
 
 def typing(line: str) -> Callable[[Lab, State, list[Command]], str | None]:

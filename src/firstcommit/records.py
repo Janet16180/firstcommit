@@ -161,12 +161,15 @@ class ReflogEntry(TypedDict):
     One move of HEAD, as its reflog records it: from where, to where, and git's note of why.
 
     ``old`` is the commit HEAD left, empty for the first move; ``new`` the commit it moved to;
-    ``message`` git's own words, such as ``reset: moving to HEAD~1`` or ``commit: Add the map``.
+    ``message`` git's own words, such as ``reset: moving to HEAD~1`` or ``commit: Add the map``;
+    ``line`` the whole line ``git reflog`` prints for it on a terminal, without colour, such as
+    ``3727643 (HEAD -> side) HEAD@{0}: checkout: moving from main to side``.
     """
 
     old: str
     new: str
     message: str
+    line: str
 
 
 ReviewVerdict = Literal["approved", "changes-requested", "commented"]
@@ -272,6 +275,80 @@ The views of the level screen (docs/drafts/chapters-5-9.md, the view ladder): yo
 zones, the crew view, history, a conflict's two sides, the black box, the review board, and your
 branch and main.
 """
+Picture = Literal["chain", "desk", "movelog", "sides"]
+"""
+The teaching pictures (docs/drafts/teaching-pictures.md): the chain of commits with their names,
+HEAD and pins; the desk (working folder and staging area); the move log (``git reflog``, one row
+per line); and a conflict's two sides.
+"""
+
+
+class WhatIf(TypedDict):
+    """
+    The chain's one-time WHAT IF, played once the step ``after`` passes.
+
+    It shows the same chain with the names in ``without`` taken off, and the commits only they
+    reached drawn as ghosts.
+    """
+
+    without: list[str]
+    after: str
+
+
+class Pictures(TypedDict):
+    """
+    The pictures a level shows and the marks on them, written with `firstcommit.kit.pictures`.
+
+    ``large`` is the main picture and ``small`` a second, smaller one or None. ``folder`` adds the
+    working-folder row under the chain; ``mothership`` the mothership's pins and the commits only
+    it has; ``alex`` Alex's pins; ``ghosts`` the commits only the reflog reaches
+    (`Observation` ``ghosts``). ``kept`` is the step after which the desk outlines Git's copy, or
+    None; ``lines`` the files whose lines the desk draws (`Observation` ``texts``); ``graph`` shows
+    git's own ``git log --oneline --graph --all`` beside the chain (`Observation` ``graph``);
+    ``whatif`` the chain's WHAT IF, or None.
+    """
+
+    large: Picture
+    small: Literal["chain", "desk"] | None
+    folder: bool
+    mothership: bool
+    alex: bool
+    ghosts: bool
+    kept: str | None
+    lines: list[str]
+    graph: bool
+    whatif: WhatIf | None
+
+
+class TargetCommit(TypedDict):
+    """One commit of a challenge's target chart: a label of the level's own, its parents' labels and its subject."""
+
+    id: str
+    parents: list[str]
+    subject: str
+
+
+class Target(TypedDict):
+    """
+    A challenge's target chart: the commits by label, the name each branch should be on, and the branch HEAD should be on.
+
+    A name counts as placed when the player's branch is on a commit whose subject is the one of
+    the commit ``names`` gives it; labels, not hashes, since hashes exist only after setup.
+    """
+
+    commits: list[TargetCommit]
+    names: dict[str, str]
+    head: str
+
+
+class FileTexts(TypedDict):
+    """A file's text in the working folder and in the staging area, None where it is not, for the desk's lines."""
+
+    path: str
+    folder: str | None
+    index: str | None
+
+
 Seen = Literal[View, "band", "tape"]
 """
 What the page marks seen once its birth has played: a view; ``band``, the crew view flattened

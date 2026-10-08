@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 
-from firstcommit import gitcmd, kit, runner
+from firstcommit import gitcmd, kit, records, runner
 from sample_levels import cargo_sample, cargo_sample_es
 
 SPANISH = ["TITLE", "BRIEFING", "HINTS", "DEBRIEF", "CARD", "SCENE", "STEPS", "HELLO_STAGED", "STAGED", "NOT_STAGED", "RIGHT", "LOOK", "COMMITTED", "NOT_COMMITTED"]
@@ -125,6 +125,31 @@ def test_a_level_is_played_in_the_view_it_names_and_in_your_station_without_one(
     assert runner.load(level_module(VIEW="history")).view == "history"
 
 
+CHART: records.Target = {
+    "commits": [{"id": "a", "parents": [], "subject": "Start"}, {"id": "b", "parents": ["a"], "subject": "Next"}],
+    "names": {"main": "b", "old": "a"},
+    "head": "main",
+}
+
+
+def test_a_level_names_the_pictures_it_shows_and_its_target_or_none() -> None:
+    assert (runner.load(level_module()).pictures, runner.load(level_module()).target) == (None, None)
+    pictures = kit.pictures("chain", folder=True, kept="stage", whatif={"without": ["scout"], "after": "branch"})
+    level = runner.load(level_module(PICTURES=pictures, TARGET=CHART))
+    assert (level.pictures, level.target) == (pictures, CHART)
+
+
+def test_pictures_start_with_every_mark_off() -> None:
+    assert kit.pictures("movelog") == {
+        "large": "movelog", "small": None, "folder": False, "mothership": False, "alex": False, "ghosts": False, "kept": None, "lines": [], "graph": False, "whatif": None,
+    }
+
+
+def test_a_step_rings_nothing_unless_it_says_what() -> None:
+    assert kit.ReadStep(id="a", text="Read.").look == ()
+    assert kit.WatchStep(id="a", text="Do.", watch=cargo_sample.is_staged, look=("HEAD", "Add the map")).look == ("HEAD", "Add the map")
+
+
 def nothing(lab: kit.Lab, state: kit.State) -> None:
     """
     Do nothing, as a level event's action.
@@ -199,6 +224,18 @@ BROKEN: dict[str, tuple[types.ModuleType, str]] = {
     "a scene frame without text": (level_module(SCENE=[kit.SceneFrame(art="space", text="")]), "SCENE"),
     "a view nobody drew": (level_module(VIEW="map"), "VIEW"),
     "a tape flag that is not a boolean": (level_module(TAPE="yes"), "TAPE"),
+    "pictures that are not pictures": (level_module(PICTURES="chain"), "PICTURES"),
+    "a large picture nobody drew": (level_module(PICTURES={**kit.pictures("chain"), "large": "map"}), "PICTURES"),
+    "a small picture that cannot be small": (level_module(PICTURES=kit.pictures("chain", small="movelog")), "PICTURES"),  # type: ignore[arg-type]
+    "a kept outline on a step the quest does not have": (level_module(PICTURES=kit.pictures("desk", kept="fly")), "PICTURES"),
+    "lines of a blank path": (level_module(PICTURES=kit.pictures("desk", lines=[" "])), "PICTURES"),
+    "a what-if after a step the quest does not have": (level_module(PICTURES=kit.pictures("chain", whatif={"without": ["scout"], "after": "fly"})), "PICTURES"),
+    "a what-if without a name": (level_module(PICTURES=kit.pictures("chain", whatif={"without": [], "after": "stage"})), "PICTURES"),
+    "a target name on a commit it does not list": (level_module(TARGET={**CHART, "names": {"main": "z"}}), "TARGET"),
+    "a target head that is no name": (level_module(TARGET={**CHART, "head": "scout"}), "TARGET"),
+    "a target parent it does not list": (level_module(TARGET={**CHART, "commits": [{"id": "b", "parents": ["a"], "subject": "Next"}]}), "TARGET"),
+    "a target that is not a chart": (level_module(TARGET=["main"]), "TARGET"),
+    "a step whose look is not text": (level_module(QUEST=[kit.ReadStep(id="a", text="Read.", look=("HEAD", 3))]), "look"),  # type: ignore[arg-type]
     "an answer that is not a function": (level_module(QUESTION="Who?", ANSWER="Robin"), "ANSWER"),
     "an answer with no question": (level_module(ANSWER=lambda lab, state: "Robin"), "ANSWER"),
     "the band, a birth mark and not a view to open on": (level_module(VIEW="band"), "VIEW"),

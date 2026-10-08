@@ -166,6 +166,8 @@ CARD: kit.CommandCard         # the command card the player collects: command an
 SCENE: list[kit.SceneFrame] = []        # optional; Rama's scene the first time the level opens
 VIEW: View = "station"                  # optional; the level screen's main view (records.View)
 TAPE: bool = False                      # optional; True to show the black box's tape of HEAD's moves
+PICTURES: kit.Pictures | None = None    # optional; kit.pictures("chain", folder=True, ...): the teaching pictures and their marks
+TARGET: kit.Target | None = None        # optional; a challenge's target chart: commits by label, names on them, HEAD's name
 REACTIONS: list[kit.ReactionRule] = []  # optional; tried before the shared ones
 EVENTS: list[kit.LevelEvent] = []       # optional; changes the level makes during the play
 CHALLENGE: bool = False                 # optional; True for a challenge (any order, no guidance)
@@ -263,7 +265,8 @@ def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | Non
     answer (a hash, an author) is an answer step. Its `QUEST_ACTIONS` entry returns one option.
 
   Every step may carry `more`: text the page folds under a closed "More" below its text, for
-  detail the step does not need.
+  detail the step does not need, and `look`: commit subjects or `"HEAD"` the page rings in gold
+  while the step is current, in a level with `PICTURES`.
 
   A watch's message is shown live, after every poll, while the player works: write it as the
   next thing to do ("`README.md` is in the working folder; stage it with `git add`"), never as
