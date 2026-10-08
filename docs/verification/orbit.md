@@ -669,3 +669,39 @@ in `tests/test_decks.py`.
 | `branch-origin-main` | `origin/main` is a remote-tracking branch; `git branch -a` shows it as `remotes/origin/main` | E69; gitglossary(7) remote-tracking branch |
 | `branch-switch-c-carries` | `git switch -c` takes the uncommitted edit along | `verify`; E79 |
 | notes | as the cards above | the cards |
+
+## Wave 2: the conflict chapter (added 2026-10-08)
+
+Experiments run in the image (`firstcommit:latest`, git 2.43.0) with the game's configuration,
+numbered on from E82:
+
+| Tag | What ran | Result |
+|---|---|---|
+| E83 | `beacon` one commit ahead of `main`; on `main`, `git merge beacon` | status 0, a fast-forward: `main` at `beacon`'s commit, no new commit |
+| E84 | `main` and `scout` each a commit ahead on different files; `git merge --no-edit scout`; `git log --oneline --graph` on a terminal | status 0; a merge commit with two parents and git's `Merge branch 'scout'` message; both changes in the files; the graph draws the two lines joining |
+| E85 | the same with a plain `git merge scout` on a terminal (`script`), `core.editor = true` | status 0: git waits for the editor, which ends at once, and keeps its prepared message |
+| E86 | both branches changed the same line of `docking.txt`; `git merge --no-edit scout` | status 1; the file holds `<<<<<<< HEAD`, your line, `=======`, theirs, `>>>>>>> scout`; `git status` lists it unmerged |
+| E87 | then `git commit -m x` | status 128: git refuses while a file is unmerged |
+| E88 | then `git restore --theirs docking.txt` | status 0; the file holds `scout`'s line; still unmerged until added |
+| E89 | then `git add docking.txt` and a bare `git commit` | both 0; the merge commit has two parents and git's message (no editor opened) |
+| E90 | the conflict again; `git add` with the markers still in, then `git commit --no-edit` | both 0; the commit holds the markers |
+| E91 | three files in conflict; `git merge --abort`; then the merge again and `git reset --hard` | abort 0: no merge in progress, `HEAD` back at its commit, the files as before; reset 0, no merge in progress either |
+| E92 | an uncommitted edit to a file the merge does not touch; the merge stops; `git merge --abort` | the edit is still there |
+| E93 | an uncommitted edit to a file the merge would change; `git merge --no-edit scout` | status 1: git refuses before merging and names the file |
+| E94 | the playground: your commit sets bay 5 and adds `checklist.txt`, Alex pushed bay 4; `git push`, then `git pull --rebase` | push 1 (refused); pull 1, `docking.txt` unmerged, the checklist staged |
+| E95 | then `git restore --ours docking.txt`, `git add docking.txt`, `git rebase --continue` | `--ours` gives Alex's bay 4 during the rebase; continue 0 with `core.editor = true`; your commit replayed on Alex's with the checklist; the push goes through |
+| E96 | the same with `git pull --no-rebase`, `--theirs`, add, `git commit --no-edit`; Alex pulls, commits and pushes again; your `git push`, `git pull --no-rebase --no-edit`, `git push` | the merge commit has two parents; the push is refused (1), the pull merges without a conflict (0), the push goes through (0) |
+| E97 | after a merge committed with your side, `git restore --source=scout docking.txt` | status 0; the file holds `scout`'s version |
+
+### Level `conflict-meet` (Two crews meet, 6-1)
+
+*Re-checked* by `tests/levels/test_conflict_meet.py`: the fast-forward making no commit, the merge
+commit with two parents keeping both changes, `scout` merged first (lost), and a graph drawn before
+the merge.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, prediction reveal, `FORWARDED`, debrief | with nothing new on your branch, a merge slides the label and makes no commit | E83; git-merge(1) FAST-FORWARD MERGE |
+| card, `MERGED`, debrief | when both moved on, a merge commit with two parents keeps both changes | E84; git-merge(1) TRUE MERGE |
+| debrief, hint 2 | `--no-edit` keeps git's prepared message; without it git opens an editor on a terminal | E85; git-merge(1) `--edit, -e, --no-edit` |
+| `MERGED_BEACON` (lost) | merged after `scout`, `beacon` comes in through a merge commit | the level's test |
