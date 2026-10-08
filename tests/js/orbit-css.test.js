@@ -152,3 +152,13 @@ test("two sides take the zones' place, and open each conflicted file as a book o
   assert.match(rule('.sides-half[data-author="alex"]'), /--side: var\(--z-re\);/);
   assert.match(rule(".sides-line"), /white-space: pre-wrap;/);
 });
+
+test("the kept places are one group only on the black box view, framed there with the workshop outside", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.match(rule(".viz-kept"), /display: contents;/);
+  assert.match(rule(".viz-kept-name"), /display: none;/);
+  assert.match(rule('.sky[data-view="blackbox"] .viz-kept'), /display: grid;/);
+  assert.match(rule('.sky[data-view="blackbox"] .viz-kept'), /grid-column: 3 \/ -1;/);
+  assert.match(rule('.sky[data-view="blackbox"] .viz-kept'), /grid-template-columns: minmax\(0, 1fr\) 42px minmax\(0, 1fr\) 42px minmax\(0, 1fr\);/);
+  assert.match(rule('.sky[data-view="blackbox"] .viz-kept-name'), /display: block;/);
+});

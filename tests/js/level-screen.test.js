@@ -784,7 +784,7 @@ test("while your vault is empty, a level whose history is not born yet stays on 
 });
 
 test("a view the page cannot draw yet opens on your station", async () => {
-  const run = viewing("blackbox", ["station", "history", "blackbox"]);
+  const run = viewing("board", ["station", "history", "board"]);
   await settle();
   assert.equal(shown(run), "station");
   assert.deepEqual(tabs(run), ["station", "history"]);
@@ -884,5 +884,18 @@ test("before any conflict, a level whose two sides are not born yet stays on you
   await run.clock.advance(3000);
   assert.equal(shown(run), "station");
   assert.equal(run.q(".sides").hidden, true);
+  run.view.dispose();
+});
+
+test("the black box keeps the zones on stage, framing what Git keeps, and is born as its level opens", async () => {
+  const run = viewing("blackbox", ["station", "history"]);
+  await settle();
+  assert.equal(shown(run), "blackbox");
+  assert.equal(said(run), "Before anyone travels in time: a flight recorder.");
+  assert.equal(yours(run).hidden, true);
+  await run.clock.advance(2600);
+  assert.deepEqual(marked(run), [{ view: "blackbox" }]);
+  assert.deepEqual(tabs(run), ["station", "history", "blackbox"]);
+  assert.equal(chosen(run), "blackbox");
   run.view.dispose();
 });

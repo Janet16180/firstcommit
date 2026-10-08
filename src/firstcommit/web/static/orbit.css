@@ -673,6 +673,35 @@ pre.code code {
   }
 }
 
+/* The places Git keeps: one group in the row only on the black box view, where a frame names
+   them and leaves the workshop outside. */
+.viz-kept {
+  display: contents;
+}
+
+.viz-kept-name {
+  display: none;
+}
+
+.sky[data-view="blackbox"] .viz-kept {
+  display: grid;
+  grid-column: 3 / -1;
+  grid-template-columns: minmax(0, 1fr) 42px minmax(0, 1fr) 42px minmax(0, 1fr);
+  position: relative;
+  padding: 26px 8px 8px;
+  border: 3px solid var(--ink);
+  background: color-mix(in srgb, var(--ink) 5%, transparent);
+}
+
+.sky[data-view="blackbox"] .viz-kept-name {
+  display: block;
+  position: absolute;
+  top: 4px;
+  left: 10px;
+  margin: 0;
+  font: 700 0.85rem var(--f-ui);
+}
+
 /* A file git ignores: still on the disk, out of git's sight. */
 .file.is-ignored {
   flex-wrap: wrap;
@@ -1930,6 +1959,12 @@ pre.code code {
 
   .sky[data-view="history"] .viz-row {
     grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .sky[data-view="blackbox"] .viz-kept {
+    grid-column: 1 / -1;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 10px;
   }
 
   .flow {

@@ -366,3 +366,12 @@ test("a workshop holding only ignored files says it is empty, and still shows th
   assert.equal(workshop.querySelector(".file.is-ignored .ftag").textContent, "ignored, still on your disk");
   assert.equal(workshop.querySelector(".z-count").textContent, "0");
 });
+
+test("the places Git keeps, the dock, the vault and the mothership, are grouped and named as the black box; the workshop stays outside", () => {
+  const panel = ZonePanel.create();
+  const kept = panel.element.querySelector(".viz-row .viz-kept");
+  assert.deepEqual([...kept.querySelectorAll(".zone")].map((node) => node.dataset.zone), ["dock", "vault", "remote"]);
+  assert.equal(kept.querySelector(".viz-kept-name").textContent, "Black box: what Git keeps");
+  assert.equal(zone(panel, "workshop").closest(".viz-kept"), null);
+  assert.deepEqual(texts(panel.element, ".z-head h3"), ["Workshop", "Cargo dock", "Vault", "Mothership"]);
+});

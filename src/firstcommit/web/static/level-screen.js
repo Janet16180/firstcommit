@@ -8,7 +8,8 @@
  * the view ladder's (docs/drafts/chapters-5-9.md): your station (or the crew view, in a level with
  * a teammate) shows the four zones; history folds your station into the strip and leaves the
  * vault and the mothership on the stage, and in a crew level flattens Alex's station into the
- * band along the top; two sides open each conflicted file like a book under the strip. A level opens on its main view; a view not born yet is
+ * band along the top; two sides open each conflicted file like a book under the strip; the black
+ * box frames the places Git keeps, the workshop outside. A level opens on its main view; a view not born yet is
  * born first (births.js), once the stage has something to show it with, and then marked born.
  * The tab row holds the views born so far.
  * Opening a mission that is not in progress starts it, and a level's scene plays the first time
@@ -31,7 +32,9 @@ const LevelScreen = (function () {
   const { el } = Dom;
   const { t } = Strings;
   /* The views the page draws so far; a level whose main view is another opens on your station. */
-  const DRAWN = ["station", "crew", "history", "sides"];
+  const DRAWN = ["station", "crew", "history", "sides", "blackbox"];
+  /* The views that show your station unfolded, so the strip stays away. */
+  const UNFOLDED = ["station", "crew", "blackbox"];
   const SAY = { preparing: "level.preparing", start: "level.start", down: "level.down", back: "level.back", hint: "level.hint", ended: "level.ended", partMet: "level.partMet", predictFirst: "level.predictFirst" };
 
 
@@ -91,7 +94,7 @@ const LevelScreen = (function () {
     const { ui } = screen;
     screen.view = view;
     ui.sky.dataset.view = view;
-    const folded = view !== "station" && view !== "crew";
+    const folded = !UNFOLDED.includes(view);
     ui.strip.element.hidden = !folded;
     ui.band.element.hidden = !folded || !screen.crew;
     ui.sides.element.hidden = view !== "sides";

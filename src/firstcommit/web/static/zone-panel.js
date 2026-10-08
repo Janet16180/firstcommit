@@ -144,8 +144,12 @@ const ZonePanel = (function () {
   const flow = (arrows, mirrored = false) => el("div", { class: mirrored ? "flow is-mirror" : "flow", "aria-hidden": "true" },
     arrows.map(([arrow, back]) => el("div", { class: back ? "fl is-back" : "fl", "data-arrow": arrow }, ArtSprites.icon("arrow"), el("span", {}, `git ${base(arrow)}`))));
 
-  /* The four zones in a row, with the arrows between them. */
-  const soloRow = (shells) => el("div", { class: "viz-row" }, ZONES.map((name, index) => [shells[name].element, index < FLOWS.length && flow(FLOWS[index])]));
+  /* The four zones in a row, with the arrows between them. The places Git keeps (the dock, the
+     vault and the mothership) are grouped, so the black box view can frame them with the workshop
+     outside; elsewhere the group adds nothing to the row. */
+  const soloRow = (shells) => el("div", { class: "viz-row" },
+    shells.workshop.element, flow(FLOWS[0]),
+    el("div", { class: "viz-kept" }, el("p", { class: "viz-kept-name" }, t("zones.kept")), shells.dock.element, flow(FLOWS[1]), shells.vault.element, flow(FLOWS[2]), shells.remote.element));
 
   /* One person's station: their workshop, dock and vault, with the arrows between them. A
      mirrored station (Alex's, on the far side) runs the other way, so its vault faces the

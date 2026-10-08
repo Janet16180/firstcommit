@@ -53,7 +53,7 @@ test("under reduced motion a birth is two still frames, each held long enough to
 
 test("only the views with a birth drawn have one", () => {
   assert.equal(ViewBirth.has("history"), true);
-  for (const view of ["station", "crew", "blackbox"]) assert.equal(ViewBirth.has(view), false, view);
+  for (const view of ["station", "crew", "board"]) assert.equal(ViewBirth.has(view), false, view);
 });
 
 test("history waits to be born until your vault holds commits, so the fold has something to fold", () => {
@@ -90,4 +90,14 @@ test("two sides wait for a file in conflict", () => {
   assert.equal(ViewBirth.has("sides"), true);
   assert.equal(ViewBirth.ready("sides", { ...reading([]), workshop: [{ path: "a.txt", state: "edited" }] }), false);
   assert.equal(ViewBirth.ready("sides", { ...reading([]), workshop: [{ path: "a.txt", state: "conflicted" }] }), true);
+});
+
+test("the black box is born as its level opens: a frame drawn round what Git keeps, with Rama's line", async () => {
+  assert.equal(ViewBirth.has("blackbox"), true);
+  assert.equal(ViewBirth.ready("blackbox", reading(null)), true);
+  const run = birth("blackbox");
+  assert.deepEqual(run.seen, [["show", "blackbox"], ["say", "Before anyone travels in time: a flight recorder."]]);
+  assert.ok(run.sky.classList.contains("art-birth-boundary"));
+  await run.clock.advance(ViewBirth.BIRTH_MS);
+  await run.finished;
 });
