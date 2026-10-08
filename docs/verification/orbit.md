@@ -507,17 +507,19 @@ a log before the commit, the journal sealed too (lost), and a commit without the
 ### Level `vault-look` (Look before you seal, 3-2)
 
 *Re-checked* by `tests/levels/test_vault_look.py`: the overnight edits as a level event, the
-whole path, the typo named by its file, `git add .` then `git restore --staged engine.cfg`, a
-staged check before the add, the typo committed (lost), and the two diffs after staging the fix.
+whole path, the accidental change named by its file, `git add .` then `git restore --staged
+engine.cfg`, a staged check before the add, the accidental change committed (lost), the two diffs
+after staging the route, and no text in either language calling it a typo (reframed 2026-10-08,
+from the user's playtest: the crew's note says only `route.txt` was meant to change).
 
 | Text | Claim | Evidence |
 |---|---|---|
 | card, debrief | `git diff` shows changes in the working folder not staged; `git diff --staged` what the next commit takes | E56, E57; git-diff(1) |
 | hint 1, `DIFFED` | each changed line twice, `-` before, `+` after | E56 |
-| `TYPO_FOUND`, `ROUTE_IS_FIX` | `power=99999` is the typo; the route gained a stop | setup |
-| `TYPO_STAGED`, `EVERYTHING_STAGED` | `git restore --staged engine.cfg` unstages it, the file keeps the edit | E58 |
-| `CHECKED`, `SEALED`, debrief | after staging the route, `--staged` shows only the new stop; the commit holds the fix, not the typo | E57, E59 |
-| `TYPO_SEALED` (lost) | a commit cannot be taken back until a later chapter | as vault-seal |
+| `ACCIDENT_FOUND`, `ROUTE_IS_MEANT` | `engine.cfg` changed to `power=99999`; the route gained a stop | setup |
+| `ACCIDENT_STAGED`, `EVERYTHING_STAGED` | `git restore --staged engine.cfg` unstages it, the file keeps the edit | E58 |
+| `CHECKED`, `SEALED`, debrief | after staging the route, `--staged` shows only the new stop; the commit holds the route's change, not the other | E57, E59 |
+| `ACCIDENT_SEALED` (lost) | a commit cannot be taken back until a later chapter | as vault-seal |
 
 ### Level `vault-inspection` (Cargo inspection, 3-5, challenge)
 
