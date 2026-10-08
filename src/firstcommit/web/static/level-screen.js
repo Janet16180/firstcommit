@@ -113,31 +113,41 @@ const LevelScreen = (function () {
     drawTabs(screen);
   }
 
+  /* The view the level opens on: its main view, or your station when the page does not draw it yet. */
+  const opening = (screen) => (DRAWN.includes(screen.level.view) ? screen.level.view : home(screen));
+
   /* The level's main view. One not born yet with a birth to play waits on your station for it;
-     one the page does not draw yet opens on your station. */
+     one the page does not draw yet opens on your station. The crew band is born the first time
+     a crew level opens on another view, once the crew view was. */
   function openView(screen) {
     const { level } = screen;
     screen.seen = [...level.views_seen];
-    const drawn = DRAWN.includes(level.view);
-    const unborn = drawn && !screen.seen.includes(level.view);
-    screen.birth = unborn && ViewBirth.has(level.view) ? level.view : null;
+    const unborn = DRAWN.includes(level.view) && !screen.seen.includes(level.view);
+    screen.births = [];
+    if (unborn && ViewBirth.has(level.view)) screen.births.push(level.view);
+    if (level.view !== "crew" && screen.seen.includes("crew") && !screen.seen.includes("band")) screen.births.push("band");
     drawTabs(screen);
-    if (unborn && !screen.birth) born(screen, level.view);
-    show(screen, drawn && !screen.birth ? level.view : home(screen));
+    if (unborn && !screen.births.includes(level.view)) born(screen, level.view);
+    show(screen, screen.births.includes(level.view) ? home(screen) : opening(screen));
   }
 
-  /* Plays the waiting birth once the stage, as `reading` reads it, can show it. */
-  async function bear(screen, reading) {
+  async function birth(screen, view) {
     const { ctx, ui } = screen;
-    const view = screen.birth;
-    if (!view || !ViewBirth.ready(view, reading)) return;
-    screen.birth = null;
     screen.bearing = true;
     await ViewBirth.play(view, { sky: ui.sky, show: (shown) => show(screen, shown), say: (line) => ui.comms.say(line, "info"), reducedMotion: ctx.reducedMotion, timers: ctx.timers });
     screen.bearing = false;
     if (screen.disposed) return;
     born(screen, view);
-    show(screen, view);
+    show(screen, opening(screen));
+  }
+
+  /* Starts the next waiting birth once the stage, as `reading` reads it, can show it; says whether one started. */
+  function bear(screen, reading) {
+    const view = screen.births[0];
+    if (!view || screen.bearing || !ViewBirth.ready(view, reading)) return false;
+    screen.births.shift();
+    birth(screen, view);
+    return true;
   }
 
   /* The stage follows the level's teammate: your station's view becomes the crew view. */
@@ -342,14 +352,27 @@ const LevelScreen = (function () {
   const kept = (reaction) => reaction.moment !== null || reaction.mood === "warn" || reaction.mood === "err";
 
   /* Whether Rama's line must keep what it says: a kept reaction holds it until the player types
-     again, and a moment or a view's birth holds it while it plays. Typing again also frees the
-     met goal's note. */
-  function keeping(screen, { commands, reactions }) {
+     again, and a moment or a view's birth holds it while it plays, unless newer reactions have
+     taken the line (a birth that starts after them, `fresh`, speaks last). Typing again also frees
+     the met goal's note. */
+  function keeping(screen, { commands, reactions }, fresh) {
     if (commands.length || reactions.length) {
       screen.held = reactions.some(kept);
       screen.metNote = false;
     }
-    return screen.held || screen.bearing || screen.ui.moments.showing();
+    const playing = screen.bearing || screen.ui.moments.showing();
+    return screen.held || fresh || (playing && !reactions.length);
+  }
+
+  /* The stage drawn from an observation: the zones, the strips and whether a teammate is on it. */
+  function stage(screen, observation) {
+    const { ui } = screen;
+    ui.zones.update(observation);
+    const reading = Zones.read(observation);
+    ui.strip.update(reading);
+    if (reading.crew) ui.band.update(reading.crew);
+    crewed(screen, observation);
+    return reading;
   }
 
   function moments(screen, reactions) {
@@ -371,21 +394,17 @@ const LevelScreen = (function () {
     try {
       const plan = Polling.plan(screen.level.steps, screen.state, screen.level.challenge);
       const observation = await game.observe();
-      screen.ui.zones.update(observation);
-      const reading = Zones.read(observation);
-      screen.ui.strip.update(reading);
-      if (reading.crew) screen.ui.band.update(reading.crew);
-      crewed(screen, observation);
-      bear(screen, reading);
+      const reading = stage(screen, observation);
       measureTerminal(screen);
       if (screen.offline) screen.ui.comms.say(t(SAY.back), "info");
       screen.offline = false;
       react(screen, observation.reactions);
       moments(screen, observation.reactions);
       if (observation.commands.length && !observation.reactions.length && predicting(screen)) screen.ui.comms.say(t(SAY.predictFirst), "info");
+      const fresh = bear(screen, reading);
       echo(screen, observation.commands);
       if (observation.commands.length) await recount(screen);
-      const keep = keeping(screen, observation);
+      const keep = keeping(screen, observation, fresh);
       if (plan.watchStep) stepped(screen, await game.step(null), { watched: true, keep });
       if (plan.autoCheck && !screen.finished) checked(screen, await game.check(null, true), { auto: true, keep });
     } catch (error) {
@@ -457,7 +476,7 @@ const LevelScreen = (function () {
   /* ctx: game, status(), refresh(), reload() (shows this screen again), sound, timers, page,
      reducedMotion, terminal ({attach(host), detach(), type(text)}). */
   function create(ctx, levelId) {
-    const screen = { ctx, levelId, level: null, state: null, number: "", shownStars: null, view: "station", seen: [], crew: false, birth: null, bearing: false, held: false, metNote: false, mission: null, poller: null, finished: false, offline: false, attached: false, disposed: false, ui: {} };
+    const screen = { ctx, levelId, level: null, state: null, number: "", shownStars: null, view: "station", seen: [], crew: false, births: [], bearing: false, held: false, metNote: false, mission: null, poller: null, finished: false, offline: false, attached: false, disposed: false, ui: {} };
     screen.element = el("div", { class: "level-screen" });
     layout(screen);
     load(screen);

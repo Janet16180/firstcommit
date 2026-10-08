@@ -280,6 +280,29 @@ test("a solve that comes a tick after a moment's reaction, while the moment play
   run.view.dispose();
 });
 
+test("a plain reaction that replaces a moment's while it still plays frees Rama's line, so the solve that follows is said", async () => {
+  let observed = 0;
+  let checks = 0;
+  const moment = [{ line: "git status", mood: "warn", text: para("Why junk stays out."), moment: "launch" }];
+  const plain = [{ line: "git add notes.txt", mood: "ok", text: para("Staged."), moment: null }];
+  const run = screen({
+    active: { ...record("active"), step: 3, auto_check: true },
+    replies: {
+      "/api/observe": () => {
+        observed += 1;
+        const reactions = [moment, plain][observed - 1] || [];
+        return { ...quiet(), reactions, commands: reactions.map(({ line }) => ({ line, status: 0 })) };
+      },
+      "/api/check": () => ((checks += 1) < 2 ? record("check_unsolved") : record("check_solved")),
+    },
+  });
+  await settle();
+  await run.clock.advance(1500);
+  await settle();
+  assert.equal(said(run), record("check_solved").message[0].spans.map((span) => span.text).join(""));
+  run.view.dispose();
+});
+
 test("once the quest is done the mission is checked by itself; a solve stops the polling and docks the lesson at the bottom", async () => {
   const run = screen({ active: { ...record("active"), step: 3, auto_check: true }, replies: { "/api/check": record("check_solved") } });
   await settle();
@@ -738,11 +761,12 @@ test("history is born once your vault holds commits: the fold and the unroll wit
   run.view.dispose();
 });
 
-test("a goal met as history is born goes under the next goal, so Rama's birth lines are heard", async () => {
+test("a goal met as history is born goes under the next goal, and the line typed has its say first, so Rama's birth lines are heard", async () => {
   const level = { ...seenLevel(), view: "history", views_seen: ["station"] };
   level.steps = [...level.steps, { ...level.steps[2], id: "read" }];
   const met = { ...correct(3, false, ["look", "status", "stage"]), message: para("Cloned.") };
-  const run = screen({ active: { ...record("active"), step: 2, steps: 4 }, replies: { "/api/level": level, "/api/step": met } });
+  const cloned = { ...record("observation"), commands: [{ line: "git clone x project", status: 0 }], reactions: [{ line: "git clone x project", mood: "ok", text: para("A copy came down."), moment: null }] };
+  const run = screen({ active: { ...record("active"), step: 2, steps: 4 }, replies: { "/api/level": level, "/api/step": met, "/api/observe": cloned } });
   await settle();
   assert.equal(said(run), "You know every room now.");
   assert.equal(run.q(".goal.is-current .goal-note").textContent, "Cloned.");
@@ -777,7 +801,7 @@ test("in a level with a teammate the crew view stands in for your station's tab"
 });
 
 test("in a crew level, history flattens Alex's station into the band along the top; the crew view brings it back", async () => {
-  const run = viewing("history", ["station", "crew", "history"], { "/api/observe": { ...record("press").observation, commands: [], reactions: [] } });
+  const run = viewing("history", ["station", "crew", "history", "band"], { "/api/observe": { ...record("press").observation, commands: [], reactions: [] } });
   await settle();
   const band = run.q(".strip.is-band");
   assert.equal(band.hidden, false);
@@ -793,4 +817,31 @@ test("without a teammate there is no band", async () => {
   await settle();
   assert.equal(run.q(".strip.is-band").hidden, true);
   run.view.dispose();
+});
+
+const crewQuiet = () => ({ ...record("press").observation, commands: [], reactions: [] });
+
+test("the band is born the first time a crew level opens on another view: the crew view flattens, Rama says so, and the game is told", async () => {
+  const run = viewing("history", ["station", "crew", "history"], { "/api/observe": crewQuiet() });
+  await settle();
+  assert.equal(shown(run), "flatten");
+  assert.equal(said(run), "Alex's station, flattened into a band: it still shows what reaches them.");
+  assert.equal(run.q(".strip.is-band").hidden, false);
+  assert.deepEqual(marked(run), []);
+  await run.clock.advance(2600);
+  assert.equal(shown(run), "history");
+  assert.deepEqual(marked(run), [{ view: "band" }]);
+  assert.deepEqual(tabs(run), ["crew", "history"]);
+  run.view.dispose();
+});
+
+test("no band is born before the crew view, in a level that opens on the crew view, or once it was", async () => {
+  for (const [view, seen] of [["history", ["station", "history"]], ["crew", ["station", "crew"]], ["history", ["station", "crew", "history", "band"]]]) {
+    const run = viewing(view, seen, { "/api/observe": crewQuiet() });
+    await settle();
+    await run.clock.advance(3000);
+    assert.notEqual(shown(run), "flatten", `${view} ${seen}`);
+    assert.deepEqual(marked(run), [], `${view} ${seen}`);
+    run.view.dispose();
+  }
 });

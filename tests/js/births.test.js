@@ -61,3 +61,18 @@ test("history waits to be born until your vault holds commits, so the fold has s
   assert.equal(ViewBirth.ready("history", reading([])), false);
   assert.equal(ViewBirth.ready("history", reading([{ hash: "a" }])), true);
 });
+
+test("the crew band is born out of the crew view: Alex's station flattens into the band, with Rama's line", async () => {
+  const run = birth("band");
+  assert.deepEqual(run.seen, [["show", "flatten"], ["say", "Alex's station, flattened into a band: it still shows what reaches them."]]);
+  assert.ok(run.sky.classList.contains("art-birth-flatten"));
+  await run.clock.advance(ViewBirth.BIRTH_MS);
+  await run.finished;
+  assert.ok(!run.sky.classList.contains("art-birth-flatten"));
+});
+
+test("the band waits for a teammate on the stage", () => {
+  assert.equal(ViewBirth.has("band"), true);
+  assert.equal(ViewBirth.ready("band", reading([{ hash: "a" }])), false);
+  assert.equal(ViewBirth.ready("band", { ...reading([]), crew: reading([]) }), true);
+});

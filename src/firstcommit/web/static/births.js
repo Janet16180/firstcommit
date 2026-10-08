@@ -7,13 +7,15 @@
  * stage is a still frame held STILL_MS, long enough to read its line. Needs dom.js and
  * strings.js. Defines one global, ViewBirth.
  *
- * has(view)              whether the view has a birth.
+ * has(view)              whether the view (or "band", the crew band) has a birth.
  * ready(view, reading)   whether the stage, as Zones.read reads it, has something to show the
- *                        birth with: history waits for your vault to hold commits.
+ *                        birth with: history waits for your vault to hold commits, the band for
+ *                        a teammate.
  * play(view, {sky, show, say, reducedMotion, timers})
  *                        a promise that resolves once the birth is over; show(view) puts a view on
- *                        the stage ("fold" is your station with the strip above it), say(text)
- *                        gives Rama the line. Timed on `timers` (window unless given).
+ *                        the stage ("fold" is your station with the strip above it, "flatten" the
+ *                        crew view with the band above it), say(text) gives Rama the line. Timed
+ *                        on `timers` (window unless given).
  */
 
 /* global Strings */
@@ -28,11 +30,17 @@ const ViewBirth = (function () {
       { view: "fold", motion: "art-birth-fold", line: "views.born.strip" },
       { view: "history", motion: "art-birth-unroll", line: "views.born.history" },
     ],
+    band: [{ view: "flatten", motion: "art-birth-flatten", line: "views.born.band" }],
   };
 
   const has = (view) => Object.hasOwn(STAGES, view);
 
-  const ready = (view, reading) => view !== "history" || Boolean(reading.vault && reading.vault.length);
+  const READY = {
+    history: (reading) => Boolean(reading.vault && reading.vault.length),
+    band: (reading) => reading.crew !== null,
+  };
+
+  const ready = (view, reading) => READY[view](reading);
 
   async function play(view, { sky, show, say, reducedMotion = true, timers = window }) {
     const wait = (ms) => new Promise((resolve) => timers.setTimeout(resolve, ms));
