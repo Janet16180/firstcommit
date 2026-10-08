@@ -6,6 +6,8 @@ your clone, a branch ``scout`` with two commits of a survey, while ``main`` is l
 mothership. The goals: a plain ``git push`` on ``main`` that worked (typed: it breaks the myth
 that a push sends everything); the mothership holding ``scout`` at your ``scout``'s commit, its
 ``main`` unchanged; and the remote-tracking branches listed with ``git branch -r`` after that.
+Once ``scout`` is sent, a level event has Alex fetch, so Alex's band shows ``origin/scout``
+arriving at Alex's station (the crew band is born here, docs/drafts/chapters-5-9.md).
 """
 
 from collections.abc import Callable
@@ -58,7 +60,8 @@ mothership now has `scout` for the team to review, and its `main` did not move. 
 `origin/scout` the upstream of your `scout`, so a plain `git push` on `scout` sends it next time.
 
 `git branch -r` lists your repository's records of the remote's branches: `origin/main`, and now
-`origin/scout`.
+`origin/scout`. Alex fetched after your push, so Alex's repository has `origin/scout` too, ready to
+review, while Alex's own branches did not move.
 
 At work, you push your task's branch by name and ask for a review; `main` changes only when the
 review is merged.
@@ -184,6 +187,23 @@ def watch_list(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
     listed = kit.typed(kit.after(typed, SEND), LIST, "ok")
     verdict = kit.Verdict(listed, LISTED if listed else NOT_LISTED)
     return verdict if sent.solved else sent
+
+
+def alex_fetches(lab: kit.Lab, state: kit.State) -> None:
+    """
+    Have Alex fetch, with the playground's button, so Alex's repository learns of ``scout``.
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The level's lab.
+    state : kit.State
+        The level's state (unused).
+    """
+    kit.press(lab, "alex", "fetch")
+
+
+EVENTS = [kit.LevelEvent(id="alex-fetches", run=alex_fetches, goal="send")]
 
 
 QUEST: list[kit.Step] = [

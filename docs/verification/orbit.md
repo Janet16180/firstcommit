@@ -845,3 +845,9 @@ address looks like https://github.com/moonbase/project.git". E48 to E101 above r
 | hint 1 | `sim-output/` ignores the whole folder | E107; gitignore(5) PATTERN FORMAT (a trailing slash matches a folder) |
 | `watch_ignore` | only a `.gitignore` counts, not `.git/info/exclude`, which stays in one repository | E107 (check-ignore names the source); gitignore(5) DESCRIPTION; *re-checked* by `tests/levels/test_cargo_junk.py` |
 | debrief | once `.gitignore` is in a commit, everyone who works on the project gets the rule | gitignore(5) DESCRIPTION ("checked into version control and distributed to other repositories via clone") |
+
+## 5-3: Alex fetches once `scout` is sent (added 2026-10-08)
+
+| Claim | Says | Evidence |
+|---|---|---|
+| 5-3 debrief | after Alex's fetch, Alex's repository has `origin/scout` and Alex's own branches did not move | E106 (fetch exits 0); git-fetch(1) DESCRIPTION; *re-checked* by `tests/levels/test_branch_send.py` |

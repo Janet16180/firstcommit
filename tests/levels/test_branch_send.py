@@ -1,6 +1,6 @@
 from firstcommit import kit
 from firstcommit.levels import branch_send as level
-from level_helpers import reaction, started, typed_in, watch
+from level_helpers import reached, reaction, started, typed_in, watch
 
 
 def test_a_plain_push_on_main_leaves_scout_here() -> None:
@@ -39,3 +39,12 @@ def test_a_list_typed_before_the_push_does_not_count() -> None:
     lab, state = started(level)
     typed = typed_in(lab, "git push", "git branch -r", "git push -u origin scout")
     assert level.check(lab, state, None, typed).message == level.NOT_LISTED
+
+
+def test_once_scout_is_sent_alex_fetches_and_holds_origin_scout() -> None:
+    lab, state = started(level)
+    typed_in(lab, "git push", "git push -u origin scout")
+    assert kit.git_run(lab.teammate, "rev-parse", "-q", "--verify", "refs/remotes/origin/scout").returncode == 1
+    reached(level, lab, state, "send")
+    assert kit.git(lab.teammate, "rev-parse", "origin/scout") == kit.git(lab.project, "rev-parse", "scout")
+    assert kit.git(lab.teammate, "rev-parse", "--abbrev-ref", "HEAD").strip() == "main"
