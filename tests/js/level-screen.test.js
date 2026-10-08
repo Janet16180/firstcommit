@@ -20,9 +20,9 @@ const quiet = () => ({ ...record("observation"), commands: [], reactions: [] });
 
 /* A level screen for the sample level; `active` is the level in progress as the status first says
    (null: none), `recounted` the level in progress the dashboard gives after typed lines. */
-function screen({ active = record("active"), replies = {}, levelId = "sample-second", recounted = null } = {}) {
+function screen({ active = record("active"), replies = {}, levelId = "sample-second", recounted = null, dev = false } = {}) {
   const clock = createClock();
-  let status = { ...record("status"), active };
+  let status = { ...record("status"), active, dev };
   const server = fakeServer({
     "/api/level": seenLevel(),
     "/api/scene": {},
@@ -34,7 +34,7 @@ function screen({ active = record("active"), replies = {}, levelId = "sample-sec
     "/api/hint": record("hint"),
     ...replies,
   });
-  const seen = { sounds: [], attached: 0, detached: 0, typed: [], reloads: 0, refreshed: 0 };
+  const seen = { sounds: [], attached: 0, detached: 0, typed: [], ran: [], finished: 0, reloads: 0, refreshed: 0 };
   const ctx = {
     game: createGameApi(server.api),
     status: () => status,
@@ -42,6 +42,8 @@ function screen({ active = record("active"), replies = {}, levelId = "sample-sec
       seen.refreshed += 1;
       if (server.calls.some((call) => call.path === "/api/start")) status = { ...status, active: record("active") };
       if (recounted) status = { ...status, active: recounted };
+      /* Each line the terminal ran counts as typed once it has finished, as the game counts it. */
+      if (seen.finished && status.active) status = { ...status, active: { ...status.active, commands: record("active").commands + seen.finished } };
       return status;
     },
     reload: () => (seen.reloads += 1),
@@ -54,7 +56,10 @@ function screen({ active = record("active"), replies = {}, levelId = "sample-sec
         seen.attached += 1;
         seen.host = host;
       },
-      detach: () => (seen.detached += 1), type: (text) => seen.typed.push(text) },
+      detach: () => (seen.detached += 1), type: (text) => seen.typed.push(text), run: (line) => {
+        seen.ran.push(line);
+        clock.setTimeout(() => (seen.finished += 1), 300);
+      } },
     setStatus: (next) => (status = next),
   };
   const view = LevelScreen.create(ctx, levelId);
@@ -952,5 +957,56 @@ test("in a crew level the black box keeps to your row, framed, and Alex goes int
   run.q('.view-tab[data-view="crew"]').click();
   assert.ok(run.q(".station.is-mirror"));
   assert.equal(run.q(".strip.is-band").hidden, true);
+  run.view.dispose();
+});
+
+/* A dev-mode screen on the sample level at its answer goal, whose solution is `solution`. */
+function solving(solution, replies = {}) {
+  return screen({ dev: true, replies: { "/api/level": { ...seenLevel(), solution }, "/api/step": correct(2), ...replies } });
+}
+
+test("out of dev mode the head has no Solve button", async () => {
+  const run = screen();
+  await settle();
+  assert.equal(run.q(".hud .solve").hidden, true);
+  run.view.dispose();
+});
+
+test("in dev mode, Solve runs the solution's lines in the terminal one at a time, each once the last has run", async () => {
+  const run = solving({ lines: ["git status", "git add notes.txt"], answers: { status: "notes.txt" }, answer: null });
+  await settle();
+  assert.equal(run.q(".hud .solve").hidden, false);
+  run.q(".hud .solve").click();
+  await settle();
+  assert.deepEqual(run.seen.ran, ["git status"]);
+  await run.clock.advance(400);
+  await settle();
+  assert.deepEqual(run.seen.ran, ["git status", "git add notes.txt"]);
+  run.view.dispose();
+});
+
+test("after the lines, Solve answers the goals that ask, with the solution's answers read again from the game", async () => {
+  let asked = 0;
+  const first = { lines: ["git status"], answers: { status: null }, answer: null };
+  const then = { lines: ["git status"], answers: { status: "notes.txt" }, answer: null };
+  const run = screen({ dev: true, replies: { "/api/level": () => ({ ...seenLevel(), solution: (asked += 1) <= 2 ? first : then }), "/api/step": correct(2) } });
+  await settle();
+  run.q(".hud .solve").click();
+  await run.clock.advance(2000);
+  await settle();
+  const steps = run.server.calls.filter((call) => call.path === "/api/step" && call.body.answer !== null);
+  assert.deepEqual(steps.map((call) => call.body), [{ answer: "notes.txt" }]);
+  assert.ok(run.all(".goal")[2].classList.contains("is-current"));
+  run.view.dispose();
+});
+
+test("Solve ends with the level's own question, answered from the solution", async () => {
+  const level = { ...seenLevel(), question: para("Who made the commit?"), placeholder: "a name", solution: { lines: [], answers: {}, answer: "Robin" } };
+  const run = screen({ dev: true, active: { ...record("active"), step: 3 }, replies: { "/api/level": level, "/api/check": record("check_solved") } });
+  await settle();
+  run.q(".hud .solve").click();
+  await run.clock.advance(1000);
+  await settle();
+  assert.deepEqual(run.server.calls.filter((call) => call.path === "/api/check" && !call.body.auto).map((call) => call.body), [{ answer: "Robin", auto: false }]);
   run.view.dispose();
 });

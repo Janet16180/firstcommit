@@ -251,6 +251,7 @@
       else if (app.terminal) app.terminal.element.remove();
     },
     type: (text) => app.terminal && app.terminal.type(text),
+    run: (line) => app.terminal && app.terminal.run(line),
   };
 
   /* A refused WebSocket looks like a network failure; asking the API tells a stale key apart

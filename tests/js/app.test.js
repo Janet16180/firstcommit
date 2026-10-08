@@ -27,7 +27,7 @@ async function boot({ hash = "#/", token = "KEY", replies = {}, stored = {}, wra
   const storage = new Map(Object.entries(stored));
   const windowListeners = new Map();
   const server = fakeServer({ "/api/status": { ...record("status"), active: null }, "/api/cards": { cards: record("cards") }, "/api/notes": record("notes"), ...replies });
-  const seen = { locked: 0, terminals: 0 };
+  const seen = { locked: 0, terminals: 0, runs: [] };
   Object.defineProperty(global, "navigator", { value: { language: browserLanguage }, configurable: true });
   Object.assign(global, {
     location: { hash, pathname: "/", search: "" },
@@ -43,7 +43,7 @@ async function boot({ hash = "#/", token = "KEY", replies = {}, stored = {}, wra
       seen.terminals += 1;
       seen.looks = options.looks;
       seen.labels = [options.labels];
-      return { element: el("div", { class: "term-dock" }), start() {}, setLook() {}, setLabels: (labels) => seen.labels.push(labels), type() {}, dispose() {} };
+      return { element: el("div", { class: "term-dock" }), start() {}, setLook() {}, setLabels: (labels) => seen.labels.push(labels), type() {}, run: (line) => seen.runs.push(line), dispose() {} };
     },
   });
   load(["app.js"], []);
@@ -75,6 +75,25 @@ async function onLevel(check) {
     await settle();
   }
 }
+
+test("in dev mode the level's Solve button runs the solution's lines in the page's terminal", async () => {
+  const active = record("active");
+  const page = await boot({
+    hash: `#/level/${active.level}`,
+    replies: { "/api/status": { ...record("status"), active, dev: true }, "/api/level": record("level"), "/api/view": {}, "/api/observe": record("observation"), "/api/step": record("step"), "/api/check": record("check_unsolved") },
+  });
+  try {
+    await settle();
+    page.main.querySelector(".hud .solve").click();
+    await settle();
+    await settle();
+    assert.deepEqual(page.seen.runs, [record("level").solution.lines[0]]);
+  } finally {
+    global.location.hash = "#/";
+    page.fire("hashchange", {});
+    await settle();
+  }
+});
 
 test("a level's address opens the level screen, with its zones and the terminal under Rama's line", () => onLevel((page) => {
   assert.ok(page.main.querySelector(".level-screen .viz"));

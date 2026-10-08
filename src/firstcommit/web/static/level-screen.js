@@ -42,6 +42,10 @@ const LevelScreen = (function () {
   /* How the zones lay out on each view (zone-panel.js): history is the chart, the black box keeps
      to your row; every other view shows the zones as they are. */
   const ZONE_MODES = { history: "chart", blackbox: "row" };
+  /* Solve's pace: how often it looks, and how long a line or a goal may take before it gives up. */
+  const POLL_MS = 300;
+  const LINE_MS = 20000;
+  const GOAL_MS = 8000;
   const SAY = { preparing: "level.preparing", start: "level.start", down: "level.down", back: "level.back", hint: "level.hint", ended: "level.ended", partMet: "level.partMet", predictFirst: "level.predictFirst" };
 
 
@@ -54,12 +58,14 @@ const LevelScreen = (function () {
     ui.stars = el("span", { class: "hud-stars" });
     ui.intro = el("button", { type: "button", class: "btn intro", hidden: true, "aria-label": t("level.introTip"), onclick: () => scene(screen) }, ArtSprites.icon("replay"), el("span", { class: "lbl" }, t("level.intro")));
     ui.restart = el("button", { type: "button", class: "btn restart", disabled: true, onclick: () => restart(screen) }, ArtSprites.icon("restart"), el("span", { class: "lbl" }, t("level.restart")));
+    ui.solve = el("button", { type: "button", class: "btn solve", hidden: true, title: t("level.solveTip"), onclick: () => solve(screen) }, el("span", { class: "lbl" }, t("level.solve")));
     return el("header", { class: "hud" },
       el("a", { class: "btn", href: "#/", "aria-label": t("level.mapTip") }, ArtSprites.icon("back"), el("span", { class: "lbl" }, t("level.map"))),
       el("div", { class: "hud-title" }, ui.number, ui.name, ui.command),
       ui.commands,
       ui.stars,
       ui.intro,
+      ui.solve,
       ui.restart,
     );
   }
@@ -349,6 +355,52 @@ const LevelScreen = (function () {
     else screen.ui.comms.say(t(SAY.ended), "warn");
   }
 
+  /* Waits until `done()` holds, looking every POLL_MS on the screen's timers, for at most `ms`;
+     says whether it came to hold. */
+  async function until(screen, done, ms) {
+    const wait = () => new Promise((resolve) => screen.ctx.timers.setTimeout(resolve, POLL_MS));
+    for (let waited = 0; waited < ms && !screen.disposed; waited += POLL_MS) {
+      if (await done()) return true;
+      await wait();
+    }
+    return false;
+  }
+
+  const typedCount = async (ctx) => ((await ctx.refresh()).active || { commands: 0 }).commands;
+
+  /* Runs a line in the terminal and waits until the game has counted it, so the next follows it. */
+  async function runLine(screen, line) {
+    const { ctx } = screen;
+    const before = await typedCount(ctx);
+    ctx.terminal.run(line);
+    await until(screen, async () => (await typedCount(ctx)) > before, LINE_MS);
+  }
+
+  /* The goals still open, met in order with the solution's answers; a watch goal is left to the
+     polling, which passes it once its lines have run. Then the level's own question. */
+  async function answerGoals(screen, solution) {
+    const { level, state, ctx } = screen;
+    const { game } = ctx;
+    while (!screen.finished && !screen.disposed && state.step < level.steps.length) {
+      const at = state.step;
+      const step = level.steps[at];
+      if (step.kind === "read") await send(screen, () => game.step(null), stepped);
+      if (step.kind === "choice" || step.kind === "answer") await send(screen, () => game.step(solution.answers[step.id]), stepped);
+      if (!(await until(screen, async () => state.step > at || screen.finished, GOAL_MS))) return;
+    }
+    if (level.question.length && !screen.finished && !screen.disposed) await send(screen, () => game.check(solution.answer, false), checked);
+  }
+
+  /* Dev mode: plays the level from its solution, as a player would. The answers are read again
+     after the lines, since some only exist once the lines have run (a clone's commit count). */
+  async function solve(screen) {
+    const { ctx, levelId, ui } = screen;
+    ui.solve.disabled = true;
+    for (const line of (await ctx.game.level(levelId)).solution.lines) await runLine(screen, line);
+    await answerGoals(screen, (await ctx.game.level(levelId)).solution);
+    ui.solve.disabled = false;
+  }
+
   async function restart(screen) {
     stop(screen);
     screen.ui.restart.disabled = true;
@@ -462,6 +514,7 @@ const LevelScreen = (function () {
     ui.command.hidden = ui.command.textContent === "";
     screen.element.classList.toggle("is-challenge", level.challenge);
     ui.intro.hidden = level.scene.length === 0;
+    ui.solve.hidden = !ctx.status().dev;
     ui.restart.disabled = false;
     drawHud(screen);
     openView(screen);
@@ -512,7 +565,7 @@ const LevelScreen = (function () {
   }
 
   /* ctx: game, status(), refresh(), reload() (shows this screen again), sound, timers, page,
-     reducedMotion, terminal ({attach(host), detach(), type(text)}). */
+     reducedMotion, terminal ({attach(host), detach(), type(text), run(line)}). */
   function create(ctx, levelId) {
     const screen = { ctx, levelId, level: null, state: null, number: "", shownStars: null, view: "station", seen: [], crew: false, births: [], bearing: false, taped: false, firstMove: null, held: false, metNote: false, mission: null, poller: null, finished: false, offline: false, attached: false, disposed: false, ui: {} };
     screen.element = el("div", { class: "level-screen" });
