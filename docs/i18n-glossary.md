@@ -41,12 +41,12 @@ the forms that must not appear in any Spanish text.
 |---|---|
 | repository | el repositorio |
 | folder | la carpeta |
-| working folder | la carpeta de trabajo |
+| working folder | la carpeta de trabajo (not directorio de trabajo) |
 | file | el archivo |
 | remote | el remoto |
 | untracked | sin seguimiento ("lo lista como sin seguimiento") |
 | snapshot | la instantánea |
-| history | la historia |
+| history | la historia (not historial) |
 | author | el autor, la autora; "quién lo hizo" when the person is unknown |
 | computer | la computadora |
 | terminal | la terminal |
