@@ -1350,13 +1350,14 @@ def with_events(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch, *ev
     return level
 
 
-def test_an_event_runs_once_right_after_the_first_observation_so_the_next_one_tells_its_change(sample_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_an_event_runs_once_after_the_first_observation_has_been_returned_so_the_next_one_tells_its_change(sample_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     level = with_events(sample_level, monkeypatch, kit.LevelEvent(id="arrive", run=write_note))
     game.start(level.id)
     first = game.observe()
     assert [entry["path"] for entry in first["project"]["files"]] == ["hello.txt"]
-    assert (lab_project(game_home) / "note.txt").read_text() == "x"
+    assert not (lab_project(game_home) / "note.txt").exists()
     assert [event["kind"] for event in game.observe()["events"]] == ["file-created"]
+    assert (lab_project(game_home) / "note.txt").read_text() == "x"
     (game_home / "observed.json").unlink()
     game.observe()
     game.observe()
@@ -1382,8 +1383,10 @@ def test_starting_again_runs_the_events_again(sample_level: runner.Level, game_h
     level = with_events(sample_level, monkeypatch, kit.LevelEvent(id="arrive", run=write_note))
     game.start(level.id)
     game.observe()
+    game.observe()
     game.start(level.id)
     assert active_record()["events"] == []
+    game.observe()
     game.observe()
     assert (lab_project(game_home) / "note.txt").read_text() == "x"
 
