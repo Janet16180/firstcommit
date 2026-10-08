@@ -5,7 +5,7 @@ const test = require("node:test");
 const { installBrowser, load } = require("./load");
 
 installBrowser();
-const { Strip, Strings } = load(["dom.js", "strings.js", "art-pixels.js", "art-sprites.js", "strip.js"], ["Strip", "Strings"]);
+const { Strip, Strings } = load(["dom.js", "strings.js", "places.js", "art-pixels.js", "art-sprites.js", "strip.js"], ["Strip", "Strings"]);
 
 const file = (path, state = "saved") => ({ path, state });
 const capsule = (hash, author = "You") => ({ hash, short: hash, subject: hash, author, parents: [], lane: 0, revert: false, labels: [] });
@@ -62,7 +62,7 @@ test("the cards speak the page's language", () => {
   try {
     const strip = Strip.create({ onExpand: () => {} });
     strip.update(reading({ workshop: [file("notes.txt", "edited")] }));
-    assert.match(card(strip, "workshop").textContent, /Taller/);
+    assert.match(card(strip, "workshop").textContent, /Carpeta de trabajo \(taller\)/);
     assert.match(card(strip, "workshop").textContent, /en ningún branch/);
   } finally {
     Strings.use("en");
@@ -90,4 +90,10 @@ test("a conflicted file carries a conflict tag, so a paused merge shows in the s
   const tags = [...card(strip, "workshop").querySelectorAll(".strip-file")].map((node) => [node.firstChild.textContent, node.querySelector(".strip-tag")?.dataset.state || null]);
   assert.deepEqual(tags, [["README.md", "conflicted"], ["todo.txt", "edited"], ["notes.txt", null]]);
   assert.equal(card(strip, "workshop").querySelector(".strip-tag").textContent, "conflict");
+});
+
+test("each card names its place by the real git name first, the game's name in brackets", () => {
+  const strip = Strip.create({ onExpand: () => {} });
+  strip.update(reading({ remote: [] }));
+  assert.deepEqual([...strip.element.querySelectorAll(".strip-name")].map((name) => name.textContent), ["Working folder (workshop)", "Staging area (cargo dock)", "Repository (vault)", "Remote (mothership)"]);
 });

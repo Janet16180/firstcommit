@@ -1272,12 +1272,12 @@ pre.code code {
 .z-head h3 {
   margin: 0;
   font: 700 1.12rem/1.2 var(--f-px);
+  overflow-wrap: anywhere;
 }
 
-.z-head small {
-  display: block;
-  font: 1.02rem/1 var(--f-term);
-  color: var(--ink-soft);
+.z-head > div {
+  flex: 1;
+  min-width: 0;
 }
 
 .z-count {
@@ -2216,6 +2216,29 @@ pre.code code {
   padding-bottom: calc(var(--dock-h, 120px) + 28px);
 }
 
+/* A place's name (places.js): the real git name, then the game's in brackets, quieter. A small
+   card keeps the real name alone. */
+.place-game {
+  color: var(--ink-soft);
+  font-size: 0.85em;
+  font-weight: 400;
+}
+
+.strip-name .place-game {
+  display: none;
+}
+
+.chain-pin .place-game {
+  color: inherit;
+}
+
+/* A zone's heading keeps the game's name on its own line under the real one, where the git name
+   used to be. */
+.z-head .place-game {
+  display: block;
+  font: 0.8rem var(--f-term);
+}
+
 /* The chain (chain.js): one row per commit, its lane on the left. Each lane is an SVG stretched to
    its row, so a row may grow when its names wrap and the lines still meet; one viewBox unit is
    one pixel across. */
@@ -3003,6 +3026,10 @@ pre.code code {
 }
 
 @media (max-width: 600px) {
+  .place-game {
+    display: none;
+  }
+
   .chain-hash {
     display: none;
   }
@@ -3031,8 +3058,18 @@ pre.code code {
     font-size: 1rem;
   }
 
-  .z-head small {
+  .z-head .place-game {
     display: none;
+  }
+
+  .z-head h3 {
+    font-size: 0.9rem;
+  }
+
+  /* A file's name wraps rather than losing its end to an ellipsis. */
+  .fname {
+    white-space: normal;
+    overflow-wrap: anywhere;
   }
 
   .zone {

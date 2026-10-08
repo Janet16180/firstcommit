@@ -5,7 +5,7 @@ const test = require("node:test");
 const { installBrowser, load } = require("./load");
 
 installBrowser();
-const { Desk, Strings } = load(["dom.js", "strings.js", "desk.js"], ["Desk", "Strings"]);
+const { Desk, Strings } = load(["dom.js", "strings.js", "places.js", "desk.js"], ["Desk", "Strings"]);
 
 /* A file as a snapshot lists it, by the blob each place holds (null: not there). */
 const file = (path, head, index, folder) => ({ path, head, index, folder, head_mode: null, index_mode: null, folder_mode: null, ignored: false, conflicted: false, repository: false, index_change: null, folder_change: null });
@@ -23,7 +23,7 @@ const lines = (node) => [...node.querySelectorAll(".desk-line")].map((line) => [
 
 test("the desk lays out the working folder, the staging area and your commits, each file tagged by where Git's copy is", () => {
   const made = desk();
-  assert.deepEqual([...made.element.querySelectorAll(".desk-zone h3")].map((head) => head.textContent), ["Working folder", "Staging area", "Your commits"]);
+  assert.deepEqual([...made.element.querySelectorAll(".desk-zone h3")].map((head) => head.textContent), ["Working folder (workshop)", "Staging area (cargo dock)", "Repository (vault)"]);
   assert.equal(card(made, "engine.cfg").querySelector(".desk-tag").textContent, "edited");
   assert.equal(card(made, "notes.txt").querySelector(".desk-tag").textContent, "Git's copy is in the staging area");
   assert.deepEqual([...made.element.querySelectorAll(".desk-zone.is-staging .desk-name")].map((name) => name.textContent), ["notes.txt"]);
@@ -62,7 +62,7 @@ test("the desk speaks Spanish when the page does", () => {
   Strings.use("es");
   try {
     const made = desk({ kept: true });
-    assert.deepEqual([...made.element.querySelectorAll(".desk-zone h3")].map((head) => head.textContent), ["Carpeta de trabajo", "Staging area", "Tus commits"]);
+    assert.deepEqual([...made.element.querySelectorAll(".desk-zone h3")].map((head) => head.textContent), ["Carpeta de trabajo (taller)", "Staging area (muelle de carga)", "Repositorio (bóveda)"]);
     assert.equal(made.element.querySelector(".desk-kept-name").textContent, "Git tiene una copia");
     assert.equal(made.element.querySelector(".desk-only").textContent, "solo aquí");
   } finally {

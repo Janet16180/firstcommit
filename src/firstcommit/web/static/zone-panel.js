@@ -17,10 +17,10 @@
  * both hold sits level on each side, marked shared and tethered across; in a level with no
  * mothership, the vault alone). The chart says a paused operation over itself, and a key under
  * it says what a tether means once one is drawn.
- * Needs dom.js, strings.js, art-sprites.js, typed.js and zones.js. Defines one global, ZonePanel.
+ * Needs dom.js, strings.js, places.js, art-sprites.js, typed.js and zones.js. Defines one global, ZonePanel.
  */
 
-/* global Dom, Strings, ArtSprites, Typed, Zones */
+/* global Dom, Strings, ArtSprites, Typed, Zones, Places */
 /* exported ZonePanel */
 
 const ZonePanel = (function () {
@@ -162,12 +162,10 @@ const ZonePanel = (function () {
   /* A zone's frame; `key` names it on the page ("crew-vault" for Alex's vault), `name` its kind. */
   function zoneShell(key) {
     const name = base(key);
-    const title = t(`zones.${name}`);
-    const git = t(`zones.${name}Git`);
     const shell = { count: el("span", { class: "z-count" }, "–"), body: el("div", { class: "z-body" }) };
     shell.operation = el("p", { class: "z-op", hidden: true });
-    shell.element = el("article", { class: "zone", "data-zone": key, "aria-label": title },
-      el("header", { class: "z-head" }, el("span", { class: "zico", "aria-hidden": "true" }), el("div", {}, el("h3", {}, title), el("small", {}, git)), shell.count),
+    shell.element = el("article", { class: "zone", "data-zone": key, "aria-label": Places.text(name) },
+      el("header", { class: "z-head" }, el("span", { class: "zico", "aria-hidden": "true" }), el("div", {}, el("h3", {}, Places.label(name))), shell.count),
       shell.operation,
       shell.body,
     );

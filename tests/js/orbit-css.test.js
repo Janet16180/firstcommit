@@ -241,3 +241,19 @@ test("in the column, history's vault and mothership stack with push pointing dow
   assert.match(block, /\.stage\.is-column \.viz\.is-chart \.fl\.is-back \.art-icon {\s*transform: rotate\(-90deg\);/);
   assert.match(block, /\.stage\.is-column \.viz\.is-chart \.tethers,/);
 });
+
+test("a place's game name is quieter after the real one, and drops on a small card and on a phone", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.match(rule(".place-game"), /color: var\(--ink-soft\);/);
+  assert.match(rule(".strip-name .place-game"), /display: none;/);
+  const phone = css.slice(css.indexOf("@media (max-width: 600px)"));
+  assert.match(phone.slice(0, phone.indexOf("\n}")), /\.place-game {\s*display: none;/);
+});
+
+test("a zone's longer real name wraps inside its heading and never pushes the count out", () => {
+  const rule = (selector) => css.slice(css.indexOf(`\n${selector} {`), css.indexOf("}", css.indexOf(`\n${selector} {`)));
+  assert.match(rule(".z-head > div"), /min-width: 0;/);
+  assert.match(rule(".z-head h3"), /overflow-wrap: anywhere;/);
+  const phone = css.slice(css.indexOf("@media (max-width: 600px)"));
+  assert.match(phone.slice(0, phone.indexOf("\n}")), /\.z-head \.place-game {\s*display: none;/);
+});
