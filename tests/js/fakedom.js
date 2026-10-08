@@ -348,6 +348,11 @@ class FakeElement extends FakeNode {
     if (this.ownerDocument.activeElement === this) this.ownerDocument.activeElement = this.ownerDocument.body;
   }
 
+  /* Nothing scrolls here: the last options asked for are kept for a test to read. */
+  scrollIntoView(options) {
+    this.scrolledIntoView = options;
+  }
+
   closest(selector) {
     const parts = parseSelector(selector);
     for (let at = this; at && at.nodeType === 1; at = at.parentNode) if (matches(at, parts)) return at;

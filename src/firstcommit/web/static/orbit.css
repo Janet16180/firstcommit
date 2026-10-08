@@ -3109,3 +3109,344 @@ pre.code code {
     animation: none;
   }
 }
+
+/* The playground (playground-screen.js): the views and one picture on the left, the terminals on
+   the right; one column below 980px, and on a phone the picture folds into one line. */
+.pg-body {
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 16px 16px 28px;
+  display: grid;
+  gap: 18px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  align-items: start;
+}
+
+.pg-left,
+.pg-terms {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.pg-views,
+.pg-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.pg-tab,
+.pg-more-button {
+  font: 700 0.9rem var(--f-ui);
+  padding: 4px 12px;
+  background: var(--panel);
+  color: var(--ink-soft);
+  border: 2px solid var(--edge);
+  cursor: pointer;
+}
+
+.pg-tab[aria-selected="true"],
+.pg-more-button[aria-current="true"] {
+  background: var(--z-va);
+  color: var(--on-accent);
+}
+
+.pg-tab[hidden] {
+  display: none;
+}
+
+.pg-more {
+  position: relative;
+}
+
+.pg-more-list {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  background: var(--panel);
+  border: 2px solid var(--edge);
+  box-shadow: 4px 4px 0 var(--edge);
+}
+
+.pg-more-list[hidden] {
+  display: none;
+}
+
+.pg-more-list .pg-tab {
+  text-align: left;
+  white-space: nowrap;
+}
+
+.pg-whose {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font: 700 0.9rem var(--f-ui);
+}
+
+.pg-whose[hidden] {
+  display: none;
+}
+
+.pg-whose-button {
+  font: 700 0.85rem var(--f-ui);
+  padding: 3px 10px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 2px solid var(--you);
+  cursor: pointer;
+}
+
+.pg-whose-button[data-whose="alex"] {
+  border-color: var(--alex);
+}
+
+.pg-whose-button[data-whose="you"][aria-pressed="true"] {
+  background: var(--you);
+  color: var(--on-accent);
+}
+
+.pg-whose-button[data-whose="alex"][aria-pressed="true"] {
+  background: var(--alex);
+  color: var(--on-accent);
+}
+
+.pg-pictured {
+  position: relative;
+  min-width: 0;
+  padding: 14px;
+  background: var(--panel);
+  border: 3px solid var(--edge);
+  box-shadow: 5px 5px 0 var(--edge);
+}
+
+.pg-key {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 2;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 2px solid var(--edge);
+  border-radius: 50%;
+  background: var(--panel);
+  color: var(--ink);
+  font: 700 0.9rem/1 var(--f-body);
+  cursor: pointer;
+}
+
+.pg-key[aria-pressed="true"] {
+  background: var(--gold);
+}
+
+/* The legend folds behind "i": each picture's own key, which lists only what it draws. */
+.pg-pictured:not(.is-keyed) .chain-legend,
+.pg-pictured:not(.is-keyed) .viz .legend,
+.pg-pictured:not(.is-keyed) .chart-key {
+  display: none;
+}
+
+.pg-fold {
+  display: none;
+}
+
+.pg-loose,
+.pg-live {
+  margin: 10px 0 0;
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+.pg-loose[hidden],
+.pg-live[hidden],
+.pg-down[hidden] {
+  display: none;
+}
+
+.pg-live {
+  padding: 6px 10px;
+  border-left: 4px solid var(--gold);
+}
+
+.pg-down {
+  max-width: 1600px;
+  margin: 12px auto 0;
+  padding: 8px 16px;
+  color: var(--s-new);
+  font-weight: 700;
+}
+
+.pg-choose {
+  max-width: 900px;
+  margin: 24px auto 12px;
+  padding: 0 16px;
+  font: 700 1.3rem var(--f-px);
+}
+
+.pg-choices {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 0 16px 28px;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.pg-choice {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 12px 14px;
+  background: var(--panel);
+  color: var(--ink);
+  border: 3px solid var(--edge);
+  box-shadow: 4px 4px 0 var(--edge);
+  text-align: left;
+  cursor: pointer;
+}
+
+.pg-choice-title {
+  font: 700 1.05rem var(--f-ui);
+}
+
+.pg-choice-blurb {
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+.pg-starting {
+  max-width: 900px;
+  margin: 40px auto;
+  padding: 0 16px;
+}
+
+/* The playground's picture is half the screen wide: the zones lay out by its width, as the level
+   screen's do by the screen's (the 980px and 760px blocks below the stage's). */
+.pg-slot {
+  container-type: inline-size;
+}
+
+@container (max-width: 980px) {
+  .pg-slot .viz-row,
+  .pg-slot .viz.is-chart .viz-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .pg-slot .flow {
+    display: none;
+  }
+
+  .pg-slot .crew-sky {
+    justify-self: center;
+    width: min(100%, 320px);
+  }
+
+  .pg-slot .station-row,
+  .pg-slot .station.is-mirror .station-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr);
+    gap: 6px;
+  }
+
+  .pg-slot .zone {
+    min-height: 150px;
+  }
+
+  .pg-slot .z-body {
+    max-height: 180px;
+  }
+}
+
+@container (max-width: 760px) {
+  .pg-slot .viz-crew {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas: "sky" "you" "alex";
+  }
+}
+
+@media (max-width: 980px) {
+  .pg-body {
+    grid-template-columns: minmax(0, 1fr);
+    padding: 12px 12px 20px;
+  }
+}
+
+/* A phone: the picture starts folded into its one line, which a tap unfolds. */
+@media (max-width: 760px) {
+  .pg-fold {
+    display: flex;
+    width: 100%;
+    padding: 4px 30px 4px 0;
+    background: none;
+    border: 0;
+    color: var(--ink);
+    font: 700 0.9rem var(--f-ui);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  /* A drawn chevron: right while folded, down when open. */
+  .pg-fold::before {
+    content: "";
+    flex: none;
+    align-self: center;
+    margin-right: 8px;
+    border: 6px solid transparent;
+    border-left-color: currentColor;
+    border-right-width: 0;
+  }
+
+  .pg-fold[aria-expanded="true"]::before {
+    border: 6px solid transparent;
+    border-top-color: currentColor;
+    border-bottom-width: 0;
+  }
+
+  .pg-pictured {
+    padding: 8px 10px;
+  }
+
+  .pg-tab,
+  .pg-more-button {
+    padding: 3px 7px;
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
+  /* One row of tabs that scrolls sideways; More views stays at its end, its list over the picture. */
+  .pg-views {
+    flex-wrap: nowrap;
+  }
+
+  .pg-tabs {
+    flex: 1;
+    flex-wrap: nowrap;
+    min-width: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .pg-more-list {
+    right: 0;
+    left: auto;
+  }
+
+  .pg-pictured.is-folded .pg-slot,
+  .pg-pictured.is-folded .pg-key {
+    display: none;
+  }
+}
