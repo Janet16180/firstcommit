@@ -39,7 +39,7 @@ Comandos para recordar:
 """
 
 STEPS = {
-    "push": kit.StepText(text="Envía tu commit a la nave nodriza."),
+    "push": kit.StepText(text="Intenta subir tu commit."),
     "pull": kit.StepText(text="Trae el commit de Alex a tu `main`."),
     "send": kit.StepText(text="Sube los dos commits."),
 }
@@ -49,7 +49,7 @@ WAITING = "Alex todavía está en camino. Espera un momento al informe."
 BOUNCED = "Git rechazó el push: la nave nodriza tiene el commit de Alex, y tu `main` no."
 NOT_BOUNCED = "Sube tu commit: `git push`."
 JOINED = "Tu `main` tiene el commit de Alex y el tuyo."
-NOT_JOINED = "Tu `main` todavía no tiene el commit de Alex. Tráelo: `git pull --no-rebase`."
+NOT_JOINED = "Tu `main` todavía no tiene el commit de Alex. Tráelo: `git pull`."
 SENT = "La nave nodriza tiene el commit de Alex y el tuyo."
 NOT_SENT = "Sube la historia unida: `git push`."
 ALEX_DROPPED = (

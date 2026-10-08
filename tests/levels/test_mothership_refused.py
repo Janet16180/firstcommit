@@ -46,3 +46,11 @@ def test_a_forced_push_drops_alexs_commit_and_the_level_offers_to_start_again() 
     assert rule is not None and (rule.mood, rule.text) == ("err", level.FORCED)
     verdict = level.check(lab, state, None, typed)
     assert (verdict.solved, verdict.lost, verdict.message) == (False, True, level.ALEX_DROPPED)
+
+
+def test_nothing_names_no_rebase_before_the_plain_pull_has_stopped() -> None:
+    assert watch(level, "push").text == "Try to send your commit up."
+    assert watch(level, "pull").command == "git pull"
+    lab, state = arrived(level)
+    typed = typed_in(lab, "git push")
+    assert "--no-rebase" not in watch(level, "pull").watch(lab, state, typed).message
