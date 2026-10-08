@@ -209,6 +209,26 @@ test("a solve by a line whose reaction plays a moment keeps that reaction on Ram
   run.view.dispose();
 });
 
+test("a solve that comes a tick after a moment's reaction, while the moment plays, leaves that reaction on Rama's line", async () => {
+  let observed = 0;
+  let checks = 0;
+  const reactions = [{ line: "git pull", mood: "ok", text: para("The whole ship is in your station."), moment: "launch" }];
+  const run = screen({
+    active: { ...record("active"), step: 3, auto_check: true },
+    replies: {
+      "/api/observe": () => ({ ...quiet(), reactions: (observed += 1) === 1 ? reactions : [] }),
+      "/api/check": () => ((checks += 1) === 1 ? record("check_unsolved") : record("check_solved")),
+    },
+  });
+  await settle();
+  await run.clock.advance(1500);
+  assert.ok(checks >= 2);
+  assert.equal(run.q(".comms-text").textContent, "The whole ship is in your station.");
+  await run.clock.advance(10000);
+  assert.ok(Boolean(run.q(".dock")));
+  run.view.dispose();
+});
+
 test("once the quest is done the mission is checked by itself; a solve stops the polling and docks the lesson at the bottom", async () => {
   const run = screen({ active: { ...record("active"), step: 3, auto_check: true }, replies: { "/api/check": record("check_solved") } });
   await settle();

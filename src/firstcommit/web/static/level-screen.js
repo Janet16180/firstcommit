@@ -256,7 +256,8 @@ const LevelScreen = (function () {
     screen.ui.comms.say(said.flatMap((reaction) => reaction.text), reactions[reactions.length - 1].mood);
   }
 
-  /* A reaction a met goal must not talk over: a warning, an error, or one that plays a moment. */
+  /* A reaction a met goal must not talk over: a warning, an error, or one that plays a moment (nor,
+     while that moment plays, a goal met a tick later). */
   const kept = (reaction) => reaction.moment !== null || reaction.mood === "warn" || reaction.mood === "err";
 
   function moments(screen, reactions) {
@@ -287,7 +288,7 @@ const LevelScreen = (function () {
       if (observation.commands.length && !observation.reactions.length && predicting(screen)) screen.ui.comms.say(t(SAY.predictFirst), "info");
       echo(screen, observation.commands);
       if (observation.commands.length) await recount(screen);
-      const keep = observation.reactions.some(kept);
+      const keep = observation.reactions.some(kept) || screen.ui.moments.showing();
       if (plan.watchStep) stepped(screen, await game.step(null), { watched: true, keep });
       if (plan.autoCheck && !screen.finished) checked(screen, await game.check(null, true), { auto: true, keep });
     } catch (error) {

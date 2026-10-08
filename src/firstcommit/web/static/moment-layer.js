@@ -9,8 +9,9 @@
  * create({reducedMotion, timers})
  *                         {element, play(name)}: the layer, hidden until a moment plays; under
  *                         reduced motion a moment is its still frame, for as long as it lasts.
- *                         The moments are timed on `timers` (window unless given). idle() is a
- *                         promise that resolves once no moment is showing.
+ *                         The moments are timed on `timers` (window unless given). showing() says
+ *                         whether a moment is on the layer; idle() is a promise that resolves once
+ *                         none is.
  */
 
 /* global Dom, Strings, ArtMoments */
@@ -26,7 +27,7 @@ const MomentLayer = (function () {
   function create({ reducedMotion = true, timers = window } = {}) {
     const played = new Set();
     const element = el("div", { class: "moment-layer", hidden: true, onclick: () => hide() });
-    let showing = Promise.resolve();
+    let shown = Promise.resolve();
     let release = () => {};
 
     function hide() {
@@ -42,7 +43,7 @@ const MomentLayer = (function () {
         if (played.has(name)) return;
         played.add(name);
         release();
-        showing = new Promise((resolve) => (release = resolve));
+        shown = new Promise((resolve) => (release = resolve));
         const moment = ArtMoments.play(name, { captions: captions(name), reducedMotion, timers });
         element.replaceChildren(moment.element);
         element.hidden = false;
@@ -51,7 +52,9 @@ const MomentLayer = (function () {
         });
       },
 
-      idle: () => showing,
+      showing: () => !element.hidden,
+
+      idle: () => shown,
     };
   }
 

@@ -46,12 +46,15 @@ test("a moment covers the zones until it is over", async () => {
   await withFakeMoments(async (played) => {
     const layer = MomentLayer.create();
     assert.equal(layer.element.hidden, true);
+    assert.equal(layer.showing(), false);
     layer.play("launch");
     assert.equal(layer.element.hidden, false);
+    assert.equal(layer.showing(), true);
     assert.ok(Boolean(layer.element.querySelector(".art-moment")));
     played[0].end();
     await new Promise((resolve) => setImmediate(resolve));
     assert.equal(layer.element.hidden, true);
+    assert.equal(layer.showing(), false);
     assert.equal(layer.element.childNodes.length, 0);
   });
 });
