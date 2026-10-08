@@ -104,3 +104,11 @@ test("the guide says what git really does, as engine checked it", () => {
   assert.deepEqual(moves(InfographicText.states.moves, "staged", "modified"), ["git restore --staged (a file the last commit holds)"]);
   assert.deepEqual(moves(InfographicText.states.moves, "staged", "untracked"), ["git rm --cached (before the file's first commit)", "git restore --staged (a new file, once the repository has a commit)"]);
 });
+
+test("switching is taught in Name tags, and clone on the mothership, where the new map teaches them", () => {
+  const taughtBy = (command) => items.find((item) => item.command === command).taught.chapter;
+  assert.equal(taughtBy("git clone <url>"), "mothership");
+  assert.equal(taughtBy("git switch -c <branch>"), "names");
+  assert.equal(taughtBy("git switch <branch>"), "names");
+  assert.equal(taughtBy("git switch, git restore"), "names");
+});

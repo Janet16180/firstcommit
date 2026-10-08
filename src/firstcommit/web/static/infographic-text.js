@@ -62,7 +62,7 @@ const InfographicText = Object.freeze({
           {
             command: "git clone <url>",
             what: { en: "Copies a remote repository, its whole history included, into a new folder.", es: "Copia un repositorio remoto, con toda su historia, en una carpeta nueva." },
-            taught: { chapter: "branch" },
+            taught: { chapter: "mothership" },
           },
         ],
       },
@@ -128,12 +128,12 @@ const InfographicText = Object.freeze({
           {
             command: "git switch -c <branch>",
             what: { en: "Creates a branch, a movable label on a commit, and switches to it.", es: "Crea un branch, una etiqueta que se mueve de commit en commit, y te cambia a él." },
-            taught: { chapter: "branch" },
+            taught: { chapter: "names" },
           },
           {
             command: "git switch <branch>",
             what: { en: "Moves HEAD to another branch; the working folder takes that branch's files.", es: "Mueve HEAD a otro branch; la carpeta de trabajo pasa a tener los archivos de ese branch." },
-            taught: { chapter: "branch" },
+            taught: { chapter: "names" },
           },
           {
             command: "git merge <branch>",
@@ -211,7 +211,7 @@ const InfographicText = Object.freeze({
       { from: "workshop", to: "dock", command: "git add", taught: { chapter: "cargo", levels: 1 } },
       { from: "dock", to: "workshop", command: "git restore --staged", taught: { chapter: "cargo" } },
       { from: "dock", to: "vault", command: "git commit", taught: { chapter: "vault" } },
-      { from: "vault", to: "workshop", command: "git switch, git restore", taught: { chapter: "branch" } },
+      { from: "vault", to: "workshop", command: "git switch, git restore", taught: { chapter: "names" } },
       { from: "vault", to: "mothership", command: "git push", taught: { chapter: "mothership" } },
       { from: "mothership", to: "vault", command: "git fetch", taught: { chapter: "mothership" } },
       { from: "mothership", to: "workshop", command: { en: "git pull (fetch, then merge or rebase)", es: "git pull (fetch y luego merge o rebase)" }, taught: { chapter: "mothership" } },
