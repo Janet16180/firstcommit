@@ -262,3 +262,10 @@ test("a move log row wraps git's long lines, a clone's path included, rather tha
   assert.match(rule(".movelog-line"), /overflow-wrap: anywhere;/);
   assert.match(rule(".movelog-line"), /min-width: 0;/);
 });
+
+test("on a phone a file's chip wraps its name, and its tag goes under the name when both do not fit", () => {
+  const phone = css.slice(css.indexOf("@media (max-width: 600px)"));
+  const block = phone.slice(0, phone.indexOf("\n}"));
+  assert.match(block, /\.file {\s*flex-wrap: wrap;/);
+  assert.match(block, /\.fname {\s*white-space: normal;\s*overflow-wrap: anywhere;/);
+});

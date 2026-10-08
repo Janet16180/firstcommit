@@ -396,10 +396,8 @@ def test_each_level_opens_on_the_main_view_of_the_plan() -> None:
         "mothership-refused": "crew",
         "mothership-recruit": "history",
         "branch-send": "history",
-        "branch-switch": "history",
         "branch-ticket": "history",
         "conflict-meet": "history",
-        "conflict-abort": "history",
         "conflict-collision": "sides",
         "conflict-docking": "history",
     }

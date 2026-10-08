@@ -19,7 +19,9 @@
  *   maps a child's hash to the look of its lines ("ghost", "mothership"); `walk` lists hashes
  *   whose links light up in turn ("walk", with the link's step).
  * create() {element, update(view)}: view = {project, github, teammate, ghosts, show: {mothership,
- *   alex, ghosts}, look: [subject | "HEAD"], walk, placed, legend}. main's line (else origin/main's,
+ *   alex, ghosts}, look: [subject | "HEAD"], walk, placed, legend}. A revert's gold arc runs in a
+ *   margin left of the lanes, from its capsule down to the commit it undoes (found by the
+ *   subject git gives a revert), and both rows say so. main's line (else origin/main's,
  *   else HEAD's) holds the first column. `walk` lights git log's path
  *   from HEAD; `placed` names get a tick (the captain's chart); `legend: false` leaves the key
  *   out. `whatif` (names) draws the WHAT IF: greyscale under its heading, the chain without those
@@ -38,6 +40,10 @@ const Chain = (function () {
   const X0 = 10;
   const COLUMN = 28;
   const HEIGHT = 100;
+  /* A revert's arc runs in a margin left of the first column, at ARC. */
+  const MARGIN = 14;
+  const ARC = -7;
+  const REVERT = /^Revert "(.+)"$/;
 
   function layout(commits, trunk) {
     const byHash = new Map(commits.map((commit) => [commit.hash, commit]));
@@ -74,7 +80,16 @@ const Chain = (function () {
     return { rows: grouped.map((commit) => ({ commit, column: columns.get(commit.hash) })), columns: next };
   }
 
-  function wires(rows, styles, walk = []) {
+  /* Each revert and the commit it undoes, found by the subject git gives a revert, as row pairs. */
+  function undoings(rows) {
+    return rows.flatMap((row, top) => {
+      const undone = REVERT.exec(row.commit.subject);
+      const bottom = undone ? rows.findIndex((each, at) => at > top && each.commit.subject === undone[1]) : -1;
+      return bottom > top ? [[top, bottom]] : [];
+    });
+  }
+
+  function wires(rows, styles, walk = [], undone = []) {
     const index = new Map(rows.map((row, at) => [row.commit.hash, at]));
     const pieces = rows.map(() => []);
     const link = (top, bottom, style, step = null) => {
@@ -94,6 +109,12 @@ const Chain = (function () {
     walk.slice(1).forEach((hash, step) => {
       if (index.has(walk[step]) && index.has(hash)) link(index.get(walk[step]), index.get(hash), "walk", step);
     });
+    for (const [top, bottom] of undone) {
+      const arc = (shape, column) => ({ shape, from: column, to: column, style: "undo", step: null });
+      pieces[top].push(arc("undo-out", rows[top].column));
+      for (let row = top + 1; row < bottom; row += 1) pieces[row].push(arc("undo-full", 0));
+      pieces[bottom].push(arc("undo-in", rows[bottom].column));
+    }
     return pieces;
   }
 
@@ -104,11 +125,14 @@ const Chain = (function () {
     bottom: (a) => `M${x(a)} ${HEIGHT / 2} L${x(a)} ${HEIGHT}`,
     in: (a, b) => `M${x(a)} 0 L${x(b)} ${HEIGHT / 2}`,
     out: (a, b) => `M${x(a)} ${HEIGHT / 2} L${x(b)} ${HEIGHT}`,
+    "undo-out": (a) => `M${x(a) - 9} ${HEIGHT / 2} L${ARC} ${HEIGHT / 2} L${ARC} ${HEIGHT}`,
+    "undo-full": () => `M${ARC} 0 L${ARC} ${HEIGHT}`,
+    "undo-in": (a) => `M${ARC} 0 L${ARC} ${HEIGHT / 2} L${x(a) - 9} ${HEIGHT / 2} M${x(a) - 15} ${HEIGHT / 2 - 7} L${x(a) - 9} ${HEIGHT / 2} L${x(a) - 15} ${HEIGHT / 2 + 7}`,
   };
 
-  function lane(pieces, columns) {
+  function lane(pieces, columns, margin) {
     const width = 2 * X0 + (columns - 1) * COLUMN;
-    return svg("svg", { class: "chain-lane", viewBox: `0 0 ${width} ${HEIGHT}`, preserveAspectRatio: "none", "aria-hidden": "true" },
+    return svg("svg", { class: "chain-lane", viewBox: `${-margin} 0 ${width + margin} ${HEIGHT}`, preserveAspectRatio: "none", "aria-hidden": "true" },
       ...pieces.map((piece) => {
         const path = svg("path", { class: `chain-wire is-${piece.style}`, d: PATHS[piece.shape](piece.from, piece.to), "vector-effect": "non-scaling-stroke" });
         if (piece.step !== null) path.style.setProperty("--step", String(piece.step));
@@ -168,6 +192,14 @@ const Chain = (function () {
     return ahead.reduce((best, other) => (line(other).length > line(best).length ? other : best), base);
   }
 
+  /* What a row says about a revert: what it undoes, or that a later commit undid it. */
+  function undoNote(rows, undone, at) {
+    const pair = undone.find(([top, bottom]) => top === at || bottom === at);
+    if (!pair) return null;
+    const text = pair[0] === at ? t("chain.undoes", { subject: rows[pair[1]].commit.subject }) : t("chain.undone");
+    return el("span", { class: "chain-undo" }, text);
+  }
+
   /* HEAD's commit and its first parents, the path git log walks. */
   function walkFrom(project, byHash) {
     const path = [];
@@ -213,12 +245,16 @@ const Chain = (function () {
       const styles = new Map([...motherOnly.map((commit) => [commit.hash, "mothership"]), ...[...lost, ...orphaned].map((commit) => [commit.hash, "ghost"])]);
       const trunk = trunkOf(project, byHash, show.mothership ? github : null);
       const { rows, columns } = layout(commits, trunk ? [trunk] : []);
-      const pieces = wires(rows, styles, walk ? walkFrom(project, byHash) : []);
+      const undone = undoings(rows);
+      const margin = undone.length ? MARGIN : 0;
+      const pieces = wires(rows, styles, walk ? walkFrom(project, byHash) : [], undone);
       const looked = new Set(look);
       element.setAttribute("aria-label", t("chain.label"));
       element.classList.toggle("is-whatif", Boolean(whatif));
+      element.classList.toggle("has-undo", margin > 0);
       element.style.setProperty("--columns", String(columns));
       element.style.setProperty("--column-width", `${COLUMN}px`);
+      element.style.setProperty("--margin", `${margin}px`);
       element.replaceChildren(
         ...(whatif ? [el("span", { class: "chain-whatif" }, t("moment.whatIf"))] : []),
         el("ol", { class: "chain-rows" }, ...rows.map((row, at) => {
@@ -228,11 +264,12 @@ const Chain = (function () {
           const cap = el("span", { class: `chain-cap ${kind} ${commit.subject.startsWith("Revert ") ? "is-revert" : ""}`.trim() });
           cap.style.setProperty("--column", String(row.column));
           return el("li", { class: ["chain-row", kind, looked.has(commit.subject) && "is-look"].filter(Boolean).join(" "), "data-hash": commit.hash },
-            el("span", { class: "chain-lanes" }, lane(pieces[at], columns), cap),
+            el("span", { class: "chain-lanes" }, lane(pieces[at], columns, margin), cap),
             el("span", { class: "chain-body" },
               el("code", { class: "chain-hash" }, commit.short),
               el("span", { class: "chain-subject" }, commit.subject),
               style === "mothership" && el("span", { class: "chain-only" }, t("chain.only")),
+              undoNote(rows, undone, at),
               ...tags(project, commit.hash, looked.has("HEAD"), placed),
               ...(show.mothership ? pins(github, commit.hash, "mothership") : []),
               ...(show.alex ? pins(teammate, commit.hash, "alex") : [])));
