@@ -1298,8 +1298,8 @@ def test_observing_reacts_to_each_typed_line_rama_has_something_to_say_about_wit
     kit.git(lab_project(game_home), "add", "hello.txt")
     type_lines(game_home, ("ls", 0), ("true", 0), ("git add hello.txt", 0))
     assert game.observe()["reactions"] == [
-        {"line": "ls", "mood": "info", "text": markup.parse(reactions.LS_IN_REPOSITORY)},
-        {"line": "git add hello.txt", "mood": "ok", "text": markup.parse("Hello is staged.")},
+        {"line": "ls", "mood": "info", "text": markup.parse(reactions.LS_IN_REPOSITORY), "moment": None},
+        {"line": "git add hello.txt", "mood": "ok", "text": markup.parse("Hello is staged."), "moment": None},
     ]
     assert game.observe()["reactions"] == []
 
@@ -1970,8 +1970,8 @@ def test_in_spanish_rama_reacts_in_spanish_with_the_levels_rules_and_the_shared_
     kit.git(lab_project(game_home), "add", "hello.txt")
     type_lines(game_home, ("ls", 0), ("git add hello.txt", 0))
     assert game.observe()["reactions"] == [
-        {"line": "ls", "mood": "info", "text": markup.parse(reactions_es.LS_IN_REPOSITORY)},
-        {"line": "git add hello.txt", "mood": "ok", "text": markup.parse(cargo_sample_es.HELLO_STAGED)},
+        {"line": "ls", "mood": "info", "text": markup.parse(reactions_es.LS_IN_REPOSITORY), "moment": None},
+        {"line": "git add hello.txt", "mood": "ok", "text": markup.parse(cargo_sample_es.HELLO_STAGED), "moment": None},
     ]
 
 
@@ -2075,3 +2075,15 @@ def test_a_challenge_poll_that_meets_no_goal_says_the_first_goal_still_unmet(sam
     game.start(level.id)
     waiting = game.quest_step(None)
     assert (waiting["correct"], waiting["message"]) == (False, markup.parse("No commit yet."))
+
+
+def test_a_reaction_carries_its_rules_moment_and_none_otherwise(sample_level: runner.Level, game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    rule = kit.ReactionRule(line=r"git add hello\.txt\b", mood="warn", text="Watch this.", event="file-staged", moment="secret-leak")
+    level = dataclasses.replace(sample_level, reactions=(rule,))
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    game.start(level.id)
+    game.observe()
+    kit.git(lab_project(game_home), "add", "hello.txt")
+    type_lines(game_home, ("ls", 0), ("git add hello.txt", 0))
+    said = game.observe()["reactions"]
+    assert [(reaction["line"], reaction["moment"]) for reaction in said] == [("ls", None), ("git add hello.txt", "secret-leak")]

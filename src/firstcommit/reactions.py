@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from typing import Literal
 
 from firstcommit import reactions_es
-from firstcommit.records import Command, Mood
+from firstcommit.records import Command, Moment, Mood
 
 Outcome = Literal["any", "ok", "failed", "unknown-command"]
 """How a line must have ended: any way, with status 0, with any other status, or with bash's 127 for a command it does not know."""
@@ -76,7 +76,8 @@ class ReactionRule:
     for none. ``repository`` says whether the player's folder must hold a repository afterwards
     (True or False), or None for either; ``staged``, likewise, whether its staging area must then
     differ from the last commit; ``remote`` whether the repository must then name a remote.
-    ``text`` is markup, as every game text.
+    ``text`` is markup, as every game text. ``moment`` names a one-time moment the page plays
+    with it, or None.
     """
 
     line: str
@@ -87,6 +88,7 @@ class ReactionRule:
     repository: bool | None = None
     staged: bool | None = None
     remote: bool | None = None
+    moment: Moment | None = None
 
 
 NEW_REPOSITORY = "A new repository: Git made the hidden `.git` folder, where it keeps this project's history. `ls -a` shows it."

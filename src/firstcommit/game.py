@@ -71,7 +71,7 @@ from firstcommit.lab import Lab
 from firstcommit.markup import Block
 from firstcommit.playground import ButtonOffError as ButtonOffError
 from firstcommit.reactions import ReactionRule
-from firstcommit.records import Art, ButtonView, Command, Language, Mood, Press, Who
+from firstcommit.records import Art, ButtonView, Command, Language, Moment, Mood, Press, Who
 from firstcommit.repomap import ObjectInfo, Snapshot
 from firstcommit.save import Payout
 from firstcommit.save import SaveError as SaveError
@@ -140,11 +140,12 @@ class SceneFrameView(TypedDict):
 
 
 class Reaction(TypedDict):
-    """What Rama says about one typed line (`firstcommit.reactions`)."""
+    """What Rama says about one typed line (`firstcommit.reactions`), and the moment the page plays with it, if any."""
 
     line: str
     mood: Mood
     text: list[Block]
+    moment: Moment | None
 
 
 class ActiveView(TypedDict):
@@ -1441,7 +1442,9 @@ def _observation(
         "teammate_events": _event_views(teammate_events),
         "buttons": buttons,
         "commands": typed,
-        "reactions": [{"line": command["line"], "mood": rule.mood, "text": markup.parse(_say(rule.text, messages))} for command, rule in said if rule is not None],
+        "reactions": [
+            {"line": command["line"], "mood": rule.mood, "text": markup.parse(_say(rule.text, messages)), "moment": rule.moment} for command, rule in said if rule is not None
+        ],
     }
 
 
@@ -1632,7 +1635,8 @@ def _lost_over_pleased(observation: Observation, loss: str) -> Observation:
         The same, with each ``ok`` reaction saying the loss instead, as an error, when there is one.
     """
     said: list[Reaction] = [
-        {"line": reaction["line"], "mood": "err", "text": markup.parse(loss)} if loss and reaction["mood"] == "ok" else reaction for reaction in observation["reactions"]
+        {"line": reaction["line"], "mood": "err", "text": markup.parse(loss), "moment": None} if loss and reaction["mood"] == "ok" else reaction
+        for reaction in observation["reactions"]
     ]
     return {**observation, "reactions": said}
 
