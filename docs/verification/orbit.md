@@ -719,3 +719,19 @@ merge finished instead (lost), and the merge still paused.
 | `LOOKED`, hint 1 | `git status` shows the merge in progress and the unmerged files | E86, E91 |
 | `RESET`, `NOTE_LOST`, debrief | `git reset --hard` ends the merge and drops uncommitted changes to tracked files | E91; git-reset(1) `--hard` |
 | scene | the pull stopped with conflicts in two files | the level's test |
+
+### Level `conflict-collision` (Collision, 6-3)
+
+*Re-checked* by `tests/levels/test_conflict_collision.py`: the markers, a commit refused while in
+conflict (Rama's answer), `--theirs` then still unmerged until added (Rama says so), bay 3 kept, the file written
+by hand, markers committed then fixed by a new commit, and bay 3 committed.
+
+| Text | Claim | Evidence |
+|---|---|---|
+| debrief, `READ_BOTH`, hint 1 | the file holds both sides between `<<<<<<<`, `=======` and `>>>>>>>` | E86; git-merge(1) HOW CONFLICTS ARE PRESENTED |
+| card, hint 2 | `--theirs` gives the incoming side, `--ours` yours; under a rebase they can appear swapped | E88, E95; git-restore(1) `--ours, --theirs` |
+| card, `NOT_ADDED`, hint 3 | `git add` marks the conflict solved | E88, E89; git-merge(1) HOW TO RESOLVE CONFLICTS |
+| `ANSWER_FIRST` | a commit is refused while a file is unmerged | E87 |
+| `SIDE` | after `--ours` or `--theirs` the file stays unmerged until added | E88 |
+| `NOT_BAY_4_COMMITTED`, `BAY_3_COMMITTED` | a commit with markers or the wrong side is fixed by a new commit; `git restore --source=scout` brings `scout`'s version | E90, E97 |
+| debrief | `git commit --no-edit` finishes the merge with two parents; `git merge --abort` was there all along | E89, E91 |
