@@ -58,8 +58,10 @@ the forms that must not appear in any Spanish text.
 | English | Spanish |
 |---|---|
 | capsule | la cápsula |
-| vault | la bóveda |
-| mothership | la nave nodriza |
+| workshop (the working folder) | el taller; first mention in a level: "tu carpeta de trabajo (el taller)" |
+| cargo dock (the staging area) | el muelle de carga; first mention in a level: "el staging area (el muelle de carga)" |
+| vault | la bóveda; first mention in a level: "tu repositorio (la bóveda)" |
+| mothership | la nave nodriza; first mention in a level: "el remoto (la nave nodriza)" |
 | (loading) dock | el muelle de carga |
 | base | la base |
 | crew | la tripulación |

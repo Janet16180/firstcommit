@@ -44,12 +44,12 @@ Your first ticket: the hall lights are off. You found the fix, and `lights.cfg` 
 folder already has it, in no commit yet. The crew never commits on `main`: a fix goes up on its own
 branch for review. Alex is working too.
 
-The mission is done when the mothership has a branch `fix-lights` holding your fix and its `main`
+The mission is done when the remote (the mothership) has a branch `fix-lights` holding your fix and its `main`
 holds no commit of yours, and your `main` is the same as the mothership's.
 """
 
 HINTS = [
-    "This is the vault, the mothership and this chapter: a commit, a push and a pull, and a branch of your own.",
+    "This is your repository (the vault), the mothership and this chapter: a commit, a push and a pull, and a branch of your own.",
     "Your edit is on no branch yet: a new branch made now takes it along. Commit it there, send that branch by name, then bring your `main` up to the mothership's.",
     'Every line of the mission, in order:\n\n    $ git switch -c fix-lights\n    $ git commit -am "Fix the hall lights"\n    $ git push -u origin fix-lights\n    $ git switch main\n    $ git pull',
 ]

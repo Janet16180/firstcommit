@@ -11,26 +11,34 @@ def test_the_level_starts_with_the_engine_edited_and_the_notes_staged() -> None:
     assert (kit.unstaged(snap), kit.staged(snap)) == (["engine.cfg"], ["notes.txt"])
 
 
-def test_looking_then_restoring_the_engine_solves_the_level_and_keeps_the_staged_notes() -> None:
+def test_looking_restoring_the_engine_and_reading_status_solves_the_level_and_keeps_the_staged_notes() -> None:
     lab, state = started(level)
     typed = typed_in(lab, "git diff", RESTORE)
-    assert level.check(lab, state, None, typed) == kit.Verdict(True, level.SCRAPPED)
+    assert level.check(lab, state, None, typed).message == level.NOT_STATUS
+    typed += typed_in(lab, "git status")
+    assert level.check(lab, state, None, typed) == kit.Verdict(True, level.STATUS_READ)
     assert (lab.project / "engine.cfg").read_text() == level.ENGINE_COMMITTED
     assert kit.staged(kit.snapshot(lab.project)) == ["notes.txt"]
 
 
 def test_the_level_waits_for_a_look_at_what_would_be_lost() -> None:
     lab, state = started(level)
-    typed = typed_in(lab, RESTORE)
+    typed = typed_in(lab, RESTORE, "git status")
     verdict = level.check(lab, state, None, typed)
     assert (verdict.solved, verdict.message) == (False, level.NOT_LOOKED)
 
 
-def test_restoring_the_engine_says_the_lines_are_gone_with_the_search_beam() -> None:
+def test_restoring_the_engine_says_the_lines_are_gone_with_no_moment_the_desk_shows_it() -> None:
     lab, _ = started(level)
     typed = typed_in(lab, "git diff", RESTORE)
     rule = reaction(level, typed[1], {"file-changed"}, True, True)
-    assert rule is not None and (rule.mood, rule.text, rule.moment) == ("warn", level.GONE, "search-beam")
+    assert rule is not None and (rule.mood, rule.text, rule.moment) == ("warn", level.GONE, None)
+
+
+def test_a_status_read_before_the_scrap_does_not_count() -> None:
+    lab, state = started(level)
+    typed = typed_in(lab, "git diff", "git status", RESTORE)
+    assert level.check(lab, state, None, typed).message == level.NOT_STATUS
 
 
 def test_the_unsaved_lines_are_in_no_commit_and_no_stage_once_restored() -> None:

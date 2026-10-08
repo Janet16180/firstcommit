@@ -6,7 +6,7 @@ TITLE = "Dos mitades de una nave"
 CARD = "Trae los commits nuevos del remoto a tu branch: un fetch y luego un merge (o solo un avance de tu etiqueta cuando no tienes nada nuevo)."
 SCENE = [
     "La nave está a medio construir. Tú terminas la navegación; Alex, en otra estación, termina los motores.",
-    "Cada uno envía su mitad a la nave nodriza, y cada uno trae la del otro.",
+    "Cada uno envía su mitad al remoto (la nave nodriza), y cada uno trae la del otro.",
 ]
 
 BRIEFING = """

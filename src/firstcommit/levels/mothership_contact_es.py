@@ -5,7 +5,7 @@ from firstcommit import kit
 TITLE = "Primer contacto"
 CARD = "Da un nombre corto, como `origin`, a la dirección de otro repositorio dentro del tuyo. No se envía nada: solo anota el nombre."
 SCENE = [
-    "La nave nodriza orbita sobre la base. Guarda una copia del trabajo de todas las tripulaciones.",
+    "Sobre la base orbita el remoto (la nave nodriza). Guarda una copia del trabajo de todas las tripulaciones.",
     "Antes de poder enviarle nada, tu repositorio necesita su dirección, con un nombre corto.",
 ]
 

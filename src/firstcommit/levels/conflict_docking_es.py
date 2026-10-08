@@ -6,7 +6,7 @@ TITLE = "Colisión en el acople"
 CARD = "Hace commit con el mensaje que Git preparó, sin pedir uno: durante un merge, el mensaje del propio merge. Termina un merge una vez que agregaste cada conflicto."
 SCENE = [
     "En plena aproximación: tú y Alex reescribieron la línea del acople, y Alex envió la suya primero.",
-    "Lleva el trabajo de las dos tripulaciones a la nave nodriza, con la bahía segura.",
+    "Lleva el trabajo de las dos tripulaciones al remoto (la nave nodriza), con la bahía segura.",
 ]
 
 BRIEFING = """

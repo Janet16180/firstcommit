@@ -3,6 +3,7 @@ from typing import get_args
 from firstcommit import runner
 from firstcommit.chapters import BLURBS, CHAPTERS, PLAY_ORDER
 from firstcommit.records import Language
+from game_words import unpaired
 
 
 def test_every_chapter_has_one_short_line_of_blurb_and_nothing_else_has_one() -> None:
@@ -13,6 +14,10 @@ def test_every_chapter_has_one_short_line_of_blurb_and_nothing_else_has_one() ->
 def test_every_chapter_has_its_name_and_blurb_in_every_language() -> None:
     languages = set(get_args(Language))
     assert all(set(texts) == languages and all(text.strip() for text in texts.values()) for texts in [*CHAPTERS.values(), *BLURBS.values()])
+
+
+def test_a_blurb_that_names_a_place_by_its_game_word_says_what_it_really_is() -> None:
+    assert {chapter: unpaired(text, language) for chapter, texts in BLURBS.items() for language, text in texts.items() if unpaired(text, language)} == {}
 
 
 def test_the_play_order_lists_every_level_of_the_game_once_chapter_by_chapter() -> None:

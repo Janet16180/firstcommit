@@ -7,7 +7,7 @@ CARD = "Copia un archivo, tal como está ahora, de la carpeta de trabajo al stag
 SCENE = [
     "Cada base de Git tiene tres lugares en tu computadora: la carpeta de trabajo, el staging area y el repositorio.",
     "En la carpeta de trabajo trabajas con libertad. Cuando un archivo está listo, `git add` pone una copia suya en el staging area.",
-    "El staging area es el muelle de carga: tú eliges qué sube a él. Los archivos con contraseñas se quedan fuera.",
+    "El staging area (el muelle de carga): tú eliges qué sube a él. Los archivos con contraseñas se quedan fuera.",
 ]
 
 BRIEFING = """

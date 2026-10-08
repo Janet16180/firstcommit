@@ -23,7 +23,7 @@ CARD = kit.CommandCard(
     text="Sends the commits of `main` to `origin` and makes `origin/main` its upstream, so a plain `git push` knows where to go afterwards.",
 )
 SCENE = [
-    kit.SceneFrame(art="rocket", text="A push sends your capsules up to the mothership."),
+    kit.SceneFrame(art="rocket", text="A push sends your capsules up to the remote (the mothership)."),
     kit.SceneFrame(art="rocket", text="Only capsules fly. An edit that is in no capsule stays on the ground."),
 ]
 

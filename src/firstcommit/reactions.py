@@ -107,7 +107,7 @@ STAGED = "Staged: your next commit will take the file as it is now. Change it ag
 NOTHING_NEW = "Nothing new to stage: the staging area already matched."
 ADD_WHAT = "`git add` needs to know what to stage: a file name, or `.` for everything in this folder and the folders inside it."
 NOT_STAGED = "Nothing was staged. Read Git's message: a name it does not find is the usual cause. `ls` lists the folder, and Tab completes names."
-COMMITTED = "Committed: a new capsule sealed in your vault, with its own hash and your message. `git log --oneline` lists it."
+COMMITTED = "Committed: a new capsule sealed in your repository (the vault), with its own hash and your message. `git log --oneline` lists it."
 NO_MESSAGE = (
     "No commit was made: every commit needs a message, and in the game no editor opens to write one. "
     'Give it on the line: `git commit -m "Add the map"`.'
@@ -115,16 +115,16 @@ NO_MESSAGE = (
 NOT_COMMITTED = "No commit was made. Read Git's message; usually nothing new is staged: `git add` your changes first, or `git commit -am` stages the files Git already tracks."
 NO_REMOTE = "Your repository knows no remote yet, so the push had nowhere to go. Name one first: `git remote add origin` and its address."
 FETCHED = (
-    "Fetched: the mothership's new commits are in your repository now, under remote-tracking branches such as `origin/main`. "
+    "Fetched: the new commits of the remote (the mothership) are in your repository now, under remote-tracking branches such as `origin/main`. "
     "Your own branches and your files did not move."
 )
-FETCHED_NOTHING = "Nothing new on the mothership: your repository already had every commit it has."
+FETCHED_NOTHING = "Nothing new on the remote (the mothership): your repository already had every commit it has."
 PULLED_FAST_FORWARD = (
-    "Pulled with a fast-forward: you had no new commits of your own, so Git only moved your branch up to the mothership's newest commit. "
+    "Pulled with a fast-forward: you had no new commits of your own, so Git only moved your branch up to the newest commit of the remote (the mothership). "
     "No merge commit was needed."
 )
-PULLED_MERGE = "Pulled: you and the mothership both had new commits, so Git joined them in a merge commit with two parents."
-PULLED_NOTHING = "Already up to date: the mothership had nothing your branch lacks."
+PULLED_MERGE = "Pulled: you and the remote (the mothership) both had new commits, so Git joined them in a merge commit with two parents."
+PULLED_NOTHING = "Already up to date: the remote (the mothership) had nothing your branch lacks."
 LOG_FILE = "Only the commits that changed that file, newest first: the history of one file, out of the whole history."
 LOG = "Your history, newest commit first. Each commit records its author, its date and its message, and Git names it by its hash."
 HIDDEN_GIT = "See `.git`? That hidden folder is the repository: Git keeps the whole history in it. A plain `ls` hides names that start with a dot."

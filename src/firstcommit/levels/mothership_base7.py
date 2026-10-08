@@ -26,7 +26,7 @@ CARD = kit.CommandCard(
 )
 SCENE = [
     kit.SceneFrame(art="meteor", text="Meteorite strike on Base 7. Its computer is gone, and its history with it."),
-    kit.SceneFrame(art="alarm", text="The files survived on a backup drive, with debris from the crash. Rebuild the base and get it to the mothership."),
+    kit.SceneFrame(art="alarm", text="The files survived on a backup drive, with debris from the crash. Rebuild the base and get it to the remote (the mothership)."),
 ]
 
 CARGO = {"blueprint.txt": "Base 7: three domes and a landing pad\n", "reactor.cfg": "core=stable\nlimit=80\n"}
@@ -43,7 +43,7 @@ The mission is done when the folder is a repository, a capsule holds `blueprint.
 """
 
 HINTS = [
-    "This is every chapter so far, in order: lift-off, the cargo dock, the vault and the mothership.",
+    "This is every chapter so far, in order: lift-off, the staging area (the cargo dock), your repository (the vault) and the remote (the mothership).",
     "A repository first; then choose the cargo by name, seal it, name the mothership and launch.",
     'Every line of the mission, in order:\n\n    $ git init\n    $ git add blueprint.txt reactor.cfg\n    $ git commit -m "Rebuild Base 7"\n    $ git remote add origin ../github.com/moonbase/project.git\n    $ git push -u origin main',
 ]

@@ -27,7 +27,7 @@ CARD = kit.CommandCard(
 )
 SCENE = [
     kit.SceneFrame(art="rocket", text="Your survey sits on a second course, `scout`, two capsules long."),
-    kit.SceneFrame(art="orbit", text="The mothership gets only what you send it, one branch at a time."),
+    kit.SceneFrame(art="orbit", text="The remote (the mothership) gets only what you send it, one branch at a time."),
 ]
 
 BRANCH = "scout"

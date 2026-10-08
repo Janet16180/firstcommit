@@ -25,7 +25,7 @@ CARD = kit.CommandCard(
     text="Shows exactly what the next commit will take. Look at it before every commit.",
 )
 SCENE = [
-    kit.SceneFrame(art="alarm", text="Inspection at dawn. The inspector opens every capsule in the vault, and a password must be in none."),
+    kit.SceneFrame(art="alarm", text="Inspection at dawn. The inspector opens every capsule in your repository (the vault), and a password must be in none."),
 ]
 
 REACTOR = "reactor.cfg"
@@ -45,7 +45,7 @@ and still in the working folder, and `debug.log` is untracked.
 """
 
 HINTS = [
-    "This is the cargo dock and the vault together: what is staged goes into the next capsule.",
+    "This is the staging area (the cargo dock) and the vault together: what is staged goes into the next capsule.",
     "Take the stowaways off the dock first, keep their files, then seal what is left.",
     'Every line of the mission, in order:\n\n    $ git restore --staged keys.txt\n    $ git restore --staged debug.log\n    $ git commit -m "Lower the reactor limit"',
 ]

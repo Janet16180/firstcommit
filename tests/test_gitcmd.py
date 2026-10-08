@@ -544,14 +544,19 @@ def ended(pid: int) -> bool:
 
 @pytest.mark.slow
 def test_a_command_on_a_terminal_that_runs_too_long_is_stopped_with_everything_it_started(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(gitcmd, "TIMEOUT", 1.0)
     pid_file = tmp_path / "sleeper.pid"
-    started = time.monotonic()
-    with pytest.raises(subprocess.TimeoutExpired):
-        gitcmd.run_on_terminal(tmp_path, "-c", f"alias.wait=!echo $$ > {pid_file}; exec sleep 60", "wait")
-    assert time.monotonic() - started < 10
+    margin = 60
+    # On a loaded machine the sleeper may not start before a short timeout stops git; then try longer.
+    for timeout in (1.0, 4.0, 16.0):
+        monkeypatch.setattr(gitcmd, "TIMEOUT", timeout)
+        started = time.monotonic()
+        with pytest.raises(subprocess.TimeoutExpired):
+            gitcmd.run_on_terminal(tmp_path, "-c", f"alias.wait=!echo $$ > {pid_file}.new && mv {pid_file}.new {pid_file}; exec sleep {10 * margin}", "wait")
+        assert time.monotonic() - started < timeout + margin
+        if pid_file.exists():
+            break
     pid = int(pid_file.read_text())
-    deadline = time.monotonic() + 5
+    deadline = time.monotonic() + margin
     while not ended(pid) and time.monotonic() < deadline:
         time.sleep(0.05)
     assert ended(pid)

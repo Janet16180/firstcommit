@@ -1,13 +1,13 @@
 """
 Scrap the workshop: ``git restore`` replaces a file in the working folder, and lines never staged or committed are gone.
 
-Wave 2, undo 7-1 (docs/drafts/chapters-5-9.md), guided, with a prediction. Setup makes a
+Time travel 8-1 (docs/drafts/sector8/8-1-script.md), guided, with a prediction. Setup makes a
 repository with the engine settings committed, then an experiment in ``engine.cfg`` that was
 never staged, and a change to ``notes.txt`` that is staged. The prediction breaks the myth that
-Git can always give work back. The goals: ``git diff`` typed (look at what will be lost); then
-``engine.cfg`` back to its committed version, with the staged notes kept. The notes thrown away
-are lost for this play. The black box's boundary is born here: the staging area, the vault and the
-mothership inside, the working folder outside.
+Git keeps every version of a file. The goals: ``git diff`` typed (look at what will be lost);
+``engine.cfg`` back to its committed version, with the staged notes kept; and ``git status`` read
+after it. The notes thrown away are lost for this play. The desk draws ``engine.cfg``'s lines, and
+its "Git has a copy" outline round the staging area and the commits appears with the reveal.
 """
 
 from collections.abc import Callable
@@ -19,14 +19,13 @@ DIFFICULTY = 1
 XP = 120
 COMMAND = "git restore"
 PAR = 2
-VIEW = "blackbox"
+PICTURES = kit.pictures("desk", kept="guess", lines=["engine.cfg"])
 CARD = kit.CommandCard(
     command="git restore <file>",
-    text="Replaces a file in the working folder with its version in the staging area. Lines you never staged or committed are gone for good.",
+    text="Replaces a file in the working folder with Git's copy: the staged one if there is one, else the committed one. Lines you never staged or committed are gone for good.",
 )
 SCENE = [
-    kit.SceneFrame(art="blackbox", text="Git keeps a flight recorder: what you staged, what you committed and what reached the mothership."),
-    kit.SceneFrame(art="blackbox", text="Your working folder is outside the box. Lines you only typed there were never recorded."),
+    kit.SceneFrame(art="zones", text="Last night's experiment overheated the engine. In `engine.cfg`, one line changed and one line was added: the two red lines."),
 ]
 
 ENGINE = "engine.cfg"
@@ -36,58 +35,64 @@ ENGINE_EXPERIMENT = "power=99\noverdrive=on\n"
 NOTES_COMMITTED = "Engine log\n"
 NOTES_STAGED = "Engine log\nDay 4: overdrive test planned\n"
 LOOK = r"git diff\b"
+RESTORE = rf"git (restore|checkout)\b(?!.*--staged( |$)).* {ENGINE}( |$)"
+STATUS = r"git status\b"
 
 BRIEFING = """
-Last night's experiment in `engine.cfg` overheated the engine. It was never staged or committed;
-scrap it and go back to the committed settings. Your notes in `notes.txt` are staged for the next
-commit: keep them.
+Last night's experiment in `engine.cfg`, in your working folder (the workshop), overheated the
+engine. Scrap it and go back to the committed settings. Your notes in `notes.txt` are staged for
+the next commit: keep them.
 
 The mission is done when you have looked at the experiment with `git diff`, `engine.cfg` is back to
-its committed version, and `notes.txt` is still staged.
+its committed version, and `git status` shows `notes.txt` still staged.
 """
 
 HINTS = [
     "`git diff` shows the lines in the working folder that are not staged: the experiment.",
-    "`git restore engine.cfg` replaces the file with its version in the staging area, which is the committed one.",
-    "Every line of the mission, in order:\n\n    $ git diff\n    $ git restore engine.cfg",
+    "`git restore engine.cfg` copies Git's copy of the file over yours. `engine.cfg` was never staged, so Git's copy is the committed one.",
+    "Every line of the mission, in order:\n\n    $ git diff\n    $ git restore engine.cfg\n    $ git status",
 ]
 
 DEBRIEF = """
-`git restore engine.cfg` copied the file's version from the staging area over the one in the
-working folder. The experiment's lines were never staged or committed, so no copy of them existed
-anywhere: Git cannot give them back, and no command will.
+`git restore engine.cfg` copied Git's copy over your file: the staged copy when there is one,
+otherwise the committed one. `engine.cfg` was never staged, so it got the committed `power=80`. The
+experiment's lines were never staged or committed, so Git had no copy of them, and no command can
+bring them back.
 
-`notes.txt` was safe all along: what is staged or committed is inside Git's flight recorder. Before
-you scrap a file, `git diff` shows exactly what you are about to lose.
+`notes.txt` was safe all along: it was inside "Git has a copy". Before you scrap a file, `git diff`
+shows exactly what you are about to lose.
+
+In sector 2, `git restore --staged` took a file out of the staging area and kept your folder's copy
+as it was. Without `--staged`, `git restore` replaces your folder's copy: that is the one that can
+lose work.
 
 Commands to keep:
 
     $ git diff                 # what is in the working folder and not staged
-    $ git restore engine.cfg   # scrap it: back to the staged version
+    $ git restore engine.cfg   # scrap it: back to Git's copy
 """
 
 NO_REPOSITORY = "This folder is no longer a repository: `.git` is gone. Leave the level and start it again to get it back."
-LOOKED = "`git diff` shows the experiment: the lines that are in the working folder and nowhere else."
+LOOKED = "`git diff` shows what is in your working folder and not staged. `-` is the line Git has, `+` the lines only you have. Look before they go."
 NOT_LOOKED = "Look at what you would lose first: `git diff`."
 NOT_SCRAPPED = "`engine.cfg` still holds the experiment. Scrap it: `git restore engine.cfg`."
 NOTES_LOST = "Your staged notes are gone: they were in no commit. Start the mission again."
 NOTES_UNSTAGED = "`notes.txt` is no longer staged. Stage it again: `git add notes.txt`."
-SCRAPPED = "`engine.cfg` is back to its committed settings, and your notes are still staged."
-GONE = (
-    "The experiment's lines are gone for good: they were never staged or committed, so Git has no copy of them. "
-    "Git keeps what was staged or committed; these lines were neither."
-)
+SCRAPPED = "`git restore` copied Git's copy of `engine.cfg`, `power=80`, over yours. The two red lines are gone for good. `git restore` printed nothing: most git commands are quiet when they work."
+STATUS_READ = "Your notes are still staged, ready for the next commit. `git restore` changed only the file you named."
+NOT_STATUS = "Check your notes are still staged: `git status`."
+GONE = "The experiment's lines are gone for good: Git had no copy of them."
 
 REACTIONS = [
-    kit.ReactionRule(line=r"git (restore|checkout)\b(?!.*--staged( |$))", mood="warn", text=GONE, event="file-changed", moment="search-beam"),
+    kit.ReactionRule(line=r"git (restore|checkout)\b(?!.*--staged( |$))", mood="warn", text=GONE, event="file-changed"),
 ]
 
 GUESS = kit.ChoiceStep(
     id="guess",
     text="Predict first.",
-    question="You scrap the experiment with `git restore engine.cfg`. Could Git give its lines back afterwards?",
-    options=("Yes, from the last commit", "No: they were never saved in Git"),
-    reveal="No. The last commit holds the old settings, not the experiment: its lines were never staged or committed, so Git never had a copy.",
+    question="You scrap the experiment with `git restore engine.cfg`. Tomorrow you want it back. Can Git give you the two red lines?",
+    options=("Yes, Git keeps every version of a file", "No, they are gone for good"),
+    reveal="No. Git keeps only what you staged or committed. The dashed line shows it: the staging area and your commits are inside. The red lines exist only in your working folder, so Git never had a copy.",
 )
 
 
@@ -150,10 +155,35 @@ def watch_scrap(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict
     return kit.Verdict(message == SCRAPPED, message, lost=message == NOTES_LOST)
 
 
+def watch_status(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.Verdict:
+    """
+    Pass once ``git status`` worked after the engine was scrapped, the notes still staged.
+
+    Parameters
+    ----------
+    lab : kit.Lab
+        The level's lab.
+    state : kit.State
+        The level's state.
+    typed : kit.Typed
+        The lines typed since the level started.
+
+    Returns
+    -------
+    kit.Verdict
+        The step's verdict; the scrap comes first.
+    """
+    scrapped = watch_scrap(lab, state, typed)
+    read = kit.typed(kit.after(typed, RESTORE), STATUS, "ok")
+    verdict = kit.Verdict(read, STATUS_READ if read else NOT_STATUS)
+    return verdict if scrapped.solved else scrapped
+
+
 QUEST: list[kit.Step] = [
     GUESS,
-    kit.WatchStep(id="look", text="Look at the experiment you are about to scrap.", command="git diff", watch=watch_look),
-    kit.WatchStep(id="scrap", text="Scrap the experiment, and keep your staged notes.", command=f"git restore {ENGINE}", watch=watch_scrap),
+    kit.WatchStep(id="look", text="Look at the experiment.", command="git diff", watch=watch_look),
+    kit.WatchStep(id="scrap", text="Scrap it.", command=f"git restore {ENGINE}", watch=watch_scrap),
+    kit.WatchStep(id="status", text="Check your notes are still staged.", command="git status", watch=watch_status),
 ]
 
 
@@ -184,7 +214,7 @@ def setup(lab: kit.Lab) -> kit.State:
 
 def check(lab: kit.Lab, state: kit.State, answer: str | None, typed: kit.Typed) -> kit.Verdict:
     """
-    Solved once the engine is scrapped, the notes staged, and ``git diff`` was typed.
+    Solved once ``git status`` was read after the scrap, with ``git diff`` typed; lost once the staged notes are gone.
 
     Parameters
     ----------
@@ -200,11 +230,11 @@ def check(lab: kit.Lab, state: kit.State, answer: str | None, typed: kit.Typed) 
     Returns
     -------
     kit.Verdict
-        The scrap's verdict (it says when the work is lost) unless the look is missing.
+        The last goal's verdict (the scrap's says when the work is lost) unless the look is missing.
     """
-    scrapped = watch_scrap(lab, state, typed)
+    read = watch_status(lab, state, typed)
     looked = watch_look(lab, state, typed)
-    return looked if scrapped.solved and not looked.solved else scrapped
+    return looked if read.solved and not looked.solved else read
 
 
 def solve(lab: kit.Lab, state: kit.State, typed: list[kit.Command]) -> str | None:
@@ -234,5 +264,6 @@ QUEST_ACTIONS: dict[str, Callable[[kit.Lab, kit.State, list[kit.Command]], str |
     "guess": kit.picking(GUESS.options[0]),
     "look": kit.typing("git diff"),
     "scrap": kit.typing(f"git restore {ENGINE}"),
+    "status": kit.typing("git status"),
 }
 """The player's part of each quest step, for the level tests (AUTHORING.md section 3.6); the game reads it only in dev mode."""

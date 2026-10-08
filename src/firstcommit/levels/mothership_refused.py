@@ -28,7 +28,7 @@ CARD = kit.CommandCard(
 )
 SCENE = [
     kit.SceneFrame(art="rocket", text="Your capsule is ready on the launch pad, and Alex is working too."),
-    kit.SceneFrame(art="orbit", text="When two crews send capsules to the same place, the mothership takes the first and refuses to drop it."),
+    kit.SceneFrame(art="orbit", text="When two crews send capsules to the same place, the remote (the mothership) takes the first and refuses to drop it."),
 ]
 
 ROUTE = "route.txt"

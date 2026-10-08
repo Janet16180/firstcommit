@@ -29,7 +29,7 @@ CARD = kit.CommandCard(
 )
 SCENE = [
     kit.SceneFrame(art="orbit", text="The ship is half built. You finish the navigation; Alex, at another station, finishes the engines."),
-    kit.SceneFrame(art="pull", text="Each of you sends a half to the mothership, and each brings the other's back."),
+    kit.SceneFrame(art="pull", text="Each of you sends a half to the remote (the mothership), and each brings the other's back."),
 ]
 
 NAV = "nav.cfg"

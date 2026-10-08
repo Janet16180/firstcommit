@@ -30,7 +30,7 @@ CARD = kit.CommandCard(
 )
 SCENE = [
     kit.SceneFrame(art="alarm", text="On approach: you and Alex both rewrote the docking line, and Alex sent theirs first."),
-    kit.SceneFrame(art="collision", text="Get both crews' work onto the mothership, with the bay that is safe."),
+    kit.SceneFrame(art="collision", text="Get both crews' work onto the remote (the mothership), with the bay that is safe."),
 ]
 
 DOCKING = "docking.txt"
