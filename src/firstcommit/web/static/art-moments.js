@@ -11,10 +11,9 @@
  *                         heading, then rewind, and never show the real state changed:
  *                         "secret-leak" (2-3: the keys reach every crew station), "junk-flood"
  *                         (2-5: `git add .` sends the build crates to every station),
- *                         "unreviewed-main" (5-5: your capsule lands on main at Alex's),
- *                         "force-break" (6-4, 7-2: your capsule replaces Alex's on the mothership,
- *                         which cracks and falls) and "search-beam" (7-1: a beam sweeps the black
- *                         box, the workshop outside it, and finds nothing).
+ *                         "unreviewed-main" (5-5: your capsule lands on main at Alex's)
+ *                         and "force-break" (6-4, 7-2: your capsule replaces Alex's on the
+ *                         mothership, which cracks and falls).
  * CAPTIONS                {moment: [key, ...]}: the captions each moment draws, in drawing order.
  * play(name, {captions, reducedMotion, timers})
  *                         {element, finished}: a new <svg> named by captions.caption, and a promise
@@ -196,27 +195,6 @@ const ArtMoments = (function () {
     ];
   }
 
-  function searchBeam(c, moving) {
-    const dissolving = [[22, 40], [50, 46], [30, 62], [46, 58]];
-    return [
-      backdrop("search-beam"),
-      heading(c.whatIf),
-      rect(8, 30, 56, 42, "none", { stroke: tone("art-orange"), "stroke-width": 1 }),
-      Dom.svg("g", { opacity: 0.25 }, place(28, 40, 2, sprite("file"))),
-      dissolving.map(([x, y]) => rect(x, y, 2, 2, tone("star"), { opacity: 0.4 })),
-      rect(84, 8, 306, 64, "none", { stroke: tone("art-orange"), "stroke-width": 2 }),
-      [[84, 8], [386, 8], [84, 68], [386, 68]].map(([x, y]) => rect(x, y, 4, 4, tone("art-orange-dk"))),
-      place(104, 46, 2, sprite("crate")),
-      capsuleAt(170, 48),
-      linkBefore(198, 48),
-      capsuleAt(198, 48),
-      place(300, 20, 2, sprite("ship")),
-      moving && part(moving, "art-wi-beam", [rect(88, 10, 10, 60, tone("art-yellow"), { opacity: 0.3 }), rect(97, 10, 1, 60, tone("art-flame-hot"))]),
-      part(moving, "art-wi-mark", place(230, 32, 2, sprite("cross", { k: tone("star") }))),
-      captionBand(c.caption, moving, "art-wi-caption"),
-    ];
-  }
-
   const NAV = [
     ".....kk.....",
     "....kwwk....",
@@ -273,7 +251,6 @@ const ArtMoments = (function () {
     "junk-flood": { captions: ["whatIf", "command", "caption"], seconds: 7, whatIf: true, draw: junkFlood },
     "unreviewed-main": { captions: ["whatIf", "caption"], seconds: 7, whatIf: true, draw: unreviewedMain },
     "force-break": { captions: ["whatIf", "command", "caption"], seconds: 7, whatIf: true, draw: forceBreak },
-    "search-beam": { captions: ["whatIf", "caption"], seconds: 7, whatIf: true, draw: searchBeam },
   };
 
   const NAMES = Object.freeze(Object.keys(MOMENTS));
