@@ -99,3 +99,7 @@ def test_committing_the_rule_and_the_change_still_solves_the_level() -> None:
     lab, state = arrived(level)
     typed = typed_in(lab, "git status", IGNORE, "git add .", 'git commit -q -m "Ignore the simulator"')
     assert level.check(lab, state, None, typed).solved
+
+
+def test_the_scene_opens_on_the_simulator() -> None:
+    assert [frame.art for frame in level.SCENE] == ["simulator", "zones"]

@@ -884,3 +884,54 @@ deleted side, an add/add with no base) and `tests/levels/test_conflict_collision
 |---|---|---|
 | 6-3 debrief | git calls your side *ours* and the incoming side *theirs* | git-merge(1) HOW CONFLICTS ARE PRESENTED; git-checkout(1) `--ours, --theirs`; git-restore(1) `--ours, --theirs` |
 | card (unchanged) | during a rebase the two can appear swapped | git-rebase(1) (`--ours`/`--theirs` swap) |
+
+## 7-1 Scrap the workshop (added 2026-10-08)
+
+| Tag | What ran | Result |
+|---|---|---|
+| E109 | on the host (git 2.43.0): a commit of `engine.cfg` and `notes.txt`; `notes.txt` changed and staged; `engine.cfg` changed and not staged; `git diff --stat`, `git restore engine.cfg`, `git status --short`, `git log --all -S overdrive`, then every blob in the object store | the diff lists only `engine.cfg`; the restore exits 0 and the file is the committed one; status `M  notes.txt` (still staged); no commit holds `overdrive`; the store holds three blobs (the two committed files and the staged notes), none with the experiment |
+
+| Claim | Says | Evidence |
+|---|---|---|
+| card, debrief, `GONE` (with the `search-beam` moment), prediction reveal | `git restore <file>` copies the staging area's version over the working folder's; lines never staged or committed have no copy anywhere | E109; git-restore(1) DESCRIPTION (`--worktree` is the default, the source the index) |
+| debrief, `LOOKED` | `git diff` shows what is in the working folder and not staged | E109; git-diff(1) |
+| `NOTES_LOST` (lost) | the staged notes restored away are in no commit | the level's test; E109 (only staged and committed versions are stored) |
+
+## 7-2 Recall the capsule (added 2026-10-08)
+
+| Tag | What ran | Result |
+|---|---|---|
+| E110 | on the host (git 2.43.0), `core.editor = true`: a bare hub, two clones; in one, commits "one" (steady), "strobe", "route", pushed, pulled by the other; `git revert HEAD~1`, `git log --oneline`, `git push`; the other pulls; then `git reset --hard HEAD~2` and a plain `git push` | the revert exits 0 with `Revert "strobe"` on top of `route`, the lights steady and `route.txt` kept; the push exits 0 and the other clone's pull brings steady lights; after the reset the plain push is refused (not a fast-forward) |
+
+| Claim | Says | Evidence |
+|---|---|---|
+| card, debrief, `REVERTED` | revert makes a new commit that undoes one; the earlier commit and those after it stay | E110; git-revert(1) DESCRIPTION |
+| debrief, `PUSHED` | the revert pushes like any commit, and the teammate's pull brings it | E110 |
+| `RESET_SHARED` (with the `force-break` moment), debrief | after a reset of a pushed `main`, only a forced push makes the mothership forget the commits; `git pull` brings them back | E110 (the plain push is refused); E64; the level's test (a pull, then the revert, solves it) |
+| `REWRITTEN` (lost) | a forced push drops the commits Alex pulled from the mothership | the level's test |
+
+## 7-3 Wrong course (added 2026-10-08)
+
+| Tag | What ran | Result |
+|---|---|---|
+| E111 | on the host (git 2.43.0): a clone with `base` pushed, then two unpushed commits; `git reset --hard origin/main`, `ls`, `git log --oneline --all`; then `git branch rescue HEAD@{1}` and `git log --oneline rescue` | the reset moves `main` to `base` and removes `s` from the folder; `--all` no longer lists the two commits (no ref holds them); `HEAD@{1}` names the old tip, and `rescue` there lists both again |
+
+| Claim | Says | Evidence |
+|---|---|---|
+| card, debrief, prediction reveal, `RESET`, `MOVED_BACK` | `reset --hard` moves the branch and makes the staging area and folder match; it deletes no commit | E111; git-reset(1) `--hard` |
+| debrief, `GHOSTS` | with no label, the reflog still reaches the commits; `git branch rescue HEAD@{1}` brings them back | E111; git-reflog(1); `repomap.ghosts` (*re-checked* by `tests/test_repomap.py` and `tests/levels/test_undo_wrong.py`) |
+| debrief | `--soft` and `--mixed` keep the changes staged or in the working folder | git-reset(1) `--soft`, `--mixed` |
+| debrief | they would still exist "for a while" | git-gc(1) `gc.reflogExpireUnreachable` (30 days by default) |
+
+## 7-4 Black box (added 2026-10-08)
+
+| Tag | What ran | Result |
+|---|---|---|
+| E112 | on the host (git 2.43.0): a clone with `base` pushed; two commits on `thrusters`; `git switch main`, `git branch -D thrusters`, `git reflog`, `git branch thrusters HEAD@{1}`, `git log --oneline thrusters`, `git push -u origin thrusters`, then the hub's `thrusters` | `-D` says "Deleted branch thrusters (was 9a0b7e5)"; the reflog's `HEAD@{0}` is "checkout: moving from thrusters to main" and `HEAD@{1}` the branch's last commit; the new label holds both commits; the hub has them |
+
+| Claim | Says | Evidence |
+|---|---|---|
+| card, debrief | `git reflog` lists where `HEAD` has been as `HEAD@{n}`; a label on an entry brings its commits back | E112; git-reflog(1) |
+| debrief | `git branch -D` removes a label, not the commits | E112 |
+| debrief | the reflog lives in your repository only and keeps entries for commits no label holds about a month | git-reflog(1) (local to the repository); git-gc(1) and git-config(1) `gc.reflogExpireUnreachable` (30 days by default) |
+| `WIPE`, `ERASED` (lost) | expiring the reflog and pruning erases commits no label holds | the level's test (`reflog expire --expire=now --all`, then `gc --prune=now`, and the commit is gone); git-gc(1) `--prune` |

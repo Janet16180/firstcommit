@@ -420,7 +420,8 @@ def test_a_view_stays_seen_in_the_order_seen_until_a_reset(sample_level: runner.
     game.see_view("crew")
     game.see_view("band")
     game.see_view("crew")
-    assert game.level(sample_level.id)["views_seen"] == ["station", "crew", "band"]
+    game.see_view("tape")
+    assert game.level(sample_level.id)["views_seen"] == ["station", "crew", "band", "tape"]
     game.reset()
     assert game.level(sample_level.id)["views_seen"] == ["station"]
 
@@ -2023,6 +2024,17 @@ def test_an_observation_gives_both_sides_of_each_file_in_conflict(game_home: Pat
     [conflict] = game.observe()["conflicts"]
     assert (conflict["path"], conflict["you"]["label"], conflict["them"]["label"]) == ("docking.txt", "main", "scout")
     assert conflict["you"]["lines"] != conflict["them"]["lines"]
+
+
+def test_an_observation_gives_heads_moves_and_the_commits_only_the_reflog_holds(game_home: Path) -> None:
+    game.start("conflict-meet")
+    first = game.observe()
+    assert first["ghosts"] == [] and [move["message"] for move in first["reflog"]][-1].startswith("commit (initial)")
+    lab = runner.lab_of("conflict-meet")
+    kit.type_line(lab.project, "git reset -q --hard HEAD~1")
+    now = game.observe()
+    assert now["reflog"][0]["message"].startswith("reset: moving to HEAD~1")
+    assert [ghost["subject"] for ghost in now["ghosts"]] == ["Extend the route to Mars"]
 
 
 def test_a_challenge_poll_that_meets_no_goal_says_the_first_goal_still_unmet(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch) -> None:

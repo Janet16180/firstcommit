@@ -156,6 +156,19 @@ class Conflict(TypedDict):
     base: list[str] | None
 
 
+class ReflogEntry(TypedDict):
+    """
+    One move of HEAD, as its reflog records it: from where, to where, and git's note of why.
+
+    ``old`` is the commit HEAD left, empty for the first move; ``new`` the commit it moved to;
+    ``message`` git's own words, such as ``reset: moving to HEAD~1`` or ``commit: Add the map``.
+    """
+
+    old: str
+    new: str
+    message: str
+
+
 class Command(TypedDict):
     """
     One command line the player typed in the game's terminal (`firstcommit.commands`), and how it ended.
@@ -170,14 +183,14 @@ class Command(TypedDict):
 
 Mood = Literal["info", "ok", "warn", "err"]
 """How Rama says something about a typed line (`firstcommit.reactions`): neutral, pleased, careful or about a failure."""
-Moment = Literal["secret-leak", "launch", "junk-flood", "force-break", "unreviewed-main"]
+Moment = Literal["secret-leak", "launch", "junk-flood", "force-break", "unreviewed-main", "search-beam"]
 """
 A one-time moment the page plays over the zones when a reaction carries it: a secret leaking into
 every copy, a ship launching, generated files flooding into every copy, a forced push breaking
-Alex's chain on the mothership, or an unreviewed commit on the mothership's ``main`` landing at
-Alex's station.
+Alex's chain on the mothership, an unreviewed commit on the mothership's ``main`` landing at
+Alex's station, or a search beam that finds no copy of lines never staged or committed.
 """
-Art = Literal["space", "timeline", "terminal", "planet", "flag", "zones", "conveyor", "capsule", "chain", "orbit", "rocket", "pull", "alarm", "fork", "merge", "collision", "blackbox", "meteor"]
+Art = Literal["space", "timeline", "terminal", "planet", "flag", "zones", "conveyor", "capsule", "chain", "orbit", "rocket", "pull", "alarm", "fork", "merge", "collision", "blackbox", "meteor", "simulator"]
 """The pictures a level's scene can show; the page draws each one (its art files)."""
 View = Literal["station", "crew", "history", "sides", "blackbox", "board", "focus"]
 """
@@ -185,10 +198,11 @@ The views of the level screen (docs/drafts/chapters-5-9.md, the view ladder): yo
 zones, the crew view, history, a conflict's two sides, the black box, the review board, and your
 branch and main.
 """
-Seen = Literal[View, "band"]
+Seen = Literal[View, "band", "tape"]
 """
-What the page marks seen once its birth has played: a view, or ``band``, the crew view flattened
-into Alex's band above another view (born in 5-3), which no level opens on.
+What the page marks seen once its birth has played: a view; ``band``, the crew view flattened
+into Alex's band above another view (born in 5-3); or ``tape``, the black box's tape of HEAD's
+moves under history (born in 7-3). No level opens on ``band`` or ``tape``.
 """
 
 Language = Literal["en", "es"]

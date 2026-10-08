@@ -1074,3 +1074,24 @@ def test_without_a_conflict_or_a_repository_there_are_no_conflicts(tmp_path: Pat
     assert repomap.conflicts(tmp_path / "nowhere") == []
     repo = new_repo(tmp_path, "echo a > a.txt && git add a.txt && git commit -q -m a\n")
     assert repomap.conflicts(repo) == []
+
+
+def test_heads_reflog_lists_each_move_newest_first_with_where_it_came_from(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "echo a > a.txt && git add a.txt && git commit -q -m one && echo b > a.txt && git commit -q -am two && git reset -q --hard HEAD~1\n")
+    one, two = (shell(repo, f"git rev-parse {ref}").strip() for ref in ("HEAD", "HEAD@{1}"))
+    entries = repomap.reflog(repo)
+    assert [(entry["old"], entry["new"]) for entry in entries] == [(two, one), (one, two), ("", one)]
+    assert entries[0]["message"].startswith("reset: moving to HEAD~1")
+
+
+def test_ghosts_are_the_commits_only_the_reflog_still_holds(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "echo a > a.txt && git add a.txt && git commit -q -m one && echo b > a.txt && git commit -q -am two && echo c > a.txt && git commit -q -am three && git reset -q --hard HEAD~2\n")
+    assert [ghost["subject"] for ghost in repomap.ghosts(repo)] == ["three", "two"]
+    shell(repo, "git branch rescue HEAD@{1}")
+    assert repomap.ghosts(repo) == []
+
+
+def test_without_a_repository_or_moves_there_is_no_reflog_and_no_ghost(tmp_path: Path) -> None:
+    assert (repomap.reflog(tmp_path / "nowhere"), repomap.ghosts(tmp_path / "nowhere")) == ([], [])
+    repo = new_repo(tmp_path)
+    assert (repomap.reflog(repo), repomap.ghosts(repo)) == ([], [])

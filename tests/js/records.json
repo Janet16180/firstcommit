@@ -765,7 +765,20 @@
      "Dock at bay 2"
     ]
    }
-  ]
+  ],
+  "reflog": [
+   {
+    "old": "5941dbe0000000000000000000000000000000aa",
+    "new": "a0c26f80000000000000000000000000000000bb",
+    "message": "commit: Add the route"
+   },
+   {
+    "old": "",
+    "new": "5941dbe0000000000000000000000000000000aa",
+    "message": "commit (initial): Start the project"
+   }
+  ],
+  "ghosts": []
  },
  "cards": [
   {
@@ -1568,7 +1581,9 @@
    },
    "commands": [],
    "reactions": [],
-   "conflicts": []
+   "conflicts": [],
+   "reflog": [],
+   "ghosts": []
   },
   "observation": {
    "level": "cargo-sample",
@@ -1971,7 +1986,9 @@
    },
    "commands": [],
    "reactions": [],
-   "conflicts": []
+   "conflicts": [],
+   "reflog": [],
+   "ghosts": []
   },
   "explanation": null,
   "fix": null,

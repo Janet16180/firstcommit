@@ -37,6 +37,7 @@ from firstcommit.records import (
     Operation,
     Ref,
     RefKind,
+    ReflogEntry,
     Remote,
     Snapshot,
 )
@@ -56,13 +57,16 @@ __all__ = [
     "FolderChange",
     "Operation",
     "Ref",
+    "ReflogEntry",
     "RefKind",
     "Snapshot",
     "conflicted",
     "conflicts",
+    "ghosts",
     "history",
     "mode_changed",
     "nested",
+    "reflog",
     "snapshot",
     "staged",
     "unstaged",
@@ -72,6 +76,7 @@ __all__ = [
 
 MAX_COMMITS = 200
 MAX_FILES = 300
+MAX_REFLOG = 50
 
 Area = Literal["head", "index", "folder"]
 
@@ -267,6 +272,48 @@ def conflicts(path: Path) -> list[Conflict]:
             them: ConflictSide = {"label": incoming[0], "author": incoming[1], "lines": _blob_lines(path, blobs.get("3"))}
             found.append({"path": name, "you": you, "them": them, "base": _blob_lines(path, blobs.get("1"))})
     return found
+
+
+def reflog(path: Path) -> list[ReflogEntry]:
+    """
+    Give HEAD's moves in a repository, newest first, as its reflog records them.
+
+    Parameters
+    ----------
+    path : Path
+        A folder of the repository.
+
+    Returns
+    -------
+    list[ReflogEntry]
+        At most `MAX_REFLOG` moves; empty without a repository or before the first commit.
+        Each move's ``old`` is the ``new`` of the move that came before it in time.
+    """
+    lines = _lines(gitcmd.run(path, "log", "-g", f"--max-count={MAX_REFLOG + 1}", "--format=%H%x01%gs", "HEAD", "--")) if _find(path) is not None else []
+    records = [line.split("\x01", 1) for line in lines if "\x01" in line]
+    news = [new for new, _ in records]
+    olds = [*news[1:], ""] if news else []
+    moves: list[ReflogEntry] = [{"old": old, "new": new, "message": message} for (new, message), old in zip(records, olds, strict=True)]
+    return moves[:MAX_REFLOG]
+
+
+def ghosts(path: Path) -> list[Commit]:
+    """
+    Give the commits HEAD's reflog still reaches and no branch, tag, remote-tracking branch, stash or HEAD does.
+
+    Parameters
+    ----------
+    path : Path
+        A folder of the repository.
+
+    Returns
+    -------
+    list[Commit]
+        At most `MAX_COMMITS`, children before parents and newest first; empty when there are none.
+    """
+    moved_to = sorted({entry["new"] for entry in reflog(path)})
+    result = gitcmd.run(path, "log", "-z", "--topo-order", f"--max-count={MAX_COMMITS}", f"--format={COMMIT_FORMAT}", *moved_to, "--not", "--all", "--") if moved_to else None
+    return _parsed_commits(result) if result is not None else []
 
 
 def _incoming(path: Path) -> tuple[str, str]:
@@ -839,12 +886,30 @@ def _commits(cwd: Path, head: str | None) -> tuple[list[Commit], bool]:
     result = gitcmd.run(
         cwd, "log", "-z", "--topo-order", f"--max-count={MAX_COMMITS + 1}", f"--format={COMMIT_FORMAT}", "--branches", "--tags", "--remotes", *tips, "--"
     )
+    commits = _parsed_commits(result)
+    return commits[:MAX_COMMITS], len(commits) > MAX_COMMITS
+
+
+def _parsed_commits(result: subprocess.CompletedProcess[str]) -> list[Commit]:
+    """
+    Read the commits of a ``git log -z --format=COMMIT_FORMAT``.
+
+    Parameters
+    ----------
+    result : subprocess.CompletedProcess[str]
+        The finished command.
+
+    Returns
+    -------
+    list[Commit]
+        Its commits in its order, or none if it failed.
+    """
     fields = result.stdout.removesuffix("\0").split("\0") if result.returncode == 0 and result.stdout else []
     commits: list[Commit] = []
     for start in range(0, len(fields), COMMIT_FIELDS):
         full, short, parents, author, time, subject = fields[start : start + COMMIT_FIELDS]
         commits.append({"hash": full, "short": short, "parents": parents.split(), "subject": subject, "author": author, "time": int(time)})
-    return commits[:MAX_COMMITS], len(commits) > MAX_COMMITS
+    return commits
 
 
 def _files(top: Path, head: str | None, object_format: str) -> tuple[list[FileEntry], bool]:
