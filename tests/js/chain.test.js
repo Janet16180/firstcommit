@@ -260,3 +260,18 @@ test("the arc's words speak Spanish when the page does", () => {
     Strings.use("en");
   }
 });
+
+test("a plain chain draws the capsules alone: no name tags, no HEAD mark, no pins", () => {
+  const github = snapshot({ commits: forked().commits, refs: [ref("main", "c")] });
+  const chain = drawn(forked(), { plain: true, github, show: { mothership: true, alex: false, ghosts: false } });
+  assert.equal(rows(chain).length, 4);
+  assert.equal(chain.element.querySelector(".chain-tag"), null);
+  assert.equal(chain.element.querySelector(".chain-head"), null);
+  assert.equal(chain.element.querySelector(".chain-pin"), null);
+});
+
+test("given the commits that touched a file, the chain dims the others", () => {
+  const chain = drawn(forked(), { touched: [hash("c"), hash("a")] });
+  assert.deepEqual(rows(chain).filter((row) => row.classList.contains("is-dim")).map((row) => row.dataset.hash), [hash("d"), hash("b")]);
+  assert.equal(drawn(forked()).element.querySelector(".chain-row.is-dim"), null);
+});

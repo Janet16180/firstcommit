@@ -3945,3 +3945,50 @@ pre.code code {
     display: none;
   }
 }
+
+/* A file as a commit recorded it (past-panel.js), beside the chain: violet like the vault it
+   reads, dashed red when the commit has no such file. */
+.past {
+  align-self: start;
+  padding: 10px 12px;
+  background: var(--panel);
+  border: 3px solid var(--z-va);
+}
+
+.past[data-state="missing"] {
+  border-style: dashed;
+  border-color: var(--s-new);
+}
+
+.past[data-state="empty"] {
+  border-style: dashed;
+}
+
+.past-title {
+  margin: 0 0 8px;
+  font: 700 1rem var(--f-ui);
+  overflow-wrap: anywhere;
+}
+
+.past-text {
+  margin: 0 0 8px;
+  padding: 8px 10px;
+  background: var(--crt);
+  color: var(--crt-ink);
+  font: 1.05rem/1.45 var(--f-term);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.past-empty,
+.past-missing,
+.past-note {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 0.9rem;
+}
+
+/* A commit that did not touch the file the level reads. */
+.chain-row.is-dim {
+  opacity: 0.3;
+}

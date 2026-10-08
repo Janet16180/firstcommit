@@ -24,7 +24,8 @@
  *   subject git gives a revert), and both rows say so. main's line (else origin/main's,
  *   else HEAD's) holds the first column. `walk` lights git log's path
  *   from HEAD; `placed` names get a tick (the captain's chart); `legend: false` leaves the key
- *   out. `owner` ("you" unless "alex") says whose repository `project` is, for its colour; the
+ *   out. `plain` draws the capsules alone, with no name, HEAD mark, pin or key (the vault's column
+ *   before the chain is born); `touched` (hashes, or null) dims every other commit. `owner` ("you" unless "alex") says whose repository `project` is, for its colour; the
  *   other person's pins (show.alex, `teammate`) are then yours. `whatif` (names) draws the WHAT IF: greyscale under its heading, the chain without those
  *   names, the commits only they reached as ghosts. An update that brings nothing new keeps the
  *   drawing, so its motions are not started over.
@@ -240,7 +241,7 @@ const Chain = (function () {
       draw(view);
     }
 
-    function draw({ project: real, github, teammate, ghosts, show, look, walk, placed = [], legend: keyed = true, whatif = null, owner = "you" }) {
+    function draw({ project: real, github, teammate, ghosts, show, look, walk, placed = [], legend: keyed = true, whatif = null, owner = "you", plain = false, touched = null }) {
       const other = owner === "alex" ? "you" : "alex";
       const { project, orphaned } = pretend(real, whatif);
       const mine = new Set(project.commits.map((commit) => commit.hash));
@@ -270,18 +271,21 @@ const Chain = (function () {
           const kind = { mothership: "is-mothership-only", ghost: "is-ghost" }[style] || "";
           const cap = el("span", { class: `chain-cap ${kind} ${commit.subject.startsWith("Revert ") ? "is-revert" : ""}`.trim() });
           cap.style.setProperty("--column", String(row.column));
-          return el("li", { class: ["chain-row", kind, looked.has(commit.subject) && "is-look"].filter(Boolean).join(" "), "data-hash": commit.hash },
+          const dim = touched !== null && !touched.includes(commit.hash);
+          return el("li", { class: ["chain-row", kind, looked.has(commit.subject) && "is-look", dim && "is-dim"].filter(Boolean).join(" "), "data-hash": commit.hash },
             el("span", { class: "chain-lanes" }, lane(pieces[at], columns, margin), cap),
             el("span", { class: "chain-body" },
               el("code", { class: "chain-hash" }, commit.short),
               el("span", { class: "chain-subject" }, commit.subject),
               style === "mothership" && el("span", { class: "chain-only" }, t("chain.only")),
               undoNote(rows, undone, at),
-              ...tags(project, commit.hash, looked.has("HEAD"), placed),
-              ...(show.mothership ? pins(github, commit.hash, "mothership") : []),
-              ...(show.alex ? pins(teammate, commit.hash, other) : [])));
+              ...(plain ? [] : [
+                ...tags(project, commit.hash, looked.has("HEAD"), placed),
+                ...(show.mothership ? pins(github, commit.hash, "mothership") : []),
+                ...(show.alex ? pins(teammate, commit.hash, other) : []),
+              ])));
         })),
-        ...(keyed ? [legend(project, { ...pinned(show, github, teammate, other), only: motherOnly.length > 0, ghost: lost.length + orphaned.length > 0 })] : []));
+        ...(keyed && !plain ? [legend(project, { ...pinned(show, github, teammate, other), only: motherOnly.length > 0, ghost: lost.length + orphaned.length > 0 })] : []));
     }
 
     return { element, update };
