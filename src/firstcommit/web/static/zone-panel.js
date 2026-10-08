@@ -8,7 +8,9 @@
  * typed light up, a zone that switched on flashes, and what moved is shown moving (Zones.moves):
  * files and capsules fly from their old place to their new one, labels slide, a refused push
  * bounces off the mothership, capsules that left every branch fade off and those that came back
- * fade in; none of the movement plays when the player asked for reduced motion.
+ * fade in; none of the movement plays when the player asked for reduced motion. In a level with a
+ * teammate the zones become two stations, yours and Alex's (each a workshop, a dock and a vault),
+ * with the mothership above and between them, and capsules fly between the stations through it.
  * Needs dom.js, strings.js, art-sprites.js, typed.js and zones.js. Defines one global, ZonePanel.
  */
 
@@ -22,8 +24,12 @@ const ZonePanel = (function () {
      capsule's block centre sits in its row (orbit.css draws the rows to match). */
   const LANE = 16;
   const ROW = 40;
+  const CREW_ROW = 72;
   const CENTRE = 11;
   const ZONES = ["workshop", "dock", "vault", "remote"];
+  const STATION = ["workshop", "dock", "vault"];
+  const CREW = STATION.map((name) => `crew-${name}`);
+  const base = (key) => key.replace(/^crew-/, "");
   const FLOWS = [[["add", false]], [["commit", false]], [["push", false], ["pull", true]]];
   const LIT_MS = 1600;
   const FLY_MS = 720;
@@ -56,50 +62,64 @@ const ZonePanel = (function () {
     ),
   );
 
-  /* The line from a commit down to one of its parents (`row` its place in the list; a parent not
-     in the list goes to the bottom). The first parent bends just above itself, so a branch
+  /* The line from a commit down to one of its parents (`row` its place in the list, `height` a
+     row's height; a parent not in the list goes to the bottom). The first parent bends just above itself, so a branch
      splits off where it starts; another parent bends just below the merge, so a merge reaches
      out to the branch it joins. */
-  function link(commit, row, parent, parentRow, first) {
+  function link(commit, row, parent, parentRow, first, height) {
     const x = commit.lane * LANE + 9;
-    const y = row * ROW + CENTRE;
+    const y = row * height + CENTRE;
     const px = parent.lane * LANE + 9;
-    const py = parentRow * ROW + CENTRE;
-    const bend = first ? `L ${x} ${py - ROW} L ${px} ${py}` : `L ${px} ${y + ROW} L ${px} ${py}`;
+    const py = parentRow * height + CENTRE;
+    const bend = first ? `L ${x} ${py - height} L ${px} ${py}` : `L ${px} ${y + height} L ${px} ${py}`;
     return svg("path", { class: "link", d: `M ${x} ${y} ${px === x ? `L ${px} ${py}` : bend}` });
   }
 
-  /* The capsules as a graph: each in its lane, with lines from every commit to its parents. */
-  function capsules(zone, commits) {
+  /* The capsules as a graph: each in its lane, `height` pixels a row, with lines from every
+     commit to its parents. */
+  function capsules(zone, commits, height) {
     const rows = new Map(commits.map((commit, index) => [commit.hash, index]));
     const width = (Math.max(...commits.map((commit) => commit.lane)) + 1) * LANE;
     const links = commits.flatMap((commit, row) => commit.parents.map((hash, index) => {
       const parentRow = rows.has(hash) ? rows.get(hash) : commits.length;
       const parent = rows.has(hash) ? commits[parentRow] : commit;
-      return link(commit, row, parent, parentRow, index === 0);
+      return link(commit, row, parent, parentRow, index === 0, height);
     }));
-    const lines = svg("svg", { class: "links", width, height: commits.length * ROW, "aria-hidden": "true" }, links);
-    return el("div", { class: "caps", style: `--gutter:${width}px` }, lines, commits.map(capsule(zone)));
+    const lines = svg("svg", { class: "links", width, height: commits.length * height, "aria-hidden": "true" }, links);
+    return el("div", { class: "caps", style: `--gutter:${width}px;--row:${height}px` }, lines, commits.map(capsule(zone)));
   }
 
-  /* Each zone's items, or null when the zone is off. */
-  function contents(zones) {
-    const workshop = zones.workshop.map((file) => fileChip(file.path, stateTag(file.state), { "data-state": file.state, "data-key": `workshop:${file.path}`, title: t(`zones.tip.${file.state}`) }));
-    const dock = zones.dock && zones.dock.map((change) => fileChip(change.path, t(`zones.change.${change.change}`), { class: "file is-staged", "data-key": `dock:${change.path}` }));
+  /* A station's three zones' items, keyed with `prefix` ("" for yours, "crew-" for Alex's), its
+     capsules `height` pixels a row. */
+  function stationContents(station, prefix, height) {
+    const workshop = station.workshop.map((file) => fileChip(file.path, stateTag(file.state), { "data-state": file.state, "data-key": `${prefix}workshop:${file.path}`, title: t(`zones.tip.${file.state}`) }));
+    const dock = station.dock && station.dock.map((change) => fileChip(change.path, t(`zones.change.${change.change}`), { class: "file is-staged", "data-key": `${prefix}dock:${change.path}` }));
     return {
-      workshop: { count: workshop.length, nodes: workshop },
-      dock: zones.dock && { count: dock.length, nodes: dock },
-      vault: zones.vault && { count: zones.vault.length, nodes: zones.vault.length ? [capsules("vault", zones.vault)] : [] },
-      remote: zones.remote && { count: zones.remote.length, nodes: zones.remote.length ? [capsules("remote", zones.remote)] : [] },
+      [`${prefix}workshop`]: { count: workshop.length, nodes: workshop },
+      [`${prefix}dock`]: station.dock && { count: dock.length, nodes: dock },
+      [`${prefix}vault`]: station.vault && { count: station.vault.length, nodes: station.vault.length ? [capsules(`${prefix}vault`, station.vault, height)] : [] },
     };
   }
 
-  function zoneShell(name) {
+  /* Each zone's items, or null when the zone is off; the crew view's narrower zones take taller
+     capsule rows, so a capsule's labels can wrap under its hash. */
+  function contents(zones) {
+    const height = zones.crew ? CREW_ROW : ROW;
+    return {
+      ...stationContents(zones, "", height),
+      remote: zones.remote && { count: zones.remote.length, nodes: zones.remote.length ? [capsules("remote", zones.remote, height)] : [] },
+      ...(zones.crew ? stationContents(zones.crew, "crew-", height) : {}),
+    };
+  }
+
+  /* A zone's frame; `key` names it on the page ("crew-vault" for Alex's vault), `name` its kind. */
+  function zoneShell(key) {
+    const name = base(key);
     const title = t(`zones.${name}`);
     const git = t(`zones.${name}Git`);
     const shell = { count: el("span", { class: "z-count" }, "–"), body: el("div", { class: "z-body" }) };
     shell.operation = el("p", { class: "z-op", hidden: true });
-    shell.element = el("article", { class: "zone", "data-zone": name, "aria-label": title },
+    shell.element = el("article", { class: "zone", "data-zone": key, "aria-label": title },
       el("header", { class: "z-head" }, el("span", { class: "zico", "aria-hidden": "true" }), el("div", {}, el("h3", {}, title), el("small", {}, git)), shell.count),
       shell.operation,
       shell.body,
@@ -107,8 +127,23 @@ const ZonePanel = (function () {
     return shell;
   }
 
-  const flow = (arrows) => el("div", { class: "flow", "aria-hidden": "true" },
-    arrows.map(([command, back]) => el("div", { class: back ? "fl is-back" : "fl", "data-arrow": command }, ArtSprites.icon("arrow"), el("span", {}, `git ${command}`))));
+  const flow = (arrows, mirrored = false) => el("div", { class: mirrored ? "flow is-mirror" : "flow", "aria-hidden": "true" },
+    arrows.map(([arrow, back]) => el("div", { class: back ? "fl is-back" : "fl", "data-arrow": arrow }, ArtSprites.icon("arrow"), el("span", {}, `git ${base(arrow)}`))));
+
+  /* The four zones in a row, with the arrows between them. */
+  const soloRow = (shells) => el("div", { class: "viz-row" }, ZONES.map((name, index) => [shells[name].element, index < FLOWS.length && flow(FLOWS[index])]));
+
+  /* One person's station: their workshop, dock and vault, with the arrows between them. */
+  const station = (shells, who, prefix) => el("section", { class: "station", "data-station": who, "aria-label": t(`zones.station.${who}`) },
+    el("p", { class: "station-name" }, t(`zones.station.${who}`)),
+    el("div", { class: "station-row" }, shells[`${prefix}workshop`].element, flow([[`${prefix}add`, false]]), shells[`${prefix}dock`].element, flow([[`${prefix}commit`, false]]), shells[`${prefix}vault`].element));
+
+  /* Your station, the mothership between the two with each station's push and pull under it
+     (Alex's mirrored, as their station is on the other side), and Alex's station. */
+  const crewRows = (shells) => el("div", { class: "viz-crew" },
+    station(shells, "you", ""),
+    el("div", { class: "crew-sky" }, shells.remote.element, el("div", { class: "crew-flows" }, flow([["push", false], ["pull", true]]), flow([["crew-push", false], ["crew-pull", true]], true))),
+    station(shells, "alex", "crew-"));
 
   /* Restarts a class's one-shot animation on a node, and takes the class off after `ms`. */
   function flash(node, name, ms, timers) {
@@ -200,18 +235,28 @@ const ZonePanel = (function () {
 
   /* options: reducedMotion (no flying items; the arrows and zones still light), timers. */
   function create({ reducedMotion = true, timers = window } = {}) {
-    const shells = Object.fromEntries(ZONES.map((name) => [name, zoneShell(name)]));
-    const row = el("div", { class: "viz-row" }, ZONES.map((name, index) => [shells[name].element, index < FLOWS.length && flow(FLOWS[index])]));
+    const shells = Object.fromEntries([...ZONES, ...CREW].map((key) => [key, zoneShell(key)]));
+    const row = soloRow(shells);
     const legend = el("ul", { class: "legend" }, LEGEND.map((state) => el("li", { "data-state": state }, t(`zones.legend.${state}`))));
     const element = el("section", { class: "viz px", "aria-label": t("zones.label") }, row, legend);
     let drawn = null;
     let last = null;
+    let crew = false;
+
+    /* Two stations while the level has a teammate, else the row of four. */
+    function arrange(withCrew) {
+      if (withCrew === crew) return;
+      element.firstChild.replaceWith(withCrew ? crewRows(shells) : soloRow(shells));
+      element.classList.toggle("is-crew", withCrew);
+      crew = withCrew;
+    }
 
     function draw(zones) {
       const filled = contents(zones);
-      for (const name of ZONES) {
-        const shell = shells[name];
-        const zone = filled[name];
+      for (const key of crew ? [...ZONES, ...CREW] : ZONES) {
+        const shell = shells[key];
+        const zone = filled[key];
+        const name = base(key);
         shell.element.classList.toggle("is-dormant", !zone);
         shell.count.textContent = zone ? String(zone.count) : "–";
         shell.body.replaceChildren(...(!zone ? [say(OFF[name])] : zone.count ? zone.nodes : [say(EMPTY[name])]));
@@ -231,6 +276,7 @@ const ZonePanel = (function () {
         const before = places(element);
         const moves = last && Zones.moves(last, zones, Typed.gitCommands(observation.commands), Typed.failedGitCommands(observation.commands));
         last = zones;
+        arrange(Boolean(zones.crew));
         if (text !== drawn) draw(zones);
         drawn = text;
         if (moves) animate(element, shells, moves, before, { reducedMotion, timers });

@@ -215,3 +215,50 @@ test("a file that just became conflicted cracks", () => {
   panel.update({ ...observe({ ...one, operation: "merge", files: [{ ...one.files[0], conflicted: true, index_change: "modified" }] }), commands: [{ line: "git merge topic", status: 1 }] });
   assert.ok(keyed(zone(panel, "workshop"), `workshop:${one.files[0].path}`).classList.contains("art-crack"));
 });
+
+test("with a teammate the zones show two stations, yours and Alex's, with the mothership between and above them", () => {
+  const panel = ZonePanel.create();
+  const observation = record("press").observation;
+  panel.update(observation);
+  assert.ok(panel.element.classList.contains("is-crew"));
+  const stations = [...panel.element.querySelectorAll(".station")];
+  assert.deepEqual(stations.map((node) => node.dataset.station), ["you", "alex"]);
+  assert.deepEqual(stations.map((node) => node.querySelector(".station-name").textContent), ["Your base", "Alex's base"]);
+  assert.deepEqual([...stations[0].querySelectorAll(".zone")].map((node) => node.dataset.zone), ["workshop", "dock", "vault"]);
+  assert.deepEqual([...stations[1].querySelectorAll(".zone")].map((node) => node.dataset.zone), ["crew-workshop", "crew-dock", "crew-vault"]);
+  assert.ok(panel.element.querySelector(".crew-sky .zone[data-zone=remote]"));
+  assert.ok(keyed(zone(panel, "crew-vault"), `crew-vault:${observation.teammate.commits[0].hash}`));
+  assert.ok(panel.element.querySelector('.fl[data-arrow="crew-push"]'));
+});
+
+test("a level without a teammate keeps the four zones in one row, with no stations", () => {
+  const panel = ZonePanel.create();
+  panel.update(record("observation"));
+  assert.equal(panel.element.classList.contains("is-crew"), false);
+  assert.equal(panel.element.querySelector(".station"), null);
+  assert.equal(panel.element.querySelectorAll(".viz-row .zone").length, 4);
+});
+
+test("a teammate's push lights their own push arrow", () => {
+  const clock = createClock();
+  const panel = ZonePanel.create({ timers: clock });
+  const after = record("press").observation;
+  const pushed = after.github.commits[0].hash;
+  const older = after.github.commits[1].hash;
+  const before = { ...after, github: { ...after.github, head: older, commits: after.github.commits.slice(1), refs: after.github.refs.map((ref) => ({ ...ref, target: older })) } };
+  panel.update(before);
+  panel.update(after);
+  assert.ok(panel.element.querySelector('.fl[data-arrow="crew-push"]').classList.contains("is-lit"));
+  assert.ok(keyed(zone(panel, "remote"), `remote:${pushed}`));
+});
+
+test("in the crew view capsule rows are taller, so a capsule's labels fit under its hash, and the lines follow them", () => {
+  const crew = ZonePanel.create();
+  crew.update(record("press").observation);
+  const caps = zone(crew, "crew-vault").querySelector(".caps");
+  assert.match(caps.getAttribute("style"), /--row:72px/);
+  assert.equal(caps.querySelector("svg.links").getAttribute("height"), "144");
+  const solo = ZonePanel.create();
+  solo.update(record("observation"));
+  assert.match(zone(solo, "vault").querySelector(".caps").getAttribute("style"), /--row:40px/);
+});
