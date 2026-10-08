@@ -13,7 +13,8 @@
  * global, GuidePictures.
  *
  * draw(model, words) {element}: model is a desk or a chain as GuideText describes them;
- *   another kind throws a RangeError.
+ *   another kind throws a RangeError. What the command changed is lit in gold: a fresh chip,
+ *   place, commit (with its lines to its parents) or name, and a name taken off (`gone`).
  */
 
 /* global Dom */
@@ -36,20 +37,20 @@ const GuidePictures = (function () {
     return el("li", { class: fresh(item, `gp-chip gp-chip--${item.state || "plain"}`) }, el("span", { class: "gp-file" }, item.name), state);
   }
 
-  function place(key, items, words) {
+  function place(key, items, lit, words) {
     const absent = items === null;
     const body = absent
       ? el("p", { class: "gp-none" }, words.notYet)
       : items.length === 0
         ? el("p", { class: "gp-none" }, words.empty)
         : el("ul", { class: "gp-chips", role: "list" }, items.map((item) => chip(item, words)));
-    return el("section", { class: `gp-place gp-place--${key}${absent ? " gp-place--absent" : ""}` },
+    return el("section", { class: `gp-place gp-place--${key}${absent ? " gp-place--absent" : ""}${lit ? " gp-fresh" : ""}` },
       el("h4", { class: "gp-place-name" }, words.places[key]),
       body);
   }
 
   function desk(model, words) {
-    return el("div", { class: "gp gp-desk" }, PLACES.filter((key) => key in model).map((key) => place(key, model[key], words)));
+    return el("div", { class: "gp gp-desk" }, PLACES.filter((key) => key in model).map((key) => place(key, model[key], (model.fresh || []).includes(key), words)));
   }
 
   const centre = (row, col) => ({ x: X0 + col * COLUMN, y: ROW / 2 + row * ROW });
@@ -64,7 +65,7 @@ const GuidePictures = (function () {
     const links = commits.flatMap((commit, row) => commit.parents.map((parent) => {
       const from = centre(row, commit.col);
       const to = centre(rowOf.get(parent), commits[rowOf.get(parent)].col);
-      const look = commit.ghost ? "ghost" : commit.who === "mothership" ? "mothership" : "line";
+      const look = commit.fresh ? "fresh" : commit.ghost ? "ghost" : commit.who === "mothership" ? "mothership" : "line";
       return svg("path", { class: `gp-link gp-link--${look}`, d: `M${from.x} ${from.y} L${from.x} ${to.y - ROW / 2} L${to.x} ${to.y}` });
     }));
     const capsules = commits.map((commit, row) => {
@@ -80,6 +81,24 @@ const GuidePictures = (function () {
     return el("span", { class: fresh(name, `gp-tag gp-tag--${kind}`) }, name.name);
   }
 
+  /* A name the command took off: struck through and lit, with the words that say so. */
+  function goneTag(name, words) {
+    return el("span", { class: "gp-gone" }, el("s", { class: "gp-tag gp-tag--gone gp-fresh" }, name.name), el("span", { class: "gp-gone-note" }, words.gone));
+  }
+
+  /* The row's names. Where your bookmark and the mothership's pin sit on one commit they are one
+     name, "origin/main (mothership)", lit if either moved. */
+  function rowNames(names, head, words) {
+    const pin = names.find((name) => name.kind === "mothership");
+    const bookmark = names.find((name) => name.kind === "remote");
+    return names.filter((name) => !(pin && bookmark && name === pin)).map((name) => {
+      if (name.gone) return goneTag(name, words);
+      if (name.name === head) return el("span", { class: "gp-rides" }, headMark(words), tag(name, true));
+      if (name === bookmark && pin) return tag({ ...name, name: `${name.name} (${words.mothership})`, kind: "remote gp-tag--synced", fresh: name.fresh || pin.fresh }, false);
+      return tag(name, false);
+    });
+  }
+
   const headMark = (words) => el("span", { class: "gp-head", title: words.head }, "HEAD");
 
   function commitRow(commit, model, words) {
@@ -88,7 +107,8 @@ const GuidePictures = (function () {
     return el("li", { class: "gp-row" },
       el("span", { class: "gp-sr" }, who),
       model.head === commit.id ? headMark(words) : null,
-      names.map((name) => (name.name === model.head ? el("span", { class: "gp-rides" }, headMark(words), tag(name, true)) : tag(name, false))));
+      rowNames(names, model.head, words),
+      commit.mark ? el("span", { class: "gp-mark" }, words.marks[commit.mark]) : null);
   }
 
   function chain(model, words) {

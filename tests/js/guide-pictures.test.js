@@ -16,6 +16,9 @@ const words = {
   ghost: "no name leads here",
   notYours: "on the mothership only",
   by: { you: "your commit", alex: "Alex's commit" },
+  marks: { merge: "merge commit", revert: "undoes the one below" },
+  gone: "taken off",
+  mothership: "mothership",
 };
 const draw = (model) => {
   const element = GuidePictures.draw(model, words);
@@ -48,7 +51,7 @@ test("a file's state is written beside it, so colour is never the only clue, and
 
 const chain = (more = {}) => ({
   kind: "chain",
-  commits: [{ id: "m", col: 0, parents: ["c", "d"], fresh: true }, { id: "d", col: 1, parents: ["b"], who: "alex" }, { id: "c", col: 0, parents: ["b"] }, { id: "b", col: 0, parents: [] }],
+  commits: [{ id: "m", col: 0, parents: ["c", "d"], fresh: true, mark: "merge" }, { id: "d", col: 1, parents: ["b"], who: "alex" }, { id: "c", col: 0, parents: ["b"] }, { id: "b", col: 0, parents: [] }],
   names: [{ name: "main", on: "m", kind: "branch" }, { name: "scout", on: "d", kind: "branch" }, { name: "origin/main", on: "b", kind: "remote" }],
   head: "main",
   ...more,
@@ -99,4 +102,30 @@ test("each row tells a screen reader whose commit it is, or that it is a ghost o
 
 test("an unknown kind of picture is an error", () => {
   assert.throws(() => GuidePictures.draw({ kind: "tape" }, words), RangeError);
+});
+
+test("what changed is lit: a new commit's lines to its parents too, and a merge commit says what it is", () => {
+  const picture = draw(chain());
+  assert.equal(picture.querySelectorAll(".gp-link--fresh").length, 2);
+  assert.equal(picture.querySelector(".gp-row .gp-mark").textContent, "merge commit");
+});
+
+test("a name taken off stays drawn, struck through and lit, and says so", () => {
+  const picture = draw({ kind: "chain", commits: [{ id: "a", col: 0, parents: [] }], names: [{ name: "main", on: "a", kind: "branch" }, { name: "test-run", on: "a", kind: "branch", gone: true }], head: "main" });
+  const gone = picture.querySelector(".gp-tag--gone");
+  assert.equal(gone.textContent, "test-run");
+  assert.ok(gone.classList.contains("gp-fresh"));
+  assert.match(gone.parentNode.textContent, /taken off/);
+});
+
+test("where your bookmark and the mothership agree, one name says both", () => {
+  const picture = draw({ kind: "chain", commits: [{ id: "a", col: 0, parents: [] }], names: [{ name: "main", on: "a", kind: "branch" }, { name: "origin/main", on: "a", kind: "remote" }, { name: "mothership", on: "a", kind: "mothership" }], head: "main" });
+  assert.deepEqual(texts(picture, ".gp-tag"), ["main", "origin/main (mothership)"]);
+  assert.equal(picture.querySelectorAll(".gp-tag--mothership").length, 0);
+});
+
+test("a place that just appeared is lit", () => {
+  const desk = draw({ kind: "desk", folder: [], staging: [], fresh: ["staging"] });
+  assert.ok(desk.querySelector(".gp-place--staging").classList.contains("gp-fresh"));
+  assert.ok(!desk.querySelector(".gp-place--folder").classList.contains("gp-fresh"));
 });

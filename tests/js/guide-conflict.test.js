@@ -39,6 +39,18 @@ test("the conflict opens on the real file git wrote, markers and all, at step 1 
   assert.match(section.querySelector(".gc-term").textContent, /CONFLICT \(content\): Merge conflict in checklist\.txt/);
 });
 
+test("the first time git says \"both modified\", one line says what it means", () => {
+  assert.match(create().textContent, /"both modified" is git status's word for this file/);
+});
+
+test("the add step says plainly what git add does in a conflict", () => {
+  const section = create();
+  step(section, 4);
+  [...section.querySelectorAll(".gx-keep button")][0].click();
+  step(section, 1);
+  assert.equal(section.querySelector(".gx-sentence").textContent, "git add tells Git this file is resolved: git add checklist.txt.");
+});
+
 test("pointing at a part says whose it is, and leaving puts the step's picture back", () => {
   const section = create();
   assert.equal(explainTitle(section), "What Git wrote");

@@ -13,12 +13,14 @@
  * A desk is {kind: "desk", folder, staging, vault, remote}: only the places it names are drawn,
  * and a place that is null is not there yet. Each holds chips {name, state, fresh}: state is
  * "new", "edited", "conflict", "clean" or "ignored" (left out in the staging area, the vault and the
- * remote), and `fresh` lights what the command just changed.
+ * remote), and `fresh` lights what the command just changed; the desk's own `fresh` lists the
+ * places that just appeared.
  * A chain is {kind: "chain", commits, names, head}: commits newest first, each {id, col, parents,
- * who, ghost, fresh}, with `who` "you" (the default), "alex" or "mothership" (a commit the
- * mothership has and you do not); names [{name, on, kind}] with kind "branch", "remote"
- * (origin/main, your bookmark) or "mothership" (where the mothership really is); `head` is the
- * branch HEAD rides, or a commit's id when detached.
+ * who, ghost, fresh, mark}, with `who` "you" (the default), "alex" or "mothership" (a commit the
+ * mothership has and you do not) and `mark` a key of pictures.marks said beside it; names [{name,
+ * on, kind, fresh, gone}] with kind "branch", "remote" (origin/main, your bookmark) or
+ * "mothership" (where the mothership really is), `gone` for a name the command took off; `head`
+ * is the branch HEAD rides, or a commit's id when detached. Every after picture lights something.
  *
  * Every word is {en, es}; commands, file names and branch names are said once. Data only.
  * Defines one global, GuideText.
@@ -83,7 +85,7 @@ const GuideText = (function () {
       command: "git init",
       picture: {
         before: desk({ folder: [], staging: null, vault: null }),
-        after: desk({ folder: [], staging: [], vault: [] }),
+        after: desk({ folder: [], staging: [], vault: [], fresh: ["staging", "vault"] }),
       },
       runs: ["init"],
       mistake: {
@@ -167,7 +169,7 @@ const GuideText = (function () {
       command: "git remote add origin <url>",
       picture: {
         before: desk({ vault: [{ name: "Add the star map" }], remote: null }),
-        after: desk({ vault: [{ name: "Add the star map" }], remote: [] }),
+        after: desk({ vault: [{ name: "Add the star map" }], remote: [], fresh: ["remote"] }),
       },
       runs: ["remote-add"],
       mistake: {
@@ -237,7 +239,7 @@ const GuideText = (function () {
       command: "git switch <branch>",
       picture: {
         before: chain([commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("scout", "c"), branch("main", "b")], "scout"),
-        after: chain([commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("scout", "c"), branch("main", "b")]),
+        after: chain([commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("scout", "c"), { ...branch("main", "b"), fresh: true }]),
       },
       runs: ["switch"],
       mistake: {
@@ -251,7 +253,7 @@ const GuideText = (function () {
       command: "git merge <branch>",
       picture: {
         before: chain([commit("d", ["b"], { col: 1 }), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("scout", "d"), branch("main", "c")]),
-        after: chain([commit("m", ["c", "d"], { fresh: true }), commit("d", ["b"], { col: 1 }), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("main", "m"), branch("scout", "d")]),
+        after: chain([commit("m", ["c", "d"], { fresh: true, mark: "merge" }), commit("d", ["b"], { col: 1 }), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("main", "m"), branch("scout", "d")]),
       },
       runs: ["merge"],
       mistake: {
@@ -295,7 +297,7 @@ const GuideText = (function () {
       command: "git revert <commit>",
       picture: {
         before: chain([commit("b", ["a"]), commit("a")], [branch("main", "b")]),
-        after: chain([commit("r", ["b"], { fresh: true }), commit("b", ["a"]), commit("a")], [branch("main", "r")]),
+        after: chain([commit("r", ["b"], { fresh: true, mark: "revert" }), commit("b", ["a"]), commit("a")], [branch("main", "r")]),
       },
       runs: ["revert"],
       mistake: {
@@ -303,18 +305,18 @@ const GuideText = (function () {
         es: "Esperar que el commit viejo desaparezca: se queda en la historia, y un commit nuevo lo deshace.",
       },
       lessons: ["git revert"],
-      related: ["git reset <commit>", "git log", "git push"],
+      related: ["git reset --hard <commit>", "git log", "git push"],
     },
     {
-      command: "git reset <commit>",
+      command: "git reset --hard <commit>",
       picture: {
         before: chain([commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("main", "c")]),
         after: chain([commit("c", ["b"], { ghost: true }), commit("b", ["a"]), commit("a")], [{ ...branch("main", "b"), fresh: true }]),
       },
       runs: ["reset"],
       mistake: {
-        en: "Adding --hard by habit: git reset --hard also throws away the edits in your working folder.",
-        es: "Agregar --hard por costumbre: git reset --hard también descarta las ediciones de tu carpeta de trabajo.",
+        en: "Using --hard with edits you still want: they are gone for good. Commit them first, or leave out --hard to keep your files as they are.",
+        es: "Usar --hard con ediciones que todavía quieres: se pierden para siempre. Primero haz commit, o no uses --hard para conservar tus archivos como están.",
       },
       lessons: ["git reset --hard"],
       related: ["git revert <commit>", "git reflog", "git restore <file>"],
@@ -328,7 +330,7 @@ const GuideText = (function () {
         es: "Creer que un commit desapareció después de un reset: el reflog todavía lo lista, y un branch nuevo en su hash lo recupera.",
       },
       lessons: ["git reflog"],
-      related: ["git reset <commit>", "git log"],
+      related: ["git reset --hard <commit>", "git log"],
     },
     {
       command: "git log --oneline --graph --all",
@@ -373,7 +375,7 @@ const GuideText = (function () {
       command: "git pull --no-rebase",
       picture: {
         before: chain([commit("d", ["b"], { col: 1, who: "mothership" }), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [mothership("d"), branch("main", "c"), bookmark("b")]),
-        after: chain([commit("m", ["c", "d"], { fresh: true }), commit("d", ["b"], { col: 1, who: "alex" }), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("main", "m"), bookmark("d"), mothership("d")]),
+        after: chain([commit("m", ["c", "d"], { fresh: true, mark: "merge" }), commit("d", ["b"], { col: 1, who: "alex" }), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("main", "m"), bookmark("d"), mothership("d")]),
       },
       runs: ["pull-no-rebase"],
       mistake: {
@@ -415,7 +417,7 @@ const GuideText = (function () {
       command: "git branch -d <name>",
       picture: {
         before: chain([commit("b", ["a"]), commit("a")], [branch("main", "b"), branch("test-run", "a")]),
-        after: chain([commit("b", ["a"]), commit("a", [], { fresh: true })], [branch("main", "b")]),
+        after: chain([commit("b", ["a"]), commit("a")], [branch("main", "b"), { ...branch("test-run", "a"), gone: true }]),
       },
       runs: ["branch-d"],
       mistake: {
@@ -454,7 +456,7 @@ const GuideText = (function () {
       command: "git checkout <branch>",
       picture: {
         before: chain([commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("scout", "c"), branch("main", "b")]),
-        after: chain([commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("scout", "c"), branch("main", "b")], "scout"),
+        after: chain([commit("c", ["b"]), commit("b", ["a"]), commit("a")], [{ ...branch("scout", "c"), fresh: true }, branch("main", "b")], "scout"),
       },
       runs: ["checkout"],
       mistake: {
@@ -483,7 +485,7 @@ const GuideText = (function () {
       command: "git commit --no-edit",
       picture: {
         before: chain([commit("d", ["b"], { col: 1, who: "alex" }), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("alex-route", "d"), branch("main", "c")]),
-        after: chain([commit("m", ["c", "d"], { fresh: true }), commit("d", ["b"], { col: 1, who: "alex" }), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("main", "m"), branch("alex-route", "d")]),
+        after: chain([commit("m", ["c", "d"], { fresh: true, mark: "merge" }), commit("d", ["b"], { col: 1, who: "alex" }), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("main", "m"), branch("alex-route", "d")]),
       },
       runs: ["conflict-commit-yours"],
       mistake: {
@@ -512,6 +514,12 @@ const GuideText = (function () {
       taughtLater: { en: "A sector still to come", es: "Un sector que aún no llega" },
       related: { en: "Related", es: "Relacionados" },
       conflict: { en: "See a conflict, step by step", es: "Ver un conflicto, paso a paso" },
+      chainKey: {
+        en: "HEAD marks where you are; a dashed name is your bookmark of the mothership.",
+        es: "HEAD marca dónde estás; un nombre con borde punteado es tu marcador de la nave nodriza.",
+      },
+      showAll: { en: "Show all {count} lines", es: "Mostrar las {count} líneas" },
+      showLess: { en: "Show fewer lines", es: "Mostrar menos líneas" },
     },
     pictures: {
       notYet: { en: "not there yet", es: "todavía no existe" },
@@ -525,6 +533,12 @@ const GuideText = (function () {
         ignored: { en: "ignored", es: "ignorado" },
       },
       ghost: { en: "no name leads here", es: "ningún nombre lleva aquí" },
+      marks: {
+        merge: { en: "merge commit", es: "commit de merge" },
+        revert: { en: "undoes the one below", es: "deshace el de abajo" },
+      },
+      gone: { en: "taken off", es: "quitado" },
+      mothership: { en: "mothership", es: "nave nodriza" },
       notYours: { en: "on the mothership only", es: "solo en la nave nodriza" },
       by: { you: { en: "your commit", es: "tu commit" }, alex: { en: "Alex's commit", es: "commit de Alex" } },
     },
@@ -541,14 +555,18 @@ const GuideText = (function () {
         { en: "From ======= to >>>>>>> alex-route: Alex's version, named after Alex's branch.", es: "De ======= a >>>>>>> alex-route: la versión de Alex, con el nombre de su branch." },
         { en: "Everything outside the markers is already merged: your full tanks and Alex's noodles.", es: "Todo lo que está fuera de los marcadores ya está mezclado: tus tanques llenos y los fideos de Alex." },
         { en: "Click the side you want to keep: yours, Alex's, or both. The markers go and the rest stays as Git merged it.", es: "Haz clic en el lado que quieres conservar: el tuyo, el de Alex o los dos. Los marcadores se van y el resto queda como Git lo mezcló." },
-        { en: "git add checklist.txt tells Git the conflict is settled.", es: "git add checklist.txt le dice a Git que el conflicto está resuelto." },
+        { en: "git add tells Git this file is resolved: git add checklist.txt.", es: "git add le dice a Git que este archivo está resuelto: git add checklist.txt." },
         { en: "git commit makes the merge commit. It has two parents: your last commit and Alex's.", es: "git commit crea el commit de merge. Tiene dos padres: tu último commit y el de Alex." },
       ],
       silent: { en: "(prints nothing)", es: "(no imprime nada)" },
       back: { en: "Back", es: "Atrás" },
       next: { en: "Next", es: "Siguiente" },
       count: { en: "Step {step} of {steps}", es: "Paso {step} de {steps}" },
-      hint: { en: "Point at, tap or Tab to any line of the file to see what it is.", es: "Señala, toca o llega con Tab a cualquier línea del archivo para ver qué es." },
+      hint: { en: "Point at, tap or Tab to any line of the file to see what it is.", es: "Señala o toca cualquier línea del archivo, o recórrelas con la tecla Tab, para ver qué es." },
+      bothModified: {
+        en: "\"both modified\" is git status's word for this file: you and Alex both changed it since your branches split.",
+        es: "\"both modified\" es como git status llama a este archivo: tú y Alex lo cambiaron desde que se separaron sus branches.",
+      },
       parts: {
         wrote: { title: { en: "What Git wrote", es: "Lo que escribió Git" }, text: { en: "Both versions of the course line, one after the other, between three marker lines. Git did not pick: it left the question in the file.", es: "Las dos versiones de la línea del rumbo, una después de la otra, entre tres líneas marcadoras. Git no eligió: dejó la pregunta en el archivo." } },
         "ours-start": { title: { en: "<<<<<<< HEAD", es: "<<<<<<< HEAD" }, text: { en: "Start of your side. HEAD is the branch you are on: main, at your commit {yourCommit}. This line is not part of the checklist; it goes when you resolve.", es: "Empieza tu lado. HEAD es el branch donde estás: main, en tu commit {yourCommit}. Esta línea no es parte de la lista; se va cuando resuelves." } },

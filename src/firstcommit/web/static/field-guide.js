@@ -120,6 +120,16 @@ const FieldGuide = (function () {
     return { dialog, open };
   }
 
+  /* The bar that jumps to each part: a button per part that scrolls to it and focuses it. */
+  function jumpBar(words, parts) {
+    const go = (part) => {
+      part.scrollIntoView?.({ block: "start" });
+      part.focus();
+    };
+    return el("nav", { class: "guide-jump", "aria-label": words.label },
+      parts.map(([key, part]) => el("button", { type: "button", class: "btn btn-quiet", onclick: () => go(part) }, words[key])));
+  }
+
   function create(ctx, { onClose = null } = {}) {
     const status = ctx.status();
     const language = Strings.language();
@@ -132,12 +142,17 @@ const FieldGuide = (function () {
     const chapterOf = new Map(commands.groups.flatMap((group) => group.commands).map((item) => [item.command, item.taught.chapter]));
     const cards = cardDialog({ status, text, guideText, commandItems: groups.flatMap((group) => group.commands), chapterOf, conflict });
     const boxes = tag(places.places).map((place) => ({ ...place, space: place.name, git: `(${place.space.toLowerCase()})` }));
+    const parts = [
+      ["places", ArtInfographics.places({ title: places.title, places: boxes, moves: tag(places.moves) })],
+      ["states", ArtInfographics.states({ title: states.title, states: tag(states.states), moves: tag(states.moves) })],
+      ["commands", ArtInfographics.commands({ title: commands.title, groups, open: cards.open })],
+      ["conflict", conflict],
+    ];
+    for (const [, part] of parts) part.setAttribute("tabindex", "-1");
     const element = el("div", { class: "field-guide" },
       head(text, onClose),
-      ArtInfographics.places({ title: places.title, places: boxes, moves: tag(places.moves) }),
-      ArtInfographics.states({ title: states.title, states: tag(states.states), moves: tag(states.moves) }),
-      ArtInfographics.commands({ title: commands.title, groups, open: cards.open }),
-      conflict,
+      jumpBar(text.jump, parts),
+      parts.map(([, part]) => part),
       cards.dialog,
     );
     return { element };

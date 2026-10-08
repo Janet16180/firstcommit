@@ -57,7 +57,8 @@ const CHIP_STATES = ["new", "edited", "conflict", "clean", "ignored", undefined]
 const NAME_KINDS = ["branch", "remote", "mothership"];
 
 function checkDesk(desk, where) {
-  const keys = Object.keys(desk).filter((key) => key !== "kind");
+  const keys = Object.keys(desk).filter((key) => key !== "kind" && key !== "fresh");
+  for (const key of desk.fresh || []) assert.ok(keys.includes(key), where);
   assert.ok(keys.length > 0 && keys.every((key) => PLACES.includes(key)), where);
   for (const key of keys) {
     if (desk[key] === null) continue;
@@ -109,6 +110,14 @@ function words(value, found) {
   }
   return found;
 }
+
+const lit = (picture) => (picture.kind === "desk"
+  ? (picture.fresh || []).length > 0 || ["folder", "staging", "vault", "remote"].some((key) => (picture[key] || []).some((chip) => chip.fresh))
+  : picture.commits.some((commit) => commit.fresh) || picture.names.some((name) => name.fresh || name.gone));
+
+test("every after picture lights what the command changed", () => {
+  for (const card of GuideText.cards.filter((item) => item.picture.after)) assert.ok(lit(card.picture.after), card.command);
+});
 
 test("every word is given in English and in Spanish, and each card has its mistake in both", () => {
   assert.ok(words(GuideText, []).length > 60);

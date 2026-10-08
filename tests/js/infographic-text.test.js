@@ -100,7 +100,7 @@ test("the guide says what git really does, as engine checked it", () => {
   assert.deepEqual(moves(InfographicText.places.moves, "mothership", "workshop"), ["git pull (fetch, then merge or rebase)"]);
   assert.equal(place("workshop"), "Your files as you edit them. Git saves nothing here until you add and commit.");
   assert.equal(place("vault"), "Every commit of your repository, yours and the ones you fetched, on this computer, in the hidden .git folder.");
-  assert.equal(command("git reset <commit>"), "Moves the current branch's label to another commit, and the staging area with it; the working folder keeps its files.");
+  assert.equal(command("git reset --hard <commit>"), "Moves the current branch's label to another commit, and makes the staging area and the working folder match it: edits not committed are gone. Without --hard, your files stay as they are.");
   assert.deepEqual(moves(InfographicText.states.moves, "staged", "modified"), ["git restore --staged (a file the last commit holds)"]);
   assert.deepEqual(moves(InfographicText.states.moves, "staged", "untracked"), ["git rm --cached (before the file's first commit)", "git restore --staged (a new file, once the repository has a commit)"]);
 });

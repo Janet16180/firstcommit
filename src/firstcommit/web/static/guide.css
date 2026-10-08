@@ -6,6 +6,28 @@
  * mothership pink (--z-re), a conflict red (--s-new), and gold means "look here".
  */
 
+/* The jump bar stays at the top of the guide while it scrolls, over a level too. */
+.guide-jump {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -20px 0 -12px;
+  padding: 8px 0;
+  background: var(--bg);
+  border-bottom: 3px solid var(--line);
+}
+
+.field-guide > [tabindex="-1"]:focus {
+  outline: none;
+}
+
+.field-guide > [tabindex="-1"] {
+  scroll-margin-top: 64px;
+}
+
 .guide-card-dialog {
   width: min(760px, calc(100vw - 32px));
   max-width: none;
@@ -120,15 +142,37 @@
   margin: 0;
 }
 
+/* Long lines wrap rather than clip, on a phone too. */
 .gc-term {
   margin: 0;
   padding: 10px 12px;
-  overflow-x: auto;
   font: 1.15rem/1.25 var(--f-term);
   color: var(--crt-ink);
   background: var(--crt);
   border: 3px solid var(--edge);
-  white-space: pre;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.gc-term:not(.is-open) .gc-more {
+  display: none;
+}
+
+.gc-show {
+  margin-top: 8px;
+}
+
+.gc-where {
+  margin: 0;
+  padding: 6px 10px;
+  background: var(--panel-2);
+  border-left: 5px solid var(--z-va);
+}
+
+.gc-key {
+  margin: -6px 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
 }
 
 .gc-prompt,
@@ -348,6 +392,44 @@
   background: var(--z-re);
   border: 0;
   border-radius: 9px;
+}
+
+.gp-link--fresh {
+  stroke: var(--gold);
+  stroke-width: 4;
+}
+
+.gp-place.gp-fresh {
+  outline-offset: 2px;
+}
+
+.gp-mark {
+  font: 700 0.75rem/1.2 var(--f-body);
+  white-space: nowrap;
+  color: var(--edge);
+  background: var(--gold);
+  padding: 0 5px;
+}
+
+.gp-tag--synced {
+  border-color: var(--z-re);
+}
+
+.gp-gone {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.gp-tag--gone {
+  color: var(--ink-soft);
+  border-color: var(--ink-soft);
+  text-decoration: line-through;
+}
+
+.gp-gone-note {
+  font: 700 0.75rem var(--f-body);
+  color: var(--ink-soft);
 }
 
 .gp-head {

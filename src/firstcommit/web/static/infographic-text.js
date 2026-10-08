@@ -9,7 +9,8 @@
  * commands that are only a command are said once. Each item says where the game teaches it
  * (`taught`): a number of its chapter's levels finished ({chapter: id, levels: n}, in any order)
  * or the whole chapter ({chapter: id}); never a level's id, which the page does not know. The
- * guide shows every item from the start, and tags one not taught yet with its sector. Data
+ * guide shows every item from the start, and tags one not taught yet with its sector. A command
+ * that looks like a neighbour has a `short` subtitle that tells them apart. Data
  * only. Defines one global, InfographicText.
  */
 
@@ -20,6 +21,13 @@ const InfographicText = Object.freeze({
   lede: {
     en: "Everything the missions teach. Click a command for its picture, what git prints and the usual mistake. What a sector still ahead teaches is tagged with it.",
     es: "Todo lo que enseñan las misiones. Haz clic en un comando para ver su imagen, lo que imprime git y el error común. Lo que enseña un sector que aún tienes por delante lleva su marca.",
+  },
+  jump: {
+    label: { en: "Jump to", es: "Ir a" },
+    places: { en: "Places", es: "Lugares" },
+    states: { en: "File states", es: "Estados" },
+    commands: { en: "Commands", es: "Comandos" },
+    conflict: { en: "Conflict", es: "Conflicto" },
   },
   upcoming: { en: "Coming up in sector {sector}", es: "Llega en el sector {sector}" },
   later: { en: "Coming up later", es: "Llega más adelante" },
@@ -95,6 +103,7 @@ const InfographicText = Object.freeze({
           },
           {
             command: "git restore --staged <file>",
+            short: { en: "unstage a file", es: "sacar del staging area" },
             what: { en: "Unstages a file: the staging area gets back the version of the last commit.", es: "Saca un archivo del staging area: el staging area recupera la versión del último commit." },
             taught: { chapter: "cargo" },
           },
@@ -115,11 +124,13 @@ const InfographicText = Object.freeze({
           },
           {
             command: "git push",
+            short: { en: "send your commits", es: "enviar tus commits" },
             what: { en: "Sends your branch's new commits to the remote repository.", es: "Envía los commits nuevos de tu branch al repositorio remoto." },
             taught: { chapter: "mothership" },
           },
           {
             command: "git push -u origin <branch>",
+            short: { en: "a new branch, the first time", es: "un branch nuevo, la primera vez" },
             what: { en: "Sends a new branch to the remote and makes origin/<branch> its upstream, so a plain git push works from then on.", es: "Envía un branch nuevo al remoto y hace de origin/<branch> su upstream, así que desde entonces basta con git push." },
             taught: { chapter: "branch" },
           },
@@ -130,6 +141,7 @@ const InfographicText = Object.freeze({
           },
           {
             command: "git pull",
+            short: { en: "fetch, then bring in", es: "fetch, y luego traerlos" },
             what: {
               en: "A fetch, then brings the remote's commits into your branch: a fast-forward when only the remote moved on; when both did, you choose a merge (--no-rebase) or a rebase (--rebase).",
               es: "Hace fetch y luego trae los commits del remoto a tu branch: un fast-forward si solo avanzó el remoto; si avanzaron los dos, eliges un merge (--no-rebase) o un rebase (--rebase).",
@@ -138,6 +150,7 @@ const InfographicText = Object.freeze({
           },
           {
             command: "git pull --no-rebase",
+            short: { en: "when both moved on", es: "cuando los dos avanzaron" },
             what: { en: "When you and the remote both moved on, brings the remote's commits in with a merge commit.", es: "Cuando tú y el remoto avanzaron, trae los commits del remoto con un commit de merge." },
             taught: { chapter: "mothership" },
           },
@@ -148,21 +161,25 @@ const InfographicText = Object.freeze({
         commands: [
           {
             command: "git branch <name>",
+            short: { en: "a name where you are", es: "un nombre donde estás" },
             what: { en: "Puts a new name tag on the commit you are on. You stay where you are.", es: "Pone una etiqueta nueva en el commit donde estás. Tú te quedas donde estás." },
             taught: { chapter: "names" },
           },
           {
             command: "git branch <name> <commit>",
+            short: { en: "a name on any commit", es: "un nombre en cualquier commit" },
             what: { en: "Puts a new name on any commit, given by its hash. You stay where you are.", es: "Pone un nombre nuevo en cualquier commit, indicado por su hash. Tú te quedas donde estás." },
             taught: { chapter: "names" },
           },
           {
             command: "git branch -d <name>",
+            short: { en: "take a name off", es: "quitar un nombre" },
             what: { en: "Takes a name off; its commits stay. Git refuses to take off the name HEAD rides, or one whose work no other name leads to.", es: "Quita un nombre; sus commits se quedan. Git no quita el nombre en el que va HEAD, ni uno con trabajo al que no lleva ningún otro nombre." },
             taught: { chapter: "names" },
           },
           {
             command: "git branch -v",
+            short: { en: "list the names", es: "listar los nombres" },
             what: { en: "Lists your branches with the commit each one names; * marks the one HEAD is on. git branch -r lists your origin/ bookmarks.", es: "Lista tus branches con el commit que nombra cada uno; * marca aquel donde está HEAD. git branch -r lista tus marcadores origin/." },
             taught: { chapter: "names" },
           },
@@ -173,21 +190,25 @@ const InfographicText = Object.freeze({
         commands: [
           {
             command: "git switch -c <branch>",
+            short: { en: "a new branch, and go there", es: "un branch nuevo, y vas a él" },
             what: { en: "Creates a branch, a movable label on a commit, and switches to it.", es: "Crea un branch, una etiqueta que se mueve de commit en commit, y te cambia a él." },
             taught: { chapter: "names" },
           },
           {
             command: "git switch <branch>",
+            short: { en: "go to a branch", es: "ir a un branch" },
             what: { en: "Moves HEAD to another branch; the working folder takes that branch's files.", es: "Mueve HEAD a otro branch; la carpeta de trabajo pasa a tener los archivos de ese branch." },
             taught: { chapter: "names" },
           },
           {
             command: "git checkout -b <branch>",
+            short: { en: "older form of switch -c", es: "forma antigua de switch -c" },
             what: { en: "The older form of git switch -c: creates a branch and switches to it.", es: "La forma antigua de git switch -c: crea un branch y te cambia a él." },
             taught: { chapter: "names" },
           },
           {
             command: "git checkout <branch>",
+            short: { en: "older form of switch", es: "forma antigua de switch" },
             what: { en: "The older form of git switch: moves HEAD to another branch.", es: "La forma antigua de git switch: mueve HEAD a otro branch." },
             taught: { chapter: "names" },
           },
@@ -218,6 +239,7 @@ const InfographicText = Object.freeze({
         commands: [
           {
             command: "git restore <file>",
+            short: { en: "drop your edits", es: "descartar tus ediciones" },
             what: { en: "Replaces the working copy with the staged or committed version. Unsaved lines are gone for good.", es: "Reemplaza la copia de trabajo por la versión del staging area o la del último commit. Las líneas sin guardar se pierden para siempre." },
             taught: { chapter: "undo" },
           },
@@ -227,8 +249,11 @@ const InfographicText = Object.freeze({
             taught: { chapter: "undo" },
           },
           {
-            command: "git reset <commit>",
-            what: { en: "Moves the current branch's label to another commit, and the staging area with it; the working folder keeps its files.", es: "Mueve la etiqueta del branch actual a otro commit, y el staging area con ella; la carpeta de trabajo conserva sus archivos." },
+            command: "git reset --hard <commit>",
+            what: {
+              en: "Moves the current branch's label to another commit, and makes the staging area and the working folder match it: edits not committed are gone. Without --hard, your files stay as they are.",
+              es: "Mueve la etiqueta del branch actual a otro commit, y hace que el staging area y la carpeta de trabajo coincidan con él: las ediciones sin commit se pierden. Sin --hard, tus archivos se quedan como están.",
+            },
             taught: { chapter: "undo" },
           },
           {

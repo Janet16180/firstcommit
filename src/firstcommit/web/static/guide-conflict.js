@@ -269,7 +269,7 @@ const GuideConflict = (function () {
     }
 
     const STAGES = {
-      read: () => [[terminal("conflict-merge"), editor(words.file.conflicted, false, markedFile())], null],
+      read: () => [[terminal("conflict-merge"), editor(words.file.conflicted, false, markedFile()), el("p", { class: "gx-hint" }, words.bothModified)], null],
       choose: (choice) => [[editor(words.file.conflicted, false, markedFile())], [keepBox(choice, set, words), editor(choice ? words.file.saved : words.file.nothing, Boolean(choice), cleanFile(conflict, sides, choice, words))]],
       add: (choice) => [[terminal("conflict-status", `conflict-add-${choice}`)], [editor(words.file.added, true, cleanFile(conflict, sides, choice, words))]],
       commit: (choice) => [[diamond(conflict, choice, words), terminal(`conflict-commit-${choice}`)], [editor(words.file.committed, true, cleanFile(conflict, sides, choice, words))]],

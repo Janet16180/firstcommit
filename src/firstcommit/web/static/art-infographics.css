@@ -77,6 +77,13 @@
   outline-offset: 6px;
 }
 
+.art-ig-short {
+  display: block;
+  margin-top: 2px;
+  font: 1.1rem/1.1 var(--f-term);
+  color: var(--crt-soft);
+}
+
 .art-ig-card .art-ig-what {
   display: block;
   margin: 6px 0 0;
@@ -292,7 +299,7 @@
     gap: 2px 8px;
   }
 
-  .art-ig-move .art-ig-sr {
+  .art-ig-move .art-ig-end {
     position: static;
     width: auto;
     height: auto;
@@ -301,7 +308,7 @@
     font-weight: 700;
   }
 
-  .art-ig-move .art-ig-sr + .art-ig-move-label + .art-ig-sr::before {
+  .art-ig-move .art-ig-end + .art-ig-move-label + .art-ig-end::before {
     content: "> ";
     color: var(--ink-soft);
   }

@@ -18,6 +18,9 @@ const words = {
     taught: "Where you learn it",
     related: "Related",
     conflict: "See a conflict, step by step",
+    chainKey: "HEAD marks where you are; a dashed name is your bookmark of the mothership.",
+    showAll: "Show all {count} lines",
+    showLess: "Show fewer lines",
   },
   pictures: {
     places: { folder: "Working folder (workshop)", staging: "Staging area (cargo dock)", vault: "Repository (vault)", remote: "Remote (mothership)" },
@@ -28,6 +31,9 @@ const words = {
     ghost: "ghost",
     notYours: "mothership only",
     by: { you: "your commit", alex: "Alex's commit" },
+    marks: { merge: "merge commit", revert: "undoes the one below" },
+    gone: "taken off",
+    mothership: "mothership",
   },
 };
 
@@ -105,4 +111,37 @@ test("a command still ahead carries its tag", () => {
   const card = create({ ...ADD, tag: "Coming up in sector 7" });
   assert.equal(card.querySelector(".gc-tag").textContent, "Coming up in sector 7");
   assert.equal(create().querySelector(".gc-tag"), null);
+});
+
+test("where the game teaches it, and the way to the conflict, come before the pictures", () => {
+  const card = create({ ...ADD, conflict: true });
+  const order = [...card.children].map((node) => node.className);
+  assert.ok(order.indexOf("gc-where") < order.indexOf("gc-pictures"));
+  assert.ok(order.indexOf("btn gc-conflict") < order.indexOf("gc-pictures"));
+});
+
+test("a chain picture comes with one line that says what HEAD and a dashed name are", () => {
+  const chain = { kind: "chain", commits: [{ id: "a", col: 0, parents: [] }], names: [{ name: "main", on: "a", kind: "branch" }], head: "main" };
+  assert.match(create({ ...ADD, picture: { before: chain } }).textContent, /HEAD marks where you are/);
+  assert.doesNotMatch(create().textContent, /HEAD marks where you are/);
+});
+
+test("a long transcript shows its key lines, leaving out git's hints, and Show all opens the rest", () => {
+  const wall = ["To ../mothership.git", " ! [rejected]        main -> main (fetch first)", "error: failed to push some refs", "hint: Updates were rejected", "hint: have locally."].join("\n") + "\n";
+  const card = create({ ...ADD, runs: [[{ command: "git push", output: wall }]] });
+  const terminal = card.querySelector(".gc-term");
+  assert.equal(terminal.querySelectorAll(".gc-more").length, 2);
+  const button = card.querySelector(".gc-show");
+  assert.equal(button.textContent, "Show all 6 lines");
+  assert.equal(button.getAttribute("aria-expanded"), "false");
+  button.click();
+  assert.ok(terminal.classList.contains("is-open"));
+  assert.equal(button.getAttribute("aria-expanded"), "true");
+  assert.equal(button.textContent, "Show fewer lines");
+});
+
+test("a short transcript has nothing to hide and no Show all", () => {
+  const card = create();
+  assert.equal(card.querySelector(".gc-show"), null);
+  assert.equal(card.querySelectorAll(".gc-more").length, 0);
 });

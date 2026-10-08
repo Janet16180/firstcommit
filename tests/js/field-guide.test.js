@@ -157,3 +157,14 @@ test("cards and the conflict speak the page's language", () => {
     Strings.use("en");
   }
 });
+
+test("a jump bar leads to each part of the guide", () => {
+  const view = FieldGuide.create({ status: () => two(true, false) });
+  document.body.replaceChildren(view.element);
+  const buttons = [...view.element.querySelectorAll(".guide-jump button")];
+  assert.deepEqual(buttons.map((button) => button.textContent), ["Places", "File states", "Commands", "Conflict"]);
+  buttons[2].click();
+  assert.equal(document.activeElement, view.element.querySelector(".art-ig--commands"));
+  buttons[3].click();
+  assert.equal(document.activeElement, view.element.querySelector("#guide-conflict"));
+});
