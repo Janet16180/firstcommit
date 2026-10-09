@@ -1,4 +1,4 @@
-name: CI and delivery
+name: CI
 
 on:
   pull_request:
@@ -48,43 +48,3 @@ jobs:
         run: |
           docker build --target player --tag firstcommit-player --file deploy/docker/Dockerfile .
           docker run --rm --network none firstcommit-player firstcommit --help
-
-  deliver:
-    name: Deliver container
-    needs: tests
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    runs-on: ubuntu-24.04
-    timeout-minutes: 20
-    permissions:
-      contents: read
-      packages: write
-    steps:
-      - name: Check out the tested commit
-        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
-        with:
-          persist-credentials: false
-      - name: Build the game image
-        env:
-          REPOSITORY: ${{ github.repository }}
-          REVISION: ${{ github.sha }}
-        run: |
-          image="ghcr.io/${REPOSITORY,,}"
-          docker build --target player --file deploy/docker/Dockerfile \
-            --label "org.opencontainers.image.source=https://github.com/$REPOSITORY" \
-            --label "org.opencontainers.image.revision=$REVISION" \
-            --label "org.opencontainers.image.description=An AI-assisted educational game for learning Git" \
-            --tag "$image:$REVISION" --tag "$image:latest" .
-      - name: Publish the tested game to GitHub Container Registry
-        env:
-          REPOSITORY: ${{ github.repository }}
-          REGISTRY_USER: ${{ github.actor }}
-          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REVISION: ${{ github.sha }}
-        run: |
-          image="ghcr.io/${REPOSITORY,,}"
-          export DOCKER_CONFIG
-          DOCKER_CONFIG=$(mktemp -d)
-          trap 'rm -rf "$DOCKER_CONFIG"' EXIT
-          printf '%s' "$REGISTRY_TOKEN" | docker login ghcr.io --username "$REGISTRY_USER" --password-stdin
-          docker push "$image:$REVISION"
-          docker push "$image:latest"
