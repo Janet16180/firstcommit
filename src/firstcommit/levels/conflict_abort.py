@@ -105,7 +105,7 @@ def _ended(typed: kit.Typed, pattern: str, status: int) -> bool:
     typed : kit.Typed
         The lines typed since the level started.
     pattern : str
-        A pattern for `kit.matches`.
+        A pattern for `kit.typed`.
     status : int
         The exit status asked for.
 
@@ -114,7 +114,7 @@ def _ended(typed: kit.Typed, pattern: str, status: int) -> bool:
     bool
         True if any such line ended so.
     """
-    return any(kit.matches(line, pattern, "any") and line["status"] == status for line in typed)
+    return any(kit.typed([line], pattern) and line["status"] == status for line in typed)
 
 
 def _merge_started(typed: kit.Typed) -> bool:
@@ -148,7 +148,7 @@ def _since_merge_started(typed: kit.Typed) -> kit.Typed:
     kit.Typed
         Those lines; none before such a pull.
     """
-    starts = [index for index, line in enumerate(typed) if kit.matches(line, MERGE_START, "any") and line["status"] == CONFLICT_STATUS]
+    starts = [index for index, line in enumerate(typed) if kit.typed([line], MERGE_START) and line["status"] == CONFLICT_STATUS]
     return typed[starts[-1] + 1 :] if starts else []
 
 
