@@ -57,6 +57,7 @@ from firstcommit import (
     kit,
     markers,
     markup,
+    mergetool,
     playground,
     reactions,
     repomap,
@@ -1284,6 +1285,23 @@ def shell_environment(base: Mapping[str, str]) -> dict[str, str]:
     gitcmd.ensure_config()
     save.ensure_tmp()
     return gitcmd.shell_environment(base, save.home())
+
+
+def merge_tool(file: str) -> int:
+    """
+    Be the game's merge tool for one file in conflict, in the player's language, on this process's terminal (`firstcommit.mergetool.run`).
+
+    Parameters
+    ----------
+    file : str
+        The file, as ``git mergetool`` names it from the top of the working folder.
+
+    Returns
+    -------
+    int
+        0 once the file is answered (git then adds it), 1 when the player cancels or it is gone.
+    """
+    return mergetool.run(Path(file), _language(), sys.stdin, sys.stdout)
 
 
 def shell_command() -> list[str]:

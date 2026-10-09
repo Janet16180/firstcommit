@@ -2399,3 +2399,11 @@ def test_in_two_halves_the_pull_that_brings_alexs_half_plays_the_launch_moment(g
     type_lines(game_home, ("git pull -q", kit.type_line(lab.project, "git pull -q")["status"]))
     said = game.observe()["reactions"]
     assert [(reaction["line"], reaction["moment"]) for reaction in said] == [("git pull -q", "launch")]
+
+
+def test_the_merge_tool_speaks_the_players_language_and_hands_an_answered_file_back_to_git(game_home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    monkeypatch.chdir(tmp_path)
+    Path("launch.txt").write_text("Window: 05:30\n")
+    game.set_language("es")
+    assert game.merge_tool("launch.txt") == 0
+    assert capsys.readouterr().out == "launch.txt ya no tiene marcadores de conflicto: Git lo agrega al staging area tal como está.\n"

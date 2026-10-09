@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+import threading
 import types
 from pathlib import Path
 from typing import Any
@@ -251,3 +252,17 @@ def test_the_module_runs_as_a_program(game_home: Path) -> None:
     env = {**os.environ, "FIRSTCOMMIT_HOME": str(game_home)}
     result = subprocess.run([sys.executable, "-m", "firstcommit", "status"], capture_output=True, text=True, env=env, check=False)
     assert (result.returncode, "0 XP" in result.stdout) == (0, True), result.stderr
+
+
+def test_git_runs_the_merge_tool_through_the_command_line(game_home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    monkeypatch.chdir(tmp_path)
+    Path("launch.txt").write_text("<<<<<<< HEAD\na\n=======\nb\n>>>>>>> scout\n")
+    threading.Timer(0.1, lambda: Path("launch.txt").write_text("b\n")).start()
+    assert cli.main(["mergetool", "launch.txt"]) == 0
+    assert capsys.readouterr().out.startswith("Waiting for the merge panel: pick a side for each conflict in launch.txt")
+
+
+def test_the_merge_tool_is_not_listed_among_the_players_commands(capsys: pytest.CaptureFixture[str]) -> None:
+    with pytest.raises(SystemExit):
+        cli.main(["--help"])
+    assert "mergetool" not in capsys.readouterr().out
