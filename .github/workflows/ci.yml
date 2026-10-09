@@ -1,0 +1,90 @@
+name: CI and delivery
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    steps:
+      - name: Check out the proposed changes
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Scan Git history for credentials
+        env:
+          GITLEAKS_VERSION: 8.30.1
+          GITLEAKS_SHA256: 551f6fc83ea457d62a0d98237cbad105af8d557003051f41f3e7ca7b3f2470eb
+        run: |
+          tools=$(mktemp -d)
+          trap 'rm -rf "$tools"' EXIT
+          archive="gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          curl --fail --silent --show-error --location \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/$archive" \
+            --output "$tools/$archive"
+          printf '%s  %s\n' "$GITLEAKS_SHA256" "$tools/$archive" | sha256sum --check --strict
+          tar -xzf "$tools/$archive" -C "$tools" gitleaks
+          "$tools/gitleaks" git --redact --log-opts=--all
+      - name: Check launcher syntax
+        run: bash -n install.sh run.sh deploy/docker/run
+      - name: Build the test environment
+        run: docker build --target test --tag firstcommit-ci --file deploy/docker/Dockerfile .
+      - name: Run lint, type checks, and the Python and JavaScript tests
+        run: docker run --rm --network none firstcommit-ci
+      - name: Check the player image
+        run: |
+          docker build --target player --tag firstcommit-player --file deploy/docker/Dockerfile .
+          docker run --rm --network none firstcommit-player firstcommit --help
+
+  deliver:
+    name: Deliver container
+    needs: tests
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Check out the tested commit
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          persist-credentials: false
+      - name: Build the game image
+        env:
+          REPOSITORY: ${{ github.repository }}
+          REVISION: ${{ github.sha }}
+        run: |
+          image="ghcr.io/${REPOSITORY,,}"
+          docker build --target player --file deploy/docker/Dockerfile \
+            --label "org.opencontainers.image.source=https://github.com/$REPOSITORY" \
+            --label "org.opencontainers.image.revision=$REVISION" \
+            --label "org.opencontainers.image.description=An AI-assisted educational game for learning Git" \
+            --tag "$image:$REVISION" --tag "$image:latest" .
+      - name: Publish the tested game to GitHub Container Registry
+        env:
+          REPOSITORY: ${{ github.repository }}
+          REGISTRY_USER: ${{ github.actor }}
+          REGISTRY_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REVISION: ${{ github.sha }}
+        run: |
+          image="ghcr.io/${REPOSITORY,,}"
+          export DOCKER_CONFIG
+          DOCKER_CONFIG=$(mktemp -d)
+          trap 'rm -rf "$DOCKER_CONFIG"' EXIT
+          printf '%s' "$REGISTRY_TOKEN" | docker login ghcr.io --username "$REGISTRY_USER" --password-stdin
+          docker push "$image:$REVISION"
+          docker push "$image:latest"

@@ -1,96 +1,34 @@
 # First Commit
 
-A hands-on game that teaches Git, and how GitHub uses it, to people who are starting out. Every
-level explains first, then lets you play: a short scene with Rama, the ship's robot, a guided
-quest in a real terminal, challenges, a debrief, and flashcards spaced over the following days.
-A field guide and each chapter's notes stay at hand.
+Learn Git through small missions, a real terminal, and a playground where you can experiment.
+This game was created with help from AI for educational purposes.
 
-Everything runs on your own machine. The game keeps its own Git configuration and its own
-practice repositories under `~/.firstcommit`; it never touches your repositories or your
-`~/.gitconfig`.
+![The First Commit mission map](docs/images/mission-map.png)
 
-## Play
+## Install and play
 
-Work in progress: see [docs/DESIGN.md](docs/DESIGN.md).
+On **Ubuntu 24.04**, including **WSL**, download or clone this repository and open a terminal
+inside its `firstcommit` folder. Then run:
 
-## Install
-
-On a fresh WSL Ubuntu 24.04, one script installs everything:
-
-```
-./install.sh          # git, bash-completion, Docker Engine, uv, and the game's Python dependencies
-./install.sh --dev    # the same, plus Node and ESLint for the page tests
+```bash
+./install.sh
+./run.sh
 ```
 
-It asks for your password (sudo) and can be run again: it skips what is already installed. uv
-and Node are pinned by version and SHA-256, Node to the same build as the Docker test image. If
-it adds you to the `docker` group, open a new WSL terminal before `deploy/docker/run`.
+The installer sets up Git, uv, and the game's dependencies. It may ask for your sudo password.
+When the game starts, open the browser link it prints. Keep the terminal open while you play;
+press Ctrl-C to stop. Your progress is saved locally.
 
-## Play with Docker
+## Screenshots
 
-The Docker image holds Ubuntu 24.04 with git 2.43 and Python 3.12, the versions every level is
-checked against, plus the game. You need Docker Engine installed inside your WSL Ubuntu
-([install guide](https://docs.docker.com/engine/install/ubuntu/)); Docker Desktop has not been
-tested.
+**Guided missions.** Read the goals, try real Git commands, and see what changes in your repository.
 
-```
-deploy/docker/run
-```
+![A guided mission with goals, a live diagram, Rama, and the terminal](docs/images/guided-mission.png)
 
-The first run builds the image, which takes a few minutes. Later runs reuse it and rebuild it by
-themselves when the game changes, and rebuild it from scratch, with Ubuntu's latest
-updates, once it is more than 30 days old, so git's security fixes reach you. The game then
-prints a link: open it in your Windows browser. Ctrl-C stops the game, and your progress stays.
+**The playground.** Practise with a teammate's repository and work through a merge conflict.
 
-| Command | What it does |
-|---|---|
-| `deploy/docker/run` | build the image if needed, then start the game |
-| `deploy/docker/run shell` | open a terminal in the running game, with the game's Git settings |
-| `deploy/docker/run reset` | delete your saved game and practice repositories (it asks first) |
-| `deploy/docker/run build` | build the image without starting the game |
-| `deploy/docker/run update` | rebuild the image now from scratch, with Ubuntu's latest updates |
-| `FIRSTCOMMIT_PORT=8851 deploy/docker/run` | start the game on another port |
-| `deploy/docker/run --dev` | start the game in dev mode, for the people who build it: each level's page shows its solution (`firstcommit serve --dev` without Docker) |
-| `deploy/docker/run test` | for developers: run ruff, mypy and the tests inside the container, offline |
+![A merge conflict with separate terminals for the player and Alex](docs/images/playground-conflict.png)
 
-Your progress and practice repositories live in the Docker volume `firstcommit-home`, which the
-container sees as `~/.firstcommit`. They survive restarts and rebuilds until you run `reset`. If
-the game says its port is in use, start it again with another `FIRSTCOMMIT_PORT`: the game's own
-hint shows the command for playing without Docker.
+**The field guide.** Keep a visual explanation of Git's commands and file states close at hand.
 
-**What the container keeps apart.** The game sees only its own files: its volume and the image.
-Your WSL home, your repositories and your `~/.gitconfig` are not mounted (the only file shared is
-your time zone, read-only, so dates match your clock). The git version is always the image's, and
-nothing of your WSL setup (shell configuration, aliases, Git settings) reaches the game. Nothing is
-installed in your WSL besides Docker.
-
-**What it does not.** A container is packaging, not a security boundary:
-
-- It shares your WSL's Linux kernel with everything else you run there.
-- It shares your WSL's network. The game's server listens on 127.0.0.1 only, and a container with
-  its own network could not be reached through that address, so the container uses the host's
-  network. The game and the shell in the page can therefore reach every service on your WSL's
-  localhost, and everything your WSL can reach.
-- Being allowed to use Docker gives root-level power over your WSL: Docker's documentation says
-  so about the `docker` group.
-
-The game runs as an ordinary user, `player`, without sudo, without Linux capabilities and without
-any way to gain privileges (`--cap-drop ALL`, `no-new-privileges`). For real isolation, a virtual
-machine with its own kernel, offline by default, is planned (see [docs/DESIGN.md](docs/DESIGN.md),
-section 3).
-
-## Develop
-
-The game's plumbing (the local web server, the page's terminal, save helpers and lab cleanup)
-lives in `src/firstcommit/termlab/`, copied in from the termlab library; see
-[docs/TERMLAB.md](docs/TERMLAB.md).
-
-```
-uv sync
-uv run pytest -q
-uv run ruff check
-uv run mypy
-eslint src/firstcommit tests/js
-```
-
-Content rules, the level contract and how to verify every claim: [AUTHORING.md](AUTHORING.md).
+![The field guide explaining the working folder, staging area, repository, and remote](docs/images/field-guide.png)

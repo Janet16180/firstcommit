@@ -1,0 +1,5 @@
+# RFC 6455's public example WebSocket handshake key; not a credential.
+b748eb9731d676c55b0772ad2605448b71d912ab:tests/test_termlab_terminal.py:generic-api-key:34
+# Minified xterm.js class exports FourKeyMap and SequencerByKey; not credentials.
+# Scoped to this exact historical commit and line. New matches must be reviewed.
+b748eb9731d676c55b0772ad2605448b71d912ab:src/firstcommit/termlab/web/static/xterm.js:generic-api-key:2

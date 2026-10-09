@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Install what First Commit needs on a fresh WSL Ubuntu 24.04: git, Docker Engine and uv, then
+# Install what First Commit needs on a fresh WSL Ubuntu 24.04: git and uv, then
 # the game's Python dependencies. "install.sh --dev" also installs Node and ESLint for the page
 # tests. Safe to run again: each step skips what is already there.
 set -euo pipefail
@@ -12,12 +12,14 @@ uv_sha256_x86_64=8681d8921e7d520fb368991dcf5f9c1905b80f5bf2a265a0ed085c8d8e34247
 uv_sha256_aarch64=d58030acd26159499ac82f32da12d1b3c12a3a1bfc414232d9082070c03e128d
 
 dev=false
+with_docker=false
 
 usage() {
     cat <<EOF
-Usage: ./install.sh [--dev]
+Usage: ./install.sh [--dev] [--docker]
 
-Installs git, bash-completion, Docker Engine and uv $uv_version, then runs "uv sync".
+Installs git, bash-completion and uv $uv_version, then runs "uv sync".
+  --docker also install Docker Engine for container play
   --dev   also install Node (the version the Docker test image pins) and ESLint
 EOF
 }
@@ -52,10 +54,27 @@ check_system() {
 }
 
 install_packages() {
-    say "Installing git, bash-completion and download tools"
-    as_root apt-get update
-    as_root env DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends \
-        git bash-completion less nano ca-certificates curl xz-utils
+    install_apt_packages git bash-completion less nano ca-certificates curl xz-utils
+}
+
+install_apt_packages() {
+    local package
+    local missing=()
+    for package in "$@"; do
+        if ! dpkg-query -W -f='${Status}\n' "$package" 2>/dev/null | grep -qx 'install ok installed'; then
+            missing+=("$package")
+        fi
+    done
+    if [ "${#missing[@]}" -eq 0 ]; then
+        say "Required system packages are already installed"
+        return
+    fi
+    say "Installing missing system packages: ${missing[*]}"
+    if ! as_root apt-get update; then
+        fail "apt could not update its package lists; required packages are missing: ${missing[*]}." \
+            "Fix the repository error printed above, then run ./install.sh again."
+    fi
+    as_root env DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends "${missing[@]}"
 }
 
 # Docker's own apt repository, as in https://docs.docker.com/engine/install/ubuntu/.
@@ -136,8 +155,7 @@ install_node() {
 }
 
 install_eslint() {
-    say "Installing ESLint"
-    as_root env DEBIAN_FRONTEND=noninteractive apt-get install --yes --no-install-recommends eslint
+    install_apt_packages eslint
 }
 
 sync_game() {
@@ -147,11 +165,13 @@ sync_game() {
 
 print_next_steps() {
     say "Done"
-    if [ "${docker_group_added:-false}" = true ]; then
-        printf 'You were added to the docker group: open a new WSL terminal (or run "newgrp docker") first.\n'
+    printf 'Play:               ./run.sh\n'
+    if [ "$with_docker" = true ]; then
+        if [ "${docker_group_added:-false}" = true ]; then
+            printf 'For Docker, open a new WSL terminal (or run "newgrp docker") to activate your group membership.\n'
+        fi
+        printf 'Play in Docker:     deploy/docker/run\n'
     fi
-    printf 'Play in Docker:     deploy/docker/run\n'
-    printf 'Play without it:    uv run firstcommit\n'
     if [ "$dev" = true ]; then
         printf 'Run the tests:      uv run pytest -q\n'
     fi
@@ -161,13 +181,16 @@ main() {
     for argument in "$@"; do
         case "$argument" in
             --dev) dev=true ;;
+            --docker) with_docker=true ;;
             -h | --help) usage; exit 0 ;;
             *) usage >&2; exit 2 ;;
         esac
     done
     check_system
     install_packages
-    install_docker
+    if [ "$with_docker" = true ]; then
+        install_docker
+    fi
     install_uv
     if [ "$dev" = true ]; then
         install_node
