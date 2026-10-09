@@ -48,7 +48,37 @@ Done since: the code review and the security review (both report only), then a f
 `SSH_AGENT_PID`, `GH_TOKEN`, `GITHUB_TOKEN` and `GH_ENTERPRISE_TOKEN` from the page's shell (the
 lead recommends yes).
 
-## Handoff, end of 2026-10-08 (read this first)
+## Handoff, end of 2026-10-09 (read this first)
+
+37 levels in English and Spanish, in eight sectors: Lift-off (2), The cargo dock (4), The time vault
+(5: 3.4 "Look into the past" is new), The mothership (7), Name tags (5), Parallel universes (3), Collisions
+(5: 7.2 now has the player start the pull; 7.4 "Merge tools" is new, Docking collision is 7.5),
+Time travel (6: 8.3 "Deleting isn't erasing" is new). Built and merged since the last handoff:
+
+- termlab lives inside the game (`src/firstcommit/termlab/`, `docs/TERMLAB.md`); the game needs
+  nothing outside the standard library at runtime. termlab's VM stayed in `~/learning/termlab`.
+- The playground (`#/playground`, a button on the map): seven starts, your terminal and Alex's
+  (shown or hidden per start), the views, click to keep, the editor strip with Get me out.
+- `git mergetool` opens the game's learning panel in every terminal (levels and both playground
+  terminals). The game's merge tool is AUTHORING 3.2's one configured program.
+- A commit's subject is written `*in italics*` (markup `em`; quotes on the command line); a test
+  checks every subject a level's lab creates.
+- The "file as it was" panel (3.4 and 8.3) and the field guide's playground links.
+- `install.sh` for a clean WSL; dev mode (`serve --dev`: `#/dev` and Solve).
+
+Waiting for the user: History drawing branches as side lines (lead recommends yes); commit the
+design drafts in `docs/drafts/` (untracked); ble.sh (`p2/blesh-held`, ebc0b45) still held to try.
+
+Follow-ups, not started: History as one column on a phone; the Desk's "came with the switch"
+mark; a playground landmark sprite; the levels' Crew view below 980 px; the absolute path in a
+clone's first reflog entry; a field guide card for `git show <commit>:<file>`; 3.4's greyed diff
+headers.
+
+Process that worked: designs as plain-text scripts and static storyboards with real git output,
+a fresh Sonnet reviewer, revise, the user approves, then build; every merge through a review
+worktree with all tiers (fast, slow and docker, ruff, mypy, eslint, node) and a fast-forward.
+
+## Handoff, end of 2026-10-08 (superseded)
 
 Plans in force: `docs/drafts/chapters-3-7.md` (rules, wave 1) and `docs/drafts/chapters-5-9.md`
 (sectors 5 to 9 and the view ladder, approved by the user). Contract: `docs/briefs/ORBIT.md`.
