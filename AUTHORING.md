@@ -345,6 +345,7 @@ for people.
 | `kit.is_ancestor(folder, a, b)`, `kit.reachable(folder, commit)` | whether commit `a` leads to `b`; whether some ref still leads to a commit |
 | `kit.setup_github(lab)` | the stand-in GitHub, empty, on `main`, with a reflog (`kit.setup_playground` makes it too) |
 | `kit.typed(typed, pattern, outcome)`, `kit.after(typed, pattern)` | whether a line was typed and how it ended; the lines after the last one that worked |
+| `kit.shown_revs(typed, path, outcome)` | the commits named in each `git show <rev>:<path>` typed, as typed, oldest first: resolve them with `rev-parse` to tell which commit the player read |
 | `kit.on_push(lab, file, text, lines)` | Alex runs shell lines in Alex's clone inside the player's first push that leaves `file` on GitHub's `main` reading `text`: use it instead of a level event when the player's next line must already see Alex's push |
 | `kit.switching(branch)`, `kit.creating(branch)` | patterns for those two that accept both forms: `git switch <branch>` or `git checkout <branch>`; `git switch -c <branch>` or `git checkout -b <branch>`. A goal that reads typed lines about moving between branches uses them, never a pattern of its own |
 | `kit.type_line(folder, line)` | run a line in bash as the player would, for `solve` and `QUEST_ACTIONS`; returns its `kit.Command` |

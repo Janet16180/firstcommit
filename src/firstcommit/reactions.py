@@ -241,6 +241,10 @@ GLOBAL_OPTIONS = re.compile(
 """Git's options typed before a subcommand, which `plain` leaves out."""
 
 
+SHOW_REV = r"git show ([^\s:-][^\s:]*):(?:\./)?"
+"""The start of ``git show <rev>:<file>`` as `plain` gives it, the commit in its group; the file follows."""
+
+
 def matches(command: Command, pattern: str, outcome: Outcome) -> bool:
     """
     Tell whether a typed line starts as a pattern says and ended as asked.
@@ -267,6 +271,29 @@ def matches(command: Command, pattern: str, outcome: Outcome) -> bool:
         "unknown-command": status == UNKNOWN_COMMAND_STATUS,
     }
     return re.match(pattern, plain(command["line"])) is not None and ended[outcome]
+
+
+def shown_revs(lines: list[Command], path: str, outcome: Outcome = "any") -> list[str]:
+    """
+    Give the commits named in each ``git show <rev>:<file>`` typed for one file, as typed.
+
+    Parameters
+    ----------
+    lines : list[Command]
+        Typed lines, oldest first.
+    path : str
+        The file, relative to the top of the working folder; ``./`` before it is read too.
+    outcome : Outcome
+        How the line must have ended.
+
+    Returns
+    -------
+    list[str]
+        Each ``<rev>`` in the order typed; never one that starts with ``-``, which git would read
+        as an option.
+    """
+    shows = [re.fullmatch(SHOW_REV + re.escape(path), plain(command["line"])) for command in lines if matches(command, SHOW_REV, outcome)]
+    return [show.group(1) for show in shows if show is not None]
 
 
 def plain(line: str) -> str:

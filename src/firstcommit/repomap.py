@@ -36,6 +36,7 @@ from firstcommit.records import (
     FileTexts,
     FolderChange,
     Operation,
+    PastRead,
     Ref,
     RefKind,
     ReflogEntry,
@@ -57,6 +58,7 @@ __all__ = [
     "FileEntry",
     "FolderChange",
     "Operation",
+    "PastRead",
     "Ref",
     "ReflogEntry",
     "RefKind",
@@ -70,9 +72,11 @@ __all__ = [
     "mode_changed",
     "nested",
     "parsed_commits",
+    "read_past",
     "reflog",
     "snapshot",
     "staged",
+    "touched",
     "unstaged",
     "untracked",
     "version",
@@ -344,6 +348,60 @@ def file_texts(path: Path, names: list[str]) -> list[FileTexts]:
     """
     staged = _find(path) is not None
     return [{"path": name, "folder": _folder_text(path / name), "index": _staged_text(path, name) if staged else None} for name in names]
+
+
+def touched(path: Path, name: str) -> list[str]:
+    """
+    Give the commits that changed a file, deleting it included, as ``git log -- <file>`` finds them on every branch.
+
+    Parameters
+    ----------
+    path : Path
+        A folder of the repository.
+    name : str
+        The file, relative to the top of the working folder.
+
+    Returns
+    -------
+    list[str]
+        Their full hashes, newest first, at most `MAX_COMMITS`; empty without a repository.
+    """
+    found = _find(path) is not None
+    return _lines(gitcmd.run(path, "log", "--all", "--format=%H", f"--max-count={MAX_COMMITS}", "--", name)) if found else []
+
+
+def read_past(path: Path, rev: str, name: str) -> PastRead:
+    """
+    Read a file as a commit recorded it, as ``git show <rev>:<file>`` prints it.
+
+    Parameters
+    ----------
+    path : Path
+        A folder of the repository.
+    rev : str
+        The commit, as the player typed it (a hash, ``HEAD~1``...); never an option.
+    name : str
+        The file, relative to the top of the working folder.
+
+    Returns
+    -------
+    PastRead
+        The commit's full hash and subject, None when git knows no such commit; and the file's
+        first `MAX_TEXT` bytes, None when the commit has no such file.
+
+    Raises
+    ------
+    ValueError
+        If ``rev`` starts with ``-``, so git would read it as an option.
+    """
+    if rev.startswith("-"):
+        raise ValueError(f"a commit name cannot start with '-': {rev!r}")
+    resolved = gitcmd.run(path, "rev-parse", "--verify", "-q", f"{rev}^{{commit}}")
+    commit = resolved.stdout.strip() if resolved.returncode == 0 else None
+    subject = gitcmd.run(path, "log", "-1", "--format=%s", commit, "--").stdout.rstrip("\n") if commit else None
+    shown = gitcmd.run(path, "cat-file", "blob", f"{commit}:{name}") if commit else None
+    text = shown.stdout[:MAX_TEXT] if shown is not None and shown.returncode == 0 else None
+    return {"rev": rev, "commit": commit, "subject": subject, "text": text}
 
 
 def _folder_text(file: Path) -> str | None:

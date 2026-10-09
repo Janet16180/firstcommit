@@ -24,7 +24,7 @@ from firstcommit.lab import Lab
 from firstcommit.markup import code
 from firstcommit.playground import on_push, press, setup_github
 from firstcommit.playground import setup as setup_playground
-from firstcommit.reactions import LIST_HIDDEN, Outcome, ReactionRule, matches
+from firstcommit.reactions import LIST_HIDDEN, Outcome, ReactionRule, matches, shown_revs
 from firstcommit.records import Art, Command, Keep, Picture, Pictures, Target, WhatIf
 from firstcommit.repomap import (
     Commit,
@@ -61,6 +61,7 @@ __all__ = [
     "Commit",
     "FileEntry",
     "Lab",
+    "Outcome",
     "LevelEvent",
     "Person",
     "Pictures",
@@ -105,6 +106,7 @@ __all__ = [
     "typing",
     "setup_github",
     "setup_playground",
+    "shown_revs",
     "snapshot",
     "switching",
     "staged",
@@ -376,6 +378,9 @@ def pictures(
     lines: Sequence[str] = (),
     graph: bool = False,
     whatif: WhatIf | None = None,
+    past: str | None = None,
+    plain: bool = False,
+    quiet: Sequence[str] = (),
 ) -> Pictures:
     """
     Name the pictures a level shows, for its ``PICTURES``, every mark off unless given.
@@ -402,6 +407,13 @@ def pictures(
         Whether git's own ``git log --oneline --graph --all`` is shown beside the chain.
     whatif : WhatIf | None
         The chain's WHAT IF, or None.
+    past : str | None
+        The file whose old versions the panel beside the chain shows, as the player reads them
+        with ``git show <commit>:<file>``, or None.
+    plain : bool
+        Whether the chain draws its capsules alone, with no names, HEAD mark or pins.
+    quiet : Sequence[str]
+        The steps during which the chain's legend is hidden.
 
     Returns
     -------
@@ -419,6 +431,9 @@ def pictures(
         "lines": list(lines),
         "graph": graph,
         "whatif": whatif,
+        "past": past,
+        "plain": plain,
+        "quiet": list(quiet),
     }
 
 

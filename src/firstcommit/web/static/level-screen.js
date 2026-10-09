@@ -169,6 +169,7 @@ const LevelScreen = (function () {
 
   /* What the current goal asks to look at. */
   const looked = ({ level, state }) => (state.step < level.steps.length ? level.steps[state.step].look : []);
+  const stepId = ({ level, state }) => (state.step < level.steps.length ? level.steps[state.step].id : null);
 
   /* Whether a view shows Alex's band: the folded views, and the black box. */
   const showsBand = (view) => !UNSTRIPPED.includes(view) || view === "blackbox";
@@ -570,7 +571,7 @@ const LevelScreen = (function () {
   function stage(screen, observation) {
     const { ui } = screen;
     if (screen.pictures) {
-      screen.pictures.update(observation, { look: looked(screen), passed: screen.state.done });
+      screen.pictures.update(observation, { look: looked(screen), passed: screen.state.done, step: stepId(screen) });
       return { moved: false };
     }
     ui.zones.update(observation);

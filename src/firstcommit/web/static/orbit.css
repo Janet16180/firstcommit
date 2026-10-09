@@ -4048,6 +4048,12 @@ pre.code code {
   margin: 0;
   color: var(--ink-soft);
   font-size: 0.9rem;
+  overflow-wrap: anywhere;
+}
+
+.past-empty code,
+.past-missing code {
+  white-space: normal;
 }
 
 /* A commit that did not touch the file the level reads. */

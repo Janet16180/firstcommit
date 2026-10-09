@@ -142,7 +142,14 @@ def test_a_level_names_the_pictures_it_shows_and_its_target_or_none() -> None:
 def test_pictures_start_with_every_mark_off() -> None:
     assert kit.pictures("movelog") == {
         "large": "movelog", "small": None, "folder": False, "mothership": False, "alex": False, "ghosts": False, "kept": None, "lines": [], "graph": False, "whatif": None,
+        "past": None, "plain": False, "quiet": [],
     }
+
+
+def test_a_level_that_reads_a_file_as_it_was_names_the_file_and_the_steps_that_hide_the_legend() -> None:
+    pictures = kit.pictures("chain", past="fuel.txt", plain=True, quiet=["stage"])
+    assert (pictures["past"], pictures["plain"], pictures["quiet"]) == ("fuel.txt", True, ["stage"])
+    assert runner.load(level_module(PICTURES=pictures)).pictures == pictures
 
 
 def test_a_step_rings_nothing_unless_it_says_what() -> None:
@@ -231,6 +238,9 @@ BROKEN: dict[str, tuple[types.ModuleType, str]] = {
     "lines of a blank path": (level_module(PICTURES=kit.pictures("desk", lines=[" "])), "PICTURES"),
     "a what-if after a step the quest does not have": (level_module(PICTURES=kit.pictures("chain", whatif={"without": ["scout"], "after": "fly"})), "PICTURES"),
     "a what-if without a name": (level_module(PICTURES=kit.pictures("chain", whatif={"without": [], "after": "stage"})), "PICTURES"),
+    "a past file with a blank path": (level_module(PICTURES=kit.pictures("chain", past=" ")), "PICTURES"),
+    "a plain flag that is not a boolean": (level_module(PICTURES={**kit.pictures("chain"), "plain": "yes"}), "PICTURES"),
+    "a quiet step the quest does not have": (level_module(PICTURES=kit.pictures("chain", quiet=["fly"])), "PICTURES"),
     "a target name on a commit it does not list": (level_module(TARGET={**CHART, "names": {"main": "z"}}), "TARGET"),
     "a target head that is no name": (level_module(TARGET={**CHART, "head": "scout"}), "TARGET"),
     "a target parent it does not list": (level_module(TARGET={**CHART, "commits": [{"id": "b", "parents": ["a"], "subject": "Next"}]}), "TARGET"),

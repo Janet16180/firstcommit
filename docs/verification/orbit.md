@@ -1137,3 +1137,25 @@ a commit refused while in conflict, markers added by hand, a wrong answer commit
 | the tool's own lines, the panel's footer | the game's tool waits for the panel, takes Ctrl-C as a key, and git's temporary copies go to the game home's `TMPDIR` | `firstcommit.mergetool`, `gitcmd.MERGETOOL_SETTINGS` (`mergetool.writeToTemp`, git-mergetool(1)); scenes 9, 11, 18; `tests/test_mergetool.py` |
 | field guide card `git mergetool` | the transcript is a real run, the panel's pick written while the tool waited | `tests/guide_capture.py` (`mergetool` run), `tests/test_guide_capture.py` |
 
+## Past versions: 3-4 Look into the past and 8-3 Deleting isn't erasing (added 2026-10-08)
+
+The levels follow docs/drafts/past/; every output in their scripts was recorded on real git 2.43.0
+by `.scratch/sector7-design/past_gen.py`. The rows below re-ran each claim on the host (git
+2.43.0, a scratch `HOME`, `GIT_CONFIG_NOSYSTEM=1`, `core.editor = true`, `LC_ALL=C`). The tags are
+P1 and P2, so they cannot collide with the E numbers other work adds meanwhile.
+
+| Tag | What ran | Result |
+|---|---|---|
+| P1 | 3-4's history with its authors and dates (six commits, `fuel.txt` 90%, 75%, 60%, 40%); `git log --oneline fuel.txt`, `git show ccf9485`, `git show ccf9485:fuel.txt`, `git show ccf9485 fuel.txt`, then `git status --short` and `cat fuel.txt` | the log lists four of the six commits, *Log the fuel after Phobos* second, `ccf9485`; `git show` prints the message and the diff `-fuel: 75%`, `+fuel: 60%`; with the colon it prints `fuel: 60%`; with a space it prints the diff of `fuel.txt` only; status empty, the folder still `fuel: 40%`; every line exits 0 |
+| P2 | a bare hub and two clones; in one, a commit, then *Add the airlock keys* (`airlock password: orion-7`) and *Remove the keys* (`git rm`), pushed, pulled by the other; `git show HEAD:keys.txt`, `HEAD~1:keys.txt`, `HEAD~2:keys.txt`, `git log --oneline keys.txt`, `git log --oneline -- keys.txt`; then `git show HEAD~1:keys.txt` in the other clone and in a fresh clone of the hub | `fatal: path 'keys.txt' does not exist in 'HEAD'` (128); the password (0); the same fatal for `HEAD~2` (128); `fatal: ambiguous argument 'keys.txt': unknown revision or path not in the working tree.` and `Use '--' to separate paths from revisions` (128); the remove and the add (0); the password in both other clones (0) |
+
+| Level | Text | Claim | Evidence |
+|---|---|---|---|
+| `vault-past` (3-4) | card, `READ`, debrief | `git show <commit>:<file>` prints the file as that commit recorded it, and changes nothing | P1; gitrevisions(7) `<rev>:<path>` ("names the blob ... at the given path in the tree-ish"); git-show(1) ("For plain blobs, it shows the plain contents"); the level's test |
+| `vault-past` | `LOGGED`, hints | `git log fuel.txt` skips the commits that did not change the file; the Phobos commit is `ccf9485`, second | P1; git-log(1) `[--] <path>...`; *re-checked* by the level's test (the lab's hash starts `ccf9485`) |
+| `vault-past` | prediction, `SHOWN` | `git show <hash>` prints the message and the change, `-` taken out and `+` put in | P1; git-show(1) ("For commits it shows the log message and textual diff") |
+| `vault-past` | `SPACE_NOT_COLON` | with a space, git shows what the commit changed in that file | P1; the level's test |
+| `undo-erasing` (8-3) | `NOT_IN_HEAD`, `FOUND`, `TOO_FAR`, prediction | the newest commit has no `keys.txt`; the one before holds it; two back is before it was added | P2; gitrevisions(7) `<rev>~<n>`; *re-checked* by the level's test |
+| `undo-erasing` | `FOUND` | the remote and Alex have the commit; a later clone gets it too | P2 (the other clone and a fresh clone read the password) |
+| `undo-erasing` | `DASHES`, `TRAIL`, hint 2 | a file no longer in the folder needs `--`; with it, the log lists the add and the remove | P2; git-log(1) SYNOPSIS `[[--] <path>...]`; the level's test |
+| `undo-erasing` | `TRAIL` | rewriting history cannot reach copies already pulled | P2 (each clone holds its own copy of the commit); git-push(1) `--force` replaces only the remote's ref |

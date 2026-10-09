@@ -115,6 +115,9 @@ const createGameApi = (function () {
     lines: list(text),
     graph: flag,
     whatif: nullable(record({ without: list(text), after: text })),
+    past: nullable(text),
+    plain: flag,
+    quiet: list(text),
   });
   /* A challenge's chart: the goal tree by the level's own labels, the names on it and HEAD's. */
   const TARGET = record({ commits: list(record({ id: text, parents: list(text), subject: text })), names: mapping(text), head: text });
@@ -166,6 +169,8 @@ const createGameApi = (function () {
   /* One move of HEAD: the commit it left ("" for the first), the one it moved to, git's note, and
      the line `git reflog` prints for it. */
   const REFLOG_ENTRY = record({ old: text, new: text, message: text, line: text });
+  /* A file through its history: the commits that changed it, and the latest `git show <rev>:<file>` read again. */
+  const PAST = record({ path: text, touched: list(text), read: nullable(record({ rev: text, commit: nullable(text), subject: nullable(text), text: nullable(text) })) });
   /* A file with conflict markers, as the server read it: the lines git merged on its own, and
      each block's two sides with the words after its markers; `read` names the text as read, for
      a write back. */
@@ -175,7 +180,7 @@ const createGameApi = (function () {
     record(fields)(value, where);
   };
   const MARKED = record({ path: text, read: text, parts: list(MARKED_PART) });
-  const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), teammate: nullable(SNAPSHOT), events: EVENTS, teammate_events: EVENTS, buttons: BARS, commands: list(record({ line: text, status: number })), reactions: list(record({ line: text, mood: MOOD, text: BLOCKS, moment: nullable(MOMENT) })), conflicts: list(CONFLICT), marked: list(MARKED), reflog: list(REFLOG_ENTRY), ghosts: list(COMMIT), texts: list(record({ path: text, folder: nullable(text), index: nullable(text) })), graph: nullable(list(text)) });
+  const OBSERVATION = record({ level: text, project: SNAPSHOT, github: nullable(SNAPSHOT), teammate: nullable(SNAPSHOT), events: EVENTS, teammate_events: EVENTS, buttons: BARS, commands: list(record({ line: text, status: number })), reactions: list(record({ line: text, mood: MOOD, text: BLOCKS, moment: nullable(MOMENT) })), conflicts: list(CONFLICT), marked: list(MARKED), reflog: list(REFLOG_ENTRY), ghosts: list(COMMIT), texts: list(record({ path: text, folder: nullable(text), index: nullable(text) })), graph: nullable(list(text)), past: nullable(PAST) });
   /* The free-play playground (docs/drafts/playground/plan.md, E3): its views, its starting points
      (each with the chapters whose commands it uses), and the current start's preferences, with a
      stamp that changes every time the start is built, so the page replaces both shells. */
