@@ -30,9 +30,11 @@ The repository's GitHub rules require the `Tests` check to pass before a PR can 
 `main`, with the branch up to date. Contributions require approval from @Janet16180. New
 commits dismiss older approvals. Force pushes and branch deletion are blocked.
 
-No one may bypass either rule, including the repository owner. GitHub does not allow PR
-authors to approve their own PRs, so a PR authored by @Janet16180 cannot merge under this
-policy. Changes to repository settings remain under the owner's control.
+The owner can use a review exception when merging through a pull request, since GitHub
+does not allow authors to approve their own PRs. This exception applies to repository
+administrators; @Janet16180 is currently the only administrator. The separate Tests and
+CodeQL requirements cannot be bypassed. Direct pushes to main, force pushes, and branch
+deletion remain blocked.
 
 After a change lands on `main`, CI reruns the checks. The workflow builds test and player
 images only inside the CI runner. It does not publish images, upload build artifacts, or deploy
