@@ -292,3 +292,15 @@ def test_a_levels_own_pull_reaction_comes_before_the_shared_one() -> None:
 @pytest.mark.parametrize("english", list(reactions.SPANISH), ids=lambda text: text[:40])
 def test_a_shared_reaction_that_uses_a_game_word_says_what_it_really_is(english: str) -> None:
     assert (unpaired(english, "en"), unpaired(reactions.SPANISH[english], "es")) == ([], [])
+
+
+def test_rama_tells_what_the_merge_tool_did_from_how_git_mergetool_ended() -> None:
+    assert said("git mergetool", kinds=["conflict-resolved"], staged=True) == f"ok: {reactions.MERGETOOL_ANSWERED}"
+    assert said("git mergetool", status=1) == f"info: {reactions.MERGETOOL_STOPPED}"
+    assert said("git mergetool") == f"info: {reactions.MERGETOOL_NOTHING}"
+
+
+@pytest.mark.parametrize("line", ["git mergetool --tool=vimdiff", "git mergetool --tool vimdiff", "git mergetool -t meld", "git mergetool launch.txt --tool=meld"])
+def test_rama_says_another_tool_is_for_one_run_and_the_game_opens_its_own_panel(line: str) -> None:
+    for status, kinds in [(0, ["conflict-resolved"]), (1, [])]:
+        assert said(line, status=status, kinds=kinds) == f"info: {reactions.MERGETOOL_OTHER}"

@@ -135,6 +135,16 @@ UNKNOWN_COMMAND = "The shell knows no command by that name. Check its spelling: 
 NEW_FILE = "A new file in the working folder. Git does not track it yet: `git status` lists it as untracked until you `git add` it."
 CHANGED_FILE = "You changed a file in the working folder. What is staged stays as it was until you `git add` the file again."
 
+MERGETOOL_ANSWERED = (
+    "The merge tool wrote your answer, and Git added the file to the staging area (the cargo dock) itself: no `git add` this time. "
+    "`git status` shows it."
+)
+MERGETOOL_STOPPED = "The merge tool stopped before an answer, so Git put the file back as it was, markers and all. Nothing is lost: run `git mergetool` again when you are ready."
+MERGETOOL_NOTHING = "No file is in conflict, so Git opened no merge tool: it opens one only for files a merge left in conflict."
+MERGETOOL_OTHER = "`--tool` picks another program for this one run; vimdiff, for one, opens inside your terminal. In the game, plain `git mergetool` opens the game's merge panel."
+
+OTHER_TOOL = r"git mergetool\b.*( -t\b| --tool\b| --tool=)"
+"""A ``git mergetool`` that names another tool for this run (``-t``, ``--tool``)."""
 LOG_FILE_LINE = r"git log( \S+)* (-- )?[\w./-]*\w\.\w+( |$)"
 """A ``git log`` given a file: a word with a dot between two letters or digits, such as ``oxygen.cfg`` (never ``a..b``)."""
 
@@ -162,6 +172,10 @@ RULES: tuple[ReactionRule, ...] = (
     ReactionRule(line=r"git pull\b", mood="ok", text=PULLED_MERGE, outcome="ok", event="merge-commit-created"),
     ReactionRule(line=r"git pull\b", mood="ok", text=PULLED_FAST_FORWARD, outcome="ok", event="branch-moved"),
     ReactionRule(line=r"git pull\b", mood="info", text=PULLED_NOTHING, outcome="ok"),
+    ReactionRule(line=OTHER_TOOL, mood="info", text=MERGETOOL_OTHER),
+    ReactionRule(line=r"git mergetool\b", mood="ok", text=MERGETOOL_ANSWERED, outcome="ok", event="conflict-resolved"),
+    ReactionRule(line=r"git mergetool\b", mood="info", text=MERGETOOL_STOPPED, outcome="failed"),
+    ReactionRule(line=r"git mergetool\b", mood="info", text=MERGETOOL_NOTHING, outcome="ok"),
     ReactionRule(line=LIST_HIDDEN, mood="info", text=HIDDEN_GIT, outcome="ok", repository=True),
     ReactionRule(line=r"ls\b", mood="info", text=LS_IN_REPOSITORY, outcome="ok", repository=True),
     ReactionRule(line=r"ls\b", mood="info", text=LS_NO_REPOSITORY, outcome="ok", repository=False),

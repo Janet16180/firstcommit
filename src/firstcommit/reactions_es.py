@@ -44,3 +44,10 @@ DID_YOU_MEAN_GIT = "¿Querías escribir `git`? Le pasa a toda la tripulación."
 UNKNOWN_COMMAND = "La terminal no conoce ningún comando con ese nombre. Revisa cómo lo escribiste: la tecla Tab también completa los nombres de los comandos."
 NEW_FILE = "Un archivo nuevo en la carpeta de trabajo. Git aún no lo sigue: `git status` lo lista como sin seguimiento hasta que hagas `git add`."
 CHANGED_FILE = "Cambiaste un archivo en la carpeta de trabajo. Lo que está en el staging area se queda como estaba hasta que vuelvas a hacer `git add` del archivo."
+MERGETOOL_ANSWERED = (
+    "La herramienta de merge escribió tu respuesta, y Git agregó el archivo al staging area (el muelle de carga) por su cuenta: esta vez no hace falta `git add`. "
+    "`git status` lo muestra."
+)
+MERGETOOL_STOPPED = "La herramienta de merge se detuvo antes de una respuesta, así que Git dejó el archivo como estaba, con sus marcadores. No se perdió nada: ejecuta `git mergetool` otra vez cuando quieras."
+MERGETOOL_NOTHING = "Ningún archivo está en conflicto, así que Git no abrió ninguna herramienta de merge: solo abre una para los archivos que un merge dejó en conflicto."
+MERGETOOL_OTHER = "`--tool` elige otro programa solo para esta vez; vimdiff, por ejemplo, se abre dentro de tu terminal. En el juego, `git mergetool` a secas abre el panel de merge del juego."
