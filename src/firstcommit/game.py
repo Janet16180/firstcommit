@@ -109,8 +109,6 @@ MIN_GIT = (2, 32)
 TARGET_GIT = (2, 43)
 MIN_PYTHON = (3, 12)
 GIT_VERSION = re.compile(r"git version (\d+)\.(\d+)")
-SHOW_REV = r"git\s+show\s+([^\s:-][^\s:]*):"
-"""The start of ``git show <rev>:<file>``, the commit as typed in its group; the level's file follows."""
 CHALLENGE_MOODS = ("warn", "err")
 """What Rama still says in a challenge: danger and errors, never guidance."""
 QUEST_FIRST = "The guided quest is not finished yet: step {step} of {steps} is next."
@@ -2043,8 +2041,7 @@ def _past(project: Path, path: str, played: list[Command]) -> Past:
     Past
         The file's commits, and its latest read or None.
     """
-    shows = [re.fullmatch(SHOW_REV + re.escape(path), command["line"].strip()) for command in played]
-    revs = [show.group(1) for show in shows if show is not None]
+    revs = reactions.shown_revs(played, path)
     return {"path": path, "touched": repomap.touched(project, path), "read": repomap.read_past(project, revs[-1], path) if revs else None}
 
 

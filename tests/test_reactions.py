@@ -175,6 +175,23 @@ def test_a_typed_line_matches_a_pattern_from_its_start_and_an_outcome() -> None:
     assert not reactions.matches(failed, r"status\b", "any")
 
 
+def test_the_commits_named_in_git_show_of_a_file_are_given_in_the_order_typed_and_by_outcome() -> None:
+    lines: list[Command] = [
+        {"line": "git show HEAD:keys.txt", "status": 128},
+        {"line": "git  --no-pager show  ccf9485:keys.txt ", "status": 0},
+        {"line": "git show HEAD~1 keys.txt", "status": 0},
+        {"line": "git show HEAD:keys.txt.bak", "status": 128},
+        {"line": "git show --help:keys.txt", "status": 0},
+        {"line": "git show HEAD:notes.txt", "status": 0},
+        {"line": "echo git show HEAD:keys.txt", "status": 0},
+        {"line": "git show HEAD~2:./keys.txt", "status": 0},
+    ]
+    assert reactions.shown_revs(lines, "keys.txt") == ["HEAD", "ccf9485", "HEAD~2"]
+    assert reactions.shown_revs(lines, "keys.txt", "ok") == ["ccf9485", "HEAD~2"]
+    assert reactions.shown_revs(lines, "keys.txt", "failed") == ["HEAD"]
+    assert reactions.shown_revs(lines, "fuel.txt") == []
+
+
 @pytest.mark.parametrize(
     "line",
     [

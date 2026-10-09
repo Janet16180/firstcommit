@@ -24,7 +24,7 @@ from firstcommit.lab import Lab
 from firstcommit.markup import code
 from firstcommit.playground import on_push, press, setup_github
 from firstcommit.playground import setup as setup_playground
-from firstcommit.reactions import LIST_HIDDEN, Outcome, ReactionRule, matches
+from firstcommit.reactions import LIST_HIDDEN, Outcome, ReactionRule, matches, shown_revs
 from firstcommit.records import Art, Command, Picture, Pictures, Target, WhatIf
 from firstcommit.repomap import (
     Commit,
@@ -104,6 +104,7 @@ __all__ = [
     "typing",
     "setup_github",
     "setup_playground",
+    "shown_revs",
     "snapshot",
     "switching",
     "staged",
