@@ -737,8 +737,10 @@ paused merge named, and a graph drawn before the merge.
 
 ### Level `conflict-abort` (Abort the docking, 6-2)
 
-*Re-checked* by `tests/levels/test_conflict_abort.py`: the pull stopping as a level event with both
-files in conflict, the abort keeping the note, a hard reset (Rama's warning, the note lost), the
+*Re-checked* by `tests/levels/test_conflict_abort.py`: nothing pulling by itself, your
+`git pull --no-rebase` stopping with both files in conflict (status 1), a plain `git pull` and a
+`git pull --rebase` both refused (status 128, Rama's answers), a fetch and an abort with no merge
+started not counting, a merge of the bookmark counting as the pull, the abort keeping the note, a hard reset (Rama's warning, the note lost), the
 merge finished instead (lost), and the merge still paused.
 
 | Text | Claim | Evidence |
@@ -747,7 +749,9 @@ merge finished instead (lost), and the merge still paused.
 | card, debrief | git can rebuild uncommitted changes only in some cases, so commit or stash before a merge | git-merge(1) `--abort` ("will in some cases be unable to reconstruct these changes") |
 | `LOOKED`, hint 1 | `git status` shows the merge in progress and the unmerged files | E86, E91 |
 | `RESET`, `NOTE_LOST`, debrief | `git reset --hard` ends the merge and drops uncommitted changes to tracked files | E91; git-reset(1) `--hard` |
-| scene | the pull stopped with conflicts in two files | the level's test |
+| scene, `PAUSED`, debrief | your `git pull --no-rebase` stops with conflicts in two files | E114; the level's test |
+| `HOW_TO_JOIN` | a plain `git pull` with commits on both sides fetches, then refuses and asks how to join them | E114, E65, G2 |
+| `REBASE_REFUSED` | `git pull --rebase` refuses while a tracked file has changes not in a commit; a merge leaves a file it does not change alone | E115, E92 |
 
 ### Level `conflict-collision` (Collision, 6-3)
 
@@ -1085,6 +1089,8 @@ No level uses it yet; the levels of sector 8 will cite these when they are writt
 
 | Tag | What ran | Result |
 |---|---|---|
+| E114 | (2026-10-08, git 2.43.0) a bare hub; your clone and Alex's each commit a line to `notes.txt`, Alex pushes; in yours, `git pull`, then `git pull --no-rebase`, `git merge --abort` | plain pull 128, "fatal: Need to specify how to reconcile divergent branches.", `origin/main` fetched, no merge; `--no-rebase` 1, "Automatic merge failed", `MERGE_HEAD` written; abort 0, `MERGE_HEAD` gone, `HEAD` reflog "reset: moving to HEAD" |
+| E115 | (2026-10-08, git 2.43.0) the same, with an uncommitted edit to `todo.txt`; `git pull --rebase` | 128: "error: cannot pull with rebase: You have unstaged changes." / "error: Please commit or stash them."; no rebase started, ` M todo.txt` |
 | E113 | on the host (git 2.43.0), in a bare hub: `main` with `a.txt` and `d.txt`; `fix` adds a line to `a.txt`; `main` then changes `d.txt`; `git merge-tree --write-tree --name-only main fix`; a `clash` branch adds another line to `a.txt`; `git merge-tree --write-tree --name-only fix clash`, also with `--no-messages` | the clean merge exits 0 and prints only the tree; the clash exits 1 and prints the tree, then `a.txt`, then (without `--no-messages`) a blank line and "CONFLICT (content): Merge conflict in a" |
 
 `firstcommit.pulls` reads mergeability and conflicted paths from that output, makes the merge with
