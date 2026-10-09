@@ -418,6 +418,9 @@ test("a level says its teaching pictures and its challenge's chart, or null, and
   await refused("/api/level", (body) => (body.pictures.large = "tape"), (api) => api.level("x"));
   await refused("/api/level", (body) => (body.pictures.small = "movelog"), (api) => api.level("x"));
   await refused("/api/level", (body) => delete body.pictures.whatif, (api) => api.level("x"));
+  await refused("/api/level", (body) => delete body.pictures.past, (api) => api.level("x"));
+  await refused("/api/level", (body) => (body.pictures.plain = "yes"), (api) => api.level("x"));
+  await refused("/api/level", (body) => (body.pictures.quiet = "look"), (api) => api.level("x"));
   await refused("/api/level", (body) => delete body.target, (api) => api.level("x"));
   await refused("/api/level", (body) => (body.target.names = []), (api) => api.level("x"));
   await refused("/api/level", (body) => delete body.steps[0].look, (api) => api.level("x"));
@@ -433,6 +436,21 @@ test("an observation carries the desk's texts, git's graph or null, and each ref
   await refused("/api/observe", (body) => delete body.texts, (api) => api.observe());
   await refused("/api/observe", (body) => delete body.graph, (api) => api.observe());
   await refused("/api/observe", (body) => delete body.reflog[0].line, (api) => api.observe());
+});
+
+test("an observation carries the level's file through its history, its latest read or null, or null for a level that reads none", async () => {
+  const observation = await gameApi().game.observe();
+  assert.equal(observation.past.read.text, "Buy fuel\n");
+  assert.equal(observation.past.touched.length, 2);
+  const unread = gameApi({ ...REPLIES, "/api/observe": { ...record("observation"), past: { path: "fuel.txt", touched: [], read: null } } }).game;
+  assert.equal((await unread.observe()).past.read, null);
+  const missing = { ...record("observation").past.read, commit: null, subject: null, text: null };
+  const unknown = gameApi({ ...REPLIES, "/api/observe": { ...record("observation"), past: { ...record("observation").past, read: missing } } }).game;
+  assert.equal((await unknown.observe()).past.read.commit, null);
+  assert.equal((await gameApi({ ...REPLIES, "/api/observe": { ...record("observation"), past: null } }).game.observe()).past, null);
+  await refused("/api/observe", (body) => delete body.past, (api) => api.observe());
+  await refused("/api/observe", (body) => delete body.past.read.rev, (api) => api.observe());
+  await refused("/api/observe", (body) => (body.past.touched = "all"), (api) => api.observe());
 });
 
 const Pg = require("./playground-records");

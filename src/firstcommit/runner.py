@@ -634,9 +634,12 @@ def _pictures_problem(pictures: Any, quest: list[kit.Step]) -> str | None:
         and set(pictures) == set(Pictures.__annotations__)
         and pictures["large"] in typing.get_args(Picture)
         and pictures["small"] in (None, "chain", "desk")
-        and all(isinstance(pictures[flag], bool) for flag in ("folder", "mothership", "alex", "ghosts", "graph"))
+        and all(isinstance(pictures[flag], bool) for flag in ("folder", "mothership", "alex", "ghosts", "graph", "plain"))
         and (pictures["kept"] is None or pictures["kept"] in steps)
         and _texts(pictures["lines"], list)
+        and (pictures["past"] is None or _is_text(pictures["past"]))
+        and isinstance(pictures["quiet"], list)
+        and all(step in steps for step in pictures["quiet"])
         and (whatif is None or (isinstance(whatif, dict) and _texts(whatif.get("without"), list) and bool(whatif["without"]) and whatif.get("after") in steps))
     )
     return None if fine else "PICTURES must come from kit.pictures, with pictures the page draws and steps the quest has"

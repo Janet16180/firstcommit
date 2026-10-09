@@ -350,7 +350,10 @@ class Pictures(TypedDict):
     (`Observation` ``ghosts``). ``kept`` is the step after which the desk outlines Git's copy, or
     None; ``lines`` the files whose lines the desk draws (`Observation` ``texts``); ``graph`` shows
     git's own ``git log --oneline --graph --all`` beside the chain (`Observation` ``graph``);
-    ``whatif`` the chain's WHAT IF, or None.
+    ``whatif`` the chain's WHAT IF, or None. ``past`` is the file whose old versions the panel
+    beside the chain shows (`Observation` ``past``), or None; ``plain`` draws the chain's capsules
+    alone, with no names, HEAD mark or pins (sector 3, before the chain is taught); ``quiet`` the
+    steps during which the chain's legend is hidden.
     """
 
     large: Picture
@@ -363,6 +366,37 @@ class Pictures(TypedDict):
     lines: list[str]
     graph: bool
     whatif: WhatIf | None
+    past: str | None
+    plain: bool
+    quiet: list[str]
+
+
+class PastRead(TypedDict):
+    """
+    A file as a commit recorded it, read again from the latest ``git show <rev>:<path>`` the player typed.
+
+    ``rev`` is the commit as typed; ``commit`` its full hash and ``subject`` its subject, both None
+    when git knows no such commit; ``text`` what ``git show`` prints for the file, None when that
+    commit has no such file (or no commit was found).
+    """
+
+    rev: str
+    commit: str | None
+    subject: str | None
+    text: str | None
+
+
+class Past(TypedDict):
+    """
+    A level's file through its history: the commits that changed it, and the latest version of it the player read.
+
+    ``touched`` are the full hashes of the commits that changed ``path``, deleting it included,
+    newest first; ``read`` is None until a ``git show <rev>:<path>`` was typed.
+    """
+
+    path: str
+    touched: list[str]
+    read: PastRead | None
 
 
 class TargetCommit(TypedDict):

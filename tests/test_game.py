@@ -486,6 +486,48 @@ def test_an_observation_carries_the_desks_texts_and_gits_graph_only_for_a_level_
     assert observed["graph"] == repomap.graph(project)
 
 
+def past_read() -> records.PastRead | None:
+    """
+    Observe the level in progress and give its latest read of the level's file.
+
+    Returns
+    -------
+    records.PastRead | None
+        The read, or None before any.
+    """
+    past = game.observe()["past"]
+    assert past is not None
+    return past["read"]
+
+
+def test_an_observation_reads_the_levels_file_again_from_the_latest_git_show_of_it(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch, game_home: Path) -> None:
+    game.start(sample_level.id)
+    assert game.observe()["past"] is None
+    level = replaced(sample_level, pictures=kit.pictures("chain", past="hello.txt"))
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    project = lab_project(game_home)
+    kit.git(project, "add", "hello.txt")
+    kit.git(project, "commit", "-q", "-m", "Say hello")
+    (project / "notes.txt").write_text("notes\n")
+    kit.git(project, "add", "notes.txt")
+    kit.git(project, "commit", "-q", "-m", "Add notes")
+    assert game.observe()["past"] == {"path": "hello.txt", "touched": repomap.touched(project, "hello.txt"), "read": None}
+    type_lines(game_home, ("git show HEAD~1:hello.txt", 0), ("git show HEAD~1:notes.txt", 128), ("git log hello.txt", 0))
+    assert past_read() == repomap.read_past(project, "HEAD~1", "hello.txt")
+    type_lines(game_home, ("git show nowhere:hello.txt", 128))
+    assert past_read() == {"rev": "nowhere", "commit": None, "subject": None, "text": None}
+    assert past_read() == {"rev": "nowhere", "commit": None, "subject": None, "text": None}, "it stays until the next read"
+
+
+def test_only_a_plain_git_show_of_the_levels_file_counts_as_reading_it(sample_level: runner.Level, monkeypatch: pytest.MonkeyPatch, game_home: Path) -> None:
+    level = replaced(sample_level, pictures=kit.pictures("chain", past="hello.txt"))
+    monkeypatch.setattr(runner, "catalogue", lambda: {level.id: level})
+    game.start(level.id)
+    game.observe()
+    type_lines(game_home, ("git show --help:hello.txt", 0), ("git show HEAD hello.txt", 0), ("echo git show HEAD:hello.txt", 0), ("git show HEAD:hello.txt.bak", 128))
+    assert past_read() is None
+
+
 def test_a_view_stays_seen_in_the_order_seen_until_a_reset(sample_level: runner.Level) -> None:
     game.see_view("crew")
     game.see_view("band")

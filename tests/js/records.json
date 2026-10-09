@@ -335,7 +335,10 @@
      "rescue"
     ],
     "after": "look"
-   }
+   },
+   "past": null,
+   "plain": false,
+   "quiet": []
   },
   "target": {
    "commits": [
@@ -886,7 +889,20 @@
    "| * f286a29 (quiet-engine) Try a quiet engine",
    "|/  ",
    "* 6b6a005 (origin/main, main) Fix the route"
-  ]
+  ],
+  "past": {
+   "path": "notes.txt",
+   "touched": [
+    "862a51f8b6294a4b0729a7c5c929bfd67068d962",
+    "32d332da761f44df7959e5887b6b94cb4667d781"
+   ],
+   "read": {
+    "rev": "32d332d",
+    "commit": "32d332da761f44df7959e5887b6b94cb4667d781",
+    "subject": "Add notes",
+    "text": "Buy fuel\n"
+   }
+  }
  },
  "cards": [
   {
@@ -1721,7 +1737,8 @@
     "| * f286a29 (quiet-engine) Try a quiet engine",
     "|/  ",
     "* 6b6a005 (origin/main, main) Fix the route"
-   ]
+   ],
+   "past": null
   },
   "observation": {
    "level": "cargo-sample",
@@ -2157,7 +2174,8 @@
     "| * f286a29 (quiet-engine) Try a quiet engine",
     "|/  ",
     "* 6b6a005 (origin/main, main) Fix the route"
-   ]
+   ],
+   "past": null
   },
   "explanation": null,
   "fix": null,

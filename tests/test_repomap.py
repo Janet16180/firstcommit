@@ -1097,6 +1097,29 @@ def test_the_graph_is_git_log_oneline_graph_all_as_a_terminal_shows_it(tmp_path:
     assert repomap.graph(tmp_path / "nowhere") == []
 
 
+def test_the_commits_that_touched_a_file_are_listed_newest_first_its_deletion_included(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "echo 1 > fuel.txt && git add fuel.txt && git commit -q -m one && echo a > crew.txt && git add crew.txt && git commit -q -m two && echo 2 > fuel.txt && git commit -q -am three && git rm -q fuel.txt && git commit -q -m four\n")
+    assert repomap.touched(repo, "fuel.txt") == shell(repo, "git log --format=%H -- fuel.txt").split()
+    assert len(repomap.touched(repo, "fuel.txt")) == 3
+    assert (repomap.touched(repo, "nothing.txt"), repomap.touched(tmp_path / "nowhere", "fuel.txt")) == ([], [])
+
+
+def test_a_file_is_read_as_a_commit_recorded_it_exactly_as_git_show_prints_it(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "printf 'fuel: 60%%\\n' > fuel.txt && git add fuel.txt && git commit -q -m 'Log the fuel' && git rm -q fuel.txt && git commit -q -m 'Remove it'\n")
+    first = shell(repo, "git rev-parse HEAD~1").strip()
+    assert repomap.read_past(repo, "HEAD~1", "fuel.txt") == {"rev": "HEAD~1", "commit": first, "subject": "Log the fuel", "text": shell(repo, "git show HEAD~1:fuel.txt")}
+    assert repomap.read_past(repo, first[:7], "fuel.txt")["text"] == "fuel: 60%\n"
+
+
+def test_a_commit_without_the_file_or_a_name_git_does_not_know_reads_nothing(tmp_path: Path) -> None:
+    repo = new_repo(tmp_path, "echo 1 > fuel.txt && git add fuel.txt && git commit -q -m one && git rm -q fuel.txt && git commit -q -m 'Remove it'\n")
+    head = shell(repo, "git rev-parse HEAD").strip()
+    assert repomap.read_past(repo, "HEAD", "fuel.txt") == {"rev": "HEAD", "commit": head, "subject": "Remove it", "text": None}
+    assert repomap.read_past(repo, "zzz", "fuel.txt") == {"rev": "zzz", "commit": None, "subject": None, "text": None}
+    assert repomap.read_past(repo, "HEAD~9", "fuel.txt")["commit"] is None
+    assert repomap.read_past(tmp_path / "nowhere", "HEAD", "fuel.txt")["commit"] is None
+
+
 def test_a_files_texts_are_read_from_the_folder_and_the_staging_area(tmp_path: Path) -> None:
     repo = new_repo(tmp_path, "echo one > a.txt && git add a.txt && git commit -q -m one && echo two > a.txt && echo new > b.txt\n")
     assert repomap.file_texts(repo, ["a.txt", "b.txt", "gone.txt"]) == [

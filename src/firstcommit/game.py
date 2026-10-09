@@ -82,6 +82,7 @@ from firstcommit.records import (
     MarkedFile,
     Moment,
     Mood,
+    Past,
     Pictures,
     PlaygroundView,
     Press,
@@ -108,6 +109,8 @@ MIN_GIT = (2, 32)
 TARGET_GIT = (2, 43)
 MIN_PYTHON = (3, 12)
 GIT_VERSION = re.compile(r"git version (\d+)\.(\d+)")
+SHOW_REV = r"git\s+show\s+([^\s:-][^\s:]*):"
+"""The start of ``git show <rev>:<file>``, the commit as typed in its group; the level's file follows."""
 CHALLENGE_MOODS = ("warn", "err")
 """What Rama still says in a challenge: danger and errors, never guidance."""
 QUEST_FIRST = "The guided quest is not finished yet: step {step} of {steps} is next."
@@ -385,7 +388,9 @@ class Observation(TypedDict):
     folder's and the staging area's texts of the files the level's desk draws
     (`firstcommit.repomap.file_texts`), empty for a level without; ``graph`` the lines of
     ``git log --oneline --graph --all`` (`firstcommit.repomap.graph`), None unless the level shows
-    it.
+    it. ``past`` is the level's file through its history (`firstcommit.records.Past`), read again
+    from the latest ``git show <rev>:<file>`` typed since the level started, None for a level
+    whose pictures read no file.
     """
 
     level: str
@@ -402,6 +407,7 @@ class Observation(TypedDict):
     ghosts: list[Commit]
     texts: list[FileTexts]
     graph: list[str] | None
+    past: Past | None
 
 
 class ChapterName(TypedDict):
@@ -1063,7 +1069,7 @@ def observe() -> Observation:
         else:
             now, typed = _look(entry.id, lab, last, active["typed"])
         messages = _messages(entry, _language())
-        observation = _lost_over_pleased(_observation(last, now, _buttons(lab, now), lab.project, typed, _rules(entry), messages, entry.pictures), _loss(entry, active, lab, messages))
+        observation = _lost_over_pleased(_observation(last, now, _buttons(lab, now), lab.project, typed, _rules(entry), messages, entry.pictures, active["typed"]), _loss(entry, active, lab, messages))
         if now != last:
             save.write_observed(now)
     return observation
@@ -1117,12 +1123,12 @@ def press(person: str, button: str) -> PressView:
         active = _catch_up(active)
         messages = _messages(entry, _language())
         then, typed_before = _look(entry.id, lab, last, active["typed"])
-        before = _observation(last, then, _buttons(lab, then), lab.project, typed_before, _rules(entry), messages, entry.pictures)
+        before = _observation(last, then, _buttons(lab, then), lab.project, typed_before, _rules(entry), messages, entry.pictures, active["typed"])
         facts = playground.facts(lab, who, _clones(then)[who], then["github"])
         pressed = playground.press(lab, who, which)
         active = _catch_up(active)
         now, typed_during = _look(entry.id, lab, then, active["typed"])
-        observation = _observation(then, now, _buttons(lab, now), lab.project, typed_during, _rules(entry), messages, entry.pictures)
+        observation = _observation(then, now, _buttons(lab, now), lab.project, typed_during, _rules(entry), messages, entry.pictures, active["typed"])
         if now != last:
             save.write_observed(now)
     found = explanations.explain(pressed, _clones(then)[who], _clones(now)[who], facts, playground.BUTTON_IDS)
@@ -1955,6 +1961,7 @@ def _observation(
     rules: tuple[ReactionRule, ...],
     messages: Mapping[str, str],
     pictures: Pictures | None,
+    played: list[Command],
 ) -> Observation:
     """
     Tell what changed in a lab between two observations, and what Rama says about the lines typed in between.
@@ -1976,7 +1983,10 @@ def _observation(
     messages : Mapping[str, str]
         The messages in the player's language (`_messages`).
     pictures : Pictures | None
-        The level's pictures, which say whether to read the desk's texts and git's graph.
+        The level's pictures, which say whether to read the desk's texts, git's graph and a file
+        as a commit recorded it.
+    played : list[Command]
+        Every line typed since the level started, where the latest read of that file is found.
 
     Returns
     -------
@@ -2011,7 +2021,31 @@ def _observation(
         "ghosts": repomap.ghosts(project),
         "texts": repomap.file_texts(project, pictures["lines"]) if pictures is not None else [],
         "graph": repomap.graph(project) if pictures is not None and pictures["graph"] else None,
+        "past": _past(project, pictures["past"], played) if pictures is not None and pictures["past"] is not None else None,
     }
+
+
+def _past(project: Path, path: str, played: list[Command]) -> Past:
+    """
+    Read a file through its history: the commits that changed it, and the latest ``git show <rev>:<file>`` typed, run again.
+
+    Parameters
+    ----------
+    project : Path
+        The player's repository.
+    path : str
+        The file the level reads.
+    played : list[Command]
+        Every line typed since the level started, oldest first; a read counts however it ended.
+
+    Returns
+    -------
+    Past
+        The file's commits, and its latest read or None.
+    """
+    shows = [re.fullmatch(SHOW_REV + re.escape(path), command["line"].strip()) for command in played]
+    revs = [show.group(1) for show in shows if show is not None]
+    return {"path": path, "touched": repomap.touched(project, path), "read": repomap.read_past(project, revs[-1], path) if revs else None}
 
 
 def _changes(before: Snapshot | None, after: Snapshot | None) -> list[Event]:
