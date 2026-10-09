@@ -265,6 +265,7 @@ def type_line(folder: Path, line: str) -> Command:
         If the line runs longer than `firstcommit.gitcmd.TIMEOUT` seconds.
     """
     home = save.home()
+    save.ensure_tmp()
     env = {**gitcmd.shell_environment(os.environ, home), "HOME": str(home), "HISTFILE": "/dev/null"}
     ran = subprocess.run(["bash", "--noprofile", "--norc", "-c", line], cwd=folder, env=env, capture_output=True, stdin=subprocess.DEVNULL, timeout=gitcmd.TIMEOUT, check=False)
     return {"line": line, "status": ran.returncode}

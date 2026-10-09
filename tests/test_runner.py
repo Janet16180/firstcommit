@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 
-from firstcommit import gitcmd, kit, records, runner
+from firstcommit import gitcmd, kit, records, runner, save
 from sample_levels import cargo_sample, cargo_sample_es
 
 SPANISH = ["TITLE", "BRIEFING", "HINTS", "DEBRIEF", "CARD", "SCENE", "STEPS", "HELLO_STAGED", "STAGED", "NOT_STAGED", "RIGHT", "LOOK", "COMMITTED", "NOT_COMMITTED"]
@@ -431,6 +431,17 @@ def test_removing_the_labs_deletes_them_all_and_tolerates_none(game_home: Path) 
     runner.remove_labs()
     runner.remove_labs()
     assert not (game_home / "labs").exists()
+
+
+def test_removing_the_labs_also_removes_what_a_killed_git_mergetool_left_in_the_games_temporary_folder(game_home: Path) -> None:
+    left = save.ensure_tmp() / "git-mergetool-Ab12Cd"
+    left.mkdir()
+    (left / "launch_LOCAL_42.txt").write_text("mine\n")
+    runner.start_lab(runner.load(cargo_sample))
+    assert not left.exists()
+    left.mkdir()
+    runner.remove_labs()
+    assert not left.exists()
 
 
 def test_a_level_is_a_challenge_only_when_it_says_so() -> None:

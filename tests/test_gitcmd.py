@@ -1,7 +1,9 @@
 import http.server
 import os
 import pty
+import shlex
 import subprocess
+import sys
 import threading
 import time
 from collections.abc import Iterator
@@ -84,6 +86,7 @@ def test_isolation_names_the_games_config_its_labs_and_the_playground(tmp_path: 
         "GIT_CONFIG_GLOBAL": str(tmp_path / save.GITCONFIG_FILE),
         "GIT_CONFIG_NOSYSTEM": "1",
         "GIT_CEILING_DIRECTORIES": f"{tmp_path / 'labs'}:{tmp_path / 'playground'}",
+        "TMPDIR": str(tmp_path / "tmp"),
         **gitcmd.config_entries(gitcmd.PLAYER_SETTINGS),
     }
 
@@ -220,9 +223,9 @@ def test_the_games_git_never_runs_a_signature_program_to_show_a_log(tmp_path: Pa
     assert not marker.exists()
 
 
-def test_the_players_shell_keeps_the_repositorys_own_settings_and_only_loses_the_editor_and_the_pager(tmp_path: Path) -> None:
+def test_the_players_shell_keeps_the_repositorys_own_settings_and_only_loses_the_editor_the_pager_and_the_merge_tool(tmp_path: Path) -> None:
     env = gitcmd.shell_environment({"PATH": "/usr/bin"}, tmp_path)
-    expected = gitcmd.config_entries({"core.editor": "true", "core.pager": "cat"})
+    expected = gitcmd.config_entries({"core.editor": "true", "core.pager": "cat", **gitcmd.MERGETOOL_SETTINGS})
     assert {key: value for key, value in env.items() if key.startswith(("GIT_CONFIG_COUNT", "GIT_CONFIG_KEY", "GIT_CONFIG_VALUE"))} == expected
 
 
@@ -637,7 +640,29 @@ def test_an_older_game_config_or_the_players_own_editor_setting_never_opens_an_e
 def test_the_isolation_sets_no_editor_and_no_pager_as_settings_that_outrank_every_config_file(tmp_path: Path) -> None:
     env = gitcmd.isolation(tmp_path)
     entries = {env[f"GIT_CONFIG_KEY_{index}"]: env[f"GIT_CONFIG_VALUE_{index}"] for index in range(int(env["GIT_CONFIG_COUNT"]))}
-    assert entries == gitcmd.PLAYER_SETTINGS == {"core.editor": "true", "core.pager": "cat"}
+    assert entries == gitcmd.PLAYER_SETTINGS == {"core.editor": "true", "core.pager": "cat", **gitcmd.MERGETOOL_SETTINGS}
+
+
+def test_the_games_merge_tool_is_its_own_program_trusted_by_its_exit_status_with_no_backup_no_prompt_and_copies_outside_the_folder() -> None:
+    assert {
+        "merge.tool": "firstcommit",
+        "mergetool.firstcommit.cmd": f"{shlex.quote(sys.executable)} -m firstcommit mergetool \"$MERGED\"",
+        "mergetool.firstcommit.trustExitCode": "true",
+        "mergetool.keepBackup": "false",
+        "mergetool.writeToTemp": "true",
+        "mergetool.prompt": "false",
+    } == gitcmd.MERGETOOL_SETTINGS
+
+
+def test_in_the_players_shell_git_names_the_games_merge_tool_whatever_the_player_sets(game_home: Path) -> None:
+    save.ensure_gitconfig(gitcmd.BASE_CONFIG)
+    project = game_home / "labs" / "tool" / "project"
+    project.mkdir(parents=True)
+    env = {**gitcmd.shell_environment(os.environ, game_home), "HOME": str(game_home)}
+    line = "git init -q && git config --global merge.tool meld && git config merge.tool"
+    ran = subprocess.run(["bash", "--norc", "-c", line], cwd=project, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=30, check=False)
+    assert (ran.returncode, ran.stdout) == (0, "firstcommit\n")
+    assert "mergetool" not in (project / ".git" / "config").read_text()
 
 
 def test_in_the_players_shell_git_on_a_terminal_prints_straight_out_whatever_pager_is_set(game_home: Path) -> None:

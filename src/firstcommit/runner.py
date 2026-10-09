@@ -929,5 +929,6 @@ def start_lab(level: Level) -> kit.State:
 
 
 def remove_labs() -> None:
-    """Remove every lab, even one whose folders a player locked."""
+    """Remove every lab, even one whose folders a player locked, and what a killed ``git mergetool`` left in the game's temporary folder."""
     sandbox.remove_tree(labs_folder(), save.home())
+    save.remove_mergetool_leftovers()

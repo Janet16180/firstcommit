@@ -2057,6 +2057,12 @@ def test_a_shell_environment_comes_with_the_game_git_config_it_names(sample_leve
     assert Path(env["GIT_CONFIG_GLOBAL"]).read_text() == "[user]\n\tname = Ada\n"
 
 
+def test_a_shell_environment_comes_with_the_temporary_folder_it_names(sample_level: runner.Level, game_home: Path) -> None:
+    env = game.shell_environment({})
+    assert Path(env["TMPDIR"]) == game_home / save.TMP_FOLDER
+    assert Path(env["TMPDIR"]).is_dir()
+
+
 def test_the_game_hands_the_interfaces_the_save_error_and_the_home() -> None:
     assert game.SaveError is save.SaveError
     assert game.home is save.home

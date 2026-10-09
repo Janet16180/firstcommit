@@ -15,8 +15,10 @@ import errno
 import os
 import pty
 import select
+import shlex
 import signal
 import subprocess
+import sys
 import termios
 import time
 from collections.abc import Mapping
@@ -93,7 +95,26 @@ login and host names: no machine-dependent identity, and no login or host name i
 commit.
 """
 
-PLAYER_SETTINGS = {"core.editor": "true", "core.pager": "cat"}
+MERGETOOL_SETTINGS = {
+    "merge.tool": "firstcommit",
+    "mergetool.firstcommit.cmd": f'{shlex.quote(sys.executable)} -m firstcommit mergetool "$MERGED"',
+    "mergetool.firstcommit.trustExitCode": "true",
+    "mergetool.keepBackup": "false",
+    "mergetool.writeToTemp": "true",
+    "mergetool.prompt": "false",
+}
+"""
+The game's own merge tool, the one program the game's settings name (AUTHORING.md section 3.2).
+
+Plain ``git mergetool`` runs ``firstcommit mergetool <file>`` (`firstcommit.mergetool`) with the
+Python running the game, on each file in conflict. git trusts its exit status (0: answered, so
+git adds the file; anything else: git puts the file back), keeps no ``.orig`` backup in the
+working folder, writes its temporary copies to ``TMPDIR`` (the game home's, `isolation`) instead
+of the working folder, and asks nothing before starting it (git-mergetool(1)). They are never
+written into a lab's ``.git/config``: they travel only in the environment, with `PLAYER_SETTINGS`.
+"""
+
+PLAYER_SETTINGS = {"core.editor": "true", "core.pager": "cat", **MERGETOOL_SETTINGS}
 """
 Settings every git the game starts keeps, the player's shell included, whatever its configuration
 files say: no editor ever opens (`BASE_CONFIG` explains why), and no pager: output longer than the
@@ -101,6 +122,8 @@ page's terminal scrolls there, instead of stopping in ``less`` for a key a begin
 As ``GIT_CONFIG_COUNT`` entries they reach a game home whose configuration is older than the
 setting, and outrank a ``git config --global core.editor`` or ``core.pager`` the player runs and
 the ``PAGER`` variable (git-config(1), core.pager). Only ``GIT_PAGER`` set in the shell comes first.
+The game's merge tool (`MERGETOOL_SETTINGS`) travels the same way, so ``git mergetool`` always
+opens the page's panel, whatever ``merge.tool`` the player sets.
 """
 
 TERMINAL_SETTINGS = {**NO_PROGRAMS, "color.ui": "never"}
@@ -141,12 +164,15 @@ def isolation(home: Path) -> dict[str, str]:
     -------
     dict[str, str]
         ``GIT_CONFIG_GLOBAL``, ``GIT_CONFIG_NOSYSTEM``, ``GIT_CEILING_DIRECTORIES`` (the labs
-        folder and the playground's), and `PLAYER_SETTINGS` as ``GIT_CONFIG_COUNT`` entries.
+        folder and the playground's), ``TMPDIR`` (the game home's temporary folder, so what a
+        killed ``git mergetool`` leaves stays in the game home, where every lab reset removes
+        it), and `PLAYER_SETTINGS` as ``GIT_CONFIG_COUNT`` entries.
     """
     return {
         "GIT_CONFIG_GLOBAL": str(home / save.GITCONFIG_FILE),
         "GIT_CONFIG_NOSYSTEM": "1",
         "GIT_CEILING_DIRECTORIES": f"{home / save.LABS_FOLDER}:{home / save.PLAYGROUND_FOLDER}",
+        "TMPDIR": str(home / save.TMP_FOLDER),
         **config_entries(PLAYER_SETTINGS),
     }
 

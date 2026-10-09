@@ -1268,7 +1268,8 @@ def shell_environment(base: Mapping[str, str]) -> dict[str, str]:
 
     Git there is kept to the game (`firstcommit.gitcmd.shell_environment`), and the game's git
     configuration that it names is created first if it is missing (never overwritten), so the
-    player's first ``git init`` is on ``main``.
+    player's first ``git init`` is on ``main``; so is the temporary folder it names, which
+    ``git mergetool`` needs.
 
     Parameters
     ----------
@@ -1281,6 +1282,7 @@ def shell_environment(base: Mapping[str, str]) -> dict[str, str]:
         ``base`` without its git variables, plus the game's isolation.
     """
     gitcmd.ensure_config()
+    save.ensure_tmp()
     return gitcmd.shell_environment(base, save.home())
 
 

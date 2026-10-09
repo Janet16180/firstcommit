@@ -369,5 +369,6 @@ def build(start: StartId) -> Lab:
 
 
 def remove() -> None:
-    """Remove the free playground's lab, if any, even one whose folders a player locked."""
+    """Remove the free playground's lab, if any, even one whose folders a player locked, and what a killed ``git mergetool`` left in the game's temporary folder."""
     sandbox.remove_tree(lab().root, save.home())
+    save.remove_mergetool_leftovers()

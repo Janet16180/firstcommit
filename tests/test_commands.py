@@ -249,6 +249,12 @@ def test_a_line_typed_for_a_level_runs_in_bash_and_comes_back_with_its_exit_stat
     assert commands.type_line(folder, "gti status") == {"line": "gti status", "status": 127}
 
 
+def test_a_line_typed_for_a_level_has_the_games_temporary_folder_to_work_in(game_home: Path) -> None:
+    folder = game_home / "labs" / "some-level" / "project"
+    folder.mkdir(parents=True)
+    assert commands.type_line(folder, 'test "$TMPDIR" = "$HOME/tmp" && mktemp -d') == {"line": 'test "$TMPDIR" = "$HOME/tmp" && mktemp -d', "status": 0}
+
+
 def test_a_line_typed_for_a_level_uses_the_games_git_and_never_the_players_home(game_home: Path) -> None:
     folder = game_home / "project"
     folder.mkdir()
