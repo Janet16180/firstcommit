@@ -37,3 +37,9 @@ policy. Changes to repository settings remain under the owner's control.
 After a change lands on `main`, CI reruns the checks. The workflow builds test and player
 images only inside the CI runner. It does not publish images, upload build artifacts, or deploy
 the game. All workflow jobs use read-only repository permissions.
+
+## Contributions from forks
+
+Fork this repository, create a branch in your fork, and open a pull request to `Janet16180/firstcommit:main`. You do not need write access. The owner reviews and merges changes after the required checks pass. Approval to run an external contributor's workflow is separate from approval to merge their code.
+
+Project code is licensed under Apache 2.0. Contributions intentionally submitted for inclusion are under the same license, unless explicitly stated otherwise. Third-party components retain their original licenses; see NOTICE.

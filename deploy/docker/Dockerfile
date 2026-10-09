@@ -47,6 +47,7 @@ RUN useradd --create-home --shell /bin/bash player \
 # The source folder may hold __pycache__ folders; they are rebuilt here, since the player cannot
 # write next to these files.
 COPY src/firstcommit /opt/firstcommit/lib/firstcommit
+COPY LICENSE NOTICE /opt/firstcommit/
 RUN find /opt/firstcommit/lib -name __pycache__ -prune -exec rm -r {} + \
  && python3 -m compileall -q /opt/firstcommit/lib
 
