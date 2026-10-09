@@ -2,8 +2,11 @@
 Capture what real git prints for the field guide's cards and its conflict, and write guide-git.js.
 
 Every transcript comes from git itself, run with the game's settings (`gitcmd.BASE_CONFIG`, no
-pager, no editor, no colours) and fixed dates, so the hashes are the same on every run. The one
-change to what git printed: the temporary folder's path is written as ``/home/you``.
+pager, no editor, no colours) and fixed dates, so the hashes are the same on every run. The
+branch and merge cards' commands run on a terminal of their own, as in the game's terminal: git
+then names branches in ``git log``, and ``ls`` prints in columns; what is kept is what the screen
+shows (`shown`). The one change to what git printed: the temporary folder's path is written as
+``/home/you``.
 ``test_guide_capture.py`` regenerates it and checks the page's copy is the same, byte for byte.
 To regenerate after a change to git or to the story:
 
@@ -13,14 +16,19 @@ The conflict is the "Markers decoded" prototype's: a 7-line launch checklist whe
 the Moon on ``main`` and Alex for Jupiter on ``alex-route``.
 """
 
+import fcntl
 import json
 import os
+import pty
 import re
 import shutil
+import struct
 import subprocess
 import tempfile
+import termios
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from functools import partial
 from pathlib import Path
 from typing import Any
 
@@ -33,6 +41,11 @@ YOU = gitcmd.Person("You", "you@station.space")
 ALEX = gitcmd.Person("Alex", "alex@station.space")
 START = 1760000000
 SHOWN_HOME = "/home/you"
+CARDS = 1780300800
+"""When the branch and merge cards' story starts (2026-06-01): each of its commits has a fixed minute after it."""
+TERMINAL = {"TERM": "xterm-256color", "COLUMNS": "80", "LINES": "24"}
+"""The terminal the cards' commands run on: 80 columns, as a narrow game terminal."""
+CLEAR_LINE = "\x1b[K"
 
 CHECKLIST = """LAUNCH CHECKLIST
 1. Seal the hatch
@@ -43,6 +56,77 @@ CHECKLIST = """LAUNCH CHECKLIST
 6. Snack: crackers
 7. Wave goodbye to base
 """
+
+
+def shown(raw: str) -> str:
+    """
+    Give what a terminal's output leaves on screen.
+
+    A carriage return goes back to the start of the line, ESC [K clears the rest of it (git's
+    "Waiting for your editor" hint goes that way), and the terminal's carriage return and line feed pairs become plain line feeds.
+
+    Parameters
+    ----------
+    raw : str
+        What the terminal received.
+
+    Returns
+    -------
+    str
+        The lines as the screen shows them.
+
+    Raises
+    ------
+    ValueError
+        If any other escape sequence is left: the screen would show something else.
+    """
+    lines = []
+    for line in raw.replace("\r\n", "\n").split("\n"):
+        screen = ""
+        for part in line.split("\r"):
+            clear = part.startswith(CLEAR_LINE)
+            part = part.removeprefix(CLEAR_LINE)
+            screen = part if clear else part + screen[len(part) :]
+        if "\x1b" in screen:
+            raise ValueError(f"an escape sequence is left in {screen!r}")
+        lines.append(screen)
+    return "\n".join(lines)
+
+
+def on_terminal(command: str, here: Path, environment: dict[str, str]) -> str:
+    """
+    Run bash code on a terminal of its own, 80 columns wide, and give everything it wrote.
+
+    Parameters
+    ----------
+    command : str
+        Bash code.
+    here : Path
+        Where it runs.
+    environment : dict[str, str]
+        Its variables.
+
+    Returns
+    -------
+    str
+        What the terminal received, standard output and standard error in the order written.
+    """
+    main, side = pty.openpty()
+    fcntl.ioctl(side, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 80, 0, 0))
+    process = subprocess.Popen(["bash", "-c", command], cwd=here, env={**environment, **TERMINAL}, stdin=side, stdout=side, stderr=side, start_new_session=True)
+    os.close(side)
+    chunks = []
+    while True:
+        try:
+            chunk = os.read(main, 4096)
+        except OSError:  # EIO: the terminal's other end closed
+            break
+        if not chunk:
+            break
+        chunks.append(chunk)
+    process.wait()
+    os.close(main)
+    return b"".join(chunks).decode()
 
 
 @dataclass
@@ -73,6 +157,7 @@ class Story:
         return {
             "PATH": os.environ["PATH"],
             "HOME": str(self.work),
+            "HISTFILE": "/dev/null",
             "LC_ALL": "C",
             "GIT_CONFIG_GLOBAL": str(self.work / ".gitconfig"),
             "GIT_CONFIG_NOSYSTEM": "1",
@@ -106,7 +191,7 @@ class Story:
         """
         return subprocess.run(["bash", "-c", command], cwd=self.here, env=self.environment(), capture_output=True, text=True, check=True).stdout
 
-    def step(self, name: str, command: str, picks: Mapping[str, Sequence[Keep]] | None = None) -> None:
+    def step(self, name: str, command: str, picks: Mapping[str, Sequence[Keep]] | None = None, terminal: bool = False) -> None:
         """
         Run a command a card shows, and add it with everything it printed to the transcript `name`.
 
@@ -122,13 +207,28 @@ class Story:
         picks : Mapping[str, Sequence[Keep]] | None
             For ``git mergetool``, the merge panel's clicks, written while the game's tool waits
             (`firstcommit.commands.run_with_panel`); the tool's game home is the work folder's.
+        terminal : bool
+            Run it on a terminal, and keep what the screen shows.
         """
         argv = ["bash", "-c", command]
         if picks:
             printed = commands.run_with_panel(argv, self.here, {**self.environment(), "FIRSTCOMMIT_HOME": str(self.work / ".firstcommit")}, picks)[1]
+        elif terminal:
+            printed = shown(on_terminal(command, self.here, self.environment()))
         else:
             printed = subprocess.run(argv, cwd=self.here, env=self.environment(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, check=False).stdout
         self.runs.setdefault(name, []).append({"command": command, "output": printed.replace(str(self.work), SHOWN_HOME)})
+
+    def at(self, minute: int) -> None:
+        """
+        Set the clock so the next command runs `minute` minutes into the cards' story.
+
+        Parameters
+        ----------
+        minute : int
+            Minutes after `CARDS`.
+        """
+        self.tick = CARDS + (minute - 1) * 60
 
 
 def edit(path: Path, old: str, new: str) -> None:
@@ -234,21 +334,21 @@ def names(story: Story) -> None:
     step("remote-add", "git remote -v")
     step("push-first", "git push -u origin main")
 
-    step("branch", "git branch test-run")
-    step("branch", "git branch")
+    quiet("git branch test-run")
+    quiet("git branch")
     step("branch-v", "git branch -v")
     step("branch-v", "git branch -r")
     first = quiet("git rev-parse --short HEAD~3").strip()
     step("branch-at", "git log --oneline")
     step("branch-at", f"git branch first-route {first}")
     step("branch-at", "git branch -v")
-    step("branch-d", "git branch -d test-run")
+    quiet("git branch -d test-run")
     quiet("git branch -d first-route")
 
 
 def branches(story: Story) -> None:
     """
-    Play the branches: a new course switched to, drawn, sent up and merged.
+    Play the branches: a new course switched to, drawn, sent up and merged; the cards' own transcripts come from `cards`.
 
     Parameters
     ----------
@@ -258,20 +358,20 @@ def branches(story: Story) -> None:
     step, quiet = story.step, story.quiet
     star_map = story.here / "map.txt"
 
-    step("switch-c", "git switch -c scout")
+    quiet("git switch -c scout")
     (story.here / "probe.txt").write_text("probe: ready\n")
     quiet('git add probe.txt && git commit -q -m "Ready the probe"')
-    step("switch", "git switch main")
-    step("switch", "ls")
+    quiet("git switch main")
+    quiet("ls")
     star_map.write_text("Star map: Mars, Jupiter, Saturn, Pluto\n")
     quiet('git commit -q -am "Add Pluto"')
-    step("log-graph", "git log --oneline --graph --all")
-    step("checkout", "git checkout scout")
-    step("checkout-b", "git checkout -b night-watch")
+    quiet("git log --oneline --graph --all")
+    quiet("git checkout scout")
+    quiet("git checkout -b night-watch")
     quiet("git switch -q main")
     step("push-branch", "git push -u origin scout")
-    step("merge", "git merge scout")
-    step("merge", "git log --graph --oneline")
+    quiet("git merge scout")
+    quiet("git log --graph --oneline")
     step("push", "git push")
 
 
@@ -461,6 +561,153 @@ def conflict(story: Story) -> dict[str, Any]:
     return {**data, "resolved": resolved, "head": head}
 
 
+def scene(story: Story, moves: int) -> None:
+    """
+    Start a fresh repository for one of the cards' scenes, `moves` steps into their one story, in ``project``, the folder the game's terminal opens in.
+
+    Every scene is rebuilt from the start with the same minutes, so a commit has the same hash on
+    every card that shows it. The steps: 1 *Start the project* and 2 *Plot the route* on
+    ``main``; 3 ``scout`` with *Ready the probe*, back on ``main``; 4 *Fill the tanks* on ``main``.
+
+    Parameters
+    ----------
+    story : Story
+        The story; it is left in the scene's folder.
+    moves : int
+        How many steps to play, 2 to 4.
+    """
+    story.here = story.work / "project"
+    shutil.rmtree(story.here, ignore_errors=True)
+    story.here.mkdir()
+    commits = [
+        ("notes.txt", "Notes\n", "Start the project"),
+        ("route.txt", "Route: Moon\n", "Plot the route"),
+        ("probe.txt", "probe=ready\n", "Ready the probe"),
+        ("fuel.txt", "fuel=full\n", "Fill the tanks"),
+    ]
+    story.quiet("git init -q")
+    for minute, (file, text, message) in enumerate(commits[:moves], start=1):
+        if minute == 3:
+            story.quiet("git switch -q -c scout")
+        (story.here / file).write_text(text)
+        story.at(minute)
+        story.quiet(f'git add {file} && git commit -q -m "{message}"')
+        if minute == 3:
+            story.quiet("git switch -q main")
+
+
+def naming(story: Story) -> None:
+    """
+    Play the cards that put names on and move HEAD: git branch, git switch, git switch -c and the older checkouts.
+
+    Parameters
+    ----------
+    story : Story
+        The story.
+    """
+    step = partial(story.step, terminal=True)
+    scene(story, 2)
+    step("branch", "git branch scout")
+    step("branch", "git branch")
+    step("branch", "git log --oneline")
+
+    scene(story, 3)
+    step("switch", "ls")
+    step("switch", "git switch scout")
+    step("switch", "ls")
+    step("switch", "git log --oneline --all")
+    step("switch", "git switch main")
+    step("switch", "ls")
+
+    scene(story, 3)
+    (story.here / "notes.txt").write_text("Notes\nFuel: 80%\n")
+    step("switch-carry", "git switch scout")
+    step("switch-carry", "git status --short")
+
+    scene(story, 2)
+    story.quiet("git switch -q -c scout")
+    (story.here / "route.txt").write_text("Route: Mars\n")
+    story.at(3)
+    story.quiet('git commit -q -am "Head for Mars" && git switch -q main')
+    (story.here / "route.txt").write_text("Route: Moon, Phobos\n")
+    step("switch-refused", "git switch scout")
+
+    scene(story, 2)
+    step("switch-c", "git switch -c lights")
+    step("switch-c", "git log --oneline")
+    step("switch-missing", "git switch lights-on")
+    scene(story, 2)
+    step("checkout-b", "git checkout -b lights")
+    scene(story, 3)
+    step("checkout", "git checkout scout")
+
+
+def deleting(story: Story) -> None:
+    """
+    Play git branch -d: a name taken off after a merge, and git's two refusals.
+
+    Parameters
+    ----------
+    story : Story
+        The story.
+    """
+    step = partial(story.step, terminal=True)
+    scene(story, 3)
+    story.at(4)
+    story.quiet("git merge -q scout")
+    step("branch-d", "git branch -d scout")
+    step("branch-d", "git log --oneline --all")
+    scene(story, 4)
+    step("branch-d-refused", "git branch -d scout")
+    scene(story, 3)
+    story.quiet("git switch -q scout")
+    step("branch-d-here", "git branch -d scout")
+
+
+def merging(story: Story) -> str:
+    """
+    Play the merges, a fast-forward and a merge commit, the graph before and after, and give the merge's message.
+
+    Parameters
+    ----------
+    story : Story
+        The story.
+
+    Returns
+    -------
+    str
+        The text git hands the editor for ``git merge scout``, comments included.
+    """
+    step = partial(story.step, terminal=True)
+    scene(story, 3)
+    story.at(4)
+    step("merge-ff", "git merge scout")
+    step("merge-ff", "git log --oneline --graph --all")
+
+    scene(story, 4)
+    step("log-graph", "git log --oneline --graph --all")
+    step("log-graph-head", "git log --oneline --graph")
+
+    scene(story, 4)
+    story.at(5)
+    step("merge", "git merge scout")
+    step("merge", "git log --oneline --graph --all")
+    step("log-graph-merged", "git log --oneline --graph --all")
+
+    scene(story, 4)
+    story.at(5)
+    step("merge-no-edit", "git merge --no-edit scout")
+    step("merge-no-edit", "git log --oneline -1")
+
+    scene(story, 4)
+    editor = story.work / "editor.sh"
+    editor.write_text(f'#!/bin/sh\ncp "$1" "{story.work}/message.txt"\n')
+    editor.chmod(0o755)
+    story.at(5)
+    story.quiet(f"GIT_MERGE_AUTOEDIT=yes GIT_EDITOR={editor} git merge -q scout")
+    return (story.work / "message.txt").read_text()
+
+
 def capture(work: Path) -> dict[str, Any]:
     """
     Run the whole story in an empty folder and give everything git printed.
@@ -473,16 +720,19 @@ def capture(work: Path) -> dict[str, Any]:
     Returns
     -------
     dict[str, Any]
-        ``version`` (git's), ``runs`` (each transcript, [{command, output}], by name) and
-        ``conflict``.
+        ``version`` (git's), ``runs`` (each transcript, [{command, output}], by name),
+        ``conflict`` and ``mergeMessage`` (what git asks the editor to confirm for a merge).
     """
     (work / ".gitconfig").write_text(gitcmd.BASE_CONFIG)
     story = Story(work=work, here=work)
     ship(story)
     move_log(story)
     found = conflict(story)
+    naming(story)
+    deleting(story)
+    message = merging(story)
     version = story.quiet("git --version").strip()
-    return {"version": version, "runs": dict(sorted(story.runs.items())), "conflict": found}
+    return {"version": version, "runs": dict(sorted(story.runs.items())), "conflict": found, "mergeMessage": message}
 
 
 def page(data: dict[str, Any]) -> str:
@@ -508,8 +758,10 @@ def page(data: dict[str, Any]) -> str:
  * git settings and fixed dates, so the hashes are the same on every run. runs[name] is a
  * transcript, [{{command, output}}]; conflict is one real merge conflict (the launch checklist):
  * the file's three stages, the file with markers, and for each way to resolve it (yours, theirs,
- * both) the clean file and the merge commit's "hash parent parent". Data only. Defines one
- * global, GuideGit.
+ * both) the clean file and the merge commit's "hash parent parent"; mergeMessage is the text git
+ * hands the editor for a merge commit. The branch and merge cards' transcripts were run on a
+ * terminal, as the game's is, and keep what its screen showed. Data only. Defines one global,
+ * GuideGit.
  */
 
 /* exported GuideGit */

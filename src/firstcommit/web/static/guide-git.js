@@ -7,8 +7,10 @@
  * git settings and fixed dates, so the hashes are the same on every run. runs[name] is a
  * transcript, [{command, output}]; conflict is one real merge conflict (the launch checklist):
  * the file's three stages, the file with markers, and for each way to resolve it (yours, theirs,
- * both) the clean file and the merge commit's "hash parent parent". Data only. Defines one
- * global, GuideGit.
+ * both) the clean file and the merge commit's "hash parent parent"; mergeMessage is the text git
+ * hands the editor for a merge commit. The branch and merge cards' transcripts were run on a
+ * terminal, as the game's is, and keep what its screen showed. Data only. Defines one global,
+ * GuideGit.
  */
 
 /* exported GuideGit */
@@ -28,12 +30,16 @@ const GuideGit = Object.freeze({
     ],
     "branch": [
       {
-        "command": "git branch test-run",
+        "command": "git branch scout",
         "output": ""
       },
       {
         "command": "git branch",
-        "output": "* main\n  test-run\n"
+        "output": "* main\n  scout\n"
+      },
+      {
+        "command": "git log --oneline",
+        "output": "59039c2 (HEAD -> main, scout) Plot the route\n3090621 Start the project\n"
       }
     ],
     "branch-at": [
@@ -52,8 +58,24 @@ const GuideGit = Object.freeze({
     ],
     "branch-d": [
       {
-        "command": "git branch -d test-run",
-        "output": "Deleted branch test-run (was 2fcec23).\n"
+        "command": "git branch -d scout",
+        "output": "Deleted branch scout (was 0797945).\n"
+      },
+      {
+        "command": "git log --oneline --all",
+        "output": "0797945 (HEAD -> main) Ready the probe\n59039c2 Plot the route\n3090621 Start the project\n"
+      }
+    ],
+    "branch-d-here": [
+      {
+        "command": "git branch -d scout",
+        "output": "error: cannot delete branch 'scout' used by worktree at '/home/you/project'\n"
+      }
+    ],
+    "branch-d-refused": [
+      {
+        "command": "git branch -d scout",
+        "output": "error: the branch 'scout' is not fully merged.\nIf you are sure you want to delete it, run 'git branch -D scout'\n"
       }
     ],
     "branch-v": [
@@ -74,8 +96,8 @@ const GuideGit = Object.freeze({
     ],
     "checkout-b": [
       {
-        "command": "git checkout -b night-watch",
-        "output": "Switched to a new branch 'night-watch'\n"
+        "command": "git checkout -b lights",
+        "output": "Switched to a new branch 'lights'\n"
       }
     ],
     "clone": [
@@ -225,7 +247,19 @@ const GuideGit = Object.freeze({
     "log-graph": [
       {
         "command": "git log --oneline --graph --all",
-        "output": "* 89a63a8 Add Pluto\n| * ada1762 Ready the probe\n|/  \n* 2fcec23 Ignore the simulator output\n* 5b05b31 Fill the tanks\n* 4cb8e58 Add Saturn\n* 74b88e5 Add the star map\n"
+        "output": "* 6c401cd (HEAD -> main) Fill the tanks\n| * 0797945 (scout) Ready the probe\n|/  \n* 59039c2 Plot the route\n* 3090621 Start the project\n"
+      }
+    ],
+    "log-graph-head": [
+      {
+        "command": "git log --oneline --graph",
+        "output": "* 6c401cd (HEAD -> main) Fill the tanks\n* 59039c2 Plot the route\n* 3090621 Start the project\n"
+      }
+    ],
+    "log-graph-merged": [
+      {
+        "command": "git log --oneline --graph --all",
+        "output": "*   b74c431 (HEAD -> main) Merge branch 'scout'\n|\\  \n| * 0797945 (scout) Ready the probe\n* | 6c401cd Fill the tanks\n|/  \n* 59039c2 Plot the route\n* 3090621 Start the project\n"
       }
     ],
     "ls": [
@@ -244,8 +278,8 @@ const GuideGit = Object.freeze({
         "output": "Merge made by the 'ort' strategy.\n probe.txt | 1 +\n 1 file changed, 1 insertion(+)\n create mode 100644 probe.txt\n"
       },
       {
-        "command": "git log --graph --oneline",
-        "output": "*   5e44729 Merge branch 'scout'\n|\\  \n| * ada1762 Ready the probe\n* | 89a63a8 Add Pluto\n|/  \n* 2fcec23 Ignore the simulator output\n* 5b05b31 Fill the tanks\n* 4cb8e58 Add Saturn\n* 74b88e5 Add the star map\n"
+        "command": "git log --oneline --graph --all",
+        "output": "*   b74c431 (HEAD -> main) Merge branch 'scout'\n|\\  \n| * 0797945 (scout) Ready the probe\n* | 6c401cd Fill the tanks\n|/  \n* 59039c2 Plot the route\n* 3090621 Start the project\n"
       }
     ],
     "merge-abort": [
@@ -260,6 +294,26 @@ const GuideGit = Object.freeze({
       {
         "command": "git status",
         "output": "On branch main\nnothing to commit, working tree clean\n"
+      }
+    ],
+    "merge-ff": [
+      {
+        "command": "git merge scout",
+        "output": "Updating 59039c2..0797945\nFast-forward\n probe.txt | 1 +\n 1 file changed, 1 insertion(+)\n create mode 100644 probe.txt\n"
+      },
+      {
+        "command": "git log --oneline --graph --all",
+        "output": "* 0797945 (HEAD -> main, scout) Ready the probe\n* 59039c2 Plot the route\n* 3090621 Start the project\n"
+      }
+    ],
+    "merge-no-edit": [
+      {
+        "command": "git merge --no-edit scout",
+        "output": "Merge made by the 'ort' strategy.\n probe.txt | 1 +\n 1 file changed, 1 insertion(+)\n create mode 100644 probe.txt\n"
+      },
+      {
+        "command": "git log --oneline -1",
+        "output": "b74c431 (HEAD -> main) Merge branch 'scout'\n"
       }
     ],
     "mergetool": [
@@ -412,18 +466,60 @@ const GuideGit = Object.freeze({
     ],
     "switch": [
       {
-        "command": "git switch main",
-        "output": "Switched to branch 'main'\nYour branch is up to date with 'origin/main'.\n"
+        "command": "ls",
+        "output": "notes.txt  route.txt\n"
+      },
+      {
+        "command": "git switch scout",
+        "output": "Switched to branch 'scout'\n"
       },
       {
         "command": "ls",
-        "output": "fuel.txt\nmap.txt\nsim-output\n"
+        "output": "notes.txt  probe.txt  route.txt\n"
+      },
+      {
+        "command": "git log --oneline --all",
+        "output": "0797945 (HEAD -> scout) Ready the probe\n59039c2 (main) Plot the route\n3090621 Start the project\n"
+      },
+      {
+        "command": "git switch main",
+        "output": "Switched to branch 'main'\n"
+      },
+      {
+        "command": "ls",
+        "output": "notes.txt  route.txt\n"
       }
     ],
     "switch-c": [
       {
-        "command": "git switch -c scout",
-        "output": "Switched to a new branch 'scout'\n"
+        "command": "git switch -c lights",
+        "output": "Switched to a new branch 'lights'\n"
+      },
+      {
+        "command": "git log --oneline",
+        "output": "59039c2 (HEAD -> lights, main) Plot the route\n3090621 Start the project\n"
+      }
+    ],
+    "switch-carry": [
+      {
+        "command": "git switch scout",
+        "output": "M\tnotes.txt\nSwitched to branch 'scout'\n"
+      },
+      {
+        "command": "git status --short",
+        "output": " M notes.txt\n"
+      }
+    ],
+    "switch-missing": [
+      {
+        "command": "git switch lights-on",
+        "output": "fatal: invalid reference: lights-on\n"
+      }
+    ],
+    "switch-refused": [
+      {
+        "command": "git switch scout",
+        "output": "error: Your local changes to the following files would be overwritten by checkout:\n\troute.txt\nPlease commit your changes or stash them before you switch branches.\nAborting\n"
       }
     ]
   },
@@ -445,5 +541,6 @@ const GuideGit = Object.freeze({
       "theirs": "b7862fe 2c7074a 5f3d6ad",
       "both": "375dcc3 2c7074a 5f3d6ad"
     }
-  }
+  },
+  "mergeMessage": "Merge branch 'scout'\n# Please enter a commit message to explain why this merge is necessary,\n# especially if it merges an updated upstream into a topic branch.\n#\n# Lines starting with '#' will be ignored, and an empty message aborts\n# the commit.\n"
 });
