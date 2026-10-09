@@ -6,6 +6,7 @@ from hypothesis import given
 from hypothesis import strategies as st
 
 from firstcommit import freeplay, gitcmd, markers, records
+from firstcommit.termlab import store
 
 CONFLICTED = (
     b"LAUNCH CHECKLIST\n"
@@ -102,3 +103,67 @@ def test_the_conflict_start_reads_as_git_wrote_it_and_resolves_to_a_file_git_acc
     gitcmd.output(lab.project, "add", freeplay.CHECKLIST)
     assert gitcmd.run(lab.project, "diff", "--cached", "--check").returncode == 0
     assert "4. Course: the Moon\n" in path.read_text()
+
+
+def clone_in_conflict(folder: Path) -> Path:
+    """Build a repository paused in a merge, with ``launch.txt`` in conflict."""
+    gitcmd.output(folder, "init", "-q", "-b", "main", "project")
+    project = folder / "project"
+    for branch, window in [("main", "06:00"), ("scout", "05:30"), ("main", "07:00")]:
+        if branch == "scout":
+            gitcmd.output(project, "switch", "-q", "-c", "scout")
+        elif window == "07:00":
+            gitcmd.output(project, "switch", "-q", "main")
+        (project / "launch.txt").write_text(f"Launch plan\nWindow: {window}\n")
+        gitcmd.output(project, "add", "launch.txt")
+        gitcmd.output(project, "commit", "-q", "-m", f"Launch at {window}", when="2026-06-01T09:00:00+00:00")
+    gitcmd.run(project, "merge", "--no-edit", "scout")
+    return project
+
+
+def test_answering_writes_the_chosen_sides_into_the_file_in_conflict_and_gives_it_back(game_home: Path) -> None:
+    project = clone_in_conflict(game_home)
+    read = markers.marked("launch.txt", (project / "launch.txt").read_bytes())["read"]
+    answered = markers.answer(project, "launch.txt", read, ["theirs"])
+    assert (project / "launch.txt").read_text() == "Launch plan\nWindow: 05:30\n"
+    assert answered == markers.marked("launch.txt", b"Launch plan\nWindow: 05:30\n")
+    assert sorted(entry.name for entry in project.iterdir()) == [".git", "launch.txt"]
+
+
+def test_answering_replaces_the_file_whole(game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    project = clone_in_conflict(game_home)
+    read = markers.marked("launch.txt", (project / "launch.txt").read_bytes())["read"]
+    replaced: list[tuple[Path, bytes]] = []
+    monkeypatch.setattr(store, "replace_bytes", lambda path, data: replaced.append((path, data)))
+    markers.answer(project, "launch.txt", read, ["yours"])
+    assert replaced == [(project / "launch.txt", b"Launch plan\nWindow: 07:00\n")]
+
+
+def test_answering_a_file_that_changed_since_it_was_read_or_is_a_link_writes_nothing(game_home: Path, tmp_path: Path) -> None:
+    project = clone_in_conflict(game_home)
+    path = project / "launch.txt"
+    read = markers.marked("launch.txt", path.read_bytes())["read"]
+    path.write_text(path.read_text() + "Pilot: Cadet\n")
+    before = path.read_bytes()
+    with pytest.raises(markers.ChangedError):
+        markers.answer(project, "launch.txt", read, ["yours"])
+    assert path.read_bytes() == before
+    outside = tmp_path / "outside.txt"
+    outside.write_bytes(before)
+    path.unlink()
+    path.symlink_to(outside)
+    with pytest.raises(markers.ChangedError):
+        markers.answer(project, "launch.txt", markers.marked("launch.txt", before)["read"], ["yours"])
+    assert outside.read_bytes() == before
+
+
+def test_answering_needs_a_file_in_conflict_and_one_choice_per_block(game_home: Path) -> None:
+    project = clone_in_conflict(game_home)
+    path = project / "launch.txt"
+    before = path.read_bytes()
+    read = markers.marked("launch.txt", before)["read"]
+    with pytest.raises(markers.NotInConflictError):
+        markers.answer(project, "notes.txt", read, ["yours"])
+    with pytest.raises(ValueError, match="1 conflict blocks, 2 choices"):
+        markers.answer(project, "launch.txt", read, ["yours", "theirs"])
+    assert path.read_bytes() == before

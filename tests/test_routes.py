@@ -742,6 +742,34 @@ def test_a_resolve_of_a_changed_file_conflicts_and_a_wrong_number_of_choices_is_
     assert api(site, "/api/playground/resolve", body) == (400, {"error": "1 conflict blocks, 2 choices"})
 
 
+def test_a_levels_resolve_sends_the_file_the_hash_read_and_the_choices(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
+    reply = {"file": {"path": "launch.txt", "read": "ab" * 32, "parts": []}}
+    calls = record(monkeypatch, "resolve", reply)
+    body = {"file": "launch.txt", "read": "cd" * 32, "choices": ["theirs", "both"]}
+    assert api(site, "/api/resolve", body) == (200, reply)
+    assert calls == [("launch.txt", "cd" * 32, ["theirs", "both"])]
+
+
+@pytest.mark.parametrize("change", [{"file": 3}, {"file": ""}, {"read": "xyz"}, {"choices": ["mine"]}, {"choices": ["yours"] * 1001}])
+def test_a_levels_resolve_needs_a_file_a_hash_and_known_choices(site: Site, monkeypatch: pytest.MonkeyPatch, change: dict[str, Any]) -> None:
+    calls = record(monkeypatch, "resolve", {})
+    body = {"file": "launch.txt", "read": "cd" * 32, "choices": ["yours"], **change}
+    assert api(site, "/api/resolve", body)[0] == 400
+    assert calls == []
+
+
+def test_a_levels_resolve_tells_a_changed_file_wrong_choices_an_unknown_file_and_no_level_apart(site: Site, monkeypatch: pytest.MonkeyPatch) -> None:
+    body = {"file": "launch.txt", "read": "cd" * 32, "choices": ["yours"]}
+    record(monkeypatch, "resolve", error=game.FileChangedError("launch.txt changed since it was read"))
+    assert api(site, "/api/resolve", body) == (409, {"error": "launch.txt changed since it was read", "kind": "changed"})
+    record(monkeypatch, "resolve", error=game.WrongChoicesError("2 conflict blocks, 1 choices"))
+    assert api(site, "/api/resolve", body) == (400, {"error": "2 conflict blocks, 1 choices"})
+    record(monkeypatch, "resolve", error=game.UnknownIdError("no file in conflict named 'launch.txt'"))
+    assert api(site, "/api/resolve", body) == (404, {"error": "no file in conflict named 'launch.txt'"})
+    record(monkeypatch, "resolve", error=game.NotPlayingError("no level is in progress"))
+    assert api(site, "/api/resolve", body) == (409, {"error": "no level is in progress"})
+
+
 def test_the_real_free_playground_starts_and_is_observed(site: Site) -> None:
     status, started = api(site, "/api/playground/start", {"start": "alex-ahead"})
     assert (status, started["current"]) == (200, {"start": "alex-ahead", "started": started["current"]["started"], "view": "history", "alex": True, "whose": "you"})
@@ -802,6 +830,7 @@ def test_every_route_is_a_get_or_post_under_api() -> None:
         ("POST", "/api/card"),
         ("GET", "/api/notes"),
         ("POST", "/api/press"),
+        ("POST", "/api/resolve"),
         ("POST", "/api/scene"),
         ("POST", "/api/language"),
         ("POST", "/api/view"),

@@ -859,6 +859,7 @@
     ]
    }
   ],
+  "marked": [],
   "reflog": [
    {
     "old": "5941dbe0000000000000000000000000000000aa",
@@ -1707,6 +1708,7 @@
    "commands": [],
    "reactions": [],
    "conflicts": [],
+   "marked": [],
    "reflog": [],
    "ghosts": [],
    "texts": [
@@ -2143,6 +2145,7 @@
    "commands": [],
    "reactions": [],
    "conflicts": [],
+   "marked": [],
    "reflog": [],
    "ghosts": [],
    "texts": [

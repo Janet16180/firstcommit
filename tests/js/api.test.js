@@ -487,6 +487,19 @@ test("a click-to-keep write names the person, the file, the text it was read fro
   assert.deepEqual(calls.map((call) => [call.path, call.body]), [["/api/playground/resolve", { person: "you", file: "checklist.txt", read: "r1", choices: ["yours", "both"] }]]);
 });
 
+test("a level's merge panel write names the file, the text it was read from and a choice per block", async () => {
+  const { game, calls } = gameApi({ "/api/resolve": { file: Pg.marked() } });
+  assert.deepEqual(await game.resolve({ file: "launch.txt", read: "r1", choices: ["theirs", "both"] }), { file: Pg.marked() });
+  await assert.rejects(gameApi({ "/api/resolve": { file: null } }).game.resolve({ file: "x", read: "r", choices: [] }), /file/);
+  assert.deepEqual(calls.map((call) => [call.path, call.body]), [["/api/resolve", { file: "launch.txt", read: "r1", choices: ["theirs", "both"] }]]);
+});
+
+test("a level's observation carries its files in conflict as the merge panel reads them", async () => {
+  const observation = { ...record("observation"), marked: [Pg.marked()] };
+  assert.deepEqual(await gameApi({ "/api/observe": observation }).game.observe(), observation);
+  await assert.rejects(gameApi({ "/api/observe": { ...record("observation"), marked: [{ path: "x" }] } }).game.observe(), /marked/);
+});
+
 test("the game's own playground records are accepted as they are", async () => {
   const { game } = gameApi({ "/api/playground": record("playground"), "/api/playground/observe": record("playground_observation"), "/api/playground/resolve": record("resolve") });
   assert.deepEqual(await game.playground(), record("playground"));
