@@ -139,7 +139,10 @@ uv run firstcommit --help
   configuration can never change a level, and a lab never falls through to a repository above
   it). The player's real `~/.gitconfig` and repositories are never read or changed.
 - No hooks, no filters, no aliases that run programs, apart from the stand-in GitHub's one
-  `post-receive` hook that `kit.on_push` writes for Alex. No root.
+  `post-receive` hook that `kit.on_push` writes for Alex, and the game's own merge tool: `merge.tool =
+  firstcommit` and its `mergetool.firstcommit.cmd` (`gitcmd.MERGETOOL_SETTINGS`), set only in the game's
+  environment as `GIT_CONFIG_COUNT` entries, never in a lab's `.git/config` or any file of a lab.
+  `git mergetool` runs it, and it opens the page's merge panel (`firstcommit.mergetool`). No root.
 - Build every repository with git commands (`init`, `commit`, `clone` from another lab
   repository). Never copy, unpack or download a `.git` folder: its configuration could name
   programs that git runs. The game's own git commands refuse the known ones (`gitcmd.NO_PROGRAMS`),
