@@ -6,7 +6,8 @@ line and the page only render blocks, so the layout rules live in one place.
 
 A code span is a run of backticks, its text, and a run of as many backticks (as in CommonMark),
 so `code` can write any name or subject a player chose as one code span that can never forge
-paragraphs, bullets or other code in the game's voice.
+paragraphs, bullets or other code in the game's voice. Text between single asterisks, outside
+code, is shown in italics: the game uses them for a commit's subject, such as *Plot the route*.
 """
 
 import re
@@ -17,6 +18,9 @@ PARAGRAPH_BREAK = re.compile(r"\n(?:[ \t]*\n)+")
 # An opening run of backticks, the shortest text, then a closing run of exactly as many.
 CODE_SPAN = re.compile(r"(?<!`)(`+)(?!`)(.+?)(?<!`)\1(?!`)")
 BACKTICK_RUN = re.compile(r"`+")
+# An asterisk with no word or asterisk before it and text right after, the shortest text, then an
+# asterisk with text right before it and no word or asterisk after: "2 * 3" stays as written.
+ITALICS = re.compile(r"(?<![\w*])\*(?=[^\s*])(.+?)(?<=[^\s*])\*(?![\w*])")
 WHITESPACE = re.compile(r"\s+")
 CONTROL = re.compile("[\x00-\x1f\x7f-\x9f]")
 GIT_ESCAPES = {"\a": "\\a", "\b": "\\b", "\t": "\\t", "\n": "\\n", "\v": "\\v", "\f": "\\f", "\r": "\\r"}
@@ -26,10 +30,11 @@ BULLET = "- "
 
 
 class Span(TypedDict):
-    """A run of text inside a paragraph or bullet; ``code`` marks text written in backticks."""
+    """A run of text inside a paragraph or bullet; ``code`` marks text written in backticks, ``em`` text in italics."""
 
     text: str
     code: bool
+    em: bool
 
 
 class Para(TypedDict):
@@ -155,14 +160,14 @@ def _spans(text: str) -> list[Span]:
     position = 0
     for match in CODE_SPAN.finditer(text):
         spans += _prose_span(text[position : match.start()])
-        spans.append({"text": _code_text(match[2]), "code": True})
+        spans.append({"text": _code_text(match[2]), "code": True, "em": False})
         position = match.end()
     return spans + _prose_span(text[position:])
 
 
 def _prose_span(text: str) -> list[Span]:
     """
-    Make the plain text between code spans into a span.
+    Make the plain text between code spans into spans: plain text, and the text between asterisks in italics.
 
     Parameters
     ----------
@@ -172,10 +177,19 @@ def _prose_span(text: str) -> list[Span]:
     Returns
     -------
     list[Span]
-        One span, or none for empty text.
+        Non-empty spans, in order; none for empty text.
     """
     collapsed = WHITESPACE.sub(" ", text)
-    return [{"text": collapsed, "code": False}] if collapsed else []
+    spans: list[Span] = []
+    position = 0
+    for match in ITALICS.finditer(collapsed):
+        if match.start() > position:
+            spans.append({"text": collapsed[position : match.start()], "code": False, "em": False})
+        spans.append({"text": match[1], "code": False, "em": True})
+        position = match.end()
+    if position < len(collapsed):
+        spans.append({"text": collapsed[position:], "code": False, "em": False})
+    return spans
 
 
 def _code_text(content: str) -> str:

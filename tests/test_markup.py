@@ -106,12 +106,12 @@ def test_the_visible_form_holds_no_control_character(text: str) -> None:
 @given(st.text(min_size=1))
 def test_any_text_written_as_code_reads_back_as_one_code_span_showing_it(text: str) -> None:
     assert markup.parse("x " + markup.code(text) + " y") == [
-        {"kind": "para", "spans": [{"text": "x ", "code": False}, {"text": markup.visible(text), "code": True}, {"text": " y", "code": False}]}
+        {"kind": "para", "spans": [{"text": "x ", "code": False, "em": False}, {"text": markup.visible(text), "code": True, "em": False}, {"text": " y", "code": False, "em": False}]}
     ]
 
 
 def test_empty_text_written_as_code_shows_one_space() -> None:
-    assert markup.parse("x " + markup.code("") + " y")[0] == {"kind": "para", "spans": [{"text": "x ", "code": False}, {"text": " ", "code": True}, {"text": " y", "code": False}]}
+    assert markup.parse("x " + markup.code("") + " y")[0] == {"kind": "para", "spans": [{"text": "x ", "code": False, "em": False}, {"text": " ", "code": True, "em": False}, {"text": " y", "code": False, "em": False}]}
 
 
 @pytest.mark.parametrize(

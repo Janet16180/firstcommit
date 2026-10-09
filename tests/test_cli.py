@@ -230,11 +230,15 @@ def test_text_is_rendered_as_wrapped_paragraphs_code_and_bullets() -> None:
     assert "  - `one`\n  - two" in rendered
 
 
+def test_a_commits_subject_in_italics_is_shown_in_quotes_on_the_command_line() -> None:
+    assert cli.render(markup.parse("Put it on *Plot the route*, by its hash.")).strip() == 'Put it on "Plot the route", by its hash.'
+
+
 def test_control_characters_never_reach_the_players_terminal() -> None:
     blocks: list[markup.Block] = [
-        {"kind": "para", "spans": [{"text": "esc\x1b]0;PWNED\x07title", "code": True}, {"text": " is untracked\x9b.", "code": False}]},
+        {"kind": "para", "spans": [{"text": "esc\x1b]0;PWNED\x07title", "code": True, "em": False}, {"text": " is untracked\x9b.", "code": False, "em": False}]},
         {"kind": "code", "text": "line one\x1b[2K\nline two\x7f"},
-        {"kind": "bullets", "items": [[{"text": "bell\x07", "code": False}]]},
+        {"kind": "bullets", "items": [[{"text": "bell\x07", "code": False, "em": False}]]},
     ]
     rendered = cli.render(blocks)
     assert not any(ord(char) < 0x20 and char != "\n" or 0x7F <= ord(char) <= 0x9F for char in rendered)

@@ -31,7 +31,7 @@ const ScenePlayer = (function () {
     return paragraphs.map((spans) => el("p", {}, spans.map((span) => {
       const part = span.text.slice(0, Math.max(0, left));
       left -= span.text.length;
-      return part && (span.code ? el("code", {}, part) : part);
+      return part && (span.code ? el("code", {}, part) : span.em ? el("em", {}, part) : part);
     })));
   }
 

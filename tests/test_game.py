@@ -1205,7 +1205,7 @@ def test_observing_the_lab_snapshots_it_and_tells_what_changed(sample_level: run
     assert second["events"] == [
         {
             "kind": "file-created",
-            "text": [{"kind": "para", "spans": [{"text": "notes.txt", "code": True}, {"text": " appeared.", "code": False}]}],
+            "text": [{"kind": "para", "spans": [{"text": "notes.txt", "code": True, "em": False}, {"text": " appeared.", "code": False, "em": False}]}],
         }
     ]
     assert game.observe()["events"] == []
@@ -1968,7 +1968,7 @@ source = "git-commit(1)"
     (view,) = game.due_cards("branch", 5)
     right = next(option for option in view["choices"] if option["value"] == "`note.txt` as it was when you ran `git add`")
     assert right["text"] == [
-        {"kind": "para", "spans": [{"text": "note.txt", "code": True}, {"text": " as it was when you ran ", "code": False}, {"text": "git add", "code": True}]}
+        {"kind": "para", "spans": [{"text": "note.txt", "code": True, "em": False}, {"text": " as it was when you ran ", "code": False, "em": False}, {"text": "git add", "code": True, "em": False}]}
     ]
     result = game.answer_card("branch-ticks", right["value"])
     assert (result["correct"], result["answer"], result["answer_text"]) == (True, right["value"], right["text"])

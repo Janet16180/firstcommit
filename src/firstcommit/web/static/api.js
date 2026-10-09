@@ -36,7 +36,7 @@ const createGameApi = (function () {
     for (const [key, item] of Object.entries(value)) spec(item, `${where}.${key}`);
   };
 
-  const SPANS = list(record({ text, code: flag }));
+  const SPANS = list(record({ text, code: flag, em: flag }));
   const BLOCK_KINDS = {
     para: record({ spans: SPANS }),
     code: record({ text }),

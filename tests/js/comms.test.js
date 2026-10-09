@@ -7,7 +7,7 @@ const { installBrowser, load } = require("./load");
 installBrowser();
 const { Comms } = load(["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "comms.js"], ["Comms"]);
 
-const para = (text) => [{ kind: "para", spans: [{ text, code: false }] }];
+const para = (text) => [{ kind: "para", spans: [{ text, code: false, em: false }] }];
 
 test("Rama's line shows Rama, who is speaking, and is announced politely", () => {
   const comms = Comms.create();

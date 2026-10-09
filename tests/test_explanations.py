@@ -131,7 +131,7 @@ def test_an_explanation_writes_its_file_as_code_in_the_games_markup() -> None:
     found = explained(e12)
     [paragraph] = markup.parse(found["text"])
     assert paragraph["kind"] == "para"
-    assert {"text": found["file"], "code": True} in paragraph["spans"]
+    assert {"text": found["file"], "code": True, "em": False} in paragraph["spans"]
 
 
 def test_a_refusal_no_rule_explains_adds_nothing_to_gits_own_message() -> None:

@@ -11,12 +11,17 @@ installBrowser();
 const { Markup } = load(["dom.js", "markup.js"], ["Markup"]);
 const SHARED_FIXTURE = path.join(__dirname, "..", "fixtures", "markup.json");
 
-const span = (text, code = false) => ({ text, code });
+const span = (text, code = false, em = false) => ({ text, code, em });
 const rendered = (blocks) => Markup.render(blocks).map(html).join("");
 
 test("a paragraph shows its spans, with code spans as code", () => {
   const blocks = [{ kind: "para", spans: [span("Open "), span("README.md", true), span(" now.")] }];
   assert.equal(rendered(blocks), "<p>Open <code>README.md</code> now.</p>");
+});
+
+test("a commit's subject in italics shows as emphasis", () => {
+  const blocks = [{ kind: "para", spans: [span("Put it on "), span("Plot the route", false, true), span(".")] }];
+  assert.equal(rendered(blocks), "<p>Put it on <em>Plot the route</em>.</p>");
 });
 
 test("blocks fold under a closed More, and no blocks fold nothing", () => {

@@ -18,7 +18,8 @@
         "spans": [
           {
             "text": "Git keeps the history of your project.",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       }
@@ -33,7 +34,8 @@
         "spans": [
           {
             "text": "Two spaces and a tab.",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       }
@@ -48,7 +50,8 @@
         "spans": [
           {
             "text": "First.",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       },
@@ -57,7 +60,8 @@
         "spans": [
           {
             "text": "Second.",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       }
@@ -72,7 +76,8 @@
         "spans": [
           {
             "text": "First.",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       },
@@ -81,7 +86,8 @@
         "spans": [
           {
             "text": "Second.",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       }
@@ -96,15 +102,18 @@
         "spans": [
           {
             "text": "Run ",
-            "code": false
+            "code": false,
+            "em": false
           },
           {
             "text": "git status",
-            "code": true
+            "code": true,
+            "em": false
           },
           {
             "text": " to look.",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       }
@@ -119,15 +128,18 @@
         "spans": [
           {
             "text": "main",
-            "code": true
+            "code": true,
+            "em": false
           },
           {
             "text": " is a branch, like ",
-            "code": false
+            "code": false,
+            "em": false
           },
           {
             "text": "topic",
-            "code": true
+            "code": true,
+            "em": false
           }
         ]
       }
@@ -142,15 +154,18 @@
         "spans": [
           {
             "text": "Type ",
-            "code": false
+            "code": false,
+            "em": false
           },
           {
             "text": "git commit -m",
-            "code": true
+            "code": true,
+            "em": false
           },
           {
             "text": " then a message.",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       }
@@ -165,7 +180,8 @@
         "spans": [
           {
             "text": "A lone ` stays.",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       }
@@ -180,7 +196,8 @@
         "spans": [
           {
             "text": "An empty pair `` stays.",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       }
@@ -195,15 +212,18 @@
         "spans": [
           {
             "text": "Run ",
-            "code": false
+            "code": false,
+            "em": false
           },
           {
             "text": "a`b",
-            "code": true
+            "code": true,
+            "em": false
           },
           {
             "text": " now.",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       }
@@ -218,11 +238,13 @@
         "spans": [
           {
             "text": "`main`",
-            "code": true
+            "code": true,
+            "em": false
           },
           {
             "text": " is quoted.",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       }
@@ -237,15 +259,18 @@
         "spans": [
           {
             "text": "The file ",
-            "code": false
+            "code": false,
+            "em": false
           },
           {
             "text": "my  notes.txt",
-            "code": true
+            "code": true,
+            "em": false
           },
           {
             "text": " has two spaces.",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       }
@@ -260,15 +285,18 @@
         "spans": [
           {
             "text": "A name made of one space: ",
-            "code": false
+            "code": false,
+            "em": false
           },
           {
             "text": " ",
-            "code": true
+            "code": true,
+            "em": false
           },
           {
             "text": ".",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       }
@@ -283,7 +311,8 @@
         "spans": [
           {
             "text": "Not closed: `` a ` b.",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       }
@@ -298,7 +327,8 @@
         "spans": [
           {
             "text": "Look:",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       },
@@ -311,7 +341,8 @@
         "spans": [
           {
             "text": "That is the history.",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       }
@@ -326,7 +357,8 @@
         "spans": [
           {
             "text": "The file:",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       },
@@ -355,7 +387,8 @@
         "spans": [
           {
             "text": "$ git init makes a repository.",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       }
@@ -370,7 +403,8 @@
         "spans": [
           {
             "text": "Print the date:",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       },
@@ -390,19 +424,22 @@
           [
             {
               "text": "the working folder",
-              "code": false
+              "code": false,
+              "em": false
             }
           ],
           [
             {
               "text": "the staging area",
-              "code": false
+              "code": false,
+              "em": false
             }
           ],
           [
             {
               "text": "the commits",
-              "code": false
+              "code": false,
+              "em": false
             }
           ]
         ]
@@ -419,13 +456,15 @@
           [
             {
               "text": "a commit records every file",
-              "code": false
+              "code": false,
+              "em": false
             }
           ],
           [
             {
               "text": "a branch names a commit",
-              "code": false
+              "code": false,
+              "em": false
             }
           ]
         ]
@@ -441,7 +480,8 @@
         "spans": [
           {
             "text": "Commands to keep:",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       },
@@ -451,21 +491,25 @@
           [
             {
               "text": "git status",
-              "code": true
+              "code": true,
+              "em": false
             },
             {
               "text": " shows the three areas",
-              "code": false
+              "code": false,
+              "em": false
             }
           ],
           [
             {
               "text": "git add",
-              "code": true
+              "code": true,
+              "em": false
             },
             {
               "text": " stages a file",
-              "code": false
+              "code": false,
+              "em": false
             }
           ]
         ]
@@ -481,7 +525,8 @@
         "spans": [
           {
             "text": "-q keeps git quiet.",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       }
@@ -496,7 +541,8 @@
         "spans": [
           {
             "text": "A lesson written inside code. It wraps.",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       },
@@ -515,7 +561,8 @@
         "spans": [
           {
             "text": "On branch main nothing to commit",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       }
@@ -530,13 +577,201 @@
         "spans": [
           {
             "text": "Run:",
-            "code": false
+            "code": false,
+            "em": false
           }
         ]
       },
       {
         "kind": "code",
         "text": "$ git add .\n$ git commit"
+      }
+    ]
+  },
+  {
+    "name": "asterisks mark a commit's subject in italics",
+    "text": "Put it on *Plot the route*, by its hash.",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "Put it on ",
+            "code": false,
+            "em": false
+          },
+          {
+            "text": "Plot the route",
+            "code": false,
+            "em": true
+          },
+          {
+            "text": ", by its hash.",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "italics may run over a line break",
+    "text": "an old name on *Start the\nproject* can go",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "an old name on ",
+            "code": false,
+            "em": false
+          },
+          {
+            "text": "Start the project",
+            "code": false,
+            "em": true
+          },
+          {
+            "text": " can go",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "italics can open and close a paragraph",
+    "text": "*Fix the route*",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "Fix the route",
+            "code": false,
+            "em": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "an asterisk next to a space stays as written",
+    "text": "2 * 3 and 4 *",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "2 * 3 and 4 *",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "an unmatched asterisk stays as written",
+    "text": "*Plot the route",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "*Plot the route",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "asterisks inside code stay as written",
+    "text": "Run `git add *.txt *` now.",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "Run ",
+            "code": false,
+            "em": false
+          },
+          {
+            "text": "git add *.txt *",
+            "code": true,
+            "em": false
+          },
+          {
+            "text": " now.",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "italics stay inside the prose between code spans",
+    "text": "`main` is on *Fix the route*, not `test-run`.",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "main",
+            "code": true,
+            "em": false
+          },
+          {
+            "text": " is on ",
+            "code": false,
+            "em": false
+          },
+          {
+            "text": "Fix the route",
+            "code": false,
+            "em": true
+          },
+          {
+            "text": ", not ",
+            "code": false,
+            "em": false
+          },
+          {
+            "text": "test-run",
+            "code": true,
+            "em": false
+          },
+          {
+            "text": ".",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "asterisks in a verbatim block stay as written",
+    "text": "Output:\n\n  *not italics*",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "Output:",
+            "code": false,
+            "em": false
+          }
+        ]
+      },
+      {
+        "kind": "code",
+        "text": "*not italics*"
       }
     ]
   }

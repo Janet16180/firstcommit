@@ -361,5 +361,5 @@ def _wrap(spans: list[Span], first: str, rest: str) -> str:
     str
         The wrapped lines; long words such as hashes are never broken.
     """
-    text = "".join(f"`{span['text']}`" if span["code"] else span["text"] for span in spans)
+    text = "".join(f"`{span['text']}`" if span["code"] else f'"{span["text"]}"' if span["em"] else span["text"] for span in spans)
     return textwrap.fill(text, width=WIDTH, initial_indent=first, subsequent_indent=rest, break_long_words=False, break_on_hyphens=False)

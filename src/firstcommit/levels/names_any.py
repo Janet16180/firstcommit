@@ -26,7 +26,7 @@ CARD = kit.CommandCard(
 SCENE = [
     kit.SceneFrame(
         art="chain",
-        text="After your pull, `main` slid up to Alex's fix, and your bookmark and the pin of the remote (the mothership) are there too. `test-run` is still on Start the project.",
+        text="After your pull, `main` slid up to Alex's fix, and your bookmark and the pin of the remote (the mothership) are there too. `test-run` is still on *Start the project*.",
     ),
 ]
 
@@ -37,10 +37,10 @@ TO_FIRST_ROUTE = kit.switching(story.FIRST_ROUTE)
 
 BRIEFING = """
 Before this mission you ran `git pull`, the step the last mission ended on, so `main` is on Alex's
-fix, Fix the route. `test-run`, an old name on Start the project, can go. Then the captain wants
+fix, *Fix the route*. `test-run`, an old name on *Start the project*, can go. Then the captain wants
 the commit where the route was first plotted easy to find, under a name `first-route`.
 
-The mission is done when `test-run` is gone, `first-route` names Plot the route, and you have
+The mission is done when `test-run` is gone, `first-route` names *Plot the route*, and you have
 checked the history after each change.
 """
 
@@ -66,15 +66,15 @@ Commands to keep:
 NO_REPOSITORY = "This folder is no longer a repository: `.git` is gone. Leave the level and start it again to get it back."
 LOGGED = (
     "Each line starts with the commit's hash: the way to name a commit to Git. Each commit remembers the one before it, "
-    "its parent: `git log` starts at `main`'s commit and follows those lines down to the first commit, Start the project, with `test-run` on it."
+    "its parent: `git log` starts at `main`'s commit and follows those lines down to the first commit, *Start the project*, with `test-run` on it."
 )
 NOT_LOGGED = "Read the history: `git log --oneline`."
 NOT_DELETED = "`test-run` is still there. Take the name off: `git branch -d test-run`."
 DELETED = 'Git says which commit the name pointed at: look at "was" and the hash after it. The commit is still there.'
-LOGGED_AGAIN = "Still five commits. Only a name went. Now find Plot the route, one line up: its hash is the one you need next."
+LOGGED_AGAIN = "Still five commits. Only a name went. Now find *Plot the route*, one line up: its hash is the one you need next."
 NOT_LOGGED_AGAIN = "Check the history: `git log --oneline`."
-NOT_NAMED = "There is no `first-route` yet. Put it on Plot the route: `git branch first-route` and that commit's hash, from `git log --oneline`."
-ELSEWHERE = "`first-route` is on another commit. Take it off with `git branch -d first-route`, then put it on Plot the route, by the hash `git log --oneline` shows for it."
+NOT_NAMED = "There is no `first-route` yet. Put it on *Plot the route*: `git branch first-route` and that commit's hash, from `git log --oneline`."
+ELSEWHERE = "`first-route` is on another commit. Take it off with `git branch -d first-route`, then put it on *Plot the route*, by the hash `git log --oneline` shows for it."
 NAMED = "A name on an old commit, and nothing else moved. Without a hash, `git branch` puts the name where you are."
 LOGGED_THIRD = "`git log` shows the new name in brackets on its commit."
 NOT_LOGGED_THIRD = "Check the history: `git log --oneline`."
@@ -88,7 +88,7 @@ DELETE_GUESS = kit.ChoiceStep(
     id="guess-delete",
     look=("Start the project",),
     text="Predict first.",
-    question="You take the name `test-run` off with `git branch -d test-run`. What happens to the Start the project commit?",
+    question="You take the name `test-run` off with `git branch -d test-run`. What happens to the *Start the project* commit?",
     options=("It is deleted too", "It stays"),
     reveal="It stays. A name points at a commit; it is not the commit. And `main` still leads down the lines to it.",
 )
@@ -96,7 +96,7 @@ NAME_GUESS = kit.ChoiceStep(
     id="guess-name",
     look=("Plot the route",),
     text="Predict first.",
-    question="You put a new name `first-route` on Plot the route, by its hash. What happens to your folder?",
+    question="You put a new name `first-route` on *Plot the route*, by its hash. What happens to your folder?",
     options=("It shows that commit's files", "Nothing changes"),
     reveal="Nothing changes. `git branch` only writes a name. `HEAD` stays on `main`, so your files stay as they are.",
 )

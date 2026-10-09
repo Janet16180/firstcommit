@@ -7,7 +7,7 @@ const { createClock, installBrowser, load, settle } = require("./load");
 const document = installBrowser();
 const { Completion } = load(["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "completion.js"], ["Completion"]);
 
-const para = (text) => [{ kind: "para", spans: [{ text, code: false }] }];
+const para = (text) => [{ kind: "para", spans: [{ text, code: false, em: false }] }];
 
 test("the band crosses the screen with the title and the mission, with sparks, then leaves by itself", async () => {
   const clock = createClock();

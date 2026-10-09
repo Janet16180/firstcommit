@@ -7,7 +7,7 @@ const { createClock, installBrowser, load, settle } = require("./load");
 const document = installBrowser();
 const { ScenePlayer, ArtScenes, Strings } = load(["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-scenes.js", "scene.js"], ["ScenePlayer", "ArtScenes", "Strings"]);
 
-const line = (art, ...spans) => ({ art, text: [{ kind: "para", spans: spans.map((span) => (Array.isArray(span) ? { text: span[0], code: true } : { text: span, code: false })) }] });
+const line = (art, ...spans) => ({ art, text: [{ kind: "para", spans: spans.map((span) => (Array.isArray(span) ? { text: span[0], code: true, em: false } : { text: span, code: false, em: false })) }] });
 const SCENE = [line("space", "I am Rama."), line("flag", "Plant the flag with ", ["git init"], ".")];
 
 function play({ reducedMotion = false, scene = SCENE } = {}) {
@@ -58,6 +58,13 @@ test("Next on the last line closes the scene", async () => {
   assert.equal(run.over(), 1);
   assert.equal(document.body.querySelector("dialog.cutscene"), null);
   assert.equal(run.clock.pending(), 0);
+});
+
+test("a commit's subject in italics types in as emphasis", () => {
+  const scene = [{ art: "space", text: [{ kind: "para", spans: [{ text: "Back to ", code: false, em: false }, { text: "Plot the route", code: false, em: true }] }] }];
+  const run = play({ reducedMotion: true, scene });
+  assert.equal(run.q(".cs-txt em").textContent, "Plot the route");
+  run.q(".cs-skip").click();
 });
 
 test("Skip closes the scene at once", async () => {

@@ -3,7 +3,7 @@
 /*
  * Showing the game's text. The server parses every text (firstcommit/markup.py) into blocks:
  * {kind: "para", spans}, {kind: "code", text} and {kind: "bullets", items: [spans]}, where a
- * span is {text, code}. This only turns blocks into elements; it never parses text itself
+ * span is {text, code, em}: code in backticks, or a commit's subject in italics. This only turns blocks into elements; it never parses text itself
  * (Ring Zero audit JS-8). Needs dom.js. Defines one global, Markup.
  */
 
@@ -21,7 +21,8 @@ const Markup = (() => {
     return el("code", { class: "words" }, words.flatMap((word, index) => (index ? [" ", el("span", {}, word)] : [el("span", {}, word)])));
   }
 
-  const spans = (list) => list.map((span) => (span.code ? codeSpan(span.text) : span.text));
+  const spanElement = (span) => (span.code ? codeSpan(span.text) : span.em ? el("em", {}, span.text) : span.text);
+  const spans = (list) => list.map(spanElement);
 
   const BLOCKS = {
     para: (block) => el("p", {}, spans(block.spans)),

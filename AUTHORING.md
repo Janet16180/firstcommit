@@ -534,6 +534,10 @@ All text is parsed by `firstcommit.markup` (the page and the command line only r
 - Lines starting with `- ` are bullets.
 - `backticks` mark commands, file names, branch names and hashes. A code span opened by two or
   more backticks closes on as many, so it can hold a backtick: ``` `` a`b `` ```.
+- `*asterisks*` put a commit's subject in italics, as in "`first-route` names *Plot the route*";
+  the page shows them as emphasis and the command line in quotes. Italics mean a commit's subject
+  and nothing else, and every subject of a level's lab named in its text is in italics
+  (`tests/test_levels.py` checks it). An asterisk next to a space stays as written: `2 * 3`.
 - Anything the player chose (a file name, a branch, a commit subject, a typed answer) goes into a
   message through `kit.code(text)`: it shows as one code span whatever it holds, with control
   characters escaped as git does, so it can never forge a paragraph, a bullet or other code.

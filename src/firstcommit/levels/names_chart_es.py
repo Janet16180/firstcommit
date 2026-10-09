@@ -40,6 +40,6 @@ STEPS = {
 NO_REPOSITORY = "Esta carpeta ya no es un repositorio: `.git` desapareció. Sal del nivel y vuelve a empezarlo para recuperarlo."
 MATCHED = "Tus nombres coinciden con el mapa del capitán, y el dibujo de git en la terminal está de acuerdo: `HEAD -> lights-v2` en el experimento de las luces."
 NOT_MATCHED = "Tus nombres todavía no coinciden con el mapa del capitán."
-WRONG_SIDE = "`lights-v2` quedó donde estaba `HEAD`, en el commit de `main`. El mapa lo quiere en Try bright lights: ve primero a `bright-lights`."
+WRONG_SIDE = "`lights-v2` quedó donde estaba `HEAD`, en el commit de `main`. El mapa lo quiere en *Try bright lights*: ve primero a `bright-lights`."
 COMMITS_CHANGED = "El mapa deja cada commit como está. Vuelve a empezar la misión para intentarlo otra vez."
 USED_BY_WORKTREE = '"Used by worktree" significa que tu carpeta muestra ese branch: `HEAD` está en él. Git no quita el nombre donde está `HEAD`. Mueve `HEAD` primero.'

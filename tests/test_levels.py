@@ -14,7 +14,7 @@ from types import ModuleType
 import pytest
 
 import sample_levels
-from firstcommit import game, kit, levels, runner
+from firstcommit import game, kit, levels, markup, runner
 from firstcommit.termlab import sandbox
 from game_words import unpaired
 
@@ -386,6 +386,21 @@ def test_a_steps_look_names_head_or_a_commit_its_lab_holds_once_solved(level: ru
     level.solve(runner.lab_of(level.id), state, [])
     subjects = set(kit.git(runner.lab_of(level.id).project, "log", "--all", "--format=%s").splitlines())
     assert {subject for step in level.quest for subject in step.look} <= subjects | {"HEAD"}
+
+
+@pytest.mark.parametrize("level", runner.catalogue().values(), ids=lambda level: level.id)
+def test_a_level_names_each_commit_of_its_lab_by_its_subject_in_italics(level: runner.Level, game_home: Path) -> None:
+    state = runner.start_lab(level)
+    lab = runner.lab_of(level.id)
+    level.solve(lab, state, [])
+    repositories = [repository for repository in (lab.project, lab.github) if (repository / "HEAD").exists() or (repository / ".git").exists()]
+    subjects = {subject for repository in repositories for subject in kit.git(repository, "log", "--all", "--format=%s").splitlines()}
+    for language in ("en", "es"):
+        blocks = markup.parse(every_text(level, language))
+        spans = [span for block in blocks if block["kind"] == "para" for span in block["spans"]]
+        spans += [span for block in blocks if block["kind"] == "bullets" for item in block["items"] for span in item]
+        bare = sorted({subject for span in spans if not span["code"] and not span["em"] for subject in subjects if re.search(rf"(?<!\w){re.escape(subject)}(?!\w)", span["text"])})
+        assert bare == [], f"{language}: write each of these commit subjects in italics, as *...*"
 
 
 def test_each_level_opens_on_the_main_view_of_the_plan() -> None:

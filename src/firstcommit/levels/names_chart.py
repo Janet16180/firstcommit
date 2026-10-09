@@ -80,7 +80,7 @@ Commands to keep:
 NO_REPOSITORY = "This folder is no longer a repository: `.git` is gone. Leave the level and start it again to get it back."
 MATCHED = "Your names match the captain's chart, and git's drawing in the terminal agrees: `HEAD -> lights-v2` on the bright-lights experiment."
 NOT_MATCHED = "Your names do not match the captain's chart yet."
-WRONG_SIDE = "`lights-v2` is where `HEAD` was, on `main`'s commit. The chart wants it on Try bright lights: go to `bright-lights` first."
+WRONG_SIDE = "`lights-v2` is where `HEAD` was, on `main`'s commit. The chart wants it on *Try bright lights*: go to `bright-lights` first."
 COMMITS_CHANGED = "The chart keeps every commit as it is. Start the mission again to try again."
 USED_BY_WORKTREE = '"Used by worktree" means your folder is showing that branch: `HEAD` is on it. Git will not take off the name `HEAD` is on. Move `HEAD` first.'
 

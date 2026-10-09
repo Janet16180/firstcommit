@@ -144,7 +144,7 @@ LEVEL_VIEW = {
     "title": "A level",
     "difficulty": 1,
     "xp": 100,
-    "briefing": [{"kind": "para", "spans": [{"text": "Do it.", "code": False}]}],
+    "briefing": [{"kind": "para", "spans": [{"text": "Do it.", "code": False, "em": False}]}],
     "steps": [],
     "hints_total": 2,
 }

@@ -68,7 +68,7 @@ DEBRIEF = """
 and the one that turned the oxygen down. Each commit records its author, its date and its
 message, so the history tells who changed what, and when.
 
-A message can say little ("Night tweaks") or mislead; the changes themselves never do.
+A message can say little (*Night tweaks*) or mislead; the changes themselves never do.
 
 Commands to keep:
 

@@ -89,7 +89,8 @@
       "spans": [
        {
         "text": "Makes the current folder a repository.",
-        "code": false
+        "code": false,
+        "em": false
        }
       ]
      }
@@ -115,7 +116,8 @@
       "spans": [
        {
         "text": "Three places on your computer: the working folder, the staging area and the repository.",
-        "code": false
+        "code": false,
+        "em": false
        }
       ]
      }
@@ -129,11 +131,13 @@
       "spans": [
        {
         "text": "git add",
-        "code": true
+        "code": true,
+        "em": false
        },
        {
         "text": " copies a file into the staging area.",
-        "code": false
+        "code": false,
+        "em": false
        }
       ]
      }
@@ -166,7 +170,8 @@
      "spans": [
       {
        "text": "Saves the staging area as a new commit, with your message.",
-       "code": false
+       "code": false,
+       "em": false
       }
      ]
     }
@@ -179,15 +184,18 @@
     "spans": [
      {
       "text": "A teammate asked you to record the change to ",
-      "code": false
+      "code": false,
+      "em": false
      },
      {
       "text": "notes.txt",
-      "code": true
+      "code": true,
+      "em": false
      },
      {
       "text": " in a commit of its own.",
-      "code": false
+      "code": false,
+      "em": false
      }
     ]
    },
@@ -196,15 +204,18 @@
     "spans": [
      {
       "text": "The level is solved once the last commit holds the new ",
-      "code": false
+      "code": false,
+      "em": false
      },
      {
       "text": "notes.txt",
-      "code": true
+      "code": true,
+      "em": false
      },
      {
       "text": " and nothing else changed.",
-      "code": false
+      "code": false,
+      "em": false
      }
     ]
    }
@@ -221,7 +232,8 @@
       "spans": [
        {
         "text": "Your repository is in the terminal below. Every command you type there changes the map on the right.",
-        "code": false
+        "code": false,
+        "em": false
        }
       ]
      }
@@ -244,7 +256,8 @@
       "spans": [
        {
         "text": "Ask Git what changed since the last commit.",
-        "code": false
+        "code": false,
+        "em": false
        }
       ]
      },
@@ -260,7 +273,8 @@
       "spans": [
        {
         "text": "Which file has changes that are not staged?",
-        "code": false
+        "code": false,
+        "em": false
        }
       ]
      }
@@ -279,15 +293,18 @@
       "spans": [
        {
         "text": "Stage the change with ",
-        "code": false
+        "code": false,
+        "em": false
        },
        {
         "text": "git add",
-        "code": true
+        "code": true,
+        "em": false
        },
        {
         "text": ". Watch the file move to the staging area.",
-        "code": false
+        "code": false,
+        "em": false
        }
       ]
      }
@@ -365,15 +382,18 @@
     "spans": [
      {
       "text": "Not quite: look for the line that says ",
-      "code": false
+      "code": false,
+      "em": false
      },
      {
       "text": "modified",
-      "code": true
+      "code": true,
+      "em": false
      },
      {
       "text": ".",
-      "code": false
+      "code": false,
+      "em": false
      }
     ]
    }
@@ -393,15 +413,18 @@
     "spans": [
      {
       "text": "The last commit does not hold the new ",
-      "code": false
+      "code": false,
+      "em": false
      },
      {
       "text": "notes.txt",
-      "code": true
+      "code": true,
+      "em": false
      },
      {
       "text": " yet.",
-      "code": false
+      "code": false,
+      "em": false
      }
     ]
    }
@@ -420,7 +443,8 @@
     "spans": [
      {
       "text": "Solved.",
-      "code": false
+      "code": false,
+      "em": false
      }
     ]
    }
@@ -438,7 +462,8 @@
     "spans": [
      {
       "text": "Git records what is staged, not what is in the folder.",
-      "code": false
+      "code": false,
+      "em": false
      }
     ]
    },
@@ -447,7 +472,8 @@
     "spans": [
      {
       "text": "Commands to keep:",
-      "code": false
+      "code": false,
+      "em": false
      }
     ]
    },
@@ -466,7 +492,8 @@
      "spans": [
       {
        "text": "Saves the staging area as a new commit, with your message.",
-       "code": false
+       "code": false,
+       "em": false
       }
      ]
     }
@@ -481,15 +508,18 @@
     "spans": [
      {
       "text": "Look at what ",
-      "code": false
+      "code": false,
+      "em": false
      },
      {
       "text": "git status",
-      "code": true
+      "code": true,
+      "em": false
      },
      {
       "text": " lists under the changes not staged.",
-      "code": false
+      "code": false,
+      "em": false
      }
     ]
    }
@@ -732,23 +762,28 @@
       "spans": [
        {
         "text": "You made commit ",
-        "code": false
+        "code": false,
+        "em": false
        },
        {
         "text": "547cd2b",
-        "code": true
+        "code": true,
+        "em": false
        },
        {
         "text": " on ",
-        "code": false
+        "code": false,
+        "em": false
        },
        {
         "text": "feature",
-        "code": true
+        "code": true,
+        "em": false
        },
        {
         "text": ": Add a greeting to the readme.",
-        "code": false
+        "code": false,
+        "em": false
        }
       ]
      }
@@ -762,11 +797,13 @@
       "spans": [
        {
         "text": "README.md",
-        "code": true
+        "code": true,
+        "em": false
        },
        {
         "text": " is staged: its new version goes into the next commit.",
-        "code": false
+        "code": false,
+        "em": false
        }
       ]
      }
@@ -791,7 +828,8 @@
       "spans": [
        {
         "text": "Staged: your next commit will take the file as it is now.",
-        "code": false
+        "code": false,
+        "em": false
        }
       ]
      }
@@ -862,15 +900,18 @@
      "spans": [
       {
        "text": "What does ",
-       "code": false
+       "code": false,
+       "em": false
       },
       {
        "text": "git add",
-       "code": true
+       "code": true,
+       "em": false
       },
       {
        "text": " change?",
-       "code": false
+       "code": false,
+       "em": false
       }
      ]
     }
@@ -885,7 +926,8 @@
        "spans": [
         {
          "text": "The staging area",
-         "code": false
+         "code": false,
+         "em": false
         }
        ]
       }
@@ -899,7 +941,8 @@
        "spans": [
         {
          "text": "The last commit",
-         "code": false
+         "code": false,
+         "em": false
         }
        ]
       }
@@ -913,7 +956,8 @@
        "spans": [
         {
          "text": "The remote",
-         "code": false
+         "code": false,
+         "em": false
         }
        ]
       }
@@ -927,7 +971,8 @@
        "spans": [
         {
          "text": "Nothing until you push",
-         "code": false
+         "code": false,
+         "em": false
         }
        ]
       }
@@ -949,7 +994,8 @@
      "spans": [
       {
        "text": "Which command shows the state of the three areas?",
-       "code": false
+       "code": false,
+       "em": false
       }
      ]
     }
@@ -971,7 +1017,8 @@
      "spans": [
       {
        "text": "What does the last command print?",
-       "code": false
+       "code": false,
+       "em": false
       }
      ]
     }
@@ -1020,7 +1067,8 @@
     "spans": [
      {
       "text": "The staging area",
-      "code": false
+      "code": false,
+      "em": false
      }
     ]
    }
@@ -1031,11 +1079,13 @@
     "spans": [
      {
       "text": "git add",
-      "code": true
+      "code": true,
+      "em": false
      },
      {
       "text": " copies the file into the staging area; the next commit records it.",
-      "code": false
+      "code": false,
+      "em": false
      }
     ]
    }
@@ -1053,7 +1103,8 @@
     "spans": [
      {
       "text": "Git keeps three areas.",
-      "code": false
+      "code": false,
+      "em": false
      }
     ]
    },
@@ -1067,21 +1118,25 @@
      [
       {
        "text": "git status",
-       "code": true
+       "code": true,
+       "em": false
       },
       {
        "text": ": what changed",
-       "code": false
+       "code": false,
+       "em": false
       }
      ],
      [
       {
        "text": "git add",
-       "code": true
+       "code": true,
+       "em": false
       },
       {
        "text": ": stage a file",
-       "code": false
+       "code": false,
+       "em": false
       }
      ]
     ]
@@ -1866,39 +1921,48 @@
        "spans": [
         {
          "text": "A push moved branch ",
-         "code": false
+         "code": false,
+         "em": false
         },
         {
          "text": "main",
-         "code": true
+         "code": true,
+         "em": false
         },
         {
          "text": " from ",
-         "code": false
+         "code": false,
+         "em": false
         },
         {
          "text": "de4c885",
-         "code": true
+         "code": true,
+         "em": false
         },
         {
          "text": " to ",
-         "code": false
+         "code": false,
+         "em": false
         },
         {
          "text": "21e6785",
-         "code": true
+         "code": true,
+         "em": false
         },
         {
          "text": " (",
-         "code": false
+         "code": false,
+         "em": false
         },
         {
          "text": "Update notes.txt",
-         "code": true
+         "code": true,
+         "em": false
         },
         {
          "text": ").",
-         "code": false
+         "code": false,
+         "em": false
         }
        ]
       }
@@ -1914,39 +1978,48 @@
        "spans": [
         {
          "text": "Remote-tracking branch ",
-         "code": false
+         "code": false,
+         "em": false
         },
         {
          "text": "origin/main",
-         "code": true
+         "code": true,
+         "em": false
         },
         {
          "text": " moved from ",
-         "code": false
+         "code": false,
+         "em": false
         },
         {
          "text": "de4c885",
-         "code": true
+         "code": true,
+         "em": false
         },
         {
          "text": " to ",
-         "code": false
+         "code": false,
+         "em": false
         },
         {
          "text": "21e6785",
-         "code": true
+         "code": true,
+         "em": false
         },
         {
          "text": " (",
-         "code": false
+         "code": false,
+         "em": false
         },
         {
          "text": "Update notes.txt",
-         "code": true
+         "code": true,
+         "em": false
         },
         {
          "text": ").",
-         "code": false
+         "code": false,
+         "em": false
         }
        ]
       }

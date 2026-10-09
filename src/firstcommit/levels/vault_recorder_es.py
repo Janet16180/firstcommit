@@ -31,7 +31,7 @@ DEBRIEF = """
 que bajó el oxígeno. Cada commit guarda su autor, su fecha y su mensaje, así que la historia dice
 quién cambió qué, y cuándo.
 
-Un mensaje puede decir poco ("Night tweaks") o confundir; los cambios en sí, nunca.
+Un mensaje puede decir poco (*Night tweaks*) o confundir; los cambios en sí, nunca.
 
 Comandos para recordar:
 

@@ -74,7 +74,7 @@ NOT_LABELLED = "Keep your commits on a branch first: `git branch rescue`."
 LABELLED = (
     "`rescue` is a second name on the same commit. Nothing else changed: no new commit, no file. `HEAD` still rides `main`. "
     "Next, `git reset --hard origin/main` moves the branch you are on, `main`, to the commit your `origin/main` bookmark is on, "
-    "Start the project. `--hard` also makes your folder match that commit; without it, the branch moves and your files stay as they are."
+    "*Start the project*. `--hard` also makes your folder match that commit; without it, the branch moves and your files stay as they are."
 )
 GHOSTS = (
     "No branch leads to your two commits now, but Git still has them. The next mission shows how to find them; for now, "
@@ -87,7 +87,7 @@ RESET = (
     "`rescue` still holds them. `survey.txt` left your folder."
 )
 LOGGED = (
-    "One commit, as predicted. `git log` walks down from `HEAD`, and nothing below Start the project leads up to the survey "
+    "One commit, as predicted. `git log` walks down from `HEAD`, and nothing below *Start the project* leads up to the survey "
     "commits. They are still in Git: `rescue` leads to them. What if you had not made the branch? No branch would lead to the "
     "two commits. Git keeps commits no branch leads to for about 30 days, then may delete them, and `git log` would not list them."
 )
@@ -104,7 +104,7 @@ GUESS = kit.ChoiceStep(
     text="Predict first.",
     question="After the reset, how many commits will `git log --oneline` list?",
     options=("1", "3"),
-    reveal="1. `git log` starts at `HEAD` and walks down the parents. `HEAD` rides `main`, which will be on Start the project, the oldest commit. The two survey commits sit above it, where only `rescue` leads.",
+    reveal="1. `git log` starts at `HEAD` and walks down the parents. `HEAD` rides `main`, which will be on *Start the project*, the oldest commit. The two survey commits sit above it, where only `rescue` leads.",
 )
 
 

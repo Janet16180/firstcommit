@@ -377,7 +377,7 @@ test("a reaction may carry a moment the page knows, or none", async () => {
 
 test("a quest step may be a choice, with its options as text to show and a value to send back", async () => {
   const level = record("level");
-  level.steps[0] = { ...level.steps[0], kind: "choice", choices: [{ value: "a", text: [{ kind: "para", spans: [{ text: "A", code: false }] }] }] };
+  level.steps[0] = { ...level.steps[0], kind: "choice", choices: [{ value: "a", text: [{ kind: "para", spans: [{ text: "A", code: false, em: false }] }] }] };
   const { game } = gameApi({ ...REPLIES, "/api/level": level });
   assert.equal((await game.level("x")).steps[0].choices[0].value, "a");
   await refused("/api/level", (view) => delete view.steps[0].choices, (api) => api.level("x"));

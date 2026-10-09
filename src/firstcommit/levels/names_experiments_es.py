@@ -5,7 +5,7 @@ from firstcommit import kit
 TITLE = "Dos experimentos"
 CARD = "Lleva `HEAD` a otro branch, y tu carpeta cambia para mostrar el commit de ese branch."
 SCENE = [
-    "El experimento de ayer es la línea lateral de la derecha: `bright-lights` y su commit, Try bright lights, unido a Fix the route. Volviste a `main`. La fila bajo la cadena es tu carpeta de trabajo: `engine.txt` espera ahí, todavía fuera de Git.",
+    "El experimento de ayer es la línea lateral de la derecha: `bright-lights` y su commit, *Try bright lights*, unido a *Fix the route*. Volviste a `main`. La fila bajo la cadena es tu carpeta de trabajo: `engine.txt` espera ahí, todavía fuera de Git.",
 ]
 
 BRIEFING = """

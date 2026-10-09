@@ -27,7 +27,7 @@ CARD = kit.CommandCard(
 SCENE = [
     kit.SceneFrame(
         art="fork",
-        text="Yesterday's experiment is the side line on the right: `bright-lights` and its commit, Try bright lights, joined to Fix the route. You are back on `main`. The row under the chain is your working folder: `engine.txt` is waiting there, not in Git yet.",
+        text="Yesterday's experiment is the side line on the right: `bright-lights` and its commit, *Try bright lights*, joined to *Fix the route*. You are back on `main`. The row under the chain is your working folder: `engine.txt` is waiting there, not in Git yet.",
     ),
 ]
 

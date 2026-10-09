@@ -8,7 +8,7 @@ const { installBrowser, load, record } = require("./load");
 const document = installBrowser();
 const { Mission } = load(["dom.js", "strings.js", "markup.js", "art-pixels.js", "art-sprites.js", "mission.js"], ["Mission"]);
 
-const para = (text) => [{ kind: "para", spans: [{ text, code: false }] }];
+const para = (text) => [{ kind: "para", spans: [{ text, code: false, em: false }] }];
 
 function mission({ level = record("level"), active = record("active") } = {}) {
   const seen = { answers: [], continued: 0, chosen: [], checks: [], hints: 0, typed: [] };

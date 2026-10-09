@@ -27,7 +27,7 @@ CARD = kit.CommandCard(
 SCENE = [
     kit.SceneFrame(
         art="chain",
-        text="The next day, the same mistake: two survey commits on `main`. This time you moved `main` back and forgot to name them. The chain shows only Start the project: no branch leads to the survey commits, and you have not looked for them yet.",
+        text="The next day, the same mistake: two survey commits on `main`. This time you moved `main` back and forgot to name them. The chain shows only *Start the project*: no branch leads to the survey commits, and you have not looked for them yet.",
     ),
 ]
 
@@ -69,7 +69,7 @@ Commands to keep:
 """
 
 NO_REPOSITORY = "This folder is no longer a repository: `.git` is gone. Leave the level and start it again to get it back."
-LOGGED = "`git log` starts at `HEAD` and walks back through the parents. The survey commits came after Start the project, and no branch leads to them, so `git log` cannot list them."
+LOGGED = "`git log` starts at `HEAD` and walks back through the parents. The survey commits came after *Start the project*, and no branch leads to them, so `git log` cannot list them."
 NOT_LOGGED = "Look for them in the history: `git log --oneline`."
 READ = (
     "`git log` is the story of your commits. `git reflog` is the story of your moves: every place `HEAD` has been, newest at "
@@ -79,20 +79,20 @@ READ = (
     "parents; `HEAD@{1}` walks back through your own moves."
 )
 NOT_READ = "Read the move log: `git reflog`."
-NOT_NAMED = "Put a branch `survey` on Survey day 2: `git branch survey` and the `HEAD@{n}` of its line."
-WRONG_LINE = "`survey` is on Start the project, where you are now. Survey day 2 is one move back: `HEAD@{1}`. Take the name off with `git branch -d survey` and try again."
-NAMED = "A name on Survey day 2, and both survey commits are solid again: Survey day 1 is its parent. They were never gone."
+NOT_NAMED = "Put a branch `survey` on *Survey day 2*: `git branch survey` and the `HEAD@{n}` of its line."
+WRONG_LINE = "`survey` is on *Start the project*, where you are now. *Survey day 2* is one move back: `HEAD@{1}`. Take the name off with `git branch -d survey` and try again."
+NAMED = "A name on *Survey day 2*, and both survey commits are solid again: *Survey day 1* is its parent. They were never gone."
 NOT_ON = "Go there: `git switch survey`."
 ON = "You are on `survey`, and `survey.txt` is back in your folder. Read the move log again."
 READ_AGAIN = (
-    "One new line on top, and every number grew by one: Survey day 2 was `HEAD@{1}`, now it is `HEAD@{2}`. The numbers count "
+    "One new line on top, and every number grew by one: *Survey day 2* was `HEAD@{1}`, now it is `HEAD@{2}`. The numbers count "
     "back from now, so read the move log right before you use it, or use the hash at the start of the line: it never shifts. "
     "The new line says `checkout`: that is the older name of `git switch`."
 )
 NOT_READ_AGAIN = "Read the move log again: `git reflog`."
 ERASED = "The survey commits are gone for good. Start the mission again."
 WIPE = "That cleans up commits no branch leads to: they can be erased for good once the move log forgets them. Give them a name first."
-WRONG_LINE_SAID = "`survey` is on Start the project, where you are now. Survey day 2 is one move back: `HEAD@{1}`."
+WRONG_LINE_SAID = "`survey` is on *Start the project*, where you are now. *Survey day 2* is one move back: `HEAD@{1}`."
 
 REACTIONS = [
     kit.ReactionRule(line=WIPE_LINE, mood="warn", text=WIPE, repository=True),
@@ -281,7 +281,7 @@ def watch_reflog_again(lab: kit.Lab, state: kit.State, typed: kit.Typed) -> kit.
 QUEST: list[kit.Step] = [
     kit.WatchStep(id="log", text="Look for them in the history.", command="git log --oneline", watch=watch_log),
     kit.WatchStep(id="reflog", text="Read the move log.", command="git reflog", watch=watch_reflog),
-    kit.WatchStep(id="name", text="Put a branch `survey` on Survey day 2.", command=f"git branch {BRANCH} HEAD@{{1}}", watch=watch_named),
+    kit.WatchStep(id="name", text="Put a branch `survey` on *Survey day 2*.", command=f"git branch {BRANCH} HEAD@{{1}}", watch=watch_named),
     GUESS,
     kit.WatchStep(id="switch", text="Go there.", command=f"git switch {BRANCH}", watch=watch_on),
     kit.WatchStep(id="reflog-again", text="Read the move log again.", command="git reflog", watch=watch_reflog_again),
