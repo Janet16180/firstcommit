@@ -1,0 +1,4 @@
+title: 'firstcommit-mergetool launch.txt'
+title: ''
+folder while the tool waited: .git launch.txt launch_BACKUP_1899254.txt launch_BASE_1899254.txt launch_LOCAL_1899254.txt launch_REMOTE_1899254.txt
+folder while the tool waited: left in TMPDIR: 

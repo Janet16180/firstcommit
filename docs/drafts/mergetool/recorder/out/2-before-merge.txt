@@ -1,0 +1,5 @@
+project $ git mergetool
+No files need merging
+project $ echo $?
+0
+project $ 

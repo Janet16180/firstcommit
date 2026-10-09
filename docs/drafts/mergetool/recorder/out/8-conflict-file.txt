@@ -1,0 +1,26 @@
+project $ git merge --no-edit scout
+Auto-merging launch.txt
+CONFLICT (content): Merge conflict in launch.txt
+Automatic merge failed; fix conflicts and then commit the result.
+project $ cat launch.txt
+Launch plan
+<<<<<<< HEAD
+Window: 07:00
+=======
+Window: 05:30
+>>>>>>> scout
+Pilot: Cadet
+Destination: Base 7
+Cargo:
+- water
+- fuel cells
+<<<<<<< HEAD
+- oxygen
+=======
+- spare antenna
+>>>>>>> scout
+project $ git log --oneline --all
+3bd2b29 (HEAD -> main) Launch at 07:00 and pack oxygen
+c95b381 (scout) The window closes early: launch at 05:30, and pack a spare antenna
+9e75f0a Write the launch plan
+project $ 

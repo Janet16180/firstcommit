@@ -1,0 +1,5 @@
+title: 'firstcommit-mergetool launch.txt'
+title: ''
+folder while the tool waited: before the tool: Launch plan | Window: 05:30 | Pilot: Cadet | Destination: Base 7 | Cargo: | - water | - fuel cells | <<<<<<< HEAD | - oxygen | ======= | - spare antenna | >>>>>>> scout | 
+folder while the tool waited: .git launch.txt
+folder while the tool waited: left in TMPDIR: 

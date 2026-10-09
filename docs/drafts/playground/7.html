@@ -1,0 +1,989 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Playground Conflict: vim, and Get me out</title>
+<style>
+:root {
+  --bg: #E6E3EF; --panel: #FBF9F3; --panel-2: #EFEBE0; --ink: #1F1A3D; --ink-soft: #5E577E;
+  --edge: #1F1A3D; --line: #C9C3DA; --wd: #D9731F; --st: #1D93A8; --va: #7A52D1; --re: #D23F6A;
+  --new: #D33A32; --mod: #B98A00; --gold: #F2B01E; --ok: #2E7D50; --alex: #3D8A18;
+  --crt: #120F2C; --crt-ink: #FFE6B0; --crt-soft: #9F95C8; --crt-cmd: #FFD25A; --crt-ok: #9EF0A0;
+  --va-row: #ECE6F7; --re-row: #F7E6EC;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --alex: #A6E05A; --alex-ink: #10200A; --bg: #0B0920; --panel: #17133D; --panel-2: #1F1A4A; --ink: #F2EAD3; --ink-soft: #B9AED8;
+    --edge: #04030F; --line: #3A3470; --ok: #9EF0A0; --new: #FF8A78; --va-row: #2A2160; --re-row: #3A1C3A;
+  }
+}
+:root[data-theme="dark"] {
+  --alex: #A6E05A; --alex-ink: #10200A; --bg: #0B0920; --panel: #17133D; --panel-2: #1F1A4A; --ink: #F2EAD3; --ink-soft: #B9AED8;
+  --edge: #04030F; --line: #3A3470; --ok: #9EF0A0; --new: #FF8A78; --va-row: #2A2160; --re-row: #3A1C3A;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+code, .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .92em; }
+p code, li code, .rama code, .reveal code, .q code { background: var(--panel-2); padding: 0 4px; border: 1px solid var(--line); }
+header { background: var(--crt); color: var(--crt-ink); display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 8px 16px; }
+header a { color: var(--crt-ink); font-weight: 700; text-decoration: none; border: 2px solid var(--crt-ink); padding: 2px 10px; }
+header .no { color: var(--gold); font: 700 14px ui-monospace, monospace; }
+header .title { font: 700 17px ui-monospace, monospace; }
+header .chip { background: #2A2558; padding: 1px 8px; font: 13px ui-monospace, monospace; }
+main { max-width: 1240px; margin: 0 auto; padding: 14px 16px 40px; display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 820px) { main { grid-template-columns: 1fr; } .side { order: 2; } }
+.box { background: var(--panel); border: 3px solid var(--edge); box-shadow: 4px 4px 0 var(--edge); }
+.side { padding: 12px 14px; align-self: start; }
+.side h2 { font: 700 15px ui-monospace, monospace; margin: 12px 0 6px; }
+.side p { margin: 0 0 8px; }
+.goals { list-style: none; margin: 0; padding: 0; }
+.goals li { display: flex; gap: 8px; margin: 0 0 6px; }
+.goals code, .side code { white-space: pre-wrap; }
+.rides { display: inline-flex; align-items: center; gap: 4px; padding: 1px 4px 1px 0; border-bottom: 2px solid var(--va); }
+.desk:not(.revealed) .line.red::after { content: none; }
+.committed { font: 12px ui-monospace, monospace; color: var(--ink-soft); padding-left: 24px; }
+.goals li::before { content: ""; flex: none; width: 14px; height: 14px; margin-top: 3px; border: 2px solid var(--edge); }
+.goals li.done { color: var(--ink-soft); text-decoration: line-through; }
+.goals li.done::before { background: var(--st); }
+.right { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.stage { padding: 12px; position: relative; min-height: 220px; overflow-x: auto; }
+.stage.whatif .pic { filter: grayscale(1) contrast(.9); }
+.whatif-badge { display: none; position: absolute; top: 8px; right: 10px; background: #000; color: #fff; font: 700 14px ui-monospace, monospace; padding: 2px 10px; border: 2px solid #fff; z-index: 2; }
+.stage.whatif .whatif-badge { display: block; }
+.picnote { margin: 10px 0 0; font-size: 13px; color: var(--ink-soft); border-top: 1px dashed var(--line); padding-top: 6px; }
+.picnote b { color: var(--ink); }
+.rama { padding: 10px 14px; display: flex; gap: 12px; align-items: flex-start; border-left: 6px solid var(--gold); min-height: 64px; }
+.rama .bot { flex: none; width: 34px; height: 34px; background: var(--crt); border: 2px solid var(--edge); position: relative; }
+.rama .bot::before, .rama .bot::after { content: ""; position: absolute; top: 11px; width: 6px; height: 6px; background: #5EE6E6; }
+.rama .bot::before { left: 8px; } .rama .bot::after { right: 8px; }
+.rama .who { font-size: 12px; color: var(--ink-soft); font-weight: 700; }
+.q { margin: 0 0 8px; font-weight: 600; }
+.choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.choices button { font: inherit; font-weight: 700; background: var(--panel); color: var(--ink); border: 3px solid var(--edge); padding: 6px 12px; cursor: pointer; }
+.choices button[aria-pressed="true"] { background: var(--gold); color: #1F1A3D; }
+.reveal { margin: 8px 0 0; }
+.term { background: var(--crt); color: var(--crt-ink); padding: 10px 12px; font: 14px/1.35 ui-monospace, Menlo, Consolas, monospace; min-height: 170px; max-height: 300px; overflow: auto; white-space: pre; border: 3px solid var(--edge); }
+.term .cmd { color: var(--crt-cmd); }
+.term .old { opacity: .55; }
+.term .hl { background: #4A3A10; outline: 1px solid var(--gold); }
+.nav { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.nav button { font: 700 15px system-ui, sans-serif; padding: 6px 16px; border: 3px solid var(--edge); background: var(--panel); color: var(--ink); cursor: pointer; }
+.nav button.primary { background: var(--gold); color: #1F1A3D; }
+.nav button:disabled { opacity: .4; cursor: default; }
+.nav .count { color: var(--ink-soft); font-size: 14px; }
+.debrief { padding: 12px 14px; border-left: 6px solid var(--st); }
+.debrief h2 { font: 700 15px ui-monospace, monospace; margin: 0 0 6px; }
+.debrief pre { background: var(--crt); color: var(--crt-ink); padding: 8px 10px; overflow-x: auto; }
+/* the desk */
+.desk { display: flex; flex-wrap: wrap; gap: 14px; align-items: stretch; }
+.zone { border: 3px solid var(--c); background: var(--panel-2); padding: 8px 10px; min-width: 0; }
+.zone h3 { margin: 0 0 6px; font: 700 13px ui-monospace, monospace; color: var(--c); }
+.zone.wd { --c: var(--wd); flex: 1 1 220px; }
+.zone.st { --c: var(--st); flex: 1 1 150px; }
+.zone.va { --c: var(--va); flex: 1 1 170px; }
+.file { font: 13px ui-monospace, monospace; border: 2px solid var(--edge); background: var(--panel); padding: 4px 6px; margin: 0 0 6px; }
+.file .name { font-weight: 700; }
+.file .tag { font-size: 11px; color: var(--ink-soft); margin-left: 6px; }
+.file .line { display: block; padding-left: 10px; }
+.file .line.red { color: var(--new); font-weight: 700; }
+.file .line.red::after { content: "  only here"; font-weight: 400; font-size: 11px; color: var(--new); }
+.file .line.gone { color: var(--new); text-decoration: line-through; opacity: .45; animation: dissolve 1.6s steps(4) forwards; }
+@keyframes dissolve { from { opacity: 1; } to { opacity: .25; } }
+.blink { animation: blink 1s steps(2) 3; }
+@keyframes blink { 50% { background: var(--gold); } }
+.kept { flex: 2 1 340px; display: flex; flex-wrap: wrap; gap: 10px; padding: 18px 10px 10px; position: relative; border: 3px dashed transparent; }
+.kept.on { border-color: var(--ink-soft); }
+.kept .kept-name { display: none; position: absolute; top: -12px; left: 10px; background: var(--panel); color: var(--ink); font: 700 13px ui-monospace, monospace; padding: 0 6px; }
+.kept.on .kept-name { display: block; }
+.mini-cap { display: flex; gap: 6px; align-items: center; font-size: 13px; margin: 0 0 4px; }
+/* the chain */
+.chain { display: flex; flex-direction: column; background: var(--va-row); padding: 4px 8px; }
+.chain { position: relative; padding-left: 30px; }
+.chain .cell { padding: 0 0 4px; min-height: 40px; flex-wrap: nowrap; align-items: flex-start; }
+.chain .body { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; white-space: normal; min-width: 0; padding-top: 10px; }
+.chain .body .subj { flex: 0 1 auto; }
+.chain { overflow-x: auto; }
+.chain .wires .walk { opacity: 0; animation: walkin .3s steps(3) forwards; }
+@keyframes walkin { to { opacity: 1; } }
+.chain .wires { position: absolute; left: 0; top: 0; z-index: 1; overflow: visible; pointer-events: none; }
+@media (max-width: 600px) { .chain .hash { display: none; } }
+.chain .count { font: 700 12px ui-monospace, monospace; color: var(--va); margin: 2px 0 4px -22px; }
+.ship.ring { outline: 3px solid var(--gold); outline-offset: 2px; }
+.files { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 10px; border: 3px solid var(--wd); background: var(--panel-2); padding: 6px 8px; font-size: 13px; }
+.files b { color: var(--wd); font: 700 13px ui-monospace, monospace; margin-right: 4px; }
+.files .file { margin: 0; }
+.files .file.left { text-decoration: line-through; opacity: .45; }
+.ship { font: 700 11px system-ui, sans-serif; color: var(--va); }
+.pin { font: 700 11px system-ui, sans-serif; padding: 1px 7px; border-radius: 9px; color: #fff; }
+.pin.ms { background: var(--re); }
+.pin.alex { background: var(--alex); color: var(--alex-ink, #FFFFFF); }
+.pin.you { background: var(--you, #7A52D1); }
+.pin.moved { }
+/* git's own drawing of the tree */
+.graph { background: var(--crt); color: var(--crt-ink); padding: 8px 10px; font: 13px/1.5 ui-monospace, Menlo, Consolas, monospace; overflow-x: auto; margin: 0; border: 3px solid var(--edge); }
+.graph .hl { background: #4A3A10; outline: 1px solid var(--gold); }
+@media (max-width: 600px) { .term, .graph { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; } }
+/* the target pair */
+.pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.pair.stack { grid-template-columns: minmax(0, 1fr); }
+.pair:not(.stack) .hash { display: none; }
+.pair:not(.stack) .chain .body { gap: 4px; }
+@media (max-width: 820px) { .pair { grid-template-columns: 1fr; } }
+.pair h4 { margin: 0 0 6px; font: 700 13px ui-monospace, monospace; }
+.chain.target { background: var(--panel-2); border: 2px dashed var(--va); }
+.chain .cell.dim { opacity: .3; }
+.then { border: 3px solid var(--va); background: var(--panel); padding: 8px 10px; }
+.then h4 { margin: 0 0 6px; }
+.then pre { background: var(--crt); color: var(--crt-ink); padding: 8px 10px; margin: 0 0 6px; font: 14px/1.5 ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; }
+.then.missing { border-style: dashed; border-color: var(--new); }
+.checks { list-style: none; padding: 0; margin: 8px 0 0; font-size: 13px; }
+.checks li::before { content: "✗ "; color: var(--new); font-weight: 700; }
+.tick { color: var(--ok); font-weight: 700; margin-right: 2px; }
+.named { white-space: nowrap; }
+.checks li.ok::before { content: "✓ "; color: var(--ok); }
+/* the chart */
+.chart { display: grid; gap: 0; min-width: 0; }
+.chart .colhead { font: 700 13px ui-monospace, monospace; padding: 4px 8px; }
+.chart .colhead.va { color: var(--va); } .chart .colhead.re { color: var(--re); }
+.chart .row { display: contents; }
+.cell { position: relative; min-height: 40px; display: flex; align-items: center; gap: 6px; padding: 4px 8px 4px 0; font-size: 13px; white-space: nowrap; }
+.cell.va { background: var(--va-row); }
+.cell.re { background: var(--re-row); }
+.cell.gap { background: transparent; }
+.cell.tether::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 2px dashed var(--re); }
+.lane { position: relative; z-index: 2; flex: none; height: 40px; align-self: flex-start; }
+.lane svg { position: absolute; inset: 0; overflow: visible; }
+.cap { width: 16px; height: 16px; border: 2px solid var(--edge); background: var(--c, var(--va)); flex: none; position: relative; z-index: 1; }
+.cap.re { --c: var(--re); }
+.cap.alex { --c: var(--alex); }
+.cap.ghost { background: var(--panel); border: 2px dashed var(--va); opacity: .8; }
+.cap.mirror { background: repeating-linear-gradient(45deg, var(--va) 0 3px, var(--panel) 3px 6px); }
+.cap.ring, .cap.new { box-shadow: 0 0 0 3px var(--gold); }
+.subj { font-weight: 600; }
+.subj.ghost { opacity: .6; font-style: italic; }
+.subj.remote { color: var(--re); }
+.only-ms { font-size: 11px; font-weight: 700; color: var(--re); border: 2px dotted var(--re); padding: 0 5px; }
+.hash { font: 12px ui-monospace, monospace; color: var(--ink-soft); }
+.ref { white-space: nowrap; font: 700 11px ui-monospace, monospace; border: 2px solid var(--edge); padding: 0 5px; background: var(--panel); color: var(--ink); }
+.ref.head { background: var(--va); color: #fff; }
+.ref.remote { border-style: dashed; }
+.ref.mother { background: var(--re); color: #fff; }
+.ref.moved { }
+.undo { font-size: 11px; color: var(--mod); font-weight: 700; }
+.band { display: flex; align-items: center; gap: 8px; border: 2px dashed var(--line); padding: 4px 8px; margin: 0 0 10px; font-size: 13px; flex-wrap: wrap; }
+.band .who { font-weight: 700; color: var(--alex); }
+.band .caps { display: flex; gap: 3px; }
+.band .caps i { width: 11px; height: 11px; background: var(--va); border: 1px solid var(--edge); display: block; }
+.band .caps i.new { box-shadow: 0 0 0 2px var(--gold); }
+.legend { font-size: 12px; color: var(--ink-soft); margin-top: 8px; display: flex; gap: 14px; flex-wrap: wrap; }
+/* the trail */
+.diarywrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+@media (max-width: 820px) { .diarywrap { grid-template-columns: 1fr; } }
+.diary { background: var(--crt); color: var(--crt-ink); border: 3px solid var(--edge); padding: 8px; overflow-x: auto; }
+.diary h3 { margin: 0 0 6px; font: 700 13px ui-monospace, monospace; color: var(--crt-soft); }
+.diary table { border-collapse: collapse; font: 13px ui-monospace, monospace; width: 100%; }
+.diary td { padding: 4px 6px; white-space: nowrap; }
+.diary td.line { font: 13px ui-monospace, Menlo, Consolas, monospace; }
+.notes-toggle { margin-left: auto; color: var(--ink-soft); }
+.diary .r { color: var(--crt-cmd); }
+.diary .m { color: var(--crt-soft); }
+.diary tr.pick td { background: #4A3A10; }
+.diary tr.pick td:first-child { box-shadow: inset 4px 0 0 var(--gold); }
+.diary tr.fresh td { color: var(--crt-ok); }
+.diary tr.off { visibility: hidden; }
+.diary .cap { display: inline-block; width: 16px; height: 16px; vertical-align: middle; }
+.diary .nolabel { color: var(--crt-warn, #FFB86B); font-size: 12px; }
+.diary .empty { color: var(--crt-soft); font-style: italic; padding: 18px 6px; }
+.small { font-size: 12px; }
+.sb { max-width: 1320px; margin: 0 auto; padding: 10px 16px 6px; display: grid; gap: 10px; }
+.sb .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.sb button { font: 700 14px ui-monospace, monospace; padding: 6px 14px; border: 3px solid var(--edge); background: var(--panel); color: var(--ink); cursor: pointer; }
+.sb button.primary { background: var(--gold); color: #1F1A3D; }
+.sb button:disabled { opacity: .4; cursor: default; }
+.sb .count { color: var(--ink-soft); font-size: 13px; }
+.caption { padding: 10px 14px; }
+.caption p { margin: 0 0 6px; }
+.caption .do { font-weight: 700; }
+.caption .picnote { color: var(--ink-soft); font-size: 13px; margin: 6px 0 0; }
+.screen { max-width: 1280px; margin: 0 auto 30px; border: 3px solid var(--edge); background: var(--bg); position: relative; }
+.pg-head { background: var(--crt); color: var(--crt-ink); display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center; padding: 8px 12px; }
+.pg-head .where { font: 700 16px ui-monospace, monospace; }
+.pg-head .start { color: var(--gold); font: 700 14px ui-monospace, monospace; }
+.pg-head .sp { flex: 1; }
+.pg-head .btn { border: 2px solid var(--crt-ink); padding: 2px 10px; font: 700 13px ui-monospace, monospace; }
+.pg-head .btn.back { background: var(--gold); color: #1F1A3D; border-color: var(--gold); }
+.pg-main { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 640px); gap: 12px; padding: 12px; align-items: start; }
+@media (max-width: 1000px) { .pg-main { grid-template-columns: 1fr; } }
+.views { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 8px; align-items: center; }
+.views .tab { font: 700 13px ui-monospace, monospace; padding: 4px 10px; border: 2px solid var(--edge); background: var(--panel); }
+.views .tab.on { background: var(--va); color: #fff; }
+.views .tab.conflict { border-color: var(--new); color: var(--new); }
+.views .tab.conflict.on { background: var(--new); color: #fff; }
+.whose { display: flex; gap: 0; margin: 0 0 8px; font: 700 12px ui-monospace, monospace; align-items: center; }
+.whose span.l { margin-right: 6px; color: var(--ink-soft); }
+.whose b { padding: 2px 10px; border: 2px solid var(--edge); background: var(--panel); }
+.whose b.on.you { background: var(--va); color: #fff; }
+.whose b.on.alex { background: var(--alex); color: var(--alex-ink, #fff); }
+.picture { padding: 10px; min-height: 320px; }
+:root { --you: #7A52D1; }
+.alexs { --va: var(--alex); --va-row: #E3F1D8; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .alexs { --va-row: #1E3314; } }
+.legend-fold { margin-top: 6px; }
+.legend-fold summary { cursor: pointer; font: 700 12px ui-monospace, monospace; color: var(--ink-soft); }
+.summary { display: none; }
+.hist-head { display: grid; grid-template-columns: 1fr 1fr; font: 700 13px ui-monospace, monospace; padding: 0 8px 4px 30px; }
+.hist-head .va { color: var(--va); } .hist-head .re { color: var(--re); }
+.chain.hist { display: grid; grid-template-columns: 1fr 1fr; column-gap: 8px; background: transparent; padding-left: 8px; }
+.chain.hist .cell { padding: 0 4px 4px 0; }
+.chain.hist .cell.va { background: var(--va-row); }
+.chain.hist .cell.re { background: var(--re-row); }
+.chain.hist .cell.none { border-left: 2px dashed var(--line); }
+.mlog .empty { color: var(--crt-soft); font-style: italic; padding: 14px 4px; }
+.live { font-size: 13px; border-left: 4px solid var(--gold); padding: 2px 8px; margin: 8px 0 0; }
+.cpanel.waiting .file, .cpanel.waiting .act { opacity: .4; filter: grayscale(1); }
+.cpanel .msg.wait { border-color: var(--gold); }
+.cpanel .act .w.primary { background: var(--va); color: #fff; }
+.cpanel div.or { margin-top: 10px; padding: 8px 10px; border: 2px solid var(--edge); background: var(--panel-2); color: var(--ink); }
+.cpanel .trychip { border: 2px dashed var(--gold); background: var(--panel); padding: 1px 8px; font: 700 12px ui-monospace, monospace; white-space: nowrap; }
+.strip span.out { background: var(--new); color: #fff; }
+.strip .ask { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; background: #fff; padding: 4px 8px; border: 2px solid var(--new); font-weight: 700; }
+.strip .ask .out { margin-left: 0; }
+.strip .ask .stay { border: 2px solid #1F1A3D; padding: 1px 8px; font: 700 12px ui-monospace, monospace; }
+.strip .morebtn { display: none; text-decoration: underline; font-weight: 700; }
+.tw .chip-row { padding: 6px 8px; background: var(--panel-2); border-bottom: 2px solid var(--edge); }
+@media (max-width: 600px) {
+  .summary { display: flex; gap: 8px; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 3; background: var(--panel); border: 3px solid var(--edge); padding: 6px 8px; font-size: 13px; margin-bottom: 8px; }
+  .summary .tap { font: 700 12px ui-monospace, monospace; color: var(--va); white-space: nowrap; }
+  .pg-main:not(.sheet) .picture { display: none; }
+  .strip:not(.more) .extra { display: none; }
+  .pg-main .hist-wide { display: none; }
+  .pg-main .hist-narrow { display: block; }
+  .whose { display: none; }
+  .pg-head { padding: 6px 8px; gap: 4px 6px; }
+  .pg-head .where { font-size: 14px; }
+  .pg-head .start { font-size: 12px; }
+  .pg-head .sp { display: none; }
+  .pg-head .btn { font-size: 11px; padding: 1px 6px; }
+  .strip .morebtn { display: inline; }
+  .cpanel ol { font-size: 12px; }
+}
+.picture .chain { max-height: none; }
+.picture .placeholder { color: var(--ink-soft); font-style: italic; padding: 30px 10px; }
+.terms { display: grid; gap: 10px; min-width: 0; }
+.terms > *, .pg-main > section { min-width: 0; }
+.terms .toggle { display: flex; align-items: center; gap: 8px; font-size: 13px; flex-wrap: wrap; }
+.terms .toggle .sw { width: 34px; height: 18px; border: 2px solid var(--edge); background: var(--panel); position: relative; }
+.terms .toggle .sw::after { content: ""; position: absolute; top: 1px; left: 1px; width: 12px; height: 12px; background: var(--ink-soft); }
+.terms .toggle .sw.on { background: var(--alex); }
+.terms .toggle .sw.on::after { left: 17px; background: #fff; }
+.terms .toggle .off { color: var(--ink-soft); font-style: italic; }
+.phone-switch { display: none; }
+.tw { border: 3px solid var(--edge); }
+.tw.you { border-color: var(--you); }
+.tw.you h4 { background: var(--you); color: #fff; }
+.tw .term { white-space: pre-wrap; overflow-wrap: anywhere; }
+.tw .term.editor { white-space: pre; overflow-x: auto; }
+.views .tab.more { border-style: dashed; }
+.views .tab.more.on { border-style: solid; }
+.phone-switch .l { align-self: center; font: 700 12px ui-monospace, monospace; padding-right: 6px; }
+.wip { font-size: 13px; border-left: 4px solid var(--wd); padding: 2px 8px; margin: 8px 0 0; }
+.desk .tag.came { background: var(--gold); color: #1F1A3D; }
+.desk .file.left { text-decoration: line-through; opacity: .5; }
+.cpanel .or.off { opacity: .4; filter: grayscale(1); }
+.hist-narrow { display: none; }
+.hist-narrow .where { font: 700 11px ui-monospace, monospace; padding: 0 5px; border: 1px solid var(--line); }
+.hist-narrow .where.both { color: var(--va); } .hist-narrow .where.you { color: var(--va); border-color: var(--va); } .hist-narrow .where.ms { color: var(--re); border-color: var(--re); }
+.tw.alex { border-color: var(--alex); }
+.tw h4 { margin: 0; padding: 3px 8px; font: 700 12px ui-monospace, monospace; background: var(--edge); color: var(--crt-ink); }
+.tw.alex h4 { background: var(--alex); color: var(--alex-ink, #fff); }
+.tw .term { border: 0; min-height: 210px; max-height: 360px; }
+.terms.two .tw .term { min-height: 170px; max-height: 230px; }
+.term .alexp { color: var(--alex); }
+@media (prefers-color-scheme: dark) { .term .alexp { color: #A6E05A; } }
+.term .alexp, .term .youp { font-weight: 700; }
+.term .youp { color: var(--crt-cmd); }
+.term .typed { background: #4A3A10; }
+.term .cursor { background: var(--crt-ink); color: var(--crt); }
+.chip-row { display: flex; gap: 8px; align-items: center; font-size: 13px; }
+.chip-row .trychip { border: 2px dashed var(--gold); background: var(--panel); padding: 2px 8px; font: 700 13px ui-monospace, monospace; }
+.chip-row .trychip.used { border-style: solid; opacity: .6; }
+.strip { background: var(--gold); color: #1F1A3D; padding: 6px 10px; font-size: 13px; display: flex; flex-wrap: wrap; gap: 4px 14px; align-items: center; border: 3px solid var(--edge); border-bottom: 0; }
+.strip b { font: 700 13px ui-monospace, monospace; }
+.strip kbd { font: 700 12px ui-monospace, monospace; background: #fff; border: 1px solid #1F1A3D; padding: 0 4px; }
+.strip .out { margin-left: auto; background: #1F1A3D; color: #fff; padding: 2px 10px; font: 700 12px ui-monospace, monospace; }
+.strip .out.pressed { outline: 3px solid #fff; }
+.editor { white-space: pre; }
+.editor .bar { background: var(--crt-ink); color: var(--crt); display: block; }
+.editor .tilde { color: #5B5BD6; }
+.editor .mark { color: #FF8A78; }
+/* the history chart: your repository and the mothership, shared commits on shared rows */
+.hist { display: grid; grid-template-columns: 1fr 1fr; gap: 0 10px; font-size: 13px; }
+.hist .colhead { font: 700 13px ui-monospace, monospace; padding: 4px 6px; }
+.hist .colhead.va { color: var(--va); } .hist .colhead.re { color: var(--re); }
+.hist .c { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; min-height: 38px; padding: 4px 6px; }
+.hist .c.va { background: var(--va-row); } .hist .c.re { background: var(--re-row); }
+.hist .c.none { background: transparent; border-left: 2px dashed var(--line); }
+.hist .cap { width: 14px; height: 14px; border: 2px solid var(--edge); background: var(--va); display: inline-block; flex: none; }
+.hist .c.re .cap { background: var(--re); }
+.ref.mom { border-color: var(--re); color: var(--re); }
+/* the crew view: the mothership over two stations */
+.crew { display: grid; gap: 10px; }
+.crew .ms { border: 3px solid var(--re); padding: 6px 10px; background: var(--re-row); font-size: 13px; }
+.crew .stations { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+@media (max-width: 600px) { .crew .stations { grid-template-columns: 1fr; } }
+.crew .station { border: 3px solid var(--va); padding: 6px 10px; font-size: 13px; background: var(--panel); }
+.crew .station.alex { border-color: var(--alex); }
+.crew h5 { margin: 0 0 4px; font: 700 13px ui-monospace, monospace; }
+.crew .zone-l { font: 700 11px ui-monospace, monospace; color: var(--ink-soft); margin-top: 6px; }
+.crew .f { display: inline-block; border: 2px solid var(--wd); padding: 0 5px; margin: 2px 4px 2px 0; font: 12px ui-monospace, monospace; }
+.crew .f.conflicted { border-color: var(--new); color: var(--new); font-weight: 700; }
+.crew .f.staged { border-color: var(--st); }
+.crew .f.edited { border-style: dashed; }
+.crew .cm { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 2px 0; }
+.crew .cm .cap { width: 12px; height: 12px; border: 2px solid var(--edge); background: var(--va); display: inline-block; }
+.crew .merging { color: var(--new); font-weight: 700; }
+/* the move log, live */
+.mlog { background: var(--crt); color: var(--crt-ink); border: 3px solid var(--edge); padding: 8px; font: 13px/1.6 ui-monospace, Menlo, Consolas, monospace; overflow-x: auto; }
+.mlog h3 { margin: 0 0 6px; font: 700 13px ui-monospace, monospace; color: var(--crt-soft); }
+.mlog .row { white-space: pre; }
+.mlog .row.ghost::after { content: "  no name"; color: #FFB86B; font-size: 12px; }
+.mlog .r { color: var(--crt-cmd); }
+@media (max-width: 600px) { .mlog .row { white-space: pre-wrap; } }
+/* the conflict panel: click to keep */
+.cpanel { font-size: 13px; }
+.cpanel .file { border: 3px solid var(--edge); background: var(--panel); }
+.cpanel .file h5 { margin: 0; padding: 4px 8px; background: var(--edge); color: var(--crt-ink); font: 700 13px ui-monospace, monospace; display: flex; gap: 8px; }
+.cpanel .file h5 .st { margin-left: auto; color: #FF8A78; }
+.cpanel .file h5 .st.ok { color: #9EF0A0; }
+.cpanel ol { list-style: none; margin: 0; padding: 4px 0; font: 13px/1.6 ui-monospace, Menlo, Consolas, monospace; }
+.cpanel li { padding: 0 8px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.cpanel li.marker { color: var(--ink-soft); }
+.cpanel li.marker.gone { text-decoration: line-through; opacity: .5; }
+.cpanel li.ours { box-shadow: inset 5px 0 0 var(--va); background: var(--va-row); }
+.cpanel li.theirs { box-shadow: inset 5px 0 0 var(--alex); background: color-mix(in srgb, var(--alex) 14%, var(--panel)); }
+.cpanel li.dropped { text-decoration: line-through; opacity: .45; }
+.cpanel .tagm { font: 700 11px system-ui, sans-serif; padding: 0 6px; border-radius: 8px; color: #fff; }
+.cpanel .tagm.you { background: var(--va); } .cpanel .tagm.alex { background: var(--alex); color: var(--alex-ink, #fff); }
+.cpanel .keep { display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 8px; align-items: center; border-top: 2px dashed var(--line); border-bottom: 2px dashed var(--line); }
+.cpanel .keep b { font: 700 12px ui-monospace, monospace; padding: 3px 10px; border: 2px solid var(--edge); background: var(--panel); }
+.cpanel .keep b.on.you { background: var(--va); color: #fff; }
+.cpanel .keep b.on.alex { background: var(--alex); color: var(--alex-ink, #fff); }
+.cpanel .keep b.on.both { background: var(--gold); color: #1F1A3D; }
+.cpanel .act { display: flex; gap: 8px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+.cpanel .act .w { font: 700 13px ui-monospace, monospace; padding: 4px 12px; border: 3px solid var(--edge); background: var(--gold); color: #1F1A3D; }
+.cpanel .act .w.off { opacity: .4; }
+.cpanel .msg { padding: 6px 10px; border: 2px solid var(--edge); margin-top: 8px; }
+.cpanel .msg.ok { border-color: var(--ok); }
+.cpanel .msg.err { border-color: var(--new); }
+.cpanel .or { margin-top: 8px; color: var(--ink-soft); }
+/* dialogs over the screen */
+.veil { position: absolute; inset: 0; background: rgba(11, 9, 32, .55); display: flex; align-items: flex-start; justify-content: center; padding: 50px 16px; z-index: 5; }
+.dialog { max-width: 640px; width: 100%; padding: 14px 16px; }
+.dialog h3 { margin: 0 0 8px; font: 700 16px ui-monospace, monospace; }
+.dialog .starts { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 600px) { .dialog .starts { grid-template-columns: 1fr; } }
+.dialog .st { border: 2px solid var(--edge); padding: 6px 8px; font-size: 13px; background: var(--panel); }
+.dialog .st.pick { outline: 4px solid var(--gold); }
+.dialog .st b { display: block; font: 700 14px ui-monospace, monospace; }
+.dialog .st .uses { font-size: 11px; color: var(--ink-soft); font-weight: 700; }
+.dialog .btns { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+.dialog .btns span { border: 3px solid var(--edge); padding: 3px 12px; font: 700 13px ui-monospace, monospace; }
+.dialog .btns span.go { background: var(--new); color: #fff; }
+.mapmock { padding: 16px; display: grid; gap: 10px; }
+.mapmock .sectors { display: flex; flex-wrap: wrap; gap: 8px; }
+.mapmock .sector { border: 2px solid var(--edge); padding: 6px 10px; font: 700 13px ui-monospace, monospace; background: var(--panel); }
+.mapmock .sector.lm { border: 3px solid var(--gold); background: var(--crt); color: var(--crt-ink); }
+.mapmock .sector.lm.pick { outline: 4px solid var(--gold); outline-offset: 2px; }
+.cardmock { padding: 14px 16px; max-width: 520px; }
+.cardmock .cmd { font: 700 18px ui-monospace, monospace; }
+.cardmock .try { display: inline-block; margin-top: 10px; border: 3px solid var(--edge); background: var(--gold); color: #1F1A3D; padding: 4px 12px; font: 700 13px ui-monospace, monospace; }
+.cardmock .try.pick { outline: 4px solid var(--va); outline-offset: 2px; }
+/* phone: one terminal at a time, with You | Alex above it */
+@media (max-width: 600px) {
+  .terms.two .phone-switch { display: flex; }
+  .terms.two .tw.hidden-phone { display: none; }
+  .phone-switch b { flex: 1; text-align: center; padding: 4px; border: 2px solid var(--edge); font: 700 13px ui-monospace, monospace; background: var(--panel); }
+  .phone-switch b.on.you { background: var(--va); color: #fff; }
+  .phone-switch b.on.alex { background: var(--alex); color: var(--alex-ink, #fff); }
+  .pg-main { padding: 8px; }
+  .screen { border-width: 0; }
+}
+</style>
+</head>
+<body>
+<header><a href="index.html">All flows</a><span class="no">Playground 7</span><span class="title">Conflict: vim, and Get me out</span></header>
+<div class="sb">
+  <div class="bar"><button type="button" id="back">Back</button><button type="button" id="next" class="primary">Next</button><span class="count" id="count"></span><label class="small notes-toggle"><input type="checkbox" id="notes"> designer notes</label></div>
+  <div class="caption box" id="caption" aria-live="polite"></div>
+</div>
+<div class="screen" id="screen"></div>
+<script type="application/json" id="flow">{"title": "Conflict: vim, and Get me out", "run": "vim", "start": "conflict", "view": "conflict", "alex": false, "file": "checklist.txt", "banner": "Your pull stopped on a conflict in checklist.txt. Try: git status", "summary": "Stuck in vim, Get me out with its confirmation; then vim done right, the panel waiting and refreshing; and the rare refused Write.", "beats": [{"s": 0, "do": "The playground opens on Conflict, on the Conflict tab."}, {"s": 1, "do": "They type `cat checklist.txt`.", "see": "The markers, as Git wrote them, in the terminal."}, {"s": 1, "editor": {"who": "you", "name": "vim", "at": 1, "status": "\"checklist.txt\" 14L, 273B"}, "do": "They type `vim checklist.txt`.", "see": "vim fills the terminal. The strip: Save and quit: Esc, then :wq Enter. On a wide screen also: Type: press i. Leave typing mode: Esc. Quit without saving: Esc, then :q! Enter. On a phone those sit behind \"more keys\"."}, {"s": 1, "editor": {"who": "you", "name": "vim", "at": 1, "status": "\"checklist.txt\" 14L, 273B"}, "stripMore": true, "do": "On a phone, they tap more keys.", "see": "The other three keys appear."}, {"s": 1, "editor": {"who": "you", "name": "vim", "at": 1, "status": "E37: No write since last change (add ! to override)"}, "do": "They type a few letters, then `:q`, and vim refuses.", "see": "vim's own error at the bottom. The player is stuck."}, {"s": 1, "editor": {"who": "you", "name": "vim", "at": 1, "status": "E37: No write since last change (add ! to override)"}, "getout": "ask", "do": "They press Get me out.", "see": "It asks first: Quit vim without saving? Your changes to checklist.txt are lost. Quit without saving, or Keep editing."}, {"s": 1, "editor": {"who": "you", "name": "vim", "at": 1, "status": ":q!"}, "getout": "yes", "do": "They press Quit without saving.", "see": "The page types Esc, `:q!` and Enter into the terminal for them."}, {"s": 2, "sheet": true, "do": "vim quits without saving.", "see": "The prompt is back, the strip is gone, and the panel is live again: checklist.txt is as Git wrote it."}, {"s": 3, "do": "They type `git status`.", "see": "Still unmerged: nothing changed."}, {"s": 3, "sheet": true, "panel": {"choices": ["yours"]}, "do": "On the Conflict tab they click Keep: Yours, but do not write yet.", "see": "Write is ready."}, {"s": 3, "sheet": true, "editor": {"who": "you", "name": "vim", "at": 3, "status": "\"checklist.txt\" 14L, 273B"}, "do": "Instead they open vim again: `vim checklist.txt`.", "see": "The panel greys out, with the editor chips, and the pick is cleared: it was made on text the editor is about to change."}, {"s": 3, "editor": {"who": "you", "name": "vim", "at": 4, "status": "-- INSERT --"}, "do": "They press i, delete the markers and Alex's line, then press Esc.", "see": "`-- INSERT --` while typing: the strip's Type and Leave typing mode keys."}, {"s": 3, "editor": {"who": "you", "name": "vim", "at": 4, "status": ":wq"}, "do": "They type `:wq` and Enter."}, {"s": 4, "sheet": true, "panel": {}, "do": "The prompt is back.", "see": "The panel shows checklist.txt as vim saved it: no markers, the Moon course line."}, {"s": 4, "sheet": true, "panel": {"choices": ["yours"], "stale": true, "read": 3}, "do": "The rare case, shown once: a Write clicked just as the file changed.", "see": "Refused: checklist.txt changed after the panel last read it, so nothing was written and the picks were cleared. Look again is the main button.", "note": "The server's 409. With the panel refreshing on every change this needs a click in the moment between a save and the refresh; it is designed so even that never writes over the editor's work."}, {"s": 5, "panel": {}, "do": "They type `git add checklist.txt`."}, {"s": 6, "view": "chain", "sheet": true, "do": "They type `git commit` and pick Chain.", "see": "The merge commit, with its two parents."}], "starts": [{"id": "empty", "title": "Empty folder", "blurb": "Two files and no repository yet.", "uses": ""}, {"id": "changes", "title": "Uncommitted changes", "blurb": "An edited file, not committed, and a branch to switch to.", "uses": "Parallel universes, Time travel"}, {"id": "branches", "title": "Two branches", "blurb": "Two experiments forked off main.", "uses": "Name tags"}, {"id": "alex-ahead", "title": "Alex is ahead", "blurb": "Alex sent two commits you do not have.", "uses": "The mothership"}, {"id": "both", "title": "Both committed", "blurb": "You and Alex each committed a different file: a pull makes a merge, with no conflict.", "uses": "Collisions"}, {"id": "conflict", "title": "Conflict", "blurb": "Your pull stopped: you and Alex changed the same line.", "uses": "Collisions"}, {"id": "lost", "title": "Something lost", "blurb": "A deleted branch, and its commits with no name.", "uses": "Time travel"}], "startTitle": "Conflict"}</script>
+<script type="application/json" id="runs">{"you": [{"state": {"vault": {"head": "9b9b67c", "branch": "main", "commits": [{"id": "9b9b67c", "subject": "Head for the Moon", "author": "Cadet", "time": 1780567200, "parents": ["0a8298c"]}, {"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "9b9b67c"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "ghosts": [], "reflog": [{"ref": "HEAD@{0}", "at": "9b9b67c", "message": "commit: Head for the Moon", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "commit: Add the launch checklist", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "commit: Add the crew list", "ghost": false}, {"ref": "HEAD@{3}", "at": "a38b821", "message": "commit: Plot the route", "ghost": false}, {"ref": "HEAD@{4}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "mothership": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}]}, "alex": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "pinWho": "Alex", "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "conflicted"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n<<<<<<< HEAD\n4. Course: the Moon\n=======\n4. Course: Jupiter\n>>>>>>> 94b6459f310f9ec74b15d5f70e207bdf95b25026\n5. Music: off\n6. Shields: on\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "staged": {}}}, {"state": {"vault": {"head": "9b9b67c", "branch": "main", "commits": [{"id": "9b9b67c", "subject": "Head for the Moon", "author": "Cadet", "time": 1780567200, "parents": ["0a8298c"]}, {"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "9b9b67c"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "ghosts": [], "reflog": [{"ref": "HEAD@{0}", "at": "9b9b67c", "message": "commit: Head for the Moon", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "commit: Add the launch checklist", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "commit: Add the crew list", "ghost": false}, {"ref": "HEAD@{3}", "at": "a38b821", "message": "commit: Plot the route", "ghost": false}, {"ref": "HEAD@{4}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "mothership": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}]}, "alex": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "pinWho": "Alex", "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "conflicted"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n<<<<<<< HEAD\n4. Course: the Moon\n=======\n4. Course: Jupiter\n>>>>>>> 94b6459f310f9ec74b15d5f70e207bdf95b25026\n5. Music: off\n6. Shields: on\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "staged": {}}}, {"state": {"vault": {"head": "9b9b67c", "branch": "main", "commits": [{"id": "9b9b67c", "subject": "Head for the Moon", "author": "Cadet", "time": 1780567200, "parents": ["0a8298c"]}, {"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "9b9b67c"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "ghosts": [], "reflog": [{"ref": "HEAD@{0}", "at": "9b9b67c", "message": "commit: Head for the Moon", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "commit: Add the launch checklist", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "commit: Add the crew list", "ghost": false}, {"ref": "HEAD@{3}", "at": "a38b821", "message": "commit: Plot the route", "ghost": false}, {"ref": "HEAD@{4}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "mothership": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}]}, "alex": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "pinWho": "Alex", "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "conflicted"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n<<<<<<< HEAD\n4. Course: the Moon\n=======\n4. Course: Jupiter\n>>>>>>> 94b6459f310f9ec74b15d5f70e207bdf95b25026\n5. Music: off\n6. Shields: on\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "staged": {}}}, {"state": {"vault": {"head": "9b9b67c", "branch": "main", "commits": [{"id": "9b9b67c", "subject": "Head for the Moon", "author": "Cadet", "time": 1780567200, "parents": ["0a8298c"]}, {"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "9b9b67c"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "ghosts": [], "reflog": [{"ref": "HEAD@{0}", "at": "9b9b67c", "message": "commit: Head for the Moon", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "commit: Add the launch checklist", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "commit: Add the crew list", "ghost": false}, {"ref": "HEAD@{3}", "at": "a38b821", "message": "commit: Plot the route", "ghost": false}, {"ref": "HEAD@{4}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "mothership": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}]}, "alex": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "pinWho": "Alex", "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "conflicted"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n<<<<<<< HEAD\n4. Course: the Moon\n=======\n4. Course: Jupiter\n>>>>>>> 94b6459f310f9ec74b15d5f70e207bdf95b25026\n5. Music: off\n6. Shields: on\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "staged": {}}}, {"state": {"vault": {"head": "9b9b67c", "branch": "main", "commits": [{"id": "9b9b67c", "subject": "Head for the Moon", "author": "Cadet", "time": 1780567200, "parents": ["0a8298c"]}, {"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "9b9b67c"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "ghosts": [], "reflog": [{"ref": "HEAD@{0}", "at": "9b9b67c", "message": "commit: Head for the Moon", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "commit: Add the launch checklist", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "commit: Add the crew list", "ghost": false}, {"ref": "HEAD@{3}", "at": "a38b821", "message": "commit: Plot the route", "ghost": false}, {"ref": "HEAD@{4}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "mothership": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}]}, "alex": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "pinWho": "Alex", "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "conflicted"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: the Moon\n5. Music: off\n6. Shields: on\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "staged": {}}}, {"state": {"vault": {"head": "9b9b67c", "branch": "main", "commits": [{"id": "9b9b67c", "subject": "Head for the Moon", "author": "Cadet", "time": 1780567200, "parents": ["0a8298c"]}, {"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "9b9b67c"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "ghosts": [], "reflog": [{"ref": "HEAD@{0}", "at": "9b9b67c", "message": "commit: Head for the Moon", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "commit: Add the launch checklist", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "commit: Add the crew list", "ghost": false}, {"ref": "HEAD@{3}", "at": "a38b821", "message": "commit: Plot the route", "ghost": false}, {"ref": "HEAD@{4}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "mothership": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}]}, "alex": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "pinWho": "Alex", "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "staged"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: the Moon\n5. Music: off\n6. Shields: on\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "staged": {}}}, {"state": {"vault": {"head": "e4c3ae0", "branch": "main", "commits": [{"id": "e4c3ae0", "subject": "Merge branch 'main' of ../github.com/moonbase/project", "author": "Cadet", "time": 1791488711, "parents": ["9b9b67c", "94b6459"]}, {"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "9b9b67c", "subject": "Head for the Moon", "author": "Cadet", "time": 1780567200, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "e4c3ae0"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "ghosts": [], "reflog": [{"ref": "HEAD@{0}", "at": "e4c3ae0", "message": "commit (merge): Merge branch 'main' of ../github.com/moonbase/project", "ghost": false}, {"ref": "HEAD@{1}", "at": "9b9b67c", "message": "commit: Head for the Moon", "ghost": false}, {"ref": "HEAD@{2}", "at": "0a8298c", "message": "commit: Add the launch checklist", "ghost": false}, {"ref": "HEAD@{3}", "at": "44c16d0", "message": "commit: Add the crew list", "ghost": false}, {"ref": "HEAD@{4}", "at": "a38b821", "message": "commit: Plot the route", "ghost": false}, {"ref": "HEAD@{5}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "mothership": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}]}, "alex": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "pinWho": "Alex", "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "saved"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: the Moon\n5. Music: off\n6. Shields: on\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "staged": {}}}], "alex": [{"state": {"vault": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "ghosts": [], "reflog": [{"ref": "HEAD@{0}", "at": "94b6459", "message": "commit: Head for Jupiter", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{3}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "mothership": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}]}, "alex": {"head": "9b9b67c", "branch": "main", "commits": [{"id": "9b9b67c", "subject": "Head for the Moon", "author": "Cadet", "time": 1780567200, "parents": ["0a8298c"]}, {"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "9b9b67c"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "pinWho": "You", "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "saved"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: Jupiter\n5. Music: off\n6. Shields: off\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "staged": {}}}, {"state": {"vault": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "ghosts": [], "reflog": [{"ref": "HEAD@{0}", "at": "94b6459", "message": "commit: Head for Jupiter", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{3}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "mothership": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}]}, "alex": {"head": "9b9b67c", "branch": "main", "commits": [{"id": "9b9b67c", "subject": "Head for the Moon", "author": "Cadet", "time": 1780567200, "parents": ["0a8298c"]}, {"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "9b9b67c"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "pinWho": "You", "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "saved"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: Jupiter\n5. Music: off\n6. Shields: off\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "staged": {}}}, {"state": {"vault": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "ghosts": [], "reflog": [{"ref": "HEAD@{0}", "at": "94b6459", "message": "commit: Head for Jupiter", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{3}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "mothership": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}]}, "alex": {"head": "9b9b67c", "branch": "main", "commits": [{"id": "9b9b67c", "subject": "Head for the Moon", "author": "Cadet", "time": 1780567200, "parents": ["0a8298c"]}, {"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "9b9b67c"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "pinWho": "You", "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "saved"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: Jupiter\n5. Music: off\n6. Shields: off\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "staged": {}}}, {"state": {"vault": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "ghosts": [], "reflog": [{"ref": "HEAD@{0}", "at": "94b6459", "message": "commit: Head for Jupiter", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{3}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "mothership": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}]}, "alex": {"head": "9b9b67c", "branch": "main", "commits": [{"id": "9b9b67c", "subject": "Head for the Moon", "author": "Cadet", "time": 1780567200, "parents": ["0a8298c"]}, {"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "9b9b67c"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "pinWho": "You", "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "saved"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: Jupiter\n5. Music: off\n6. Shields: off\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "staged": {}}}, {"state": {"vault": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "ghosts": [], "reflog": [{"ref": "HEAD@{0}", "at": "94b6459", "message": "commit: Head for Jupiter", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{3}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "mothership": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}]}, "alex": {"head": "9b9b67c", "branch": "main", "commits": [{"id": "9b9b67c", "subject": "Head for the Moon", "author": "Cadet", "time": 1780567200, "parents": ["0a8298c"]}, {"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "9b9b67c"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "pinWho": "You", "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "saved"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: Jupiter\n5. Music: off\n6. Shields: off\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "staged": {}}}, {"state": {"vault": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "ghosts": [], "reflog": [{"ref": "HEAD@{0}", "at": "94b6459", "message": "commit: Head for Jupiter", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{3}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "mothership": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}]}, "alex": {"head": "9b9b67c", "branch": "main", "commits": [{"id": "9b9b67c", "subject": "Head for the Moon", "author": "Cadet", "time": 1780567200, "parents": ["0a8298c"]}, {"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "9b9b67c"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "pinWho": "You", "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "saved"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: Jupiter\n5. Music: off\n6. Shields: off\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "staged": {}}}, {"state": {"vault": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "ghosts": [], "reflog": [{"ref": "HEAD@{0}", "at": "94b6459", "message": "commit: Head for Jupiter", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{3}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "mothership": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}]}, "alex": {"head": "e4c3ae0", "branch": "main", "commits": [{"id": "e4c3ae0", "subject": "Merge branch 'main' of ../github.com/moonbase/project", "author": "Cadet", "time": 1791488711, "parents": ["9b9b67c", "94b6459"]}, {"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "9b9b67c", "subject": "Head for the Moon", "author": "Cadet", "time": 1780567200, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "e4c3ae0"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "pinWho": "You", "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "saved"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: Jupiter\n5. Music: off\n6. Shields: off\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "staged": {}}}]}</script>
+<script type="application/json" id="raw">[{"who": null, "line": null, "status": null, "output": "", "state": {"you": {"repo": {"head": "9b9b67c", "branch": "main", "commits": [{"id": "9b9b67c", "subject": "Head for the Moon", "author": "Cadet", "time": 1780567200, "parents": ["0a8298c"]}, {"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "9b9b67c"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "conflicted"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n<<<<<<< HEAD\n4. Course: the Moon\n=======\n4. Course: Jupiter\n>>>>>>> 94b6459f310f9ec74b15d5f70e207bdf95b25026\n5. Music: off\n6. Shields: on\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "reflog": [{"ref": "HEAD@{0}", "at": "9b9b67c", "message": "commit: Head for the Moon", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "commit: Add the launch checklist", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "commit: Add the crew list", "ghost": false}, {"ref": "HEAD@{3}", "at": "a38b821", "message": "commit: Plot the route", "ghost": false}, {"ref": "HEAD@{4}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "ghosts": [], "graph": ["* 9b9b67c (HEAD -> main) Head for the Moon", "| * 94b6459 (origin/main) Head for Jupiter", "|/  ", "* 0a8298c Add the launch checklist", "* 44c16d0 Add the crew list", "* a38b821 Plot the route", "* b9e397c Start the project"], "merging": true, "reflog_lines": ["9b9b67c (HEAD -> main) HEAD@{0}: commit: Head for the Moon", "0a8298c HEAD@{1}: commit: Add the launch checklist", "44c16d0 HEAD@{2}: commit: Add the crew list", "a38b821 HEAD@{3}: commit: Plot the route", "b9e397c HEAD@{4}: clone: from ~/.firstcommit/playground/github.com/moonbase/project.git"]}, "alex": {"repo": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "saved"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: Jupiter\n5. Music: off\n6. Shields: off\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "reflog": [{"ref": "HEAD@{0}", "at": "94b6459", "message": "commit: Head for Jupiter", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{3}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "ghosts": [], "graph": ["* 94b6459 (HEAD -> main, origin/main) Head for Jupiter", "* 0a8298c Add the launch checklist", "* 44c16d0 Add the crew list", "* a38b821 Plot the route", "* b9e397c Start the project"], "merging": false, "reflog_lines": ["94b6459 (HEAD -> main, origin/main) HEAD@{0}: commit: Head for Jupiter", "0a8298c HEAD@{1}: pull -q: Fast-forward", "44c16d0 HEAD@{2}: pull -q: Fast-forward", "b9e397c HEAD@{3}: clone: from ~/.firstcommit/playground/github.com/moonbase/project.git"]}, "mothership": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}]}}}, {"who": "you", "line": "cat checklist.txt", "status": 0, "output": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n<<<<<<< HEAD\n4. Course: the Moon\n=======\n4. Course: Jupiter\n>>>>>>> 94b6459f310f9ec74b15d5f70e207bdf95b25026\n5. Music: off\n6. Shields: on\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n", "state": {"you": {"repo": {"head": "9b9b67c", "branch": "main", "commits": [{"id": "9b9b67c", "subject": "Head for the Moon", "author": "Cadet", "time": 1780567200, "parents": ["0a8298c"]}, {"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "9b9b67c"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "conflicted"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n<<<<<<< HEAD\n4. Course: the Moon\n=======\n4. Course: Jupiter\n>>>>>>> 94b6459f310f9ec74b15d5f70e207bdf95b25026\n5. Music: off\n6. Shields: on\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "reflog": [{"ref": "HEAD@{0}", "at": "9b9b67c", "message": "commit: Head for the Moon", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "commit: Add the launch checklist", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "commit: Add the crew list", "ghost": false}, {"ref": "HEAD@{3}", "at": "a38b821", "message": "commit: Plot the route", "ghost": false}, {"ref": "HEAD@{4}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "ghosts": [], "graph": ["* 9b9b67c (HEAD -> main) Head for the Moon", "| * 94b6459 (origin/main) Head for Jupiter", "|/  ", "* 0a8298c Add the launch checklist", "* 44c16d0 Add the crew list", "* a38b821 Plot the route", "* b9e397c Start the project"], "merging": true, "reflog_lines": ["9b9b67c (HEAD -> main) HEAD@{0}: commit: Head for the Moon", "0a8298c HEAD@{1}: commit: Add the launch checklist", "44c16d0 HEAD@{2}: commit: Add the crew list", "a38b821 HEAD@{3}: commit: Plot the route", "b9e397c HEAD@{4}: clone: from ~/.firstcommit/playground/github.com/moonbase/project.git"]}, "alex": {"repo": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "saved"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: Jupiter\n5. Music: off\n6. Shields: off\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "reflog": [{"ref": "HEAD@{0}", "at": "94b6459", "message": "commit: Head for Jupiter", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{3}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "ghosts": [], "graph": ["* 94b6459 (HEAD -> main, origin/main) Head for Jupiter", "* 0a8298c Add the launch checklist", "* 44c16d0 Add the crew list", "* a38b821 Plot the route", "* b9e397c Start the project"], "merging": false, "reflog_lines": ["94b6459 (HEAD -> main, origin/main) HEAD@{0}: commit: Head for Jupiter", "0a8298c HEAD@{1}: pull -q: Fast-forward", "44c16d0 HEAD@{2}: pull -q: Fast-forward", "b9e397c HEAD@{3}: clone: from ~/.firstcommit/playground/github.com/moonbase/project.git"]}, "mothership": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}]}}}, {"who": "you", "line": null, "status": null, "output": "", "editor": "vim", "file": "checklist.txt", "saved": false, "state": {"you": {"repo": {"head": "9b9b67c", "branch": "main", "commits": [{"id": "9b9b67c", "subject": "Head for the Moon", "author": "Cadet", "time": 1780567200, "parents": ["0a8298c"]}, {"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "9b9b67c"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "conflicted"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n<<<<<<< HEAD\n4. Course: the Moon\n=======\n4. Course: Jupiter\n>>>>>>> 94b6459f310f9ec74b15d5f70e207bdf95b25026\n5. Music: off\n6. Shields: on\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "reflog": [{"ref": "HEAD@{0}", "at": "9b9b67c", "message": "commit: Head for the Moon", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "commit: Add the launch checklist", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "commit: Add the crew list", "ghost": false}, {"ref": "HEAD@{3}", "at": "a38b821", "message": "commit: Plot the route", "ghost": false}, {"ref": "HEAD@{4}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "ghosts": [], "graph": ["* 9b9b67c (HEAD -> main) Head for the Moon", "| * 94b6459 (origin/main) Head for Jupiter", "|/  ", "* 0a8298c Add the launch checklist", "* 44c16d0 Add the crew list", "* a38b821 Plot the route", "* b9e397c Start the project"], "merging": true, "reflog_lines": ["9b9b67c (HEAD -> main) HEAD@{0}: commit: Head for the Moon", "0a8298c HEAD@{1}: commit: Add the launch checklist", "44c16d0 HEAD@{2}: commit: Add the crew list", "a38b821 HEAD@{3}: commit: Plot the route", "b9e397c HEAD@{4}: clone: from ~/.firstcommit/playground/github.com/moonbase/project.git"]}, "alex": {"repo": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "saved"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: Jupiter\n5. Music: off\n6. Shields: off\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "reflog": [{"ref": "HEAD@{0}", "at": "94b6459", "message": "commit: Head for Jupiter", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{3}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "ghosts": [], "graph": ["* 94b6459 (HEAD -> main, origin/main) Head for Jupiter", "* 0a8298c Add the launch checklist", "* 44c16d0 Add the crew list", "* a38b821 Plot the route", "* b9e397c Start the project"], "merging": false, "reflog_lines": ["94b6459 (HEAD -> main, origin/main) HEAD@{0}: commit: Head for Jupiter", "0a8298c HEAD@{1}: pull -q: Fast-forward", "44c16d0 HEAD@{2}: pull -q: Fast-forward", "b9e397c HEAD@{3}: clone: from ~/.firstcommit/playground/github.com/moonbase/project.git"]}, "mothership": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}]}}}, {"who": "you", "line": "git status", "status": 0, "output": "On branch main\nYour branch and 'origin/main' have diverged,\nand have 1 and 1 different commits each, respectively.\n  (use \"git pull\" if you want to integrate the remote branch with yours)\n\nYou have unmerged paths.\n  (fix conflicts and run \"git commit\")\n  (use \"git merge --abort\" to abort the merge)\n\nUnmerged paths:\n  (use \"git add <file>...\" to mark resolution)\n\tboth modified:   checklist.txt\n\nno changes added to commit (use \"git add\" and/or \"git commit -a\")\n", "state": {"you": {"repo": {"head": "9b9b67c", "branch": "main", "commits": [{"id": "9b9b67c", "subject": "Head for the Moon", "author": "Cadet", "time": 1780567200, "parents": ["0a8298c"]}, {"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "9b9b67c"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "conflicted"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n<<<<<<< HEAD\n4. Course: the Moon\n=======\n4. Course: Jupiter\n>>>>>>> 94b6459f310f9ec74b15d5f70e207bdf95b25026\n5. Music: off\n6. Shields: on\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "reflog": [{"ref": "HEAD@{0}", "at": "9b9b67c", "message": "commit: Head for the Moon", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "commit: Add the launch checklist", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "commit: Add the crew list", "ghost": false}, {"ref": "HEAD@{3}", "at": "a38b821", "message": "commit: Plot the route", "ghost": false}, {"ref": "HEAD@{4}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "ghosts": [], "graph": ["* 9b9b67c (HEAD -> main) Head for the Moon", "| * 94b6459 (origin/main) Head for Jupiter", "|/  ", "* 0a8298c Add the launch checklist", "* 44c16d0 Add the crew list", "* a38b821 Plot the route", "* b9e397c Start the project"], "merging": true, "reflog_lines": ["9b9b67c (HEAD -> main) HEAD@{0}: commit: Head for the Moon", "0a8298c HEAD@{1}: commit: Add the launch checklist", "44c16d0 HEAD@{2}: commit: Add the crew list", "a38b821 HEAD@{3}: commit: Plot the route", "b9e397c HEAD@{4}: clone: from ~/.firstcommit/playground/github.com/moonbase/project.git"]}, "alex": {"repo": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "saved"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: Jupiter\n5. Music: off\n6. Shields: off\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "reflog": [{"ref": "HEAD@{0}", "at": "94b6459", "message": "commit: Head for Jupiter", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{3}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "ghosts": [], "graph": ["* 94b6459 (HEAD -> main, origin/main) Head for Jupiter", "* 0a8298c Add the launch checklist", "* 44c16d0 Add the crew list", "* a38b821 Plot the route", "* b9e397c Start the project"], "merging": false, "reflog_lines": ["94b6459 (HEAD -> main, origin/main) HEAD@{0}: commit: Head for Jupiter", "0a8298c HEAD@{1}: pull -q: Fast-forward", "44c16d0 HEAD@{2}: pull -q: Fast-forward", "b9e397c HEAD@{3}: clone: from ~/.firstcommit/playground/github.com/moonbase/project.git"]}, "mothership": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}]}}}, {"who": "you", "line": null, "status": null, "output": "", "editor": "vim", "file": "checklist.txt", "saved": true, "state": {"you": {"repo": {"head": "9b9b67c", "branch": "main", "commits": [{"id": "9b9b67c", "subject": "Head for the Moon", "author": "Cadet", "time": 1780567200, "parents": ["0a8298c"]}, {"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "9b9b67c"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "conflicted"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: the Moon\n5. Music: off\n6. Shields: on\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "reflog": [{"ref": "HEAD@{0}", "at": "9b9b67c", "message": "commit: Head for the Moon", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "commit: Add the launch checklist", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "commit: Add the crew list", "ghost": false}, {"ref": "HEAD@{3}", "at": "a38b821", "message": "commit: Plot the route", "ghost": false}, {"ref": "HEAD@{4}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "ghosts": [], "graph": ["* 9b9b67c (HEAD -> main) Head for the Moon", "| * 94b6459 (origin/main) Head for Jupiter", "|/  ", "* 0a8298c Add the launch checklist", "* 44c16d0 Add the crew list", "* a38b821 Plot the route", "* b9e397c Start the project"], "merging": true, "reflog_lines": ["9b9b67c (HEAD -> main) HEAD@{0}: commit: Head for the Moon", "0a8298c HEAD@{1}: commit: Add the launch checklist", "44c16d0 HEAD@{2}: commit: Add the crew list", "a38b821 HEAD@{3}: commit: Plot the route", "b9e397c HEAD@{4}: clone: from ~/.firstcommit/playground/github.com/moonbase/project.git"]}, "alex": {"repo": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "saved"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: Jupiter\n5. Music: off\n6. Shields: off\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "reflog": [{"ref": "HEAD@{0}", "at": "94b6459", "message": "commit: Head for Jupiter", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{3}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "ghosts": [], "graph": ["* 94b6459 (HEAD -> main, origin/main) Head for Jupiter", "* 0a8298c Add the launch checklist", "* 44c16d0 Add the crew list", "* a38b821 Plot the route", "* b9e397c Start the project"], "merging": false, "reflog_lines": ["94b6459 (HEAD -> main, origin/main) HEAD@{0}: commit: Head for Jupiter", "0a8298c HEAD@{1}: pull -q: Fast-forward", "44c16d0 HEAD@{2}: pull -q: Fast-forward", "b9e397c HEAD@{3}: clone: from ~/.firstcommit/playground/github.com/moonbase/project.git"]}, "mothership": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}]}}}, {"who": "you", "line": "git add checklist.txt", "status": 0, "output": "", "state": {"you": {"repo": {"head": "9b9b67c", "branch": "main", "commits": [{"id": "9b9b67c", "subject": "Head for the Moon", "author": "Cadet", "time": 1780567200, "parents": ["0a8298c"]}, {"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "9b9b67c"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "staged"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: the Moon\n5. Music: off\n6. Shields: on\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "reflog": [{"ref": "HEAD@{0}", "at": "9b9b67c", "message": "commit: Head for the Moon", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "commit: Add the launch checklist", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "commit: Add the crew list", "ghost": false}, {"ref": "HEAD@{3}", "at": "a38b821", "message": "commit: Plot the route", "ghost": false}, {"ref": "HEAD@{4}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "ghosts": [], "graph": ["* 9b9b67c (HEAD -> main) Head for the Moon", "| * 94b6459 (origin/main) Head for Jupiter", "|/  ", "* 0a8298c Add the launch checklist", "* 44c16d0 Add the crew list", "* a38b821 Plot the route", "* b9e397c Start the project"], "merging": true, "reflog_lines": ["9b9b67c (HEAD -> main) HEAD@{0}: commit: Head for the Moon", "0a8298c HEAD@{1}: commit: Add the launch checklist", "44c16d0 HEAD@{2}: commit: Add the crew list", "a38b821 HEAD@{3}: commit: Plot the route", "b9e397c HEAD@{4}: clone: from ~/.firstcommit/playground/github.com/moonbase/project.git"]}, "alex": {"repo": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "saved"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: Jupiter\n5. Music: off\n6. Shields: off\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "reflog": [{"ref": "HEAD@{0}", "at": "94b6459", "message": "commit: Head for Jupiter", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{3}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "ghosts": [], "graph": ["* 94b6459 (HEAD -> main, origin/main) Head for Jupiter", "* 0a8298c Add the launch checklist", "* 44c16d0 Add the crew list", "* a38b821 Plot the route", "* b9e397c Start the project"], "merging": false, "reflog_lines": ["94b6459 (HEAD -> main, origin/main) HEAD@{0}: commit: Head for Jupiter", "0a8298c HEAD@{1}: pull -q: Fast-forward", "44c16d0 HEAD@{2}: pull -q: Fast-forward", "b9e397c HEAD@{3}: clone: from ~/.firstcommit/playground/github.com/moonbase/project.git"]}, "mothership": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}]}}}, {"who": "you", "line": "git commit", "status": 0, "output": "[main e4c3ae0] Merge branch 'main' of ../github.com/moonbase/project\n", "state": {"you": {"repo": {"head": "e4c3ae0", "branch": "main", "commits": [{"id": "e4c3ae0", "subject": "Merge branch 'main' of ../github.com/moonbase/project", "author": "Cadet", "time": 1791488711, "parents": ["9b9b67c", "94b6459"]}, {"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "9b9b67c", "subject": "Head for the Moon", "author": "Cadet", "time": 1780567200, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "e4c3ae0"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "saved"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: the Moon\n5. Music: off\n6. Shields: on\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "reflog": [{"ref": "HEAD@{0}", "at": "e4c3ae0", "message": "commit (merge): Merge branch 'main' of ../github.com/moonbase/project", "ghost": false}, {"ref": "HEAD@{1}", "at": "9b9b67c", "message": "commit: Head for the Moon", "ghost": false}, {"ref": "HEAD@{2}", "at": "0a8298c", "message": "commit: Add the launch checklist", "ghost": false}, {"ref": "HEAD@{3}", "at": "44c16d0", "message": "commit: Add the crew list", "ghost": false}, {"ref": "HEAD@{4}", "at": "a38b821", "message": "commit: Plot the route", "ghost": false}, {"ref": "HEAD@{5}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "ghosts": [], "graph": ["*   e4c3ae0 (HEAD -> main) Merge branch 'main' of ../github.com/moonbase/project", "|\\  ", "| * 94b6459 (origin/main) Head for Jupiter", "* | 9b9b67c Head for the Moon", "|/  ", "* 0a8298c Add the launch checklist", "* 44c16d0 Add the crew list", "* a38b821 Plot the route", "* b9e397c Start the project"], "merging": false, "reflog_lines": ["e4c3ae0 (HEAD -> main) HEAD@{0}: commit (merge): Merge branch 'main' of ../github.com/moonbase/project", "9b9b67c HEAD@{1}: commit: Head for the Moon", "0a8298c HEAD@{2}: commit: Add the launch checklist", "44c16d0 HEAD@{3}: commit: Add the crew list", "a38b821 HEAD@{4}: commit: Plot the route", "b9e397c HEAD@{5}: clone: from ~/.firstcommit/playground/github.com/moonbase/project.git"]}, "alex": {"repo": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}, {"name": "origin/main", "kind": "remote", "at": "94b6459"}]}, "files": [{"path": "README.md", "status": "saved"}, {"path": "checklist.txt", "status": "saved"}, {"path": "crew.txt", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "route.txt", "status": "saved"}], "texts": {"README.md": "# Project\n", "notes.txt": "Notes\n", "checklist.txt": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: Jupiter\n5. Music: off\n6. Shields: off\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"}, "reflog": [{"ref": "HEAD@{0}", "at": "94b6459", "message": "commit: Head for Jupiter", "ghost": false}, {"ref": "HEAD@{1}", "at": "0a8298c", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{2}", "at": "44c16d0", "message": "pull -q: Fast-forward", "ghost": false}, {"ref": "HEAD@{3}", "at": "b9e397c", "message": "clone: from ~/.firstcommit/playground/github.com/moonbase/project.git", "ghost": false}], "ghosts": [], "graph": ["* 94b6459 (HEAD -> main, origin/main) Head for Jupiter", "* 0a8298c Add the launch checklist", "* 44c16d0 Add the crew list", "* a38b821 Plot the route", "* b9e397c Start the project"], "merging": false, "reflog_lines": ["94b6459 (HEAD -> main, origin/main) HEAD@{0}: commit: Head for Jupiter", "0a8298c HEAD@{1}: pull -q: Fast-forward", "44c16d0 HEAD@{2}: pull -q: Fast-forward", "b9e397c HEAD@{3}: clone: from ~/.firstcommit/playground/github.com/moonbase/project.git"]}, "mothership": {"head": "94b6459", "branch": "main", "commits": [{"id": "94b6459", "subject": "Head for Jupiter", "author": "Alex", "time": 1780563600, "parents": ["0a8298c"]}, {"id": "0a8298c", "subject": "Add the launch checklist", "author": "Cadet", "time": 1780477200, "parents": ["44c16d0"]}, {"id": "44c16d0", "subject": "Add the crew list", "author": "Cadet", "time": 1780390800, "parents": ["a38b821"]}, {"id": "a38b821", "subject": "Plot the route", "author": "Cadet", "time": 1780304400, "parents": ["b9e397c"]}, {"id": "b9e397c", "subject": "Start the project", "author": "First Commit", "time": 1777626000, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "94b6459"}]}}}]</script>
+<script>
+"use strict";
+const FLOW = JSON.parse(document.getElementById("flow").textContent);
+const RUNS = JSON.parse(document.getElementById("runs").textContent);
+const RAW = JSON.parse(document.getElementById("raw").textContent);
+const LEVEL = { beats: [] };
+const $ = (sel) => document.querySelector(sel);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const md = (s) => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\n\n/g, "</p><p>");
+let at = 0;
+const STICKY = ["view", "whose", "alex", "focus", "chip", "back", "start", "panel"];
+/* Each beat inherits the screen's settings from the one before it, so a flow only says what changes. */
+const BEATS = [];
+FLOW.beats.forEach((b, i) => {
+  const prev = BEATS[i - 1] || { view: FLOW.view, whose: "you", alex: FLOW.alex, focus: "you", start: FLOW.start };
+  const beat = { ...b };
+  for (const k of STICKY) if (!(k in b) && k in prev) beat[k] = prev[k];
+  BEATS.push(beat);
+});
+/* build.py's chain reads LEVEL.beats[at] and stateOf(beat); here a beat's picture is one person's side. */
+function reflogTyped(beat) { return RAW.slice(1, beat.s + 1).some((r) => r.line && r.line.startsWith("git reflog")); }
+/* The mothership's pin only when it says something the bookmark does not, or when Alex is shown; Alex's pin only when Alex is. */
+function motherPin(beat) {
+  const st = RAW[beat.s].state, mine = st[beat.whose] && st[beat.whose].repo, ms = st.mothership;
+  if (beat.alex || !mine || !ms) return Boolean(beat.alex);
+  const at = (repo, name) => (repo.refs.find((r) => r.name === name) || {}).at;
+  return at(ms, "main") !== at(mine, "origin/main");
+}
+function asLevelBeat(beat) { return { ...beat, s: [beat.whose, beat.s], mother: true, motherPin: motherPin(beat), alex: Boolean(beat.alex), foldLegend: true, ghosts: reflogTyped(beat) }; }
+LEVEL.beats = BEATS.map(asLevelBeat);
+const stateOf = (beat) => RUNS[beat.s[0]][beat.s[1]].state;
+
+/* Every commit the level ever shows, in one stable order: by generation (longest path from the
+   root) newest first, then by time. Lanes: 0 for the first-parent chain of the first state's
+   main, 1 for everything else. */
+function layout() {
+  const all = new Map();
+  const add = (c) => { if (!all.has(c.id)) all.set(c.id, c); };
+  for (const run of Object.values(RUNS)) for (const beat of run) {
+    const s = beat.state;
+    for (const c of (s.vault ? s.vault.commits : [])) add(c);
+    for (const c of s.ghosts) add(c);
+    for (const c of (s.mothership ? s.mothership.commits : [])) add(c);
+  }
+  const gen = new Map();
+  const depth = (id) => {
+    if (gen.has(id)) return gen.get(id);
+    const c = all.get(id);
+    const g = c && c.parents.length ? 1 + Math.max(...c.parents.map(depth)) : 0;
+    gen.set(id, g);
+    return g;
+  };
+  const order = [...all.values()].sort((a, b) => depth(b.id) - depth(a.id) || b.time - a.time);
+  const run = RUNS[LEVEL.beats[0].s[0]];
+  const lane0 = new Set();
+  for (const st of [run[0].state, run[run.length - 1].state]) {
+    for (const name of ["main", "origin/main"]) {
+      const ref = st.vault.refs.find((r) => r.name === name);
+      let walk = ref && ref.at;
+      while (walk && all.has(walk)) { lane0.add(walk); walk = all.get(walk).parents[0]; }
+    }
+  }
+  const lanes = new Map(order.map((c) => [c.id, lane0.has(c.id) ? 0 : 1]));
+  /* Keep each side line together, just above the commit it leaves from, so it reads as a branch. */
+  const main = order.filter((c) => lanes.get(c.id) === 0);
+  const side = order.filter((c) => lanes.get(c.id) === 1);
+  const forkOf = (c) => { let at = c; while (at && lanes.get(at.id) === 1) at = all.get(at.parents[0]); return at ? at.id : null; };
+  const grouped = [];
+  for (const c of main) { grouped.push(...side.filter((x) => forkOf(x) === c.id)); grouped.push(c); }
+  grouped.push(...side.filter((x) => !grouped.includes(x)));
+  /* Each side line gets its own column: a commit takes its child's column when a side child has
+     one, otherwise the next free column, so two branches off one commit never share a column. */
+  let next = 1;
+  for (const c of grouped.filter((x) => lanes.get(x.id) === 1)) {
+    const child = grouped.find((x) => lanes.get(x.id) >= 1 && x.parents[0] === c.id && x.lane !== undefined);
+    c.lane = child ? child.lane : next++;
+    lanes.set(c.id, c.lane);
+  }
+  return { order: grouped, lanes, width: 26 + Math.max(1, next - 1) * 22 };
+}
+const LAYOUT = layout();
+
+function refsAt(repo, id, mother) {
+  if (!repo) return "";
+  return repo.refs.filter((r) => r.at === id).map((r) => {
+    let text = r.name;
+    let cls = r.kind === "remote" ? "remote" : mother ? "mother" : "";
+    if (!mother && r.kind === "branch" && repo.branch === r.name) { text = `HEAD → ${r.name}`; cls = "head"; }
+    return { text, cls, key: (mother ? "m:" : "v:") + r.name };
+  });
+}
+
+function moved(beat) {
+  const prev = LEVEL.beats[at - 1];
+  if (!prev) return { refs: new Set(), caps: new Set() };
+  const before = stateOf(prev), now = stateOf(beat);
+  const refs = new Set(), caps = new Set();
+  const place = (s) => {
+    const m = new Map();
+    for (const r of (s.vault ? s.vault.refs : [])) m.set("v:" + r.name, r.at + (s.vault.branch === r.name ? "*" : ""));
+    for (const r of (s.mothership ? s.mothership.refs : [])) m.set("m:" + r.name, r.at);
+    return m;
+  };
+  const a = place(before), b = place(now);
+  for (const [k, v] of b) if (a.get(k) !== v) refs.add(k);
+  const had = new Set((before.vault ? before.vault.commits : []).map((c) => c.id));
+  for (const c of (now.vault ? now.vault.commits : [])) if (!had.has(c.id)) caps.add(c.id);
+  return { refs, caps };
+}
+
+/* A row's capsule only. The lines between capsules are drawn by wire() once the rows are laid
+   out, because a row grows when its names wrap. */
+const LANE_X = (l) => 10 + l * 22;
+function capsule(c, look) {
+  const w = LAYOUT.width, cx = LANE_X(LAYOUT.lanes.get(c.id)) - 8, cy = 12;
+  const fill = look.ghost || look.remote ? "var(--panel)" : look.mirror ? "url(#mirror)" : "var(--va)";
+  const dash = look.ghost ? 'stroke-dasharray="3 2"' : look.remote ? 'stroke-dasharray="1 2"' : "";
+  const ring = look.ring ? `<rect x="${cx - 4}" y="${cy - 4}" width="24" height="24" fill="none" stroke="var(--gold)" stroke-width="3"/>` : "";
+  const box = `<rect x="${cx}" y="${cy}" width="16" height="16" fill="${fill}" stroke="${look.ghost ? "var(--va)" : look.remote ? "var(--re)" : "var(--edge)"}" stroke-width="${look.remote ? 3 : 2}" ${dash}/>`;
+  return `<span class="lane" data-id="${c.id}" style="width:${w}px"><svg width="${w}" height="40"><defs><pattern id="mirror" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="6" fill="var(--va)"/></pattern></defs>${ring}${box}</svg></span>`;
+}
+
+/* Every chain on the page registers its links here; wire() draws them over the laid-out rows. */
+let WIRES = [];
+function links(rows, ids, ghosts, remote, undo, walkFrom) {
+  const edges = [];
+  const walk = [];
+  const byId = new Map(rows.map((c) => [c.id, c]));
+  for (let id = walkFrom; id && byId.has(id); id = byId.get(id).parents[0]) walk.push(id);
+  for (const c of rows) for (const p of c.parents) {
+    if (ids.has(p)) edges.push({ from: c.id, to: p, dashed: ghosts.has(c.id) || remote.has(c.id), remote: remote.has(c.id) });
+  }
+  WIRES.push({ edges, undo, walk });
+  return `data-wire="${WIRES.length - 1}"`;
+}
+
+/* A side line runs down its own column and turns into its parent's column just above the
+   parent, as git draws it; a merge's second line leaves at once and runs down the side column. */
+function wire() {
+  document.querySelectorAll(".chain[data-wire]").forEach((el) => {
+    const spec = WIRES[Number(el.dataset.wire)];
+    if (!spec) return;
+    el.querySelectorAll("svg.wires").forEach((old) => old.remove());
+    const box = el.getBoundingClientRect();
+    const where = new Map();
+    el.querySelectorAll(".lane[data-id]").forEach((lane) => {
+      const r = lane.getBoundingClientRect();
+      const id = lane.dataset.id;
+      where.set(id, { x: r.left - box.left + el.scrollLeft + LANE_X(LAYOUT.lanes.get(id.replace(/^[mp]:/, ""))), y: r.top - box.top + 20 });
+    });
+    let paths = "";
+    for (const e of spec.edges) {
+      const a = where.get(e.from), b = where.get(e.to);
+      if (!a || !b) continue;
+      const turn = 12;
+      const d = a.x >= b.x
+        ? `M${a.x} ${a.y} L${a.x} ${b.y - turn - 8} L${b.x} ${b.y - 8} L${b.x} ${b.y}`
+        : `M${a.x} ${a.y} L${a.x} ${a.y + 8} L${b.x} ${a.y + 8 + turn} L${b.x} ${b.y}`;
+      const dash = e.dashed ? 'stroke-dasharray="4 3" opacity=".6"' : "";
+      paths += `<path d="${d}" fill="none" stroke="${e.remote ? "var(--re)" : "var(--va)"}" stroke-width="3" ${dash}/>`;
+    }
+    spec.walk.slice(1).forEach((id, i) => {
+      const a = where.get(spec.walk[i]), b = where.get(id);
+      if (a && b) paths += `<path class="walk" style="animation-delay:${0.4 + i * 0.45}s" d="M${a.x} ${a.y} L${b.x} ${b.y}" fill="none" stroke="var(--gold)" stroke-width="5"/>`;
+    });
+    if (spec.undo) {
+      const subjAt = (subj) => [...el.querySelectorAll(".cell")].find((cell) => cell.dataset.subj === subj);
+      const from = subjAt(spec.undo[0]), to = subjAt(spec.undo[1]);
+      if (from && to) {
+        const y1 = from.getBoundingClientRect().top - box.top + 20, y2 = to.getBoundingClientRect().top - box.top + 20;
+        paths += `<defs><marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="var(--gold)"/></marker></defs><path d="M26 ${y1} C 2 ${y1}, 2 ${y2}, 24 ${y2}" fill="none" stroke="var(--gold)" stroke-width="3" stroke-dasharray="5 3" marker-end="url(#ah)"/>`;
+      }
+    }
+    el.insertAdjacentHTML("afterbegin", `<svg class="wires" width="${el.scrollWidth}" height="${el.scrollHeight}">${paths}</svg>`);
+  });
+}
+window.addEventListener("resize", () => wire());
+
+/* The chain: every commit drawn once, joined to its parents. Your labels are solid tags (the
+   ship marks the one you are on), origin/* tags are hollow (your note of the mothership), and
+   pins mark where the mothership and Alex really are. */
+function chain(beat) {
+  const s = stateOf(beat);
+  const showGhosts = Boolean(beat.ghosts);
+  const ghostIds = new Set(showGhosts ? s.ghosts.map((g) => g.id) : []);
+  const vaultIds = new Set(s.vault.commits.map((c) => c.id));
+  const motherOnly = new Set(beat.mother && s.mothership ? s.mothership.commits.map((c) => c.id).filter((id) => !vaultIds.has(id)) : []);
+  const ids = new Set([...vaultIds, ...ghostIds, ...motherOnly]);
+  const rows = LAYOUT.order.filter((c) => ids.has(c.id));
+  const ring = new Set(beat.ring || []);
+  const mv = moved(beat);
+  const pinMoved = pinsMoved(beat);
+  const [undoFrom, undoTo] = beat.undoes || [null, null];
+  const shown = new Set();
+  let out = `<div class="chain" ${links(rows, ids, ghostIds, motherOnly, beat.undoes, beat.walk ? (s.vault.refs.find((r) => r.name === beat.walk) || {}).at : null)}>`;
+  if (beat.count) {
+    const mainAt = (s.vault.refs.find((r) => r.name === "main") || {}).at;
+    let n = 0, walk = mainAt;
+    const byId = new Map(LAYOUT.order.map((c) => [c.id, c]));
+    while (walk && byId.has(walk)) { n += 1; walk = byId.get(walk).parents[0]; }
+    out += `<div class="count">main: ${n} commits</div>`;
+  }
+  for (const c of rows) {
+    const ghost = ghostIds.has(c.id);
+    const look = { ghost, remote: motherOnly.has(c.id), mirror: c.subject.startsWith("Revert "), ring: ring.has(c.subject) || mv.caps.has(c.id) };
+    const rank = (r) => (r.kind === "branch" && s.vault.branch === r.name ? 0 : r.kind === "branch" ? 1 : 2);
+    const tags = beat.plain ? "" : s.vault.refs.filter((r) => r.at === c.id).sort((a, b) => rank(a) - rank(b)).map((r) => {
+      const here = r.kind === "branch" && s.vault.branch === r.name;
+      const cls = r.kind === "remote" ? "remote" : here ? "head" : "";
+      const key = "v:" + r.name;
+      const tag = `<span class="ref ${cls} ${mv.refs.has(key) ? "moved" : ""}">${esc(r.name)}</span>`;
+      return here ? `<span class="rides"><span class="ship ${beat.ringhead ? "ring" : ""}" title="HEAD: you are here">HEAD ▶</span>${tag}</span>` : tag;
+    }).join("");
+    const pins = [];
+    if (!beat.plain && s.vault.refs.some((r) => r.at === c.id && r.kind === "branch" && r.name === s.vault.branch)) shown.add("head");
+    if (!beat.plain && s.vault.refs.some((r) => r.at === c.id && r.kind === "branch" && r.name !== s.vault.branch)) shown.add("other");
+    if (!beat.plain && s.vault.refs.some((r) => r.at === c.id && r.kind === "remote")) shown.add("remote");
+    if (beat.mother && beat.motherPin !== false && s.mothership) for (const r of s.mothership.refs.filter((r) => r.at === c.id)) pins.push(`<span class="pin ms ${pinMoved.has("m:" + r.name) ? "moved" : ""}">Mothership: ${esc(r.name)}</span>`);
+    if (beat.alex && s.alex) for (const r of s.alex.refs.filter((r) => r.kind === "branch" && r.at === c.id)) pins.push(`<span class="pin ${s.pinWho === "You" ? "you" : "alex"} ${pinMoved.has("a:" + r.name) ? "moved" : ""}">${s.pinWho || "Alex"}: ${esc(r.name)}</span>`);
+    if (pins.some((p) => p.includes("pin ms"))) shown.add("ms");
+    if (pins.some((p) => !p.includes("pin ms"))) shown.add("other-pin");
+    const undo = c.subject === undoFrom ? `<span class="undo">↶ undoes "${esc(undoTo)}"</span>` : "";
+    const undone = undoFrom && c.subject === undoTo ? `<span class="undo">undone by the top commit</span>` : "";
+    out += `<div class="cell ${(beat.dim || []).includes(c.subject) ? "dim" : ""}" data-subj="${esc(c.subject)}">${capsule(c, look)}<span class="body"><span class="hash">${c.id}</span><span class="subj ${look.ghost ? "ghost" : ""} ${look.remote ? "remote" : ""}">${esc(c.subject)}</span>${look.remote ? '<span class="only-ms">only on the mothership</span>' : ""}${tags}${pins.join("")}${undo}${undone}</span></div>`;
+  }
+  out += `</div>`;
+  const legend = [];
+  if (shown.has("head")) legend.push('<span><span class="ref head">filled</span> the branch you are on</span>');
+  if (shown.has("other")) legend.push('<span><span class="ref">outlined</span> your other branches</span>');
+  if (shown.has("remote")) legend.push('<span><span class="ref remote">dashed</span> your bookmark of where the mothership was</span>');
+  if (shown.has("ms")) legend.push('<span><span class="pin ms">Mothership: main</span> pin: where the mothership\'s <code>main</code> really is</span>');
+  if (shown.has("other-pin")) legend.push(s.pinWho === "You" ? '<span><span class="pin you">You: main</span> pin: where your <code>main</code> really is</span>' : '<span><span class="pin alex">Alex: main</span> pin: where Alex\'s <code>main</code> really is</span>');
+  if (rows.length > 1) legend.push("<span>each line joins a commit to the one before it, its parent</span>");
+  if (ghostIds.size) legend.push("<span>faded, dashed capsule: in Git, but no name leads to it</span>");
+  if (motherOnly.size) legend.push('<span><span class="only-ms">pink dotted capsule</span>: only on the mothership, not in your repository yet</span>');
+  if (beat.noLegend) legend.length = 0;
+  if (legend.length && beat.foldLegend) out += `<details class="legend-fold"><summary>i: what the marks mean</summary><div class="legend">${legend.join("")}</div></details>`;
+  else if (legend.length) out += `<div class="legend">${legend.join("")}</div>`;
+  if (beat.desk) {
+    const prev = LEVEL.beats[at - 1] ? stateOf(LEVEL.beats[at - 1]) : s;
+    const now = new Set(s.files.map((f) => f.path));
+    const left = prev.files.filter((f) => !now.has(f.path)).map((f) => `<span class="file left">${esc(f.path)}</span>`).join("");
+    out += `<div class="files"><b>Your working folder</b>${s.files.map((f) => `<span class="file">${esc(f.path)}</span>`).join("")}${left}</div>`;
+  }
+  return out;
+}
+
+/* The target: the captain's chart, the same commits with the names where they should end up,
+   and a check per name. */
+function pinsMoved(beat) {
+  const prev = LEVEL.beats[at - 1];
+  const out = new Set();
+  if (!prev) return out;
+  const place = (st) => {
+    const m = new Map();
+    for (const r of (st.mothership ? st.mothership.refs : [])) m.set("m:" + r.name, r.at);
+    for (const r of (st.alex ? st.alex.refs : [])) m.set("a:" + r.name, r.at);
+    return m;
+  };
+  const a = place(stateOf(prev)), b = place(stateOf(beat));
+  for (const [k, v] of b) if (a.get(k) !== v) out.add(k);
+  return out;
+}
+
+
+
+const VIEWS = [["chain", "Chain"], ["history", "History"], ["desk", "Desk"], ["crew", "Crew"], ["movelog", "Move log"], ["graph", "Graph"]];
+const MORE = new Set(["movelog", "graph"]);
+const PER_PERSON = new Set(["chain", "desk", "movelog", "graph"]);
+const MERGED = FLOW.merged || {};
+
+function raw(beat) { return RAW[beat.s].state; }
+function mine(beat, whose) { return raw(beat)[whose || beat.whose]; }
+function conflicted(beat) { const y = raw(beat).you; return Boolean(y && y.files.some((f) => f.status === "conflicted")); }
+
+function viewChain(beat) {
+  const side = mine(beat);
+  if (!side || !side.repo || !side.repo.commits.length) return `<div class="placeholder">No commits yet${side && side.repo ? "" : ": this folder is not a repository. <code>git init</code> makes one"}.</div>`;
+  const wip = side.files.filter((f) => !["saved", "untracked"].includes(f.status)).map((f) => `${esc(f.path)} (${f.status === "new" ? "new" : f.status === "conflicted" ? "conflict" : "edited"})`);
+  return chain(asLevelBeat(beat)) + (wip.length ? `<p class="wip">In your folder, in no commit yet: ${wip.join(", ")}. Desk shows it.</p>` : "");
+}
+
+function viewDesk(beat) {
+  const side = mine(beat);
+  const tag = { untracked: "not in a repository", new: "new: Git has no copy", edited: "edited", staged: "staged", "staged+edited": "edited after staging", conflicted: "conflict", saved: "" };
+  const before = beat.s > 0 ? RAW[beat.s - 1].state[beat.whose] : null;
+  const had = new Set(before ? before.files.map((f) => f.path) : side.files.map((f) => f.path));
+  const nowSet = new Set(side.files.map((f) => f.path));
+  const arrived = (f) => (!had.has(f.path) && f.status === "saved" ? '<span class="tag came">came with the switch</span>' : "");
+  const files = side.files.map((f) => `<div class="file"><span class="name">${esc(f.path)}</span>${tag[f.status] ? `<span class="tag">${tag[f.status]}</span>` : ""}${arrived(f)}</div>`).join("") +
+    (before ? before.files.filter((f) => !nowSet.has(f.path)).map((f) => `<div class="file left"><span class="name">${esc(f.path)}</span><span class="tag">left with the switch</span></div>`).join("") : "");
+  const staged = side.files.filter((f) => f.status.startsWith("staged")).map((f) => `<div class="file"><span class="name">${esc(f.path)}</span></div>`).join("") || '<span class="small">empty</span>';
+  const vault = side.repo ? (side.repo.commits.slice(0, 4).map((c) => `<div class="mini-cap"><span class="cap"></span><span class="subj">${esc(c.subject)}</span></div>`).join("") || '<span class="small">no commits yet</span>') : '<span class="small">no repository yet</span>';
+  return `<div class="desk"><div class="zone wd"><h3>Working folder</h3>${files}</div><div class="kept"><div class="zone st"><h3>Staging area</h3>${staged}</div><div class="zone va"><h3>Commits</h3>${vault}</div></div></div>`;
+}
+
+function viewMoveLog(beat) {
+  const side = mine(beat);
+  if (!side.repo || !side.reflog_lines) return '<div class="placeholder">No moves yet: the move log starts with the first commit.</div>';
+  if (!reflogTyped(beat)) return '<div class="mlog"><h3>The move log</h3><div class="empty">Type <code>git reflog</code> to read the move log.</div></div>';
+  const ghosts = new Set(side.reflog.filter((e) => e.ghost).map((e) => e.ref));
+  const rows = side.reflog_lines.map((line) => {
+    const m = line.match(/HEAD@\{\d+\}/);
+    const ref = m ? m[0] : "";
+    const htmlLine = m ? esc(line.slice(0, m.index)) + `<span class="r">${esc(ref)}</span>` + esc(line.slice(m.index + ref.length)) : esc(line);
+    return `<div class="row ${ghosts.has(ref) ? "ghost" : ""}">${htmlLine}</div>`;
+  }).join("");
+  const live = beat.liveNote ? '<p class="live">Live here: from now on it updates by itself. In missions you type <code>git reflog</code> each time.</p>' : "";
+  return `<div class="mlog"><h3>The move log: what <code>git reflog</code> prints, newest first</h3>${rows}</div>${live}`;
+}
+
+function viewGraph(beat) {
+  const side = mine(beat);
+  if (!side.repo || !side.graph.length) return '<div class="placeholder">Nothing to draw yet.</div>';
+  return `<h4 class="mono">git log --oneline --graph --all, as git prints it now</h4><pre class="graph">${side.graph.map(esc).join("\n")}</pre>`;
+}
+
+function viewHistory(beat) {
+  const st = raw(beat);
+  const you = st.you && st.you.repo, ms = st.mothership;
+  if (!you || !ms) return '<div class="placeholder">History puts your repository beside the mothership: there is no mothership in this starting point.</div>';
+  const youIds = new Set(you.commits.map((c) => c.id)), msIds = new Set(ms.commits.map((c) => c.id));
+  const rows = LAYOUT.order.filter((c) => youIds.has(c.id) || msIds.has(c.id));
+  const edges = [];
+  const side = (repo, ids, prefix, mom) => (c) => {
+    if (!ids.has(c.id)) return '<div class="cell none"></div>';
+    for (const p of c.parents) if (ids.has(p)) edges.push({ from: prefix + c.id, to: prefix + p, dashed: false, remote: mom });
+    const names = repo.refs.filter((r) => r.at === c.id).map((r) => {
+      const head = !mom && r.kind === "branch" && repo.branch === r.name;
+      return head ? `<span class="rides"><span class="ship">HEAD ▶</span><span class="ref head">${esc(r.name)}</span></span>` : `<span class="ref ${r.kind === "remote" ? "remote" : ""} ${mom ? "mom" : ""}">${esc(r.name)}</span>`;
+    }).join("");
+    const cap = capsule(c, {}).replace('data-id="', `data-id="${prefix}`);
+    return `<div class="cell ${mom ? "re" : "va"}" ${mom ? 'style="--va: var(--re)"' : ""}>${cap}<span class="body"><span class="subj">${esc(c.subject)}</span>${names}</span></div>`;
+  };
+  const left = side(you, youIds, "", false), right = side(ms, msIds, "m:", true);
+  const cells = rows.map((c) => left(c) + right(c)).join("");
+  WIRES.push({ edges, undo: null, walk: [] });
+  const wide = `<div class="hist-wide"><div class="hist-head"><span class="va">Your repository</span><span class="re">Mothership</span></div><div class="chain hist" data-wire="${WIRES.length - 1}">${cells}</div><p class="small">Shared commits sit on shared rows. Side lines are branches; Chain shows one repository in detail.</p></div>`;
+  /* On a phone, one column: each commit once, with where it is. */
+  const pedges = [];
+  const prow = rows.map((c) => {
+    const both = youIds.has(c.id) && msIds.has(c.id), mineOnly = youIds.has(c.id) && !msIds.has(c.id);
+    for (const p of c.parents) if (youIds.has(p) || msIds.has(p)) pedges.push({ from: "p:" + c.id, to: "p:" + p, dashed: !youIds.has(c.id), remote: !youIds.has(c.id) });
+    const names = you.refs.filter((r) => r.at === c.id).map((r) => (r.kind === "branch" && you.branch === r.name ? `<span class="rides"><span class="ship">HEAD ▶</span><span class="ref head">${esc(r.name)}</span></span>` : `<span class="ref ${r.kind === "remote" ? "remote" : ""}">${esc(r.name)}</span>`)).join("") +
+      ms.refs.filter((r) => r.at === c.id).map((r) => `<span class="pin ms">Mothership: ${esc(r.name)}</span>`).join("");
+    const where = both ? '<span class="where both">both</span>' : mineOnly ? '<span class="where you">yours only</span>' : '<span class="where ms">mothership only</span>';
+    const cap = capsule(c, { remote: !youIds.has(c.id) }).replace('data-id="', 'data-id="p:');
+    return `<div class="cell">${cap}<span class="body"><span class="subj">${esc(c.subject)}</span>${where}${names}</span></div>`;
+  }).join("");
+  WIRES.push({ edges: pedges, undo: null, walk: [] });
+  const narrow = `<div class="hist-narrow"><div class="chain" data-wire="${WIRES.length - 1}">${prow}</div><p class="small">Each commit once, with where it is: both, yours only, or mothership only. Side lines are branches.</p></div>`;
+  return `${wide}${narrow}`;
+}
+
+function station(side, who) {
+  if (!side) return "";
+  const files = side.files.map((f) => `<span class="f ${f.status}">${esc(f.path)}${f.status === "conflicted" ? " ⚠" : ""}</span>`).join("");
+  const staged = side.files.filter((f) => f.status.startsWith("staged")).map((f) => `<span class="f staged">${esc(f.path)}</span>`).join("") || '<span class="small">empty</span>';
+  const repo = side.repo;
+  const commits = repo ? repo.commits.slice(0, 3).map((c) => {
+    const names = repo.refs.filter((r) => r.at === c.id && r.kind === "branch").map((r) => (repo.branch === r.name ? `<span class="rides"><span class="ship">HEAD ▶</span><span class="ref head">${esc(r.name)}</span></span>` : `<span class="ref">${esc(r.name)}</span>`)).join("");
+    return `<div class="cm"><span class="cap"></span>${esc(c.subject)}${names}</div>`;
+  }).join("") : '<span class="small">no repository</span>';
+  return `<div class="station ${who}"><h5>${who === "alex" ? "Alex's station" : "Your station"}${side.merging ? ' <span class="merging">merging: paused</span>' : ""}</h5><div class="zone-l">WORKING FOLDER</div>${files}<div class="zone-l">STAGING AREA</div>${staged}<div class="zone-l">COMMITS, NEWEST FIRST</div>${commits}</div>`;
+}
+
+function viewCrew(beat) {
+  const st = raw(beat);
+  const ms = st.mothership;
+  const top = ms ? `<div class="ms"><b>Mothership</b>: ${ms.refs.map((r) => `<code>${esc(r.name)}</code> on ${esc((ms.commits.find((c) => c.id === r.at) || {}).subject || "")}`).join("; ")}</div>` : '<div class="ms">No mothership in this starting point.</div>';
+  return `<div class="crew">${top}<div class="stations">${station(st.you, "you")}${station(st.alex, "alex")}</div></div>`;
+}
+
+/* The click-to-keep panel, read from the file as the page last read it. */
+function viewConflict(beat) {
+  const p = beat.panel || {};
+  const editing = beat.editor && beat.editor.who === "you";
+  const now = (raw(beat).you.texts || {})[FLOW.file] || "";
+  const chips = `<div class="or ${editing ? "off" : ""}"><b>Or resolve it in an editor.</b> Click one to type it at your prompt: <span class="trychip">nano ${esc(FLOW.file)}</span> <span class="trychip">vim ${esc(FLOW.file)}</span></div>`;
+  if (!/^<<<<<<< /m.test(now) && !p.stale) {
+    const lines = now.replace(/\n$/, "").split("\n").map((l) => `<li><span>${esc(l)}</span></li>`).join("");
+    const how = p.written ? "Written from your picks. " : "";
+    return `<div class="cpanel"><div class="file"><h5>${esc(FLOW.file)}, as it is now<span class="st ok">no markers left</span></h5><ol>${lines}</ol></div><div class="msg ok">${how}Next: type <code>git add ${esc(FLOW.file)}</code>, then <code>git commit</code>. The page never runs git for you.</div></div>`;
+  }
+  const text = p.stale ? ((RAW[p.read].state.you.texts || {})[FLOW.file] || "") : now;
+  const choices = p.stale || editing ? [] : p.choices || [];
+  let part = "clean", block = -1;
+  const items = [];
+  for (const line of text.replace(/\n$/, "").split("\n")) {
+    if (line.startsWith("<<<<<<< ")) { part = "ours"; block += 1; items.push({ line, cls: "marker", block }); continue; }
+    if (line === "=======" && part === "ours") { part = "theirs"; items.push({ line, cls: "marker", block }); continue; }
+    if (line.startsWith(">>>>>>> ") && part === "theirs") {
+      items.push({ line, cls: "marker", block });
+      items.push({ keep: block });
+      part = "clean"; continue;
+    }
+    items.push({ line, cls: part === "clean" ? "" : part, block });
+  }
+  const pick = (b) => choices[b];
+  const lis = items.map((it) => {
+    if (it.keep !== undefined) {
+      const c = pick(it.keep);
+      return `<li class="keep">Keep: <b class="${c === "yours" ? "on you" : ""}">Yours</b><b class="${c === "theirs" ? "on alex" : ""}">Alex's</b><b class="${c === "both" ? "on both" : ""}">Both</b></li>`;
+    }
+    const c = pick(it.block);
+    let cls = it.cls;
+    if (cls === "marker" && c) cls += " gone";
+    if ((cls === "ours" && c === "theirs") || (cls === "theirs" && c === "yours")) cls += " dropped";
+    const who = it.cls === "ours" ? '<span class="tagm you">You</span>' : it.cls === "theirs" ? '<span class="tagm alex">Alex</span>' : "";
+    const shown = it.line.startsWith(">>>>>>> ") ? `${it.line.slice(0, 15)}…` : it.line;
+    return `<li class="${cls}"><span title="${esc(it.line)}">${esc(shown)}</span>${who}</li>`;
+  }).join("");
+  const ready = choices.length && choices.every(Boolean);
+  let msg = "";
+  if (p.stale) msg = `<div class="msg err"><b>${esc(FLOW.file)}</b> changed after this panel last read it, so nothing was written and your picks were cleared. <b>Look again</b> reads the file as it is now.</div>`;
+  if (editing) msg = `<div class="msg wait"><b>${esc(FLOW.file)}</b> is open in ${esc(beat.editor.name)} in your terminal. The panel waits, and reads the file again when the editor saves it.</div>`;
+  const write = p.stale ? `<span class="w primary">Look again</span><span class="w off">Write this into ${esc(FLOW.file)}</span>` : `<span class="w ${ready && !editing ? "" : "off"}">Write this into ${esc(FLOW.file)}</span>`;
+  return `<div class="cpanel ${editing ? "waiting" : ""}"><p class="small">Lines outside the markers: Git merged them on its own. Pick a side for each block.</p><div class="file"><h5>${esc(FLOW.file)}<span class="st">conflict: 1 block</span></h5><ol>${lis}</ol></div>` +
+    `<div class="act">${write}</div>${msg}${chips}</div>`;
+}
+
+const PROMPT = { you: (dir) => `<span class="youp">${esc(dir)} $</span>`, alex: (dir) => `<span class="alexp">alex: ${esc(dir)} $</span>` };
+
+function editorScreen(beat) {
+  const e = beat.editor;
+  const text = (RAW[e.at].state.you.texts || {})[FLOW.file] || "";
+  const lines = text.replace(/\n$/, "").split("\n").map((l) => (/^(<<<<<<<|=======|>>>>>>>)/.test(l) ? `<span class="mark">${esc(l)}</span>` : esc(l)));
+  if (e.name === "nano") {
+    const head = `<span class="bar">  GNU nano 7.2                    ${esc(FLOW.file)}${e.modified ? " *" : ""}                     </span>`;
+    const pad = Array(Math.max(0, 14 - lines.length)).fill("");
+    const foot = e.status ? `<span class="bar">${esc(e.status)}</span>` : "";
+    return [head, ...lines, ...pad, foot, "^G Help      ^O Write Out ^W Where Is  ^K Cut       ^T Execute", "^X Exit      ^R Read File ^\\ Replace   ^U Paste     ^J Justify"].join("\n");
+  }
+  const pad = Array(Math.max(0, 14 - lines.length)).fill('<span class="tilde">~</span>');
+  return [...lines, ...pad, esc(e.status || "")].join("\n");
+}
+
+function terminalOf(who, beat) {
+  if (beat.editor && beat.editor.who === who) return `<div class="term editor">${editorScreen(beat)}</div>`;
+  const out = [];
+  const dir = "project";
+  out.push(`<span class="old">${who === "alex" ? "Alex's terminal, in Alex's clone." : `Playground: ${esc(FLOW.startTitle)}. ${esc(FLOW.banner || "")}`}</span>`);
+  let last = -1;
+  for (let i = 1; i <= beat.s; i += 1) if (RAW[i].who === who && RAW[i].line) last = i;
+  for (let i = 1; i <= beat.s; i += 1) {
+    const r = RAW[i];
+    if (r.who !== who) continue;
+    if (r.editor) { out.push(`<span class="old">${PROMPT[who](dir)} ${esc(r.editor)} ${esc(r.file)}</span>`); continue; }
+    if (!r.line) continue;
+    const old = i !== last ? "old" : "";
+    out.push(`<span class="${old}">${PROMPT[who](dir)} ${esc(r.line)}</span>`);
+    if (r.output) out.push(...r.output.replace(/\n$/, "").split("\n").map((l) => `<span class="${old}">${esc(l)}</span>`));
+  }
+  const typed = beat.typing && beat.typing.who === who ? `<span class="typed">${esc(beat.typing.text)}</span>` : "";
+  out.push(`${PROMPT[who](dir)} ${typed}<span class="cursor"> </span>`);
+  return `<div class="term">${out.join("\n")}</div>`;
+}
+
+function strip(beat) {
+  const e = beat.editor;
+  if (!e) return "";
+  let out = '<span class="out">Get me out</span>';
+  if (beat.getout === "ask") out = `<span class="ask">Quit ${esc(e.name)} without saving? Your changes to ${esc(FLOW.file)} are lost. <span class="out">Quit without saving</span> <span class="stay">Keep editing</span></span>`;
+  if (beat.getout === "yes") out = '<span class="out pressed">Quitting without saving…</span>';
+  const more = beat.stripMore ? "more" : "";
+  if (e.name === "nano") return `<div class="strip"><b>You are in nano.</b><span>Save: <kbd>Ctrl</kbd>+<kbd>O</kbd>, then <kbd>Enter</kbd></span><span>Quit: <kbd>Ctrl</kbd>+<kbd>X</kbd></span>${out}</div>`;
+  return `<div class="strip ${more}"><b>You are in vim.</b><span>Save and quit: <kbd>Esc</kbd>, then <kbd>:wq</kbd> <kbd>Enter</kbd></span><span class="extra">Type: press <kbd>i</kbd></span><span class="${e.status === "-- INSERT --" ? "" : "extra"}">Leave typing mode: <kbd>Esc</kbd></span><span class="extra">Quit without saving: <kbd>Esc</kbd>, then <kbd>:q!</kbd> <kbd>Enter</kbd></span><span class="morebtn">${beat.stripMore ? "fewer keys" : "more keys"}</span>${out}</div>`;
+}
+
+function terminals(beat) {
+  const hasAlex = Boolean(raw(beat).alex);
+  const toggle = hasAlex ? `<div class="toggle"><span class="sw ${beat.alex ? "on" : ""}"></span><span>${beat.alex ? "Hide" : "Show"} Alex's terminal</span></div>` : "";
+  const ran = beat.chip && RAW.slice(1, beat.s + 1).some((r) => r.line === beat.chip);
+  const chip = beat.chip && !ran ? `<div class="chip-row"><span class="trychip ${beat.chipUsed ? "used" : ""}">Try: ${esc(beat.chip)}</span><span class="small">click to type it at your prompt; Enter runs it</span></div>` : "";
+  const mineTerm = `<div class="tw you ${beat.alex && beat.focus === "alex" ? "hidden-phone" : ""}"><h4>Your terminal</h4>${chip}${beat.editor && beat.editor.who === "you" ? strip(beat) : ""}${terminalOf("you", beat)}</div>`;
+  const alexTerm = beat.alex ? `<div class="tw alex ${beat.focus !== "alex" ? "hidden-phone" : ""}"><h4>Alex's terminal (Alex, alex@example.com)</h4>${terminalOf("alex", beat)}</div>` : "";
+  const sw = beat.alex ? `<div class="phone-switch"><span class="l">Terminal:</span><b class="${beat.focus !== "alex" ? "on you" : ""}">You</b><b class="${beat.focus === "alex" ? "on alex" : ""}">Alex</b></div>` : "";
+  return `<div class="terms ${beat.alex ? "two" : ""}">${toggle}${sw}${mineTerm}${alexTerm}</div>`;
+}
+
+function dialog(beat) {
+  const d = beat.dialog;
+  if (!d) return "";
+  if (d === "picker" || d === "picker-pick") {
+    const items = FLOW.starts.map((s) => `<div class="st ${d === "picker-pick" && s.id === FLOW.start ? "pick" : ""}"><b>${esc(s.title)}</b>${esc(s.blurb)}${s.uses ? `<div class="uses">uses ${esc(s.uses)}</div>` : ""}</div>`).join("");
+    return `<div class="veil"><div class="dialog box"><h3>Choose a starting point</h3><div class="starts">${items}</div><p class="small">Each one builds a fresh practice repository. Nothing you do here touches your missions.</p></div></div>`;
+  }
+  if (d === "confirm") return `<div class="veil"><div class="dialog box"><h3>Start over?</h3><p>This playground goes back to how "${esc(FLOW.startTitle)}" began. Your files and commits here are erased, and Alex's too. Your missions are not touched.</p><div class="btns"><span>Cancel</span><span class="go">Start over</span></div></div></div>`;
+  return "";
+}
+
+function screen(beat) {
+  if (beat.dialog === "map" || beat.dialog === "map-pick") {
+    return `<div class="pg-head"><span class="where">First Commit</span><span class="sp"></span><span class="btn">Field guide</span></div><div class="mapmock"><div class="sectors">${["1 Lift-off", "2 Cargo", "3 Logbook", "4 The mothership", "5 Name tags", "6 Branches", "7 Collisions", "8 Time travel"].map((s) => `<span class="sector">${s}</span>`).join("")}<span class="sector lm ${beat.dialog === "map-pick" ? "pick" : ""}">Playground: free play</span></div><p class="small">The map. The Playground is a landmark of its own, open from the start.</p></div>`;
+  }
+  if (beat.dialog === "card") {
+    return `<div class="pg-head"><span class="where">Mission 5-4</span><span class="start">One step</span><span class="sp"></span><span class="btn">Field guide</span></div><div style="padding:16px"><div class="cardmock box"><div class="small">Field guide, command card</div><div class="cmd">git switch -c &lt;name&gt;</div><p>Makes a new branch where you are and moves HEAD onto it, in one step. The older form is <code>git checkout -b &lt;name&gt;</code>.</p><span class="try ${beat.cardPick ? "pick" : ""}">Try it in the playground</span></div><p class="small">The card is open over mission 5-4, which stays in progress.</p></div>`;
+  }
+  const conflict = conflicted(beat) || (beat.panel && (beat.panel.written || beat.panel.stale));
+  const main4 = VIEWS.filter(([id]) => !MORE.has(id)).map(([id, name]) => `<span class="tab ${beat.view === id ? "on" : ""}">${name}</span>`).join("");
+  const moreOn = MORE.has(beat.view);
+  const more = `<span class="tab more ${moreOn ? "on" : ""}">${moreOn ? `More: ${VIEWS.find(([id]) => id === beat.view)[1]}` : "More views"} ▾</span>`;
+  const tabs = main4 + (conflict ? `<span class="tab conflict ${beat.view === "conflict" ? "on" : ""}">Conflict</span>` : "") + more;
+  const whose = beat.alex && PER_PERSON.has(beat.view) ? `<div class="whose"><span class="l">Picture:</span><b class="${beat.whose === "you" ? "on you" : ""}">your repository</b><b class="${beat.whose === "alex" ? "on alex" : ""}">Alex's repository</b></div>` : "";
+  const pic = { chain: viewChain, history: viewHistory, desk: viewDesk, movelog: viewMoveLog, crew: viewCrew, graph: viewGraph, conflict: viewConflict }[beat.view](beat);
+  const back = beat.back ? `<span class="btn back">Back to ${esc(beat.back)}</span>` : "";
+  const head = `<div class="pg-head"><span class="where">Playground</span><span class="start">${esc(FLOW.startTitle)}</span><span class="sp"></span>${back}<span class="btn">Start over</span><span class="btn">Other start</span></div>`;
+  const alexs = beat.whose === "alex" && PER_PERSON.has(beat.view) ? "alexs" : "";
+  const sum = `<div class="summary ${beat.sheet ? "open" : ""}"><span>${summary(beat)}</span><span class="tap">${beat.sheet ? "▴ fold" : "▾ picture"}</span></div>`;
+  return `${head}<div class="pg-main ${beat.sheet ? "sheet" : ""}"><section><nav class="views">${tabs}</nav>${whose}${sum}<div class="picture box ${alexs}">${pic}</div></section>${terminals(beat)}</div>${dialog(beat)}`;
+}
+
+/* The picture in one line, for a phone: where HEAD is and how main stands with the mothership. */
+function ancestors(repo, id) {
+  const byId = new Map(repo.commits.map((c) => [c.id, c]));
+  const seen = new Set();
+  const walk = [id];
+  while (walk.length) { const x = walk.pop(); if (!x || seen.has(x) || !byId.has(x)) continue; seen.add(x); walk.push(...byId.get(x).parents); }
+  return seen;
+}
+function summary(beat) {
+  const st = raw(beat);
+  const name = { chain: "Chain", history: "History", desk: "Desk", movelog: "Move log", crew: "Crew", graph: "Graph", conflict: "Conflict" }[beat.view];
+  const owner = beat.alex ? beat.focus || "you" : "you";
+  const side = st[owner];
+  const who = owner === "alex" ? "Alex's repository: " : "Your repository: ";
+  const parts = [];
+  if (!side || !side.repo) parts.push("no repository yet");
+  else if (!side.repo.commits.length) parts.push("no commits yet");
+  else {
+    parts.push(`HEAD on ${side.repo.branch || side.repo.head}`);
+    const at = (n) => (side.repo.refs.find((r) => r.name === n) || {}).at;
+    if (at("main") && at("origin/main")) {
+      const a = ancestors(side.repo, at("main")), b = ancestors(side.repo, at("origin/main"));
+      const ahead = [...a].filter((x) => !b.has(x)).length, behind = [...b].filter((x) => !a.has(x)).length;
+      parts.push(ahead || behind ? `main ${ahead ? `${ahead} ahead` : ""}${ahead && behind ? ", " : ""}${behind ? `${behind} behind` : ""} of origin/main` : "main in step with origin/main");
+    }
+    const edited = side.files.filter((f) => f.status !== "saved" && f.status !== "untracked").length;
+    if (side.files.some((f) => f.status === "conflicted")) parts.push(`${FLOW.file || "a file"}: conflict`);
+    else if (edited) parts.push(`${edited} file${edited > 1 ? "s" : ""} changed`);
+  }
+  return `<b>${name}</b> · ${esc(who)}${parts.map(esc).join(" · ")}`;
+}
+
+function draw() {
+  const beat = BEATS[at];
+  WIRES = [];
+  $("#screen").innerHTML = screen(beat);
+  wire();
+  document.querySelectorAll(".term").forEach((t) => { t.scrollTop = t.scrollHeight; });
+  $("#caption").innerHTML = `<p class="do">${md(beat.do || "")}</p>${beat.see ? `<p>${md(beat.see)}</p>` : ""}` + (beat.note && $("#notes").checked ? `<p class="picnote"><b>Designer note:</b> ${md(beat.note)}</p>` : "");
+  $("#count").textContent = `Beat ${at + 1} of ${BEATS.length}`;
+  $("#back").disabled = at === 0;
+  $("#next").disabled = at === BEATS.length - 1;
+  history.replaceState(null, "", `#${at + 1}`);
+}
+$("#notes").addEventListener("change", () => draw());
+$("#back").addEventListener("click", () => { at = Math.max(0, at - 1); draw(); });
+$("#next").addEventListener("click", () => { at = Math.min(BEATS.length - 1, at + 1); draw(); });
+document.addEventListener("keydown", (e) => { if (e.key === "ArrowRight") $("#next").click(); if (e.key === "ArrowLeft") $("#back").click(); });
+const fromHash = Number(location.hash.slice(1));
+if (fromHash > 0 && fromHash <= BEATS.length) at = fromHash - 1;
+draw();
+</script>
+</body>
+</html>

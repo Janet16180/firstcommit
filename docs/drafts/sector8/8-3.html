@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>8-3 Wrong course</title>
+<style>
+:root {
+  --bg: #E6E3EF; --panel: #FBF9F3; --panel-2: #EFEBE0; --ink: #1F1A3D; --ink-soft: #5E577E;
+  --edge: #1F1A3D; --line: #C9C3DA; --wd: #D9731F; --st: #1D93A8; --va: #7A52D1; --re: #D23F6A;
+  --new: #D33A32; --mod: #B98A00; --gold: #F2B01E; --ok: #2E7D50; --alex: #3D8A18;
+  --crt: #120F2C; --crt-ink: #FFE6B0; --crt-soft: #9F95C8; --crt-cmd: #FFD25A; --crt-ok: #9EF0A0;
+  --va-row: #ECE6F7; --re-row: #F7E6EC;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --alex: #A6E05A; --alex-ink: #10200A; --bg: #0B0920; --panel: #17133D; --panel-2: #1F1A4A; --ink: #F2EAD3; --ink-soft: #B9AED8;
+    --edge: #04030F; --line: #3A3470; --ok: #9EF0A0; --new: #FF8A78; --va-row: #2A2160; --re-row: #3A1C3A;
+  }
+}
+:root[data-theme="dark"] {
+  --alex: #A6E05A; --alex-ink: #10200A; --bg: #0B0920; --panel: #17133D; --panel-2: #1F1A4A; --ink: #F2EAD3; --ink-soft: #B9AED8;
+  --edge: #04030F; --line: #3A3470; --ok: #9EF0A0; --new: #FF8A78; --va-row: #2A2160; --re-row: #3A1C3A;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+code, .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: .92em; }
+p code, li code, .rama code, .reveal code, .q code { background: var(--panel-2); padding: 0 4px; border: 1px solid var(--line); }
+header { background: var(--crt); color: var(--crt-ink); display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; padding: 8px 16px; }
+header a { color: var(--crt-ink); font-weight: 700; text-decoration: none; border: 2px solid var(--crt-ink); padding: 2px 10px; }
+header .no { color: var(--gold); font: 700 14px ui-monospace, monospace; }
+header .title { font: 700 17px ui-monospace, monospace; }
+header .chip { background: #2A2558; padding: 1px 8px; font: 13px ui-monospace, monospace; }
+main { max-width: 1240px; margin: 0 auto; padding: 14px 16px 40px; display: grid; grid-template-columns: minmax(0, 300px) minmax(0, 1fr); gap: 14px; }
+@media (max-width: 820px) { main { grid-template-columns: 1fr; } .side { order: 2; } }
+.box { background: var(--panel); border: 3px solid var(--edge); box-shadow: 4px 4px 0 var(--edge); }
+.side { padding: 12px 14px; align-self: start; }
+.side h2 { font: 700 15px ui-monospace, monospace; margin: 12px 0 6px; }
+.side p { margin: 0 0 8px; }
+.goals { list-style: none; margin: 0; padding: 0; }
+.goals li { display: flex; gap: 8px; margin: 0 0 6px; }
+.goals code, .side code { white-space: pre-wrap; }
+.rides { display: inline-flex; align-items: center; gap: 4px; padding: 1px 4px 1px 0; border-bottom: 2px solid var(--va); }
+.desk:not(.revealed) .line.red::after { content: none; }
+.committed { font: 12px ui-monospace, monospace; color: var(--ink-soft); padding-left: 24px; }
+.goals li::before { content: ""; flex: none; width: 14px; height: 14px; margin-top: 3px; border: 2px solid var(--edge); }
+.goals li.done { color: var(--ink-soft); text-decoration: line-through; }
+.goals li.done::before { background: var(--st); }
+.right { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.stage { padding: 12px; position: relative; min-height: 220px; overflow-x: auto; }
+.stage.whatif .pic { filter: grayscale(1) contrast(.9); }
+.whatif-badge { display: none; position: absolute; top: 8px; right: 10px; background: #000; color: #fff; font: 700 14px ui-monospace, monospace; padding: 2px 10px; border: 2px solid #fff; z-index: 2; }
+.stage.whatif .whatif-badge { display: block; }
+.picnote { margin: 10px 0 0; font-size: 13px; color: var(--ink-soft); border-top: 1px dashed var(--line); padding-top: 6px; }
+.picnote b { color: var(--ink); }
+.rama { padding: 10px 14px; display: flex; gap: 12px; align-items: flex-start; border-left: 6px solid var(--gold); min-height: 64px; }
+.rama .bot { flex: none; width: 34px; height: 34px; background: var(--crt); border: 2px solid var(--edge); position: relative; }
+.rama .bot::before, .rama .bot::after { content: ""; position: absolute; top: 11px; width: 6px; height: 6px; background: #5EE6E6; }
+.rama .bot::before { left: 8px; } .rama .bot::after { right: 8px; }
+.rama .who { font-size: 12px; color: var(--ink-soft); font-weight: 700; }
+.q { margin: 0 0 8px; font-weight: 600; }
+.choices { display: flex; flex-wrap: wrap; gap: 8px; }
+.choices button { font: inherit; font-weight: 700; background: var(--panel); color: var(--ink); border: 3px solid var(--edge); padding: 6px 12px; cursor: pointer; }
+.choices button[aria-pressed="true"] { background: var(--gold); color: #1F1A3D; }
+.reveal { margin: 8px 0 0; }
+.term { background: var(--crt); color: var(--crt-ink); padding: 10px 12px; font: 14px/1.35 ui-monospace, Menlo, Consolas, monospace; min-height: 170px; max-height: 300px; overflow: auto; white-space: pre; border: 3px solid var(--edge); }
+.term .cmd { color: var(--crt-cmd); }
+.term .old { opacity: .55; }
+.term .hl { background: #4A3A10; outline: 1px solid var(--gold); }
+.nav { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.nav button { font: 700 15px system-ui, sans-serif; padding: 6px 16px; border: 3px solid var(--edge); background: var(--panel); color: var(--ink); cursor: pointer; }
+.nav button.primary { background: var(--gold); color: #1F1A3D; }
+.nav button:disabled { opacity: .4; cursor: default; }
+.nav .count { color: var(--ink-soft); font-size: 14px; }
+.debrief { padding: 12px 14px; border-left: 6px solid var(--st); }
+.debrief h2 { font: 700 15px ui-monospace, monospace; margin: 0 0 6px; }
+.debrief pre { background: var(--crt); color: var(--crt-ink); padding: 8px 10px; overflow-x: auto; }
+/* the desk */
+.desk { display: flex; flex-wrap: wrap; gap: 14px; align-items: stretch; }
+.zone { border: 3px solid var(--c); background: var(--panel-2); padding: 8px 10px; min-width: 0; }
+.zone h3 { margin: 0 0 6px; font: 700 13px ui-monospace, monospace; color: var(--c); }
+.zone.wd { --c: var(--wd); flex: 1 1 220px; }
+.zone.st { --c: var(--st); flex: 1 1 150px; }
+.zone.va { --c: var(--va); flex: 1 1 170px; }
+.file { font: 13px ui-monospace, monospace; border: 2px solid var(--edge); background: var(--panel); padding: 4px 6px; margin: 0 0 6px; }
+.file .name { font-weight: 700; }
+.file .tag { font-size: 11px; color: var(--ink-soft); margin-left: 6px; }
+.file .line { display: block; padding-left: 10px; }
+.file .line.red { color: var(--new); font-weight: 700; }
+.file .line.red::after { content: "  only here"; font-weight: 400; font-size: 11px; color: var(--new); }
+.file .line.gone { color: var(--new); text-decoration: line-through; opacity: .45; animation: dissolve 1.6s steps(4) forwards; }
+@keyframes dissolve { from { opacity: 1; } to { opacity: .25; } }
+.blink { animation: blink 1s steps(2) 3; }
+@keyframes blink { 50% { background: var(--gold); } }
+.kept { flex: 2 1 340px; display: flex; flex-wrap: wrap; gap: 10px; padding: 18px 10px 10px; position: relative; border: 3px dashed transparent; }
+.kept.on { border-color: var(--ink-soft); }
+.kept .kept-name { display: none; position: absolute; top: -12px; left: 10px; background: var(--panel); color: var(--ink); font: 700 13px ui-monospace, monospace; padding: 0 6px; }
+.kept.on .kept-name { display: block; }
+.mini-cap { display: flex; gap: 6px; align-items: center; font-size: 13px; margin: 0 0 4px; }
+/* the chain */
+.chain { display: flex; flex-direction: column; background: var(--va-row); padding: 4px 8px; }
+.chain { position: relative; padding-left: 30px; }
+.chain .cell { padding: 0 0 4px; min-height: 40px; flex-wrap: nowrap; align-items: flex-start; }
+.chain .body { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 6px; white-space: normal; min-width: 0; padding-top: 10px; }
+.chain .body .subj { flex: 0 1 auto; }
+.chain { overflow-x: auto; }
+.chain .wires .walk { opacity: 0; animation: walkin .3s steps(3) forwards; }
+@keyframes walkin { to { opacity: 1; } }
+.chain .wires { position: absolute; left: 0; top: 0; z-index: 1; overflow: visible; pointer-events: none; }
+@media (max-width: 600px) { .chain .hash { display: none; } }
+.chain .count { font: 700 12px ui-monospace, monospace; color: var(--va); margin: 2px 0 4px -22px; }
+.ship.ring { outline: 3px solid var(--gold); outline-offset: 2px; }
+.files { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 10px; border: 3px solid var(--wd); background: var(--panel-2); padding: 6px 8px; font-size: 13px; }
+.files b { color: var(--wd); font: 700 13px ui-monospace, monospace; margin-right: 4px; }
+.files .file { margin: 0; }
+.files .file.left { text-decoration: line-through; opacity: .45; }
+.ship { font: 700 11px system-ui, sans-serif; color: var(--va); }
+.pin { font: 700 11px system-ui, sans-serif; padding: 1px 7px; border-radius: 9px; color: #fff; }
+.pin.ms { background: var(--re); }
+.pin.alex { background: var(--alex); color: var(--alex-ink, #FFFFFF); }
+.pin.you { background: var(--you, #7A52D1); }
+.pin.moved { }
+/* git's own drawing of the tree */
+.graph { background: var(--crt); color: var(--crt-ink); padding: 8px 10px; font: 13px/1.5 ui-monospace, Menlo, Consolas, monospace; overflow-x: auto; margin: 0; border: 3px solid var(--edge); }
+.graph .hl { background: #4A3A10; outline: 1px solid var(--gold); }
+@media (max-width: 600px) { .term, .graph { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; } }
+/* the target pair */
+.pair { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 14px; }
+.pair.stack { grid-template-columns: minmax(0, 1fr); }
+.pair:not(.stack) .hash { display: none; }
+.pair:not(.stack) .chain .body { gap: 4px; }
+@media (max-width: 820px) { .pair { grid-template-columns: 1fr; } }
+.pair h4 { margin: 0 0 6px; font: 700 13px ui-monospace, monospace; }
+.chain.target { background: var(--panel-2); border: 2px dashed var(--va); }
+.chain .cell.dim { opacity: .3; }
+.then { border: 3px solid var(--va); background: var(--panel); padding: 8px 10px; }
+.then h4 { margin: 0 0 6px; }
+.then pre { background: var(--crt); color: var(--crt-ink); padding: 8px 10px; margin: 0 0 6px; font: 14px/1.5 ui-monospace, Menlo, Consolas, monospace; white-space: pre-wrap; }
+.then.missing { border-style: dashed; border-color: var(--new); }
+.checks { list-style: none; padding: 0; margin: 8px 0 0; font-size: 13px; }
+.checks li::before { content: "✗ "; color: var(--new); font-weight: 700; }
+.tick { color: var(--ok); font-weight: 700; margin-right: 2px; }
+.named { white-space: nowrap; }
+.checks li.ok::before { content: "✓ "; color: var(--ok); }
+/* the chart */
+.chart { display: grid; gap: 0; min-width: 0; }
+.chart .colhead { font: 700 13px ui-monospace, monospace; padding: 4px 8px; }
+.chart .colhead.va { color: var(--va); } .chart .colhead.re { color: var(--re); }
+.chart .row { display: contents; }
+.cell { position: relative; min-height: 40px; display: flex; align-items: center; gap: 6px; padding: 4px 8px 4px 0; font-size: 13px; white-space: nowrap; }
+.cell.va { background: var(--va-row); }
+.cell.re { background: var(--re-row); }
+.cell.gap { background: transparent; }
+.cell.tether::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; border-top: 2px dashed var(--re); }
+.lane { position: relative; z-index: 2; flex: none; height: 40px; align-self: flex-start; }
+.lane svg { position: absolute; inset: 0; overflow: visible; }
+.cap { width: 16px; height: 16px; border: 2px solid var(--edge); background: var(--c, var(--va)); flex: none; position: relative; z-index: 1; }
+.cap.re { --c: var(--re); }
+.cap.alex { --c: var(--alex); }
+.cap.ghost { background: var(--panel); border: 2px dashed var(--va); opacity: .8; }
+.cap.mirror { background: repeating-linear-gradient(45deg, var(--va) 0 3px, var(--panel) 3px 6px); }
+.cap.ring, .cap.new { box-shadow: 0 0 0 3px var(--gold); }
+.subj { font-weight: 600; }
+.subj.ghost { opacity: .6; font-style: italic; }
+.subj.remote { color: var(--re); }
+.only-ms { font-size: 11px; font-weight: 700; color: var(--re); border: 2px dotted var(--re); padding: 0 5px; }
+.hash { font: 12px ui-monospace, monospace; color: var(--ink-soft); }
+.ref { white-space: nowrap; font: 700 11px ui-monospace, monospace; border: 2px solid var(--edge); padding: 0 5px; background: var(--panel); color: var(--ink); }
+.ref.head { background: var(--va); color: #fff; }
+.ref.remote { border-style: dashed; }
+.ref.mother { background: var(--re); color: #fff; }
+.ref.moved { }
+.undo { font-size: 11px; color: var(--mod); font-weight: 700; }
+.band { display: flex; align-items: center; gap: 8px; border: 2px dashed var(--line); padding: 4px 8px; margin: 0 0 10px; font-size: 13px; flex-wrap: wrap; }
+.band .who { font-weight: 700; color: var(--alex); }
+.band .caps { display: flex; gap: 3px; }
+.band .caps i { width: 11px; height: 11px; background: var(--va); border: 1px solid var(--edge); display: block; }
+.band .caps i.new { box-shadow: 0 0 0 2px var(--gold); }
+.legend { font-size: 12px; color: var(--ink-soft); margin-top: 8px; display: flex; gap: 14px; flex-wrap: wrap; }
+/* the trail */
+.diarywrap { display: grid; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+@media (max-width: 820px) { .diarywrap { grid-template-columns: 1fr; } }
+.diary { background: var(--crt); color: var(--crt-ink); border: 3px solid var(--edge); padding: 8px; overflow-x: auto; }
+.diary h3 { margin: 0 0 6px; font: 700 13px ui-monospace, monospace; color: var(--crt-soft); }
+.diary table { border-collapse: collapse; font: 13px ui-monospace, monospace; width: 100%; }
+.diary td { padding: 4px 6px; white-space: nowrap; }
+.diary td.line { font: 13px ui-monospace, Menlo, Consolas, monospace; }
+.notes-toggle { margin-left: auto; color: var(--ink-soft); }
+.diary .r { color: var(--crt-cmd); }
+.diary .m { color: var(--crt-soft); }
+.diary tr.pick td { background: #4A3A10; }
+.diary tr.pick td:first-child { box-shadow: inset 4px 0 0 var(--gold); }
+.diary tr.fresh td { color: var(--crt-ok); }
+.diary tr.off { visibility: hidden; }
+.diary .cap { display: inline-block; width: 16px; height: 16px; vertical-align: middle; }
+.diary .nolabel { color: var(--crt-warn, #FFB86B); font-size: 12px; }
+.diary .empty { color: var(--crt-soft); font-style: italic; padding: 18px 6px; }
+.small { font-size: 12px; }
+</style>
+</head>
+<body>
+<header><a href="index.html">Map</a><span class="no">Mission 8-3</span><span class="title">Wrong course</span><span class="chip">git reset --hard</span></header>
+<main>
+  <aside class="side box">
+    <p>You made two survey commits on <code>main</code> by mistake: they belong on a branch of their own, and the mothership has not seen them. Keep them on a branch <code>rescue</code>, and get <code>main</code> back to where the mothership's <code>main</code> is.</p>
+    <h2>Goals</h2>
+    <ol class="goals"><li><span>Keep your commits on a branch: <code>git branch rescue</code>.</span></li><li><span>Predict first.</span></li><li><span>Move <code>main</code> back: <code>git reset --hard origin/main</code>.</span></li><li><span>Check: <code>git log --oneline</code>.</span></li></ol>
+    <h2>Hints (each costs a star)</h2>
+    <ol class="small"><li><code>git branch rescue</code> puts a new name on the commit you are on, so the two commits keep a name.</li><li><code>git reset --hard origin/main</code> moves the branch you are on, <code>main</code>, to where <code>origin/main</code> is, and makes your files match.</li><li>The last hint gives every line.</li></ol>
+  </aside>
+  <div class="right">
+    <div class="nav"><button type="button" id="back">Back</button><button type="button" id="next" class="primary">Next</button><span class="count" id="count"></span><label class="small notes-toggle"><input type="checkbox" id="notes"> designer notes</label></div>
+    <section id="stage" class="stage box" aria-label="The picture"><span class="whatif-badge">WHAT IF</span><div id="pic" class="pic"></div><p id="picnote" class="picnote"></p></section>
+    <section id="rama" class="rama box" aria-live="polite"></section>
+    <section id="debrief" class="debrief box" hidden></section>
+    <div id="term" class="term" aria-label="Terminal"></div>
+  </div>
+</main>
+<script type="application/json" id="level">{"title": "Wrong course", "kind": "Mission", "command": "git reset --hard", "briefing": "You made two survey commits on `main` by mistake: they belong on a branch of their own, and the mothership has not seen them. Keep them on a branch `rescue`, and get `main` back to where the mothership's `main` is.", "goals": ["Keep your commits on a branch: `git branch rescue`.", "Predict first.", "Move `main` back: `git reset --hard origin/main`.", "Check: `git log --oneline`."], "hints": ["`git branch rescue` puts a new name on the commit you are on, so the two commits keep a name.", "`git reset --hard origin/main` moves the branch you are on, `main`, to where `origin/main` is, and makes your files match.", "Every line of the mission, in order:\n\n    $ git branch rescue\n    $ git reset --hard origin/main\n    $ git log --oneline"], "beats": [{"kind": "scene", "s": ["7-3", 0], "pic": "chain", "desk": true, "mother": true, "rama": "Two survey commits landed on `main` by mistake. The mothership's pin is two commits below: it has not seen them. Your folder has `survey.txt`, from those commits."}, {"kind": "type", "s": ["7-3", 1], "pic": "chain", "desk": true, "mother": true, "rama": "`rescue` is a second name on the same commit. Nothing else changed: no new commit, no file. `HEAD` still rides `main`.", "note": "A `rescue` tag appears beside `main` on Survey day 2.", "goal": 1}, {"kind": "say", "s": ["7-3", 1], "pic": "chain", "desk": true, "mother": true, "ring": ["Start the project"], "rama": "Next: `git reset --hard origin/main`. `git reset` moves the branch you are on, `main`, to another commit: here, the one your `origin/main` bookmark is on, Start the project."}, {"kind": "say", "s": ["7-3", 1], "pic": "chain", "desk": true, "mother": true, "rama": "`--hard` also makes your folder match that commit. Without `--hard`, the branch moves and your files stay as they are."}, {"kind": "predict", "s": ["7-3", 1], "pic": "chain", "desk": true, "mother": true, "question": "After the reset, how many commits will `git log --oneline` list?", "options": ["1", "3"], "reveal": "1. `git log` starts at `HEAD` and walks down the parents. `HEAD` rides `main`, which will be on `Start the project`, the oldest commit. The two survey commits sit above it, where only `rescue` leads.", "goal": 2}, {"kind": "type", "s": ["7-3", 2], "pic": "chain", "desk": true, "mother": true, "rama": "`main` slid down two commits, and `HEAD` rode it: \"HEAD is now at\" names where you are. The commits did not move: `rescue` still holds them. `survey.txt` left your folder.", "note": "The `main` tag and the HEAD mark slide down two commits, next to `origin/main` and the mothership's pin. `survey.txt` fades out of the folder row.", "goal": 3}, {"kind": "type", "s": ["7-3", 3], "pic": "chain", "desk": true, "mother": true, "hl": [0], "rama": "One commit, as predicted. `git log` walks down from `HEAD`, and nothing below `Start the project` leads up to the survey commits. They are still in Git: `rescue` leads to them.", "goal": 4}, {"kind": "whatif", "s": ["7-3-whatif", 1], "pic": "chain", "desk": true, "mother": true, "ghosts": true, "rama": "What if you had not made the branch? No branch would lead to the two commits. You just saw them, so the picture draws them faded rather than hiding them. Git keeps commits no branch leads to for about 30 days, then may delete them, and `git log` would not list them. The next mission finds commits like these.", "note": "Greyscale, under WHAT IF: the same reset without `rescue`. The two capsules fade to dashed outlines. Then it rewinds to the real state."}, {"kind": "done", "s": ["7-3", 3], "pic": "chain", "desk": true, "mother": true, "debrief": "`git reset --hard origin/main` moved the branch you were on, `main`, back down the chain, and made your folder match that commit. It deleted no commit: your two commits are still there, held by `rescue`.\n\nWithout `--hard`, reset moves the branch and leaves your files as they are. Use reset only on commits nobody else has: on a branch others have pulled, `git revert` is the safe undo.", "keep": ["git branch rescue              # a name on the commits first", "git reset --hard origin/main   # then move main back"]}], "losses": ["The two survey commits pushed onto the mothership's `main` (kept as today)."], "reactions": ["`git reset`: \"`main` moved back. The commits it left are still in Git.\"", "A reset before the branch: the goal text says \"No branch leads to your two commits now, but Git still has them. The next mission shows how to find them; for now, start again with Restart.\""]}</script>
+<script type="application/json" id="runs">{"7-3": [{"line": null, "status": null, "output": "", "state": {"vault": {"head": "0be9911", "branch": "main", "commits": [{"id": "0be9911", "subject": "Survey day 2", "author": "Cadet", "time": 1784710800, "parents": ["ec56de1"]}, {"id": "ec56de1", "subject": "Survey day 1", "author": "Cadet", "time": 1784624400, "parents": ["59e52f5"]}, {"id": "59e52f5", "subject": "Start the project", "author": "First Commit", "time": 1791478510, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "0be9911"}, {"name": "origin/main", "kind": "remote", "at": "59e52f5"}]}, "ghosts": [], "reflog": [{"ref": "HEAD@{0}", "at": "0be9911", "message": "commit: Survey day 2", "ghost": false}, {"ref": "HEAD@{1}", "at": "ec56de1", "message": "commit: Survey day 1", "ghost": false}, {"ref": "HEAD@{2}", "at": "59e52f5", "message": "clone: from <lab>/github.com/moonbase/project.git", "ghost": false}], "mothership": {"head": "59e52f5", "branch": "main", "commits": [{"id": "59e52f5", "subject": "Start the project", "author": "First Commit", "time": 1791478510, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "59e52f5"}]}, "alex": {"head": "59e52f5", "branch": "main", "commits": [{"id": "59e52f5", "subject": "Start the project", "author": "First Commit", "time": 1791478510, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "59e52f5"}, {"name": "origin/main", "kind": "remote", "at": "59e52f5"}]}, "files": [{"path": "README.md", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "survey.txt", "status": "saved"}], "texts": {"notes.txt": "Notes\n", "survey.txt": "Crater A: 4 km wide\nCrater B: 9 km wide\n"}, "staged": {"notes.txt": "Notes\n", "survey.txt": "Crater A: 4 km wide\nCrater B: 9 km wide\n"}}}, {"line": "git branch rescue", "status": 0, "output": "", "state": {"vault": {"head": "0be9911", "branch": "main", "commits": [{"id": "0be9911", "subject": "Survey day 2", "author": "Cadet", "time": 1784710800, "parents": ["ec56de1"]}, {"id": "ec56de1", "subject": "Survey day 1", "author": "Cadet", "time": 1784624400, "parents": ["59e52f5"]}, {"id": "59e52f5", "subject": "Start the project", "author": "First Commit", "time": 1791478510, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "0be9911"}, {"name": "rescue", "kind": "branch", "at": "0be9911"}, {"name": "origin/main", "kind": "remote", "at": "59e52f5"}]}, "ghosts": [], "reflog": [{"ref": "HEAD@{0}", "at": "0be9911", "message": "commit: Survey day 2", "ghost": false}, {"ref": "HEAD@{1}", "at": "ec56de1", "message": "commit: Survey day 1", "ghost": false}, {"ref": "HEAD@{2}", "at": "59e52f5", "message": "clone: from <lab>/github.com/moonbase/project.git", "ghost": false}], "mothership": {"head": "59e52f5", "branch": "main", "commits": [{"id": "59e52f5", "subject": "Start the project", "author": "First Commit", "time": 1791478510, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "59e52f5"}]}, "alex": {"head": "59e52f5", "branch": "main", "commits": [{"id": "59e52f5", "subject": "Start the project", "author": "First Commit", "time": 1791478510, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "59e52f5"}, {"name": "origin/main", "kind": "remote", "at": "59e52f5"}]}, "files": [{"path": "README.md", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "survey.txt", "status": "saved"}], "texts": {"notes.txt": "Notes\n", "survey.txt": "Crater A: 4 km wide\nCrater B: 9 km wide\n"}, "staged": {"notes.txt": "Notes\n", "survey.txt": "Crater A: 4 km wide\nCrater B: 9 km wide\n"}}}, {"line": "git reset --hard origin/main", "status": 0, "output": "HEAD is now at 59e52f5 Start the project\n", "state": {"vault": {"head": "59e52f5", "branch": "main", "commits": [{"id": "0be9911", "subject": "Survey day 2", "author": "Cadet", "time": 1784710800, "parents": ["ec56de1"]}, {"id": "ec56de1", "subject": "Survey day 1", "author": "Cadet", "time": 1784624400, "parents": ["59e52f5"]}, {"id": "59e52f5", "subject": "Start the project", "author": "First Commit", "time": 1791478510, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "59e52f5"}, {"name": "rescue", "kind": "branch", "at": "0be9911"}, {"name": "origin/main", "kind": "remote", "at": "59e52f5"}]}, "ghosts": [], "reflog": [{"ref": "HEAD@{0}", "at": "59e52f5", "message": "reset: moving to origin/main", "ghost": false}, {"ref": "HEAD@{1}", "at": "0be9911", "message": "commit: Survey day 2", "ghost": false}, {"ref": "HEAD@{2}", "at": "ec56de1", "message": "commit: Survey day 1", "ghost": false}, {"ref": "HEAD@{3}", "at": "59e52f5", "message": "clone: from <lab>/github.com/moonbase/project.git", "ghost": false}], "mothership": {"head": "59e52f5", "branch": "main", "commits": [{"id": "59e52f5", "subject": "Start the project", "author": "First Commit", "time": 1791478510, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "59e52f5"}]}, "alex": {"head": "59e52f5", "branch": "main", "commits": [{"id": "59e52f5", "subject": "Start the project", "author": "First Commit", "time": 1791478510, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "59e52f5"}, {"name": "origin/main", "kind": "remote", "at": "59e52f5"}]}, "files": [{"path": "README.md", "status": "saved"}, {"path": "notes.txt", "status": "saved"}], "texts": {"notes.txt": "Notes\n"}, "staged": {"notes.txt": "Notes\n"}}}, {"line": "git log --oneline", "status": 0, "output": "59e52f5 (HEAD -> main, origin/main) Start the project\n", "state": {"vault": {"head": "59e52f5", "branch": "main", "commits": [{"id": "0be9911", "subject": "Survey day 2", "author": "Cadet", "time": 1784710800, "parents": ["ec56de1"]}, {"id": "ec56de1", "subject": "Survey day 1", "author": "Cadet", "time": 1784624400, "parents": ["59e52f5"]}, {"id": "59e52f5", "subject": "Start the project", "author": "First Commit", "time": 1791478510, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "59e52f5"}, {"name": "rescue", "kind": "branch", "at": "0be9911"}, {"name": "origin/main", "kind": "remote", "at": "59e52f5"}]}, "ghosts": [], "reflog": [{"ref": "HEAD@{0}", "at": "59e52f5", "message": "reset: moving to origin/main", "ghost": false}, {"ref": "HEAD@{1}", "at": "0be9911", "message": "commit: Survey day 2", "ghost": false}, {"ref": "HEAD@{2}", "at": "ec56de1", "message": "commit: Survey day 1", "ghost": false}, {"ref": "HEAD@{3}", "at": "59e52f5", "message": "clone: from <lab>/github.com/moonbase/project.git", "ghost": false}], "mothership": {"head": "59e52f5", "branch": "main", "commits": [{"id": "59e52f5", "subject": "Start the project", "author": "First Commit", "time": 1791478510, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "59e52f5"}]}, "alex": {"head": "59e52f5", "branch": "main", "commits": [{"id": "59e52f5", "subject": "Start the project", "author": "First Commit", "time": 1791478510, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "59e52f5"}, {"name": "origin/main", "kind": "remote", "at": "59e52f5"}]}, "files": [{"path": "README.md", "status": "saved"}, {"path": "notes.txt", "status": "saved"}], "texts": {"notes.txt": "Notes\n"}, "staged": {"notes.txt": "Notes\n"}}}], "7-3-whatif": [{"line": null, "status": null, "output": "", "state": {"vault": {"head": "0be9911", "branch": "main", "commits": [{"id": "0be9911", "subject": "Survey day 2", "author": "Cadet", "time": 1784710800, "parents": ["ec56de1"]}, {"id": "ec56de1", "subject": "Survey day 1", "author": "Cadet", "time": 1784624400, "parents": ["59e52f5"]}, {"id": "59e52f5", "subject": "Start the project", "author": "First Commit", "time": 1791478510, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "0be9911"}, {"name": "origin/main", "kind": "remote", "at": "59e52f5"}]}, "ghosts": [], "reflog": [{"ref": "HEAD@{0}", "at": "0be9911", "message": "commit: Survey day 2", "ghost": false}, {"ref": "HEAD@{1}", "at": "ec56de1", "message": "commit: Survey day 1", "ghost": false}, {"ref": "HEAD@{2}", "at": "59e52f5", "message": "clone: from <lab>/github.com/moonbase/project.git", "ghost": false}], "mothership": {"head": "59e52f5", "branch": "main", "commits": [{"id": "59e52f5", "subject": "Start the project", "author": "First Commit", "time": 1791478510, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "59e52f5"}]}, "alex": {"head": "59e52f5", "branch": "main", "commits": [{"id": "59e52f5", "subject": "Start the project", "author": "First Commit", "time": 1791478510, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "59e52f5"}, {"name": "origin/main", "kind": "remote", "at": "59e52f5"}]}, "files": [{"path": "README.md", "status": "saved"}, {"path": "notes.txt", "status": "saved"}, {"path": "survey.txt", "status": "saved"}], "texts": {"notes.txt": "Notes\n", "survey.txt": "Crater A: 4 km wide\nCrater B: 9 km wide\n"}, "staged": {"notes.txt": "Notes\n", "survey.txt": "Crater A: 4 km wide\nCrater B: 9 km wide\n"}}}, {"line": "git reset --hard origin/main", "status": 0, "output": "HEAD is now at 59e52f5 Start the project\n", "state": {"vault": {"head": "59e52f5", "branch": "main", "commits": [{"id": "59e52f5", "subject": "Start the project", "author": "First Commit", "time": 1791478510, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "59e52f5"}, {"name": "origin/main", "kind": "remote", "at": "59e52f5"}]}, "ghosts": [{"id": "0be9911", "subject": "Survey day 2", "author": "Cadet", "time": 1784710800, "parents": ["ec56de1"]}, {"id": "ec56de1", "subject": "Survey day 1", "author": "Cadet", "time": 1784624400, "parents": ["59e52f5"]}], "reflog": [{"ref": "HEAD@{0}", "at": "59e52f5", "message": "reset: moving to origin/main", "ghost": false}, {"ref": "HEAD@{1}", "at": "0be9911", "message": "commit: Survey day 2", "ghost": true}, {"ref": "HEAD@{2}", "at": "ec56de1", "message": "commit: Survey day 1", "ghost": true}, {"ref": "HEAD@{3}", "at": "59e52f5", "message": "clone: from <lab>/github.com/moonbase/project.git", "ghost": false}], "mothership": {"head": "59e52f5", "branch": "main", "commits": [{"id": "59e52f5", "subject": "Start the project", "author": "First Commit", "time": 1791478510, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "59e52f5"}]}, "alex": {"head": "59e52f5", "branch": "main", "commits": [{"id": "59e52f5", "subject": "Start the project", "author": "First Commit", "time": 1791478510, "parents": []}], "refs": [{"name": "main", "kind": "branch", "at": "59e52f5"}, {"name": "origin/main", "kind": "remote", "at": "59e52f5"}]}, "files": [{"path": "README.md", "status": "saved"}, {"path": "notes.txt", "status": "saved"}], "texts": {"notes.txt": "Notes\n"}, "staged": {"notes.txt": "Notes\n"}}}]}</script>
+<script>
+"use strict";
+const LEVEL = JSON.parse(document.getElementById("level").textContent);
+const RUNS = JSON.parse(document.getElementById("runs").textContent);
+const $ = (sel) => document.querySelector(sel);
+const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const md = (s) => esc(s).replace(/`([^`]+)`/g, "<code>$1</code>").replace(/\n\n/g, "</p><p>");
+let at = 0;
+const picked = {};
+
+const stateOf = (beat) => RUNS[beat.s[0]][beat.s[1]].state;
+
+/* Every commit the level ever shows, in one stable order: by generation (longest path from the
+   root) newest first, then by time. Lanes: 0 for the first-parent chain of the first state's
+   main, 1 for everything else. */
+function layout() {
+  const all = new Map();
+  const add = (c) => { if (!all.has(c.id)) all.set(c.id, c); };
+  for (const run of Object.values(RUNS)) for (const beat of run) {
+    const s = beat.state;
+    for (const c of (s.vault ? s.vault.commits : [])) add(c);
+    for (const c of s.ghosts) add(c);
+    for (const c of (s.mothership ? s.mothership.commits : [])) add(c);
+  }
+  const gen = new Map();
+  const depth = (id) => {
+    if (gen.has(id)) return gen.get(id);
+    const c = all.get(id);
+    const g = c && c.parents.length ? 1 + Math.max(...c.parents.map(depth)) : 0;
+    gen.set(id, g);
+    return g;
+  };
+  const order = [...all.values()].sort((a, b) => depth(b.id) - depth(a.id) || b.time - a.time);
+  const run = RUNS[LEVEL.beats[0].s[0]];
+  const lane0 = new Set();
+  for (const st of [run[0].state, run[run.length - 1].state]) {
+    for (const name of ["main", "origin/main"]) {
+      const ref = st.vault.refs.find((r) => r.name === name);
+      let walk = ref && ref.at;
+      while (walk && all.has(walk)) { lane0.add(walk); walk = all.get(walk).parents[0]; }
+    }
+  }
+  const lanes = new Map(order.map((c) => [c.id, lane0.has(c.id) ? 0 : 1]));
+  /* Keep each side line together, just above the commit it leaves from, so it reads as a branch. */
+  const main = order.filter((c) => lanes.get(c.id) === 0);
+  const side = order.filter((c) => lanes.get(c.id) === 1);
+  const forkOf = (c) => { let at = c; while (at && lanes.get(at.id) === 1) at = all.get(at.parents[0]); return at ? at.id : null; };
+  const grouped = [];
+  for (const c of main) { grouped.push(...side.filter((x) => forkOf(x) === c.id)); grouped.push(c); }
+  grouped.push(...side.filter((x) => !grouped.includes(x)));
+  /* Each side line gets its own column: a commit takes its child's column when a side child has
+     one, otherwise the next free column, so two branches off one commit never share a column. */
+  let next = 1;
+  for (const c of grouped.filter((x) => lanes.get(x.id) === 1)) {
+    const child = grouped.find((x) => lanes.get(x.id) >= 1 && x.parents[0] === c.id && x.lane !== undefined);
+    c.lane = child ? child.lane : next++;
+    lanes.set(c.id, c.lane);
+  }
+  return { order: grouped, lanes, width: 26 + Math.max(1, next - 1) * 22 };
+}
+const LAYOUT = layout();
+
+function refsAt(repo, id, mother) {
+  if (!repo) return "";
+  return repo.refs.filter((r) => r.at === id).map((r) => {
+    let text = r.name;
+    let cls = r.kind === "remote" ? "remote" : mother ? "mother" : "";
+    if (!mother && r.kind === "branch" && repo.branch === r.name) { text = `HEAD → ${r.name}`; cls = "head"; }
+    return { text, cls, key: (mother ? "m:" : "v:") + r.name };
+  });
+}
+
+function moved(beat) {
+  const prev = LEVEL.beats[at - 1];
+  if (!prev) return { refs: new Set(), caps: new Set() };
+  const before = stateOf(prev), now = stateOf(beat);
+  const refs = new Set(), caps = new Set();
+  const place = (s) => {
+    const m = new Map();
+    for (const r of (s.vault ? s.vault.refs : [])) m.set("v:" + r.name, r.at + (s.vault.branch === r.name ? "*" : ""));
+    for (const r of (s.mothership ? s.mothership.refs : [])) m.set("m:" + r.name, r.at);
+    return m;
+  };
+  const a = place(before), b = place(now);
+  for (const [k, v] of b) if (a.get(k) !== v) refs.add(k);
+  const had = new Set((before.vault ? before.vault.commits : []).map((c) => c.id));
+  for (const c of (now.vault ? now.vault.commits : [])) if (!had.has(c.id)) caps.add(c.id);
+  return { refs, caps };
+}
+
+/* A row's capsule only. The lines between capsules are drawn by wire() once the rows are laid
+   out, because a row grows when its names wrap. */
+const LANE_X = (l) => 10 + l * 22;
+function capsule(c, look) {
+  const w = LAYOUT.width, cx = LANE_X(LAYOUT.lanes.get(c.id)) - 8, cy = 12;
+  const fill = look.ghost || look.remote ? "var(--panel)" : look.mirror ? "url(#mirror)" : "var(--va)";
+  const dash = look.ghost ? 'stroke-dasharray="3 2"' : look.remote ? 'stroke-dasharray="1 2"' : "";
+  const ring = look.ring ? `<rect x="${cx - 4}" y="${cy - 4}" width="24" height="24" fill="none" stroke="var(--gold)" stroke-width="3"/>` : "";
+  const box = `<rect x="${cx}" y="${cy}" width="16" height="16" fill="${fill}" stroke="${look.ghost ? "var(--va)" : look.remote ? "var(--re)" : "var(--edge)"}" stroke-width="${look.remote ? 3 : 2}" ${dash}/>`;
+  return `<span class="lane" data-id="${c.id}" style="width:${w}px"><svg width="${w}" height="40"><defs><pattern id="mirror" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect width="3" height="6" fill="var(--va)"/></pattern></defs>${ring}${box}</svg></span>`;
+}
+
+/* Every chain on the page registers its links here; wire() draws them over the laid-out rows. */
+let WIRES = [];
+function links(rows, ids, ghosts, remote, undo, walkFrom) {
+  const edges = [];
+  const walk = [];
+  const byId = new Map(rows.map((c) => [c.id, c]));
+  for (let id = walkFrom; id && byId.has(id); id = byId.get(id).parents[0]) walk.push(id);
+  for (const c of rows) for (const p of c.parents) {
+    if (ids.has(p)) edges.push({ from: c.id, to: p, dashed: ghosts.has(c.id) || remote.has(c.id), remote: remote.has(c.id) });
+  }
+  WIRES.push({ edges, undo, walk });
+  return `data-wire="${WIRES.length - 1}"`;
+}
+
+/* A side line runs down its own column and turns into its parent's column just above the
+   parent, as git draws it; a merge's second line leaves at once and runs down the side column. */
+function wire() {
+  document.querySelectorAll(".chain[data-wire]").forEach((el) => {
+    const spec = WIRES[Number(el.dataset.wire)];
+    if (!spec) return;
+    el.querySelectorAll("svg.wires").forEach((old) => old.remove());
+    const box = el.getBoundingClientRect();
+    const where = new Map();
+    el.querySelectorAll(".lane[data-id]").forEach((lane) => {
+      const r = lane.getBoundingClientRect();
+      const id = lane.dataset.id;
+      where.set(id, { x: r.left - box.left + el.scrollLeft + LANE_X(LAYOUT.lanes.get(id.replace(/^[mp]:/, ""))), y: r.top - box.top + 20 });
+    });
+    let paths = "";
+    for (const e of spec.edges) {
+      const a = where.get(e.from), b = where.get(e.to);
+      if (!a || !b) continue;
+      const turn = 12;
+      const d = a.x >= b.x
+        ? `M${a.x} ${a.y} L${a.x} ${b.y - turn - 8} L${b.x} ${b.y - 8} L${b.x} ${b.y}`
+        : `M${a.x} ${a.y} L${a.x} ${a.y + 8} L${b.x} ${a.y + 8 + turn} L${b.x} ${b.y}`;
+      const dash = e.dashed ? 'stroke-dasharray="4 3" opacity=".6"' : "";
+      paths += `<path d="${d}" fill="none" stroke="${e.remote ? "var(--re)" : "var(--va)"}" stroke-width="3" ${dash}/>`;
+    }
+    spec.walk.slice(1).forEach((id, i) => {
+      const a = where.get(spec.walk[i]), b = where.get(id);
+      if (a && b) paths += `<path class="walk" style="animation-delay:${0.4 + i * 0.45}s" d="M${a.x} ${a.y} L${b.x} ${b.y}" fill="none" stroke="var(--gold)" stroke-width="5"/>`;
+    });
+    if (spec.undo) {
+      const subjAt = (subj) => [...el.querySelectorAll(".cell")].find((cell) => cell.dataset.subj === subj);
+      const from = subjAt(spec.undo[0]), to = subjAt(spec.undo[1]);
+      if (from && to) {
+        const y1 = from.getBoundingClientRect().top - box.top + 20, y2 = to.getBoundingClientRect().top - box.top + 20;
+        paths += `<defs><marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0 L8 4 L0 8 z" fill="var(--gold)"/></marker></defs><path d="M26 ${y1} C 2 ${y1}, 2 ${y2}, 24 ${y2}" fill="none" stroke="var(--gold)" stroke-width="3" stroke-dasharray="5 3" marker-end="url(#ah)"/>`;
+      }
+    }
+    el.insertAdjacentHTML("afterbegin", `<svg class="wires" width="${el.scrollWidth}" height="${el.scrollHeight}">${paths}</svg>`);
+  });
+}
+window.addEventListener("resize", () => wire());
+
+/* The chain: every commit drawn once, joined to its parents. Your labels are solid tags (the
+   ship marks the one you are on), origin/* tags are hollow (your note of the mothership), and
+   pins mark where the mothership and Alex really are. */
+function chain(beat) {
+  const s = stateOf(beat);
+  const showGhosts = Boolean(beat.ghosts);
+  const ghostIds = new Set(showGhosts ? s.ghosts.map((g) => g.id) : []);
+  const vaultIds = new Set(s.vault.commits.map((c) => c.id));
+  const motherOnly = new Set(beat.mother && s.mothership ? s.mothership.commits.map((c) => c.id).filter((id) => !vaultIds.has(id)) : []);
+  const ids = new Set([...vaultIds, ...ghostIds, ...motherOnly]);
+  const rows = LAYOUT.order.filter((c) => ids.has(c.id));
+  const ring = new Set(beat.ring || []);
+  const mv = moved(beat);
+  const pinMoved = pinsMoved(beat);
+  const [undoFrom, undoTo] = beat.undoes || [null, null];
+  const shown = new Set();
+  let out = `<div class="chain" ${links(rows, ids, ghostIds, motherOnly, beat.undoes, beat.walk ? (s.vault.refs.find((r) => r.name === beat.walk) || {}).at : null)}>`;
+  if (beat.count) {
+    const mainAt = (s.vault.refs.find((r) => r.name === "main") || {}).at;
+    let n = 0, walk = mainAt;
+    const byId = new Map(LAYOUT.order.map((c) => [c.id, c]));
+    while (walk && byId.has(walk)) { n += 1; walk = byId.get(walk).parents[0]; }
+    out += `<div class="count">main: ${n} commits</div>`;
+  }
+  for (const c of rows) {
+    const ghost = ghostIds.has(c.id);
+    const look = { ghost, remote: motherOnly.has(c.id), mirror: c.subject.startsWith("Revert "), ring: ring.has(c.subject) || mv.caps.has(c.id) };
+    const rank = (r) => (r.kind === "branch" && s.vault.branch === r.name ? 0 : r.kind === "branch" ? 1 : 2);
+    const tags = beat.plain ? "" : s.vault.refs.filter((r) => r.at === c.id).sort((a, b) => rank(a) - rank(b)).map((r) => {
+      const here = r.kind === "branch" && s.vault.branch === r.name;
+      const cls = r.kind === "remote" ? "remote" : here ? "head" : "";
+      const key = "v:" + r.name;
+      const tag = `<span class="ref ${cls} ${mv.refs.has(key) ? "moved" : ""}">${esc(r.name)}</span>`;
+      return here ? `<span class="rides"><span class="ship ${beat.ringhead ? "ring" : ""}" title="HEAD: you are here">HEAD ▶</span>${tag}</span>` : tag;
+    }).join("");
+    const pins = [];
+    if (!beat.plain && s.vault.refs.some((r) => r.at === c.id && r.kind === "branch" && r.name === s.vault.branch)) shown.add("head");
+    if (!beat.plain && s.vault.refs.some((r) => r.at === c.id && r.kind === "branch" && r.name !== s.vault.branch)) shown.add("other");
+    if (!beat.plain && s.vault.refs.some((r) => r.at === c.id && r.kind === "remote")) shown.add("remote");
+    if (beat.mother && beat.motherPin !== false && s.mothership) for (const r of s.mothership.refs.filter((r) => r.at === c.id)) pins.push(`<span class="pin ms ${pinMoved.has("m:" + r.name) ? "moved" : ""}">Mothership: ${esc(r.name)}</span>`);
+    if (beat.alex && s.alex) for (const r of s.alex.refs.filter((r) => r.kind === "branch" && r.at === c.id)) pins.push(`<span class="pin ${s.pinWho === "You" ? "you" : "alex"} ${pinMoved.has("a:" + r.name) ? "moved" : ""}">${s.pinWho || "Alex"}: ${esc(r.name)}</span>`);
+    if (pins.some((p) => p.includes("pin ms"))) shown.add("ms");
+    if (pins.some((p) => !p.includes("pin ms"))) shown.add("other-pin");
+    const undo = c.subject === undoFrom ? `<span class="undo">↶ undoes "${esc(undoTo)}"</span>` : "";
+    const undone = undoFrom && c.subject === undoTo ? `<span class="undo">undone by the top commit</span>` : "";
+    out += `<div class="cell ${(beat.dim || []).includes(c.subject) ? "dim" : ""}" data-subj="${esc(c.subject)}">${capsule(c, look)}<span class="body"><span class="hash">${c.id}</span><span class="subj ${look.ghost ? "ghost" : ""} ${look.remote ? "remote" : ""}">${esc(c.subject)}</span>${look.remote ? '<span class="only-ms">only on the mothership</span>' : ""}${tags}${pins.join("")}${undo}${undone}</span></div>`;
+  }
+  out += `</div>`;
+  const legend = [];
+  if (shown.has("head")) legend.push('<span><span class="ref head">filled</span> the branch you are on</span>');
+  if (shown.has("other")) legend.push('<span><span class="ref">outlined</span> your other branches</span>');
+  if (shown.has("remote")) legend.push('<span><span class="ref remote">dashed</span> your bookmark of where the mothership was</span>');
+  if (shown.has("ms")) legend.push('<span><span class="pin ms">Mothership: main</span> pin: where the mothership\'s <code>main</code> really is</span>');
+  if (shown.has("other-pin")) legend.push(s.pinWho === "You" ? '<span><span class="pin you">You: main</span> pin: where your <code>main</code> really is</span>' : '<span><span class="pin alex">Alex: main</span> pin: where Alex\'s <code>main</code> really is</span>');
+  if (rows.length > 1) legend.push("<span>each line joins a commit to the one before it, its parent</span>");
+  if (ghostIds.size) legend.push("<span>faded, dashed capsule: in Git, but no name leads to it</span>");
+  if (motherOnly.size) legend.push('<span><span class="only-ms">pink dotted capsule</span>: only on the mothership, not in your repository yet</span>');
+  if (beat.noLegend) legend.length = 0;
+  if (legend.length && beat.foldLegend) out += `<details class="legend-fold"><summary>i: what the marks mean</summary><div class="legend">${legend.join("")}</div></details>`;
+  else if (legend.length) out += `<div class="legend">${legend.join("")}</div>`;
+  if (beat.desk) {
+    const prev = LEVEL.beats[at - 1] ? stateOf(LEVEL.beats[at - 1]) : s;
+    const now = new Set(s.files.map((f) => f.path));
+    const left = prev.files.filter((f) => !now.has(f.path)).map((f) => `<span class="file left">${esc(f.path)}</span>`).join("");
+    out += `<div class="files"><b>Your working folder</b>${s.files.map((f) => `<span class="file">${esc(f.path)}</span>`).join("")}${left}</div>`;
+  }
+  return out;
+}
+
+/* The target: the captain's chart, the same commits with the names where they should end up,
+   and a check per name. */
+function target(beat) {
+  const s = stateOf(beat);
+  const t = beat.target;
+  const rows = LAYOUT.order.filter((c) => s.vault.commits.some((v) => v.id === c.id));
+  const subjOf = (name) => { const r = s.vault.refs.find((x) => x.name === name); const c = r && rows.find((x) => x.id === r.at); return c ? c.subject : null; };
+  const placed = (n) => subjOf(n) === t.names[n];
+  const headOk = s.vault.branch === t.head;
+  const tick = (ok) => (ok ? '<span class="tick">✓</span>' : "");
+  let out = `<div class="chain target" ${links(rows, new Set(rows.map((r) => r.id)), new Set(), new Set(), null, null)}>`;
+  for (const c of rows) {
+    const names = Object.entries(t.names).filter(([, subj]) => subj === c.subject).sort(([a], [b]) => (b === t.head) - (a === t.head)).map(([n]) => n === t.head
+      ? `<span class="rides"><span class="ship">HEAD ▶</span>${tick(headOk && placed(n))}<span class="ref head">${esc(n)}</span></span>`
+      : `<span class="named">${tick(placed(n))}<span class="ref ${n.includes("/") ? "remote" : ""}">${esc(n)}</span></span>`).join("");
+    out += `<div class="cell">${capsule(c, {})}<span class="body"><span class="subj">${esc(c.subject)}</span>${names}</span></div>`;
+  }
+  const total = Object.keys(t.names).length;
+  const inPlace = Object.keys(t.names).filter(placed).length;
+  const extra = s.vault.refs.filter((r) => r.kind === "branch" && !(r.name in t.names)).length;
+  out += `</div><ul class="checks">`;
+  out += `<li class="${inPlace === total ? "ok" : ""}">names in place: ${inPlace} of ${total}</li>`;
+  out += `<li class="${headOk ? "ok" : ""}"><code>HEAD</code> in place</li>`;
+  out += `<li class="${extra ? "" : "ok"}">names the chart does not have: ${extra}</li></ul>`;
+  return out;
+}
+
+function pinsMoved(beat) {
+  const prev = LEVEL.beats[at - 1];
+  const out = new Set();
+  if (!prev) return out;
+  const place = (st) => {
+    const m = new Map();
+    for (const r of (st.mothership ? st.mothership.refs : [])) m.set("m:" + r.name, r.at);
+    for (const r of (st.alex ? st.alex.refs : [])) m.set("a:" + r.name, r.at);
+    return m;
+  };
+  const a = place(stateOf(prev)), b = place(stateOf(beat));
+  for (const [k, v] of b) if (a.get(k) !== v) out.add(k);
+  return out;
+}
+
+function desk(beat) {
+  const s = stateOf(beat);
+  const staged = s.files.filter((f) => f.status.startsWith("staged"));
+  const fileCard = (f) => {
+    const text = s.texts[f.path];
+    const stagedText = s.staged[f.path];
+    let lines = "";
+    if (text !== undefined && f.path === "engine.cfg") {
+      const keep = new Set((stagedText || "").split("\n"));
+      lines = text.split("\n").filter(Boolean).map((l) => `<span class="line ${keep.has(l) ? "" : "red"} ${beat.hl && !keep.has(l) ? "blink" : ""}">${esc(l)}</span>`).join("");
+      lines += (beat.gone || []).map((l) => `<span class="line gone">${esc(l)}</span>`).join("");
+    }
+    const tag = { edited: "edited", staged: "Git's copy is in the staging area", "staged+edited": "edited after staging", new: "new" }[f.status] || "";
+    return `<div class="file"><span class="name">${esc(f.path)}</span>${tag ? `<span class="tag">${tag}</span>` : ""}${lines}</div>`;
+  };
+  const vault = s.vault.commits.map((c) => `<div class="mini-cap"><span class="cap"></span><span class="subj">${esc(c.subject)}</span><span class="rides"><span class="ship">HEAD ▶</span><span class="ref head">${esc(s.vault.branch)}</span></span></div>`).join("");
+  const revealed = beat.outline && (beat.kind !== "predict" || picked[at] !== undefined);
+  return `<div class="desk ${revealed ? "revealed" : ""}"><div class="zone wd"><h3>Working folder</h3>${s.files.map(fileCard).join("")}</div>` +
+    `<div class="kept ${revealed ? "on" : ""}"><span class="kept-name">Git has a copy</span>` +
+    `<div class="zone st"><h3>Staging area</h3>${staged.map((f) => `<div class="file"><span class="name">${esc(f.path)}</span><span class="tag">Git's copy, ready for the next commit</span></div>`).join("") || '<span class="small">empty</span>'}</div>` +
+    `<div class="zone va"><h3>Vault</h3>${vault}${s.staged["engine.cfg"] !== undefined ? `<div class="committed">engine.cfg in it: ${esc(s.staged["engine.cfg"].trim())}</div>` : ""}</div></div></div>`;
+}
+
+function diary(beat) {
+  let table = `<div class="empty">Type <code>git reflog</code> to read the move log.</div>`;
+  if (beat.diary) {
+    const shown = RUNS[beat.diary[0]][beat.diary[1]].state.reflog;
+    const ghostNow = new Set(stateOf(beat).ghosts.map((g) => g.id));
+    const printed = RUNS[beat.diary[0]][beat.diary[1]].output.replace(/\n$/, "").split("\n");
+    table = `<table>${shown.map((e, i) => {
+      const line = printed[i] || "";
+      const at = line.indexOf(e.ref);
+      const html = at < 0 ? esc(line) : `${esc(line.slice(0, at))}<span class="r">${esc(e.ref)}</span>${esc(line.slice(at + e.ref.length))}`;
+      const mark = ghostNow.has(e.at) && !beat.nomark ? ' <span class="nolabel">no name</span>' : "";
+      return `<tr class="${e.ref === beat.pick ? "pick" : ""} ${beat.fresh && i === 0 ? "fresh" : ""} ${beat.lit ? "off" : ""}" data-row="${i}"><td class="line">${html}${mark}</td></tr>`;
+    }).join("")}</table>`;
+  }
+  return `<div class="diarywrap"><div class="diary"><h3>The move log: what <code>git reflog</code> printed, newest first</h3>${table}</div><div>${chain(beat)}</div></div>`;
+}
+
+function terminal(upto) {
+  const lines = [];
+  const typedAt = LEVEL.beats.slice(0, upto + 1).map((b, i) => (b.kind === "type" ? i : -1)).filter((i) => i >= 0);
+  const lastTyped = typedAt.length ? typedAt[typedAt.length - 1] : -1;
+  const want = LEVEL.beats[upto].hl || (LEVEL.beats[upto].pick && LEVEL.beats[lastTyped] && LEVEL.beats[lastTyped].diary ? [RUNS[LEVEL.beats[lastTyped].diary[0]][LEVEL.beats[lastTyped].diary[1]].state.reflog.findIndex((e) => e.ref === LEVEL.beats[upto].pick)] : null);
+  LEVEL.beats.slice(0, upto + 1).forEach((beat, i) => {
+    if (beat.kind !== "type") return;
+    const rec = RUNS[beat.s[0]][beat.s[1]];
+    const old = i !== lastTyped ? "old" : "";
+    lines.push(`<span class="cmd ${old}">$ ${esc(rec.line)}</span>`);
+    rec.output.replace(/\n$/, "").split("\n").forEach((l, n) => {
+      if (rec.output === "") return;
+      const hl = i === lastTyped && want && want.includes(n) ? "hl" : i === lastTyped && (LEVEL.beats[upto].grey || []).includes(n) ? "old" : "";
+      lines.push(`<span class="${old} ${hl}">${esc(l)}</span>`);
+    });
+  });
+  lines.push('<span class="cmd">$ </span>');
+  return lines.join("\n");
+}
+
+/* "The file as it was then": what git show <commit>:<file> printed, beside the chain, or what git said instead. */
+function thenPanel(t) {
+  if (t.at === undefined) return `<div class="then"><h4>${esc(t.file)} as it was then</h4><p class="small">Nothing picked yet. <code>git show &lt;commit&gt;:${esc(t.file)}</code> prints the file exactly as that commit recorded it.</p></div>`;
+  const rec = RUNS[t.at[0]][t.at[1]];
+  const head = `<h4>${esc(t.file)} as it was in "${esc(t.subject)}"</h4>`;
+  if (rec.status) return `<div class="then missing">${head}<p>Not there: this commit has no <code>${esc(t.file)}</code>.</p></div>`;
+  return `<div class="then">${head}<pre>${esc(rec.output.replace(/\n$/, ""))}</pre><p class="small">Read from the commit. Your folder is not changed.</p></div>`;
+}
+
+function draw() {
+  const beat = LEVEL.beats[at];
+  WIRES = [];
+  let pic = { desk, chain, diary }[beat.pic](beat);
+  if (beat.graph) {
+    const printed = RUNS[beat.graph[0]][beat.graph[1]].output.replace(/\n$/, "").split("\n");
+    const lit = beat.ring || [];
+    const pre = printed.map((l) => `<span class="${lit.some((sub) => l.endsWith(sub)) ? "hl" : ""}">${esc(l)}</span>`).join("\n");
+    pic = `<div class="pair stack"><div><h4>The chain</h4>${pic}</div><div><h4>The same tree, as <code>git log --oneline --graph --all</code> prints it</h4><pre class="graph">${pre}</pre></div></div>`;
+  }
+  if (beat.target) pic = `<div class="pair"><div><h4>Your chain</h4>${pic}</div><div><h4>The captain's chart</h4>${target(beat)}</div></div>`;
+  if (beat.then) pic = `<div class="pair then-pair"><div>${pic}</div><div>${thenPanel(beat.then)}</div></div>`;
+  $("#stage").className = `stage box ${beat.kind === "whatif" ? "whatif" : ""}`;
+  $("#pic").innerHTML = pic;
+  wire();
+  $("#picnote").innerHTML = beat.note ? `<b>The picture:</b> ${md(beat.note)}` : "";
+  $("#picnote").hidden = !beat.note || !$("#notes").checked;
+  let rama = beat.rama ? `<p>${md(beat.rama)}</p>` : (beat.kind === "type" ? '<p class="small">(a challenge: Rama stays quiet)</p>' : "");
+  if (beat.question) {
+    const choice = picked[at];
+    rama = `<p class="q">Predict: ${md(beat.question)}</p><div class="choices">${beat.options.map((o, i) => `<button type="button" data-i="${i}" aria-pressed="${choice === i}">${md(o)}</button>`).join("")}</div>` +
+      (choice !== undefined ? `<p class="reveal">${md(beat.reveal)}</p>` : "");
+  }
+  $("#rama").innerHTML = `<span class="bot" aria-hidden="true"></span><div><div class="who">${beat.kind === "whatif" ? "Rama, WHAT IF" : "Rama, ship's computer"}</div>${rama}</div>`;
+  $("#rama").querySelectorAll("button[data-i]").forEach((b) => b.addEventListener("click", () => { picked[at] = Number(b.dataset.i); draw(); }));
+  const term = $("#term");
+  term.innerHTML = terminal(at);
+  /* Show the first lit line when there is one, else the newest lines. */
+  const lit = term.querySelector(".hl");
+  term.scrollTop = lit ? Math.max(0, lit.offsetTop - term.offsetTop - 24) : term.scrollHeight;
+  const done = Math.max(0, ...LEVEL.beats.slice(0, at + 1).map((b) => b.goal || 0));
+  document.querySelectorAll(".goals li").forEach((li, i) => li.classList.toggle("done", LEVEL.kind === "Challenge" ? i < done : i < done));
+  $("#debrief").hidden = beat.kind !== "done";
+  if (beat.kind === "done") $("#debrief").innerHTML = `<h2>Mission complete</h2><p>${md(beat.debrief)}</p><p>Commands to keep:</p><pre>${beat.keep.map((l) => "$ " + esc(l)).join("\n")}</pre>`;
+  $("#count").textContent = `Beat ${at + 1} of ${LEVEL.beats.length}: ${beat.kind}`;
+  $("#back").disabled = at === 0;
+  $("#next").disabled = at === LEVEL.beats.length - 1;
+  if (beat.lit) {
+    document.querySelectorAll(".diary tr.off").forEach((tr, i) => setTimeout(() => tr.classList.remove("off"), 350 * (i + 1)));
+  }
+}
+
+$("#notes").addEventListener("change", () => draw());
+$("#back").addEventListener("click", () => { at = Math.max(0, at - 1); draw(); });
+$("#next").addEventListener("click", () => { at = Math.min(LEVEL.beats.length - 1, at + 1); draw(); });
+document.addEventListener("keydown", (e) => { if (e.key === "ArrowRight") $("#next").click(); if (e.key === "ArrowLeft") $("#back").click(); });
+const fromHash = Number(location.hash.slice(1));
+if (fromHash > 0 && fromHash <= LEVEL.beats.length) at = fromHash - 1;
+draw();
+</script>
+</body>
+</html>

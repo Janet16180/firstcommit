@@ -1,0 +1,2 @@
+folder while the tool waited: after the hang-up, left in TMPDIR: git-mergetool-Xx5pBs git-mergetool-Xx5pBs/launch_BACKUP_1899526.txt git-mergetool-Xx5pBs/launch_BASE_1899526.txt git-mergetool-Xx5pBs/launch_LOCAL_1899526.txt git-mergetool-Xx5pBs/launch_REMOTE_1899526.txt
+folder while the tool waited: left in TMPDIR: git-mergetool-Xx5pBs git-mergetool-Xx5pBs/launch_BACKUP_1899526.txt git-mergetool-Xx5pBs/launch_BASE_1899526.txt git-mergetool-Xx5pBs/launch_LOCAL_1899526.txt git-mergetool-Xx5pBs/launch_REMOTE_1899526.txt

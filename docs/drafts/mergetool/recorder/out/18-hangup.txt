@@ -1,0 +1,35 @@
+project $ git merge --no-edit scout
+Auto-merging launch.txt
+CONFLICT (content): Merge conflict in launch.txt
+Automatic merge failed; fix conflicts and then commit the result.
+project $ git mergetool
+Merging:
+launch.txt
+
+Normal merge conflict for 'launch.txt':
+  {local}: modified file
+  {remote}: modified file
+Waiting for the merge panel: pick a side for each conflict in launch.txt, then Write.
+To stop without changing the file: Cancel in the panel, or Ctrl-C here.
+
+[the terminal closes; a new one opens]
+project $ git status --short
+UU launch.txt
+project $ cat launch.txt
+Launch plan
+<<<<<<< HEAD
+Window: 07:00
+=======
+Window: 05:30
+>>>>>>> scout
+Pilot: Cadet
+Destination: Base 7
+Cargo:
+- water
+- fuel cells
+<<<<<<< HEAD
+- oxygen
+=======
+- spare antenna
+>>>>>>> scout
+project $ 

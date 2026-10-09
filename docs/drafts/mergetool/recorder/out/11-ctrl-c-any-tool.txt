@@ -1,0 +1,17 @@
+project $ git merge --no-edit scout
+Auto-merging launch.txt
+CONFLICT (content): Merge conflict in launch.txt
+Automatic merge failed; fix conflicts and then commit the result.
+project $ git mergetool
+Merging:
+launch.txt
+
+Normal merge conflict for 'launch.txt':
+  {local}: modified file
+  {remote}: modified file
+^C
+project $ echo $?
+130
+project $ git status --short
+UU launch.txt
+project $ 
