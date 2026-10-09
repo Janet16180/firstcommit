@@ -83,7 +83,7 @@ const GuideText = (function () {
         en: "Thinking git log shows every commit: it lists only the ones your branch leads back to. git reflog finds the others.",
         es: "Creer que git log muestra todos los commits: solo lista los que alcanza tu branch hacia atrás. git reflog encuentra los demás.",
       },
-      lessons: ["git log <file>"],
+      lessons: ["git log <file>", "git show <commit>:<file>", "git show HEAD~1:<file>"],
       playground: { start: "branches", view: "chain", try: "git log --oneline" },
       related: ["git commit -m \"<message>\"", "git diff", "git reflog"],
     },
