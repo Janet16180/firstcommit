@@ -174,7 +174,7 @@ const InfographicText = Object.freeze({
           {
             command: "git branch -d <name>",
             short: { en: "take a name off", es: "quitar un nombre" },
-            what: { en: "Takes a name off; its commits stay. Git refuses to take off the name HEAD rides, or one whose work no other name leads to.", es: "Quita un nombre; sus commits se quedan. Git no quita el nombre en el que va HEAD, ni uno con trabajo al que no lleva ningún otro nombre." },
+            what: { en: "Takes a name off; its commits stay. Git refuses to take off the name HEAD rides, or one whose commits the branch you are on does not hold yet.", es: "Quita un nombre; sus commits se quedan. Git no quita el nombre en el que va HEAD, ni uno cuyos commits todavía no tiene el branch donde estás." },
             taught: { chapter: "names" },
           },
           {

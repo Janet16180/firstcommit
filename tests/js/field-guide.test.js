@@ -107,7 +107,7 @@ test("clicking a command opens its card in a dialog, and closing it gives the fo
   const dialog = openCard(view, "git merge <branch>");
   assert.ok(dialog.open);
   assert.equal(dialog.querySelector(".gc-command").textContent, "git merge <branch>");
-  assert.match(dialog.querySelector(".gc-term").textContent, /Merge made by the 'ort' strategy\./);
+  assert.match(dialog.textContent, /Merge made by the 'ort' strategy\./);
   dialog.querySelector(".guide-card-close").click();
   assert.ok(!dialog.open);
   assert.equal(document.activeElement, commandButton(view, "git merge <branch>"));
@@ -173,4 +173,28 @@ test("a card opened in the guide links to its playground start", () => {
   const view = FieldGuide.create({ status: () => two(true, false) });
   const link = openCard(view, "git switch <branch>").querySelector("a.gc-try");
   assert.equal(link.getAttribute("href"), "#/playground?start=branches&view=chain&try=git%20switch%20bright-lights");
+});
+
+test("a card's frames and sections show the transcripts they name, and the merge's message as git prepared it", () => {
+  const view = FieldGuide.create({ status: () => two(true, false) });
+  const merge = openCard(view, "git merge <branch>");
+  const sections = [...merge.querySelectorAll(".gc-section")];
+  assert.match(sections[0].querySelector(".gc-term").textContent, /Fast-forward/);
+  assert.match(sections[1].querySelector(".gc-term").textContent, /Merge made by the 'ort' strategy\./);
+  assert.match(merge.querySelector(".gc-editor").textContent, /^\.git\/MERGE_MSGMerge branch 'scout'\n# Please enter a commit message/);
+  const graph = openCard(view, "git log --oneline --graph --all");
+  assert.equal(graph.querySelector(".gc-decoder .gc-typed").textContent, "git log --oneline --graph --all");
+});
+
+test("the branch cards' own words come in the page's language, git's words never", () => {
+  Strings.use("es");
+  try {
+    const view = FieldGuide.create({ status: () => two(true, false) });
+    const card = openCard(view, "git branch <name>");
+    assert.match(card.textContent, /HEAD está en main, no en scout\./);
+    assert.match(card.querySelector(".gc-term").textContent, /\(HEAD -> main, scout\) Plot the route/);
+    assert.equal(card.querySelector(".gc-fact.is-changed em").textContent, "Plot the route");
+  } finally {
+    Strings.use("en");
+  }
 });

@@ -75,6 +75,18 @@ const FieldGuide = (function () {
     return fill(words.taughtAt, { sector: sector + 1, mission: mission + 1, title: chapter.levels[mission].title });
   }
 
+  /* A card with what real git printed put in from GuideGit: its transcripts, its frames' and
+     sections' (named by `run`), and the message git prepares for a merge (`message: true`). */
+  function withGit(card) {
+    const framed = (item) => ({ ...item, run: item.run && GuideGit.runs[item.run], message: item.message && GuideGit.mergeMessage });
+    return {
+      ...card,
+      runs: card.runs.map((name) => GuideGit.runs[name]),
+      picture: card.picture && card.picture.frames ? { ...card.picture, frames: card.picture.frames.map(framed) } : card.picture,
+      sections: (card.sections || []).map((section) => ({ ...framed(section), frames: section.frames.map(framed) })),
+    };
+  }
+
   /* The cards' modal dialog, one per guide: open(command, opener) shows that command's card and
      gives the focus back to `opener` when it closes. Its cancel and close stay its own, so a
      guide that is itself a dialog over a level stays open. */
@@ -98,7 +110,7 @@ const FieldGuide = (function () {
       const card = guideText.cards.find((item) => item.command === command);
       const item = commandItems.find((entry) => entry.command === command);
       body.replaceChildren(GuideCard.create({
-        ...card, what: item.what, tag: item.tag, where: whereTaught(status, guideText.card, chapterOf.get(command), card.lessons), runs: card.runs.map((name) => GuideGit.runs[name]),
+        ...withGit(card), what: item.what, tag: item.tag, where: whereTaught(status, guideText.card, chapterOf.get(command), card.lessons),
       }, words, {
         onRelated: show,
         onConflict: () => {
