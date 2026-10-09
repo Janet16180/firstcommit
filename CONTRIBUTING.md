@@ -27,14 +27,11 @@ daemon skip inside that image; CI also builds and checks the player image separa
 ## Review and delivery
 
 The repository's GitHub rules require the `Tests` check to pass before a PR can merge into
-`main`, with the branch up to date. Contributions require approval from @Janet16180. New
+`main`, with the branch up to date. External contributions require approval from the owner. New
 commits dismiss older approvals. Force pushes and branch deletion are blocked.
 
-The owner can use a review exception when merging through a pull request, since GitHub
-does not allow authors to approve their own PRs. This exception applies to repository
-administrators; @Janet16180 is currently the only administrator. The separate Tests and
-CodeQL requirements cannot be bypassed. Direct pushes to main, force pushes, and branch
-deletion remain blocked.
+Changes to `main` go through pull requests and must pass Tests and CodeQL. Direct pushes,
+force pushes, and branch deletion are blocked.
 
 After a change lands on `main`, CI reruns the checks. The workflow builds test and player
 images only inside the CI runner. It does not publish images, upload build artifacts, or deploy
