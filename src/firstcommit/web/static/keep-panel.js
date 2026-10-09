@@ -13,11 +13,13 @@
  * with no block left, or one git add has taken) it shows the file as it is now and what to type next; the page never runs git. Under it, two chips type `nano <file>`
  * or `vim <file>` at the prompt. Needs dom.js and strings.js. Defines one global, KeepPanel.
  *
- * create({onWrite, onType}) {element, update({person, marked, texts, editing})}: onWrite({file,
+ * create({onWrite, onType, chips}) {element, update({person, marked, texts, editing})}: onWrite({file,
  *   read, choices}) writes the picks (a promise; a 409 rejection is the file having changed);
  *   onType(line) types at the prompt. person is whose repository ("you" or "alex"), marked and
  *   texts that person's (PlaygroundObservation), editing {editor, path} while an editor runs in
- *   that person's terminal, else null.
+ *   that person's terminal, else null. With chips false the editor chips are left out: the game's
+ *   merge tool holds the terminal meanwhile (merge-tool.js), which also names its own `next`
+ *   message for a file with no markers left.
  */
 
 /* global Dom, Strings */
@@ -65,7 +67,7 @@ const KeepPanel = (function () {
     }, `${editor} ${file}`)));
   }
 
-  function create({ onWrite, onType }) {
+  function create({ onWrite, onType, chips: withChips = true, next = "pg.keep.next" }) {
     const element = el("section", { class: "keep", "aria-label": t("pg.view.conflict") });
     const state = { reads: new Map(), picks: new Map(), stale: new Set(), written: new Set(), seen: [], last: null };
 
@@ -96,7 +98,7 @@ const KeepPanel = (function () {
           el("ol", { class: "keep-lines" }, items)),
         el("div", { class: "keep-act" }, look, write),
         message,
-        chips(file.path, { editing, onType }));
+        withChips ? chips(file.path, { editing, onType }) : null);
     }
 
     /* A file with no markers left, as it is now: its lines, and what to type next. */
@@ -106,7 +108,7 @@ const KeepPanel = (function () {
         el("div", { class: "keep-box" },
           el("h3", { class: "keep-head" }, el("span", {}, t("pg.keep.now", { file: path })), el("span", { class: "keep-state is-ok" }, t("pg.keep.clean"))),
           el("ol", { class: "keep-lines" }, lines.map((entry) => line(entry, "same")))),
-        el("p", { class: "keep-message is-ok" }, written, said("pg.keep.next", { file: path })));
+        el("p", { class: "keep-message is-ok" }, written, said(next, { file: path })));
     }
 
     function draw() {

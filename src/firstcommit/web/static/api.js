@@ -88,7 +88,7 @@ const createGameApi = (function () {
   const VIEW = oneOf("station", "crew", "history", "sides", "blackbox", "board", "focus");
   /* What the save remembers as born: the views, the crew band and the black box's tape, which no
      level opens on (records.Seen). */
-  const SEEN = oneOf("station", "crew", "history", "sides", "blackbox", "board", "focus", "band", "tape");
+  const SEEN = oneOf("station", "crew", "history", "sides", "blackbox", "board", "focus", "band", "tape", "mergetool");
 
   const STATUS = record({
     xp: number,

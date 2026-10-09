@@ -305,7 +305,7 @@ test("in dev mode a level carries its solution: the lines to type, the answers b
   assert.equal(solution.answer, null);
   const unsolved = gameApi({ ...REPLIES, "/api/level": { ...record("level"), solution: null } }).game;
   assert.equal((await unsolved.level("x")).solution, null);
-  const unknown = gameApi({ ...REPLIES, "/api/level": { ...record("level"), solution: { lines: [], answers: { count: null }, answer: "Robin" } } }).game;
+  const unknown = gameApi({ ...REPLIES, "/api/level": { ...record("level"), solution: { lines: [], answers: { count: null }, answer: "Robin", picks: {} } } }).game;
   assert.equal((await unknown.level("x")).solution.answers.count, null);
   await refused("/api/level", (level) => delete level.solution, (api) => api.level("x"));
   await refused("/api/level", (level) => (level.solution.lines = "git add ."), (api) => api.level("x"));

@@ -4,10 +4,11 @@ const assert = require("node:assert/strict");
 const test = require("node:test");
 const { makeEvent } = require("./fakedom");
 const { createClock, fakeServer, httpError, installBrowser, load, record, settle } = require("./load");
+const Pg = require("./playground-records");
 
 const document = installBrowser({ reducedMotion: true });
 const { LevelScreen, createGameApi } = load(
-  ["dom.js", "strings.js", "places.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "view-tabs.js", "strip.js", "sides.js", "tape.js", "births.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "target-chart.js", "git-graph.js", "pictures.js", "art-infographics.js", "infographic-text.js", "guide-git.js", "guide-text.js", "guide-pictures.js", "guide-card.js", "guide-conflict.js", "field-guide.js", "level-screen.js"],
+  ["dom.js", "strings.js", "places.js", "markup.js", "art-pixels.js", "art-sprites.js", "art-sky.js", "art-scenes.js", "art-moments.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "mission.js", "comms.js", "completion.js", "scene.js", "moment-layer.js", "view-tabs.js", "strip.js", "sides.js", "tape.js", "births.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "target-chart.js", "git-graph.js", "pictures.js", "art-infographics.js", "infographic-text.js", "guide-git.js", "guide-text.js", "guide-pictures.js", "guide-card.js", "guide-conflict.js", "field-guide.js", "keep-panel.js", "merge-tool.js", "level-screen.js"],
   ["LevelScreen", "createGameApi"],
 );
 
@@ -25,7 +26,7 @@ const quiet = () => ({ ...record("observation"), commands: [], reactions: [] });
 function screen({ active = record("active"), replies = {}, levelId = "sample-second", recounted = null, dev = false } = {}) {
   const clock = createClock();
   let status = { ...record("status"), active, dev };
-  const seen = { sounds: [], attached: 0, detached: 0, typed: [], ran: [], finished: [], reloads: 0 };
+  const seen = { sounds: [], attached: 0, detached: 0, typed: [], ran: [], finished: [], keys: [], reloads: 0, listener: null };
   const server = fakeServer({
     "/api/level": seenLevel(),
     "/api/scene": {},
@@ -52,10 +53,12 @@ function screen({ active = record("active"), replies = {}, levelId = "sample-sec
     page: document,
     reducedMotion: true,
     terminal: {
-      attach: (host) => {
+      attach: (host, listener) => {
         seen.attached += 1;
         seen.host = host;
+        seen.listener = listener;
       },
+      keys: (raw) => seen.keys.push(raw),
       detach: () => (seen.detached += 1), type: (text) => seen.typed.push(text), run: (line) => {
         seen.ran.push(line);
         clock.setTimeout(() => seen.finished.push(line), 300);
@@ -970,7 +973,7 @@ test("out of dev mode the head has no Solve button", async () => {
 });
 
 test("in dev mode, Solve runs the solution's lines in the terminal one at a time, each once the last has run", async () => {
-  const run = solving({ lines: ["git status", "git add notes.txt"], answers: { status: "notes.txt" }, answer: null });
+  const run = solving({ lines: ["git status", "git add notes.txt"], answers: { status: "notes.txt" }, answer: null, picks: {} });
   await settle();
   assert.equal(run.q(".hud .solve").hidden, false);
   run.q(".hud .solve").click();
@@ -985,7 +988,7 @@ test("in dev mode, Solve runs the solution's lines in the terminal one at a time
 
 test("Solve answers a goal that asks before it runs a line, so the goals after it see the lines", async () => {
   const order = [];
-  const run = solving({ lines: ["git add notes.txt"], answers: { status: "notes.txt" }, answer: null }, {
+  const run = solving({ lines: ["git add notes.txt"], answers: { status: "notes.txt" }, answer: null, picks: {} }, {
     "/api/step": (body) => {
       order.push(`step ${body.answer}`);
       return correct(2);
@@ -1004,7 +1007,7 @@ test("Solve answers a goal that asks before it runs a line, so the goals after i
 });
 
 test("leaving the level stops Solve: no later line runs and the game is asked nothing more", async () => {
-  const run = solving({ lines: ["git status", "git add notes.txt"], answers: { status: "notes.txt" }, answer: null });
+  const run = solving({ lines: ["git status", "git add notes.txt"], answers: { status: "notes.txt" }, answer: null, picks: {} });
   await settle();
   run.q(".hud .solve").click();
   await settle();
@@ -1018,8 +1021,8 @@ test("leaving the level stops Solve: no later line runs and the game is asked no
 
 test("after the lines, Solve answers the goals that ask, with the solution's answers read again from the game", async () => {
   let asked = 0;
-  const first = { lines: ["git status"], answers: { status: null }, answer: null };
-  const then = { lines: ["git status"], answers: { status: "notes.txt" }, answer: null };
+  const first = { lines: ["git status"], answers: { status: null }, answer: null, picks: {} };
+  const then = { lines: ["git status"], answers: { status: "notes.txt" }, answer: null, picks: {} };
   const run = screen({ dev: true, replies: { "/api/level": () => ({ ...seenLevel(), solution: (asked += 1) <= 2 ? first : then }), "/api/step": correct(2) } });
   await settle();
   run.q(".hud .solve").click();
@@ -1032,7 +1035,7 @@ test("after the lines, Solve answers the goals that ask, with the solution's ans
 });
 
 test("Solve ends with the level's own question, answered from the solution", async () => {
-  const level = { ...seenLevel(), question: para("Who made the commit?"), placeholder: "a name", solution: { lines: [], answers: {}, answer: "Robin" } };
+  const level = { ...seenLevel(), question: para("Who made the commit?"), placeholder: "a name", solution: { lines: [], answers: {}, answer: "Robin", picks: {} } };
   const run = screen({ dev: true, active: { ...record("active"), step: 3 }, replies: { "/api/level": level, "/api/check": record("check_solved") } });
   await settle();
   run.q(".hud .solve").click();
@@ -1150,4 +1153,74 @@ test("where the chart's two sides stack, on a wide screen's column or a narrow s
   assert.ok(between.q(".viz").classList.contains("is-chart"));
   assert.ok(!between.q(".viz").classList.contains("is-stack"));
   between.view.dispose();
+});
+
+
+/* A screen on the sample level whose lab has `checklist.txt` in conflict, as the observation reads it. */
+function inConflict(options = {}) {
+  const observation = () => ({ ...quiet(), marked: [Pg.marked()] });
+  return screen({ ...options, replies: { "/api/observe": observation, "/api/resolve": { file: Pg.marked() }, ...(options.replies || {}) } });
+}
+
+test("while the game's merge tool waits in the terminal, its panel stands above it, and Rama says what it is and git's words for the two sides", async () => {
+  const run = inConflict();
+  await settle();
+  await run.clock.advance(1600);
+  assert.equal(run.q(".mtool").hidden, true);
+  run.seen.listener.title("firstcommit-mergetool checklist.txt");
+  assert.equal(run.q(".mtool").hidden, false);
+  assert.ok(run.q(".termcol").contains(run.q(".mtool")));
+  assert.match(run.q(".comms-text").textContent, /merge tool: this panel.*local is yours and remote is Alex's/);
+  await settle();
+  assert.deepEqual(run.server.calls.filter((call) => call.path === "/api/view").map((call) => call.body), [{ view: "mergetool" }]);
+  await run.clock.advance(1600);
+  assert.equal(run.q(".mtool .keep-head").textContent, "checklist.txtconflict: 1 block");
+  run.view.dispose();
+});
+
+test("a player who saw the merge tool before hears only what it is", async () => {
+  const run = inConflict({ replies: { "/api/level": { ...seenLevel(), views_seen: ["station", "mergetool"] } } });
+  await settle();
+  run.seen.listener.title("firstcommit-mergetool checklist.txt");
+  assert.doesNotMatch(run.q(".comms-text").textContent, /local is yours/);
+  await settle();
+  assert.equal(run.server.calls.some((call) => call.path === "/api/view" && call.body.view === "mergetool"), false);
+  run.view.dispose();
+});
+
+test("the panel's Write goes to the level's resolve, and Cancel types Ctrl-C in the terminal", async () => {
+  const run = inConflict();
+  await settle();
+  run.seen.listener.title("firstcommit-mergetool checklist.txt");
+  await run.clock.advance(1600);
+  run.q(".mtool .keep-pick[data-choice=\"theirs\"]").click();
+  run.q(".mtool .keep-write").click();
+  await settle();
+  assert.deepEqual(run.server.calls.filter((call) => call.path === "/api/resolve").map((call) => call.body), [{ file: "checklist.txt", read: Pg.marked().read, choices: ["theirs"] }]);
+  run.q(".mtool-cancel").click();
+  assert.deepEqual(run.seen.keys, ["\x03"]);
+  run.view.dispose();
+});
+
+test("when the terminal closes under the merge tool, the panel goes and Rama says the tool stopped", async () => {
+  const run = inConflict();
+  await settle();
+  run.seen.listener.title("firstcommit-mergetool checklist.txt");
+  run.seen.listener.closed();
+  assert.equal(run.q(".mtool").hidden, true);
+  assert.match(run.q(".comms-text").textContent, /terminal restarted/);
+  assert.equal(run.q(".comms").dataset.mood, "warn");
+  run.view.dispose();
+});
+
+test("in dev mode, Solve answers the merge panel with the solution's picks once the tool waits for the file", async () => {
+  const run = inConflict({ dev: true, replies: { "/api/level": { ...seenLevel(), solution: { lines: ["git mergetool"], answers: {}, answer: null, picks: { "checklist.txt": ["both"] } } } } });
+  await settle();
+  run.q(".hud .solve").click();
+  await run.clock.advance(100);
+  run.seen.listener.title("firstcommit-mergetool checklist.txt");
+  await run.clock.advance(1600);
+  await settle();
+  assert.deepEqual(run.server.calls.filter((call) => call.path === "/api/resolve").map((call) => call.body), [{ file: "checklist.txt", read: Pg.marked().read, choices: ["both"] }]);
+  run.view.dispose();
 });

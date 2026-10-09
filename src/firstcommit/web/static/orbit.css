@@ -3874,6 +3874,68 @@ pre.code code {
   filter: grayscale(1);
 }
 
+/* The game's merge tool (merge-tool.js): the click-to-keep panel above the terminal git mergetool
+   holds, under a gold bar naming the tool and the file, with Cancel and one footer line. */
+.mtool {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 8px;
+  padding: 0 0 10px;
+  background: var(--panel);
+  border: 3px solid var(--edge);
+  box-shadow: 5px 5px 0 var(--edge);
+}
+
+.mtool[hidden] {
+  display: none;
+}
+
+.mtool > :not(.mtool-bar) {
+  margin-left: 10px;
+  margin-right: 10px;
+}
+
+.mtool-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+  margin: 0;
+  padding: 4px 10px;
+  background: var(--gold);
+  color: #1F1A3D;
+  font: 700 0.95rem var(--f-ui);
+}
+
+.mtool-bar code {
+  font: 1.05rem var(--f-term);
+}
+
+.mtool-file {
+  margin-left: auto;
+  overflow-wrap: anywhere;
+}
+
+.mtool-wait,
+.mtool-foot {
+  margin-top: 0;
+  margin-bottom: 0;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+.mtool-foot {
+  padding-top: 6px;
+  border-top: 2px dashed var(--line);
+}
+
+.mtool-act {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 /* The editor strip (editor-strip.js): gold, above the terminal an editor runs in, with Get me
    out in red. On a phone vim's other keys fold behind "more keys", all but Esc while typing. */
 .pg-strip {

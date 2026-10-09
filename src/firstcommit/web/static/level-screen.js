@@ -24,12 +24,15 @@
  * bug and is left to surface. Needs dom.js, strings.js, markup.js, art-sprites.js, progress.js,
  * poll.js, zones.js, zone-panel.js, mission.js, comms.js, completion.js, scene.js, moment-layer.js,
  * view-tabs.js, strip.js, sides.js, tape.js, births.js, pictures.js (with the pictures it draws)
- * and field-guide.js (with its art and text). A level with teaching pictures shows them in place
+ * field-guide.js (with its art and text), keep-panel.js and merge-tool.js. A level with teaching pictures shows them in place
  * of the zones, the strips and the tab row.
+ * While the game's merge tool waits in the terminal (`git mergetool`), its panel (merge-tool.js)
+ * stands above the terminal, whatever the view; Rama says what it is when it opens, the first
+ * time with git's words for the two sides, and says so if the terminal restarts under it.
  * Defines one global, LevelScreen.
  */
 
-/* global Dom, Strings, ArtSprites, Progress, Polling, Zones, ZonePanel, Mission, Comms, Completion, ScenePlayer, MomentLayer, ViewTabs, Strip, Sides, Tape, ViewBirth, FieldGuide, Pictures */
+/* global Dom, Strings, ArtSprites, Progress, Polling, Zones, ZonePanel, Mission, Comms, Completion, ScenePlayer, MomentLayer, ViewTabs, Strip, Sides, Tape, ViewBirth, FieldGuide, Pictures, MergeTool */
 /* exported LevelScreen */
 
 const LevelScreen = (function () {
@@ -59,6 +62,8 @@ const LevelScreen = (function () {
   const POLL_MS = 300;
   const LINE_MS = 20000;
   const GOAL_MS = 8000;
+  /* Ctrl-C, as the terminal sends it: the game's merge tool reads it as Cancel. */
+  const CTRL_C = "\x03";
   const SAY = { preparing: "level.preparing", start: "level.start", down: "level.down", back: "level.back", hint: "level.hint", ended: "level.ended", partMet: "level.partMet", predictFirst: "level.predictFirst" };
 
 
@@ -234,12 +239,39 @@ const LevelScreen = (function () {
     ui.tape = Tape.create();
     ui.tabs = ViewTabs.create({ tabs: [], current: "station", onPick: () => {} });
     ui.comms = Comms.create();
+    ui.tool = MergeTool.create({
+      timers: screen.ctx.timers,
+      onWrite: ({ file, read, choices }) => screen.ctx.game.resolve({ file, read, choices }),
+      onCancel: () => screen.ctx.terminal.keys(CTRL_C),
+      onOpen: () => toolOpened(screen),
+      onClose: (why) => why === "terminal" && screen.ui.comms.say(t("tool.hungUp"), "warn"),
+    });
     ui.mission = el("aside", { class: "mission px", "aria-label": t("mission.label") }, el("p", {}, t("level.loading")));
-    ui.termcol = el("div", { class: "termcol" }, ui.comms.element);
+    ui.termcol = el("div", { class: "termcol" }, ui.comms.element, ui.tool.element);
     ui.sky = el("div", { class: "sky" }, ui.band.element, ui.strip.element, ui.sides.element, ui.zones.element, ui.tape.element, ui.moments.element);
     ui.stage = el("main", { class: "stage" }, el("div", { class: "views" }, ui.tabs.element, ui.sky), ui.mission, ui.termcol);
     screen.element.replaceChildren(hud(screen), ui.stage);
     show(screen, "station");
+  }
+
+  /* The merge tool opened: Rama says what it is, and the first time ever what git calls the two sides. */
+  function toolOpened(screen) {
+    const first = !screen.seen.includes("mergetool");
+    screen.ui.comms.say(first ? `${t("tool.opened")} ${t("tool.localRemote")}` : t("tool.opened"), "info");
+    if (!first) return;
+    screen.seen.push("mergetool");
+    screen.ctx.game.view("mergetool").catch((error) => expected(screen, error) || Promise.reject(error));
+  }
+
+  /* Dev mode's solve answers the merge panel as the solution says, once the tool waits for a file
+     the observation has read. */
+  async function pick(screen, marked) {
+    const path = screen.ui.tool.path();
+    const choices = screen.picks && path && screen.picks[path];
+    const file = choices && !screen.picked.includes(path) && marked.find((entry) => entry.path === path);
+    if (!file) return;
+    screen.picked.push(path);
+    await screen.ctx.game.resolve({ file: path, read: file.read, choices });
   }
 
   function missing(screen) {
@@ -475,7 +507,10 @@ const LevelScreen = (function () {
   async function solve(screen) {
     const { ctx, levelId, ui } = screen;
     ui.solve.disabled = true;
-    const ran = await runLines(screen, (await ctx.game.level(levelId)).solution.lines);
+    const { solution } = await ctx.game.level(levelId);
+    screen.picks = solution.picks;
+    screen.picked = [];
+    const ran = await runLines(screen, solution.lines);
     if (ran) await answerGoals(screen, (await ctx.game.level(levelId)).solution);
     ui.solve.disabled = false;
   }
@@ -568,6 +603,8 @@ const LevelScreen = (function () {
       const plan = Polling.plan(screen.level.steps, screen.state, screen.level.challenge);
       const observation = await game.observe();
       const reading = stage(screen, observation);
+      screen.ui.tool.update({ person: "you", marked: observation.marked, texts: observation.texts });
+      await pick(screen, observation.marked);
       measureTerminal(screen);
       if (screen.offline) screen.ui.comms.say(t(SAY.back), "info");
       screen.offline = false;
@@ -616,7 +653,7 @@ const LevelScreen = (function () {
     ui.mission.replaceWith(screen.mission.element);
     ui.mission = screen.mission.element;
     ui.comms.say(t(SAY.start));
-    ctx.terminal.attach(ui.termcol);
+    ctx.terminal.attach(ui.termcol, { title: (title, at) => ui.tool.title(title, at), closed: () => ui.tool.closed() });
     screen.attached = true;
     measureTerminal(screen);
     /* A level may stage a change right after the page first looks at the lab; looking only once
@@ -650,9 +687,10 @@ const LevelScreen = (function () {
   }
 
   /* ctx: game, status(), refresh(), reload() (shows this screen again), sound, timers, page,
-     reducedMotion, terminal ({attach(host), detach(), type(text), run(line)}). */
+     reducedMotion, terminal ({attach(host, {title(title, at), closed()}), detach(), type(text),
+     run(line), keys(raw)}). */
   function create(ctx, levelId) {
-    const screen = { ctx, levelId, level: null, state: null, number: "", shownStars: null, view: "station", seen: [], crew: false, births: [], bearing: false, taped: false, firstMove: null, guide: null, pictures: null, toldLines: 0, held: false, metNote: false, mission: null, poller: null, finished: false, offline: false, attached: false, disposed: false, ui: {} };
+    const screen = { ctx, levelId, picks: null, picked: [], level: null, state: null, number: "", shownStars: null, view: "station", seen: [], crew: false, births: [], bearing: false, taped: false, firstMove: null, guide: null, pictures: null, toldLines: 0, held: false, metNote: false, mission: null, poller: null, finished: false, offline: false, attached: false, disposed: false, ui: {} };
     screen.element = el("div", { class: "level-screen" });
     layout(screen);
     /* A screen that crosses a width where history stacks redraws the view it is on. */

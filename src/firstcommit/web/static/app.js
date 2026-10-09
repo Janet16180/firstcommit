@@ -62,7 +62,7 @@
 
   /* client.js removes the fragment when it carries the access key; keep the address part first. */
   const firstAddress = Route.address(location.hash);
-  const app = { status: null, view: null, turn: 0, terminal: null, terminalFor: null, locked: false, fromLevel: null };
+  const app = { status: null, view: null, turn: 0, terminal: null, terminalFor: null, heard: { title: "", at: 0 }, listener: null, locked: false, fromLevel: null };
   const client = createClient({ header: "X-FirstCommit-Token", storageKey: "firstcommit.token", command: "firstcommit", onLocked: () => showLocked() });
   const game = createGameApi(client.api);
   const main = document.getElementById("app");
@@ -231,36 +231,55 @@
     if (app.terminal) app.terminal.dispose();
     app.terminal = null;
     app.terminalFor = null;
+    app.heard = { title: "", at: 0 };
+  }
+
+  /* A shell's title (the game's merge tool sets it) goes to the screen showing that shell, with
+     when it came; one set while the screen was away is told when it is shown again. Its
+     connection closing is told too: whatever the title announced is over. */
+  function heard(title) {
+    app.heard = { title, at: Date.now() };
+    if (app.listener) app.listener.title(title, app.heard.at);
+  }
+
+  function hungUp() {
+    app.heard = { title: "", at: 0 };
+    if (app.listener) app.listener.closed();
   }
 
   /* One shell per level started: it lives while that level is in progress, even while the
-     player looks at other views, and is replaced when another level starts. */
+     player looks at other views, and is replaced when another level starts. `listener`
+     {title(title, at), closed()} hears its titles and its connection closing while attached. */
   const terminal = {
-    attach(host) {
+    attach(host, listener = null) {
       const key = app.status.active ? app.status.active.started : null;
       if (app.terminal && app.terminalFor !== key) disposeTerminal();
       if (!app.terminal) {
-        app.terminal = createTerminal({ protocol: "firstcommit", token: client.token, command: "firstcommit", looks: TERMINAL_LOOKS, labels: terminalLabels(), storagePrefix: "firstcommit.", openFromHeight: 0, onUnreachable: probe });
+        app.terminal = createTerminal({ protocol: "firstcommit", token: client.token, command: "firstcommit", looks: TERMINAL_LOOKS, labels: terminalLabels(), storagePrefix: "firstcommit.", openFromHeight: 0, onUnreachable: probe, onTitle: heard, onClose: hungUp });
         app.terminalFor = key;
         app.terminal.setLook(shownTheme(), t("terminal.title"));
       }
+      app.listener = listener;
+      if (listener && app.heard.title) listener.title(app.heard.title, app.heard.at);
       host.append(app.terminal.element);
       app.terminal.start();
     },
     detach() {
+      app.listener = null;
       const still = app.status && app.status.active && app.status.active.started === app.terminalFor;
       if (!still) disposeTerminal();
       else if (app.terminal) app.terminal.element.remove();
     },
     type: (text) => app.terminal && app.terminal.type(text),
     run: (line) => app.terminal && app.terminal.run(line),
+    keys: (raw) => app.terminal && app.terminal.keys(raw),
   };
 
   /* The playground's two shells, yours and Alex's, each on its own endpoint: they live while the
      start they were opened for stands, even while the player is elsewhere, and are replaced when
      it is built again. */
   const PLAY_PATHS = { you: "/api/terminal/playground", alex: "/api/terminal/playground-alex" };
-  const play = { you: null, alex: null, started: null, titles: {}, listeners: {} };
+  const play = { you: null, alex: null, started: null, titles: {}, at: {}, listeners: {}, closers: {} };
 
   function disposePlay() {
     for (const person of ["you", "alex"]) {
@@ -270,28 +289,37 @@
     }
   }
 
-  /* A shell's title (the editor wrappers set it) goes to the playground showing it; one set while
-     the player was away is told when it is shown again. */
+  /* A shell's title (the editor wrappers and the game's merge tool set it) goes to the playground
+     showing it, with when it came; one set while the player was away is told when it is shown
+     again. Its connection closing is told too. */
   function retitle(person, title) {
     play.titles[person] = title;
-    if (play.listeners[person]) play.listeners[person](title);
+    play.at[person] = Date.now();
+    if (play.listeners[person]) play.listeners[person](title, play.at[person]);
+  }
+
+  function playHungUp(person) {
+    play.titles[person] = "";
+    if (play.closers[person]) play.closers[person]();
   }
 
   const playTerminals = {
-    attach(person, host, started, onTitle) {
+    attach(person, host, started, onTitle, onClose = () => {}) {
       if (play.started !== started) disposePlay();
       play.started = started;
       if (!play[person]) {
-        play[person] = createTerminal({ protocol: "firstcommit", token: client.token, command: "firstcommit", path: PLAY_PATHS[person], looks: TERMINAL_LOOKS, labels: terminalLabels(), storagePrefix: `firstcommit.pg-${person}.`, openFromHeight: 0, onUnreachable: probe, onTitle: (title) => retitle(person, title) });
+        play[person] = createTerminal({ protocol: "firstcommit", token: client.token, command: "firstcommit", path: PLAY_PATHS[person], looks: TERMINAL_LOOKS, labels: terminalLabels(), storagePrefix: `firstcommit.pg-${person}.`, openFromHeight: 0, onUnreachable: probe, onTitle: (title) => retitle(person, title), onClose: () => playHungUp(person) });
         play[person].setLook(shownTheme(), t(`pg.term.${person}`));
       }
       play.listeners[person] = onTitle;
-      if (play.titles[person]) onTitle(play.titles[person]);
+      play.closers[person] = onClose;
+      if (play.titles[person]) onTitle(play.titles[person], play.at[person]);
       host.append(play[person].element);
       play[person].start();
     },
     detach() {
       play.listeners = {};
+      play.closers = {};
       for (const person of ["you", "alex"]) if (play[person]) play[person].element.remove();
     },
     type: (person, text) => play[person] && play[person].type(text),
