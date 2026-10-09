@@ -113,6 +113,7 @@ PLAY_ORDER: tuple[str, ...] = (
     "conflict-docking",
     "undo-scrap",
     "undo-recall",
+    "undo-erasing",
     "undo-wrong",
     "undo-movelog",
     "undo-blackbox",

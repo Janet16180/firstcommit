@@ -60,6 +60,7 @@ __all__ = [
     "Commit",
     "FileEntry",
     "Lab",
+    "Outcome",
     "LevelEvent",
     "Person",
     "Pictures",
