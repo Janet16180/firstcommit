@@ -3,6 +3,8 @@ name = "firstcommit"
 version = "0.1.0"
 description = "First Commit: a hands-on game that teaches Git to people who are starting out."
 readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE", "src/firstcommit/termlab/web/static/xterm-LICENSE.txt"]
 requires-python = ">=3.12"
 dependencies = []
 

@@ -1,0 +1,5 @@
+First Commit
+
+Project code is licensed under the Apache License, Version 2.0.
+
+The bundled xterm.js and xterm.css files are licensed under MIT. Their copyright and license text are preserved in src/firstcommit/termlab/web/static/xterm-LICENSE.txt and the CSS header. The project license does not replace those terms.

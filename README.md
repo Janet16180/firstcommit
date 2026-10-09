@@ -1,9 +1,8 @@
 # First Commit
 
 Learn Git through small missions, a real terminal, and a playground where you can experiment.
-This game was created with help from AI for educational purposes.
 
-![The First Commit mission map](docs/images/mission-map.png)
+![Chapter 4: your repository, the remote, and Alex’s station during a team mission](docs/images/remote-teamwork.png)
 
 ## Install and play
 
@@ -21,14 +20,12 @@ press Ctrl-C to stop. Your progress is saved locally.
 
 ## Screenshots
 
-**Guided missions.** Read the goals, try real Git commands, and see what changes in your repository.
+**Merge history.** Follow two branches into a commit with two parents, while Rama explains what changed.
 
-![A guided mission with goals, a live diagram, Rama, and the terminal](docs/images/guided-mission.png)
+![Mission 7.1: the live history after merging two crews’ work](docs/images/merge-history.png)
 
-**The playground.** Practise with a teammate's repository and work through a merge conflict.
+**Conflict resolution.** Compare both versions and choose an answer for each conflict in the built-in merge tool.
 
-![A merge conflict with separate terminals for the player and Alex](docs/images/playground-conflict.png)
+![Mission 7.4: the interactive merge tool with separate choices for each conflict](docs/images/merge-resolution.png)
 
-**The field guide.** Keep a visual explanation of Git's commands and file states close at hand.
-
-![The field guide explaining the working folder, staging area, repository, and remote](docs/images/field-guide.png)
+Created with help from AI for educational purposes. Licensed under [Apache 2.0](LICENSE). Third-party notices are in [NOTICE](NOTICE).
