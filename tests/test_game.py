@@ -428,6 +428,14 @@ def test_in_dev_mode_a_level_in_progress_shows_its_last_hints_lines_and_its_answ
     active = save.load_active()
     assert active is not None and solution["lines"] == game.solution_lines(sample_level, active["state"])
     assert set(solution["answers"]) == {step.id for step in sample_level.quest if isinstance(step, (kit.AnswerStep, kit.ChoiceStep))}
+    assert solution["picks"] == {}
+
+
+def test_in_dev_mode_a_level_that_runs_git_mergetool_shows_the_merge_panels_picks(game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(game.DEV_VARIABLE, "1")
+    game.start("conflict-mergetool")
+    solution = game.level("conflict-mergetool")["solution"]
+    assert solution is not None and solution["picks"] == {"launch.txt": ["theirs", "both"]}
 
 
 def test_in_dev_mode_an_answer_the_lab_cannot_give_yet_is_none_until_it_can(game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:

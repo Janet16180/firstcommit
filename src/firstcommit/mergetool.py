@@ -71,6 +71,29 @@ def title(path: str) -> str:
     return f"{TITLE} {CONTROLS.sub('', path)}"
 
 
+def waiting_for(line: str) -> str | None:
+    """
+    Read which file the tool waits for from the first line it prints, in either language.
+
+    Parameters
+    ----------
+    line : str
+        A line of output, with or without its line ending.
+
+    Returns
+    -------
+    str | None
+        The file's path, or None for any other line.
+    """
+    text = line.rstrip("\r\n")
+    found = None
+    for template in WAITING.values():
+        before, _, after = template.splitlines()[0].partition("{path}")
+        if found is None and text.startswith(before) and text.endswith(after) and len(text) > len(before) + len(after):
+            found = text[len(before) : len(text) - len(after)]
+    return found
+
+
 def answered(path: Path) -> bool:
     """
     Tell whether a file in conflict has been answered: it is a plain file with no conflict block.

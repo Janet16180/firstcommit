@@ -444,6 +444,18 @@ def test_removing_the_labs_also_removes_what_a_killed_git_mergetool_left_in_the_
     assert not left.exists()
 
 
+def test_a_level_names_the_merge_panels_picks_for_its_tests_and_none_by_default() -> None:
+    assert runner.load(level_module()).picks == {}
+    level = runner.load(level_module(PICKS={"launch.txt": ("theirs", "both")}))
+    assert level.picks == {"launch.txt": ("theirs", "both")}
+
+
+@pytest.mark.parametrize("picks", [["theirs"], {"launch.txt": "theirs"}, {"launch.txt": ("mine",)}, {3: ("yours",)}, {"launch.txt": ()}])
+def test_the_merge_panels_picks_are_one_side_per_block_by_file(picks: Any) -> None:
+    with pytest.raises(ValueError, match="cargo_sample.*PICKS"):
+        runner.load(level_module(PICKS=picks))
+
+
 def test_a_level_is_a_challenge_only_when_it_says_so() -> None:
     goals = [step for step in cargo_sample.QUEST if isinstance(step, kit.WatchStep)]
     assert runner.load(level_module(CHALLENGE=True, QUEST=goals)).challenge is True

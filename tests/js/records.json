@@ -159,7 +159,8 @@
    "answers": {
     "guess": "It comes with you"
    },
-   "answer": null
+   "answer": null,
+   "picks": {}
   },
   "card": {
    "level": "sample-second",

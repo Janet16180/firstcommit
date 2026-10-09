@@ -109,6 +109,7 @@ PLAY_ORDER: tuple[str, ...] = (
     "conflict-meet",
     "conflict-abort",
     "conflict-collision",
+    "conflict-mergetool",
     "conflict-docking",
     "undo-scrap",
     "undo-recall",

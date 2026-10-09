@@ -261,3 +261,19 @@ def test_a_line_typed_for_a_level_uses_the_games_git_and_never_the_players_home(
     save.ensure_gitconfig(gitcmd.BASE_CONFIG)
     assert commands.type_line(folder, 'test "$GIT_CONFIG_GLOBAL" = "$HOME/gitconfig" && test "$HOME" = "$FIRSTCOMMIT_HOME"')["status"] == 0
     assert commands.type_line(folder, "git init -q && git symbolic-ref --short HEAD | grep -qx main")["status"] == 0
+
+
+def test_a_line_typed_for_a_level_can_play_the_merge_panels_picks_while_git_mergetool_waits(game_home: Path) -> None:
+    project = game_home / "labs" / "some-level" / "project"
+    project.mkdir(parents=True)
+    gitcmd.ensure_config()
+    lines = [
+        "git init -q && echo 'Window: 06:00' > launch.txt && git add launch.txt && git commit -qm Plan",
+        "git switch -qc scout && echo 'Window: 05:30' > launch.txt && git commit -qam Early",
+        "git switch -q main && echo 'Window: 07:00' > launch.txt && git commit -qam Late",
+        "git merge --no-edit scout",
+    ]
+    assert [commands.type_line(project, line)["status"] for line in lines] == [0, 0, 0, 1]
+    assert commands.type_line(project, "git mergetool", picks={"launch.txt": ["theirs"]}) == {"line": "git mergetool", "status": 0}
+    assert (project / "launch.txt").read_text() == "Window: 05:30\n"
+    assert gitcmd.output(project, "status", "--porcelain").splitlines() == ["M  launch.txt"]

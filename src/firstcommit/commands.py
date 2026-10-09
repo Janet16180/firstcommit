@@ -15,17 +15,21 @@ NUL, so a line with tabs or newlines is still one record. `since` reads the log 
 position; only whole records count, so a record the shell is still writing is read next time.
 
 `type_line` runs one line the way a player would type it, for the levels' reference solutions
-and their tests.
+and their tests, and can play the merge panel's picks while ``git mergetool`` waits.
 """
 
 import os
 import re
+import select
 import shlex
+import signal
 import subprocess
+import time
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 
-from firstcommit import gitcmd, save
-from firstcommit.records import Command
+from firstcommit import gitcmd, markers, mergetool, save
+from firstcommit.records import Command, Keep
 
 COMPLETION = Path("/usr/share/bash-completion/bash_completion")
 """Tab completion for git and the other commands, as Ubuntu's bash-completion package installs it."""
@@ -238,7 +242,7 @@ def _contents(log: Path) -> bytes:
     return data
 
 
-def type_line(folder: Path, line: str) -> Command:
+def type_line(folder: Path, line: str, picks: Mapping[str, Sequence[Keep]] | None = None) -> Command:
     """
     Run one command line as the player would type it in the game's terminal, and record how it ended.
 
@@ -247,12 +251,19 @@ def type_line(folder: Path, line: str) -> Command:
     never reads or writes the player's own files. Nothing is logged: the caller keeps the
     record.
 
+    With ``picks``, the line may run ``git mergetool``: each time the game's merge tool says it
+    waits for one of those files (`firstcommit.mergetool.waiting_for`), the picks are written as
+    the merge panel's Write writes them (`firstcommit.markers.answer`), so the tool ends as it
+    does when a player clicks.
+
     Parameters
     ----------
     folder : Path
-        The folder to run in; it must exist.
+        The folder to run in, the repository's top when ``picks`` are given; it must exist.
     line : str
         The command line, as typed.
+    picks : Mapping[str, Sequence[Keep]] | None
+        For each file the merge panel may be asked about, one side per conflict block.
 
     Returns
     -------
@@ -262,10 +273,65 @@ def type_line(folder: Path, line: str) -> Command:
     Raises
     ------
     subprocess.TimeoutExpired
-        If the line runs longer than `firstcommit.gitcmd.TIMEOUT` seconds.
+        If the line runs longer than `firstcommit.gitcmd.TIMEOUT` seconds; it is stopped first,
+        with every process it started.
     """
     home = save.home()
     save.ensure_tmp()
     env = {**gitcmd.shell_environment(os.environ, home), "HOME": str(home), "HISTFILE": "/dev/null"}
-    ran = subprocess.run(["bash", "--noprofile", "--norc", "-c", line], cwd=folder, env=env, capture_output=True, stdin=subprocess.DEVNULL, timeout=gitcmd.TIMEOUT, check=False)
-    return {"line": line, "status": ran.returncode}
+    argv = ["bash", "--noprofile", "--norc", "-c", line]
+    if not picks:
+        ran = subprocess.run(argv, cwd=folder, env=env, capture_output=True, stdin=subprocess.DEVNULL, timeout=gitcmd.TIMEOUT, check=False)
+        return {"line": line, "status": ran.returncode}
+    return {"line": line, "status": _with_panel(argv, folder, env, picks)}
+
+
+def _with_panel(argv: list[str], folder: Path, env: Mapping[str, str], picks: Mapping[str, Sequence[Keep]]) -> int:
+    """
+    Run a line while playing the merge panel: write a file's picks each time the game's merge tool waits for it.
+
+    Parameters
+    ----------
+    argv : list[str]
+        The bash command that runs the line.
+    folder : Path
+        The repository's top, where it runs.
+    env : Mapping[str, str]
+        Its environment.
+    picks : Mapping[str, Sequence[Keep]]
+        One side per conflict block, by file.
+
+    Returns
+    -------
+    int
+        The line's exit status.
+
+    Raises
+    ------
+    subprocess.TimeoutExpired
+        If it runs longer than `firstcommit.gitcmd.TIMEOUT` seconds; it is stopped first, with every process it started.
+    """
+    deadline = time.monotonic() + gitcmd.TIMEOUT
+    process = subprocess.Popen(argv, cwd=folder, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, start_new_session=True)
+    assert process.stdout is not None
+    pending = b""
+    try:
+        while time.monotonic() < deadline:
+            if not select.select([process.stdout], [], [], 0.1)[0]:
+                continue
+            chunk = os.read(process.stdout.fileno(), 65536)
+            if not chunk:
+                break
+            *lines, pending = (pending + chunk).split(b"\n")
+            for said in lines:
+                path = mergetool.waiting_for(said.decode("utf-8", "replace"))
+                if path is not None and path in picks:
+                    markers.answer(folder, path, markers.marked(path, (folder / path).read_bytes())["read"], picks[path])
+        status = process.wait(timeout=max(deadline - time.monotonic(), 0.01))
+    except BaseException:
+        os.killpg(process.pid, signal.SIGKILL)
+        process.wait()
+        raise
+    finally:
+        process.stdout.close()
+    return status

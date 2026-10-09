@@ -276,3 +276,11 @@ def test_git_mergetool_with_no_conflict_starts_no_tool(game_home: Path) -> None:
     assert shell.status() == 0
     assert "No files need merging" in shell.shown
     assert "firstcommit-mergetool" not in shell.shown
+
+
+@pytest.mark.parametrize("language", ["en", "es"])
+def test_the_tools_first_line_tells_which_file_it_waits_for_in_either_language(language: str) -> None:
+    first = mergetool.WAITING[language].format(path="docs/launch plan.txt").splitlines()[0]  # type: ignore[index]
+    assert mergetool.waiting_for(first) == "docs/launch plan.txt"
+    assert mergetool.waiting_for(first + "\n") == "docs/launch plan.txt"
+    assert mergetool.waiting_for("Normal merge conflict for 'launch.txt':") is None

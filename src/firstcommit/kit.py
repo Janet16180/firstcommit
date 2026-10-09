@@ -11,7 +11,7 @@ the page's button runs, so a level can prepare a state such as "Alex already pus
 
 import hashlib
 import re
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Literal
@@ -25,7 +25,7 @@ from firstcommit.markup import code
 from firstcommit.playground import on_push, press, setup_github
 from firstcommit.playground import setup as setup_playground
 from firstcommit.reactions import LIST_HIDDEN, Outcome, ReactionRule, matches
-from firstcommit.records import Art, Command, Picture, Pictures, Target, WhatIf
+from firstcommit.records import Art, Command, Keep, Picture, Pictures, Target, WhatIf
 from firstcommit.repomap import (
     Commit,
     FileEntry,
@@ -48,6 +48,7 @@ from firstcommit.repomap import (
 
 __all__ = [
     "GAME",
+    "Keep",
     "LIST_HIDDEN",
     "PICK_ONE",
     "PLAYER",
@@ -421,7 +422,7 @@ def pictures(
     }
 
 
-def typing(line: str) -> Callable[[Lab, State, list[Command]], str | None]:
+def typing(line: str, picks: Mapping[str, Sequence[Keep]] | None = None) -> Callable[[Lab, State, list[Command]], str | None]:
     """
     Make a quest action that types one line in the project folder, for a level's ``QUEST_ACTIONS``.
 
@@ -429,6 +430,9 @@ def typing(line: str) -> Callable[[Lab, State, list[Command]], str | None]:
     ----------
     line : str
         The line, as the player types it.
+    picks : Mapping[str, Sequence[Keep]] | None
+        For a line that runs ``git mergetool``, the merge panel's clicks: one side per conflict
+        block, by file (`type_line`); usually the level's ``PICKS``.
 
     Returns
     -------
@@ -438,7 +442,7 @@ def typing(line: str) -> Callable[[Lab, State, list[Command]], str | None]:
     """
 
     def act(lab: Lab, state: State, typed: list[Command]) -> str | None:
-        typed.append(type_line(lab.project, line))
+        typed.append(type_line(lab.project, line, picks))
         return None
 
     return act

@@ -1,5 +1,6 @@
-"""Helpers the tests of single levels share (``tests/levels``): start a level's lab, type in it, find its steps and rules."""
+"""Helpers the tests of single levels share (``tests/levels``): start a level's lab, type in it, find its steps and rules, and read the shape of a hint's git line."""
 
+import re
 from types import ModuleType
 
 from firstcommit import kit, reactions, runner
@@ -141,3 +142,28 @@ def reaction(
         The rule that speaks, or None.
     """
     return reactions.react(line, kinds, repository, staged, (*runner.load(module).reactions, *reactions.RULES), remote=remote, ignored=ignored, branch=branch)
+
+
+def command_shape(line: str) -> str | None:
+    """
+    Give the shape of a git line a hint shows: its subcommand and its options, its names left out.
+
+    ``HEAD~2`` and ``HEAD@{3}`` keep their kind with the number made ``n``, and ``origin`` stays, so
+    ``git push -u origin scout`` and ``git push -u origin main`` are one shape.
+
+    Parameters
+    ----------
+    line : str
+        A line after ``$ ``, perhaps with a comment.
+
+    Returns
+    -------
+    str | None
+        The shape, or None when the line is not a git command.
+    """
+    words = line.split("#")[0].split()
+    shape = None
+    if words[:1] == ["git"] and len(words) > 1:
+        kept = [word for word in words[2:] if word.startswith(("-", "HEAD")) or word == "origin"]
+        shape = " ".join([words[1], *(re.sub(r"\{\d+\}", "{n}", re.sub(r"~\d+", "~n", word)) for word in kept)])
+    return shape

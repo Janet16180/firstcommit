@@ -136,7 +136,7 @@ const createGameApi = (function () {
     pictures: nullable(PICTURES),
     target: nullable(TARGET),
     /* Dev mode only: the last hint's lines and the answers, null where the lab cannot tell yet. */
-    solution: nullable(record({ lines: list(text), answers: mapping(nullable(text)), answer: nullable(text) })),
+    solution: nullable(record({ lines: list(text), answers: mapping(nullable(text)), answer: nullable(text), picks: mapping(list(oneOf("yours", "theirs", "both"))) })),
     card: nullable(CARD),
     challenge: flag,
     briefing: BLOCKS,

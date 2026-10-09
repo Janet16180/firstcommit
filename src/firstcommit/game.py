@@ -261,12 +261,14 @@ class Solution(TypedDict):
     (`solution_lines`); ``answers`` the answer of each answer or choice step by step id, None
     while the lab cannot give it yet (a count read from a clone not made yet); ``answer`` the
     answer to the level's own question (`runner.Level` ``answer``), None for a level without one
-    or while the lab cannot give it yet.
+    or while the lab cannot give it yet; ``picks`` the merge panel's clicks the lines need, one side
+    per conflict block by file (`runner.Level` ``picks``), empty for a level without.
     """
 
     lines: list[str]
     answers: dict[str, str | None]
     answer: str | None
+    picks: dict[str, list[Keep]]
 
 
 class LevelView(TypedDict):
@@ -797,6 +799,7 @@ def _solution(entry: runner.Level, state: Mapping[str, Any]) -> Solution:
         "lines": solution_lines(entry, state),
         "answers": {step_id: _answer(functools.partial(entry.actions[step_id], lab, dict(state), [])) for step_id in asking},
         "answer": _answer(functools.partial(entry.answer, lab, dict(state))) if entry.answer is not None else None,
+        "picks": {file: list(sides) for file, sides in entry.picks.items()},
     }
 
 
