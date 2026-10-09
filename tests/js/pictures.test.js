@@ -5,12 +5,12 @@ const test = require("node:test");
 const { createClock, installBrowser, load, record } = require("./load");
 
 installBrowser();
-const { Pictures } = load(["dom.js", "strings.js", "places.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "target-chart.js", "git-graph.js", "sides.js", "pictures.js"], ["Pictures"]);
+const { Pictures } = load(["dom.js", "strings.js", "places.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "target-chart.js", "git-graph.js", "sides.js", "past-panel.js", "pictures.js"], ["Pictures"]);
 
 /* A level's pictures as LevelView.pictures gives them: the chain alone unless a test says more. */
-const spec = (more = {}) => ({ large: "chain", small: null, folder: false, mothership: false, alex: false, ghosts: false, kept: null, lines: [], graph: false, whatif: null, ...more });
+const spec = (more = {}) => ({ large: "chain", small: null, folder: false, mothership: false, alex: false, ghosts: false, kept: null, lines: [], graph: false, whatif: null, past: null, plain: false, quiet: [], ...more });
 /* The sample observation, with the fields the pictures read; `typed` are this tick's lines. */
-const observed = (typed = [], more = {}) => ({ ...record("observation"), commands: typed.map((line) => ({ line, status: 0 })), texts: [], graph: null, ...more });
+const observed = (typed = [], more = {}) => ({ ...record("observation"), commands: typed.map((line) => ({ line, status: 0 })), texts: [], graph: null, past: null, ...more });
 const shown = (pictures) => [".pictures-large", ".pictures-small"].flatMap((slot) => [...pictures.element.querySelector(slot).children]).map((node) => node.className.split(" ")[0]);
 const made = (more, observation = observed(), progress = { look: [], passed: [] }) => {
   const pictures = Pictures.create(spec(more));
@@ -118,4 +118,48 @@ test("once its step has passed, the chain plays the level's WHAT IF for a while,
   assert.ok(chain.classList.contains("is-rewind"));
   pictures.update(observed(), { look: [], passed: ["reset"] });
   assert.ok(!pictures.element.querySelector(".chain").classList.contains("is-whatif"));
+});
+
+const sample = () => record("observation").project.commits;
+const reading = (commit, text = "fuel: 60%\n") => ({ rev: commit.short, commit: commit.hash, subject: commit.subject, text });
+const past = (more = {}) => ({ path: "fuel.txt", touched: [], read: null, ...more });
+
+test("a level that reads a file as it was shows its panel beside the chain, with the commit read ringed", () => {
+  const [, second] = sample();
+  const pictures = made({ past: "fuel.txt" }, observed([], { past: past({ read: reading(second) }) }));
+  assert.ok(pictures.element.querySelector(".pictures-pair .past"));
+  assert.equal(pictures.element.querySelector(".past-text").textContent, "fuel: 60%");
+  assert.deepEqual([...pictures.element.querySelectorAll(".chain-row.is-look")].map((row) => row.dataset.hash), [second.hash]);
+  assert.equal(made().element.querySelector(".past"), null);
+});
+
+test("before the chain is born the level draws the vault's capsules plain", () => {
+  const pictures = made({ past: "fuel.txt", plain: true }, observed([], { past: past() }));
+  assert.equal(pictures.element.querySelector(".chain-tag"), null);
+  assert.ok(pictures.element.querySelector(".chain-row"));
+});
+
+test("once a git log of the level's file has worked, the commits that did not change it are dimmed, and stay so", () => {
+  const [first, second, third] = sample();
+  const lab = (typed) => observed(typed, { past: past({ touched: [first.hash, third.hash] }) });
+  const dimmed = (pictures) => [...pictures.element.querySelectorAll(".chain-row.is-dim")].map((row) => row.dataset.hash);
+  const pictures = Pictures.create(spec({ past: "fuel.txt" }));
+  pictures.update(lab([]), { look: [], passed: [] });
+  assert.deepEqual(dimmed(pictures), [], "nothing dims before the log");
+  pictures.update(lab(["git log notes.txt"]), { look: [], passed: [] });
+  assert.deepEqual(dimmed(pictures), [], "another file's log dims nothing");
+  pictures.update({ ...lab([]), commands: [{ line: "git log --oneline fuel.txt", status: 128 }] }, { look: [], passed: [] });
+  assert.deepEqual(dimmed(pictures), [], "a log that failed dims nothing");
+  pictures.update(lab(["git log --oneline -- fuel.txt"]), { look: [], passed: [] });
+  assert.ok(dimmed(pictures).includes(second.hash));
+  pictures.update(lab(["git show HEAD"]), { look: [], passed: [] });
+  assert.ok(dimmed(pictures).includes(second.hash), "it stays after the next lines");
+});
+
+test("during the level's quiet steps the chain's legend is hidden", () => {
+  const pictures = Pictures.create(spec({ past: "keys.txt", quiet: ["read-head"] }));
+  pictures.update(observed([], { past: past({ path: "keys.txt" }) }), { look: [], passed: [], step: "read-head" });
+  assert.equal(pictures.element.querySelector(".chain-legend"), null);
+  pictures.update(observed([], { past: past({ path: "keys.txt" }) }), { look: [], passed: [], step: "answer" });
+  assert.ok(pictures.element.querySelector(".chain-legend"));
 });
