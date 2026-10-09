@@ -90,6 +90,7 @@ PLAY_ORDER: tuple[str, ...] = (
     "vault-seal",
     "vault-look",
     "vault-recorder",
+    "vault-past",
     "vault-inspection",
     "mothership-contact",
     "mothership-launch",
