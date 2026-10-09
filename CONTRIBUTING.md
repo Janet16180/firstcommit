@@ -34,7 +34,6 @@ No one may bypass either rule, including the repository owner. GitHub does not a
 authors to approve their own PRs, so a PR authored by @Janet16180 cannot merge under this
 policy. Changes to repository settings remain under the owner's control.
 
-After a change lands on `main`, CI reruns the checks. A successful run publishes the game
-image to `ghcr.io/janet16180/firstcommit`, tagged with the commit SHA and `latest`. Pull
-requests have read-only tokens and cannot publish images. The workflow never deploys a public
-web server: the game is played locally.
+After a change lands on `main`, CI reruns the checks. The workflow builds test and player
+images only inside the CI runner. It does not publish images, upload build artifacts, or deploy
+the game. All workflow jobs use read-only repository permissions.
