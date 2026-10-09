@@ -181,3 +181,13 @@ def test_removing_the_playground_removes_its_lab() -> None:
     freeplay.remove()
     assert not lab.root.exists()
     freeplay.remove()
+
+
+def test_building_or_removing_the_playground_removes_what_a_killed_git_mergetool_left() -> None:
+    left = save.ensure_tmp() / "git-mergetool-Ab12Cd"
+    left.mkdir()
+    freeplay.build("conflict")
+    assert not left.exists()
+    left.mkdir()
+    freeplay.remove()
+    assert not left.exists()

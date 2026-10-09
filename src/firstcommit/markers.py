@@ -10,14 +10,20 @@ one that a new ``<<<<<<<`` line starts again.
 
 The file is read as bytes, so a resolve keeps every byte outside the blocks, line endings
 included; the lines given back are decoded as UTF-8, undecodable bytes replaced.
+
+`answer` is the merge panel's Write, the one rule both the levels' and the playground's panels
+use: it writes the chosen sides into a repository's file in conflict, whole, in one step.
 """
 
 import hashlib
 import re
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from pathlib import Path
 
+from firstcommit import repomap
 from firstcommit.records import BlockPart, CleanPart, Keep, MarkedFile, MarkedPart
+from firstcommit.termlab import store
 
 YOURS = re.compile(rb"<{7}(?: (.*))?")
 BASE = re.compile(rb"\|{7}(?: .*)?")
@@ -222,3 +228,55 @@ def resolve(data: bytes, choices: Sequence[Keep]) -> bytes:
         written += run[0].yours if choice in ("yours", "both") else []
         written += run[0].theirs if choice in ("theirs", "both") else []
     return b"".join(written)
+
+
+class NotInConflictError(LookupError):
+    """A file to answer that is not one of the repository's files in conflict."""
+
+
+class ChangedError(Exception):
+    """A file to answer that changed since it was read, or is no plain file inside its repository: nothing was written."""
+
+
+def answer(clone: Path, file: str, read: str, choices: Sequence[Keep]) -> MarkedFile:
+    """
+    Write the sides chosen for each conflict block into a repository's file in conflict, as the merge panel's Write.
+
+    Only the blocks change (`resolve`), and the new bytes replace the file whole
+    (`firstcommit.termlab.store.replace_bytes`), so the game's merge tool, which polls the file,
+    never reads half of it. git is never run: the file stays in conflict until it is added.
+
+    Parameters
+    ----------
+    clone : Path
+        The repository's working folder.
+    file : str
+        The file's path in it: one of its files in conflict.
+    read : str
+        The SHA-256 of the file as the panel read it (`marked`).
+    choices : Sequence[Keep]
+        One per conflict block, in order.
+
+    Returns
+    -------
+    MarkedFile
+        The file as written.
+
+    Raises
+    ------
+    NotInConflictError
+        If the file is not one of the repository's files in conflict.
+    ChangedError
+        If the file changed since it was read, or is no plain file inside the repository.
+    ValueError
+        If there is not one choice per block.
+    """
+    if file not in [conflict["path"] for conflict in repomap.conflicts(clone)]:
+        raise NotInConflictError(f"{file} is not in conflict")
+    path = clone / file
+    data = repomap.folder_bytes(path)
+    if data is None or not path.resolve().is_relative_to(clone.resolve()) or marked(file, data)["read"] != read:
+        raise ChangedError(f"{file} changed since it was read: look at it again")
+    written = resolve(data, choices)
+    store.replace_bytes(path, written)
+    return marked(file, written)

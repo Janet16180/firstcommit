@@ -708,6 +708,36 @@ def api_playground_resolve(body: dict[str, Any]) -> Reply:
     return reply
 
 
+def api_resolve(body: dict[str, Any]) -> Reply:
+    """
+    POST /api/resolve {"file", "read", "choices"}: write the sides chosen for each conflict block of a file of the level in progress.
+
+    Parameters
+    ----------
+    body : dict[str, Any]
+        The JSON body: the file's path, the SHA-256 (lowercase hex) of the file as the page read
+        it, and one of ``"yours"``, ``"theirs"`` or ``"both"`` per conflict block, at most
+        `MAX_CHOICES`.
+
+    Returns
+    -------
+    Reply
+        200 and `game.ResolveView`; 400 for a malformed body or the wrong number of choices, 404
+        for a file not in conflict, 409 ``{"error", "kind": "changed"}`` when the file changed
+        since it was read, and 409 with no level in progress.
+    """
+    file, read, choices = body.get("file"), body.get("read"), body.get("choices")
+    if not is_path(file) or not is_sha256(read) or not is_choices(choices):
+        return bad('send {"file": "<path>", "read": "<sha-256>", "choices": ["yours" | "theirs" | "both", ...]}')
+    try:
+        reply = playing(lambda: game.resolve(file, read, choices))
+    except game.FileChangedError as error:
+        reply = HTTPStatus.CONFLICT, {"error": str(error), "kind": "changed"}
+    except game.WrongChoicesError as error:
+        reply = bad(str(error))
+    return reply
+
+
 def is_path(value: Any) -> TypeGuard[str]:
     """
     Tell whether a body field can be a file's path in a clone (whether it is one is `game`'s to say).
@@ -778,6 +808,7 @@ ROUTES: dict[tuple[str, str], shell.Route] = {
         ("POST", "/api/card"): api_card,
         ("GET", "/api/notes"): api_notes,
         ("POST", "/api/press"): api_press,
+        ("POST", "/api/resolve"): api_resolve,
         ("GET", "/api/playground"): api_playground,
         ("POST", "/api/playground/start"): api_playground_start,
         ("POST", "/api/playground/prefs"): api_playground_prefs,

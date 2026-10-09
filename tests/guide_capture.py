@@ -19,11 +19,13 @@ import re
 import shutil
 import subprocess
 import tempfile
+from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-from firstcommit import gitcmd
+from firstcommit import commands, gitcmd
+from firstcommit.records import Keep
 
 STATIC = Path(__file__).resolve().parents[1] / "src" / "firstcommit" / "web" / "static"
 TARGET = STATIC / "guide-git.js"
@@ -104,7 +106,7 @@ class Story:
         """
         return subprocess.run(["bash", "-c", command], cwd=self.here, env=self.environment(), capture_output=True, text=True, check=True).stdout
 
-    def step(self, name: str, command: str) -> None:
+    def step(self, name: str, command: str, picks: Mapping[str, Sequence[Keep]] | None = None) -> None:
         """
         Run a command a card shows, and add it with everything it printed to the transcript `name`.
 
@@ -117,9 +119,16 @@ class Story:
             The transcript, a key of GuideGit.runs.
         command : str
             Bash code, as the player would type it.
+        picks : Mapping[str, Sequence[Keep]] | None
+            For ``git mergetool``, the merge panel's clicks, written while the game's tool waits
+            (`firstcommit.commands.run_with_panel`); the tool's game home is the work folder's.
         """
-        result = subprocess.run(["bash", "-c", command], cwd=self.here, env=self.environment(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, check=False)
-        self.runs.setdefault(name, []).append({"command": command, "output": result.stdout.replace(str(self.work), SHOWN_HOME)})
+        argv = ["bash", "-c", command]
+        if picks:
+            printed = commands.run_with_panel(argv, self.here, {**self.environment(), "FIRSTCOMMIT_HOME": str(self.work / ".firstcommit")}, picks)[1]
+        else:
+            printed = subprocess.run(argv, cwd=self.here, env=self.environment(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True, check=False).stdout
+        self.runs.setdefault(name, []).append({"command": command, "output": printed.replace(str(self.work), SHOWN_HOME)})
 
 
 def edit(path: Path, old: str, new: str) -> None:
@@ -418,13 +427,17 @@ def conflict(story: Story) -> dict[str, Any]:
     edit(checklist, "4. Course: Mars", "4. Course: the Moon")
     story.quiet('git commit -q -am "Fill the tanks, aim for the Moon"')
 
-    for name, commands in (("merge-abort", ["git merge alex-route", "git merge --abort", "git status"]), ("restore-theirs", ["git merge alex-route", "git restore --theirs checklist.txt", "cat checklist.txt"])):
+    for name, lines in (
+        ("merge-abort", ["git merge alex-route", "git merge --abort", "git status"]),
+        ("restore-theirs", ["git merge alex-route", "git restore --theirs checklist.txt", "cat checklist.txt"]),
+        ("mergetool", ["git merge alex-route", "git mergetool", "git status"]),
+    ):
         story.here = folder
         copy = work / name
         shutil.copytree(folder, copy)
         story.here = copy
-        for command in commands:
-            story.step(name, command)
+        for line in lines:
+            story.step(name, line, {"checklist.txt": ["yours"]} if line == "git mergetool" else None)
 
     story.here = folder
     story.step("conflict-merge", "git merge alex-route")

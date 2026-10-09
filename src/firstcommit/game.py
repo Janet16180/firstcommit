@@ -57,6 +57,7 @@ from firstcommit import (
     kit,
     markers,
     markup,
+    mergetool,
     playground,
     reactions,
     repomap,
@@ -260,12 +261,14 @@ class Solution(TypedDict):
     (`solution_lines`); ``answers`` the answer of each answer or choice step by step id, None
     while the lab cannot give it yet (a count read from a clone not made yet); ``answer`` the
     answer to the level's own question (`runner.Level` ``answer``), None for a level without one
-    or while the lab cannot give it yet.
+    or while the lab cannot give it yet; ``picks`` the merge panel's clicks the lines need, one side
+    per conflict block by file (`runner.Level` ``picks``), empty for a level without.
     """
 
     lines: list[str]
     answers: dict[str, str | None]
     answer: str | None
+    picks: dict[str, list[Keep]]
 
 
 class LevelView(TypedDict):
@@ -379,7 +382,9 @@ class Observation(TypedDict):
     level's first observation. ``reactions`` are what Rama says about those lines, one per line
     a rule fits, oldest first (`firstcommit.reactions`, the level's own rules first).
     ``conflicts`` gives both sides of each file in conflict in the player's repository
-    (`firstcommit.repomap.conflicts`), empty when there is none. ``reflog`` gives HEAD's moves in
+    (`firstcommit.repomap.conflicts`), empty when there is none, and ``marked`` each of those
+    files as the merge panel reads it (`firstcommit.markers.marked`; a file too large to show is
+    left out). ``reflog`` gives HEAD's moves in
     the player's repository, newest first (`firstcommit.repomap.reflog`), and ``ghosts`` the
     commits only those moves still reach (`firstcommit.repomap.ghosts`). ``texts`` are the
     folder's and the staging area's texts of the files the level's desk draws
@@ -398,6 +403,7 @@ class Observation(TypedDict):
     commands: list[Command]
     reactions: list[Reaction]
     conflicts: list[Conflict]
+    marked: list[MarkedFile]
     reflog: list[ReflogEntry]
     ghosts: list[Commit]
     texts: list[FileTexts]
@@ -793,6 +799,7 @@ def _solution(entry: runner.Level, state: Mapping[str, Any]) -> Solution:
         "lines": solution_lines(entry, state),
         "answers": {step_id: _answer(functools.partial(entry.actions[step_id], lab, dict(state), [])) for step_id in asking},
         "answer": _answer(functools.partial(entry.answer, lab, dict(state))) if entry.answer is not None else None,
+        "picks": {file: list(sides) for file, sides in entry.picks.items()},
     }
 
 
@@ -1268,7 +1275,8 @@ def shell_environment(base: Mapping[str, str]) -> dict[str, str]:
 
     Git there is kept to the game (`firstcommit.gitcmd.shell_environment`), and the game's git
     configuration that it names is created first if it is missing (never overwritten), so the
-    player's first ``git init`` is on ``main``.
+    player's first ``git init`` is on ``main``; so is the temporary folder it names, which
+    ``git mergetool`` needs.
 
     Parameters
     ----------
@@ -1281,7 +1289,25 @@ def shell_environment(base: Mapping[str, str]) -> dict[str, str]:
         ``base`` without its git variables, plus the game's isolation.
     """
     gitcmd.ensure_config()
+    save.ensure_tmp()
     return gitcmd.shell_environment(base, save.home())
+
+
+def merge_tool(file: str) -> int:
+    """
+    Be the game's merge tool for one file in conflict, in the player's language, on this process's terminal (`firstcommit.mergetool.run`).
+
+    Parameters
+    ----------
+    file : str
+        The file, as ``git mergetool`` names it from the top of the working folder.
+
+    Returns
+    -------
+    int
+        0 once the file is answered (git then adds it), 1 when the player cancels or it is gone.
+    """
+    return mergetool.run(Path(file), _language(), sys.stdin, sys.stdout)
 
 
 def shell_command() -> list[str]:
@@ -1542,9 +1568,10 @@ def resolve_playground(person: str, file: str, read: str, choices: Sequence[Keep
     """
     Write the sides chosen for each conflict block into one person's file in the free playground.
 
-    Only the blocks change (`firstcommit.markers.resolve`); git is never run, so the file stays
-    in conflict until the player types ``git add``. The file is written only if it is still a
-    plain file, inside that person's clone, whose bytes hash to ``read``.
+    Only the blocks change, and the file is replaced whole (`firstcommit.markers.answer`, the
+    rule a level's panel shares); git is never run, so the file stays in conflict until the
+    player types ``git add`` or the game's merge tool, waiting for it, ends. The file is written
+    only if it is still a plain file, inside that person's clone, whose bytes hash to ``read``.
 
     Parameters
     ----------
@@ -1582,19 +1609,86 @@ def resolve_playground(person: str, file: str, read: str, choices: Sequence[Keep
     if who == "alex" and not freeplay.STARTS[left["start"]].mothership:
         raise NoAlexError(f"{freeplay.STARTS[left['start']].title['en']} has no mothership, so no Alex")
     lab = freeplay.lab()
-    clone = lab.project if who == "you" else lab.teammate
-    path = clone / _playground_id(file, [conflict["path"] for conflict in repomap.conflicts(clone)], "file in conflict")
-    data = repomap.folder_bytes(path)
-    if data is None or not path.resolve().is_relative_to(clone.resolve()) or markers.marked(file, data)["read"] != read:
-        raise FileChangedError(f"{file} changed since it was read: look at it again")
+    return _write_answer(lab.project if who == "you" else lab.teammate, file, read, choices)
+
+
+def resolve(file: str, read: str, choices: Sequence[Keep]) -> ResolveView:
+    """
+    Write the sides chosen for each conflict block into a file of the level in progress, as its merge panel's Write.
+
+    The same rule as the playground's (`resolve_playground`, `firstcommit.markers.answer`): only
+    the blocks change, the file is replaced whole, and git is never run, so ``git mergetool``
+    (the game's tool, waiting for the file) or the player's ``git add`` takes it from there.
+
+    Parameters
+    ----------
+    file : str
+        The file's path in the level's repository: one of its files in conflict.
+    read : str
+        The SHA-256 of the file as the page read it (`firstcommit.records.MarkedFile`).
+    choices : Sequence[Keep]
+        One per conflict block, in order.
+
+    Returns
+    -------
+    ResolveView
+        The file as written.
+
+    Raises
+    ------
+    NotPlayingError
+        If no level is in progress.
+    UnknownIdError
+        If the file is not one of the level's files in conflict.
+    FileChangedError
+        If the file changed since it was read, or is no plain file in the repository; nothing is written.
+    WrongChoicesError
+        If there is not one choice per block; nothing is written.
+    """
+    with save.lock():
+        _, entry = _playing()
+        project = runner.lab_of(entry.id).project
+    return _write_answer(project, file, read, choices)
+
+
+def _write_answer(clone: Path, file: str, read: str, choices: Sequence[Keep]) -> ResolveView:
+    """
+    Write a merge panel's choices into a repository's file in conflict (`firstcommit.markers.answer`), in the game's errors.
+
+    Parameters
+    ----------
+    clone : Path
+        The repository's working folder.
+    file : str
+        The file's path in it.
+    read : str
+        The SHA-256 of the file as the page read it.
+    choices : Sequence[Keep]
+        One per conflict block, in order.
+
+    Returns
+    -------
+    ResolveView
+        The file as written.
+
+    Raises
+    ------
+    UnknownIdError
+        If the file is not in conflict there.
+    FileChangedError
+        If the file changed since it was read, or is no plain file in the repository.
+    WrongChoicesError
+        If there is not one choice per block.
+    """
     try:
-        written = markers.resolve(data, choices)
+        written = markers.answer(clone, file, read, choices)
+    except markers.NotInConflictError as error:
+        raise UnknownIdError(f"no file in conflict named {file!r}") from error
+    except markers.ChangedError as error:
+        raise FileChangedError(str(error)) from error
     except ValueError as error:
         raise WrongChoicesError(str(error)) from error
-    descriptor = os.open(path, os.O_WRONLY | os.O_TRUNC | os.O_NOFOLLOW)
-    with os.fdopen(descriptor, "wb") as handle:
-        handle.write(written)
-    return {"file": markers.marked(file, written)}
+    return {"file": written}
 
 
 def terminal_folder() -> str:
@@ -1744,10 +1838,9 @@ def _clone_view(folder: Path, snap: Snapshot, person: Who) -> CloneView:
         Its conflicts, marked files, reflog, ghosts, texts, graph and typed lines.
     """
     conflicts = repomap.conflicts(folder)
-    read = [(conflict["path"], repomap.folder_bytes(folder / conflict["path"])) for conflict in conflicts]
     return {
         "conflicts": conflicts,
-        "marked": [markers.marked(path, data) for path, data in read if data is not None and len(data) <= repomap.MAX_TEXT],
+        "marked": _marked(folder, conflicts),
         "reflog": repomap.reflog(folder),
         "ghosts": repomap.ghosts(folder),
         "texts": repomap.file_texts(folder, [file["path"] for file in snap["files"]]),
@@ -1993,6 +2086,7 @@ def _observation(
     staged = bool(repomap.staged(now["project"]))
     remote = bool(now["project"]["remotes"])
     ignored = any(file["ignored"] for file in now["project"]["files"])
+    conflicts = repomap.conflicts(project)
     said = [(command, reactions.react(command, kinds, now["project"]["exists"], staged, rules, remote=remote, ignored=ignored, branch=now["project"]["branch"])) for command in typed]
     return {
         "level": now["level"],
@@ -2006,12 +2100,33 @@ def _observation(
         "reactions": [
             {"line": command["line"], "mood": rule.mood, "text": markup.parse(_say(rule.text, messages)), "moment": rule.moment} for command, rule in said if rule is not None
         ],
-        "conflicts": repomap.conflicts(project),
+        "conflicts": conflicts,
+        "marked": _marked(project, conflicts),
         "reflog": repomap.reflog(project),
         "ghosts": repomap.ghosts(project),
         "texts": repomap.file_texts(project, pictures["lines"]) if pictures is not None else [],
         "graph": repomap.graph(project) if pictures is not None and pictures["graph"] else None,
     }
+
+
+def _marked(folder: Path, conflicts: list[Conflict]) -> list[MarkedFile]:
+    """
+    Read a repository's files in conflict as the merge panel shows them.
+
+    Parameters
+    ----------
+    folder : Path
+        The repository's working folder.
+    conflicts : list[Conflict]
+        Its files in conflict (`firstcommit.repomap.conflicts`).
+
+    Returns
+    -------
+    list[MarkedFile]
+        Each one that is a plain file no larger than `firstcommit.repomap.MAX_TEXT`, in order.
+    """
+    read = [(conflict["path"], repomap.folder_bytes(folder / conflict["path"])) for conflict in conflicts]
+    return [markers.marked(path, data) for path, data in read if data is not None and len(data) <= repomap.MAX_TEXT]
 
 
 def _changes(before: Snapshot | None, after: Snapshot | None) -> list[Event]:

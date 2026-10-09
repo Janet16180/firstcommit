@@ -8,6 +8,7 @@ itself is exercised even before a chapter has levels.
 import hashlib
 import json
 import re
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from types import ModuleType
 
@@ -17,6 +18,7 @@ import sample_levels
 from firstcommit import game, kit, levels, markup, runner
 from firstcommit.termlab import sandbox
 from game_words import unpaired
+from level_helpers import command_shape
 
 HOSTILE = [
     "",
@@ -239,7 +241,7 @@ def test_every_reaction_of_a_level_has_its_spanish(package: ModuleType, level: r
     assert_spoken(level, [kit.Verdict(False, rule.text) for rule in level.reactions])
 
 
-def type_in_one_shell(lab: kit.Lab, folder: Path, line: str) -> tuple[kit.Command, Path]:
+def type_in_one_shell(lab: kit.Lab, folder: Path, line: str, picks: Mapping[str, Sequence[kit.Keep]] | None = None) -> tuple[kit.Command, Path]:
     """
     Type a line in a terminal that is in a folder, and tell where the terminal is afterwards.
 
@@ -251,6 +253,8 @@ def type_in_one_shell(lab: kit.Lab, folder: Path, line: str) -> tuple[kit.Comman
         Where the terminal is.
     line : str
         The line.
+    picks : Mapping[str, Sequence[kit.Keep]] | None
+        The merge panel's clicks, for a line that runs ``git mergetool`` (the level's ``PICKS``).
 
     Returns
     -------
@@ -258,7 +262,7 @@ def type_in_one_shell(lab: kit.Lab, folder: Path, line: str) -> tuple[kit.Comman
         The line as typed with its status, and the terminal's folder after it (a ``cd`` moves it).
     """
     where = lab.root.parent / f"{lab.root.name}.cwd"
-    ran = kit.type_line(folder, f'{line}\nstatus=$?; pwd > "{where}"; exit $status')
+    ran = kit.type_line(folder, f'{line}\nstatus=$?; pwd > "{where}"; exit $status', picks or None)
     after = Path(where.read_text().strip())
     where.unlink()
     return {"line": line, "status": ran["status"]}, after
@@ -290,37 +294,12 @@ def test_the_last_hint_shows_commands_that_solve_the_level_typed_as_written(leve
 
     advance()
     for line in commands:
-        command, folder = type_in_one_shell(lab, folder, line)
+        command, folder = type_in_one_shell(lab, folder, line, level.picks)
         typed.append(command)
         advance()
     answer = level.solve(lab, state, []) if level.texts["en"].question else None
     assert done == [step.id for step in level.quest] or (level.challenge and sorted(done) == sorted(step.id for step in level.quest))
     assert level.check(lab, state, answer, typed).solved
-
-
-def command_shape(line: str) -> str | None:
-    """
-    Give the shape of a git line a hint shows: its subcommand and its options, its names left out.
-
-    ``HEAD~2`` and ``HEAD@{3}`` keep their kind with the number made ``n``, and ``origin`` stays, so
-    ``git push -u origin scout`` and ``git push -u origin main`` are one shape.
-
-    Parameters
-    ----------
-    line : str
-        A line after ``$ ``, perhaps with a comment.
-
-    Returns
-    -------
-    str | None
-        The shape, or None when the line is not a git command.
-    """
-    words = line.split("#")[0].split()
-    shape = None
-    if words[:1] == ["git"] and len(words) > 1:
-        kept = [word for word in words[2:] if word.startswith(("-", "HEAD")) or word == "origin"]
-        shape = " ".join([words[1], *(re.sub(r"\{\d+\}", "{n}", re.sub(r"~\d+", "~n", word)) for word in kept)])
-    return shape
 
 
 def test_a_challenge_only_asks_for_commands_an_earlier_guided_level_taught() -> None:
@@ -414,5 +393,6 @@ def test_each_level_opens_on_the_main_view_of_the_plan() -> None:
         "branch-ticket": "history",
         "conflict-meet": "history",
         "conflict-collision": "sides",
+        "conflict-mergetool": "sides",
         "conflict-docking": "history",
     }

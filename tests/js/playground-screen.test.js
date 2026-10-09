@@ -8,7 +8,7 @@ const Pg = require("./playground-records");
 
 const document = installBrowser({ reducedMotion: true });
 const { PlaygroundScreen, PlaygroundSummary, createGameApi } = load(
-  ["dom.js", "strings.js", "places.js", "art-pixels.js", "art-sprites.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "dialog.js", "keep-panel.js", "editor-strip.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "git-graph.js", "playground-summary.js", "playground-picture.js", "playground-screen.js"],
+  ["dom.js", "strings.js", "places.js", "art-pixels.js", "art-sprites.js", "api.js", "progress.js", "poll.js", "typed.js", "zones.js", "zone-panel.js", "dialog.js", "keep-panel.js", "merge-tool.js", "editor-strip.js", "chain.js", "folder-row.js", "desk.js", "move-log.js", "git-graph.js", "playground-summary.js", "playground-picture.js", "playground-screen.js"],
   ["PlaygroundScreen", "PlaygroundSummary", "createGameApi"],
 );
 
@@ -25,10 +25,11 @@ function screen({ playground = Pg.playground(), lab = Pg.observation(), route = 
   });
   const shells = { attached: [], detached: 0 };
   const playTerminals = {
-    attach: (person, host, started, onTitle) => {
+    attach: (person, host, started, onTitle, onClose) => {
       shells.attached.push([person, started]);
       shells[person] = host;
       shells.titles = { ...shells.titles, [person]: onTitle };
+      shells.closes = { ...shells.closes, [person]: onClose };
     },
     keys: (person, keys) => (shells.keys = [...(shells.keys || []), [person, keys]]),
     detach: () => (shells.detached += 1),
@@ -455,4 +456,24 @@ test("a view under More views names itself on the More button", async () => {
   assert.equal(run.q(".pg-more-button").textContent, "More: Graph");
   run.click(".pg-tab[data-view=\"chain\"]");
   assert.equal(run.q(".pg-more-button").textContent, "More views");
+});
+
+
+test("the game's merge tool in Alex's terminal opens its panel above that terminal, for Alex's file; Write and Cancel go to Alex", async () => {
+  const lab = Pg.observation({ alex: Pg.person({ marked: [Pg.marked()] }) });
+  const run = screen({ playground: Pg.playground({ start: "conflict" }), lab });
+  await run.clock.advance(0);
+  const panel = () => run.q(".pg-term[data-who=\"alex\"] .mtool");
+  assert.ok(panel().hidden);
+  run.shells.titles.alex("firstcommit-mergetool checklist.txt");
+  assert.equal(panel().hidden, false);
+  assert.ok(run.q(".pg-term[data-who=\"you\"] .mtool").hidden);
+  run.q(".pg-term[data-who=\"alex\"] .mtool .keep-pick[data-choice=\"yours\"]").dispatchEvent(makeEvent("click"));
+  run.q(".pg-term[data-who=\"alex\"] .mtool .keep-write").dispatchEvent(makeEvent("click"));
+  await settle();
+  assert.deepEqual(run.calls("/api/playground/resolve").map((call) => call.body), [{ person: "alex", file: "checklist.txt", read: Pg.marked().read, choices: ["yours"] }]);
+  run.q(".pg-term[data-who=\"alex\"] .mtool-cancel").dispatchEvent(makeEvent("click"));
+  assert.deepEqual(run.shells.keys, [["alex", "\x03"]]);
+  run.shells.closes.alex();
+  assert.ok(panel().hidden);
 });

@@ -517,6 +517,22 @@ const GuideText = (function () {
       conflict: true,
     },
     {
+      command: "git mergetool",
+      picture: {
+        before: desk({ folder: [{ name: "checklist.txt", state: "conflict" }], staging: [] }),
+        after: desk({ folder: [{ name: "checklist.txt", state: "clean" }], staging: [{ name: "checklist.txt", fresh: true }] }),
+      },
+      runs: ["mergetool"],
+      mistake: {
+        en: "Running it with no file in conflict: Git says No files need merging and opens no tool. It works only on files a merge left in conflict.",
+        es: "Ejecutarlo sin ningún archivo en conflicto: Git dice No files need merging y no abre ninguna herramienta. Solo funciona con los archivos que un merge dejó en conflicto.",
+      },
+      lessons: ["git mergetool"],
+      playground: { start: "conflict", view: "conflict", try: "git mergetool" },
+      related: ["git restore --theirs <file>", "git commit --no-edit", "git merge --abort"],
+      conflict: true,
+    },
+    {
       command: "git commit --no-edit",
       picture: {
         before: chain([commit("d", ["b"], { who: "alex" }), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("alex-route", "d"), branch("main", "c")]),

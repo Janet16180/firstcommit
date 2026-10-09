@@ -398,3 +398,27 @@ def test_a_damaged_pull_request_file_is_a_save_error(tmp_path: Path, key: str, v
     path.write_text(json.dumps({"pulls": [{**PULL, key: value}]}))
     with pytest.raises(save.SaveError, match=key):
         save.load_pulls(path)
+
+
+def test_the_games_temporary_folder_is_made_in_its_home_and_kept(game_home: Path) -> None:
+    folder = save.ensure_tmp()
+    (folder / "mine.txt").write_text("kept\n")
+    assert save.ensure_tmp() == folder == game_home / "tmp"
+    assert (folder / "mine.txt").read_text() == "kept\n"
+
+
+def test_removing_mergetool_leftovers_deletes_only_git_mergetools_own_folders(game_home: Path) -> None:
+    folder = save.ensure_tmp()
+    left = folder / "git-mergetool-Xx5pBs"
+    left.mkdir()
+    (left / "launch_BACKUP_1899526.txt").write_text("<<<<<<< HEAD\n")
+    (folder / "notes.txt").write_text("mine\n")
+    (folder / "git-mergetool.txt").write_text("not a folder git made\n")
+    save.remove_mergetool_leftovers()
+    save.remove_mergetool_leftovers()
+    assert sorted(entry.name for entry in folder.iterdir()) == ["git-mergetool.txt", "notes.txt"]
+
+
+def test_removing_mergetool_leftovers_tolerates_a_home_without_a_temporary_folder(game_home: Path) -> None:
+    save.remove_mergetool_leftovers()
+    assert not (game_home / "tmp").exists()

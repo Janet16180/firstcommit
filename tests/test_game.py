@@ -428,6 +428,14 @@ def test_in_dev_mode_a_level_in_progress_shows_its_last_hints_lines_and_its_answ
     active = save.load_active()
     assert active is not None and solution["lines"] == game.solution_lines(sample_level, active["state"])
     assert set(solution["answers"]) == {step.id for step in sample_level.quest if isinstance(step, (kit.AnswerStep, kit.ChoiceStep))}
+    assert solution["picks"] == {}
+
+
+def test_in_dev_mode_a_level_that_runs_git_mergetool_shows_the_merge_panels_picks(game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv(game.DEV_VARIABLE, "1")
+    game.start("conflict-mergetool")
+    solution = game.level("conflict-mergetool")["solution"]
+    assert solution is not None and solution["picks"] == {"launch.txt": ["theirs", "both"]}
 
 
 def test_in_dev_mode_an_answer_the_lab_cannot_give_yet_is_none_until_it_can(game_home: Path, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -2057,6 +2065,12 @@ def test_a_shell_environment_comes_with_the_game_git_config_it_names(sample_leve
     assert Path(env["GIT_CONFIG_GLOBAL"]).read_text() == "[user]\n\tname = Ada\n"
 
 
+def test_a_shell_environment_comes_with_the_temporary_folder_it_names(sample_level: runner.Level, game_home: Path) -> None:
+    env = game.shell_environment({})
+    assert Path(env["TMPDIR"]) == game_home / save.TMP_FOLDER
+    assert Path(env["TMPDIR"]).is_dir()
+
+
 def test_the_game_hands_the_interfaces_the_save_error_and_the_home() -> None:
     assert game.SaveError is save.SaveError
     assert game.home is save.home
@@ -2393,3 +2407,47 @@ def test_in_two_halves_the_pull_that_brings_alexs_half_plays_the_launch_moment(g
     type_lines(game_home, ("git pull -q", kit.type_line(lab.project, "git pull -q")["status"]))
     said = game.observe()["reactions"]
     assert [(reaction["line"], reaction["moment"]) for reaction in said] == [("git pull -q", "launch")]
+
+
+def test_the_merge_tool_speaks_the_players_language_and_hands_an_answered_file_back_to_git(game_home: Path, tmp_path: Path, monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]) -> None:
+    monkeypatch.chdir(tmp_path)
+    Path("launch.txt").write_text("Window: 05:30\n")
+    game.set_language("es")
+    assert game.merge_tool("launch.txt") == 0
+    assert capsys.readouterr().out == "launch.txt ya no tiene marcadores de conflicto: Git lo agrega al staging area tal como está.\n"
+
+
+def test_observing_a_level_reads_each_file_in_conflict_as_the_merge_panel_shows_it(game_home: Path) -> None:
+    game.start("conflict-collision")
+    assert game.observe()["marked"] == []
+    project = runner.lab_of("conflict-collision").project
+    gitcmd.run(project, "merge", "--no-edit", "scout")
+    (marked,) = game.observe()["marked"]
+    assert marked == markers.marked("docking.txt", (project / "docking.txt").read_bytes())
+
+
+def test_the_merge_panel_of_a_level_writes_the_chosen_sides_into_the_levels_file(game_home: Path) -> None:
+    game.start("conflict-collision")
+    project = runner.lab_of("conflict-collision").project
+    gitcmd.run(project, "merge", "--no-edit", "scout")
+    (marked,) = game.observe()["marked"]
+    resolved = game.resolve("docking.txt", marked["read"], ["theirs"])["file"]
+    assert (project / "docking.txt").read_text() == "Dock at bay 4\n"
+    assert resolved == markers.marked("docking.txt", b"Dock at bay 4\n")
+
+
+def test_the_merge_panel_of_a_level_refuses_a_changed_file_wrong_choices_a_file_not_in_conflict_and_no_level(game_home: Path) -> None:
+    with pytest.raises(game.NotPlayingError):
+        game.resolve("docking.txt", "0" * 64, ["yours"])
+    game.start("conflict-collision")
+    project = runner.lab_of("conflict-collision").project
+    gitcmd.run(project, "merge", "--no-edit", "scout")
+    (marked,) = game.observe()["marked"]
+    with pytest.raises(game.WrongChoicesError):
+        game.resolve("docking.txt", marked["read"], ["yours", "theirs"])
+    with pytest.raises(game.UnknownIdError):
+        game.resolve("notes.txt", marked["read"], ["yours"])
+    (project / "docking.txt").write_text("Dock at bay 9\n")
+    with pytest.raises(game.FileChangedError):
+        game.resolve("docking.txt", marked["read"], ["yours"])
+    assert (project / "docking.txt").read_text() == "Dock at bay 9\n"

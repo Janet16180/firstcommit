@@ -123,6 +123,9 @@ def build_parser() -> argparse.ArgumentParser:
     reset_parser.add_argument("--yes", action="store_true", help="really erase everything")
     reset_parser.set_defaults(run=reset)
     commands.add_parser("doctor", help="check that this machine can run the game").set_defaults(run=doctor)
+    tool_parser = commands.add_parser("mergetool")
+    tool_parser.add_argument("file", help="the file in conflict, as git mergetool names it")
+    tool_parser.set_defaults(run=merge_tool)
     parser.set_defaults(run=serve, port=DEFAULT_PORT)
     return parser
 
@@ -193,6 +196,23 @@ def shell(args: argparse.Namespace) -> int:
     env = {**game.shell_environment(terminal.player_env(os.environ)), "PWD": folder}
     print("This is the game's shell: git here uses the game's own settings, never yours. Type `exit` to leave.", flush=True)
     return subprocess.run(game.shell_command(), cwd=folder, env=env, check=False).returncode
+
+
+def merge_tool(args: argparse.Namespace) -> int:
+    """
+    Be the game's merge tool for one file: ``git mergetool`` runs this, not the player, so it is left out of ``--help``.
+
+    Parameters
+    ----------
+    args : argparse.Namespace
+        ``file``: the file in conflict, as git names it (``$MERGED``).
+
+    Returns
+    -------
+    int
+        0 when the file was answered, 1 when not (`firstcommit.game.merge_tool`).
+    """
+    return game.merge_tool(args.file)
 
 
 def status(args: argparse.Namespace) -> int:

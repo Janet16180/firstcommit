@@ -8,7 +8,7 @@ from typing import Any
 
 import pytest
 
-from firstcommit import gitcmd, kit, records, runner
+from firstcommit import gitcmd, kit, records, runner, save
 from sample_levels import cargo_sample, cargo_sample_es
 
 SPANISH = ["TITLE", "BRIEFING", "HINTS", "DEBRIEF", "CARD", "SCENE", "STEPS", "HELLO_STAGED", "STAGED", "NOT_STAGED", "RIGHT", "LOOK", "COMMITTED", "NOT_COMMITTED"]
@@ -431,6 +431,29 @@ def test_removing_the_labs_deletes_them_all_and_tolerates_none(game_home: Path) 
     runner.remove_labs()
     runner.remove_labs()
     assert not (game_home / "labs").exists()
+
+
+def test_removing_the_labs_also_removes_what_a_killed_git_mergetool_left_in_the_games_temporary_folder(game_home: Path) -> None:
+    left = save.ensure_tmp() / "git-mergetool-Ab12Cd"
+    left.mkdir()
+    (left / "launch_LOCAL_42.txt").write_text("mine\n")
+    runner.start_lab(runner.load(cargo_sample))
+    assert not left.exists()
+    left.mkdir()
+    runner.remove_labs()
+    assert not left.exists()
+
+
+def test_a_level_names_the_merge_panels_picks_for_its_tests_and_none_by_default() -> None:
+    assert runner.load(level_module()).picks == {}
+    level = runner.load(level_module(PICKS={"launch.txt": ("theirs", "both")}))
+    assert level.picks == {"launch.txt": ("theirs", "both")}
+
+
+@pytest.mark.parametrize("picks", [["theirs"], {"launch.txt": "theirs"}, {"launch.txt": ("mine",)}, {3: ("yours",)}, {"launch.txt": ()}])
+def test_the_merge_panels_picks_are_one_side_per_block_by_file(picks: Any) -> None:
+    with pytest.raises(ValueError, match="cargo_sample.*PICKS"):
+        runner.load(level_module(PICKS=picks))
 
 
 def test_a_level_is_a_challenge_only_when_it_says_so() -> None:

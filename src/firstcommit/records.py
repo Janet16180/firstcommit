@@ -394,11 +394,13 @@ class FileTexts(TypedDict):
     index: str | None
 
 
-Seen = Literal[View, "band", "tape"]
+Seen = Literal[View, "band", "tape", "mergetool"]
 """
 What the page marks seen once its birth has played: a view; ``band``, the crew view flattened
-into Alex's band above another view (born in 5-3); or ``tape``, the black box's tape of HEAD's
-moves under history (born in 7-3). No level opens on ``band`` or ``tape``.
+into Alex's band above another view (born in 5-3); ``tape``, the black box's tape of HEAD's
+moves under history (born in 7-3); or ``mergetool``, the game's merge tool panel, whose first
+opening Rama explains git's words for the two sides (7-4). No level opens on ``band``, ``tape``
+or ``mergetool``.
 """
 
 Language = Literal["en", "es"]

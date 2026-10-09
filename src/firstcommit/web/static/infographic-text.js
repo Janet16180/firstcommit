@@ -228,6 +228,11 @@ const InfographicText = Object.freeze({
             taught: { chapter: "conflict" },
           },
           {
+            command: "git mergetool",
+            what: { en: "Opens a merge tool on each file in conflict; when the tool reports success, Git adds the file. In the game, the game's own panel.", es: "Abre una herramienta de merge en cada archivo en conflicto; cuando la herramienta informa que terminó bien, Git agrega el archivo. En el juego, el panel del propio juego." },
+            taught: { chapter: "conflict" },
+          },
+          {
             command: "git commit --no-edit",
             what: { en: "Finishes a merge with the message Git prepared, without opening an editor.", es: "Termina un merge con el mensaje que preparó Git, sin abrir un editor." },
             taught: { chapter: "conflict" },

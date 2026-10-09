@@ -46,6 +46,10 @@ LABS_FOLDER = "labs"
 PLAYGROUND_FILE = "playground.json"
 PLAYGROUND_FOLDER = "playground"
 PLAYGROUND_SHELLS_FOLDER = "playground-shells"
+TMP_FOLDER = "tmp"
+"""The game shells' ``TMPDIR`` (`firstcommit.gitcmd.isolation`): where ``git mergetool`` keeps its temporary copies."""
+MERGETOOL_LEFTOVERS = "git-mergetool-*"
+"""The folders ``git mergetool`` makes in ``TMPDIR`` (``mktemp -d``), left behind when it is killed half-way."""
 START_OVER = (
     "A save written by an older version of the game reads this way too. To start over, run "
     "`firstcommit reset --yes`, or the `reset` command of the script that starts the game; either erases your progress."
@@ -457,6 +461,30 @@ def ensure_playground_shell(person: Who) -> Path:
     folder.mkdir(parents=True, exist_ok=True)
     (folder / HUSHLOGIN_FILE).touch()
     return folder
+
+
+def ensure_tmp() -> Path:
+    """
+    Make the game shells' temporary folder, if it is missing.
+
+    ``git mergetool`` needs it to exist: it makes its own folder there with ``mktemp -d``.
+
+    Returns
+    -------
+    Path
+        ``<home>/tmp``.
+    """
+    folder = home() / TMP_FOLDER
+    folder.mkdir(parents=True, exist_ok=True)
+    return folder
+
+
+def remove_mergetool_leftovers() -> None:
+    """Remove the folders a killed ``git mergetool`` left in the game's temporary folder, and nothing else there."""
+    folder = home() / TMP_FOLDER
+    for left in sorted(folder.glob(MERGETOOL_LEFTOVERS)) if folder.is_dir() else []:
+        if left.is_dir() and not left.is_symlink():
+            sandbox.remove_tree(left, home())
 
 
 def erase() -> None:

@@ -165,3 +165,12 @@ test("a file still listed with no blocks left (an editor took the markers out, g
   assert.match(run.q(".keep-message").textContent, /^Next: type git add checklist.txt/);
   assert.equal(run.q(".keep-write"), null);
 });
+
+
+test("for the game's merge tool the panel offers no editor and says the tool takes it from there", () => {
+  const made = KeepPanel.create({ onWrite: async () => ({}), onType: () => {}, chips: false, next: "tool.next" });
+  made.update({ person: "you", marked: [Pg.marked()], texts: [], editing: null });
+  assert.equal(made.element.querySelector(".keep-chip"), null);
+  made.update({ person: "you", marked: [{ ...Pg.marked(), parts: [{ kind: "clean", lines: ["done"] }] }], texts: [], editing: null });
+  assert.match(made.element.querySelector(".keep-message").textContent, /merge tool sees no markers left in checklist\.txt/);
+});

@@ -20,7 +20,7 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from pathlib import Path
 from types import MappingProxyType, ModuleType
-from typing import Any
+from typing import Any, get_args
 
 from firstcommit import gitcmd, kit, levels, reactions, save
 from firstcommit.chapters import CHAPTERS, PLAY_ORDER
@@ -84,7 +84,10 @@ class Level:
     it shows (`kit.pictures`) and ``target`` a challenge's target chart, each None for a level
     without (the level then keeps its view and tabs); ``actions`` is the module's
     ``QUEST_ACTIONS``, the player's part of each step, read by the level tests and by dev mode;
-    ``answer`` the module's ``ANSWER`` for a level that asks its own question, else None. ``challenge``
+    ``answer`` the module's ``ANSWER`` for a level that asks its own question, else None;
+    ``picks`` the module's ``PICKS``, the merge panel's clicks of a level whose solution runs
+    ``git mergetool`` (one side per conflict block, by file), read by the level tests and by dev
+    mode as ``QUEST_ACTIONS`` is, and empty for a level without. ``challenge``
     marks a level whose quest is goals met in any order, with no guidance. ``texts`` holds every
     text the player reads, by language; the cards, scene frames and steps keep the English ones
     the module wrote, with what is not text (the command, the pictures, the checks).
@@ -104,6 +107,7 @@ class Level:
     target: Target | None
     actions: Mapping[str, QuestAction]
     answer: Answer | None
+    picks: Mapping[str, tuple[kit.Keep, ...]]
     reactions: tuple[kit.ReactionRule, ...]
     events: tuple[kit.LevelEvent, ...]
     challenge: bool
@@ -147,6 +151,7 @@ def load(module: ModuleType, spanish: ModuleType | None = None) -> Level:
     target = getattr(module, "TARGET", None)
     actions = getattr(module, "QUEST_ACTIONS", {})
     answer = getattr(module, "ANSWER", None)
+    picks = getattr(module, "PICKS", {})
     level_reactions = getattr(module, "REACTIONS", [])
     events = getattr(module, "EVENTS", [])
     challenge = getattr(module, "CHALLENGE", False)
@@ -167,6 +172,7 @@ def load(module: ModuleType, spanish: ModuleType | None = None) -> Level:
             or (None if isinstance(tape, bool) else "TAPE must be True or False")
             or (None if isinstance(actions, dict) and all(callable(action) for action in actions.values()) else "QUEST_ACTIONS must map step ids to functions")
             or (None if answer is None or (callable(answer) and question) else "ANSWER must be a function, for a level with a QUESTION")
+            or _picks_problem(picks)
             or _reactions_problem(level_reactions)
             or _quest_problem(quest)
             or _pictures_problem(pictures, quest)
@@ -204,6 +210,7 @@ def load(module: ModuleType, spanish: ModuleType | None = None) -> Level:
         target=target,
         actions=MappingProxyType(dict(actions)),
         answer=answer,
+        picks=MappingProxyType({file: tuple(sides) for file, sides in picks.items()}),
         reactions=tuple(level_reactions),
         events=tuple(events),
         challenge=challenge,
@@ -213,6 +220,27 @@ def load(module: ModuleType, spanish: ModuleType | None = None) -> Level:
         check=values["check"],
         solve=values["solve"],
     )
+
+
+def _picks_problem(picks: Any) -> str | None:
+    """
+    Check a level's merge panel picks: one side or more per file, each ``"yours"``, ``"theirs"`` or ``"both"``.
+
+    Parameters
+    ----------
+    picks : Any
+        The module's ``PICKS``.
+
+    Returns
+    -------
+    str | None
+        What is wrong, or None.
+    """
+    sides = get_args(kit.Keep)
+    fine = isinstance(picks, dict) and all(
+        isinstance(file, str) and isinstance(chosen, (tuple, list)) and chosen and all(side in sides for side in chosen) for file, chosen in picks.items()
+    )
+    return None if fine else f"PICKS must map file names to sides, each one of {', '.join(sides)}"
 
 
 def step_text(step: kit.Step) -> kit.StepText:
@@ -929,5 +957,6 @@ def start_lab(level: Level) -> kit.State:
 
 
 def remove_labs() -> None:
-    """Remove every lab, even one whose folders a player locked."""
+    """Remove every lab, even one whose folders a player locked, and what a killed ``git mergetool`` left in the game's temporary folder."""
     sandbox.remove_tree(labs_folder(), save.home())
+    save.remove_mergetool_leftovers()

@@ -16,22 +16,26 @@
  * Your terminal is on the right, and Alex's under it while Alex is shown (Show or Hide Alex's
  * terminal, absent where there is no mothership); on a phone one shows at a time, chosen by the
  * same switch that chooses whose repository the picture draws. While an editor runs in a
- * terminal (its title says so), the editor strip stands above it.
+ * terminal (its title says so), the editor strip stands above it; while the game's merge tool
+ * waits in one (`git mergetool`), its panel (merge-tool.js) stands above it, for that person's
+ * repository.
  *
  * create(ctx, route) {element, dispose()}: ctx = {game, timers, page, reducedMotion,
- *   playTerminals: {attach(person, host, started, onTitle), detach(), type(person, text),
- *   keys(person, keys)}}, the shells kept by the page for
+ *   playTerminals: {attach(person, host, started, onTitle(title, at), onClose()), detach(),
+ *   type(person, text), keys(person, keys)}}, the shells kept by the page for
  *   the start built at `started`; route the playground's address (Route.parse): `picture` names a
  *   view to open on.
  */
 
-/* global Dom, Strings, ArtSprites, Progress, Dialog, Typed, Polling, EditorStrip, PlaygroundSummary, PlaygroundPicture */
+/* global Dom, Strings, ArtSprites, Progress, Dialog, Typed, Polling, EditorStrip, MergeTool, PlaygroundSummary, PlaygroundPicture */
 /* exported PlaygroundScreen */
 
 const PlaygroundScreen = (function () {
   const { el } = Dom;
   const { t } = Strings;
   const POLL_MS = 1500;
+  /* Ctrl-C, as the terminal sends it: the game's merge tool reads it as Cancel. */
+  const CTRL_C = "\x03";
   const { MAIN, MORE, PER_PERSON } = PlaygroundPicture;
   /* The views that need a mothership: both draw it. */
   const SHARED = ["history", "crew"];
@@ -89,7 +93,7 @@ const PlaygroundScreen = (function () {
     ui.terms.classList.toggle("is-two", shown);
     if (shown && !screen.alexAttached) {
       screen.alexAttached = true;
-      ctx.playTerminals.attach("alex", ui.frames.alex.host, screen.started, titled(screen, "alex"));
+      ctx.playTerminals.attach("alex", ui.frames.alex.host, screen.started, titled(screen, "alex"), () => ui.frames.alex.tool.closed());
     }
     if (ui.alexToggle) {
       ui.alexToggle.setAttribute("aria-checked", String(shown));
@@ -169,6 +173,7 @@ const PlaygroundScreen = (function () {
     screen.observation = bySide(screen, observation);
     for (const person of ["you", "alex"]) {
       const side = observation[person];
+      if (side) screen.ui.frames[person].tool.update({ person, marked: side.marked, texts: side.texts });
       if (side && Typed.gitCommands(side.typed).includes("reflog")) screen.reflogRead[person] = true;
     }
     const ran = observation.you.typed.some((command) => command.line.trim() === (screen.tryLine || "").trim());
@@ -224,19 +229,29 @@ const PlaygroundScreen = (function () {
       el("span", { class: "pg-whose-label" }, t(label)), button("you"), button("alex"));
   }
 
-  /* A terminal's frame: its name, the editor strip while an editor runs in it, and its shell. */
+  /* A terminal's frame: its name, the editor strip while an editor runs in it, the merge tool's
+     panel while the game's merge tool waits in it, and its shell. */
   function frame(screen, person) {
     const host = el("div", { class: "pg-term-host" });
     const strip = EditorStrip.create({ onKeys: (keys) => screen.ctx.playTerminals.keys(person, keys), timers: screen.ctx.timers });
+    const tool = MergeTool.create({
+      timers: screen.ctx.timers,
+      onWrite: async ({ file, read, choices }) => {
+        await screen.ctx.game.playgroundResolve({ person, file, read, choices });
+        await tick(screen);
+      },
+      onCancel: () => screen.ctx.playTerminals.keys(person, CTRL_C),
+    });
     const line = person === "you" ? screen.tryLine : null;
     const chip = line ? el("button", { type: "button", class: "pg-try", onclick: () => screen.ctx.playTerminals.type("you", line) }, t("pg.try", { line })) : null;
-    const element = el("section", { class: "pg-term termcol", "data-who": person, "aria-label": t(`pg.term.${person}`) }, el("h2", { class: "pg-term-name" }, t(`pg.term.${person}`)), strip.element, chip, host);
-    return { host, strip, chip, element };
+    const element = el("section", { class: "pg-term termcol", "data-who": person, "aria-label": t(`pg.term.${person}`) }, el("h2", { class: "pg-term-name" }, t(`pg.term.${person}`)), strip.element, tool.element, chip, host);
+    return { host, strip, tool, chip, element };
   }
 
   /* What the terminal's title says runs in it: the strip shows the editor's keys, and the
      conflict panel waits while the editor has a file. */
-  const titled = (screen, person) => (title) => {
+  const titled = (screen, person) => (title, at) => {
+    screen.ui.frames[person].tool.title(title, at);
     screen.editing[person] = EditorStrip.parse(title);
     screen.ui.frames[person].strip.show(screen.editing[person]);
     if (screen.picture) refresh(screen);
@@ -305,7 +320,7 @@ const PlaygroundScreen = (function () {
       el("div", { class: "pg-left" }, viewRow(screen), ui.whose, pictured(screen)),
       termColumn(screen));
     screen.element.replaceChildren(head(screen), ui.down, ui.body);
-    screen.ctx.playTerminals.attach("you", ui.frames.you.host, screen.started, titled(screen, "you"));
+    screen.ctx.playTerminals.attach("you", ui.frames.you.host, screen.started, titled(screen, "you"), () => ui.frames.you.tool.closed());
     drawPicture(screen);
     screen.poll = Polling.start({ tick: () => tick(screen), intervalMs: POLL_MS, timers: screen.ctx.timers, page: screen.ctx.page });
   }

@@ -142,6 +142,94 @@ def test_write_json_syncs_the_new_file_before_the_replace_and_the_folder_after_i
     assert events == [("sync", {"xp": 2}), ("replace", path), ("sync", "folder")]
 
 
+def test_replace_bytes_writes_the_new_bytes_and_leaves_nothing_else_behind(tmp_path: Path) -> None:
+    path = tmp_path / "launch.txt"
+    path.write_bytes(b"<<<<<<< HEAD\nold\n")
+    store.replace_bytes(path, b"new\n")
+    assert path.read_bytes() == b"new\n"
+    assert [entry.name for entry in tmp_path.iterdir()] == ["launch.txt"]
+
+
+def test_replace_bytes_keeps_the_files_permission_bits(tmp_path: Path) -> None:
+    path = tmp_path / "run.sh"
+    path.write_bytes(b"old\n")
+    path.chmod(0o751)
+    store.replace_bytes(path, b"new\n")
+    assert path.stat().st_mode & 0o7777 == 0o751
+
+
+def test_replace_bytes_swaps_the_file_whole_so_a_reader_never_sees_half_of_it(tmp_path: Path) -> None:
+    path = tmp_path / "big.txt"
+    old, new = b"a" * 400_000, b"b" * 400_000
+    path.write_bytes(old)
+    seen: set[bytes] = set()
+    stop = threading.Event()
+
+    def read() -> None:
+        while not stop.is_set():
+            seen.add(path.read_bytes())
+
+    reader = threading.Thread(target=read)
+    reader.start()
+    try:
+        for _ in range(10):
+            store.replace_bytes(path, new)
+            store.replace_bytes(path, old)
+    finally:
+        stop.set()
+        reader.join()
+    assert seen <= {old, new}
+
+
+def test_replace_bytes_syncs_the_new_file_before_the_replace_and_the_folder_after_it(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "launch.txt"
+    path.write_bytes(b"old\n")
+    events: list[tuple[str, Any]] = []
+    real_fsync, real_replace = os.fsync, os.replace
+
+    def fsync(fd: int) -> None:
+        synced = Path(os.readlink(f"/proc/self/fd/{fd}"))
+        events.append(("sync", "folder" if synced == tmp_path.resolve() else synced.read_bytes()))
+        real_fsync(fd)
+
+    def replace(source: str | os.PathLike[str], target: str | os.PathLike[str]) -> None:
+        events.append(("replace", Path(target)))
+        real_replace(source, target)
+
+    monkeypatch.setattr(os, "fsync", fsync)
+    monkeypatch.setattr(os, "replace", replace)
+    store.replace_bytes(path, b"new\n")
+    assert events == [("sync", b"new\n"), ("replace", path), ("sync", "folder")]
+
+
+def test_replace_bytes_leaves_the_old_file_and_no_temporary_one_when_the_replace_fails(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    path = tmp_path / "launch.txt"
+    path.write_bytes(b"old\n")
+
+    def refuse(source: str | os.PathLike[str], target: str | os.PathLike[str]) -> None:
+        raise PermissionError("refused")
+
+    monkeypatch.setattr(os, "replace", refuse)
+    with pytest.raises(PermissionError):
+        store.replace_bytes(path, b"new\n")
+    assert path.read_bytes() == b"old\n"
+    assert [entry.name for entry in tmp_path.iterdir()] == ["launch.txt"]
+
+
+def test_replace_bytes_replaces_a_symbolic_link_itself_and_never_writes_through_it(tmp_path: Path) -> None:
+    target = tmp_path / "outside.txt"
+    target.write_bytes(b"keep\n")
+    link = tmp_path / "launch.txt"
+    link.symlink_to(target)
+    store.replace_bytes(link, b"new\n")
+    assert target.read_bytes() == b"keep\n"
+    assert not link.is_symlink() and link.read_bytes() == b"new\n"
+
+
 def test_lock_creates_a_missing_home(tmp_path: Path) -> None:
     home = tmp_path / "new" / "home"
     with store.lock(home):

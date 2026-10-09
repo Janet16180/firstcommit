@@ -5,7 +5,7 @@ import pytest
 from hypothesis import given
 from hypothesis import strategies as st
 
-from firstcommit import kit, lab, markup, playground, repomap
+from firstcommit import gitcmd, kit, lab, markup, playground, repomap
 
 FULL = "ce013625030ba8dba906f756967f9e9ca394464a"
 
@@ -201,6 +201,19 @@ def test_a_typing_action_types_its_line_in_the_project_and_gives_no_answer(tmp_p
     typed: list[kit.Command] = []
     assert kit.typing("touch made.txt")(lab, {}, typed) is None
     assert typed == [{"line": "touch made.txt", "status": 0}] and (lab.project / "made.txt").exists()
+
+
+def test_a_typing_action_with_picks_plays_the_merge_panel_while_git_mergetool_waits(game_home: Path) -> None:
+    lab = kit.Lab(game_home / "labs" / "tool")
+    lab.root.mkdir(parents=True)
+    gitcmd.ensure_config()
+    for line in ["git init -q project", "cd project && echo 'Dock at bay 2' > d.txt && git add d.txt && git commit -qm Start && git switch -qc scout && echo 'Dock at bay 4' > d.txt && git commit -qam Four && git switch -q main && echo 'Dock at bay 3' > d.txt && git commit -qam Three"]:
+        assert kit.type_line(lab.root, line)["status"] == 0
+    kit.type_line(lab.project, "git merge --no-edit scout")
+    typed: list[kit.Command] = []
+    assert kit.typing("git mergetool", picks={"d.txt": ("theirs",)})(lab, {}, typed) is None
+    assert typed == [{"line": "git mergetool", "status": 0}]
+    assert (lab.project / "d.txt").read_text() == "Dock at bay 4\n"
 
 
 def test_a_picking_action_answers_its_option_and_types_nothing(tmp_path: Path) -> None:

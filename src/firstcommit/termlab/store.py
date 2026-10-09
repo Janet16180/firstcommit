@@ -1,9 +1,11 @@
-"""Save helpers: a game's home directory, a lock on it, and JSON files replaced atomically."""
+"""Save helpers: a game's home directory, a lock on it, and files replaced atomically, JSON ones included."""
 
 import contextlib
 import fcntl
 import json
 import os
+import secrets
+import stat
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
@@ -115,12 +117,44 @@ def write_json(path: Path, data: dict[str, Any]) -> None:
     """
     text = json.dumps(data, indent=2, sort_keys=True)
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_name(path.name + ".tmp")
-    with open(tmp, "w") as handle:
-        handle.write(text)
-        handle.flush()
-        os.fsync(handle.fileno())
-    os.replace(tmp, path)
+    replace_bytes(path, text.encode())
+
+
+def replace_bytes(path: Path, data: bytes) -> None:
+    """
+    Atomically and durably replace a file with new bytes.
+
+    The bytes go to a new temporary file in the same folder (a dot name with a random part), which
+    is synced to disk and then renamed over the file, and the folder is synced after. A reader
+    sees the old file or the new one whole, never part of either; a crash leaves one of them. A
+    regular file keeps its permission bits; a symbolic link at `path` is replaced by the file,
+    never written through. If anything fails, the temporary file is removed and the old file stays.
+
+    Parameters
+    ----------
+    path : Path
+        File to replace (or create) in an existing folder.
+    data : bytes
+        Its new content.
+    """
+    try:
+        kept = os.lstat(path)
+        mode = stat.S_IMODE(kept.st_mode) if stat.S_ISREG(kept.st_mode) else None
+    except FileNotFoundError:
+        mode = None
+    tmp = path.with_name(f".{path.name}.{secrets.token_hex(6)}")
+    descriptor = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL | os.O_NOFOLLOW, 0o666)
+    try:
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(data)
+            handle.flush()
+            if mode is not None:
+                os.fchmod(handle.fileno(), mode)
+            os.fsync(handle.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
     folder = os.open(path.parent, os.O_RDONLY)
     try:
         os.fsync(folder)

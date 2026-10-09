@@ -1104,3 +1104,36 @@ so a base that moved meanwhile is not overwritten. *Re-checked* by `tests/test_p
 | the merge commit's message was "Merge pull request #<n> from moonbase/<head>", then a blank line and the title | "The default message includes the pull request number and title. For example, `Merge pull request #123 from patch-1`." ([Configuring commit merging for pull requests](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/configuring-commit-merging-for-pull-requests)) | **fixed** to the documented form, "Merge pull request #<n> from <head>", then the title. Merge commits on github.com often read "from <owner>/<branch>", but no docs.github.com page I found says so, so the game does not claim it |
 | each open pull request's head mirrored at `refs/pull/<n>/head` | "When you open a pull request, GitHub creates temporary Git references that point to the pull request's head branch" ([Pull requests](https://docs.github.com/en/pull-requests/reference/pull-requests)); the fetch command is `git fetch origin pull/ID/head:BRANCH_NAME`, and "The remote `refs/pull/` namespace is *read-only*." ([Checking out pull requests locally](https://docs.github.com/en/pull-requests/how-tos/review-pull-requests/checking-out-pull-requests-locally)) | kept; the game moves the ref itself (`mirror`), and a level must never let the player push to it |
 | a review whose commit is behind the head was called "outdated" | GitHub uses "outdated" for line comments: "Not using the latest commit SHA may render your comment outdated if a subsequent commit modifies the line" ([REST API endpoints for pull request review comments](https://docs.github.com/en/rest/pulls/comments)); a review approved before new commits is "stale": "Dismiss stale pull request approvals when new commits are pushed", which dismisses "a pull request approval review when a code-modifying commit is pushed to the branch" ([Managing a branch protection rule](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/managing-a-branch-protection-rule)) | **fixed**: `ReviewView.outdated` is now `stale`. Line comments, which 8-2's "Robin's pin turns outdated" needs, are not built yet: they need a path, a line and the rule that a later commit changed that line |
+
+## 7-4 Merge tools (added 2026-10-08)
+
+`conflict-mergetool`, guided, between Collision (7-3) and Docking collision (now 7-5). Design and
+recordings: branch `p2/mergetool-design`, `docs/drafts/mergetool/` (script, storyboard, plan;
+`recorder/record.py` ran git 2.43.0 in a temporary HOME with fixed identities and dates, and
+`recorder/out/<scene>.txt` holds each scene's exact terminal output). The prototype tool there is
+what `firstcommit.mergetool` became.
+
+*Re-checked* by `tests/test_mergetool.py` (real `git mergetool` with the game's tool on a pty:
+Write, Ctrl-C, a hang-up, no conflict), `tests/test_gitcmd.py` (the six settings and `TMPDIR` in
+every shell, the player's own `merge.tool` outranked), `tests/test_commands.py` and
+`tests/test_kit.py` (the panel's picks while the tool waits), and
+`tests/levels/test_conflict_mergetool.py` (the two conflicts, the panel's answer added by git, your
+time, one cargo line, either cargo order, the answer by hand, 7-3's `--theirs` losing the oxygen,
+a commit refused while in conflict, markers added by hand, a wrong answer committed, and only
+`git mergetool` new in the map's order).
+
+| Text | Claim | Evidence |
+|---|---|---|
+| card, debrief, `LOOKED`, Rama's `MERGETOOL_ANSWERED` | `git mergetool` runs the tool `merge.tool` names on each file in conflict and, when the tool reports success, adds the file itself | git-mergetool(1) DESCRIPTION, `merge_file` in `/usr/lib/git-core/git-mergetool` (`git add -- "$MERGED"`); scene 1 (`git status`: "All conflicts fixed", `launch.txt` under "Changes to be committed") |
+| Rama's `MERGETOOL_STOPPED`, the page's Cancel | a tool that ends with failure leaves the file as it was and git says `merge of launch.txt failed` | `mergetool.<tool>.trustExitCode` in git-mergetool(1); `merge_file` (`mv -- "$BACKUP" "$MERGED"`); scenes 3, 14 |
+| Rama's `MERGETOOL_NOTHING` | with no file in conflict git starts no tool: `No files need merging` | `print_noop_and_exit`; scenes 2, 4, 5 |
+| Rama's `MERGETOOL_OTHER` | `--tool` picks another program for one run; vimdiff opens inside the terminal | git-mergetool(1) `--tool`; `git mergetool --tool-help` lists vimdiff ("Use Vim with a custom layout") |
+| `ONE_SIDE`, debrief | `git restore --theirs` keeps the other side of the whole file, so the oxygen line goes | scene 15 |
+| `LATE`, `ONE_CARGO`, `AGAIN` | `git merge --abort` works after the tool added the file, and the merge can be made again | scene 16 |
+| debrief | git keeps `launch.txt.orig` after an answer by default | `mergetool.keepBackup` "Defaults to true" in git-mergetool(1); scene 7 (`?? launch.txt.orig`) |
+| debrief | with no tool set, git picks one it finds and asks "Hit return to start merge resolution tool" | `get_merge_tool` and `merge_file` in git-mergetool; scene 17 (git 2.43 found vimdiff) |
+| debrief | Meld is opened by `git mergetool` once `merge.tool` names it | `git mergetool --tool-help` (git 2.43): `meld` is a valid tool, "requires a graphical session" |
+| debrief | in VS Code the merge editor is usually opened from the conflicted file or the Source Control view, and VS Code can be set as git's merge tool | checked by the lead against https://code.visualstudio.com/docs/sourcecontrol/merge-conflicts ("Resolve in Merge Editor", "Open in Merge Editor" under Merge Changes; Complete Merge stages the file) |
+| the tool's own lines, the panel's footer | the game's tool waits for the panel, takes Ctrl-C as a key, and git's temporary copies go to the game home's `TMPDIR` | `firstcommit.mergetool`, `gitcmd.MERGETOOL_SETTINGS` (`mergetool.writeToTemp`, git-mergetool(1)); scenes 9, 11, 18; `tests/test_mergetool.py` |
+| field guide card `git mergetool` | the transcript is a real run, the panel's pick written while the tool waited | `tests/guide_capture.py` (`mergetool` run), `tests/test_guide_capture.py` |
+

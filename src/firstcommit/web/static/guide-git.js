@@ -133,31 +133,31 @@ const GuideGit = Object.freeze({
     "conflict-commit-both": [
       {
         "command": "git commit --no-edit",
-        "output": "[main 47d6e89] Merge branch 'alex-route'\n"
+        "output": "[main 375dcc3] Merge branch 'alex-route'\n"
       },
       {
         "command": "git log --graph --oneline",
-        "output": "*   47d6e89 Merge branch 'alex-route'\n|\\  \n| * 5f3d6ad Head for Jupiter, pack noodles\n* | 2c7074a Fill the tanks, aim for the Moon\n|/  \n* 048d3a9 Write the launch checklist\n"
+        "output": "*   375dcc3 Merge branch 'alex-route'\n|\\  \n| * 5f3d6ad Head for Jupiter, pack noodles\n* | 2c7074a Fill the tanks, aim for the Moon\n|/  \n* 048d3a9 Write the launch checklist\n"
       }
     ],
     "conflict-commit-theirs": [
       {
         "command": "git commit --no-edit",
-        "output": "[main 4791f4c] Merge branch 'alex-route'\n"
+        "output": "[main b7862fe] Merge branch 'alex-route'\n"
       },
       {
         "command": "git log --graph --oneline",
-        "output": "*   4791f4c Merge branch 'alex-route'\n|\\  \n| * 5f3d6ad Head for Jupiter, pack noodles\n* | 2c7074a Fill the tanks, aim for the Moon\n|/  \n* 048d3a9 Write the launch checklist\n"
+        "output": "*   b7862fe Merge branch 'alex-route'\n|\\  \n| * 5f3d6ad Head for Jupiter, pack noodles\n* | 2c7074a Fill the tanks, aim for the Moon\n|/  \n* 048d3a9 Write the launch checklist\n"
       }
     ],
     "conflict-commit-yours": [
       {
         "command": "git commit --no-edit",
-        "output": "[main dcc52e4] Merge branch 'alex-route'\n"
+        "output": "[main e07c68d] Merge branch 'alex-route'\n"
       },
       {
         "command": "git log --graph --oneline",
-        "output": "*   dcc52e4 Merge branch 'alex-route'\n|\\  \n| * 5f3d6ad Head for Jupiter, pack noodles\n* | 2c7074a Fill the tanks, aim for the Moon\n|/  \n* 048d3a9 Write the launch checklist\n"
+        "output": "*   e07c68d Merge branch 'alex-route'\n|\\  \n| * 5f3d6ad Head for Jupiter, pack noodles\n* | 2c7074a Fill the tanks, aim for the Moon\n|/  \n* 048d3a9 Write the launch checklist\n"
       }
     ],
     "conflict-merge": [
@@ -260,6 +260,20 @@ const GuideGit = Object.freeze({
       {
         "command": "git status",
         "output": "On branch main\nnothing to commit, working tree clean\n"
+      }
+    ],
+    "mergetool": [
+      {
+        "command": "git merge alex-route",
+        "output": "Auto-merging checklist.txt\nCONFLICT (content): Merge conflict in checklist.txt\nAutomatic merge failed; fix conflicts and then commit the result.\n"
+      },
+      {
+        "command": "git mergetool",
+        "output": "Merging:\nchecklist.txt\n\nNormal merge conflict for 'checklist.txt':\n  {local}: modified file\n  {remote}: modified file\nWaiting for the merge panel: pick a side for each conflict in checklist.txt, then Write.\nTo stop without changing the file: Cancel in the panel, or Ctrl-C here.\n"
+      },
+      {
+        "command": "git status",
+        "output": "On branch main\nAll conflicts fixed but you are still merging.\n  (use \"git commit\" to conclude merge)\n\nChanges to be committed:\n\tmodified:   checklist.txt\n\n"
       }
     ],
     "pull": [
@@ -427,9 +441,9 @@ const GuideGit = Object.freeze({
       "both": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: full\n3. Shields: on\n4. Course: the Moon\n4. Course: Jupiter\n5. Music: off\n6. Snack: space noodles\n7. Wave goodbye to base\n"
     },
     "head": {
-      "yours": "dcc52e4 2c7074a 5f3d6ad",
-      "theirs": "4791f4c 2c7074a 5f3d6ad",
-      "both": "47d6e89 2c7074a 5f3d6ad"
+      "yours": "e07c68d 2c7074a 5f3d6ad",
+      "theirs": "b7862fe 2c7074a 5f3d6ad",
+      "both": "375dcc3 2c7074a 5f3d6ad"
     }
   }
 });
