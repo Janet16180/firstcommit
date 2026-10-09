@@ -7,36 +7,7 @@ const { installBrowser, load } = require("./load");
 const document = installBrowser();
 const { GuideCard } = load(["dom.js", "strings.js", "places.js", "chain.js", "guide-pictures.js", "guide-card.js"], ["GuideCard"]);
 
-const words = {
-  card: {
-    before: "Before",
-    after: "After",
-    onlyLooks: "Nothing changes: it only looks.",
-    prints: "What git prints",
-    silent: "(prints nothing)",
-    mistake: "Common mistake",
-    taught: "Where you learn it",
-    related: "Related",
-    conflict: "See a conflict, step by step",
-    chainKey: "HEAD marks where you are; a dashed name is your bookmark of the mothership.",
-    showAll: "Show all {count} lines",
-    showLess: "Show fewer lines",
-    tryIt: "Try it in the playground",
-  },
-  pictures: {
-    places: { folder: "Working folder (workshop)", staging: "Staging area (cargo dock)", vault: "Repository (vault)", remote: "Remote (mothership)" },
-    notYet: "not there yet",
-    empty: "empty",
-    head: "HEAD",
-    states: { new: "new", edited: "edited", conflict: "conflict", clean: "saved" },
-    ghost: "ghost",
-    notYours: "mothership only",
-    by: { you: "your commit", alex: "Alex's commit" },
-    marks: { merge: "merge commit", revert: "undoes the one below" },
-    gone: "taken off",
-    mothership: "mothership",
-  },
-};
+const words = require("./guide-words");
 
 const desk = (staged) => ({ kind: "desk", folder: [{ name: "map.txt", state: "new" }], staging: staged ? [{ name: "map.txt" }] : [] });
 const ADD = {
@@ -171,4 +142,127 @@ test("the playground link comes before the pictures, beside where the game teach
   const card = create({ ...ADD, playground: { start: "empty" } });
   const order = [...card.children].map((node) => node.className);
   assert.ok(order.indexOf("gc-actions") < order.indexOf("gc-pictures"));
+});
+
+const chainOf = (head, more = {}) => ({ kind: "chain", commits: [{ id: "plot", parents: ["start"], subject: "Plot the route" }, { id: "start", parents: [], subject: "Start the project" }], names: [{ name: "main", on: "plot", kind: "branch" }], head, ...more });
+const folder = (names) => ({ kind: "desk", folder: names.map((name) => ({ name })) });
+const BRANCH = {
+  ...ADD,
+  command: "git branch <name>",
+  picture: {
+    frames: [
+      { label: "Before", caption: "One name, main.", show: [chainOf("main"), folder(["notes.txt"])] },
+      { label: "After", command: "git branch scout", caption: "A second tag.", show: [chainOf("main", { names: [{ name: "main", on: "plot", kind: "branch" }, { name: "scout", on: "plot", kind: "branch", fresh: true }] })], gloss: "HEAD is on main, not on scout." },
+    ],
+  },
+  changed: "one name, scout",
+  same: "no new commit",
+  runs: [[{ command: "git branch", output: "* main\n  scout\n" }]],
+  look: ["* main"],
+};
+
+test("a card's frames show their label, the command after it, their caption, pictures and a gloss, joined by an arrow", () => {
+  const card = create(BRANCH);
+  const frames = [...card.querySelectorAll(".gc-frame")];
+  assert.equal(frames.length, 2);
+  assert.equal(frames[1].querySelector(".gc-label").textContent, "After git branch scout");
+  assert.equal(frames[1].querySelector(".gc-label code").textContent, "git branch scout");
+  assert.match(frames[0].querySelector("figcaption").textContent, /One name, main\./);
+  assert.ok(frames[0].querySelector(".gp-chain") && frames[0].querySelector(".gp-desk"));
+  assert.equal(frames[1].querySelector(".gc-gloss").textContent, "HEAD is on main, not on scout.");
+  assert.equal(card.querySelectorAll(".gc-frames .gc-then").length, 1);
+});
+
+test("what changed and what stayed the same are said in words under the frames", () => {
+  const facts = [...create(BRANCH).querySelectorAll(".gc-facts li")].map((item) => item.textContent);
+  assert.deepEqual(facts, ["Changed one name, scout", "Same no new commit"]);
+});
+
+test("a line git printed that matches the picture is marked to look at, in its own mark, not gold", () => {
+  const terminal = create(BRANCH).querySelector(".gc-term");
+  assert.deepEqual([...terminal.querySelectorAll(".gc-look")].map((node) => node.textContent), ["* main"]);
+  assert.equal(terminal.textContent, "$ git branch\n* main\n  scout\n");
+});
+
+const REFUSED = [{ command: "git switch scout", output: "error: Your local changes would be overwritten\nAborting\n" }];
+const SWITCH = {
+  ...BRANCH,
+  sections: [{
+    title: "When you have edits you have not committed",
+    between: "or",
+    frames: [
+      { label: "Comes along", caption: "The edit comes with you.", run: [{ command: "git switch scout", output: "M\tnotes.txt\n" }], look: ["M\tnotes.txt"] },
+      { label: "Refused", caption: "git stops.", run: REFUSED, refused: ["Aborting"], stop: true, gloss: "\"stash\" sets edits aside." },
+    ],
+  }],
+};
+
+test("a folded section is closed until the reader opens it, and holds its own frames, each with its own terminal", () => {
+  const section = create(SWITCH).querySelector("details.gc-section");
+  assert.equal(section.hasAttribute("open"), false);
+  assert.equal(section.querySelector("summary").textContent, "When you have edits you have not committed");
+  assert.equal(section.querySelectorAll(".gc-frame .gc-term").length, 2);
+});
+
+test("outcomes are joined by \"or\", and a refusal is its own kind of frame, with git's refusal marked", () => {
+  const section = create(SWITCH).querySelector(".gc-section");
+  assert.equal(section.querySelector(".gc-frames .gc-or").textContent, "or");
+  const refused = section.querySelectorAll(".gc-frame")[1];
+  assert.ok(refused.classList.contains("is-refused"));
+  assert.equal(refused.querySelector(".gc-refused").textContent, "Aborting");
+});
+
+test("a card with no transcript of its own leaves out What git prints", () => {
+  assert.doesNotMatch(create({ ...SWITCH, runs: [] }).textContent, /What git prints/);
+});
+
+const GRAPH_RUN = [{ command: "git log --oneline --graph --all", output: "* 59039c2 (HEAD -> main) Plot the route\n* 3090621 Start the project\n" }];
+
+test("a decoded graph puts git's lines beside the chain, one row for each line of output under the command", () => {
+  const card = create({ ...BRANCH, picture: { frames: [{ label: "", caption: "Newest at the top.", decode: true, run: GRAPH_RUN, show: [chainOf("main")] }] } });
+  const decoder = card.querySelector(".gc-decoder");
+  const [typed, ...lines] = decoder.querySelectorAll(".gc-term .gc-line");
+  assert.equal(typed.querySelector(".gc-typed").textContent, "git log --oneline --graph --all");
+  assert.deepEqual(lines.map((line) => line.textContent), ["* 59039c2 (HEAD -> main) Plot the route", "* 3090621 Start the project"]);
+  assert.equal(decoder.querySelectorAll(".chain-row").length, lines.length);
+});
+
+test("the message git prepares is shown as the editor would: its subject marked, git's comment lines after it", () => {
+  const card = create({ ...BRANCH, picture: { frames: [{ label: "The message git prepares", caption: "", message: "Merge branch 'scout'\n# Please enter a commit message\n" }] } });
+  const editor = card.querySelector(".gc-editor");
+  assert.equal(editor.querySelector(".gc-look").textContent, "Merge branch 'scout'");
+  assert.deepEqual([...editor.querySelectorAll(".gc-comment")].map((node) => node.textContent), ["# Please enter a commit message"]);
+});
+
+test("frames that hold a chain come with the line that says what HEAD and a dashed name are", () => {
+  assert.match(create(BRANCH).textContent, /HEAD marks where you are/);
+});
+
+test("words can carry code and a commit's subject: code as code, the subject in italics", () => {
+  const card = create({ ...BRANCH, changed: ["one name, ", { code: "scout" }, ", on ", { em: "Plot the route" }] });
+  const changed = card.querySelector(".gc-fact.is-changed");
+  assert.equal(changed.querySelector("code").textContent, "scout");
+  assert.equal(changed.querySelector("em").textContent, "Plot the route");
+  assert.equal(changed.textContent, "Changed one name, scout, on Plot the route");
+});
+
+test("a sum shows one command as the two it does at once", () => {
+  const sum = [{ command: "git branch lights", says: "a new tag" }, { command: "git switch lights", says: "HEAD hops onto it" }, { command: "git switch -c lights", says: "both at once" }];
+  const card = create({ ...BRANCH, sum });
+  assert.equal(card.querySelector(".gc-sum").textContent, "git branch lightsa new tag+git switch lightsHEAD hops onto it=git switch -c lightsboth at once");
+});
+
+test("a key of git's drawing pairs each symbol with what it means", () => {
+  const card = create({ ...BRANCH, glyphs: [["*", "a commit"], ["|", "a line down to the parent"]] });
+  assert.deepEqual([...card.querySelectorAll(".gc-glyphs dt")].map((node) => node.textContent), ["*", "|"]);
+  assert.deepEqual([...card.querySelectorAll(".gc-glyphs dd")].map((node) => node.textContent), ["a commit", "a line down to the parent"]);
+});
+
+test("a section that is the card's own content is not folded, and shows what git printed under its frames", () => {
+  const card = create({ ...BRANCH, picture: undefined, runs: [], sections: [{ title: "Only scout moved on", fold: false, frames: BRANCH.picture.frames, run: [{ command: "git merge scout", output: "Fast-forward\n" }], look: ["Fast-forward"] }] });
+  const section = card.querySelector(".gc-section");
+  assert.equal(section.tagName, "SECTION");
+  assert.equal(section.querySelector("h3").textContent, "Only scout moved on");
+  assert.equal(section.querySelector(".gc-term .gc-look").textContent, "Fast-forward");
+  assert.equal(card.querySelector(".gc-pictures"), null);
 });

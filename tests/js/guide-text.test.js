@@ -37,10 +37,37 @@ test("every mission that teaches is some card's lesson, so nothing taught is mis
   for (const level of levels.filter((item) => !item.challenge)) assert.ok(lessons.has(level.command), `${level.chapter}: ${level.command}`);
 });
 
-test("a card's output is a transcript real git printed", () => {
+/* Every frame of a card: its picture's and its sections'. */
+const framesOf = (card) => [...((card.picture || {}).frames || []), ...(card.sections || []).flatMap((section) => section.frames)];
+/* Every transcript a card shows, by name, with the marks it asks for in it. */
+const shownRuns = (card) => [
+  ...(card.runs.length ? [{ runs: card.runs, marks: [...(card.look || []), ...(card.refused || [])] }] : []),
+  ...[...framesOf(card), ...(card.sections || [])].filter((part) => part.run).map((part) => ({ runs: [part.run], marks: [...(part.look || []), ...(part.refused || [])] })),
+];
+
+test("a card's output is a transcript real git printed, and it shows at least one", () => {
   for (const card of GuideText.cards) {
-    assert.ok(card.runs.length > 0, card.command);
-    for (const run of card.runs) assert.ok(GuideGit.runs[run], `${card.command}: ${run}`);
+    assert.ok(shownRuns(card).length > 0, card.command);
+    for (const run of shownRuns(card).flatMap((shown) => shown.runs)) assert.ok(GuideGit.runs[run], `${card.command}: ${run}`);
+  }
+});
+
+test("every piece of output a card marks is in the transcript it marks", () => {
+  for (const card of GuideText.cards) {
+    for (const { runs, marks } of shownRuns(card)) {
+      const output = runs.flatMap((run) => GuideGit.runs[run]).map((step) => step.output).join("");
+      for (const mark of marks) assert.ok(output.includes(mark), `${card.command}: ${mark} in ${runs}`);
+    }
+  }
+});
+
+test("a decoded graph's chain has a commit for every line of git's output that names one", () => {
+  for (const frame of GuideText.cards.flatMap(framesOf).filter((item) => item.decode)) {
+    const [{ output }] = GuideGit.runs[frame.run];
+    const subjects = frame.show[0].commits.map((commit) => commit.subject);
+    for (const line of output.trimEnd().split("\n").filter((item) => /\b[0-9a-f]{7}\b/.test(item))) {
+      assert.ok(subjects.some((subject) => line.endsWith(` ${subject}`)), `${frame.run}: ${line}`);
+    }
   }
 });
 
@@ -57,7 +84,7 @@ const CHIP_STATES = ["new", "edited", "conflict", "clean", "ignored", undefined]
 const NAME_KINDS = ["branch", "remote", "mothership"];
 
 function checkDesk(desk, where) {
-  const keys = Object.keys(desk).filter((key) => key !== "kind" && key !== "fresh");
+  const keys = Object.keys(desk).filter((key) => !["kind", "fresh", "note"].includes(key));
   for (const key of desk.fresh || []) assert.ok(keys.includes(key), where);
   assert.ok(keys.length > 0 && keys.every((key) => PLACES.includes(key)), where);
   for (const key of keys) {
@@ -83,19 +110,27 @@ function checkChain(chain, where) {
   assert.ok(branches.includes(chain.head) || ids.includes(chain.head), `${where}: HEAD on ${chain.head}`);
 }
 
+function checkPicture(picture, where) {
+  assert.ok(["desk", "chain"].includes(picture.kind), where);
+  if (picture.kind === "desk") checkDesk(picture, where);
+  else checkChain(picture, where);
+}
+
 test("every picture is a desk or a chain whose parts exist, and the after picture is the same kind", () => {
   for (const card of GuideText.cards) {
-    const { before, after } = card.picture;
+    const { before, after } = card.picture || {};
     for (const [side, picture] of [["before", before], ["after", after]]) {
-      if (!picture) continue;
-      const where = `${card.command} ${side}`;
-      assert.ok(["desk", "chain"].includes(picture.kind), where);
-      if (picture.kind === "desk") checkDesk(picture, where);
-      else checkChain(picture, where);
+      if (picture) checkPicture(picture, `${card.command} ${side}`);
     }
     assert.ok(!after || after.kind === before.kind, card.command);
+    framesOf(card).forEach((frame, at) => (frame.show || []).forEach((picture) => checkPicture(picture, `${card.command} frame ${at}`)));
+    assert.ok(card.picture || card.sections, card.command);
   }
 });
+
+/* Words as text, and the code they name: plain text, or a list of text, {code} and {em}. */
+const plain = (said) => (Array.isArray(said) ? said.map((piece) => (typeof piece === "string" ? piece : piece.code || piece.em)).join("") : said);
+const codes = (said) => (Array.isArray(said) ? said.filter((piece) => piece.code).map((piece) => piece.code).sort() : []);
 
 function words(value, found) {
   if (typeof value !== "object" || value === null) return found;
@@ -103,7 +138,8 @@ function words(value, found) {
     for (const item of value) words(item, found);
   } else if ("en" in value) {
     assert.deepEqual(Object.keys(value).sort(), ["en", "es"], JSON.stringify(value));
-    assert.ok(value.en.trim() && value.es.trim(), JSON.stringify(value));
+    assert.ok(plain(value.en).trim() && plain(value.es).trim(), JSON.stringify(value));
+    assert.deepEqual(codes(value.es), codes(value.en), `the same code in both languages: ${JSON.stringify(value)}`);
     found.push(value);
   } else {
     for (const item of Object.values(value)) words(item, found);
@@ -113,10 +149,13 @@ function words(value, found) {
 
 const lit = (picture) => (picture.kind === "desk"
   ? (picture.fresh || []).length > 0 || ["folder", "staging", "vault", "remote"].some((key) => (picture[key] || []).some((chip) => chip.fresh))
-  : picture.commits.some((commit) => commit.fresh) || picture.names.some((name) => name.fresh || name.gone));
+  : picture.moved || picture.commits.some((commit) => commit.fresh) || picture.names.some((name) => name.fresh || name.gone));
 
-test("every after picture lights what the command changed", () => {
-  for (const card of GuideText.cards.filter((item) => item.picture.after)) assert.ok(lit(card.picture.after), card.command);
+test("every after picture, and every frame that runs a command, lights what the command changed", () => {
+  for (const card of GuideText.cards.filter((item) => item.picture && item.picture.after)) assert.ok(lit(card.picture.after), card.command);
+  for (const frame of GuideText.cards.flatMap(framesOf).filter((item) => item.command && item.show && !item.stop)) {
+    assert.ok(frame.show.some((picture) => lit(picture) || picture.moved), frame.command);
+  }
 });
 
 /* The free playground's starts and views (records.py's StartId and PlaygroundView on

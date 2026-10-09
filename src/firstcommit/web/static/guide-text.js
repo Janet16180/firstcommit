@@ -10,16 +10,23 @@
  * docs/drafts/playground/plan.md), the common beginner mistake, the mission that teaches it
  * (`lessons`, the command labels of the missions that teach it, as the map's records carry them;
  * the first such mission in the chapter that tags the command is named) and related commands.
- * Never a level's id: the page does not know them.
+ * Never a level's id: the page does not know them. The branch and merge cards draw their story
+ * in frames and sections instead of a before and after (guide-card.js says how): a frame's or a
+ * section's `run` is a key of GuideGit.runs and `message: true` is GuideGit.mergeMessage (the
+ * field guide puts them in), and words may be lists of text, {code} and a commit's subject
+ * ({em}), with the same code in both languages.
  *
  * A desk is {kind: "desk", folder, staging, vault, remote}: only the places it names are drawn,
  * and a place that is null is not there yet. Each holds chips {name, state, fresh}: state is
  * "new", "edited", "conflict", "clean" or "ignored" (left out in the staging area, the vault and the
  * remote), and `fresh` lights what the command just changed; the desk's own `fresh` lists the
  * places that just appeared.
- * A chain is {kind: "chain", commits, names, head}: commits newest first, each {id, parents,
- * who, ghost, fresh, mark}, with `who` "you" (the default), "alex" or "mothership" (a commit the
- * mothership has and you do not) and `mark` a key of pictures.marks said beside it; names [{name,
+ * A desk may also have `note` (a key of pictures.notes), and a chip `left` (it left the folder).
+ * A chain is {kind: "chain", commits, names, head, moved}: commits newest first, each {id,
+ * parents, subject, who, ghost, fresh, look, faint, mark, note}, with `who` "you" (the default),
+ * "alex" or "mothership" (a commit the mothership has and you do not), `look` a commit to look
+ * at, `faint` one the output leaves out, and `mark` and `note` keys of pictures.marks and
+ * pictures.notes said beside it; `moved` lights the HEAD mark when only HEAD moved; names [{name,
  * on, kind, fresh, gone}] with kind "branch", "remote" (origin/main, your bookmark) or
  * "mothership" (where the mothership really is), `gone` for a name the command took off; `head`
  * is the branch HEAD rides, or a commit's id when detached. Every after picture lights something.
@@ -37,6 +44,25 @@ const GuideText = (function () {
   const branch = (name, on) => ({ name, on, kind: "branch" });
   const bookmark = (on) => ({ name: "origin/main", on, kind: "remote" });
   const mothership = (on) => ({ name: "mothership", on, kind: "mothership" });
+  const code = (text) => ({ code: text });
+  const em = (text) => ({ em: text });
+  const lit = (name) => ({ ...name, fresh: true });
+  const moved = (picture) => ({ ...picture, moved: true });
+  const files = (names, { fresh = [], left = [], note } = {}) => ({
+    kind: "desk",
+    folder: names.map((name) => ({ name, ...(fresh.includes(name) && { fresh: true }), ...(left.includes(name) && { left: true }) })),
+    ...(note && { note }),
+  });
+  /* The branch and merge cards' one story, as tests/guide_capture.py plays it. */
+  const START = commit("start", [], { subject: "Start the project" });
+  const PLOT = commit("plot", ["start"], { subject: "Plot the route" });
+  const PROBE = commit("probe", ["plot"], { subject: "Ready the probe" });
+  const FILL = commit("fill", ["plot"], { subject: "Fill the tanks" });
+  const merged = (more = {}) => commit("merge", ["fill", "probe"], { subject: "Merge branch 'scout'", mark: "merge", ...more });
+  const BEFORE = { en: "Before", es: "Antes" };
+  const AFTER = { en: "After", es: "Después" };
+  const THEN = { en: "Then", es: "Luego" };
+  const BACK = { en: "Back", es: "De vuelta" };
 
   const cards = [
     {
@@ -239,44 +265,175 @@ const GuideText = (function () {
     },
     {
       command: "git switch -c <branch>",
+      sum: [
+        { command: "git branch lights", says: { en: "a new tag", es: "una etiqueta nueva" } },
+        { command: "git switch lights", says: { en: [code("HEAD"), " hops onto it"], es: [code("HEAD"), " salta a ella"] } },
+        { command: "git switch -c lights", says: { en: "both at once", es: "las dos cosas a la vez" } },
+      ],
       picture: {
-        before: chain([commit("b", ["a"]), commit("a")], [branch("main", "b")]),
-        after: chain([commit("b", ["a"]), commit("a")], [branch("main", "b"), { ...branch("scout", "b"), fresh: true }], "scout"),
+        frames: [
+          { label: BEFORE, caption: { en: [code("HEAD"), " is on ", code("main"), "."], es: [code("HEAD"), " está en ", code("main"), "."] }, show: [chain([PLOT, START], [branch("main", "plot")]), files(["notes.txt", "route.txt"])] },
+          {
+            label: AFTER,
+            command: "git switch -c lights",
+            caption: { en: ["A new tag, and ", code("HEAD"), " already on it. ", code("main"), " stays."], es: ["Una etiqueta nueva, y ", code("HEAD"), " ya está en ella. ", code("main"), " se queda."] },
+            show: [chain([PLOT, START], [lit(branch("lights", "plot")), branch("main", "plot")], "lights"), files(["notes.txt", "route.txt"], { note: "unchanged" })],
+          },
+        ],
       },
-      runs: ["switch-c"],
+      changed: { en: ["a name, ", code("lights"), ", and ", code("HEAD"), " on it"], es: ["un nombre, ", code("lights"), ", y ", code("HEAD"), " en él"] },
+      same: { en: "no new commit; the working folder, edits not yet committed included", es: "ningún commit nuevo; la carpeta de trabajo, con las ediciones sin commit incluidas" },
+      sections: [
+        {
+          title: { en: ["Leaving out ", code("-c")], es: ["Sin ", code("-c")] },
+          frames: [
+            {
+              label: { en: "Refused", es: "Rechazado" },
+              caption: { en: ["Without ", code("-c"), ", git switch looks for a branch of that name. There is none yet, so git changes nothing."], es: ["Sin ", code("-c"), ", git switch busca un branch con ese nombre. Todavía no existe, así que git no cambia nada."] },
+              run: "switch-missing",
+              refused: ["fatal: invalid reference"],
+              stop: true,
+            },
+          ],
+        },
+      ],
+      runs: ["switch-c", "checkout-b"],
+      look: ["(HEAD -> lights, main)"],
       mistake: {
         en: "Expecting a copy of your files: a new branch is only a new name tag on the commit you are on.",
         es: "Esperar una copia de tus archivos: un branch nuevo es solo una etiqueta nueva en el commit donde estás.",
       },
       lessons: ["git switch -c"],
       playground: { start: "branches", view: "chain", try: "git switch -c test" },
-      related: ["git switch <branch>", "git merge <branch>"],
+      related: ["git switch <branch>", "git checkout -b <branch>", "git merge <branch>"],
     },
     {
       command: "git switch <branch>",
       picture: {
-        before: chain([commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("scout", "c"), branch("main", "b")], "scout"),
-        after: chain([commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("scout", "c"), { ...branch("main", "b"), fresh: true }]),
+        frames: [
+          {
+            label: BEFORE,
+            caption: { en: [code("HEAD"), " is on ", code("main"), ". ", code("scout"), " is one commit further on."], es: [code("HEAD"), " está en ", code("main"), ". ", code("scout"), " está un commit más adelante."] },
+            show: [chain([PROBE, PLOT, START], [branch("scout", "probe"), branch("main", "plot")]), files(["notes.txt", "route.txt"])],
+          },
+          {
+            label: THEN,
+            command: "git switch scout",
+            caption: { en: [code("HEAD"), " hops to ", code("scout"), ". The folder follows: ", code("probe.txt"), " appears."], es: [code("HEAD"), " salta a ", code("scout"), ". La carpeta lo sigue: aparece ", code("probe.txt"), "."] },
+            show: [moved(chain([PROBE, PLOT, START], [branch("scout", "probe"), branch("main", "plot")], "scout")), files(["notes.txt", "probe.txt", "route.txt"], { fresh: ["probe.txt"] })],
+          },
+          {
+            label: BACK,
+            command: "git switch main",
+            caption: { en: ["Back again: ", code("probe.txt"), " leaves the folder. It is safe in ", em("Ready the probe"), "."], es: ["De vuelta: ", code("probe.txt"), " sale de la carpeta. Sigue a salvo en ", em("Ready the probe"), "."] },
+            show: [moved(chain([PROBE, PLOT, START], [branch("scout", "probe"), branch("main", "plot")])), files(["notes.txt", "probe.txt", "route.txt"], { left: ["probe.txt"] })],
+          },
+        ],
       },
+      changed: { en: ["where ", code("HEAD"), " is, and the files in the working folder"], es: ["dónde está ", code("HEAD"), ", y los archivos de la carpeta de trabajo"] },
+      same: { en: "every commit and every name tag", es: "todos los commits y todas las etiquetas" },
+      sections: [
+        {
+          title: { en: "When you have edits you have not committed", es: "Cuando tienes ediciones sin commit" },
+          between: "or",
+          frames: [
+            {
+              label: { en: "Comes along", es: "Viene contigo" },
+              caption: { en: ["An edit to a file both branches hold the same way comes with you. git lists it with ", code("M"), "."], es: ["Una edición en un archivo que los dos branches tienen igual viene contigo. git la lista con ", code("M"), "."] },
+              run: "switch-carry",
+              look: ["M\tnotes.txt"],
+            },
+            {
+              label: { en: "Refused", es: "Rechazado" },
+              caption: { en: "An edit to a file the other branch holds differently would be overwritten, so git stops and moves nothing.", es: "Una edición en un archivo que el otro branch tiene distinto se sobrescribiría, así que git se detiene y no mueve nada." },
+              run: "switch-refused",
+              refused: ["Aborting"],
+              stop: true,
+              gloss: { en: "\"stash\" is a way to set edits aside for later; you will not need it yet.", es: "\"stash\" es una forma de apartar ediciones para después; todavía no lo necesitas." },
+            },
+          ],
+        },
+      ],
       runs: ["switch"],
+      look: ["probe.txt", "(HEAD -> scout)"],
       mistake: {
         en: "Switching with edits the other branch would overwrite: Git refuses. Commit them, or undo them, first.",
         es: "Cambiar de branch con ediciones que el otro branch sobrescribiría: Git se niega. Primero haz commit de ellas, o deshazlas.",
       },
       lessons: ["git branch", "git switch"],
       playground: { start: "branches", view: "chain", try: "git switch bright-lights" },
-      related: ["git switch -c <branch>", "git status", "git merge <branch>"],
+      related: ["git switch -c <branch>", "git checkout <branch>", "git merge <branch>"],
     },
     {
       command: "git merge <branch>",
-      picture: {
-        before: chain([commit("d", ["b"], {}), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("scout", "d"), branch("main", "c")]),
-        after: chain([commit("m", ["c", "d"], { fresh: true, mark: "merge" }), commit("d", ["b"], {}), commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("main", "m"), branch("scout", "d")]),
-      },
-      runs: ["merge"],
+      sections: [
+        {
+          title: { en: ["Only ", code("scout"), " moved on: a fast-forward"], es: ["Solo ", code("scout"), " avanzó: un fast-forward"] },
+          fold: false,
+          frames: [
+            {
+              label: BEFORE,
+              caption: { en: [code("main"), " is behind ", code("scout"), " on the same line."], es: [code("main"), " está detrás de ", code("scout"), " en la misma línea."] },
+              show: [chain([PROBE, PLOT, START], [branch("scout", "probe"), branch("main", "plot")]), files(["notes.txt", "route.txt"])],
+            },
+            {
+              label: AFTER,
+              command: "git merge scout",
+              caption: { en: ["No new commit: ", code("main"), "'s tag just slides up to ", code("scout"), "'s commit."], es: ["Ningún commit nuevo: la etiqueta de ", code("main"), " solo sube al commit de ", code("scout"), "."] },
+              show: [chain([PROBE, PLOT, START], [lit(branch("main", "probe")), branch("scout", "probe")]), files(["notes.txt", "probe.txt", "route.txt"], { fresh: ["probe.txt"] })],
+            },
+          ],
+          run: "merge-ff",
+          look: ["Fast-forward"],
+        },
+        {
+          title: { en: "Both moved on: a merge commit", es: "Los dos avanzaron: un commit de merge" },
+          fold: false,
+          frames: [
+            {
+              label: BEFORE,
+              caption: { en: ["The line forks: ", code("main"), " and ", code("scout"), " each have a commit the other lacks."], es: ["La línea se bifurca: ", code("main"), " y ", code("scout"), " tienen cada uno un commit que el otro no tiene."] },
+              show: [chain([FILL, PROBE, PLOT, START], [branch("main", "fill"), branch("scout", "probe")]), files(["fuel.txt", "notes.txt", "route.txt"])],
+            },
+            {
+              label: AFTER,
+              command: "git merge scout",
+              caption: {
+                en: ["A new commit, the merge commit, with two parents (the two commits it joins). ", code("main"), " climbs onto it; ", code("scout"), " stays."],
+                es: ["Un commit nuevo, el commit de merge, con dos padres (los dos commits que une). ", code("main"), " sube a él; ", code("scout"), " se queda."],
+              },
+              show: [chain([merged({ fresh: true }), FILL, PROBE, PLOT, START], [lit(branch("main", "merge")), branch("scout", "probe")]), files(["fuel.txt", "notes.txt", "probe.txt", "route.txt"], { fresh: ["probe.txt"] })],
+            },
+          ],
+          run: "merge",
+          look: ["Merge made by the 'ort' strategy.", "(HEAD -> main) Merge branch 'scout'"],
+        },
+        {
+          title: { en: ["The merge commit's message, and ", code("--no-edit")], es: ["El mensaje del commit de merge, y ", code("--no-edit")] },
+          frames: [
+            {
+              label: { en: "The message git prepares", es: "El mensaje que prepara git" },
+              caption: { en: ["Lines starting with ", code("#"), " are dropped. The rest is the message; its first line is the subject."], es: ["Las líneas que empiezan con ", code("#"), " se descartan. El resto es el mensaje; su primera línea es el asunto."] },
+              message: true,
+            },
+            {
+              label: { en: "Keep it as it is", es: "Conservarlo tal cual" },
+              command: "git merge --no-edit scout",
+              caption: {
+                en: ["On your own computer, a plain ", code("git merge"), " opens this message in your editor and waits until you save and close it. ", code("--no-edit"), " keeps it as it is. In the game no editor ever opens."],
+                es: ["En tu propia computadora, un ", code("git merge"), " solo abre este mensaje en tu editor y espera a que lo guardes y lo cierres. ", code("--no-edit"), " lo conserva tal cual. En el juego nunca se abre un editor."],
+              },
+              run: "merge-no-edit",
+              look: ["Merge branch 'scout'"],
+              gloss: { en: ["Stuck in vim outside the game: type ", code(":wq"), " and Enter to keep the message."], es: ["Atascado en vim fuera del juego: escribe ", code(":wq"), " y Enter para conservar el mensaje."] },
+            },
+          ],
+        },
+      ],
+      runs: [],
       mistake: {
-        en: "Thinking a merge deletes the other branch, or copies it over yours: both lines stay, and scout's tag stays where it was.",
-        es: "Creer que un merge borra el otro branch, o lo copia encima del tuyo: las dos líneas se quedan, y la etiqueta de scout sigue donde estaba.",
+        en: "Running the merge from the wrong branch: git merge scout brings scout into the branch HEAD is on, so on scout it would move scout, not main. And a merge never deletes the other branch: scout's tag stays where it was.",
+        es: "Hacer el merge desde el branch equivocado: git merge scout trae scout al branch donde está HEAD, así que en scout movería scout, no main. Y un merge nunca borra el otro branch: la etiqueta de scout se queda donde estaba.",
       },
       lessons: ["git merge"],
       playground: { start: "both", view: "chain", try: "git merge origin/main" },
@@ -358,13 +515,53 @@ const GuideText = (function () {
     },
     {
       command: "git log --oneline --graph --all",
-      picture: { before: chain([commit("d", ["b"]), commit("c", ["b"], {}), commit("b", ["a"]), commit("a")], [branch("main", "d"), branch("scout", "c")]) },
-      runs: ["log-graph"],
+      picture: {
+        frames: [
+          {
+            caption: { en: "Newest at the top, in git's drawing and in the picture: each line of git's output beside its row.", es: "Lo más reciente arriba, en el dibujo de git y en la imagen: cada línea de la salida de git junto a su fila." },
+            decode: true,
+            run: "log-graph",
+            show: [chain([FILL, PROBE, PLOT, START], [branch("main", "fill"), branch("scout", "probe")])],
+          },
+        ],
+      },
+      glyphs: [
+        ["*", { en: "a commit (a square in the picture)", es: "un commit (un cuadrado en la imagen)" }],
+        ["|", { en: "a line going down to the parent", es: "una línea que baja hacia el padre" }],
+        ["/ \\", { en: "a line forking off or joining back", es: "una línea que se separa o que se vuelve a unir" }],
+        ["(HEAD -> main)", { en: ["you are here, on the tag ", code("main")], es: ["estás aquí, en la etiqueta ", code("main")] }],
+        ["(scout)", { en: "a name tag on that commit", es: "una etiqueta en ese commit" }],
+      ],
+      sections: [
+        {
+          title: { en: "After the merge", es: "Después del merge" },
+          frames: [
+            {
+              caption: { en: ["The left line is ", code("main"), "'s, the right one ", code("scout"), "'s; the merge commit joins them."], es: ["La línea de la izquierda es la de ", code("main"), " y la de la derecha la de ", code("scout"), "; el commit de merge las une."] },
+              decode: true,
+              run: "log-graph-merged",
+              show: [chain([merged(), FILL, PROBE, PLOT, START], [branch("main", "merge"), branch("scout", "probe")])],
+            },
+          ],
+        },
+        {
+          title: { en: ["Without ", code("--all")], es: ["Sin ", code("--all")] },
+          frames: [
+            {
+              label: { en: "Only what HEAD leads back to", es: "Solo lo que alcanza HEAD hacia atrás" },
+              caption: { en: [em("Ready the probe"), " is missing from the output. It is not gone: git log was not asked for it. The picture draws it faintly."], es: [em("Ready the probe"), " no está en la salida. No desapareció: no se le pidió a git log. La imagen lo dibuja tenue."] },
+              run: "log-graph-head",
+              show: [chain([FILL, commit("probe", ["plot"], { subject: "Ready the probe", faint: true, note: "notShown" }), PLOT, START], [branch("main", "fill"), branch("scout", "probe")])],
+            },
+          ],
+        },
+      ],
+      runs: [],
       mistake: {
         en: "Leaving out --all: git log shows only what your branch leads back to, so another branch's commits seem to be missing.",
         es: "Olvidar --all: git log solo muestra lo que alcanza tu branch, así que los commits de otro branch parecen no estar.",
       },
-      lessons: ["git switch -c"],
+      lessons: ["git switch", "git switch -c"],
       playground: { start: "branches", view: "graph", try: "git log --oneline --graph --all" },
       related: ["git log", "git branch -v", "git switch -c <branch>"],
     },
@@ -416,13 +613,24 @@ const GuideText = (function () {
     {
       command: "git branch <name>",
       picture: {
-        before: chain([commit("b", ["a"]), commit("a")], [branch("main", "b")]),
-        after: chain([commit("b", ["a"]), commit("a")], [branch("main", "b"), { ...branch("test-run", "b"), fresh: true }]),
+        frames: [
+          { label: BEFORE, caption: { en: ["One name, ", code("main"), ", and ", code("HEAD"), " on it."], es: ["Un nombre, ", code("main"), ", y ", code("HEAD"), " en él."] }, show: [chain([PLOT, START], [branch("main", "plot")]), files(["notes.txt", "route.txt"])] },
+          {
+            label: AFTER,
+            command: "git branch scout",
+            caption: { en: "A second name tag on the same commit.", es: "Una segunda etiqueta en el mismo commit." },
+            show: [chain([PLOT, START], [branch("main", "plot"), lit(branch("scout", "plot"))]), files(["notes.txt", "route.txt"], { note: "unchanged" })],
+            gloss: { en: [code("HEAD"), " is on ", code("main"), ", not on ", code("scout"), "."], es: [code("HEAD"), " está en ", code("main"), ", no en ", code("scout"), "."] },
+          },
+        ],
       },
+      changed: { en: ["one name, ", code("scout"), ", on ", em("Plot the route")], es: ["un nombre, ", code("scout"), ", en ", em("Plot the route")] },
+      same: { en: ["no new commit; ", code("HEAD"), " stays on ", code("main"), "; the working folder keeps the same files"], es: ["ningún commit nuevo; ", code("HEAD"), " se queda en ", code("main"), "; la carpeta de trabajo conserva los mismos archivos"] },
       runs: ["branch"],
+      look: ["* main", "(HEAD -> main, scout)"],
       mistake: {
-        en: "Expecting to be on the new branch: git branch only puts the name there. git switch takes you to it.",
-        es: "Esperar estar en el branch nuevo: git branch solo pone el nombre. git switch te lleva a él.",
+        en: "Expecting to be on the new branch: git branch only makes the name, and the * in git branch is still on main. git switch scout takes you there, or git switch -c scout does both at once.",
+        es: "Esperar estar en el branch nuevo: git branch solo crea el nombre, y el * de git branch sigue en main. git switch scout te lleva ahí, o git switch -c scout hace las dos cosas a la vez.",
       },
       lessons: ["git branch"],
       playground: { start: "branches", view: "chain", try: "git branch test" },
@@ -446,13 +654,52 @@ const GuideText = (function () {
     {
       command: "git branch -d <name>",
       picture: {
-        before: chain([commit("b", ["a"]), commit("a")], [branch("main", "b"), branch("test-run", "a")]),
-        after: chain([commit("b", ["a"]), commit("a")], [branch("main", "b"), { ...branch("test-run", "a"), gone: true }]),
+        frames: [
+          {
+            label: BEFORE,
+            caption: { en: ["After the merge, ", code("main"), " holds ", code("scout"), "'s commits."], es: ["Después del merge, ", code("main"), " tiene los commits de ", code("scout"), "."] },
+            show: [chain([PROBE, PLOT, START], [branch("main", "probe"), branch("scout", "probe")])],
+          },
+          {
+            label: AFTER,
+            command: "git branch -d scout",
+            caption: { en: ["The tag is gone. The commit stays: ", code("main"), " still leads to it."], es: ["La etiqueta ya no está. El commit se queda: ", code("main"), " todavía lleva a él."] },
+            show: [chain([PROBE, PLOT, START], [branch("main", "probe"), { ...branch("scout", "probe"), gone: true }])],
+          },
+        ],
       },
+      changed: { en: "one name less", es: "un nombre menos" },
+      same: { en: ["every commit, ", code("HEAD"), ", the working folder"], es: ["todos los commits, ", code("HEAD"), ", la carpeta de trabajo"] },
+      sections: [
+        {
+          title: { en: "When git refuses", es: "Cuando git se niega" },
+          between: "or",
+          frames: [
+            {
+              label: { en: "Not merged", es: "Sin merge" },
+              caption: { en: ["git compares with the branch you are on. ", code("main"), " does not hold ", em("Ready the probe"), ", so git keeps the name."], es: ["git compara con el branch donde estás. ", code("main"), " no tiene ", em("Ready the probe"), ", así que git conserva el nombre."] },
+              show: [chain([FILL, commit("probe", ["plot"], { subject: "Ready the probe", look: true, note: "notInMain" }), PLOT, START], [branch("main", "fill"), branch("scout", "probe")])],
+              run: "branch-d-refused",
+              refused: ["not fully merged"],
+              stop: true,
+            },
+            {
+              label: { en: "You are on it", es: "Estás en él" },
+              caption: { en: [code("HEAD"), " is on ", code("scout"), ". Switch to another branch first."], es: [code("HEAD"), " está en ", code("scout"), ". Primero cambia a otro branch."] },
+              show: [chain([PROBE, PLOT, START], [branch("scout", "probe"), branch("main", "plot")], "scout")],
+              run: "branch-d-here",
+              refused: ["cannot delete branch 'scout'"],
+              stop: true,
+              gloss: { en: "\"used by worktree\" means: it is the branch of the folder you are working in.", es: "\"used by worktree\" significa: es el branch de la carpeta en la que trabajas." },
+            },
+          ],
+        },
+      ],
       runs: ["branch-d"],
+      look: ["Deleted branch scout"],
       mistake: {
-        en: "Thinking the commits go with the name: only the name goes. A commit another name leads to stays in the history.",
-        es: "Creer que los commits se van con el nombre: solo se va el nombre. Un commit al que lleva otro nombre se queda en la historia.",
+        en: "Thinking -d deletes the branch's commits: it takes off a name only. Reaching for -D because git refused: -D forces it, and a commit no name leads to drops out of git log.",
+        es: "Creer que -d borra los commits del branch: solo quita un nombre. Usar -D porque git se negó: -D lo fuerza, y un commit al que no lleva ningún nombre desaparece de git log.",
       },
       lessons: ["git branch <name> <commit>"],
       playground: { start: "branches", view: "chain", try: "git branch -d quiet-engine" },
@@ -473,8 +720,8 @@ const GuideText = (function () {
     {
       command: "git checkout -b <branch>",
       picture: {
-        before: chain([commit("b", ["a"]), commit("a")], [branch("scout", "b")], "scout"),
-        after: chain([commit("b", ["a"]), commit("a")], [branch("scout", "b"), { ...branch("night-watch", "b"), fresh: true }], "night-watch"),
+        before: chain([PLOT, START], [branch("main", "plot")]),
+        after: chain([PLOT, START], [branch("main", "plot"), lit(branch("lights", "plot"))], "lights"),
       },
       runs: ["checkout-b"],
       mistake: {
@@ -488,8 +735,8 @@ const GuideText = (function () {
     {
       command: "git checkout <branch>",
       picture: {
-        before: chain([commit("c", ["b"]), commit("b", ["a"]), commit("a")], [branch("scout", "c"), branch("main", "b")]),
-        after: chain([commit("c", ["b"]), commit("b", ["a"]), commit("a")], [{ ...branch("scout", "c"), fresh: true }, branch("main", "b")], "scout"),
+        before: chain([PROBE, PLOT, START], [branch("scout", "probe"), branch("main", "plot")]),
+        after: moved(chain([PROBE, PLOT, START], [branch("scout", "probe"), branch("main", "plot")], "scout")),
       },
       runs: ["checkout"],
       mistake: {
@@ -573,6 +820,9 @@ const GuideText = (function () {
       showAll: { en: "Show all {count} lines", es: "Mostrar las {count} líneas" },
       showLess: { en: "Show fewer lines", es: "Mostrar menos líneas" },
       tryIt: { en: "Try it in the playground", es: "Pruébalo en la zona de pruebas" },
+      changed: { en: "Changed", es: "Cambia" },
+      same: { en: "Same", es: "Igual" },
+      or: { en: "or", es: "o" },
     },
     pictures: {
       notYet: { en: "not there yet", es: "todavía no existe" },
@@ -591,6 +841,12 @@ const GuideText = (function () {
         revert: { en: "undoes the one below", es: "deshace el de abajo" },
       },
       gone: { en: "taken off", es: "quitado" },
+      left: { en: "left the folder", es: "salió de la carpeta" },
+      notes: {
+        notInMain: { en: "not in main", es: "no está en main" },
+        notShown: { en: "not shown", es: "no se muestra" },
+        unchanged: { en: "unchanged", es: "sin cambios" },
+      },
       mothership: { en: "mothership", es: "nave nodriza" },
       notYours: { en: "on the mothership only", es: "solo en la nave nodriza" },
       by: { you: { en: "your commit", es: "tu commit" }, alex: { en: "Alex's commit", es: "commit de Alex" } },

@@ -7,19 +7,7 @@ const { installBrowser, load } = require("./load");
 const document = installBrowser();
 const { GuidePictures, Chain } = load(["dom.js", "strings.js", "places.js", "chain.js", "guide-pictures.js"], ["GuidePictures", "Chain"]);
 
-const words = {
-  places: { folder: "Working folder (workshop)", staging: "Staging area (cargo dock)", vault: "Repository (vault)", remote: "Remote (mothership)" },
-  notYet: "not there yet",
-  empty: "empty",
-  head: "HEAD, you are here",
-  states: { new: "new", edited: "edited", conflict: "conflict", clean: "saved" },
-  ghost: "no name leads here",
-  notYours: "on the mothership only",
-  by: { you: "your commit", alex: "Alex's commit" },
-  marks: { merge: "merge commit", revert: "undoes the one below" },
-  gone: "taken off",
-  mothership: "mothership",
-};
+const { pictures: words } = require("./guide-words");
 const draw = (model) => {
   const element = GuidePictures.draw(model, words);
   document.body.replaceChildren(element);
@@ -129,4 +117,80 @@ test("a place that just appeared is lit", () => {
   const desk = draw({ kind: "desk", folder: [], staging: [], fresh: ["staging"] });
   assert.ok(desk.querySelector(".gp-place--staging").classList.contains("gp-fresh"));
   assert.ok(!desk.querySelector(".gp-place--folder").classList.contains("gp-fresh"));
+});
+
+/* The branch and merge cards' story: two commits on main, scout's probe, main's tanks. */
+const story = (more = {}) => ({
+  kind: "chain",
+  commits: [
+    { id: "fill", parents: ["plot"], subject: "Fill the tanks" },
+    { id: "probe", parents: ["plot"], subject: "Ready the probe" },
+    { id: "plot", parents: ["start"], subject: "Plot the route" },
+    { id: "start", parents: [], subject: "Start the project" },
+  ],
+  names: [{ name: "main", on: "fill", kind: "branch" }, { name: "scout", on: "probe", kind: "branch" }],
+  head: "main",
+  ...more,
+});
+
+test("a commit's subject is written beside it, in italics", () => {
+  const subject = row(draw(story()), "plot").querySelector(".gp-subject");
+  assert.equal(subject.tagName, "EM");
+  assert.equal(subject.textContent, "Plot the route");
+});
+
+test("a commit to look at gets the violet look-here ring and its note, never gold", () => {
+  const picture = draw(story({ commits: story().commits.map((commit) => (commit.id === "probe" ? { ...commit, look: true, note: "notInMain" } : commit)) }));
+  const probe = row(picture, "probe");
+  assert.ok(probe.classList.contains("gp-look"));
+  assert.ok(!probe.classList.contains("is-look"));
+  assert.equal(probe.querySelector(".gp-note").textContent, "not in main");
+});
+
+test("a commit the output leaves out is drawn faintly", () => {
+  const picture = draw(story({ commits: story().commits.map((commit) => (commit.id === "probe" ? { ...commit, faint: true } : commit)) }));
+  assert.ok(row(picture, "probe").classList.contains("gp-faint"));
+  assert.ok(!row(picture, "fill").classList.contains("gp-faint"));
+});
+
+test("when only HEAD moved, the HEAD mark is lit and the tag it rides is not", () => {
+  const picture = draw(story({ head: "scout", moved: true }));
+  assert.ok(row(picture, "probe").querySelector(".chain-head").classList.contains("gp-fresh"));
+  assert.ok(!row(picture, "probe").querySelector(".chain-tag").classList.contains("gp-fresh"));
+  assert.ok(!draw(story()).querySelector(".chain-head").classList.contains("gp-fresh"));
+});
+
+const GRAPH = ["* 6c401cd (HEAD -> main) Fill the tanks", "| * 0797945 (scout) Ready the probe", "|/  ", "* 59039c2 Plot the route", "* 3090621 Start the project"];
+
+test("drawn beside git's graph, the chain has one row per line, in git's order, a connector line an empty row", () => {
+  const picture = GuidePictures.draw(story(), words, { lines: GRAPH });
+  const rows = [...picture.querySelectorAll(".chain-row")];
+  assert.equal(rows.length, GRAPH.length);
+  assert.deepEqual(rows.map((node) => node.getAttribute("data-hash")), ["fill", "probe", null, "plot", "start"]);
+  assert.ok(rows[2].classList.contains("gp-connector"));
+  assert.equal(rows[2].querySelectorAll(".chain-cap").length, 0);
+  assert.ok(rows[2].querySelectorAll(".chain-wire").length >= 2, "both lines pass through the connector row");
+});
+
+test("git's order wins over the chain's own: after a merge, scout's commit comes before main's", () => {
+  const merged = {
+    ...story(),
+    commits: [{ id: "merge", parents: ["fill", "probe"], subject: "Merge branch 'scout'" }, ...story().commits],
+    names: [{ name: "main", on: "merge", kind: "branch" }, { name: "scout", on: "probe", kind: "branch" }],
+  };
+  const lines = ["*   b74c431 (HEAD -> main) Merge branch 'scout'", "|\\  ", "| * 0797945 (scout) Ready the probe", "* | 6c401cd Fill the tanks", "|/  ", "* 59039c2 Plot the route", "* 3090621 Start the project"];
+  const picture = GuidePictures.draw(merged, words, { lines });
+  assert.deepEqual([...picture.querySelectorAll(".chain-row")].map((node) => node.getAttribute("data-hash")), ["merge", null, "probe", "fill", null, "plot", "start"]);
+});
+
+test("a line git printed that matches no commit is an error, so the picture never drifts from the output", () => {
+  assert.throws(() => GuidePictures.draw(story(), words, { lines: ["* 1234567 Something else"] }), RangeError);
+});
+
+test("in the working folder, a file that left is struck through and says so, and a note says what stayed the same", () => {
+  const desk = draw({ kind: "desk", folder: [{ name: "notes.txt" }, { name: "probe.txt", left: true }], note: "unchanged" });
+  const [, left] = desk.querySelectorAll(".gp-chip");
+  assert.ok(left.classList.contains("gp-left"));
+  assert.match(left.textContent, /probe\.txt.*left the folder/);
+  assert.equal(desk.querySelector(".gp-note").textContent, "unchanged");
 });

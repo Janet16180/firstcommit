@@ -3,7 +3,9 @@
  * (guide-pictures.js, gp-) and the merge conflict (guide-conflict.js, gx-). Links after
  * orbit.css and paints only with its tokens, so light and dark come from them. Terminals and
  * files are night, like the game's terminal. You are violet (--z-va), Alex green (--alex), the
- * mothership pink (--z-re), a conflict red (--s-new), and gold means "look here".
+ * mothership pink (--z-re), a conflict red (--s-new). In the conflict gold means "look here"; on
+ * a command's card gold means what the command changed and nothing else, a violet dashed ring or
+ * underline means "look here", and red marks a refusal.
  */
 
 /* The jump bar stays at the top of the guide while it scrolls, over a level too. */
@@ -77,7 +79,9 @@
   margin: 0;
 }
 
+/* A long command wraps at its spaces on a phone (app.css keeps other code on one line). */
 .gc-command code {
+  white-space: normal;
   padding: 0;
   font: 2rem/1.05 var(--f-term);
   color: var(--ink);
@@ -304,9 +308,50 @@
 .gp-mark {
   font: 700 0.75rem/1.2 var(--f-body);
   white-space: nowrap;
-  color: var(--edge);
-  background: var(--gold);
+  color: var(--z-va);
+  border: 2px solid var(--z-va);
   padding: 0 5px;
+}
+
+.gp-subject {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+/* A commit to look at: a violet dashed ring, never gold. */
+.gp-look .chain-cap {
+  outline: 3px dashed var(--z-va);
+  outline-offset: 2px;
+}
+
+.gp-faint .chain-cap {
+  background: var(--panel);
+  border-style: dashed;
+}
+
+.gp-faint .chain-body {
+  opacity: 0.45;
+}
+
+.gp-note {
+  margin: 0;
+  padding: 0 5px;
+  font: 700 0.75rem/1.3 var(--f-body);
+  color: var(--z-va);
+  border: 2px dashed var(--z-va);
+}
+
+.gp-desk > .gp-note {
+  flex-basis: 100%;
+  border: 0;
+  padding: 0;
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+.gp-left .gp-file {
+  text-decoration: line-through;
+  opacity: 0.6;
 }
 
 .gp-synced {
@@ -327,6 +372,280 @@
 .gp-gone-note {
   font: 700 0.75rem var(--f-body);
   color: var(--ink-soft);
+}
+
+/* A card's frames: before and after side by side, three or more steps one under the other. */
+.gc-frames {
+  --look-on-night: #B08CFF;
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.gc-frames.is-steps {
+  flex-direction: column;
+}
+
+.gc-frames.is-steps > .gc-then {
+  align-self: center;
+  transform: rotate(90deg);
+}
+
+.gc-frames > .gc-then,
+.gc-or {
+  flex: none;
+  align-self: center;
+}
+
+.gc-or {
+  font: 400 0.9rem/1 var(--f-px);
+  color: var(--ink-soft);
+}
+
+.gc-frame {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 10px 10px;
+  background: var(--panel-2);
+  border: 2px solid var(--line);
+}
+
+.gc-frame.is-refused {
+  border: 3px dashed var(--s-new);
+}
+
+.gc-frame figcaption {
+  font-size: 0.92rem;
+}
+
+.gc-label {
+  padding: 1px 6px;
+  font: 400 0.85rem/1.3 var(--f-px);
+  color: var(--panel);
+  background: var(--ink);
+}
+
+.gc-label code {
+  padding: 0;
+  font: 1.05rem/1 var(--f-term);
+  color: inherit;
+  background: none;
+}
+
+.gc-frame.is-refused .gc-label {
+  color: var(--on-accent);
+  background: var(--s-new);
+}
+
+.gc-gloss {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+/* The working folder under a chain is grey: the workshop's orange sits too close to gold. */
+.gc-frame .gp-place--folder {
+  --tone: var(--ink-soft);
+}
+
+.gc-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gc-fact-kind {
+  padding: 0 6px;
+  font: 400 0.8rem/1.3 var(--f-px);
+  border: 2px solid var(--edge);
+}
+
+.gc-fact.is-changed .gc-fact-kind {
+  color: var(--edge);
+  background: var(--gold);
+}
+
+.gc-fact.is-same .gc-fact-kind {
+  background: var(--panel-2);
+}
+
+.gc-look,
+.gc-refused {
+  text-decoration-line: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.gc-term .gc-look {
+  text-decoration-color: var(--look-on-night, var(--crt-soft));
+}
+
+.gc-term .gc-refused {
+  text-decoration-color: var(--crt-err);
+}
+
+.gc-section {
+  border-top: 2px dashed var(--line);
+  padding-top: 8px;
+}
+
+.gc-section > summary,
+.gc-section > h3 {
+  margin: 0 0 8px;
+  font: 400 1rem/1.3 var(--f-px);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.gc-section > h3 {
+  cursor: auto;
+}
+
+details.gc-section:not([open]) > summary {
+  margin-bottom: 0;
+}
+
+.gc-section > .gc-term {
+  margin-top: 8px;
+}
+
+/* A commit message as the editor shows it. */
+.gc-editor {
+  margin: 0;
+  padding: 0 10px 8px;
+  font: 1.05rem/1.25 var(--f-term);
+  color: var(--ink);
+  background: var(--panel);
+  border: 3px solid var(--edge);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.gc-editor-bar {
+  display: block;
+  margin: 0 -10px 6px;
+  padding: 2px 10px;
+  color: var(--panel);
+  background: var(--ink-soft);
+}
+
+.gc-editor .gc-look {
+  text-decoration-color: var(--z-va);
+}
+
+.gc-comment {
+  color: var(--ink-soft);
+}
+
+/* One command as the two it does at once: a + b = c. */
+.gc-sum {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+}
+
+.gc-sum-part {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 8px;
+  background: var(--panel-2);
+  border: 2px solid var(--edge);
+}
+
+.gc-sum-part:last-child {
+  border: 3px solid var(--z-va);
+}
+
+.gc-sum-part small {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.gc-sum-op {
+  font: 1.6rem/1 var(--f-term);
+}
+
+/* The key of git's drawing. */
+.gc-glyphs {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 2px 12px;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.gc-glyphs dt {
+  text-align: right;
+}
+
+.gc-glyphs dd {
+  margin: 0;
+}
+
+/* git's graph beside the chain, line for line: every line and every row is one --row high, and
+   the picture starts one row lower, level with the first line under the command. */
+.gc-decoder {
+  --row: 30px;
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.gc-decoder .gc-term {
+  padding: 8px 10px;
+  font-size: 1rem;
+  white-space: pre;
+  overflow-x: auto;
+  overflow-wrap: normal;
+}
+
+.gc-decoder .gc-line {
+  display: block;
+  height: var(--row);
+  line-height: var(--row);
+}
+
+.gc-decoded {
+  min-width: 0;
+  padding-top: calc(var(--row) + 8px);
+}
+
+.gc-decoder .gp-chain {
+  padding: 0 10px;
+  border-width: 0 0 0 3px;
+  overflow-x: auto;
+}
+
+.gc-decoder .chain-row {
+  height: var(--row);
+  min-height: var(--row);
+}
+
+/* Beside git's lines a row says only what git's line says: its names and its subject. */
+.gc-decoder .gp-mark,
+.gc-decoder .gp-note {
+  display: none;
+}
+
+.gc-decoder .chain-body {
+  flex-wrap: nowrap;
+  padding: 0 0 0 8px;
+  white-space: nowrap;
+}
+
+.gc-decoder .gc-line:nth-child(odd):not(:first-child),
+.gc-decoder .chain-row:nth-child(even) {
+  background: color-mix(in srgb, var(--z-va) 16%, transparent);
 }
 
 /* The merge conflict. */
@@ -695,6 +1014,22 @@
   .gc-then {
     justify-self: center;
     transform: rotate(90deg);
+  }
+
+  .gc-frames {
+    flex-direction: column;
+  }
+
+  .gc-frames > .gc-then {
+    align-self: center;
+  }
+
+  .gc-decoder {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gc-decoded {
+    padding-top: 0;
   }
 
   .gc-head {
