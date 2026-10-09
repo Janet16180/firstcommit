@@ -1,0 +1,2 @@
+folder while the tool waited: .git launch.txt launch_BACKUP_1899449.txt launch_BASE_1899449.txt launch_LOCAL_1899449.txt launch_REMOTE_1899449.txt
+folder while the tool waited: left in TMPDIR: 

@@ -1,0 +1,3 @@
+title: 'firstcommit-mergetool launch.txt'
+title: ''
+folder while the tool waited: left in TMPDIR: 

@@ -1,0 +1,18 @@
+project $ git merge --no-edit scout
+Auto-merging launch.txt
+CONFLICT (content): Merge conflict in launch.txt
+Automatic merge failed; fix conflicts and then commit the result.
+project $ git mergetool
+
+This message is displayed because 'merge.tool' is not configured.
+See 'git mergetool --tool-help' or 'git help config' for more details.
+'git mergetool' will now attempt to use one of the following tools:
+tortoisemerge emerge vimdiff nvimdiff
+Merging:
+launch.txt
+
+Normal merge conflict for 'launch.txt':
+  {local}: modified file
+  {remote}: modified file
+Hit return to start merge resolution tool (vimdiff): ^C
+project $ 

@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Teaching pictures</title>
+<style>
+:root {
+  --bg: #E6E3EF; --panel: #FBF9F3; --panel-2: #EFEBE0; --ink: #1F1A3D; --ink-soft: #5E577E;
+  --edge: #1F1A3D; --line: #C9C3DA; --you: #7A52D1; --alex: #3D8A18; --ms: #D23F6A;
+  --desk: #D9731F; --red: #D33A32; --ok: #2E7D50; --gold: #F2B01E; --crt: #120F2C;
+  --crt-ink: #FFE6B0; --crt-soft: #9F95C8; --crt-cmd: #FFD25A; --pick: #3A2E10;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B0920; --panel: #17133D; --panel-2: #1F1A4A; --ink: #F2EAD3; --ink-soft: #B9AED8;
+    --edge: #04030F; --line: #3A3470; --ok: #9EF0A0; --red: #FF8A78; --alex: #A6E05A;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B0920; --panel: #17133D; --panel-2: #1F1A4A; --ink: #F2EAD3; --ink-soft: #B9AED8;
+  --edge: #04030F; --line: #3A3470; --ok: #9EF0A0; --red: #FF8A78; --alex: #A6E05A;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.45 system-ui, sans-serif; }
+main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 56px; }
+h1, h2, h3 { font-family: ui-monospace, Menlo, Consolas, monospace; }
+h1 { font-size: 26px; margin: 0 0 6px; }
+.lede { color: var(--ink-soft); margin: 0 0 20px; max-width: 70ch; }
+code { font: 14px ui-monospace, Menlo, Consolas, monospace; }
+.kit { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 28px; }
+.kit div { background: var(--panel); border: 3px solid var(--edge); padding: 8px 12px; flex: 1 1 200px; }
+.kit b { font-family: ui-monospace, Menlo, Consolas, monospace; }
+.kit span { display: block; color: var(--ink-soft); font-size: 14px; }
+section.idea { background: var(--panel); border: 3px solid var(--edge); box-shadow: 6px 6px 0 var(--edge); padding: 16px; margin: 0 0 28px; }
+section.idea h2 { font-size: 18px; margin: 0 0 4px; }
+.say { margin: 0 0 4px; }
+.myth { margin: 0 0 12px; color: var(--ink-soft); font-size: 14px; }
+.myth b { color: var(--red); }
+.steps { display: flex; flex-wrap: wrap; align-items: stretch; gap: 10px; }
+.step { flex: 1 1 230px; min-width: 0; background: var(--panel-2); border: 2px solid var(--line); padding: 10px; }
+.step > .cmd { font: 13px ui-monospace, Menlo, Consolas, monospace; background: var(--crt); color: var(--crt-cmd); padding: 3px 8px; display: inline-block; margin-bottom: 8px; }
+.step > .cmd.none { background: transparent; color: var(--ink-soft); padding-left: 0; }
+.arrow { align-self: center; font: 700 22px ui-monospace, monospace; color: var(--ink-soft); }
+.note { font-size: 13px; color: var(--ink-soft); margin: 8px 0 0; }
+.hidden { font-size: 13px; color: var(--ink-soft); margin: 10px 0 0; }
+.chain { position: relative; }
+.chain svg { position: absolute; inset: 0; overflow: visible; }
+.node { position: absolute; display: flex; align-items: center; gap: 6px; white-space: nowrap; font-size: 13px; transform: translateY(-50%); }
+.cap { width: 18px; height: 18px; border: 2px solid var(--edge); background: var(--c, var(--you)); flex: none; }
+.cap.ghost { background: transparent; border: 2px dashed var(--c, var(--you)); opacity: .75; }
+.cap.mirror { background: repeating-linear-gradient(45deg, var(--c, var(--you)) 0 3px, var(--panel) 3px 6px); }
+.cap.new { box-shadow: 0 0 0 3px var(--gold); }
+.cap.unknown { background: transparent; border: 2px dotted var(--ms); }
+.msg.ghost { opacity: .6; }
+.tag { font: 700 11px ui-monospace, Menlo, Consolas, monospace; padding: 0 5px; border: 2px solid var(--edge); background: var(--panel); color: var(--ink); }
+.tag.mine { background: var(--you); color: #fff; }
+.tag.hollow { border-style: dashed; }
+.tag.moved { box-shadow: 0 0 0 2px var(--gold); }
+.ship { font-size: 15px; line-height: 1; }
+.pin { font: 700 11px system-ui, sans-serif; padding: 0 6px; border-radius: 9px; color: #fff; background: var(--c); }
+.pin.ms { --c: var(--ms); } .pin.alex { --c: var(--alex); }
+.badge { font: 700 11px ui-monospace, monospace; color: var(--ink-soft); }
+.desk { display: flex; flex-wrap: wrap; gap: 8px; align-items: stretch; }
+.box { border: 2px solid var(--c); padding: 6px 8px; background: var(--panel); font: 13px ui-monospace, Menlo, Consolas, monospace; min-width: 0; }
+.box h3 { margin: 0 0 4px; font-size: 12px; color: var(--c); }
+.box.work { --c: var(--desk); flex: 1 1 120px; }
+.box.stage { --c: var(--alex); flex: 1 1 90px; }
+.kept { border: 2px dashed var(--ok); padding: 14px 6px 6px; position: relative; flex: 1 1 110px; display: flex; }
+.kept > .box { flex: 1; }
+.kept > em { position: absolute; top: -9px; left: 6px; background: var(--panel-2); font: 700 11px ui-monospace, monospace; color: var(--ok); padding: 0 4px; font-style: normal; }
+.gone { color: var(--red); text-decoration: line-through; opacity: .6; }
+.redline { color: var(--red); }
+.diary { background: var(--crt); color: var(--crt-ink); padding: 8px; overflow-x: auto; }
+.diary table { border-collapse: collapse; font: 13px ui-monospace, Menlo, Consolas, monospace; width: 100%; }
+.diary td { padding: 3px 6px; white-space: nowrap; }
+.diary .ref { color: var(--crt-cmd); }
+.diary .kind { color: var(--crt-soft); }
+.diary tr.pick td { background: var(--pick); }
+.diary tr.pick td:first-child { box-shadow: inset 3px 0 0 var(--gold); }
+.diary tr.fresh td { color: #9EF0A0; }
+.diary .cap { display: inline-block; width: 13px; height: 13px; vertical-align: middle; }
+.combo { width: 100%; border-collapse: collapse; font-size: 14px; background: var(--panel); border: 3px solid var(--edge); }
+.combo th, .combo td { text-align: left; padding: 6px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.tablewrap { overflow-x: auto; }
+</style>
+</head>
+<body>
+<main>
+  <h1>One picture for each idea</h1>
+  <p class="lede">Four pictures carry every idea from history onward. Each card below shows one idea: the sentence, the myth it beats, and the picture before and after the command. Only what changes is drawn.</p>
+
+  <div class="kit">
+    <div><b>The chain</b><span>commits joined to their parents, name tags, the ship (you are here), pins for the mothership and Alex</span></div>
+    <div><b>The desk</b><span>the working folder and staging area; a dashed outline round what Git has a copy of</span></div>
+    <div><b>The move log</b><span>the reflog, newest at the top, line for line like <code>git reflog</code></span></div>
+    <div><b>Two sides</b><span>one conflicted file: your lines and Alex's (kept as it is today)</span></div>
+  </div>
+
+  <div id="ideas"></div>
+
+  <h2>At most two pictures at once</h2>
+  <div class="tablewrap">
+  <table class="combo">
+    <tr><th>Level is about</th><th>Large</th><th>Small</th></tr>
+    <tr><td>files, staging, first commits</td><td>desk</td><td>chain</td></tr>
+    <tr><td>branches, switching</td><td>chain</td><td>desk</td></tr>
+    <tr><td>mothership, fetch, push, pull</td><td>chain + mothership pin</td><td>none</td></tr>
+    <tr><td>merge</td><td>chain</td><td>none</td></tr>
+    <tr><td>conflict</td><td>two sides</td><td>chain</td></tr>
+    <tr><td>restore</td><td>desk</td><td>none</td></tr>
+    <tr><td>revert, reset</td><td>chain</td><td>none</td></tr>
+    <tr><td>reflog, ghosts</td><td>diary</td><td>chain</td></tr>
+  </table>
+  </div>
+</main>
+
+<script>
+"use strict";
+/* A chain is drawn from rows, newest at the top: {col, row, kind, msg, tags, ship, pins, parents, c}. */
+const ROW = 34, COL = 30, PAD = 14;
+
+function chain(nodes, extra) {
+  const rows = Math.max(...nodes.map((n) => n.row)) + 1;
+  const wrap = document.createElement("div");
+  wrap.className = "chain";
+  wrap.style.height = `${rows * ROW + 4}px`;
+  const at = (n) => ({ x: PAD + n.col * COL, y: ROW / 2 + n.row * ROW });
+  const byId = Object.fromEntries(nodes.map((n) => [n.id, n]));
+  const lines = nodes.flatMap((n) => (n.parents || []).map((p) => {
+    const a = at(n), b = at(byId[p]);
+    const faint = n.kind === "ghost" || n.kind === "unknown";
+    const colour = n.lineColour || "var(--you)";
+    return `<path d="M${a.x} ${a.y} L${a.x} ${a.y + 8} L${b.x} ${b.y - 8} L${b.x} ${b.y}" fill="none" stroke="${colour}" stroke-width="3" ${faint ? 'stroke-dasharray="4 4" opacity=".6"' : ""}/>`;
+  }));
+  if (extra) lines.push(extra(at, byId));
+  wrap.innerHTML = `<svg aria-hidden="true">${lines.join("")}</svg>`;
+  for (const n of nodes) {
+    const p = at(n);
+    const div = document.createElement("div");
+    div.className = "node";
+    div.style.left = `${p.x - 9}px`;
+    div.style.top = `${p.y}px`;
+    const tags = (n.tags || []).map((t) => `<span class="tag ${t.cls || ""}">${t.text}</span>`).join("");
+    const pins = (n.pins || []).map((t) => `<span class="pin ${t}">${t === "ms" ? "Mothership" : "Alex"}</span>`).join("");
+    const style = n.c ? ` style="--c:${n.c}"` : "";
+    div.innerHTML = `<span class="cap ${n.kind || ""}"${style}></span><span class="msg ${n.kind === "ghost" ? "ghost" : ""}">${n.msg}</span>${tags}${n.ship ? '<span class="ship" title="HEAD: you are here">&#9650;</span>' : ""}${pins}${n.badge ? `<span class="badge">${n.badge}</span>` : ""}`;
+    wrap.append(div);
+  }
+  return wrap;
+}
+
+const main = (cls = "mine") => ({ text: "main", cls });
+const tag = (text, cls = "") => ({ text, cls });
+
+function desk({ work, stage, kept = false }) {
+  const div = document.createElement("div");
+  div.className = "desk";
+  const stageBox = `<div class="box stage"><h3>Staging area</h3>${stage || "&nbsp;"}</div>`;
+  div.innerHTML = `<div class="box work"><h3>Working folder</h3>${work}</div>` +
+    (kept ? `<div class="kept"><em>Git has a copy</em>${stageBox}</div>` : stageBox);
+  return div;
+}
+
+function diary(rows) {
+  const div = document.createElement("div");
+  div.className = "diary";
+  div.innerHTML = `<table>${rows.map(([ref, kind, msg, ghost, cls]) =>
+    `<tr class="${cls || ""}"><td class="ref">${ref}</td><td class="kind">${kind}</td><td><span class="cap ${ghost ? "ghost" : ""}"></span></td><td>${msg}</td></tr>`).join("")}</table>`;
+  return div;
+}
+
+const IDEAS = [
+  {
+    title: "1. A commit is a snapshot with a parent",
+    say: "A commit is a saved photo of the whole project, and each one remembers the photo before it.",
+    myth: "A commit saves only my change.",
+    steps: [
+      { cmd: null, parts: [chain([{ id: "a", col: 0, row: 1, msg: "Start" }, { id: "b", col: 0, row: 0, msg: "Add the map", tags: [main()], ship: true, parents: ["a"] }]), desk({ work: "notes.txt", stage: "notes.txt" })] },
+      { cmd: "git commit -m \"Add notes\"", parts: [chain([{ id: "a", col: 0, row: 2, msg: "Start" }, { id: "b", col: 0, row: 1, msg: "Add the map", parents: ["a"] }, { id: "c", col: 0, row: 0, kind: "new", msg: "Add notes", tags: [main("mine moved")], ship: true, parents: ["b"] }]), desk({ work: "notes.txt", stage: "" })] },
+    ],
+    note: "Clicking a capsule opens every file it holds, not only the change.",
+    hidden: "Hashes (on hover), author details, file lists.",
+  },
+  {
+    title: "2. A branch is a movable label",
+    say: "A branch is a name tag stuck on one commit; when you commit, your tag moves up to the new one.",
+    myth: "A branch is a copy of my files.",
+    steps: [
+      { cmd: null, parts: [chain([{ id: "a", col: 0, row: 1, msg: "Start" }, { id: "b", col: 0, row: 0, msg: "Add the map", tags: [main()], ship: true, parents: ["a"] }])] },
+      { cmd: "git branch scout", parts: [chain([{ id: "a", col: 0, row: 1, msg: "Start" }, { id: "b", col: 0, row: 0, msg: "Add the map", tags: [main(), tag("scout", "moved")], ship: true, parents: ["a"] }])], note: "One new tag. No new capsule, no files copied." },
+      { cmd: "git switch scout, git commit", parts: [chain([{ id: "a", col: 0, row: 2, msg: "Start" }, { id: "b", col: 0, row: 1, msg: "Add the map", tags: [main("")], parents: ["a"] }, { id: "c", col: 1, row: 0, kind: "new", msg: "Launch the probe", tags: [tag("scout", "mine moved")], ship: true, parents: ["b"] }])], note: "Only scout climbs; main stays." },
+    ],
+    hidden: "A coloured lane per branch before it has commits of its own.",
+  },
+  {
+    title: "3. HEAD is \"you are here\"",
+    say: "HEAD marks where you are standing, and your folder shows that commit's files.",
+    myth: "HEAD is the newest commit.",
+    steps: [
+      { cmd: null, parts: [chain([{ id: "b", col: 0, row: 1, msg: "Add the map", tags: [main("")] }, { id: "c", col: 1, row: 0, msg: "Launch the probe", tags: [tag("scout", "mine")], ship: true, parents: ["b"] }]), desk({ work: "map.txt<br>probe.txt" })] },
+      { cmd: "git switch main", parts: [chain([{ id: "b", col: 0, row: 1, msg: "Add the map", tags: [main("mine moved")], ship: true }, { id: "c", col: 1, row: 0, msg: "Launch the probe", tags: [tag("scout")], parents: ["b"] }]), desk({ work: "map.txt<br><span class=\"gone\">probe.txt</span>" })], note: "The ship hops; probe.txt goes back into scout's capsule." },
+    ],
+    hidden: "The word HEAD as a separate label: the ship is HEAD (its tooltip says so).",
+  },
+  {
+    title: "4. origin/main is what you last saw of the mothership",
+    say: "origin/main is your note of where the mothership's main was the last time you checked; it does not update by itself.",
+    myth: "origin/main is live; push and pull happen by themselves.",
+    steps: [
+      { cmd: null, parts: [chain([{ id: "b", col: 0, row: 1, msg: "Add the map", tags: [main(), tag("origin/main", "hollow")], ship: true }, { id: "c", col: 0, row: 0, kind: "unknown", msg: "?", pins: ["ms"], parents: ["b"], lineColour: "var(--ms)" }])], note: "The mothership has a commit you have not fetched." },
+      { cmd: "git fetch", parts: [chain([{ id: "b", col: 0, row: 1, msg: "Add the map", tags: [main()], ship: true }, { id: "c", col: 0, row: 0, kind: "new", c: "var(--alex)", msg: "Alex: fix the route", tags: [tag("origin/main", "hollow moved")], pins: ["ms"], parents: ["b"], lineColour: "var(--alex)" }])], note: "Your note jumps to the pin. Your main does not move." },
+    ],
+    hidden: "A second column with the mothership's own copy of every commit.",
+  },
+  {
+    title: "5. Diverged histories",
+    say: "When you and the mothership both added a commit after the same one, the chain forks into a Y.",
+    myth: "Git will just put mine on top; a refused push is an error.",
+    steps: [
+      { cmd: "git fetch", parts: [chain([{ id: "a", col: 0, row: 2, msg: "+3 older" }, { id: "y", col: 0, row: 1, msg: "Your fix", tags: [main()], ship: true, parents: ["a"], badge: "1 ahead" }, { id: "t", col: 1, row: 0, c: "var(--alex)", msg: "Alex's fix", tags: [tag("origin/main", "hollow")], pins: ["ms"], parents: ["a"], lineColour: "var(--alex)", badge: "1 behind" }])] },
+      { cmd: "git push", parts: [chain([{ id: "a", col: 0, row: 2, msg: "+3 older" }, { id: "y", col: 0, row: 1, msg: "Your fix", tags: [main()], ship: true, parents: ["a"], badge: "bounced back" }, { id: "t", col: 1, row: 0, c: "var(--alex)", msg: "Alex's fix", tags: [tag("origin/main", "hollow")], pins: ["ms"], parents: ["a"], lineColour: "var(--alex)" }])], note: "The Y stays; the two arms must be joined first." },
+    ],
+    hidden: "The shared history below the fork, folded into \"+N\".",
+  },
+  {
+    title: "6. A merge joins two lines",
+    say: "A merge makes a new commit with two parents, so both lines of work are in it.",
+    myth: "A merge copies one side over the other, or deletes the branch.",
+    steps: [
+      { cmd: null, parts: [chain([{ id: "a", col: 0, row: 2, msg: "Start" }, { id: "y", col: 0, row: 1, msg: "Extend the route", tags: [main()], ship: true, parents: ["a"] }, { id: "t", col: 1, row: 0, c: "var(--alex)", msg: "Alex joins the crew", tags: [tag("scout")], parents: ["a"], lineColour: "var(--alex)" }])] },
+      { cmd: "git merge scout", parts: [chain([{ id: "a", col: 0, row: 3, msg: "Start" }, { id: "y", col: 0, row: 2, msg: "Extend the route", parents: ["a"] }, { id: "t", col: 1, row: 1, c: "var(--alex)", msg: "Alex joins the crew", tags: [tag("scout")], parents: ["a"], lineColour: "var(--alex)" }, { id: "m", col: 0, row: 0, kind: "new", msg: "Merge scout", tags: [main("mine moved")], ship: true, parents: ["y", "t"] }])], note: "Two lines down from one capsule. scout's tag stays." },
+    ],
+    hidden: "The files; a tag disappearing (it does not).",
+  },
+  {
+    title: "7. Restore, revert, reset: one kind of thing moves",
+    say: "restore changes a file on your desk, revert adds a commit that undoes an older one, and reset moves a tag back.",
+    myth: "Undo means delete; Git can always give my lines back; reset deletes commits.",
+    steps: [
+      { cmd: "git restore engine.cfg", parts: [desk({ work: "engine.cfg<br>&nbsp;power=80<br>&nbsp;<span class=\"gone\">power=99</span><br>&nbsp;<span class=\"gone\">overdrive=on</span>", stage: "notes.txt", kept: true })], note: "A file moves. The red lines were outside \"Git has a copy\": gone." },
+      { cmd: "git revert HEAD~1", parts: [chain([{ id: "a", col: 0, row: 3, msg: "Steady lights" }, { id: "s", col: 0, row: 2, msg: "Strobe lights", parents: ["a"] }, { id: "r", col: 0, row: 1, msg: "Night route", parents: ["s"] }, { id: "v", col: 0, row: 0, kind: "mirror new", msg: "Undo strobe", tags: [main("mine moved")], ship: true, parents: ["r"] }], (at, by) => { const a = at(by.v), b = at(by.s); return `<path d="M${a.x - 12} ${a.y} C ${a.x - 30} ${a.y}, ${b.x - 30} ${b.y}, ${b.x - 12} ${b.y}" fill="none" stroke="var(--gold)" stroke-width="2" stroke-dasharray="3 3"/>`; })], note: "A capsule is added: the mirror of the one it undoes." },
+      { cmd: "git reset --hard origin/main", parts: [chain([{ id: "a", col: 0, row: 2, msg: "Start", tags: [main("mine moved"), tag("origin/main", "hollow")], ship: true }, { id: "d1", col: 0, row: 1, msg: "Survey day 1", parents: ["a"] }, { id: "d2", col: 0, row: 0, msg: "Survey day 2", tags: [tag("rescue")], parents: ["d1"] }])], note: "A tag slides down. The capsules stay." },
+    ],
+    hidden: "Anything that does not move in that command.",
+  },
+  {
+    title: "8. The reflog is the move log",
+    say: "Git writes down every place HEAD has been, newest first; HEAD@{1} means \"where I was one move ago\".",
+    myth: "git log shows everything; what I cannot see is gone.",
+    steps: [
+      { cmd: "git reflog", parts: [diary([["HEAD@{0}", "reset", "Start"], ["HEAD@{1}", "commit", "Survey day 2", true, "pick"], ["HEAD@{2}", "commit", "Survey day 1", true], ["HEAD@{3}", "clone", "Start"]])], note: "Same lines, same order as the terminal. Picking a row lights its capsule on the chain." },
+      { cmd: "git switch scout", parts: [diary([["HEAD@{0}", "switch", "Add the map", false, "fresh"], ["HEAD@{1}", "reset", "Start"], ["HEAD@{2}", "commit", "Survey day 2", true, "pick"], ["HEAD@{3}", "commit", "Survey day 1", true], ["HEAD@{4}", "clone", "Start"]])], note: "A new row on top; every number grows by one. Survey day 2 is now HEAD@{2}." },
+    ],
+    hidden: "A horizontal tape (it reads backwards), timestamps, other people's diaries.",
+  },
+  {
+    title: "9. A lost commit is a ghost, not gone",
+    say: "A commit with no tag is hidden from git log, but Git keeps it for a while, and a new tag brings it back.",
+    myth: "Deleting a branch or resetting deletes the commits.",
+    steps: [
+      { cmd: null, parts: [chain([{ id: "a", col: 0, row: 2, msg: "Start", tags: [tag("origin/main", "hollow")] }, { id: "d1", col: 0, row: 1, msg: "Survey day 1", parents: ["a"] }, { id: "d2", col: 0, row: 0, msg: "Survey day 2", tags: [main()], ship: true, parents: ["d1"] }])] },
+      { cmd: "git reset --hard origin/main", parts: [chain([{ id: "a", col: 0, row: 2, msg: "Start", tags: [main("mine moved"), tag("origin/main", "hollow")], ship: true }, { id: "d1", col: 0, row: 1, kind: "ghost", msg: "Survey day 1", parents: ["a"] }, { id: "d2", col: 0, row: 0, kind: "ghost", msg: "Survey day 2", parents: ["d1"] }])], note: "No tag holds them: they fade, but stay." },
+      { cmd: "git branch survey HEAD@{1}", parts: [chain([{ id: "a", col: 0, row: 2, msg: "Start", tags: [main(), tag("origin/main", "hollow")], ship: true }, { id: "d1", col: 0, row: 1, msg: "Survey day 1", parents: ["a"] }, { id: "d2", col: 0, row: 0, kind: "new", msg: "Survey day 2", tags: [tag("survey", "moved")], parents: ["d1"] }])], note: "A tag lands; both fill back in." },
+    ],
+    hidden: "Ghosts in ordinary levels: drawn only from the reset level on.",
+  },
+];
+
+const root = document.getElementById("ideas");
+for (const idea of IDEAS) {
+  const section = document.createElement("section");
+  section.className = "idea";
+  section.innerHTML = `<h2>${idea.title}</h2><p class="say">${idea.say}</p><p class="myth"><b>Myth it beats:</b> ${idea.myth}</p>`;
+  const steps = document.createElement("div");
+  steps.className = "steps";
+  idea.steps.forEach((step, index) => {
+    if (index) steps.insertAdjacentHTML("beforeend", '<span class="arrow" aria-hidden="true">&rarr;</span>');
+    const box = document.createElement("div");
+    box.className = "step";
+    box.innerHTML = step.cmd ? `<span class="cmd">$ ${step.cmd}</span>` : '<span class="cmd none">before</span>';
+    for (const part of step.parts) {
+      part.style.marginBottom = "8px";
+      box.append(part);
+    }
+    if (step.note) box.insertAdjacentHTML("beforeend", `<p class="note">${step.note}</p>`);
+    steps.append(box);
+  });
+  section.append(steps);
+  if (idea.note) section.insertAdjacentHTML("beforeend", `<p class="note">${idea.note}</p>`);
+  section.insertAdjacentHTML("beforeend", `<p class="hidden"><b>Not drawn:</b> ${idea.hidden}</p>`);
+  root.append(section);
+}
+</script>
+</body>
+</html>

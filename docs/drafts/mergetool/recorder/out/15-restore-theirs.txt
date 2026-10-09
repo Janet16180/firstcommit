@@ -1,0 +1,15 @@
+project $ git merge --no-edit scout
+Auto-merging launch.txt
+CONFLICT (content): Merge conflict in launch.txt
+Automatic merge failed; fix conflicts and then commit the result.
+project $ git restore --theirs launch.txt
+project $ cat launch.txt
+Launch plan
+Window: 05:30
+Pilot: Cadet
+Destination: Base 7
+Cargo:
+- water
+- fuel cells
+- spare antenna
+project $ 

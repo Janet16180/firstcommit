@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sector 7 mockup</title>
+<style>
+:root {
+  --bg: #E6E3EF; --panel: #FBF9F3; --panel-2: #EFEBE0; --ink: #1F1A3D; --ink-soft: #5E577E;
+  --edge: #1F1A3D; --line: #C9C3DA; --z-wd: #D9731F; --z-st: #1D93A8; --z-va: #7A52D1;
+  --z-re: #D23F6A; --s-new: #D33A32; --gold: #F2B01E; --crt: #120F2C; --crt-ink: #FFE6B0;
+  --crt-soft: #9F95C8; --crt-cmd: #FFD25A; --ok: #2E8B57;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0B0920; --panel: #17133D; --panel-2: #1B1740; --ink: #F2EAD3; --ink-soft: #B9AED8;
+    --edge: #04030F; --line: #3A3470; --ok: #9EF0A0;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0B0920; --panel: #17133D; --panel-2: #1B1740; --ink: #F2EAD3; --ink-soft: #B9AED8;
+  --edge: #04030F; --line: #3A3470; --ok: #9EF0A0;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.45 system-ui, sans-serif; }
+main { max-width: 1100px; margin: 0 auto; padding: 24px 16px 48px; }
+h1 { font: 700 26px/1.2 ui-monospace, Menlo, Consolas, monospace; margin: 0 0 4px; }
+.lede { color: var(--ink-soft); margin: 0 0 24px; }
+section.screen { background: var(--panel); border: 3px solid var(--edge); box-shadow: 6px 6px 0 var(--edge); padding: 16px; margin: 0 0 32px; }
+.head { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: baseline; margin-bottom: 12px; }
+.head h2 { font: 700 18px ui-monospace, Menlo, Consolas, monospace; margin: 0; }
+.idea { color: var(--ink-soft); }
+code, .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 14px; }
+.row { display: flex; flex-wrap: wrap; gap: 16px; align-items: stretch; }
+.zone { border: 3px solid var(--c); padding: 10px 12px; background: var(--panel-2); min-width: 0; }
+.zone h3 { margin: 0 0 8px; font: 700 14px ui-monospace, Menlo, Consolas, monospace; color: var(--c); }
+.workshop { --c: var(--z-wd); flex: 1 1 260px; }
+.copybox { flex: 2 1 420px; border: 3px dashed var(--ok); padding: 28px 12px 12px; position: relative; display: flex; flex-wrap: wrap; gap: 12px; }
+.copybox > .tag { position: absolute; top: -13px; left: 12px; background: var(--panel); border: 2px solid var(--ok); color: var(--ok); font: 700 13px ui-monospace, Menlo, Consolas, monospace; padding: 1px 8px; }
+.copybox .zone { flex: 1 1 180px; }
+.dock { --c: var(--z-st); }
+.vault { --c: var(--z-va); }
+.file { font: 14px ui-monospace, Menlo, Consolas, monospace; }
+.file .gone { color: var(--s-new); text-decoration: line-through; opacity: .55; }
+.safe { color: var(--ok); font-weight: 700; }
+.rama { margin-top: 12px; padding: 8px 12px; border-left: 4px solid var(--gold); background: var(--panel-2); }
+.rama b { color: var(--ink-soft); font-weight: 600; margin-right: 6px; }
+.chain { list-style: none; margin: 0; padding: 0; }
+.chain li { display: flex; align-items: center; gap: 10px; min-height: 40px; position: relative; }
+.chain li + li::before { content: ""; position: absolute; left: 9px; top: -14px; height: 18px; border-left: 3px solid var(--z-va); }
+.cap { width: 21px; height: 21px; background: var(--z-va); border: 2px solid var(--edge); flex: none; }
+.cap.ghost { background: transparent; border: 2px dashed var(--z-va); opacity: .7; }
+.cap.undo { background: repeating-linear-gradient(45deg, var(--z-va) 0 4px, var(--panel) 4px 8px); }
+.label { font: 700 12px ui-monospace, Menlo, Consolas, monospace; padding: 1px 6px; border: 2px solid var(--edge); background: var(--panel); }
+.label.main { background: var(--z-va); color: #fff; }
+.label.moved { outline: 3px solid var(--gold); }
+.pin { font: 700 12px system-ui, sans-serif; padding: 1px 7px; border-radius: 10px; color: #fff; background: var(--c); }
+.pin.you { --c: var(--z-va); } .pin.ms { --c: var(--z-re); } .pin.alex { --c: var(--z-st); }
+.undo-note { color: var(--ink-soft); font-size: 14px; }
+.split { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 16px; }
+@media (max-width: 720px) { .split { grid-template-columns: 1fr; } }
+.recorder { background: var(--crt); color: var(--crt-ink); padding: 12px; border: 3px solid var(--edge); overflow-x: auto; }
+.recorder h3 { margin: 0 0 8px; font: 700 13px ui-monospace, Menlo, Consolas, monospace; color: var(--crt-soft); }
+.recorder table { border-collapse: collapse; width: 100%; font: 14px ui-monospace, Menlo, Consolas, monospace; }
+.recorder td { padding: 6px 8px; white-space: nowrap; }
+.recorder tr.picked td { background: #3A2E10; }
+.recorder tr.picked td:first-child { box-shadow: inset 4px 0 0 var(--gold); }
+.recorder .ref { color: var(--crt-cmd); }
+.recorder .kind { color: var(--crt-soft); }
+.recorder .cap { display: inline-block; vertical-align: middle; width: 16px; height: 16px; }
+.legend { display: flex; flex-wrap: wrap; gap: 16px; font-size: 13px; color: var(--ink-soft); margin-top: 10px; }
+.legend span { display: inline-flex; align-items: center; gap: 6px; }
+.hidden-list { font-size: 13px; color: var(--ink-soft); margin-top: 10px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Sector 7: one idea, one picture</h1>
+  <p class="lede">A static mockup of three key screens from <code>docs/drafts/sector-7-redesign.md</code>. Only the stage is drawn; the mission panel and the terminal stay as they are.</p>
+
+  <section class="screen" aria-labelledby="s71">
+    <div class="head"><h2 id="s71">7-1 Scrap the workshop</h2><span class="idea">after <code>git restore engine.cfg</code></span></div>
+    <div class="row">
+      <div class="zone workshop">
+        <h3>Workshop</h3>
+        <div class="file">engine.cfg<br>&nbsp; power=80<br>&nbsp; <span class="gone">power=99</span><br>&nbsp; <span class="gone">overdrive=on</span></div>
+      </div>
+      <div class="copybox">
+        <span class="tag">Git has a copy</span>
+        <div class="zone dock"><h3>Staging area</h3><div class="file">notes.txt <span class="safe">safe</span></div></div>
+        <div class="zone vault"><h3>Vault</h3><ul class="chain"><li><span class="cap"></span>Set the engine</li></ul></div>
+      </div>
+    </div>
+    <p class="rama"><b>Rama</b>Those two lines were never staged or committed. Git had no copy, so they are gone.</p>
+    <p class="hidden-list">Hidden: the mothership, the legend, Alex, the strip, the tape.</p>
+  </section>
+
+  <section class="screen" aria-labelledby="s72">
+    <div class="head"><h2 id="s72">7-2 Recall the capsule</h2><span class="idea">after <code>git revert HEAD~1</code> and <code>git push</code>, once Alex pulled</span></div>
+    <ul class="chain">
+      <li><span class="cap undo"></span>Revert "Try strobe lights" <span class="pin you">You</span><span class="pin ms">Mothership</span><span class="pin alex">Alex</span></li>
+      <li><span class="cap"></span>Add the night route</li>
+      <li><span class="cap"></span>Try strobe lights <span class="undo-note">undone by the top capsule</span></li>
+      <li><span class="cap"></span>Set the station lights</li>
+    </ul>
+    <p class="rama"><b>Rama</b>Nothing was removed. One capsule was added, and everyone moved up to it.</p>
+    <p class="hidden-list">Hidden: the strip, Alex's band (Alex is a pin), the two columns, hashes (on hover).</p>
+  </section>
+
+  <section class="screen" aria-labelledby="s74">
+    <div class="head"><h2 id="s74">7-4 The flight recorder (new)</h2><span class="idea">after <code>git reflog</code>, row <code>HEAD@{1}</code> picked</span></div>
+    <div class="split">
+      <div class="recorder">
+        <h3>FLIGHT RECORDER: newest first, like git reflog</h3>
+        <table>
+          <tr><td class="ref">HEAD@{0}</td><td class="kind">reset</td><td>6c06ded</td><td><span class="cap"></span></td><td>Start</td></tr>
+          <tr class="picked"><td class="ref">HEAD@{1}</td><td class="kind">commit</td><td>03242e9</td><td><span class="cap ghost"></span></td><td>Survey day 2</td></tr>
+          <tr><td class="ref">HEAD@{2}</td><td class="kind">commit</td><td>bcee460</td><td><span class="cap ghost"></span></td><td>Survey day 1</td></tr>
+          <tr><td class="ref">HEAD@{3}</td><td class="kind">clone</td><td>6c06ded</td><td><span class="cap"></span></td><td>Start</td></tr>
+        </table>
+      </div>
+      <div>
+        <ul class="chain">
+          <li><span class="cap ghost" style="outline:3px solid var(--gold)"></span>Survey day 2</li>
+          <li><span class="cap ghost"></span>Survey day 1</li>
+          <li><span class="cap"></span>Start <span class="label main">main</span><span class="label">origin/main</span></li>
+        </ul>
+      </div>
+    </div>
+    <div class="legend"><span><span class="cap"></span>a label holds it</span><span><span class="cap ghost"></span>no label holds it; Git still has it</span></div>
+    <p class="rama"><b>Rama</b>Each line is one move of HEAD, newest at the top. HEAD@{1} is where HEAD was one move ago.</p>
+    <p class="hidden-list">Hidden: the zones, the strip, Alex, the mothership.</p>
+  </section>
+</main>
+</body>
+</html>
