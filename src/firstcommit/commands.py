@@ -283,12 +283,12 @@ def type_line(folder: Path, line: str, picks: Mapping[str, Sequence[Keep]] | Non
     if not picks:
         ran = subprocess.run(argv, cwd=folder, env=env, capture_output=True, stdin=subprocess.DEVNULL, timeout=gitcmd.TIMEOUT, check=False)
         return {"line": line, "status": ran.returncode}
-    return {"line": line, "status": _with_panel(argv, folder, env, picks)}
+    return {"line": line, "status": run_with_panel(argv, folder, env, picks)[0]}
 
 
-def _with_panel(argv: list[str], folder: Path, env: Mapping[str, str], picks: Mapping[str, Sequence[Keep]]) -> int:
+def run_with_panel(argv: list[str], folder: Path, env: Mapping[str, str], picks: Mapping[str, Sequence[Keep]]) -> tuple[int, str]:
     """
-    Run a line while playing the merge panel: write a file's picks each time the game's merge tool waits for it.
+    Run a command while playing the merge panel: write a file's picks each time the game's merge tool waits for it.
 
     Parameters
     ----------
@@ -303,8 +303,9 @@ def _with_panel(argv: list[str], folder: Path, env: Mapping[str, str], picks: Ma
 
     Returns
     -------
-    int
-        The line's exit status.
+    tuple[int, str]
+        Its exit status, and everything it printed (standard output and error, in order), as UTF-8
+        with undecodable bytes replaced.
 
     Raises
     ------
@@ -315,6 +316,7 @@ def _with_panel(argv: list[str], folder: Path, env: Mapping[str, str], picks: Ma
     process = subprocess.Popen(argv, cwd=folder, env=env, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, start_new_session=True)
     assert process.stdout is not None
     pending = b""
+    printed = b""
     try:
         while time.monotonic() < deadline:
             if not select.select([process.stdout], [], [], 0.1)[0]:
@@ -322,6 +324,7 @@ def _with_panel(argv: list[str], folder: Path, env: Mapping[str, str], picks: Ma
             chunk = os.read(process.stdout.fileno(), 65536)
             if not chunk:
                 break
+            printed += chunk
             *lines, pending = (pending + chunk).split(b"\n")
             for said in lines:
                 path = mergetool.waiting_for(said.decode("utf-8", "replace"))
@@ -334,4 +337,4 @@ def _with_panel(argv: list[str], folder: Path, env: Mapping[str, str], picks: Ma
         raise
     finally:
         process.stdout.close()
-    return status
+    return status, printed.decode("utf-8", "replace")
