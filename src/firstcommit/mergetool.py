@@ -10,7 +10,7 @@ ends with status 0 and git adds the file; Ctrl-C, typed by the player or by the 
 ends it with status 1 and git puts the file back as it was. A file that disappears, or stops
 being a plain file, ends it with status 1 too.
 
-While it waits on a terminal, the terminal neither echoes nor turns Ctrl-C into a signal: a
+From before its first line until it ends, the terminal neither echoes nor turns Ctrl-C into a signal: a
 signal would kill git-mergetool with it, leaving its temporary copies behind and the player
 without git's own word on what happened. Keys typed meanwhile are dropped when it ends, so none
 reaches the shell after it. Without a terminal (the levels' tests) it only waits for the file.
@@ -160,8 +160,6 @@ def run(path: Path, language: Language, stdin: TextIO, stdout: TextIO) -> int:
             stdout.write(f"\x1b]0;{text}\x07")
             stdout.flush()
 
-    send(title(named))
-    print(WAITING[language].format(path=named), file=stdout, flush=True)
     keys = stdin.fileno() if stdin.isatty() else None
     kept = termios.tcgetattr(keys) if keys is not None else None
     if keys is not None and kept is not None:
@@ -169,6 +167,8 @@ def run(path: Path, language: Language, stdin: TextIO, stdout: TextIO) -> int:
         quiet[3] &= ~(termios.ICANON | termios.ECHO | termios.ISIG)
         termios.tcsetattr(keys, termios.TCSANOW, quiet)
     try:
+        send(title(named))
+        print(WAITING[language].format(path=named), file=stdout, flush=True)
         ending = wait(path, keys, lambda: send(title(named)))
     finally:
         if keys is not None and kept is not None:
