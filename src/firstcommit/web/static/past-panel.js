@@ -2,9 +2,9 @@
 
 /*
  * A file as it was (docs/drafts/past/plan.md): the panel beside the chain that shows exactly what
- * `git show <commit>:<file>` printed, titled with the commit it read, or that the commit has no
- * such file. Before anything is read it says how to fill it; a read always ends saying the folder
- * is not changed. Needs dom.js and strings.js. Defines one global, PastPanel.
+ * `git show <commit>:<file>` printed, titled with the subject of the commit it read, in italics, or
+ * that the commit has no such file. Before anything is read it says how to fill it; a read always
+ * ends saying the folder is not changed. Needs dom.js and strings.js. Defines one global, PastPanel.
  *
  * create() {element, update({file, past})}: file is the level's file (LevelView.pictures.past),
  *   past the latest read (Observation.past.read: {rev, commit, subject, text}), null before any.
@@ -32,9 +32,9 @@ const PastPanel = (function () {
 
       update({ file, past }) {
         const [state, shown] = body(file, past);
-        const title = past && past.subject ? t("past.title", { file, subject: past.subject }) : t("past.then", { file });
+        const title = past && past.subject ? [t("past.title", { file }), " ", el("em", {}, past.subject)] : [t("past.then", { file })];
         element.dataset.state = state;
-        element.replaceChildren(el("h3", { class: "past-title" }, title), ...shown);
+        element.replaceChildren(el("h3", { class: "past-title" }, ...title), ...shown);
       },
     };
   }
