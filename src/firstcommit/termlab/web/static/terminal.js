@@ -29,6 +29,8 @@
  *   changes some of them later.
  * - path: the terminal's path on the server, /api/terminal unless the server serves more.
  * - onTitle: called with each title the shell sets (an OSC 0 or 2 sequence), "" included.
+ * - onClose: called each time the shell's connection closes, and when the pane is disposed: the
+ *   programs it ran have been hung up, so anything their titles announced is over.
  */
 function createTerminal({
   protocol,
@@ -43,6 +45,7 @@ function createTerminal({
   labels = {},
   path = "/api/terminal",
   onTitle = () => {},
+  onClose = () => {},
 }) {
   /* What each close code means for the player, and whether to reconnect without being asked. */
   const closed = {
@@ -181,6 +184,7 @@ function createTerminal({
       if (ws !== socket) return;
       socket = null;
       if (disposed) return;
+      onClose();
       const info = closed[event.code] || unreachable;
       if (info === unreachable) onUnreachable();
       if (attempts === 0) term.write(`\r\n\x1b[33m[${info.text}]\x1b[0m\r\n`);
@@ -343,6 +347,7 @@ function createTerminal({
     },
 
     dispose() {
+      if (!disposed) onClose();
       disposed = true;
       clearTimeout(retryTimer);
       if (socket) {

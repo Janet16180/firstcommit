@@ -280,6 +280,28 @@ test("setLabels changes the status and the button at once, and later states use 
   assert.ok(texts(current).includes("connected") && texts(current).includes("ocultar"));
 });
 
+test("each time the shell's connection closes, and when the pane is disposed, onClose is told", async () => {
+  let closes = 0;
+  const current = page({ onClose: () => (closes += 1) });
+  const socket = await started(current);
+  accept(socket);
+  socket.onclose({ code: 1000 });
+  assert.equal(closes, 1);
+  current.pane.dispose();
+  assert.equal(closes, 2);
+});
+
+test("a replaced socket's late close tells onClose nothing", async () => {
+  let closes = 0;
+  const current = page({ onClose: () => (closes += 1) });
+  const old = await started(current);
+  accept(old);
+  old.onclose({ code: 1013 });
+  current.seen.timers.shift()();
+  old.onclose({ code: 1006 });
+  assert.equal(closes, 1);
+});
+
 test("a pane connects to /api/terminal, or to the path it was given", async () => {
   assert.equal((await started(page())).url, "ws://localhost:8800/api/terminal");
   assert.equal((await started(page({ path: "/api/terminal/second" }))).url, "ws://localhost:8800/api/terminal/second");
