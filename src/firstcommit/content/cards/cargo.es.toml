@@ -1,0 +1,99 @@
+notes = """
+El staging area (Git también lo llama index) contiene lo que llevará tu próximo commit, y tú eliges
+qué entra. `git add` copia un archivo, tal como está en ese momento, de la carpeta de trabajo al
+staging area; la carpeta de trabajo conserva su propia copia. Un `git commit` a secas se lleva lo
+que está en el staging area y deja el resto.
+
+`git status` lista lo que está en el staging area para el próximo commit, lo que cambió después en
+la carpeta de trabajo y los archivos que Git aún no sigue. Si `git add` no encuentra un nombre, se
+detiene con un error y no agrega nada. `git add .` agrega al staging area todo lo que hay en la
+carpeta actual y en las carpetas que contiene.
+
+Para sacar un archivo del staging area y dejarlo en la carpeta de trabajo:
+`git rm --cached <file>` antes del primer commit del repositorio, y `git restore --staged <file>`
+cuando ya tiene uno. Un archivo `.gitignore` lista nombres y patrones que Git ignora, como
+`sim-output/`: `git status` deja de listarlos y `git add .` se los salta, mientras los archivos
+siguen en tu disco.
+
+    $ git add map.txt                  # agrega un archivo al staging area
+    $ git status                       # mira qué está en el staging area y qué no
+    $ git rm --cached journal.txt      # lo saca del staging area, antes del primer commit
+    $ git restore --staged map.txt     # lo saca del staging area, cuando ya hay un commit
+    $ echo "sim-output/" > .gitignore  # ignora los archivos generados
+"""
+
+[[card]]
+id = "cargo-add-copies"
+prompt = "En un repositorio nuevo, ejecutas `git add map.txt`. ¿Dónde está `map.txt` ahora?"
+correct = "En la carpeta de trabajo y en el staging area"
+wrong = [
+    "Solo en el staging area: salió de la carpeta",
+    "En un commit nuevo del repositorio",
+    "Solo en la carpeta de trabajo, marcado para un commit posterior",
+]
+explain = """
+`git add` copia el contenido actual del archivo al staging area, y la carpeta de trabajo conserva
+su archivo: nada se mueve. No se hace ningún commit: un commit solo ocurre con `git commit`. El
+staging area guarda de verdad el contenido, no una marca: si vuelves a cambiar el archivo, el
+staging area sigue teniendo la versión que agregaste.
+"""
+
+[[card]]
+id = "cargo-status-short"
+prompt = "¿Qué imprime el último comando?"
+explain = """
+`git status --short` da una línea por archivo con dos columnas: el staging area y después la
+carpeta de trabajo. `A ` significa agregado al staging area, un archivo nuevo para el próximo
+commit; `??` significa sin seguimiento. Solo se agregó `map.txt`, así que `journal.txt` sigue sin
+seguimiento. `M` indicaría un cambio en un archivo que ya está en el último commit, y este
+repositorio todavía no tiene ningún commit.
+"""
+
+[[card]]
+id = "cargo-add-misspelled"
+prompt = "El archivo es `map.txt`, pero escribes `git add mapa.txt`. ¿Qué pasa?"
+correct = "Git se detiene con un error y no agrega nada"
+wrong = [
+    "Git agrega `map.txt`, el nombre más parecido",
+    "Git crea un `mapa.txt` vacío y lo agrega",
+    "Git agrega en su lugar todos los archivos de la carpeta",
+]
+explain = """
+`git add` agrega al staging area las rutas que encuentra; un nombre que no corresponde a ningún
+archivo lo detiene con un error, y no se agrega nada, ni siquiera los otros nombres de la misma
+línea. Git no adivina el nombre que querías ni crea archivos. Revisa el nombre con `ls`, o deja
+que la tecla Tab lo complete.
+"""
+
+[[card]]
+id = "cargo-unstage-before-commit"
+prompt = "El repositorio todavía no tiene ningún commit, y `git add .` agregó `journal.txt` al staging area por error. ¿Qué comando lo saca del staging area y conserva el archivo?"
+correct = "`git rm --cached journal.txt`"
+wrong = [
+    "`git rm journal.txt`",
+    "`git restore --staged journal.txt`",
+    "`git commit journal.txt`",
+]
+explain = """
+`git rm --cached` quita una ruta solo del staging area y no toca la carpeta de trabajo;
+`git status` lo sugiere cuando todavía no hay ningún commit. `git restore --staged` vuelve a poner
+la versión del último commit, así que falla mientras no haya ninguno; cuando el repositorio ya
+tiene un commit, es la forma habitual de sacar algo del staging area. Un `git rm` a secas se niega
+aquí, porque el archivo tiene cambios en el staging area, y con `-f` borraría el archivo también de
+la carpeta de trabajo. `git commit journal.txt` haría un commit con él.
+"""
+
+[[card]]
+id = "cargo-gitignore-skips"
+prompt = "`.gitignore` tiene la línea `sim-output/`, y `sim-output/` está lleno de archivos nuevos. ¿Qué agrega `git add .` de esa carpeta al staging area?"
+correct = "Nada: Git se salta los archivos ignorados"
+wrong = [
+    "Todos sus archivos",
+    "Solo los archivos que cambiaron desde la última vez",
+    "Todo, pero con una advertencia",
+]
+explain = """
+Los archivos que nombra `.gitignore` quedan fuera de `git status` y de `git add .`. Siguen en tu
+disco; Git solo deja de ofrecerlos para un commit. Haz commit del propio `.gitignore` para que todos
+tengan la misma regla.
+"""

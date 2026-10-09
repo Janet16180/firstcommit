@@ -1,0 +1,126 @@
+notes = """
+Un remoto es otro repositorio que tu repositorio conoce por un nombre corto, normalmente `origin`:
+en GitHub en el trabajo, una carpeta junto a tu base en el juego. `git remote add` solo anota el
+nombre y la dirección; no viaja nada.
+
+`git push` envía tus commits al remoto, y solo commits: un cambio que no está en un commit se
+queda aquí. El primer push de un branch con `-u` además convierte `origin/main` en su upstream,
+así que después un `git push` y un `git pull` a secas saben adónde ir.
+
+`origin/main` es la copia que guarda tu repositorio del `main` del remoto, de la última vez que
+preguntó. `git status` compara tu `main` con ella, así que no puede saber de un push que no ha
+traído con fetch. `git fetch` pregunta al remoto y mueve `origin/main`; `git pull` hace fetch y
+luego trae las noticias a tu branch. Un push se rechaza cuando el remoto tiene commits que tu
+branch no tiene; no se pierde nada, y un pull junta primero las dos historias.
+
+Un clone copia un repositorio entero: cada commit de su historia, un remoto llamado `origin` con su
+dirección y un branch propio, como `main`, en el commit donde estaba el branch del remoto.
+
+    $ git clone github.com/moonbase/project.git                  # copia un repositorio con toda su historia
+    $ git remote add origin ../github.com/moonbase/project.git   # da nombre a la dirección del remoto
+    $ git remote -v                                              # lista los remotos
+    $ git push -u origin main                                    # primer push de main, con su upstream
+    $ git fetch                                                  # pide noticias al remoto
+    $ git pull                                                   # hace fetch y trae las noticias a tu branch
+"""
+
+[[card]]
+id = "mothership-remote-add"
+prompt = "Ejecutas `git remote add origin ../github.com/moonbase/project.git`. ¿Qué llega al remoto?"
+correct = "Nada: solo da nombre a la dirección"
+wrong = [
+    "Todos los commits de tu repositorio, de golpe",
+    "Tus archivos, tal como están ahora en la carpeta de trabajo",
+    "Solo tu último commit",
+]
+explain = """
+`git remote add` escribe un nombre y una dirección en la configuración de tu repositorio, y nada
+más: no se envía nada, así que el remoto se queda como estaba. Los commits solo le llegan cuando
+haces push, y los archivos nunca viajan solos, solo dentro de commits.
+"""
+
+[[card]]
+id = "mothership-push-commits"
+prompt = "Ya hiciste push de tu `main`. Editas `route.txt` y ejecutas `git push` sin hacer commit. ¿Qué recibe el remoto?"
+correct = "Nada nuevo: solo viajan los commits"
+wrong = [
+    "El `route.txt` editado, tal como está en tu carpeta de trabajo",
+    "Un commit nuevo con el cambio",
+    "El cambio, en el staging area para su próximo commit",
+]
+explain = """
+`git push` envía commits. El cambio solo está en tu carpeta de trabajo, en ningún commit, así que
+no hay nada nuevo que enviar y el `main` del remoto se queda donde estaba. Haz primero el commit
+del cambio y luego el push.
+"""
+
+[[card]]
+id = "mothership-status-stale"
+prompt = "Alex hizo push de un commit a `main` hace una hora, y no hiciste fetch desde entonces. ¿Qué dice `git status` de tu `main`?"
+correct = "Al día con `origin/main`"
+wrong = [
+    "Un commit por detrás de `origin/main`",
+    "Primero pregunta al remoto y luego dice que va un commit por detrás",
+    "No puede saberlo, y te pide que hagas fetch",
+]
+explain = """
+`git status` compara tu `main` con `origin/main`, la copia que guarda tu repositorio del `main`
+del remoto desde el último fetch. No pregunta al remoto, así que no sabe nada del push de Alex y
+dice que estás al día. Después de `git fetch`, el mismo comando dice que vas un commit por detrás.
+"""
+
+[[card]]
+id = "mothership-fetch-changes"
+prompt = "El remoto tiene un commit nuevo en `main`. ¿Qué cambia `git fetch` en tu repositorio?"
+correct = "Se mueve `origin/main`; tu `main` y tus archivos no cambian"
+wrong = [
+    "Se mueve tu `main`, y tus archivos reciben el cambio",
+    "Solo tus archivos reciben el cambio",
+    "Nada hasta que ejecutes `git status`",
+]
+explain = """
+`git fetch` descarga los commits nuevos y mueve `origin/main`, tu copia del `main` del remoto. Tu
+propio `main` y tu carpeta de trabajo no se tocan; `git pull` es el comando que hace fetch y
+luego trae los commits a tu branch.
+"""
+
+[[card]]
+id = "mothership-push-upstream"
+prompt = "Nunca hiciste push de tu `main`. ¿Qué comando lo envía a `origin` y convierte `origin/main` en su upstream, para que después funcione un `git push` a secas? Escribe el comando completo."
+accept = ["git push -u origin main", "git push --set-upstream origin main", "git push origin -u main"]
+placeholder = "un comando de git"
+explain = """
+`git push -u origin main` envía `main` a `origin` y anota `origin/main` como su upstream. A partir de ahí, un `git push` o un `git pull` a secas en `main` sabe adónde ir.
+`--set-upstream` es el nombre largo de `-u`.
+"""
+
+[[card]]
+id = "mothership-refused-push"
+prompt = "Alex hizo push a `main` después de tu último pull, y tú también hiciste un commit. Tu `git push` es rechazado. ¿Qué cambió el push rechazado?"
+correct = "Nada, ni aquí ni en el remoto"
+wrong = [
+    "Se borró tu commit, para que puedas hacer pull",
+    "El commit de Alex se sustituyó por el tuyo",
+    "Tu commit se juntó con el de Alex en el remoto",
+]
+explain = """
+Un push que haría perder commits al `main` del remoto se rechaza, y un push rechazado no cambia
+nada: tu commit se queda en tu repositorio, y el de Alex en el remoto. Trae primero el commit de
+Alex con `git pull` y luego vuelve a hacer push.
+"""
+
+[[card]]
+id = "mothership-clone-history"
+prompt = "Clonas un repositorio cuyo `main` tiene 40 commits. ¿Cuánta de esa historia queda en tu clone?"
+correct = "Los 40 commits"
+wrong = [
+    "Solo el último commit, con sus archivos",
+    "Los archivos del último commit, sin historia",
+    "Los últimos diez commits",
+]
+explain = """
+`git clone` copia toda la historia: cada commit al que llegan los branches del remoto, con su
+autor, fecha y mensaje. Por eso puedes leer `git log` en un clone enseguida, sin preguntarle al
+remoto. Un clone hecho con `--depth` es parcial y tiene menos, pero un `git clone` simple lo tiene
+todo.
+"""

@@ -1,0 +1,324 @@
+/*
+ * The field guide's infographics (art-infographics.js). Link it after art-style.css. Colours are
+ * the page's tokens only, so light and dark mode come from the tokens; the command cards are
+ * night cards, like the terminal, in both. Headings in --f-px, text in --f-body, commands in
+ * --f-term. A box's colour arrives as --tone on the box. An item still to come (--upcoming) keeps
+ * its words at full strength: only its frame goes dashed and its picture dims, and its .art-ig-tag
+ * badge is a quiet plate in the soft ink, not a warning.
+ */
+
+.art-ig {
+  margin: 0 0 32px;
+  font-variant-ligatures: none;
+  color: var(--ink);
+  font-family: var(--f-body);
+}
+
+.art-ig-title {
+  margin: 0 0 14px;
+  font: 400 1.5rem/1.15 var(--f-px);
+}
+
+.art-ig-group + .art-ig-group {
+  margin-top: 18px;
+}
+
+.art-ig-group-title {
+  margin: 0 0 8px;
+  font: 400 1.05rem/1.2 var(--f-px);
+  color: var(--ink-soft);
+}
+
+.art-ig-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.art-ig-card {
+  padding: 12px 14px;
+  background: var(--crt);
+  color: var(--star);
+  border: 3px solid var(--gold);
+  box-shadow: 4px 4px 0 var(--edge);
+}
+
+.art-ig-command {
+  display: block;
+  padding: 0;
+  background: none;
+  font: 1.45rem/1.1 var(--f-term);
+  color: var(--crt-cmd);
+  white-space: normal;
+}
+
+.art-ig-open {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  font: inherit;
+  text-align: left;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.art-ig-card:has(.art-ig-open):hover {
+  border-color: var(--crt-cmd);
+}
+
+.art-ig-open:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 6px;
+}
+
+.art-ig-short {
+  display: block;
+  margin-top: 2px;
+  font: 1.1rem/1.1 var(--f-term);
+  color: var(--crt-soft);
+}
+
+.art-ig-card .art-ig-what {
+  display: block;
+  margin: 6px 0 0;
+  font-size: 0.88rem;
+  line-height: 1.4;
+  color: var(--crt-soft);
+}
+
+.art-ig-card--upcoming {
+  border-style: dashed;
+  border-color: var(--crt-soft);
+  box-shadow: none;
+}
+
+.art-ig-tag {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 3px 6px 2px;
+  font: 400 0.8rem/1.15 var(--f-px);
+  color: var(--ink-soft);
+  background: var(--panel-2);
+  border: 2px solid var(--ink-soft);
+}
+
+.art-ig-card .art-ig-tag {
+  color: var(--crt-soft);
+  background: var(--crt-2);
+  border-color: var(--crt-soft);
+}
+
+.art-ig-flow {
+  display: grid;
+  grid-template-columns: repeat(var(--columns), minmax(0, 1fr));
+  row-gap: 8px;
+  align-items: end;
+}
+
+.art-ig-boxes {
+  display: grid;
+  grid-column: 1 / -1;
+  grid-template-columns: repeat(var(--boxes), minmax(0, 1fr));
+  margin: 4px 0;
+}
+
+.art-ig-box {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin: 0 8px;
+  padding: 12px 10px;
+  text-align: center;
+  background: var(--panel);
+  border: 3px solid var(--tone);
+  box-shadow: 4px 4px 0 var(--edge);
+}
+
+.art-ig-pic {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin-bottom: 4px;
+  shape-rendering: crispEdges;
+}
+
+.art-ig-name {
+  margin: 0;
+  font: 400 1.35rem/1.1 var(--f-px);
+  color: var(--ink);
+}
+
+.art-ig-term {
+  margin: 0;
+  font: 1.2rem/1.05 var(--f-term);
+  color: var(--ink-soft);
+}
+
+.art-ig-box .art-ig-what {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  color: var(--ink-soft);
+}
+
+.art-ig-box .art-ig-tag {
+  margin-top: auto;
+}
+
+.art-ig-box--upcoming {
+  border-style: dashed;
+  box-shadow: none;
+}
+
+.art-ig-box--upcoming .art-ig-pic {
+  opacity: 0.55;
+}
+
+.art-ig-move {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  margin: 0 4px;
+  color: var(--ink);
+}
+
+.art-ig-move--back {
+  flex-direction: column-reverse;
+}
+
+.art-ig-move-text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.art-ig-move--forward .art-ig-move-text {
+  flex-direction: column-reverse;
+}
+
+.art-ig-move .art-ig-tag {
+  margin: 2px 0;
+}
+
+.art-ig-move-label {
+  padding: 0 4px;
+  font: 1.15rem/1.05 var(--f-term);
+  text-align: center;
+}
+
+.art-ig-arrow {
+  display: flex;
+  align-items: center;
+}
+
+.art-ig-shaft {
+  flex: 1;
+  border-top: 4px solid currentColor;
+}
+
+.art-ig-head {
+  display: block;
+  flex: none;
+  shape-rendering: crispEdges;
+}
+
+.art-ig-move--back .art-ig-arrow {
+  flex-direction: row-reverse;
+}
+
+.art-ig-move--back .art-ig-head {
+  transform: scaleX(-1);
+}
+
+.art-ig-move--upcoming {
+  color: var(--ink-soft);
+}
+
+.art-ig-move--upcoming .art-ig-shaft {
+  border-top-style: dashed;
+}
+
+.art-ig-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* On a phone the boxes stand in a column, a picture beside its words, and each move becomes a
+   line of its own under them that names both ends: "Working folder git add -> Staging area". */
+@media (max-width: 640px) {
+  .art-ig-flow {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .art-ig-boxes {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    margin: 0 0 8px;
+  }
+
+  .art-ig-box {
+    display: grid;
+    grid-template-columns: 72px minmax(0, 1fr);
+    column-gap: 12px;
+    justify-items: start;
+    margin: 0;
+    padding: 10px 12px;
+    text-align: left;
+  }
+
+  .art-ig-box .art-ig-pic {
+    grid-row: 1 / span 4;
+    align-self: center;
+    justify-self: center;
+  }
+
+  .art-ig-move,
+  .art-ig-move--back {
+    flex-direction: row;
+    margin: 0;
+  }
+
+  .art-ig-move-text,
+  .art-ig-move--forward .art-ig-move-text {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 8px;
+  }
+
+  .art-ig-move .art-ig-end {
+    position: static;
+    width: auto;
+    height: auto;
+    overflow: visible;
+    clip-path: none;
+    font-weight: 700;
+  }
+
+  .art-ig-move .art-ig-end + .art-ig-move-label + .art-ig-end::before {
+    content: "> ";
+    color: var(--ink-soft);
+  }
+
+  .art-ig-arrow {
+    display: none;
+  }
+
+  .art-ig-move-label {
+    padding: 0;
+    font-size: 1.1rem;
+  }
+}

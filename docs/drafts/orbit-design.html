@@ -1,0 +1,1641 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Gitnauta: aprende Git en órbita</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Atkinson+Hyperlegible:wght@400;700&family=VT323&display=swap" rel="stylesheet">
+<style>
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  /* claro: interior de la estación */
+  --bg:#E6E3EF; --speck:#CFC9E0; --panel:#FBF9F3; --panel-2:#EFEBE0; --ink:#1F1A3D; --ink-soft:#5E577E; --edge:#1F1A3D; --line:#C9C3DA;
+  --z-wd:#D9731F; --z-st:#1D93A8; --z-va:#7A52D1; --z-re:#D23F6A;
+  --s-new:#D33A32; --s-mod:#B98A00; --s-clean:#A9A2C0;
+  --gold:#F2B01E; --on-accent:#FFFFFF;
+  /* el espacio y la terminal son siempre de noche */
+  --void:#0B0920; --void-2:#17133D; --star:#F2EAD3;
+  --crt:#120F2C; --crt-2:#1B1740; --crt-ink:#FFE6B0; --crt-soft:#9F95C8; --crt-ok:#9EF0A0; --crt-err:#FF8A78; --crt-cmd:#FFD25A; --crt-hint:#8ADBFF; --crt-warn:#FFB86B;
+  --f-px:'Pixelify Sans','Courier New',monospace;
+  --f-body:'Atkinson Hyperlegible',system-ui,-apple-system,'Segoe UI',sans-serif;
+  --f-term:'VT323',ui-monospace,Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --bg:#0E0C24; --speck:#F2EAD3; --panel:#1B1840; --panel-2:#141134; --ink:#F2EAD3; --ink-soft:#A39CC9; --edge:#04030F; --line:#332E66;
+    --z-wd:#FF9A4A; --z-st:#4FD8EA; --z-va:#B08CFF; --z-re:#FF6F98;
+    --s-new:#FF6B5E; --s-mod:#FFD054; --s-clean:#5E5683; --on-accent:#120F2C;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0E0C24; --speck:#F2EAD3; --panel:#1B1840; --panel-2:#141134; --ink:#F2EAD3; --ink-soft:#A39CC9; --edge:#04030F; --line:#332E66;
+  --z-wd:#FF9A4A; --z-st:#4FD8EA; --z-va:#B08CFF; --z-re:#FF6F98;
+  --s-new:#FF6B5E; --s-mod:#FFD054; --s-clean:#5E5683; --on-accent:#120F2C;
+}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px);height:100%}
+body{margin:0;min-height:100%;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.5;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+button{font:inherit;color:inherit;cursor:pointer}
+[hidden]{display:none!important}
+:focus-visible{outline:3px solid var(--gold);outline-offset:2px}
+code{font-family:var(--f-term);font-size:1.15em;background:color-mix(in srgb,var(--ink) 9%,transparent);padding:0 .3em;white-space:nowrap}
+.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.sprite,.art{image-rendering:pixelated;shape-rendering:crispEdges}
+
+/* polvo estelar del fondo */
+#sky{position:fixed;inset:0;pointer-events:none;z-index:0}
+#sky i{position:absolute;background:var(--speck);opacity:.55}
+#sky i.tw{animation:tw 2.4s steps(2) infinite}
+@keyframes tw{50%{opacity:.08}}
+.screen{position:relative;z-index:1}
+
+/* piezas pixel */
+.px{background:var(--panel);border:3px solid var(--edge);box-shadow:inset -4px -4px 0 color-mix(in srgb,var(--edge) 9%,transparent),5px 5px 0 var(--edge)}
+.btn{font-family:var(--f-px);font-weight:700;font-size:1rem;line-height:1.3;background:var(--panel);color:var(--ink);border:3px solid var(--edge);box-shadow:3px 3px 0 var(--edge);padding:5px 12px}
+.btn:active:not(:disabled){transform:translate(3px,3px);box-shadow:none}
+.btn.primary{background:var(--gold);color:#1F1A3D}
+.btn:disabled{opacity:.5;cursor:default}
+.btn.quiet{background:transparent;box-shadow:none;border-color:var(--line)}
+
+/* ═════════ MAPA ═════════ */
+.map{max-width:820px;margin:0 auto;padding:28px 16px 190px}
+.top{display:flex;align-items:center;gap:18px}
+.top .sprite{flex:none;width:84px;height:94px;animation:bob 1.2s steps(2) infinite}
+@keyframes bob{50%{transform:translateY(-4px)}}
+.title{font-family:var(--f-px);font-weight:700;font-size:clamp(2.6rem,10vw,4.4rem);line-height:.95;margin:0;letter-spacing:.01em;text-shadow:3px 3px 0 var(--z-va),6px 6px 0 var(--edge)}
+.lede{margin:10px 0 0;max-width:46ch;color:var(--ink-soft)}
+.map-bar{display:flex;flex-wrap:wrap;align-items:center;gap:12px;margin-top:20px}
+.counter{padding:4px 12px;font-family:var(--f-px);font-size:1.05rem}
+.counter .star{color:var(--gold);text-shadow:2px 2px 0 var(--edge)}
+.map-bar .spacer{flex:1}
+.sector{margin-top:34px}
+.snum{font-family:var(--f-px);color:var(--ink-soft)}
+.sector h2{margin:0;font-family:var(--f-px);font-weight:700;font-size:1.6rem;line-height:1.15}
+.sector-head p{margin:2px 0 0;color:var(--ink-soft)}
+.field{position:relative;height:180px;margin-top:14px;background:var(--void);border:3px solid var(--edge);box-shadow:5px 5px 0 var(--edge);overflow:hidden}
+.field .bgstars{position:absolute;inset:0;width:100%;height:100%}
+.field .orb{position:absolute;left:14px;top:50%;width:104px;height:104px;transform:translateY(-50%)}
+.route{position:absolute;left:170px;right:44px;top:0;bottom:0}
+.route>svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible}
+.route polyline{fill:none;stroke:#3A3470;stroke-width:6;stroke-dasharray:6 6}
+.node{position:absolute;transform:translate(-50%,-50%);width:54px;height:54px;padding:0;border:3px solid #04030F;background:#E6E0F5;color:#1F1A3D;box-shadow:inset -5px -5px 0 rgba(0,0,0,.18),4px 4px 0 #04030F;font-family:var(--f-px);font-weight:700;font-size:1.05rem}
+.node.done{background:var(--gold)}
+.node.boss{background:#FF6F98}
+.node.boss.done{background:var(--gold)}
+.node:disabled{background:#3A3470;color:#8E86B8;cursor:not-allowed}
+.node:disabled svg{width:21px;height:24px}
+.node.sel{outline:3px solid #F2EAD3;outline-offset:4px}
+.node .here{position:absolute;left:50%;bottom:calc(100% + 6px);width:32px;height:36px;margin-left:-17px;animation:bob 1s steps(2) infinite;pointer-events:none}
+.sector.soon .sector-head{opacity:.6}
+.soon-field{margin-top:12px;height:44px;border:3px dashed var(--s-clean);display:flex;align-items:center;justify-content:center;font-family:var(--f-px);color:var(--ink-soft)}
+.card{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:30;width:min(580px,calc(100% - 28px));display:grid;grid-template-columns:minmax(0,1fr) auto;gap:2px 14px;align-items:center;padding:12px 16px}
+.card-num{font-family:var(--f-px);color:var(--ink-soft);font-size:.95rem}
+.card-title{margin:0;font-family:var(--f-px);font-weight:700;font-size:1.3rem;line-height:1.15}
+.card-meta{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.card .btn{grid-row:1/span 3;grid-column:2;font-size:1.15rem;padding:10px 18px}
+.stars{letter-spacing:2px;color:var(--s-clean);white-space:nowrap}
+.stars .on{color:var(--gold);text-shadow:2px 2px 0 var(--edge)}
+
+/* ═════════ NIVEL ═════════ */
+.hud{position:sticky;top:env(safe-area-inset-top,0px);z-index:20;display:flex;align-items:center;gap:10px;padding:8px 14px;background:#120F2C;color:#F2EAD3;border-bottom:3px solid #04030F;font-family:var(--f-px)}
+.hud .btn{background:transparent;color:#F2EAD3;border-color:#F2EAD3;box-shadow:none;padding:3px 10px}
+.hud-title{flex:1;min-width:0;display:flex;align-items:baseline;gap:10px;white-space:nowrap;overflow:hidden}
+.hud-title #lvlNum{color:var(--gold)}
+.hud-title b{font-size:1.2rem;overflow:hidden;text-overflow:ellipsis}
+.hud-title code{background:rgba(255,255,255,.1);color:#F2EAD3}
+.hud-stars{font-size:1.2rem;letter-spacing:3px;color:#4A4478;white-space:nowrap}
+.hud-stars .on{color:var(--gold)}
+.hud-stars.lost{animation:shake .5s steps(4)}
+@keyframes shake{25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.hud-cmds{font-family:var(--f-term);font-size:1.15rem;color:#B9AED8;white-space:nowrap}
+.hud .ico{display:none}
+.level.boss-lvl .hud{border-bottom-color:#FF6F98}
+
+.stage{max-width:1320px;margin:0 auto;padding:16px 16px 28px;display:grid;gap:18px;grid-template-columns:minmax(280px,370px) minmax(0,1fr);grid-template-areas:"viz viz" "mission term";align-items:start}
+
+/* tubería de zonas */
+.viz{grid-area:viz;padding:12px 12px 10px}
+.viz-row{display:grid;grid-template-columns:minmax(0,1fr) 42px minmax(0,1fr) 42px minmax(0,1fr) 42px minmax(0,1fr);align-items:stretch}
+.zone{--zc:var(--z-wd);display:flex;flex-direction:column;min-width:0;min-height:206px;padding:10px;background:color-mix(in srgb,var(--zc) 11%,var(--panel));border:3px solid var(--zc);transition:opacity .25s}
+.zone[data-zone="stage"]{--zc:var(--z-st)}
+.zone[data-zone="vault"]{--zc:var(--z-va)}
+.zone[data-zone="remote"]{--zc:var(--z-re)}
+.z-head{display:flex;gap:8px;align-items:flex-start;margin-bottom:10px}
+.zico{flex:none;width:14px;height:14px;margin-top:5px;background:var(--zc);box-shadow:3px 3px 0 var(--edge)}
+.z-head h3{margin:0;font-family:var(--f-px);font-weight:700;font-size:1.12rem;line-height:1.2}
+.z-head small{display:block;font-family:var(--f-term);font-size:1.02rem;line-height:1;color:var(--ink-soft)}
+.z-count{margin-left:auto;font-family:var(--f-term);font-size:1.1rem;line-height:1;padding:3px 7px;background:var(--panel);border:2px solid var(--edge)}
+.z-body{display:flex;flex-wrap:wrap;gap:6px;align-content:flex-start;flex:1;min-width:0;overflow:auto;max-height:250px}
+.empty{margin:auto 0;width:100%;text-align:center;font-size:.86rem;line-height:1.35;color:var(--ink-soft)}
+.zone.dormant{background:repeating-linear-gradient(45deg,transparent 0 8px,color-mix(in srgb,var(--ink) 6%,transparent) 8px 16px);border-style:dashed;border-color:var(--s-clean)}
+.zone.dormant .zico{background:var(--s-clean)}
+.zone.dormant h3{color:var(--ink-soft)}
+.zone.wake{animation:wake .6s steps(3)}
+@keyframes wake{50%{background:color-mix(in srgb,var(--zc) 45%,var(--panel))}}
+
+.flow{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--ink-soft)}
+.fl{display:flex;flex-direction:column;align-items:center;gap:6px}
+.fl svg{width:24px;height:21px}
+.fl span{font-family:var(--f-term);font-size:1.02rem;line-height:1;writing-mode:vertical-rl;transform:rotate(180deg);white-space:nowrap}
+.fl.back{opacity:.7}
+.fl.back svg{transform:scaleX(-1)}
+.fl.lit{color:var(--ink);opacity:1}
+.fl.lit svg{animation:blink .3s steps(2) 5}
+@keyframes blink{50%{opacity:0}}
+
+/* archivos */
+.file{--fs:var(--s-clean);display:inline-flex;align-items:center;gap:6px;max-width:100%;padding:2px 8px 2px 6px;background:var(--panel);border:2px solid var(--edge);font-family:var(--f-term);font-size:1.1rem;line-height:1.15}
+.file::before{content:'';flex:none;width:9px;height:9px;background:var(--fs)}
+.fname{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ftag{flex:none;font-size:.95rem;color:var(--ink-soft)}
+.f-n::before{background:transparent;box-shadow:inset 0 0 0 2px var(--s-clean)}
+.f-u{--fs:var(--s-new)} .f-m{--fs:var(--s-mod)} .f-s,.f-stg{--fs:var(--z-st)}
+.f-stg{border-color:var(--z-st)}
+.file.shake{animation:shake .4s steps(4)}
+
+/* cápsulas (commits) */
+.caps{display:flex;flex-direction:column;gap:10px;width:100%}
+.cap{position:relative;display:grid;grid-template-columns:18px minmax(0,1fr);gap:8px;align-items:start}
+.cblock{width:18px;height:18px;margin-top:2px;background:var(--zc);border:2px solid var(--edge);box-shadow:inset -4px -4px 0 rgba(0,0,0,.25)}
+.cap:not(:last-child)::after{content:'';position:absolute;left:7px;top:20px;width:4px;height:calc(100% - 10px);background:var(--edge)}
+.cinfo{min-width:0}
+.cline{display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+.chash{font-family:var(--f-term);font-size:1.08rem;line-height:1.1;color:var(--ink)}
+.ref{font-family:var(--f-term);font-size:.95rem;line-height:1;padding:2px 5px;background:var(--zc);color:var(--on-accent);border:2px solid var(--edge)}
+.ref.trk{background:var(--panel);color:var(--ink)}
+.cmsg{display:block;font-size:.8rem;line-height:1.25;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cauthor{display:block;font-size:.74rem;color:var(--ink-soft)}
+.rurl{width:100%;margin:0 0 6px;font-family:var(--f-term);font-size:1rem;color:var(--ink-soft);overflow-wrap:anywhere;line-height:1.1}
+.legend{display:flex;flex-wrap:wrap;gap:4px 18px;list-style:none;margin:12px 2px 0;padding:0;font-size:.82rem;color:var(--ink-soft)}
+.legend li::before{content:'';display:inline-block;width:9px;height:9px;margin-right:6px;background:var(--lg)}
+.legend li.hol::before{background:transparent;box-shadow:inset 0 0 0 2px var(--s-clean)}
+
+/* misión */
+.mission{grid-area:mission;display:flex;flex-direction:column;gap:14px;padding:16px 18px}
+.brief{margin:0}
+.mission h3{margin:0;font-family:var(--f-px);font-size:1.15rem}
+.goals{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:6px}
+.goals li{display:grid;grid-template-columns:24px 1fr;gap:10px;align-items:start;padding:6px 8px;line-height:1.4;border-left:4px solid transparent;color:var(--ink-soft)}
+.goals li.cur{color:var(--ink);border-left-color:var(--gold);background:color-mix(in srgb,var(--gold) 10%,transparent)}
+.goals li.done{color:var(--ink-soft)}
+.goals li.done>span:last-child{text-decoration:line-through;text-decoration-thickness:2px}
+.check{width:20px;height:20px;margin-top:2px;border:3px solid var(--edge);background:var(--panel)}
+.goals li.done .check{background:var(--z-st);box-shadow:inset -3px -3px 0 rgba(0,0,0,.22)}
+.goals li.just .check{animation:pop .4s steps(3)}
+@keyframes pop{0%{transform:scale(.4)}60%{transform:scale(1.3)}100%{transform:scale(1)}}
+.mission code{cursor:pointer}
+.mission code:hover{background:color-mix(in srgb,var(--gold) 30%,transparent)}
+.hints{display:flex;flex-direction:column;gap:6px}
+.hints p{margin:0;font-size:.94rem;padding:8px 12px;background:var(--panel-2);border-left:5px solid var(--gold)}
+.hint-row{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;padding-top:12px;border-top:3px dashed var(--line)}
+.hint-row small{font-size:.82rem;color:var(--ink-soft)}
+.tapnote{margin:0;font-size:.8rem;color:var(--ink-soft)}
+.fail{padding:12px;border:3px solid var(--s-new);background:color-mix(in srgb,var(--s-new) 12%,var(--panel))}
+.fail p{margin:0 0 10px}
+
+/* comunicaciones + terminal */
+.termcol{grid-area:term;display:flex;flex-direction:column;gap:14px;min-width:0}
+.comms{--mood:var(--s-clean);display:grid;grid-template-columns:52px minmax(0,1fr);gap:12px;align-items:center;padding:10px 14px 10px 10px;border-left:8px solid var(--mood)}
+.comms.ok{--mood:var(--z-st)} .comms.warn{--mood:var(--s-mod)} .comms.err{--mood:var(--s-new)}
+.comms .sprite{width:52px;height:58px}
+.comms .who{display:block;font-family:var(--f-px);font-size:.85rem;color:var(--ink-soft);line-height:1.2}
+.comms p{margin:0;font-size:.98rem;line-height:1.45}
+.comms.fresh p{animation:in .3s steps(3)}
+@keyframes in{from{opacity:0}}
+.term{position:relative;display:flex;flex-direction:column;min-width:0;background:var(--crt);color:var(--crt-ink);border:3px solid var(--edge);box-shadow:5px 5px 0 var(--edge);font-family:var(--f-term);font-size:19px}
+.term::after{content:'';position:absolute;inset:0;pointer-events:none;background:repeating-linear-gradient(to bottom,rgba(255,255,255,.03) 0 2px,transparent 2px 4px)}
+.term-bar{display:flex;align-items:center;gap:8px;padding:7px 12px;background:var(--crt-2);border-bottom:3px solid #04030F;font-size:1rem;color:var(--crt-soft)}
+.term-bar i{width:9px;height:9px;background:#FF6F98}
+.term-bar i:nth-child(2){background:#FFD25A}.term-bar i:nth-child(3){background:#4FD8EA}
+.term-bar span{margin-left:6px;white-space:nowrap}
+.term-bar .tip{margin-left:auto}
+.term-out{flex:1;min-height:220px;max-height:340px;overflow-y:auto;padding:10px 14px 4px;line-height:1.2}
+.term-out div{white-space:pre-wrap;word-break:break-word;tab-size:4}
+.term-out .cmd{color:var(--crt-ink)} .term-out .cmd .pr{color:var(--crt-ok)}
+.term-out .ok{color:var(--crt-ok)} .term-out .err{color:var(--crt-err)} .term-out .dim{color:var(--crt-soft)} .term-out .warn{color:var(--crt-warn)} .term-out .hint{color:var(--crt-hint)}
+.term-in{display:flex;align-items:center;gap:8px;padding:8px 14px 10px}
+.pr{color:var(--crt-ok);white-space:nowrap}
+.pr b{color:var(--crt-cmd);font-weight:400}
+#termIn{flex:1;min-width:40px;background:transparent;border:0;outline:none;color:var(--crt-ink);font:inherit;font-size:20px;caret-color:var(--crt-cmd)}
+.keys{display:flex;gap:6px;overflow-x:auto;padding:0 12px 12px;scrollbar-width:none}
+.keys::-webkit-scrollbar{display:none}
+.keys button{flex:none;font-family:var(--f-term);font-size:1.05rem;line-height:1.2;padding:2px 10px;background:transparent;color:var(--crt-ink);border:2px solid #4A4478}
+.keys button:hover{background:rgba(255,255,255,.08)}
+
+/* ═════════ OVERLAYS ═════════ */
+.overlay{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px));background:rgba(4,3,15,.66)}
+.overlay.on{display:flex}
+
+/* cinemática: ventana al espacio + caja de diálogo */
+.cs{width:min(700px,100%);max-height:100%;overflow:auto;background:#120F2C;color:#F2EAD3;border:4px solid #F2EAD3;outline:4px solid #04030F;box-shadow:8px 8px 0 #04030F}
+.cs-art{background:var(--void);border-bottom:4px solid #F2EAD3;cursor:pointer}
+.cs-art>svg{display:block;width:100%;height:auto}
+.cs-dlg{position:relative;display:grid;grid-template-columns:52px 1fr;gap:6px 14px;padding:22px 18px 14px}
+.cs-dlg .sprite{width:52px;height:58px}
+.cs .who{position:absolute;top:-17px;left:16px;font-family:var(--f-px);font-weight:700;background:var(--gold);color:#1F1A3D;border:3px solid #04030F;padding:0 10px;line-height:1.5}
+.cs-txt{margin:0;min-height:4.4em;font-size:1.08rem;line-height:1.5;cursor:pointer}
+.cs-txt b{color:#FFD25A;font-weight:700}
+.cs-ctl{grid-column:1/-1;display:flex;align-items:center;gap:10px}
+.pips{display:flex;gap:6px;flex:1}
+.pips i{width:8px;height:8px;background:#3A3470}
+.pips i.on{background:#F2EAD3}
+.cs .btn{background:transparent;color:#F2EAD3;border-color:#F2EAD3;box-shadow:none}
+.cs .btn.primary{background:var(--gold);color:#1F1A3D;border-color:#04030F}
+
+/* animaciones del arte (todas en pasos, sin suavizado) */
+.art .tw{animation:tw 2.2s steps(2) infinite;animation-delay:var(--d,0s)}
+.art .bob{animation:abob 1.2s steps(2) infinite}
+@keyframes abob{50%{transform:translateY(-1px)}}
+.art .eyes,.sprite .eyes{animation:eyes 4s steps(1) infinite}
+@keyframes eyes{0%,93%{opacity:1}94%,97%{opacity:0}}
+.art .flick,.sprite .flick{animation:flick .3s steps(2) infinite}
+@keyframes flick{50%{opacity:.35}}
+.a-pop{transform-box:fill-box;transform-origin:center;animation:apop .45s steps(3) both;animation-delay:var(--d,0s)}
+@keyframes apop{from{transform:scale(0)}60%{transform:scale(1.25)}}
+.a-fade{animation:afade .6s steps(4) both;animation-delay:var(--d,0s)}
+@keyframes afade{from{opacity:0}}
+.a-rise{transform-box:fill-box;transform-origin:bottom;animation:arise .8s steps(6) both;animation-delay:var(--d,0s)}
+@keyframes arise{from{transform:scaleY(0)}}
+.a-wave{animation:awave .5s steps(2) infinite}
+@keyframes awave{50%{transform:translateY(1px)}}
+.a-ring{transform-box:fill-box;transform-origin:center;animation:aring 1.4s steps(5) infinite;animation-delay:var(--d,0s)}
+@keyframes aring{from{transform:scale(.5);opacity:1}to{transform:scale(2);opacity:0}}
+.a-hopA{animation:hopA 4.5s steps(18) infinite}
+.a-hopB{animation:hopB 4.5s steps(18) infinite;animation-delay:.6s}
+@keyframes hopA{0%,12%{transform:translate(0,0)}40%{transform:translate(42px,-22px)}62%,100%{transform:translate(84px,2px)}}
+@keyframes hopB{0%,12%{transform:translate(0,0)}40%{transform:translate(36px,-24px)}62%,100%{transform:translate(72px,2px)}}
+.a-shake{animation:ashake 1.5s steps(1) infinite;animation-delay:1.8s}
+@keyframes ashake{0%,70%,100%{transform:none}76%{transform:translateX(-1px)}84%{transform:translateX(1px)}92%{transform:translateX(-1px)}}
+.a-lid{animation:alid .6s steps(4) both;animation-delay:.5s}
+@keyframes alid{from{transform:translateY(-10px)}}
+.a-drop{animation:adrop .8s steps(8) both;animation-delay:2s}
+@keyframes adrop{to{transform:translateY(26px)}}
+.a-alarm{animation:aalarm .9s steps(2) infinite}
+@keyframes aalarm{50%{opacity:0}}
+.a-meteor{animation:ameteor 2.2s steps(14) infinite}
+@keyframes ameteor{0%{transform:translate(0,0);opacity:1}70%{transform:translate(-90px,62px);opacity:1}71%,100%{opacity:0;transform:translate(-90px,62px)}}
+.a-boom{transform-box:fill-box;transform-origin:center;animation:aboom 2.2s steps(4) infinite}
+@keyframes aboom{0%,68%{transform:scale(0);opacity:0}75%{transform:scale(1.1);opacity:1}100%{transform:scale(1.7);opacity:0}}
+.a-push{animation:apush 2.6s steps(16) infinite}
+@keyframes apush{0%{transform:translate(0,0)}100%{transform:translate(96px,-46px)}}
+.a-pull{animation:apull 2.6s steps(16) infinite}
+@keyframes apull{0%{transform:translate(0,0)}100%{transform:translate(-96px,46px)}}
+.a-orbit{animation:aorbit 8s steps(32) infinite}
+@keyframes aorbit{0%{transform:translate(0,0)}25%{transform:translate(58px,14px)}50%{transform:translate(0,26px)}75%{transform:translate(-58px,14px)}100%{transform:translate(0,0)}}
+
+/* victoria y colección */
+.modal{width:min(460px,100%);max-height:100%;overflow:auto;text-align:center;padding:24px 22px}
+.modal .sprite{width:64px;height:72px;animation:bob .8s steps(2) infinite}
+.modal h2{margin:6px 0 2px;font-family:var(--f-px);font-size:2rem;line-height:1.1}
+.big-stars{font-size:2.8rem;letter-spacing:10px;color:var(--s-clean);margin:2px 0 6px}
+.big-stars .on{color:var(--gold);display:inline-block;text-shadow:3px 3px 0 var(--edge);animation:pop .4s steps(3) both}
+.modal .lesson{margin:0 auto 12px;max-width:40ch;color:var(--ink)}
+.modal .score{margin:0 0 16px;font-size:.9rem;color:var(--ink-soft)}
+.modal-actions{display:flex;flex-wrap:wrap;justify-content:center;gap:10px}
+.unlock{font-family:var(--f-px);font-size:.95rem;margin:0 0 8px;color:var(--ink-soft)}
+.cmdcard{--cc:var(--gold);display:block;text-align:left;background:#120F2C;color:#F2EAD3;border:3px solid var(--cc);box-shadow:4px 4px 0 var(--edge);padding:12px 14px;margin:0 auto 18px;max-width:360px}
+.cmdcard code{display:block;background:none;padding:0;color:#FFD25A;font-size:1.45rem;line-height:1.1;white-space:normal}
+.cmdcard p{margin:6px 0 0;font-size:.88rem;line-height:1.4;color:#B9AED8}
+.cmdcard.lock{border-style:dashed;border-color:#4A4478}
+.cmdcard.lock code{color:#5E5683}
+.coll{width:min(760px,100%);max-height:100%;overflow:auto;padding:22px}
+.coll h2{font-family:var(--f-px);margin:0 0 4px}
+.coll>p{margin:0 0 16px;color:var(--ink-soft)}
+.coll-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:14px;margin-bottom:18px}
+.coll-grid .cmdcard{margin:0;max-width:none}
+
+.ghost{position:fixed;z-index:60;pointer-events:none;margin:0}
+.ghost>*{width:100%;height:100%;margin:0;box-shadow:4px 4px 0 rgba(4,3,15,.55)}
+
+
+/* celebración a pantalla completa (breve, no bloquea después) */
+.celebrate{position:fixed;inset:0;z-index:55;display:none;align-items:center;justify-content:center;overflow:hidden;cursor:pointer}
+.celebrate.on{display:flex}
+.celebrate .veil{position:absolute;inset:0;background:rgba(4,3,15,.6);animation:veil 1.75s steps(5) both}
+@keyframes veil{0%{opacity:0}14%,80%{opacity:1}100%{opacity:0}}
+.celebrate .band{position:relative;z-index:2;width:100%;padding:22px 16px 24px;background:#120F2C;color:#F2EAD3;text-align:center;border-top:4px solid var(--gold);border-bottom:4px solid var(--gold);box-shadow:0 8px 0 #04030F;animation:band 1.75s steps(10) both}
+@keyframes band{0%{transform:translateX(-102%)}16%,84%{transform:translateX(0)}100%{transform:translateX(102%)}}
+.band h2{margin:0;font-family:var(--f-px);font-weight:700;font-size:clamp(2.1rem,7vw,3.8rem);line-height:1;text-shadow:4px 4px 0 #7A52D1}
+.band .bstars{margin-top:10px;font-size:clamp(2rem,6vw,3rem);line-height:1;letter-spacing:14px;color:#3A3470}
+.band .bstars .on{display:inline-block;color:var(--gold);text-shadow:3px 3px 0 #04030F;animation:pop .4s steps(3) both}
+.band small{display:block;margin-top:8px;font-family:var(--f-term);font-size:1.25rem;color:#B9AED8}
+.spark{position:absolute;left:50%;top:50%;z-index:1}
+
+.dock{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(12px + env(safe-area-inset-bottom,0px));z-index:40;width:min(1000px,calc(100% - 24px));display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:8px 18px;align-items:center;padding:12px 16px;border-left:8px solid var(--gold);animation:dockin .35s steps(4) both}
+@keyframes dockin{from{transform:translate(-50%,28px);opacity:0}}
+.dock-stars{font-size:1.9rem;line-height:1;letter-spacing:4px;color:var(--s-clean);white-space:nowrap}
+.dock-stars .on{color:var(--gold);text-shadow:2px 2px 0 var(--edge)}
+.dock-info{min-width:0}
+.dock-info b{display:block;font-family:var(--f-px);font-size:1.15rem;line-height:1.2}
+.dock-info p{margin:2px 0 0;font-size:.92rem;line-height:1.4}
+.dock-info small{display:block;margin-top:2px;font-size:.8rem;color:var(--ink-soft)}
+.dock-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:flex-end}
+body.docked .stage{padding-bottom:calc(var(--dock-h,120px) + 28px)}
+html.docked{scroll-padding-bottom:calc(var(--dock-h,120px) + 24px)}
+#termIn:read-only{caret-color:transparent}
+@media (max-width:760px){
+  .dock{grid-template-columns:auto minmax(0,1fr);padding:10px 12px}
+  .dock-stars{font-size:1.4rem;letter-spacing:2px}
+  .dock-actions{grid-column:1/-1;justify-content:stretch}
+  .dock-actions .btn{flex:1}
+}
+
+/* ═════════ RESPONSIVE ═════════ */
+@media (max-width:980px){
+  .stage{grid-template-columns:minmax(0,1fr);grid-template-areas:"viz" "mission" "term";padding:12px 12px 20px;gap:16px}
+  .viz-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+  .flow{display:none}
+  .zone{min-height:150px}
+  .z-body{max-height:180px}
+  .term-out{min-height:160px;max-height:260px}
+}
+@media (max-width:600px){
+  .hud{padding:6px 8px;gap:6px}
+  .hud .lbl,.hud-title code,.hud-cmds,.term-bar .tip{display:none}
+  .hud .ico{display:inline}
+  .hud-title b{font-size:1rem}
+  .z-head small{display:none}
+  .zone{padding:8px}
+  .file{font-size:1rem}
+  .field .orb{width:64px;height:64px;left:8px}
+  .route{left:100px;right:34px}
+  .node{width:46px;height:46px}
+  .top .sprite{width:60px;height:68px}
+  .card .btn{padding:8px 12px}
+  .cs-txt{font-size:1rem}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+</style>
+</head>
+<body>
+<div id="sky" aria-hidden="true"></div>
+
+<!-- ═════════ MAPA ═════════ -->
+<section id="screenMap" class="screen map">
+  <header class="top">
+    <span id="mapRama"></span>
+    <div>
+      <h1 class="title">Gitnauta</h1>
+      <p class="lede">Levanta bases por la galaxia sin perder nunca una línea de trabajo. Cada misión te enseña un comando de Git que pruebas en una terminal real simulada.</p>
+    </div>
+  </header>
+  <div class="map-bar">
+    <span class="counter px"><span class="star">★</span> <b id="mapStars"></b></span>
+    <span class="counter px">Misiones <b id="mapDone"></b></span>
+    <span class="spacer"></span>
+    <button class="btn" id="collBtn">Colección de comandos</button>
+    <button class="btn quiet" id="themeBtn"></button>
+  </div>
+  <div id="sectors"></div>
+  <div class="card px" id="card">
+    <span class="card-num" id="cardNum"></span>
+    <h2 class="card-title" id="cardTitle"></h2>
+    <div class="card-meta"><code id="cardCmd"></code><span class="stars" id="cardStars"></span></div>
+    <button class="btn primary" id="cardPlay">Iniciar misión</button>
+  </div>
+</section>
+
+<!-- ═════════ NIVEL ═════════ -->
+<section id="screenLevel" class="screen level" hidden>
+  <header class="hud">
+    <button class="btn" id="btnBack" aria-label="Volver al mapa">‹ <span class="lbl">Mapa</span></button>
+    <div class="hud-title"><span id="lvlNum"></span><b id="lvlName"></b><code id="lvlCmd"></code></div>
+    <span class="hud-cmds" id="hudCmds"></span>
+    <span class="hud-stars" id="hudStars" role="img"></span>
+    <button class="btn" id="btnIntro" aria-label="Ver intro"><span class="lbl">Intro</span><span class="ico" aria-hidden="true">?</span></button>
+    <button class="btn" id="btnReset" aria-label="Reiniciar misión"><span class="lbl">Reiniciar</span><span class="ico" aria-hidden="true">↺</span></button>
+  </header>
+
+  <main class="stage">
+    <section class="viz px" id="viz" aria-label="Estado del repositorio">
+      <div class="viz-row">
+        <article class="zone" data-zone="wd">
+          <header class="z-head"><span class="zico"></span><div><h3>Taller</h3><small>working directory</small></div><span class="z-count" id="cWd">0</span></header>
+          <div class="z-body" id="zWd"></div>
+        </article>
+        <div class="flow" aria-hidden="true"><div class="fl" id="fAdd"><svg class="sprite" viewBox="0 0 8 5"><path d="M0 2h6V0h1v1h1v3H7v1H6V3H0z" fill="currentColor"/></svg><span>git add</span></div></div>
+        <article class="zone" data-zone="stage">
+          <header class="z-head"><span class="zico"></span><div><h3>Muelle</h3><small>staging area</small></div><span class="z-count" id="cSt">–</span></header>
+          <div class="z-body" id="zSt"></div>
+        </article>
+        <div class="flow" aria-hidden="true"><div class="fl" id="fCommit"><svg class="sprite" viewBox="0 0 8 5"><path d="M0 2h6V0h1v1h1v3H7v1H6V3H0z" fill="currentColor"/></svg><span>git commit</span></div></div>
+        <article class="zone" data-zone="vault">
+          <header class="z-head"><span class="zico"></span><div><h3>Bóveda</h3><small>repositorio local</small></div><span class="z-count" id="cVa">–</span></header>
+          <div class="z-body" id="zVa"></div>
+        </article>
+        <div class="flow" aria-hidden="true">
+          <div class="fl" id="fPush"><svg class="sprite" viewBox="0 0 8 5"><path d="M0 2h6V0h1v1h1v3H7v1H6V3H0z" fill="currentColor"/></svg><span>git push</span></div>
+          <div class="fl back" id="fPull"><svg class="sprite" viewBox="0 0 8 5"><path d="M0 2h6V0h1v1h1v3H7v1H6V3H0z" fill="currentColor"/></svg><span>git pull</span></div>
+        </div>
+        <article class="zone" data-zone="remote">
+          <header class="z-head"><span class="zico"></span><div><h3>Nave nodriza</h3><small>repositorio remoto</small></div><span class="z-count" id="cRe">–</span></header>
+          <div class="z-body" id="zRe"></div>
+        </article>
+      </div>
+      <ul class="legend">
+        <li class="hol">sin repositorio</li>
+        <li style="--lg:var(--s-new)">nuevo (untracked)</li>
+        <li style="--lg:var(--s-mod)">editado (modified)</li>
+        <li style="--lg:var(--z-st)">en el muelle (staged)</li>
+        <li style="--lg:var(--s-clean)">guardado (committed)</li>
+      </ul>
+    </section>
+
+    <aside class="mission px">
+      <p class="brief" id="brief"></p>
+      <h3>Objetivos</h3>
+      <ol class="goals" id="goals"></ol>
+      <div class="fail" id="fail" hidden><p id="failText"></p><button class="btn primary" id="btnFailReset">Reiniciar misión</button></div>
+      <div class="hints" id="hints"></div>
+      <div class="hint-row">
+        <button class="btn" id="btnHint">Pedir pista</button><small id="hintCost">Cuesta una estrella</small>
+      </div>
+      <p class="tapnote">Toca cualquier comando resaltado para copiarlo en la terminal.</p>
+    </aside>
+
+    <div class="termcol">
+      <div class="comms px" id="comms" aria-live="polite">
+        <span id="commsRama"></span>
+        <div><span class="who">Rama, sistema de a bordo</span><p id="commsText"></p></div>
+      </div>
+      <section class="term" id="term" aria-label="Terminal">
+        <div class="term-bar"><i></i><i></i><i></i><span id="termTitle">cadete@base-lunar</span><span class="tip">Tab autocompleta</span></div>
+        <div class="term-out" id="termOut"></div>
+        <label class="term-in"><span class="pr" id="prompt"></span><input id="termIn" type="text" autocomplete="off" autocapitalize="off" autocorrect="off" spellcheck="false" enterkeyhint="send" aria-label="Escribe un comando"></label>
+        <div class="keys" id="keys"></div>
+      </section>
+    </div>
+  </main>
+</section>
+
+<!-- ═════════ CINEMÁTICA ═════════ -->
+<div class="overlay" id="cutscene" role="dialog" aria-label="Explicación de Rama">
+  <div class="cs">
+    <div class="cs-art" id="csArt"></div>
+    <div class="cs-dlg">
+      <span class="who">Rama</span>
+      <span id="csRama"></span>
+      <p class="cs-txt" id="csText"></p>
+      <div class="cs-ctl">
+        <div class="pips" id="csPips"></div>
+        <button class="btn" id="csSkip">Saltar</button>
+        <button class="btn primary" id="csNext">Siguiente</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═════════ CELEBRACIÓN Y PANEL INFERIOR ═════════ -->
+<div class="celebrate" id="celebrate" aria-hidden="true"></div>
+<div class="dock px" id="dock" role="status" aria-live="polite" hidden>
+  <div class="dock-stars" id="dockStars" role="img"></div>
+  <div class="dock-info">
+    <b id="dockTitle"></b>
+    <p id="dockLesson"></p>
+    <small id="dockScore"></small>
+  </div>
+  <div class="dock-actions">
+    <button class="btn" id="winRetry">Repetir</button>
+    <button class="btn" id="winMap">Mapa</button>
+    <button class="btn primary" id="winNext">Siguiente misión</button>
+  </div>
+</div>
+
+<!-- ═════════ COLECCIÓN ═════════ -->
+<div class="overlay" id="coll" role="dialog" aria-labelledby="collTitle">
+  <div class="coll px">
+    <h2 id="collTitle">Colección de comandos</h2>
+    <p>Cada misión superada te da una tarjeta. Consúltalas cuando se te olvide algo.</p>
+    <div class="coll-grid" id="collGrid"></div>
+    <button class="btn" id="collClose">Cerrar</button>
+  </div>
+</div>
+<script>
+(() => {
+'use strict';
+const $ = s => document.querySelector(s);
+const $$ = s => [...document.querySelectorAll(s)];
+const REDUCE = matchMedia('(prefers-reduced-motion: reduce)').matches;
+const TOUCH = matchMedia('(pointer: coarse)').matches;
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const clone = o => JSON.parse(JSON.stringify(o));
+const rnd = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+
+let progress = store.get('gitnauta-px-v1', { done: {}, seen: {} });
+const save = () => store.set('gitnauta-px-v1', progress);
+
+/* ─── tema ─── */
+const root = document.documentElement;
+(function () { const t = store.get('gitnauta-px-theme', null); if (t) root.dataset.theme = t; })();
+const curTheme = () => root.dataset.theme || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+const themeLabel = () => { $('#themeBtn').textContent = curTheme() === 'dark' ? 'Tema claro' : 'Tema oscuro'; };
+$('#themeBtn').onclick = () => { const nx = curTheme() === 'dark' ? 'light' : 'dark'; root.dataset.theme = nx; store.set('gitnauta-px-theme', nx); themeLabel(); };
+themeLabel();
+
+/* ─── polvo estelar ─── */
+(function () {
+  let h = '';
+  for (let i = 0; i < 70; i++) { const s = Math.random() < .15 ? 3 : 2; h += `<i class="${Math.random() < .25 ? 'tw' : ''}" style="left:${(Math.random() * 100).toFixed(2)}%;top:${(Math.random() * 100).toFixed(2)}%;width:${s}px;height:${s}px;animation-delay:${(Math.random() * 2.4).toFixed(2)}s"></i>`; }
+  $('#sky').innerHTML = h;
+})();
+
+/* ═══════════════════════════════════════════════════════════════
+   PIXEL ART
+   Cada sprite es una cuadrícula de caracteres; '.' es transparente.
+   Las filas se convierten en <rect> fusionando píxeles contiguos.
+   ═══════════════════════════════════════════════════════════════ */
+const K = '#0A0820';
+function px(rows, pal) {
+  let out = '';
+  rows.forEach((row, y) => {
+    let x = 0;
+    while (x < row.length) {
+      const ch = row[x];
+      if (!pal[ch]) { x++; continue; }
+      let w = 1; while (row[x + w] === ch) w++;
+      out += `<rect x="${x}" y="${y}" width="${w}" height="1" fill="${pal[ch]}"/>`;
+      x += w;
+    }
+  });
+  return out;
+}
+const RAMA_BODY = [
+  '.......gg.......',
+  '.......ss.......',
+  '...kkkkkkkkkk...',
+  '..kwwwwwwwwwwk..',
+  '.kwvvvvvvvvvvwk.',
+  '.kwvvvvvvvvvvwk.',
+  '.kwvvvvvvvvvvwk.',
+  '.kwvvvvvvvvvvwk.',
+  '.kswwwwwwwwwwsk.',
+  '..kssssssssssk..',
+  '...kkkwwwwkkk...',
+  '..kwwwwppwwwwk..',
+  'kkswwwwwwwwwwskk',
+  '..kwwwwwwwwwwk..',
+  '...kssssssssk...',
+  '....kkkkkkkk....'
+];
+const RAMA_EYES = ['', '', '', '', '', '.....cc..cc.....', '.....cc..cc.....'];
+const RAMA_FLAME = ['', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '......oyyo......', '.......oo.......'];
+const SPR = {
+  rama: px(RAMA_BODY, { k: K, w: '#E6E0F5', s: '#A99FD0', v: '#16123A', g: '#FFD25A', p: '#FF6F98' }),
+  ramaEyes: px(RAMA_EYES, { c: '#5CF2D6' }),
+  ramaFlame: px(RAMA_FLAME, { o: '#FF9A4A', y: '#FFE38A' }),
+  folder: px([
+    'kkkkkk........',
+    'kyyyyyk.......',
+    'kyyyyyykkkkkkk',
+    'kyyyyyyyyyyyyk',
+    'kddddddddddddk',
+    'kyyyyyyyyyyyyk',
+    'kyyyyyyyyyyyyk',
+    'kyyyyyyyyyyyyk',
+    'kddddddddddddk',
+    'kkkkkkkkkkkkkk'
+  ], { k: K, y: '#FFD25A', d: '#D9A21E' }),
+  crate: px([
+    'kkkkkkkkkkkk',
+    'kbbbbbbbbbbk',
+    'kbkkkkkkkkbk',
+    'kbkbbbbbbkbk',
+    'kbkbBBBBbkbk',
+    'kbkbbbbbbkbk',
+    'kbkkkkkkkkbk',
+    'kbbbbbbbbbbk',
+    'kBBBBBBBBBBk',
+    'kkkkkkkkkkkk'
+  ], { k: K, b: '#4FD8EA', B: '#2A9BB0' }),
+  lid: px(['kkkkkkkkkkkkkk', 'kbbbbbbbbbbbbk', 'kkkkkkkkkkkkkk'], { k: K, b: '#4FD8EA' }),
+  capsule: px([
+    '..kkkkkkkk..',
+    '.kvhhvvvvvk.',
+    'kvhvvvvvvvvk',
+    'kvvvvvvvvvvk',
+    'kvvvvvvvvvvk',
+    'kVvvvvvvvvVk',
+    '.kVVVVVVVVk.',
+    '..kkkkkkkk..'
+  ], { k: K, v: '#B08CFF', V: '#7A52D1', h: '#E8DDFF' }),
+  ship: px([
+    '.......kkkkkkkk.......',
+    '......kwwwwwwwwk......',
+    '.....kwwccwwccwwk.....',
+    '..kkkkkkkkkkkkkkkkkk..',
+    '.krrrrrrrrrrrrrrrrrrk.',
+    'krrcrrrcrrrcrrrcrrrcrk',
+    '.kRRRRRRRRRRRRRRRRRRk.',
+    '..kkkkkkkkkkkkkkkkkk..'
+  ], { k: K, w: '#E6E0F5', c: '#5CF2D6', r: '#FF6F98', R: '#C2456E' }),
+  flag: px([
+    'kkkkkkk..',
+    'krrrrrrk.',
+    'krrwwrrrk',
+    'krrrrrrk.',
+    'kkkkkkk..'
+  ], { k: K, r: '#FF6F98', w: '#F2EAD3' }),
+  meteor: px([
+    '..kkk..',
+    '.kmmMk.',
+    'kmmmmMk',
+    'kmMmmMk',
+    'kmmmMMk',
+    '.kMMMk.',
+    '..kkk..'
+  ], { k: K, m: '#8E86B8', M: '#5E5683' }),
+  probe: px([
+    '...kkk..',
+    'okkgggk.',
+    'ookggggk',
+    'okkgggk.',
+    '...kkk..'
+  ], { k: K, g: '#FFD25A', o: '#FF9A4A' }),
+  lock: px([
+    '..kkk..',
+    '.k...k.',
+    '.k...k.',
+    'kkkkkkk',
+    'kllkllk',
+    'kllkllk',
+    'klllllk',
+    'kkkkkkk'
+  ], { k: '#1F1A3D', l: '#8E86B8' }),
+  arrow: px(['....k...', '....kk..', 'kkkkkkk.', 'kkkkkkkk', 'kkkkkkk.', '....kk..', '....k...'], { k: '#F2EAD3' }),
+  x: px(['kk...kk', '.kk.kk.', '..kkk..', '.kk.kk.', 'kk...kk'], { k: '#FF6B5E' })
+};
+const fileSpr = (tint = '#F2EAD3') => px([
+  'kkkkkk..',
+  'kppppkk.',
+  'kppppkpk',
+  'kppppppk',
+  'kplllppk',
+  'kppppppk',
+  'kplllllk',
+  'kppppppk',
+  'kpllllpk',
+  'kkkkkkkk'
+], { k: K, p: tint, l: '#9F95C8' });
+
+/* círculo pixelado con sombra, brillo y anillo opcional */
+function planetSpr(r, col, shade, light, ring) {
+  const rx = ring ? Math.round(r * 1.75) : r + 1, W = rx * 2 + 1, H = r * 2 + 3, cx = rx, cy = r + 1;
+  const inside = (x, y) => x * x + y * y <= r * r + r * .6;
+  const rows = [];
+  for (let j = 0; j < H; j++) {
+    let row = '';
+    for (let i = 0; i < W; i++) {
+      const x = i - cx, y = j - cy;
+      let ch = '.';
+      if (inside(x, y)) {
+        const edge = !inside(x + 1, y) || !inside(x - 1, y) || !inside(x, y + 1) || !inside(x, y - 1);
+        const lx = x + r * .38, ly = y + r * .38;
+        ch = edge ? 'k' : (lx * lx + ly * ly < (r * .3) ** 2) ? 'c' : (x + y > r * .55) ? 'b' : 'a';
+      }
+      if (ring) {
+        const e = (x * x) / (rx * rx) + (y * y) / ((r * .42) ** 2);
+        if (e > .72 && e < 1.18 && (y >= 0 || !inside(x, y))) ch = 'n';
+      }
+      row += ch;
+    }
+    rows.push(row);
+  }
+  return { svg: px(rows, { k: K, a: col, b: shade, c: light, n: ring || '#000' }), w: W, h: H };
+}
+
+/* sprite de Rama como <svg> independiente para la interfaz */
+const ramaSvg = cls => `<svg class="sprite ${cls || ''}" viewBox="0 0 16 18" aria-hidden="true">${SPR.rama}<g class="eyes">${SPR.ramaEyes}</g><g class="flick">${SPR.ramaFlame}</g></svg>`;
+['#mapRama', '#commsRama', '#csRama'].forEach(s => { $(s).innerHTML = ramaSvg(); });
+$$('.fl svg').forEach(s => { s.setAttribute('viewBox', '0 0 8 7'); s.innerHTML = px(['....k...', '....kk..', 'kkkkkkk.', 'kkkkkkkk', 'kkkkkkk.', '....kk..', '....k...'], { k: 'currentColor' }); });
+
+/* ─── piezas de escena (lienzo de 160×90) ─── */
+const G = (x, y, s, inner, cls = '', d = null) => `<g transform="translate(${x} ${y})${s !== 1 ? ` scale(${s})` : ''}"><g class="${cls}"${d != null ? ` style="--d:${d}s"` : ''}>${inner}</g></g>`;
+const T = (x, y, t, col = '#F2EAD3', sz = 8, cls = '', d = 0, anchor = 'middle') => `<text x="${x}" y="${y}" text-anchor="${anchor}" font-family="VT323,ui-monospace,monospace" font-size="${sz}" fill="${col}" class="${cls}" style="--d:${d}s">${t}</text>`;
+const ramaG = (x, y, s = 2) => G(x, y, s, `<g class="bob">${SPR.rama}<g class="eyes">${SPR.ramaEyes}</g><g class="flick">${SPR.ramaFlame}</g></g>`);
+function starsG(n) {
+  let h = '';
+  for (let i = 0; i < n; i++) {
+    const tw = Math.random() < .3;
+    h += `<rect x="${rnd(0, 159)}" y="${rnd(0, 70)}" width="1" height="1" fill="${Math.random() < .25 ? '#8ADBFF' : '#F2EAD3'}" opacity="${tw ? 1 : .6}"${tw ? ` class="tw" style="--d:${(Math.random() * 2).toFixed(2)}s"` : ''}/>`;
+  }
+  return h;
+}
+const groundG = () => `<rect x="0" y="74" width="160" height="16" fill="#231F4D"/><rect x="0" y="74" width="160" height="1" fill="#3A3470"/><rect x="18" y="79" width="10" height="2" fill="#1A1640"/><rect x="20" y="78" width="6" height="1" fill="#1A1640"/><rect x="118" y="82" width="14" height="2" fill="#1A1640"/><rect x="121" y="81" width="8" height="1" fill="#1A1640"/>`;
+const planetG = (x, y, r, col, shade, light, ring) => { const p = planetSpr(r, col, shade, light, ring); return G(x - Math.floor(p.w / 2), y - Math.floor(p.h / 2), 1, p.svg); };
+const domeG = (x, y) => { const p = planetSpr(9, '#4FD8EA', '#2A9BB0', '#C6F6FF'); return `<svg x="${x - 9}" y="${y - 10}" width="${p.w}" height="11" viewBox="0 0 ${p.w} 11" overflow="hidden">${p.svg}</svg><rect x="${x - 10}" y="${y}" width="21" height="2" fill="${K}"/>`; };
+const boxLabel = (x, y, w, t, col) => `<rect x="${x}" y="${y}" width="${w}" height="11" fill="#120F2C" stroke="${col}" stroke-width="1"/>${T(x + w / 2, y + 8.5, t, col, 7.5)}`;
+
+const ART = {
+  space: () => `${starsG(55)}
+    ${planetG(132, 20, 9, '#FF6F98', '#C2456E', '#FFC2D4', '#B08CFF')}
+    ${groundG()}
+    ${domeG(108, 74)}
+    <rect x="108" y="54" width="1" height="10" fill="#F2EAD3"/>${G(109, 54, 1, SPR.flag, 'a-wave')}
+    ${ramaG(30, 34)}`,
+  timeline: () => `${starsG(25)}
+    ${[0, 1, 2, 3].map(i => `<g class="a-pop" style="--d:${i * .45}s"><rect x="${22 + i * 32}" y="38" width="22" height="26" fill="#E6E0F5" stroke="${K}" stroke-width="1"/><rect x="${25 + i * 32}" y="41" width="16" height="13" fill="${['#FF9A4A', '#4FD8EA', '#B08CFF', '#FF6F98'][i]}"/><rect x="${27 + i * 32}" y="49" width="4" height="3" fill="${K}"/><rect x="${33 + i * 32}" y="46" width="5" height="6" fill="${K}" opacity=".6"/>${T(33 + i * 32, 62, 'v' + (i + 1), K, 8)}</g>`).join('')}
+    <g class="a-fade" style="--d:2.1s"><rect x="129" y="24" width="2" height="12" fill="#FF6F98"/><rect x="33" y="24" width="98" height="2" fill="#FF6F98"/><rect x="33" y="24" width="2" height="10" fill="#FF6F98"/><rect x="30" y="32" width="8" height="2" fill="#FF6F98"/><rect x="32" y="34" width="4" height="2" fill="#FF6F98"/></g>
+    ${T(82, 18, 'viaje al pasado', '#FF6F98', 9, 'a-fade', 2.4)}
+    ${T(80, 80, 'cada commit es una foto', '#F2EAD3', 9, 'a-fade', 1.6)}`,
+  terminal: () => `${starsG(25)}
+    <rect x="8" y="14" width="112" height="60" fill="#120F2C" stroke="#F2EAD3" stroke-width="1"/>
+    <rect x="9" y="15" width="110" height="7" fill="#1B1740"/><rect x="16" y="17" width="3" height="3" fill="#FF6F98"/><rect x="21" y="17" width="3" height="3" fill="#FFD25A"/><rect x="26" y="17" width="3" height="3" fill="#4FD8EA"/>
+    ${T(17, 32, '$ ls', '#FFD25A', 9, 'a-fade', .4, 'start')}
+    ${T(17, 41, 'mapa.txt  diario.txt', '#FFE6B0', 9, 'a-fade', 1, 'start')}
+    ${T(17, 53, '$ git status', '#FFD25A', 9, 'a-fade', 1.8, 'start')}
+    ${T(17, 62, 'fatal: not a git repo', '#FF8A78', 9, 'a-fade', 2.4, 'start')}
+    <rect x="17" y="65" width="4" height="6" fill="#FFD25A" class="a-alarm"/>
+    ${ramaG(128, 36)}`,
+  planet: () => `${starsG(35)}${groundG()}
+    ${G(73, 54, 2, SPR.folder)}
+    <rect x="62" y="46" width="50" height="30" fill="none" stroke="#8E86B8" stroke-width="1" stroke-dasharray="3 3"/>
+    ${T(87, 22, 'una carpeta normal', '#F2EAD3', 9)}
+    ${T(87, 38, '¿Git la conoce?', '#8E86B8', 8)}
+    ${ramaG(14, 36)}`,
+  flag: () => `${starsG(35)}${groundG()}
+    ${G(56, 54, 2, SPR.folder)}
+    <g class="a-rise" style="--d:.2s"><rect x="96" y="40" width="2" height="34" fill="#F2EAD3"/>${G(98, 40, 2, SPR.flag, 'a-wave')}</g>
+    ${T(108, 32, 'git init', '#FFD25A', 10, 'a-fade', .9)}
+    <g class="a-pop" style="--d:1.5s"><rect x="122" y="56" width="26" height="14" fill="#120F2C" stroke="#5CF2D6" stroke-width="1"/>${T(135, 66, '.git', '#5CF2D6', 10)}</g>
+    <rect class="a-ring" style="--d:1.9s" x="122" y="56" width="26" height="14" fill="none" stroke="#5CF2D6" stroke-width="1"/>
+    ${ramaG(10, 36)}`,
+  zones: () => `${starsG(20)}
+    ${[['taller', '#FF9A4A', 'trabajas', fileSpr()], ['muelle', '#4FD8EA', 'preparas', SPR.crate], ['bóveda', '#B08CFF', 'guardas', SPR.capsule]].map((z, i) => `<g class="a-pop" style="--d:${i * .5}s"><rect x="${12 + i * 52}" y="22" width="36" height="36" fill="#17133D" stroke="${z[1]}" stroke-width="2"/>${G(i === 0 ? 22 + i * 52 : 18 + i * 52, i === 0 ? 30 : 32, i === 0 ? 2 : 2, z[3])}${T(30 + i * 52, 70, z[0], z[1], 10)}${T(30 + i * 52, 80, z[2], '#8E86B8', 8)}</g>`).join('')}
+    ${[0, 1].map(i => G(50 + i * 52, 37, 1, SPR.arrow, 'a-fade', .4 + i * .5)).join('')}`,
+  conveyor: () => `${starsG(20)}
+    <rect x="8" y="58" width="64" height="5" fill="#FF9A4A" stroke="${K}" stroke-width="1"/><rect x="12" y="63" width="3" height="14" fill="#5E5683"/><rect x="64" y="63" width="3" height="14" fill="#5E5683"/>
+    ${T(40, 86, 'taller', '#FF9A4A', 9)}
+    ${G(104, 46, 3, SPR.crate)}
+    ${T(122, 86, 'muelle', '#4FD8EA', 9)}
+    <g class="a-hopA">${G(14, 38, 2, fileSpr())}</g>
+    <g class="a-hopB">${G(32, 38, 2, fileSpr())}</g>
+    <g class="a-shake">${G(50, 38, 2, fileSpr('#FFB3A8'))}</g>
+    ${G(52, 26, 1, SPR.x, 'a-pop', 2.2)}
+    ${T(80, 14, 'git add elige qué sube', '#F2EAD3', 10)}`,
+  capsule: () => `${starsG(20)}
+    <rect x="44" y="76" width="72" height="10" fill="#7A52D1" stroke="${K}" stroke-width="1"/>
+    ${T(136, 84, 'bóveda', '#B08CFF', 9)}
+    <g class="a-drop">
+      ${G(68, 34, 2, SPR.crate)}
+      <g class="a-lid">${G(66, 28, 2, SPR.lid)}</g>
+      <g class="a-pop" style="--d:1.2s"><rect x="98" y="36" width="34" height="11" fill="#FF6F98" stroke="${K}" stroke-width="1"/>${T(115, 44.5, 'a1b2c3d', '#120F2C', 8)}</g>
+    </g>
+    <g class="a-fade" style="--d:1.3s">${boxLabel(6, 12, 84, '-m "primer despegue"', '#F2EAD3')}</g>
+    ${T(126, 30, 'git commit', '#FFD25A', 10)}`,
+  chain: () => `${starsG(20)}
+    ${[0, 1, 2].map(i => `<g class="a-pop" style="--d:${i * .55}s">${G(14 + i * 50, 38, 2, SPR.capsule)}${T(26 + i * 50, 62, ['a1b2c3d', 'f00d42e', '9c0ffee'][i], '#F2EAD3', 8)}${T(26 + i * 50, 70, ['despegue', 'escala Fobos', 'bitácora'][i], '#8E86B8', 7)}</g>`).join('')}
+    ${[0, 1].map(i => `<g class="a-fade" style="--d:${.9 + i * .55}s" transform="translate(${60 + i * 50} 45) scale(-1 1)">${SPR.arrow}</g>`).join('')}
+    <g class="a-pop" style="--d:1.9s"><rect x="112" y="18" width="28" height="11" fill="#F2EAD3"/>${T(126, 26.5, 'HEAD', '#120F2C', 9)}<rect x="125" y="29" width="2" height="7" fill="#F2EAD3"/></g>
+    ${T(80, 84, 'cada cápsula apunta a la anterior', '#F2EAD3', 8, 'a-fade', 2.2)}`,
+  orbit: () => `${starsG(40)}
+    ${planetG(80, 66, 14, '#3A3470', '#231F4D', '#5E5683')}
+    ${domeG(80, 53)}
+    ${T(80, 88, 'tu base (local)', '#F2EAD3', 8)}
+    <g class="${REDUCE ? '' : 'a-orbit'}">${G(69, 10, 1, SPR.ship)}${T(80, 26, 'origin', '#FF6F98', 8)}</g>`,
+  rocket: () => `${starsG(40)}
+    ${planetG(26, 76, 16, '#3A3470', '#231F4D', '#5E5683')}
+    <rect x="30" y="46" width="1" height="14" fill="#F2EAD3"/><rect x="29" y="44" width="3" height="3" fill="#FFD25A"/>
+    <rect class="a-ring" x="27" y="42" width="7" height="7" fill="none" stroke="#FFD25A" stroke-width="1"/>
+    <rect class="a-ring" style="--d:.7s" x="27" y="42" width="7" height="7" fill="none" stroke="#FFD25A" stroke-width="1"/>
+    ${G(118, 10, 2, SPR.ship)}
+    <g class="${REDUCE ? '' : 'a-push'}">${G(34, 54, 2, SPR.probe)}</g>
+    ${T(46, 38, 'git remote add', '#F2EAD3', 8)}${T(124, 40, 'git push', '#FF6F98', 11)}`,
+  pull: () => `${starsG(40)}
+    ${planetG(26, 76, 16, '#3A3470', '#231F4D', '#5E5683')}
+    ${domeG(26, 60)}
+    ${G(118, 10, 2, SPR.ship)}
+    <g class="${REDUCE ? '' : 'a-pull'}">${G(128, 34, 2, SPR.capsule)}</g>
+    ${T(118, 46, 'commit de Vega', '#8E86B8', 8)}${T(70, 26, 'git pull', '#4FD8EA', 11)}`,
+  alarm: () => `${starsG(30)}
+    <rect class="a-alarm" width="160" height="90" fill="#FF3B3B" opacity=".14"/>
+    ${groundG()}
+    <g class="a-meteor">${G(130, 2, 2, SPR.meteor)}<rect x="144" y="0" width="8" height="2" fill="#FF9A4A" opacity=".7"/><rect x="146" y="-2" width="10" height="2" fill="#FF9A4A" opacity=".4"/></g>
+    <rect class="a-boom" x="40" y="58" width="18" height="18" fill="#FF9A4A" stroke="#FFD25A" stroke-width="2"/>
+    ${T(49, 52, 'base 7', '#F2EAD3', 9)}
+    ${ramaG(104, 38)}
+    ${T(80, 16, 'alerta', '#FF6B5E', 12, 'a-alarm')}`
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   GUIONES DE LAS CINEMÁTICAS
+   ═══════════════════════════════════════════════════════════════ */
+const SCENES = {
+  intro: [
+    { art: 'space', t: 'Soy *Rama*, el sistema de a bordo. Te acompaño durante tu formación como gitnauta.' },
+    { art: 'space', t: 'El trabajo consiste en levantar bases por la galaxia *sin perder nunca una línea de trabajo*.' },
+    { art: 'timeline', t: 'Para eso usamos *Git*. Cada vez que se lo pides, toma una foto de tu proyecto. Si algo sale mal, vuelves a una foto anterior.' },
+    { art: 'terminal', t: 'Le das órdenes escribiendo en la *terminal*. Aquí los errores no rompen nada: cada uno te explica algo.' }
+  ],
+  init: [
+    { art: 'planet', t: 'Esta carpeta es solo una carpeta. Git todavía no la vigila.' },
+    { art: 'flag', t: 'Con *git init* plantas la bandera: Git crea una carpeta oculta llamada *.git*.' },
+    { art: 'flag', t: '*.git* es la caja negra de la base. Ahí vive toda la historia, así que nunca la borres.' }
+  ],
+  stage: [
+    { art: 'zones', t: 'Toda base Git tiene tres zonas en tu computadora: el *taller*, el *muelle de carga* y la *bóveda*.' },
+    { art: 'conveyor', t: 'En el taller trabajas libremente. Cuando algo está listo, lo subes al muelle con *git add*.' },
+    { art: 'conveyor', t: 'El muelle funciona como una caja de envío: *tú eliges qué entra*. Los archivos con contraseñas se quedan fuera.' }
+  ],
+  commit: [
+    { art: 'capsule', t: 'Cuando la caja está lista, la sellas con *git commit* y se convierte en una cápsula del tiempo.' },
+    { art: 'capsule', t: 'Cada cápsula lleva un código único (el *hash*) y un *mensaje* que explica qué guardaste y por qué.' },
+    { art: 'chain', t: 'Las cápsulas se encadenan: cada una recuerda a la anterior. Esa cadena es tu *historia*, y *HEAD* marca dónde estás.' }
+  ],
+  remote: [
+    { art: 'orbit', t: 'Hasta ahora todo vive en tu base. Si tu computadora se avería, la historia se pierde con ella.' },
+    { art: 'orbit', t: 'En órbita está la *nave nodriza*: un repositorio remoto, como GitHub o GitLab. Por costumbre se llama *origin*.' },
+    { art: 'rocket', t: 'Primero conectas la antena con *git remote add*. Después lanzas tus cápsulas con *git push*.' }
+  ],
+  pull: [
+    { art: 'pull', t: 'No eres el único gitnauta. Otros tripulantes también envían cápsulas a la nave nodriza.' },
+    { art: 'pull', t: 'Con *git pull* bajas esas cápsulas a tu bóveda, y sus archivos aparecen en tu taller.' },
+    { art: 'pull', t: 'La regla de convivencia es *primero pull, luego push*. Si no, la nave rechaza tu envío.' }
+  ],
+  boss: [
+    { art: 'alarm', t: 'Alerta en el sector 4. Un meteorito destruyó la *base 7* y hay que reconstruirla desde cero.' },
+    { art: 'alarm', t: 'Esta vez no hay pasos guiados. Solo la terminal y lo que ya sabes.' }
+  ]
+};
+
+/* ═══════════════════════════════════════════════════════════════
+   SECTORES Y MISIONES
+   ═══════════════════════════════════════════════════════════════ */
+const URL_EX = 'https://galaxia.dev/cadete/base-lunar.git';
+const RUTA0 = 'Luna → Marte\n';
+const CHAPTERS = [
+  { id: 1, name: 'Despegue', desc: 'Tu primera base: qué es un repositorio y cómo nace.', col: ['#FF9A4A', '#C46A22', '#FFD2A8'] },
+  { id: 2, name: 'El muelle de carga', desc: 'La staging area: decide qué entra en tu próxima foto.', col: ['#4FD8EA', '#2A9BB0', '#C6F6FF'], ring: '#E6E0F5' },
+  { id: 3, name: 'La bóveda del tiempo', desc: 'Commits: cápsulas permanentes de tu proyecto.', col: ['#B08CFF', '#7A52D1', '#E8DDFF'] },
+  { id: 4, name: 'La nave nodriza', desc: 'Remotos, push y pull: tu trabajo a salvo y compartido.', col: ['#FF6F98', '#C2456E', '#FFC2D4'], ring: '#FFD25A' }
+];
+const SOON = [
+  { name: 'Universos paralelos', desc: 'branch y switch: trabajar en paralelo sin pisarte.' },
+  { name: 'Colisiones', desc: 'merge, y qué hacer cuando dos cambios chocan.' },
+  { name: 'Viajar en el tiempo', desc: 'diff, revert y reset para revisar y deshacer.' }
+];
+const F1 = { 'mapa.txt': 'Ruta: Tierra → Luna → Marte\n', 'diario.txt': 'Día 1: aterrizaje sin incidencias.\n' };
+const F2 = { 'motor.cfg': 'potencia=9000\n', 'ruta.txt': RUTA0, 'claves-secretas.txt': 'contraseña=1234\n' };
+const F3 = { 'motor.cfg': 'potencia=9000\n', 'ruta.txt': RUTA0 };
+const BASE_CMDS = ['git init', 'git add .', 'git commit -m "Primer despegue"', 'echo "Escala en Fobos" >> ruta.txt', 'git add ruta.txt', 'git commit -m "Añade escala en Fobos"'];
+
+const Z = st => st.repo ? zones(st) : { staged: [], modified: [], untracked: [] };
+const isStaged = (st, f) => Z(st).staged.some(s => s.f === f);
+const nCommits = st => st.repo && st.repo.branches.main ? ancestors(st.repo, st.repo.branches.main).length : 0;
+const synced = st => { const r = st.repo; return !!(r && r.remotes.origin && r.branches.main && r.remotes.origin.branches.main === r.branches.main); };
+const headAuthor = st => { const r = st.repo; return r && r.branches.main ? getC(r, r.branches.main).author : null; };
+
+const LEVELS = [
+  { id: '1-1', ch: 1, title: 'Bienvenida a bordo', cmd: 'ls · git status', scene: 'intro', par: 2, cwd: 'base-lunar',
+    brief: 'Estás en tu base lunar. Mira qué hay en la carpeta y pregúntale a Git cómo va todo.',
+    seed: { files: F1, cmds: [] },
+    goals: [
+      { t: 'Mira qué archivos hay con <code>ls</code>', ok: c => /^ls\b/.test(c.last) },
+      { t: 'Pregúntale a Git: <code>git status</code>', ok: c => /^git status/.test(c.last) }],
+    hints: ['Escribe <code>ls</code> y pulsa Enter. Muestra lo que hay en la carpeta.', 'Ahora escribe <code>git status</code>. Si da error, perfecto: lee lo que dice.'],
+    lesson: 'Git solo trabaja en carpetas que conoce. Si no hay repositorio, te lo dice con un mensaje "fatal".',
+    card: { cmd: 'ls', d: 'Lista los archivos de la carpeta. Con -a muestra también los ocultos.' } },
+  { id: '1-2', ch: 1, title: 'Planta la bandera', cmd: 'git init', scene: 'init', par: 3, cwd: 'base-lunar',
+    brief: 'Convierte esta carpeta en un repositorio para que Git empiece a vigilarla.',
+    seed: { files: F1, cmds: [] },
+    goals: [
+      { t: 'Planta la bandera: <code>git init</code>', ok: c => !!c.st.repo },
+      { t: 'Busca la caja negra oculta: <code>ls -a</code>', ok: c => /^ls\s+-(a|la|al)\b/.test(c.last) },
+      { t: 'Confirma con <code>git status</code>', ok: c => /^git status/.test(c.last) && c.ok }],
+    hints: ['El comando para crear un repositorio es <code>git init</code>.', 'Los archivos que empiezan con punto están ocultos. <code>ls -a</code> los muestra.'],
+    lesson: 'git init crea la carpeta oculta .git. Desde ese momento Git puede seguir cada cambio de tu proyecto.',
+    card: { cmd: 'git init', d: 'Crea un repositorio nuevo (la carpeta .git) en la carpeta actual.' } },
+  { id: '2-1', ch: 2, title: 'Primer cargamento', cmd: 'git add', scene: 'stage', par: 2, cwd: 'base-lunar',
+    brief: 'El mapa está listo para guardarse. Súbelo al muelle de carga.',
+    seed: { files: F1, cmds: ['git init'] },
+    goals: [
+      { t: 'Sube <code>mapa.txt</code> al muelle: <code>git add mapa.txt</code>', ok: c => isStaged(c.st, 'mapa.txt') },
+      { t: 'Revisa el estado: <code>git status</code>', ok: c => /^git status/.test(c.last) && c.ok }],
+    hints: ['git add recibe el nombre del archivo: <code>git add mapa.txt</code>', 'Fíjate: en git status, mapa.txt sale en verde y diario.txt en rojo. ¿Por qué?'],
+    lesson: 'git add copia un archivo del taller al muelle. Lo verde en git status irá en el próximo commit; lo rojo, no.',
+    card: { cmd: 'git add <archivo>', d: 'Sube los cambios de un archivo a la staging area.' } },
+  { id: '2-2', ch: 2, title: 'Carga selectiva', cmd: 'git add a b', par: 3, cwd: 'base-lunar',
+    brief: 'Sube el motor y la ruta. El archivo de claves no debe salir del taller.',
+    seed: { files: F2, cmds: ['git init'] },
+    goals: [
+      { t: 'Sube <code>motor.cfg</code> al muelle', ok: c => isStaged(c.st, 'motor.cfg') },
+      { t: 'Sube <code>ruta.txt</code> al muelle', ok: c => isStaged(c.st, 'ruta.txt') },
+      { t: 'Verifica con <code>git status</code> que las claves siguen en el taller', ok: c => /^git status/.test(c.last) && c.ok && !isStaged(c.st, 'claves-secretas.txt') }],
+    hints: ['Puedes subir varios a la vez: <code>git add motor.cfg ruta.txt</code>', 'Evita <code>git add .</code> aquí: subiría también las claves. Si se colaron, usa <code>git restore --staged claves-secretas.txt</code>'],
+    lesson: 'Con git add eliges archivo por archivo. Así nunca se cuela algo que no querías guardar.',
+    card: { cmd: 'git add a b c', d: 'Sube varios archivos concretos. "git add ." sube todo lo de la carpeta.' } },
+  { id: '2-3', ch: 2, title: 'Polizón a bordo', cmd: 'git restore --staged', par: 3, cwd: 'base-lunar',
+    brief: 'Alguien ejecutó "git add ." y las claves se colaron en el muelle. Sácalas antes del commit.',
+    seed: { files: F2, cmds: ['git init', 'git add .'] },
+    goals: [
+      { t: 'Localiza al polizón con <code>git status</code>', ok: c => /^git status/.test(c.last) },
+      { t: 'Bájalo del muelle: <code>git restore --staged claves-secretas.txt</code>', ok: c => !isStaged(c.st, 'claves-secretas.txt') && isStaged(c.st, 'motor.cfg') && isStaged(c.st, 'ruta.txt') },
+      { t: 'Comprueba con <code>ls</code> que el archivo sigue en el taller', ok: c => /^ls\b/.test(c.last) && ('claves-secretas.txt' in c.st.files) }],
+    hints: ['git status te sugiere el comando exacto en la línea "(use git restore --staged…)".', '<code>git restore --staged claves-secretas.txt</code>'],
+    lesson: 'git restore --staged saca un archivo del muelle sin borrarlo. El archivo sigue intacto en tu taller.',
+    card: { cmd: 'git restore --staged <archivo>', d: 'Saca un archivo de la staging area. No borra tu trabajo.' } },
+  { id: '3-1', ch: 3, title: 'Sella la cápsula', cmd: 'git commit -m', scene: 'commit', par: 2, cwd: 'base-lunar',
+    brief: 'El muelle está cargado. Séllalo en una cápsula del tiempo con un buen mensaje.',
+    seed: { files: F2, cmds: ['git init', 'git add motor.cfg ruta.txt'] },
+    goals: [
+      { t: 'Haz tu primer commit: <code>git commit -m "Primer despegue"</code>', ok: c => nCommits(c.st) >= 1 },
+      { t: 'Consulta la historia: <code>git log</code>', ok: c => /^git log/.test(c.last) && c.ok }],
+    hints: ['El mensaje va entre comillas después de -m: <code>git commit -m "Primer despegue"</code>', '<code>git log</code> muestra todas las cápsulas, de la más nueva a la más antigua.'],
+    lesson: 'Un commit es una foto permanente de lo que había en el muelle. Lleva hash, autor, fecha y tu mensaje.',
+    card: { cmd: 'git commit -m "msg"', d: 'Guarda lo que está en el muelle como una nueva cápsula en la historia.' } },
+  { id: '3-2', ch: 3, title: 'El ciclo del gitnauta', cmd: 'editar → add → commit', par: 8, cwd: 'base-lunar',
+    brief: 'Taller, muelle, bóveda. Repite el ciclo hasta tener tres cápsulas en la historia.',
+    seed: { files: F3, cmds: ['git init', 'git add .', 'git commit -m "Primer despegue"'] },
+    goals: [
+      { t: 'Cambia la ruta: <code>echo "Escala en Fobos" >> ruta.txt</code>', ok: c => c.st.files['ruta.txt'] !== RUTA0 || nCommits(c.st) >= 2 },
+      { t: 'Súbelo al muelle y sella una 2.ª cápsula', ok: c => nCommits(c.st) >= 2 },
+      { t: 'Crea <code>touch bitacora.txt</code> y guárdalo en una 3.ª cápsula', ok: c => nCommits(c.st) >= 3 && Object.keys(headTree(c.st.repo)).length >= 3 },
+      { t: 'Mira tu cadena: <code>git log --oneline</code>', ok: c => /^git log/.test(c.last) && c.ok }],
+    hints: ['Tras modificarlo, ruta.txt aparece como "modified" en el taller. Súbelo con <code>git add ruta.txt</code>.', 'Luego <code>git commit -m "Añade escala en Fobos"</code>. Repite con <code>touch bitacora.txt</code>, add y commit.'],
+    lesson: 'Este ciclo (editar, add, commit) es el 90 % del trabajo diario con Git.',
+    card: { cmd: 'git log --oneline', d: 'Muestra la historia de commits, uno por línea.' } },
+  { id: '4-1', ch: 4, title: 'Establece contacto', cmd: 'git remote add', scene: 'remote', par: 2, cwd: 'base-lunar',
+    brief: 'Conecta tu base con la nave nodriza para poder enviarle tus cápsulas.',
+    seed: { files: F3, cmds: BASE_CMDS },
+    goals: [
+      { t: `Conecta la antena: <code>git remote add origin ${URL_EX}</code>`, ok: c => !!(c.st.repo && c.st.repo.remotes.origin) },
+      { t: 'Verifica la conexión: <code>git remote -v</code>', ok: c => /^git remote -v/.test(c.last) && c.ok }],
+    hints: ['La forma es git remote add &lt;apodo&gt; &lt;url&gt;. El apodo habitual es origin.', `<code>git remote add origin ${URL_EX}</code>`],
+    lesson: 'Un remote es solo un apodo (origin) para una URL. Todavía no se ha enviado nada.',
+    card: { cmd: 'git remote add origin <url>', d: 'Registra un repositorio remoto con el apodo origin.' } },
+  { id: '4-2', ch: 4, title: 'Lanzamiento', cmd: 'git push', par: 7, cwd: 'base-lunar',
+    brief: 'Lanza tus cápsulas a la nave nodriza. La primera vez hay que indicar el destino.',
+    seed: { files: F3, cmds: [...BASE_CMDS, 'git remote add origin ' + URL_EX] },
+    goals: [
+      { t: 'Primer lanzamiento: <code>git push -u origin main</code>', ok: c => synced(c.st) },
+      { t: 'Haz un cambio nuevo, commit, y envíalo solo con <code>git push</code>', ok: c => c.last === 'git push' && c.ok && synced(c.st) && nCommits(c.st) >= 3 },
+      { t: 'Comprueba con <code>git status</code> que estás al día', ok: c => /^git status/.test(c.last) && c.ok }],
+    hints: ['-u (upstream) le dice a Git que main viaja siempre a origin/main: <code>git push -u origin main</code>', 'Para el cambio: <code>echo "Llegada a Marte" >> ruta.txt</code>, luego add, commit y <code>git push</code>.'],
+    lesson: 'git push copia tus commits al remoto. Después del primer -u, basta con "git push".',
+    card: { cmd: 'git push -u origin main', d: 'Envía tus commits al remoto y recuerda el destino para la próxima vez.' } },
+  { id: '4-3', ch: 4, title: 'Transmisión entrante', cmd: 'git pull', scene: 'pull', par: 6, cwd: 'base-lunar',
+    brief: 'Vega, del turno de noche, envió un commit a la nave nodriza. Tráelo antes de enviar lo tuyo, o la nave rechazará tu push.',
+    seed: { files: F3, cmds: [...BASE_CMDS, 'git remote add origin ' + URL_EX, 'git push -u origin main'], after: st => crewCommit(st) },
+    goals: [
+      { t: 'Trae el informe de Vega: <code>git pull</code>', ok: c => 'informe-vega.txt' in c.st.files },
+      { t: 'Crea un commit tuyo encima', ok: c => nCommits(c.st) >= 4 && headAuthor(c.st) === 'Cadete' && ancestors(c.st.repo, c.st.repo.branches.main).includes(c.st.vega) },
+      { t: 'Envíalo con <code>git push</code>', ok: c => synced(c.st) && headAuthor(c.st) === 'Cadete' }],
+    fail: st => { const r = st.repo; if (!r || !r.remotes.origin) return null; const l = r.branches.main, rm = r.remotes.origin.branches.main; return l && rm && !ancestors(r, l).includes(rm) && !ancestors(r, rm).includes(l) ? 'Hiciste un commit sin traer antes el de Vega, y las dos historias se separaron. Unirlas se aprende en el sector de colisiones. Reinicia y empieza con git pull.' : null; },
+    hints: ['<code>git pull</code> trae las cápsulas nuevas y actualiza tu taller. Verás aparecer informe-vega.txt.', 'Después: <code>echo "Revisado" >> informe-vega.txt</code>, <code>git add .</code>, <code>git commit -m "Revisa informe"</code> y <code>git push</code>.'],
+    lesson: 'git pull baja los commits del remoto y actualiza tu taller. Primero pull, luego push.',
+    card: { cmd: 'git pull', d: 'Trae los commits nuevos del remoto y los integra en tu rama.' } },
+  { id: '4-4', ch: 4, title: 'Prueba final: base 7', cmd: 'todo el flujo', scene: 'boss', boss: true, par: 6, cwd: 'base-7',
+    brief: 'La base 7 quedó en ruinas. Reconstrúyela desde cero y ponla a salvo en la nave nodriza.',
+    seed: { files: { 'plano.txt': 'Base 7: módulo habitacional\n', 'reactor.cfg': 'estado=estable\n' }, cmds: [] },
+    goals: [
+      { t: 'Convierte la carpeta en repositorio', ok: c => !!c.st.repo },
+      { t: 'Guarda plano.txt y reactor.cfg en una cápsula', ok: c => { if (!nCommits(c.st)) return false; const t = headTree(c.st.repo); return 'plano.txt' in t && 'reactor.cfg' in t; } },
+      { t: 'Conecta la antena origin', ok: c => !!(c.st.repo && c.st.repo.remotes.origin) },
+      { t: 'Lanza las cápsulas a la nave nodriza', ok: c => synced(c.st) }],
+    hints: ['Orden de la misión: init, add, commit, remote add, push.', '<code>git init</code>, <code>git add .</code>, <code>git commit -m "Reconstruye base 7"</code>, <code>git remote add origin https://galaxia.dev/cadete/base-7.git</code>, <code>git push -u origin main</code>'],
+    lesson: 'Lo hiciste sin pasos guiados: init, add, commit, remote y push. Ya eres gitnauta certificado.',
+    card: { cmd: 'Gitnauta certificado', d: 'Dominas el flujo completo: de carpeta vacía a repositorio en la nube.' } }
+];
+LEVELS.forEach(l => { l.num = l.id.replace('-', '.'); });
+
+/* ═══════════════════════════════════════════════════════════════
+   SIMULADOR DE GIT (local)
+   Para conectar un backend, reemplaza runCommand() por una llamada
+   que devuelva el mismo formato: { out, ev, ok, rama, mood }.
+   ═══════════════════════════════════════════════════════════════ */
+let game = null;
+const hex = () => Array.from({ length: 7 }, () => '0123456789abcdef'[Math.random() * 16 | 0]).join('');
+const getC = (r, h) => r.commits.find(c => c.hash === h);
+function headTree(r) { const h = r && r.branches[r.head]; return h ? getC(r, h).tree : {}; }
+function ancestors(r, h) { const out = []; while (h) { out.push(h); h = getC(r, h).parent; } return out; }
+function zones(st) {
+  const r = st.repo, ht = headTree(r), idx = r.index, staged = [], modified = [], untracked = [];
+  const names = [...new Set([...Object.keys(st.files), ...Object.keys(idx), ...Object.keys(ht)])].sort();
+  for (const f of names) {
+    if (idx[f] !== ht[f]) staged.push({ f, kind: !(f in ht) ? 'new file' : !(f in idx) ? 'deleted' : 'modified' });
+    if (f in st.files) { if (!(f in idx)) untracked.push(f); else if (st.files[f] !== idx[f]) modified.push(f); }
+  }
+  return { staged, modified, untracked };
+}
+function crewCommit(st) {
+  const r = st.repo, rem = r.remotes.origin, parent = rem.branches.main;
+  const tree = { ...clone(getC(r, parent).tree), 'informe-vega.txt': 'Sensores: polvo fino en el sector 4\n' };
+  const h = hex();
+  r.commits.push({ hash: h, msg: 'Añade informe de sensores', author: 'Vega', tree, parent, date: new Date().toString().slice(0, 24) });
+  rem.branches.main = h; st.vega = h;
+}
+function tokenize(s) {
+  const out = []; let cur = '', q = null, had = false;
+  for (let i = 0; i < s.length; i++) {
+    const ch = s[i];
+    if (q) { if (ch === q) q = null; else cur += ch; continue; }
+    if (ch === '"' || ch === "'") { q = ch; had = true; continue; }
+    if (/\s/.test(ch)) { if (cur || had) { out.push(cur); cur = ''; had = false; } continue; }
+    if (ch === '>') { if (cur || had) { out.push(cur); cur = ''; had = false; } if (s[i + 1] === '>') { out.push('>>'); i++; } else out.push('>'); continue; }
+    cur += ch;
+  }
+  if (q) return { error: true };
+  if (cur || had) out.push(cur);
+  return out;
+}
+const isSecret = f => /clave|secret|password|contrase/i.test(f);
+
+function runCommand(line) {
+  const st = game.st; const R = { out: [], ev: [], ok: true, rama: null, mood: 'info' };
+  const say = (t, c = '') => R.out.push({ t, c });
+  const fail = (t, rama) => { R.ok = false; R.mood = 'err'; say(t, 'err'); if (rama) R.rama = rama; return R; };
+  const tk = tokenize(line.replace(/[“”«»„]/g, '"').replace(/[‘’‚]/g, "'").trim());
+  if (tk.error) return fail('bash: unexpected EOF while looking for matching quote', 'Faltó cerrar unas comillas. Ejemplo: git commit -m "mi mensaje"');
+  const [cmd, ...a] = tk;
+  switch (cmd) {
+    case 'help': case 'ayuda':
+      say('Comandos de la nave', 'hint');
+      say('  ls [-a]            ver archivos (-a muestra ocultos)\n  cat <archivo>      leer un archivo\n  touch <archivo>    crear un archivo vacío\n  echo "txt" > f     escribir en un archivo (>> añade al final)\n  clear              limpiar la pantalla\n  pista              pedir una pista');
+      say('Comandos git', 'hint');
+      say('  git init, status, add, restore --staged, commit -m\n  git log [--oneline], remote [-v], remote add, push, pull');
+      R.rama = 'Ese es el manual de la nave. Tab autocompleta y la flecha arriba repite comandos.'; return R;
+    case 'clear': R.clear = true; return R;
+    case 'pista': case 'hint': R.hint = true; return R;
+    case 'pwd': say('/galaxia/' + st.cwd); return R;
+    case 'whoami': say('cadete'); R.rama = 'Cadete en formación. De momento.'; return R;
+    case 'ls': {
+      const all = a.some(x => /^-\w*a/.test(x)); let n = Object.keys(st.files).sort();
+      if (all) n = ['.', '..', ...(st.repo ? ['.git'] : []), ...n];
+      say(n.length ? n.join('  ') : '(carpeta vacía)', n.length ? '' : 'dim');
+      R.rama = all && st.repo ? '¿Ves .git? Es la caja negra donde Git guarda toda la historia. Lo que empieza con punto está oculto.' : !st.repo ? 'Estos son los archivos de tu base. De momento son archivos normales: Git no los vigila.' : 'Estos son los archivos del taller. ls no te dice en qué zona de Git están; para eso usa git status.';
+      return R; }
+    case 'cat': {
+      if (!a[0]) return fail('cat: falta el nombre del archivo');
+      if (!(a[0] in st.files)) return fail(`cat: ${a[0]}: No such file or directory`, `No hay ningún "${a[0]}" en el taller. Revisa el nombre con ls.`);
+      say(st.files[a[0]].replace(/\n$/, '') || '(vacío)');
+      if (isSecret(a[0])) { R.rama = 'Por esto mismo este archivo nunca debe entrar en Git.'; R.mood = 'warn'; }
+      return R; }
+    case 'touch': {
+      if (!a.length) return fail('touch: missing file operand');
+      for (const f of a) if (!(f in st.files)) { st.files[f] = ''; R.ev.push({ type: 'newfile', f }); }
+      R.rama = st.repo ? `Archivo nuevo en el taller. Git lo ve, pero aún no lo sigue (untracked). Para guardarlo: git add ${a[0]}` : 'Archivo creado en el taller.';
+      return R; }
+    case 'echo': {
+      const i = a.findIndex(x => x === '>' || x === '>>');
+      if (i < 0) { say(a.join(' ')); return R; }
+      const f = a[i + 1]; if (!f) return fail("bash: syntax error near unexpected token `newline'");
+      const txt = a.slice(0, i).join(' ') + '\n'; const isNew = !(f in st.files);
+      st.files[f] = a[i] === '>' ? txt : (st.files[f] || '') + txt;
+      R.ev.push({ type: isNew ? 'newfile' : 'modify', f });
+      if (st.repo && !isNew && (f in st.repo.index)) { R.rama = `Modificaste ${f}. En el taller ahora aparece como "modified": el cambio existe, pero Git todavía no lo guardó.`; R.mood = 'warn'; }
+      else R.rama = isNew ? `Creaste ${f} en el taller.` : `Escribiste en ${f}.`;
+      return R; }
+    case 'rm':
+      if (a.includes('-rf')) return fail('rm: operación bloqueada por el sistema de a bordo', 'rm -rf está bloqueado en esta nave. Por buenas razones.');
+      return fail('rm: deshabilitado en el simulador', 'En estas misiones los archivos son demasiado valiosos para borrarlos.');
+    case 'sudo': return fail('sudo: cadete is not in the sudoers file. This incident will be reported.', 'En esta nave no hay superusuarios. El incidente quedó registrado.');
+    case 'cd': return fail('cd: en esta misión te quedas en la base', 'No hace falta moverse: todo ocurre en esta carpeta.');
+    case 'git': return git(a, R, say, fail);
+    default:
+      return fail(`bash: ${cmd}: command not found`, /^(gti|gi|gt|tig|got)$/.test(cmd) ? '¿Querías decir git? Pasa en las mejores tripulaciones.' : 'Ese comando no existe en la nave. Escribe help para ver los disponibles.');
+  }
+}
+
+function git(a, R, say, fail) {
+  const st = game.st, sub = a[0];
+  if (!sub || sub === 'help' || sub === '--help') { say('usage: git <command> [<args>]\n\n   init      crea un repositorio\n   status    muestra el estado de cada zona\n   add       sube cambios al muelle\n   restore   saca del muelle (--staged)\n   commit    sella una cápsula\n   log       muestra la historia\n   remote    gestiona remotos\n   push      envía commits al remoto\n   pull      trae commits del remoto'); return R; }
+  if (sub === '--version' || sub === 'version') { say('git version 2.47.0 (edición gitnauta)'); return R; }
+  if (sub === 'init') {
+    if (st.repo) { say(`Reinitialized existing Git repository in /galaxia/${st.cwd}/.git/`); R.rama = 'Esta base ya tenía bandera. Repetir git init no borra nada.'; return R; }
+    st.repo = { index: {}, commits: [], head: 'main', branches: { main: null }, remotes: {}, upstream: {}, tracking: {} };
+    say(`Initialized empty Git repository in /galaxia/${st.cwd}/.git/`, 'ok');
+    R.ev.push({ type: 'init' }); R.mood = 'ok';
+    R.rama = 'Bandera plantada. Git creó la carpeta oculta .git y encendió el muelle y la bóveda. Fíjate en el prompt: ahora dice (main).';
+    return R;
+  }
+  if (!st.repo) return fail('fatal: not a git repository (or any of the parent directories): .git', 'Git dice que aquí no hay repositorio. Es normal: la bandera se planta con git init.');
+  const r = st.repo;
+  switch (sub) {
+    case 'status': {
+      const z = zones(st); say('On branch ' + r.head);
+      const up = r.upstream[r.head];
+      if (up && r.tracking[r.head] !== undefined) {
+        const th = r.tracking[r.head]; const ahead = ancestors(r, r.branches[r.head]).filter(h => !ancestors(r, th).includes(h)).length;
+        say(ahead ? `Your branch is ahead of '${up}/${r.head}' by ${ahead} commit${ahead > 1 ? 's' : ''}.\n  (use "git push" to publish your local commits)` : `Your branch is up to date with '${up}/${r.head}'.`);
+      }
+      if (!r.branches.main) say('\nNo commits yet');
+      if (z.staged.length) { say('\nChanges to be committed:\n  (use "git restore --staged <file>..." to unstage)'); say(z.staged.map(s => `\t${(s.kind + ':').padEnd(12)}${s.f}`).join('\n'), 'ok'); }
+      if (z.modified.length) { say('\nChanges not staged for commit:\n  (use "git add <file>..." to update what will be committed)'); say(z.modified.map(f => `\tmodified:   ${f}`).join('\n'), 'err'); }
+      if (z.untracked.length) { say('\nUntracked files:\n  (use "git add <file>..." to include in what will be committed)'); say(z.untracked.map(f => '\t' + f).join('\n'), 'err'); }
+      if (!z.staged.length && !z.modified.length && !z.untracked.length) say(r.branches.main ? 'nothing to commit, working tree clean' : '\nnothing to commit (create/copy files and use "git add" to track)');
+      const p = [];
+      if (z.staged.length) p.push(`${z.staged.length} en el muelle (verde)`);
+      if (z.modified.length) p.push(`${z.modified.length} modificado${z.modified.length > 1 ? 's' : ''} sin subir`);
+      if (z.untracked.length) p.push(`${z.untracked.length} sin seguimiento (rojo)`);
+      R.rama = 'Lectura del radar: ' + (p.length ? p.join(', ') + '.' : 'todo limpio, nada pendiente.');
+      if (up && r.remotes[up] && r.remotes[up].branches[r.head] !== r.tracking[r.head] && st.vega) R.rama += ' Ojo: "up to date" solo compara con lo último que sabes de la nave. Puede haber novedades allá arriba.';
+      if (z.staged.some(s => isSecret(s.f))) { R.rama += ' Atención: hay claves en el muelle.'; R.mood = 'warn'; }
+      return R; }
+    case 'add': {
+      const t = a.slice(1);
+      if (!t.length) return fail("Nothing specified, nothing added.\nhint: Maybe you wanted to say 'git add .'?", 'Dime qué subir: git add archivo.txt, o git add . para todo.');
+      let list = [];
+      if (t.some(x => x === '.' || x === '-A' || x === '--all')) list = Object.keys(st.files);
+      else for (const f of t) { if (!(f in st.files)) return fail(`fatal: pathspec '${f}' did not match any files`, `No encuentro "${f}" en el taller. Revisa el nombre con ls (Tab autocompleta).`); list.push(f); }
+      const moved = []; for (const f of list) if (r.index[f] !== st.files[f]) { r.index[f] = st.files[f]; moved.push(f); }
+      if (!moved.length) { R.rama = 'Nada nuevo que subir: esos cambios ya estaban en el muelle.'; return R; }
+      R.ev.push({ type: 'add', files: moved }); R.mood = 'ok';
+      if (moved.some(isSecret)) { R.mood = 'warn'; R.rama = 'Subiste claves secretas al muelle. Si haces commit quedarán en la historia para siempre. Sácalas con git restore --staged claves-secretas.txt'; }
+      else R.rama = `${moved.join(', ')} ${moved.length > 1 ? 'subieron' : 'subió'} al muelle. git add no imprime nada cuando todo sale bien: en Git, el silencio significa éxito.`;
+      return R; }
+    case 'restore': case 'reset': {
+      const staged = sub === 'reset' || a.includes('--staged') || a.includes('-S');
+      let t = a.slice(1).filter(x => !x.startsWith('-') && x !== 'HEAD');
+      if (sub === 'reset' && !t.length) t = zones(st).staged.map(s => s.f);
+      if (!t.length) return fail('fatal: you must specify path(s) to restore', 'Indica el archivo: git restore --staged archivo.txt');
+      const ht = headTree(r), back = [];
+      if (t.includes('.')) t = zones(st).staged.map(s => s.f);
+      for (const f of t) {
+        if (!(f in st.files) && !(f in r.index)) return fail(`error: pathspec '${f}' did not match any file(s) known to git`);
+        if (staged) { if (r.index[f] !== ht[f]) { if (f in ht) r.index[f] = ht[f]; else delete r.index[f]; back.push(f); } }
+        else { if (!(f in r.index)) return fail(`error: pathspec '${f}' did not match any file(s) known to git`, 'Ese archivo nunca se subió, así que no hay versión a la que volver.'); st.files[f] = r.index[f]; R.ev.push({ type: 'modify', f }); }
+      }
+      if (staged) { if (back.length) { R.ev.push({ type: 'restore', files: back }); R.mood = 'ok'; R.rama = `${back.join(', ')} volvió al taller. No se borró nada: solo salió del muelle.`; } else R.rama = 'Ese archivo no estaba en el muelle.'; }
+      else { R.rama = 'Descartaste los cambios del taller y volviste a la versión del muelle. Cuidado: esto sí borra cambios.'; R.mood = 'warn'; }
+      return R; }
+    case 'commit': {
+      const i = a.findIndex(x => x === '-m' || x === '-am');
+      if (i < 0) return fail('Aborting commit due to empty commit message.', 'En la nave no hay editor de texto. Usa git commit -m "tu mensaje".');
+      if (a[i] === '-am') { const z = zones(st); for (const f of z.modified) r.index[f] = st.files[f]; }
+      const msg = a[i + 1];
+      if (!msg || !msg.trim()) return fail("error: switch `m' requires a value", 'Falta el mensaje: git commit -m "qué cambiaste"');
+      const extra = a.slice(i + 2).filter(x => !x.startsWith('-'));
+      if (extra.length) return fail(`error: pathspec '${extra[0]}' did not match any file(s) known to git`, 'Si el mensaje tiene espacios, ponlo entre comillas: git commit -m "primer despegue"');
+      const z = zones(st);
+      if (!z.staged.length) { R.ok = false; R.mood = 'err'; say('On branch ' + r.head); say(z.untracked.length || z.modified.length ? 'nothing added to commit but untracked files present (use "git add" to track)' : 'nothing to commit, working tree clean', 'err'); R.rama = 'El muelle está vacío: no hay nada que sellar. Primero sube algo con git add.'; return R; }
+      const h = hex(), parent = r.branches[r.head];
+      r.commits.push({ hash: h, msg, author: 'Cadete', tree: clone(r.index), parent, date: new Date().toString().slice(0, 24) });
+      r.branches[r.head] = h;
+      say(`[${r.head}${parent ? '' : ' (root-commit)'} ${h}] ${msg}`, 'ok');
+      say(` ${z.staged.length} file${z.staged.length > 1 ? 's' : ''} changed`, 'dim');
+      R.ev.push({ type: 'commit', hash: h, files: z.staged.map(s => s.f) }); R.mood = 'ok';
+      R.rama = `Cápsula ${h} sellada en la bóveda. Es una foto permanente: puedes volver a ella cuando quieras.`;
+      if (msg.trim().length < 6) R.rama += ' Un buen mensaje cuenta qué y por qué: "Añade escala en Fobos" dice más que "cambios".';
+      if (z.staged.some(s => isSecret(s.f))) { R.mood = 'warn'; R.rama = 'Sellaste claves secretas en la historia. En la vida real tocaría cambiar esas contraseñas. Aquí puedes pulsar Reiniciar.'; }
+      return R; }
+    case 'log': {
+      if (!r.branches[r.head]) return fail(`fatal: your current branch '${r.head}' does not have any commits yet`, 'La bóveda está vacía: todavía no has hecho ningún commit.');
+      const one = a.includes('--oneline'); const trk = r.tracking[r.head];
+      ancestors(r, r.branches[r.head]).forEach((h, i) => {
+        const c = getC(r, h); const deco = []; if (i === 0) deco.push(`HEAD -> ${r.head}`); if (trk === h) deco.push(`origin/${r.head}`);
+        const d = deco.length ? ` (${deco.join(', ')})` : '';
+        if (one) say(`${h}${d} ${c.msg}`, i === 0 ? 'warn' : '');
+        else { say(`commit ${h}${d}`, 'warn'); say(`Author: ${c.author} <${c.author.toLowerCase()}@galaxia.dev>\nDate:   ${c.date}\n\n    ${c.msg}\n`); }
+      });
+      R.rama = 'Esta es tu historia, de la cápsula más nueva a la más antigua. HEAD marca dónde estás ahora.';
+      return R; }
+    case 'remote': {
+      const op = a[1];
+      if (!op) { Object.keys(r.remotes).forEach(n => say(n)); if (!Object.keys(r.remotes).length) R.rama = 'Aún no hay antenas configuradas.'; return R; }
+      if (op === '-v') { const ns = Object.keys(r.remotes); ns.forEach(n => { say(`${n}\t${r.remotes[n].url} (fetch)`); say(`${n}\t${r.remotes[n].url} (push)`); }); R.rama = ns.length ? 'Antena operativa: fetch es para traer, push para enviar.' : 'Nada configurado todavía. Usa git remote add origin <url>.'; return R; }
+      if (op === 'add') {
+        const n = a[2], u = a[3];
+        if (!n || !u) return fail('usage: git remote add <name> <url>', 'Necesito un apodo y una URL: git remote add origin ' + URL_EX);
+        if (r.remotes[n]) return fail(`error: remote ${n} already exists.`, `Ya existe una antena llamada ${n}.`);
+        r.remotes[n] = { url: u, branches: {} }; R.ev.push({ type: 'remote' }); R.mood = 'ok';
+        R.rama = `Antena "${n}" conectada. Es solo un apodo para esa URL: todavía no se envió nada.`; return R; }
+      if (op === 'remove' || op === 'rm') { if (!r.remotes[a[2]]) return fail(`error: No such remote: '${a[2]}'`); delete r.remotes[a[2]]; return R; }
+      return fail(`error: unknown subcommand: ${op}`);
+    }
+    case 'push': {
+      const args = a.slice(1), flags = args.filter(x => x.startsWith('-')), pos = args.filter(x => !x.startsWith('-'));
+      const setUp = flags.some(f => f === '-u' || f === '--set-upstream');
+      if (!Object.keys(r.remotes).length) return fail('fatal: No configured push destination.\nEither specify the URL from the command-line or configure a remote repository using\n\n    git remote add <name> <url>', 'La nave no sabe a dónde enviar. Primero conecta la antena: git remote add origin <url>');
+      let rn = pos[0], br = pos[1];
+      if (!rn) { const up = r.upstream[r.head]; if (!up) return fail(`fatal: The current branch ${r.head} has no upstream branch.\nTo push the current branch and set the remote as upstream, use\n\n    git push --set-upstream origin ${r.head}\n`, 'La primera vez hay que indicar el destino: git push -u origin main. Después bastará con git push.'); rn = up; br = r.head; }
+      if (!r.remotes[rn]) return fail(`fatal: '${rn}' does not appear to be a git repository`, `No hay ninguna antena llamada "${rn}". Revisa con git remote -v.`);
+      br = br || r.head; const rem = r.remotes[rn];
+      if (!r.branches[br]) return fail(`error: src refspec ${br} does not match any\nerror: failed to push some refs to '${rem.url}'`, br === 'master' ? 'Esta base usa la rama main, no master. Prueba: git push -u origin main' : 'No hay commits que enviar todavía. Haz al menos un commit.');
+      const local = r.branches[br], prev = rem.branches[br] || null;
+      if (prev && !ancestors(r, local).includes(prev)) {
+        say(`To ${rem.url}\n ! [rejected]        ${br} -> ${br} (fetch first)`, 'err');
+        say(`error: failed to push some refs to '${rem.url}'\nhint: Updates were rejected because the remote contains work that you do not\nhint: have locally. Integrate the remote changes (e.g. 'git pull ...')\nhint: before pushing again.`, 'dim');
+        R.ok = false; R.mood = 'err'; R.rama = 'Rechazado. La nave nodriza tiene cápsulas que tú no tienes. Tráelas primero con git pull.'; return R;
+      }
+      const fresh = ancestors(r, local).filter(h => !(prev ? ancestors(r, prev) : []).includes(h));
+      if (setUp) r.upstream[br] = rn;
+      if (!fresh.length) { say('Everything up-to-date'); R.rama = 'Nada nuevo que lanzar: la nave ya tiene todas tus cápsulas.'; return R; }
+      say(`Enumerating objects: ${fresh.length * 3}, done.\nWriting objects: 100% (${fresh.length * 3}/${fresh.length * 3}), done.`, 'dim');
+      say(`To ${rem.url}`);
+      say(prev ? `   ${prev}..${local}  ${br} -> ${br}` : ` * [new branch]      ${br} -> ${br}`, 'ok');
+      if (setUp) say(`branch '${br}' set up to track '${rn}/${br}'.`);
+      rem.branches[br] = local; r.tracking[br] = local; R.ev.push({ type: 'push', hashes: fresh.slice().reverse() }); R.mood = 'ok';
+      R.rama = `Lanzamiento completado: ${fresh.length} cápsula${fresh.length > 1 ? 's' : ''} ${fresh.length > 1 ? 'viajaron' : 'viajó'} a la nave nodriza. Ya están a salvo aunque tu base falle.`;
+      return R; }
+    case 'pull': {
+      if (!Object.keys(r.remotes).length) return fail("fatal: No remote repository specified.  Please, specify either a URL or a\nremote name from which new revisions should be fetched.", 'No hay antena configurada. Primero: git remote add origin <url>');
+      const pos = a.slice(1).filter(x => !x.startsWith('-'));
+      const rn = pos[0] || r.upstream[r.head];
+      if (!rn) return fail(`There is no tracking information for the current branch.\nPlease specify which branch you want to merge with.\n\n    git pull origin ${r.head}`, 'Git no sabe de dónde traer. Usa git pull origin main, o haz antes un git push -u.');
+      if (!r.remotes[rn]) return fail(`fatal: '${rn}' does not appear to be a git repository`);
+      const rem = r.remotes[rn], rh = rem.branches[r.head] || null, lh = r.branches[r.head];
+      if (!rh) { say("fatal: couldn't find remote ref " + r.head, 'err'); R.rama = 'La nave nodriza todavía no tiene cápsulas en esa rama.'; R.ok = false; return R; }
+      r.tracking[r.head] = rh;
+      if (lh && ancestors(r, lh).includes(rh)) { say('Already up to date.'); R.rama = 'Nada nuevo en la nave: tu bóveda ya tiene todas sus cápsulas.'; return R; }
+      if (lh && !ancestors(r, rh).includes(lh)) { say('hint: You have divergent branches and need to specify how to reconcile them.\nfatal: Need to specify how to reconcile divergent branches.', 'err'); R.ok = false; R.mood = 'err'; R.rama = 'Tu historia y la de la nave se separaron: cada una tiene cápsulas que la otra no. Unirlas se aprende en el sector de colisiones.'; return R; }
+      const z = zones(st);
+      if (z.staged.length || z.modified.length) return fail('error: Your local changes to the following files would be overwritten by merge.\nPlease commit your changes or stash them before you merge.\nAborting', 'Tienes cambios sin guardar. Haz commit (o descártalos) antes de traer cápsulas de la nave.');
+      const oldT = headTree(r), newT = getC(r, rh).tree;
+      const fresh = ancestors(r, rh).filter(h => !(lh ? ancestors(r, lh) : []).includes(h));
+      const changed = [...new Set([...Object.keys(oldT), ...Object.keys(newT)])].filter(f => oldT[f] !== newT[f]);
+      say(`From ${rem.url.replace(/^https?:\/\//, '')}\n * branch            ${r.head}       -> FETCH_HEAD`, 'dim');
+      say(`Updating ${lh || '0000000'}..${rh}\nFast-forward`, 'ok');
+      changed.forEach(f => say(` ${f} | ${f in newT ? '1 +' : 'deleted'}`));
+      say(` ${changed.length} file${changed.length !== 1 ? 's' : ''} changed`, 'dim');
+      r.branches[r.head] = rh; r.index = clone(newT);
+      changed.forEach(f => { if (f in newT) st.files[f] = newT[f]; else delete st.files[f]; });
+      R.ev.push({ type: 'pull', hashes: fresh.slice().reverse(), files: changed.filter(f => f in newT) }); R.mood = 'ok';
+      R.rama = `Recibido: ${fresh.length} cápsula${fresh.length > 1 ? 's' : ''} de la nave nodriza. ${changed.length ? changed.join(', ') + ' ya está en tu taller.' : ''}`;
+      return R; }
+    case 'branch': say('* ' + r.head, 'ok'); R.rama = 'Por ahora solo existe la rama main. Las ramas llegan en el sector de universos paralelos.'; return R;
+    case 'fetch': case 'clone': case 'merge': case 'checkout': case 'switch': case 'stash': case 'rebase': case 'diff':
+      say(`git ${sub}: disponible en sectores futuros`, 'dim'); R.rama = `Buen instinto. ${sub} llega en un sector posterior del mapa.`; return R;
+    default: return fail(`git: '${sub}' is not a git command. See 'git --help'.`, sub === 'stauts' || sub === 'staus' ? 'Casi: es git status.' : 'Ese subcomando no existe. Escribe git help.');
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   MAPA ESTELAR
+   ═══════════════════════════════════════════════════════════════ */
+const starsHTML = n => [0, 1, 2].map(i => i < n ? '<span class="on">★</span>' : '<span>★</span>').join('');
+const isUnlocked = i => i === 0 || !!progress.done[LEVELS[i - 1].id];
+let selected = null;
+const fieldStars = (() => { const m = {}; return id => m[id] || (m[id] = (() => { let h = ''; for (let i = 0; i < 46; i++) { const tw = Math.random() < .2; h += `<rect x="${rnd(0, 199)}" y="${rnd(0, 59)}" width="1" height="1" fill="${Math.random() < .2 ? '#8ADBFF' : '#F2EAD3'}" opacity="${tw ? 1 : .55}"${tw ? ` class="tw" style="--d:${(Math.random() * 2).toFixed(2)}s"` : ''}/>`; } return h; })()); })();
+
+function renderMap() {
+  const done = LEVELS.filter(l => progress.done[l.id]).length;
+  const stars = LEVELS.reduce((a, l) => a + (progress.done[l.id] || 0), 0);
+  $('#mapStars').textContent = `${stars}/${LEVELS.length * 3}`;
+  $('#mapDone').textContent = `${done}/${LEVELS.length}`;
+  const nextIdx = LEVELS.findIndex((l, i) => isUnlocked(i) && !progress.done[l.id]);
+  if (selected === null || !isUnlocked(selected)) selected = nextIdx < 0 ? LEVELS.length - 1 : nextIdx;
+  $('#sectors').innerHTML = CHAPTERS.map(ch => {
+    const lv = LEVELS.map((l, i) => ({ l, i })).filter(x => x.l.ch === ch.id), n = lv.length;
+    const pts = lv.map((x, k) => [n === 1 ? 50 : (k / (n - 1) * 100), k % 2 ? 68 : 42]);
+    const p = planetSpr(ch.ring ? 11 : 14, ch.col[0], ch.col[1], ch.col[2], ch.ring);
+    return `<section class="sector">
+      <header class="sector-head"><span class="snum">Sector ${ch.id}</span><h2>${esc(ch.name)}</h2><p>${esc(ch.desc)}</p></header>
+      <div class="field">
+        <svg class="bgstars art" viewBox="0 0 200 60" preserveAspectRatio="xMidYMid slice" aria-hidden="true">${fieldStars(ch.id)}</svg>
+        <svg class="orb art" viewBox="${-(Math.max(p.w, p.h) - p.w) / 2} ${-(Math.max(p.w, p.h) - p.h) / 2} ${Math.max(p.w, p.h)} ${Math.max(p.w, p.h)}" aria-hidden="true">${p.svg}</svg>
+        <div class="route">
+          <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true"><polyline vector-effect="non-scaling-stroke" points="${pts.map(q => q.join(',')).join(' ')}"/></svg>
+          ${lv.map(({ l, i }, k) => { const un = isUnlocked(i); return `<button class="node${progress.done[l.id] ? ' done' : ''}${l.boss ? ' boss' : ''}${i === selected ? ' sel' : ''}" style="left:${pts[k][0]}%;top:${pts[k][1]}%" data-idx="${i}" ${un ? '' : 'disabled'} aria-label="Misión ${l.num}: ${esc(l.title)}${un ? '' : ', bloqueada'}">${un ? l.num : `<svg class="sprite" viewBox="0 0 7 8" aria-hidden="true">${SPR.lock}</svg>`}${i === nextIdx ? `<svg class="sprite here" viewBox="0 0 16 18" aria-hidden="true">${SPR.rama}${SPR.ramaEyes}<g class="flick">${SPR.ramaFlame}</g></svg>` : ''}</button>`; }).join('')}
+        </div>
+      </div></section>`;
+  }).join('') + SOON.map((ch, k) => `<section class="sector soon">
+      <header class="sector-head"><span class="snum">Sector ${CHAPTERS.length + k + 1}</span><h2>${esc(ch.name)}</h2><p>${esc(ch.desc)}</p></header>
+      <div class="soon-field">Próximamente</div></section>`).join('');
+  renderCard();
+}
+function renderCard() {
+  const l = LEVELS[selected];
+  $('#cardNum').textContent = `Sector ${l.ch}, misión ${l.num}`;
+  $('#cardTitle').textContent = l.title;
+  $('#cardCmd').textContent = l.cmd;
+  $('#cardStars').innerHTML = starsHTML(progress.done[l.id] || 0);
+  $('#cardStars').setAttribute('aria-label', `${progress.done[l.id] || 0} de 3 estrellas`);
+  $('#cardPlay').textContent = progress.done[l.id] ? 'Repetir misión' : 'Iniciar misión';
+}
+$('#sectors').addEventListener('click', e => {
+  const b = e.target.closest('.node'); if (!b || b.disabled) return;
+  const i = +b.dataset.idx;
+  if (i === selected) { startLevel(LEVELS[i].id); return; }
+  selected = i; $$('.node').forEach(n => n.classList.toggle('sel', +n.dataset.idx === i)); renderCard();
+});
+$('#cardPlay').onclick = () => startLevel(LEVELS[selected].id);
+
+function showMap() {
+  closeOverlays();
+  $('#screenLevel').hidden = true; $('#screenMap').hidden = false; renderMap(); window.scrollTo(0, 0);
+}
+function closeOverlays() { if (cs) csClose(true); $$('.overlay').forEach(o => o.classList.remove('on')); hideDock(); }
+
+/* ═══════════════════════════════════════════════════════════════
+   MISIÓN
+   ═══════════════════════════════════════════════════════════════ */
+const out = $('#termOut'), inp = $('#termIn');
+let lastStars = 3;
+function liveStars() { let s = 3; if (game.hints) s--; if (game.cmds > game.lvl.par + 3) s--; return Math.max(1, s); }
+function renderHud() {
+  const s = liveStars(), el = $('#hudStars');
+  el.innerHTML = starsHTML(s); el.setAttribute('aria-label', `${s} estrellas en juego`);
+  if (s < lastStars) { el.classList.remove('lost'); void el.offsetWidth; el.classList.add('lost'); }
+  lastStars = s;
+  $('#hudCmds').textContent = `${game.cmds} / ${game.lvl.par + 3} comandos`;
+}
+
+function startLevel(id, skipScene) {
+  closeOverlays();
+  const lvl = LEVELS.find(l => l.id === id);
+  selected = LEVELS.indexOf(lvl);
+  game = { lvl, st: { files: clone(lvl.seed.files), repo: null, cwd: lvl.cwd }, done: lvl.goals.map(() => false), cmds: 0, hints: 0, hist: [], hi: 0, won: false, failed: false };
+  for (const c of lvl.seed.cmds) runCommand(c);
+  if (lvl.seed.after) lvl.seed.after(game.st);
+  $('#screenMap').hidden = true; $('#screenLevel').hidden = false; window.scrollTo(0, 0);
+  $('#screenLevel').classList.toggle('boss-lvl', !!lvl.boss);
+  $('#lvlNum').textContent = 'Misión ' + lvl.num;
+  $('#lvlName').textContent = lvl.title;
+  $('#lvlCmd').textContent = lvl.cmd;
+  $('#brief').textContent = lvl.brief;
+  $('#hints').innerHTML = '';
+  $('#fail').hidden = true;
+  $('#btnHint').disabled = false;
+  inp.readOnly = false; inp.placeholder = '';
+  $('#hintCost').textContent = 'Cuesta una estrella';
+  out.innerHTML = '';
+  $('#termTitle').textContent = 'cadete@' + lvl.cwd;
+  $('#btnIntro').hidden = !lvl.scene;
+  print([{ t: `── Misión ${lvl.num}: ${lvl.title} ──`, c: 'warn' }, { t: 'Escribe help para ver los comandos. Tab autocompleta.', c: 'dim' }]);
+  setRama(lvl.boss ? 'Sin ayuda automática en esta misión. Si te atascas, el botón de pista sigue disponible.' : 'Lee los objetivos y escribe tu primer comando. Te iré contando qué pasa en cada zona.', 'info');
+  lastStars = 3;
+  renderAll();
+  evalGoals('', true);
+  const go = () => { if (!TOUCH) inp.focus(); };
+  if (lvl.scene && !skipScene && !progress.seen[lvl.id]) { progress.seen[lvl.id] = 1; save(); playScene(lvl.scene, go); } else go();
+}
+$('#btnBack').onclick = showMap;
+$('#btnReset').onclick = () => startLevel(game.lvl.id, true);
+$('#btnFailReset').onclick = () => startLevel(game.lvl.id, true);
+$('#btnIntro').onclick = () => game.lvl.scene && playScene(game.lvl.scene);
+
+function renderAll() { renderViz(); renderGoals(); renderPrompt(); renderHud(); }
+function renderPrompt() { $('#prompt').innerHTML = `~/${esc(game.st.cwd)}${game.st.repo ? ` <b>(${game.st.repo.head})</b>` : ''} $`; }
+
+/* ─── visualización de las zonas ─── */
+const WD_TAG = { u: 'nuevo', m: 'editado', s: 'en muelle', c: '', n: '' };
+const ST_TAG = { 'new file': 'nuevo', modified: 'cambio', deleted: 'borrado' };
+function capHtml(r, h, key, refs) {
+  const c = getC(r, h);
+  return `<div class="cap" data-key="${key}:${h}"><span class="cblock"></span><div class="cinfo"><div class="cline"><span class="chash">${h}</span>${refs}</div><span class="cmsg" title="${esc(c.msg)}">${esc(c.msg)}</span>${c.author !== 'Cadete' ? `<span class="cauthor">por ${esc(c.author)}</span>` : ''}</div></div>`;
+}
+function renderViz() {
+  const st = game.st, r = st.repo, z = r ? zones(st) : null;
+  const files = Object.keys(st.files).sort();
+  $('#cWd').textContent = files.length;
+  $('#zWd').innerHTML = files.length ? files.map(f => {
+    let c = 'n';
+    if (r) { if (z.untracked.includes(f)) c = 'u'; else if (z.modified.includes(f)) c = 'm'; else if (z.staged.some(s => s.f === f)) c = 's'; else c = 'c'; }
+    const tip = !r ? 'Git no vigila esta carpeta' : c === 'u' ? 'untracked: Git no lo sigue' : c === 'm' ? 'modified: cambiado y sin subir' : c === 's' ? 'su versión actual está en el muelle' : 'guardado y sin cambios';
+    return `<span class="file f-${c}" data-key="wd:${esc(f)}" title="${tip}"><span class="fname">${esc(f)}</span>${WD_TAG[c] ? `<span class="ftag">${WD_TAG[c]}</span>` : ''}</span>`;
+  }).join('') : '<p class="empty">Taller vacío. Crea algo con <code>touch</code>.</p>';
+  $$('.zone').forEach(el => el.classList.toggle('dormant', el.dataset.zone === 'wd' ? false : el.dataset.zone === 'remote' ? !(r && Object.keys(r.remotes).length) : !r));
+  if (!r) {
+    $('#zSt').innerHTML = '<p class="empty">Apagado. Se enciende al plantar la bandera con <code>git init</code>.</p>';
+    $('#zVa').innerHTML = '<p class="empty">Apagada. Sin repositorio no hay historia.</p>';
+    $('#zRe').innerHTML = '<p class="empty">Fuera de alcance.</p>';
+    ['#cSt', '#cVa', '#cRe'].forEach(s => { $(s).textContent = '–'; });
+    return;
+  }
+  $('#cSt').textContent = z.staged.length;
+  $('#zSt').innerHTML = z.staged.length ? z.staged.map(s => `<span class="file f-stg" data-key="st:${esc(s.f)}"><span class="fname">${esc(s.f)}</span><span class="ftag">${ST_TAG[s.kind]}</span></span>`).join('') : '<p class="empty">Muelle vacío. Sube cambios con <code>git add</code>.</p>';
+  const anc = r.branches[r.head] ? ancestors(r, r.branches[r.head]) : [];
+  const trk = r.tracking[r.head];
+  $('#cVa').textContent = anc.length;
+  $('#zVa').innerHTML = anc.length ? `<div class="caps">${anc.map((h, i) => capHtml(r, h, 'c', (i === 0 ? '<span class="ref">HEAD → main</span>' : '') + (trk === h ? '<span class="ref trk">origin/main</span>' : ''))).join('')}</div>` : '<p class="empty">Sin cápsulas todavía. Séllalas con <code>git commit</code>.</p>';
+  const names = Object.keys(r.remotes);
+  const rm = names.length ? r.remotes[names[0]].branches[r.head] : null;
+  const ranc = rm ? ancestors(r, rm) : [];
+  $('#cRe').textContent = names.length ? ranc.length : '–';
+  $('#zRe').innerHTML = !names.length ? '<p class="empty">Sin antena. Conéctala con <code>git remote add</code>.</p>' :
+    `<p class="rurl">${esc(names[0])}: ${esc(r.remotes[names[0]].url.replace(/^https?:\/\//, ''))}</p>` + (ranc.length ? `<div class="caps">${ranc.map((h, i) => capHtml(r, h, 'r', i === 0 ? '<span class="ref">main</span>' : '')).join('')}</div>` : '<p class="empty">Conectada pero vacía. Lanza tus cápsulas con <code>git push</code>.</p>');
+}
+
+/* ─── objetivos ─── */
+function renderGoals(just = []) {
+  const cur = game.done.indexOf(false);
+  $('#goals').innerHTML = game.lvl.goals.map((g, i) => `<li class="${game.done[i] ? 'done' : i === cur ? 'cur' : ''}${just.includes(i) ? ' just' : ''}"><span class="check" aria-hidden="true"></span><span>${g.t}${game.done[i] ? '<span class="sr-only"> (completado)</span>' : ''}</span></li>`).join('');
+}
+function evalGoals(last, ok) {
+  if (game.failed) return;
+  const c = { st: game.st, last, ok }; const just = [];
+  for (let i = 0; i < game.done.length; i++) {
+    if (game.done[i]) continue;
+    if (game.lvl.goals[i].ok(c)) { game.done[i] = true; just.push(i); } else break;
+  }
+  if (just.length) renderGoals(just);
+  if (game.done.every(Boolean) && !game.won) { game.won = true; setTimeout(win, REDUCE ? 200 : 1000); }
+}
+function checkFail() {
+  if (!game.lvl.fail || game.failed || game.won) return;
+  const msg = game.lvl.fail(game.st);
+  if (msg) { game.failed = true; $('#failText').textContent = msg; $('#fail').hidden = false; setRama(msg, 'err'); }
+}
+
+/* ─── terminal ─── */
+function print(lines) {
+  for (const l of lines) { const d = document.createElement('div'); d.className = l.c || ''; if (l.html) d.innerHTML = l.html; else d.textContent = l.t || ' '; out.appendChild(d); }
+  out.scrollTop = out.scrollHeight;
+}
+function setRama(t, mood = 'info') {
+  const b = $('#comms'); b.className = 'comms px ' + mood; $('#commsText').textContent = t;
+  void b.offsetWidth; b.classList.add('fresh');
+}
+function submit() {
+  if (!game || game.won) return;
+  const line = inp.value; inp.value = '';
+  print([{ html: `<span class="cmd"><span class="pr">${$('#prompt').innerHTML}</span> ${esc(line)}</span>` }]);
+  const norm = line.trim().replace(/\s+/g, ' ');
+  if (!norm) return;
+  game.hist.push(line); game.hi = game.hist.length;
+  const before = snapshot();
+  const R = runCommand(norm);
+  if (R.clear) { out.innerHTML = ''; return; }
+  if (R.hint) { giveHint(); return; }
+  game.cmds++;
+  print(R.out);
+  if (R.rama) setRama(R.rama, R.mood);
+  renderAll();
+  animate(R.ev, before);
+  evalGoals(norm, R.ok);
+  checkFail();
+}
+inp.addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); submit(); }
+  else if (e.key === 'ArrowUp') { e.preventDefault(); if (game.hi > 0) { game.hi--; inp.value = game.hist[game.hi]; } }
+  else if (e.key === 'ArrowDown') { e.preventDefault(); if (game.hi < game.hist.length - 1) { game.hi++; inp.value = game.hist[game.hi]; } else { game.hi = game.hist.length; inp.value = ''; } }
+  else if (e.key === 'Tab') { e.preventDefault(); complete(); }
+});
+function complete() {
+  const parts = inp.value.split(' '), last = parts[parts.length - 1];
+  let cands;
+  if (parts.length === 1) cands = ['git', 'ls', 'cat', 'touch', 'echo', 'clear', 'help', 'pista'];
+  else if (parts[0] === 'git' && parts.length === 2) cands = ['init', 'status', 'add', 'restore', 'commit', 'log', 'remote', 'push', 'pull', 'branch'];
+  else if (parts[0] === 'git' && parts[1] === 'remote' && parts.length === 3) cands = ['add', '-v'];
+  else cands = [...Object.keys(game.st.files), 'origin', 'main', '--staged', '--oneline'];
+  const m = cands.filter(c => c.startsWith(last));
+  if (m.length === 1) { parts[parts.length - 1] = m[0]; inp.value = parts.join(' ') + ' '; }
+  else if (m.length > 1) { let pre = m[0]; for (const x of m) while (!x.startsWith(pre)) pre = pre.slice(0, -1); if (pre.length > last.length) { parts[parts.length - 1] = pre; inp.value = parts.join(' '); } else print([{ t: m.join('  '), c: 'dim' }]); }
+}
+const KEYS = [['git ', 'git'], ['status', 'status'], ['add ', 'add'], ['commit -m ""', 'commit -m'], ['log --oneline', 'log'], ['push', 'push'], ['pull', 'pull'], ['ls', 'ls'], ['TAB', 'Tab'], ['UP', '↑'], ['ENTER', 'Enter']];
+$('#keys').innerHTML = KEYS.map(k => `<button type="button" data-k='${k[0]}'>${k[1]}</button>`).join('');
+$('#keys').addEventListener('click', e => {
+  const b = e.target.closest('button'); if (!b) return; const k = b.dataset.k;
+  if (k === 'TAB') complete(); else if (k === 'UP') { if (game.hi > 0) { game.hi--; inp.value = game.hist[game.hi]; } } else if (k === 'ENTER') submit();
+  else { const v = inp.value; inp.value = v + (v && !v.endsWith(' ') && k !== 'git ' ? ' ' : '') + k; if (k.endsWith('""')) { inp.focus(); const p = inp.value.length - 1; inp.setSelectionRange(p, p); return; } }
+  inp.focus();
+});
+$('#term').addEventListener('click', e => { if (!e.target.closest('button') && !getSelection().toString()) inp.focus(); });
+$('.mission').addEventListener('click', e => { const c = e.target.closest('code'); if (!c) return; inp.value = c.textContent; inp.focus(); setRama('Copiado en la terminal. Pulsa Enter para ejecutarlo.', 'info'); });
+
+function giveHint() {
+  const h = game.lvl.hints;
+  if (game.hints >= h.length) { setRama('Ya te di todas las pistas. Revisa los objetivos y lo que dice git status.', 'info'); return; }
+  const p = document.createElement('p'); p.innerHTML = h[game.hints]; $('#hints').appendChild(p);
+  game.hints++; renderHud();
+  if (game.hints >= h.length) { $('#btnHint').disabled = true; $('#hintCost').textContent = 'No quedan más pistas'; }
+  else $('#hintCost').textContent = 'Las siguientes pistas no cuestan más';
+  setRama('Dejé una pista en el panel de objetivos.', 'info');
+}
+$('#btnHint').onclick = giveHint;
+
+/* ─── animaciones: los archivos y cápsulas viajan entre zonas ─── */
+function snapshot() { const m = new Map(); $$('#viz [data-key]').forEach(n => m.set(n.dataset.key, { rect: n.getBoundingClientRect(), html: n.outerHTML })); return m; }
+const find = k => document.querySelector(`#viz [data-key="${CSS.escape(k)}"]`);
+function fly(src, dst, i) {
+  const to = dst.getBoundingClientRect(), fr = src.rect;
+  if (!fr.width) return Promise.resolve();
+  const g = document.createElement('div'); g.className = 'ghost'; g.innerHTML = src.html;
+  Object.assign(g.style, { left: fr.left + 'px', top: fr.top + 'px', width: fr.width + 'px', height: fr.height + 'px' });
+  document.body.appendChild(g);
+  const dx = to.left - fr.left, dy = to.top - fr.top;
+  const a = g.animate([
+    { transform: 'translate(0,0)', opacity: 1 },
+    { transform: `translate(${dx * .5}px,${dy * .5 - 40}px)`, opacity: 1, offset: .55 },
+    { transform: `translate(${dx}px,${dy}px)`, opacity: .4 }
+  ], { duration: 720, delay: i * 120, easing: 'cubic-bezier(.45,0,.25,1)', fill: 'both' });
+  return a.finished.then(() => g.remove(), () => g.remove());
+}
+const popEl = el => { if (el && !REDUCE) el.animate([{ transform: 'scale(.6)' }, { transform: 'scale(1.12)' }, { transform: 'scale(1)' }], { duration: 360, easing: 'steps(3)' }); };
+function wake(keys) { keys.forEach(k => { const z = document.querySelector(`.zone[data-zone="${k}"]`); z.classList.remove('wake'); void z.offsetWidth; z.classList.add('wake'); }); }
+function lit(id) { const f = $(id); f.classList.remove('lit'); void f.offsetWidth; f.classList.add('lit'); setTimeout(() => f.classList.remove('lit'), 1600); }
+async function animate(evs, before) {
+  const pairs = [], pops = [];
+  for (const ev of evs) {
+    if (ev.type === 'init') wake(['stage', 'vault']);
+    if (ev.type === 'remote') wake(['remote']);
+    if (ev.type === 'newfile') pops.push('wd:' + ev.f);
+    if (ev.type === 'modify') { const el = find('wd:' + ev.f); if (el && !REDUCE) { el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake'); } }
+    if (ev.type === 'add') { lit('#fAdd'); ev.files.forEach(f => pairs.push(['wd:' + f, 'st:' + f])); }
+    if (ev.type === 'restore') ev.files.forEach(f => pairs.push(['st:' + f, 'wd:' + f]));
+    if (ev.type === 'commit') { lit('#fCommit'); ev.files.forEach(f => pairs.push(['st:' + f, 'c:' + ev.hash])); }
+    if (ev.type === 'push') { lit('#fPush'); ev.hashes.forEach(h => pairs.push(['c:' + h, 'r:' + h])); }
+    if (ev.type === 'pull') { lit('#fPull'); ev.hashes.forEach(h => pairs.push(['r:' + h, 'c:' + h])); ev.files.forEach(f => pops.push('wd:' + f)); }
+  }
+  if (REDUCE) return;
+  pops.forEach(k => popEl(find(k)));
+  const byTarget = new Map();
+  pairs.forEach(([from, to], i) => {
+    const src = before.get(from), dst = find(to);
+    if (!src || !dst) return;
+    dst.style.opacity = '0';
+    if (!byTarget.has(dst)) byTarget.set(dst, []);
+    byTarget.get(dst).push(fly(src, dst, i));
+  });
+  await Promise.all([...byTarget].map(async ([dst, ps]) => { await Promise.all(ps); dst.style.opacity = ''; popEl(dst); }));
+  if (evs.some(e => e.type === 'commit')) wake(['vault']);
+  if (evs.some(e => e.type === 'push')) wake(['remote']);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   CINEMÁTICAS
+   ═══════════════════════════════════════════════════════════════ */
+let cs = null;
+const segs = t => t.split('*').map((s, i) => ({ s, b: i % 2 === 1 }));
+function renderTyped(sg, n) { let h = '', left = n; for (const x of sg) { if (left <= 0) break; const part = x.s.slice(0, left); left -= x.s.length; h += x.b ? `<b>${esc(part)}</b>` : esc(part); } return h; }
+function playScene(key, done) { cs = { lines: SCENES[key], i: 0, done, timer: null, full: false, art: null }; $('#cutscene').classList.add('on'); showLine(); $('#csNext').focus(); }
+function showLine() {
+  const L = cs.lines[cs.i], art = $('#csArt');
+  if (cs.art !== L.art) { art.innerHTML = `<svg class="art" viewBox="0 0 160 90" aria-hidden="true">${ART[L.art]()}</svg>`; cs.art = L.art; }
+  $('#csPips').innerHTML = cs.lines.map((_, i) => `<i class="${i <= cs.i ? 'on' : ''}"></i>`).join('');
+  $('#csNext').textContent = cs.i === cs.lines.length - 1 ? 'Empezar' : 'Siguiente';
+  const sg = segs(L.t), total = sg.reduce((a, x) => a + x.s.length, 0), el = $('#csText');
+  clearInterval(cs.timer); cs.full = false;
+  cs.finish = () => { clearInterval(cs.timer); el.innerHTML = renderTyped(sg, total); cs.full = true; };
+  if (REDUCE) { cs.finish(); return; }
+  let n = 0; cs.timer = setInterval(() => { n += 2; el.innerHTML = renderTyped(sg, n); if (n >= total) { clearInterval(cs.timer); cs.full = true; } }, 22);
+}
+function csNext() { if (!cs) return; if (!cs.full) { cs.finish(); return; } cs.i++; if (cs.i >= cs.lines.length) csClose(); else showLine(); }
+function csClose(silent) { if (!cs) return; clearInterval(cs.timer); $('#cutscene').classList.remove('on'); const d = cs.done; cs = null; if (!silent && d) d(); }
+$('#csNext').onclick = csNext; $('#csSkip').onclick = () => csClose();
+$('#csText').onclick = csNext; $('#csArt').onclick = csNext;
+document.addEventListener('keydown', e => {
+  if (cs) { if (e.key === 'Enter' || e.key === ' ') { if (e.target.tagName !== 'BUTTON') { e.preventDefault(); csNext(); } } if (e.key === 'Escape') csClose(); return; }
+  if (e.key === 'Escape') { if ($('#coll').classList.contains('on')) $('#coll').classList.remove('on'); }
+});
+
+/* ═══════════════════════════════════════════════════════════════
+   VICTORIA Y COLECCIÓN
+   ═══════════════════════════════════════════════════════════════ */
+const chCol = l => CHAPTERS.find(c => c.id === l.ch).col[0];
+const cardHtml = (l, lock) => lock ? '<div class="cmdcard lock"><code>???</code><p>Completa la misión para desbloquearla.</p></div>' : `<div class="cmdcard" style="--cc:${chCol(l)}"><code>${esc(l.card.cmd)}</code><p>${esc(l.card.d)}</p></div>`;
+let celTimer = null, celEnd = null;
+function celebrate(stars, title, sub, after) {
+  if (REDUCE) { after(); return; }
+  const c = $('#celebrate');
+  c.innerHTML = `<div class="veil"></div><div class="band"><h2>${esc(title)}</h2><div class="bstars">${[0, 1, 2].map(i => i < stars ? `<span class="on" style="animation-delay:${.35 + i * .18}s">★</span>` : '<span>★</span>').join('')}</div><small>${esc(sub)}</small></div>`;
+  c.classList.add('on');
+  const band = c.querySelector('.band'), cols = ['#FFD25A', '#4FD8EA', '#FF6F98', '#B08CFF', '#F2EAD3'], reach = Math.max(innerWidth, innerHeight) * .55;
+  for (let i = 0; i < 32; i++) {
+    const sp = document.createElement('i'), sz = [6, 8, 12][i % 3], a = Math.random() * Math.PI * 2, d = 140 + Math.random() * reach;
+    sp.className = 'spark'; sp.style.cssText = `width:${sz}px;height:${sz}px;background:${cols[i % 5]};margin:${-sz / 2}px 0 0 ${-sz / 2}px`;
+    c.insertBefore(sp, band);
+    sp.animate([{ transform: 'translate(0,0)', opacity: 1 }, { transform: `translate(${Math.cos(a) * d}px,${Math.sin(a) * d}px)`, opacity: 0 }], { duration: 1100, delay: 200 + Math.random() * 300, easing: 'steps(10)', fill: 'both' });
+  }
+  celEnd = (silent) => { clearTimeout(celTimer); c.classList.remove('on'); c.innerHTML = ''; c.onclick = null; const f = celEnd; celEnd = null; if (!silent && f) after(); };
+  c.onclick = () => celEnd && celEnd();
+  celTimer = setTimeout(() => celEnd && celEnd(), 1750);
+}
+function hideDock() {
+  if (celEnd) celEnd(true);
+  $('#dock').hidden = true; document.body.classList.remove('docked'); root.classList.remove('docked');
+}
+function showDock() {
+  const d = $('#dock'); d.hidden = false;
+  const h = d.offsetHeight; root.style.setProperty('--dock-h', h + 'px'); document.body.style.setProperty('--dock-h', h + 'px');
+  document.body.classList.add('docked'); root.classList.add('docked');
+  out.scrollTop = out.scrollHeight;
+  $('#term').scrollIntoView({ block: 'nearest', behavior: REDUCE ? 'auto' : 'smooth' });
+  ($('#winNext').hidden ? $('#winMap') : $('#winNext')).focus({ preventScroll: true });
+}
+function win() {
+  const lvl = game.lvl, s = liveStars(), prev = progress.done[lvl.id] || 0;
+  progress.done[lvl.id] = Math.max(prev, s); save();
+  inp.readOnly = true; inp.placeholder = 'Misión completada';
+  const title = lvl.boss ? 'Base 7 reconstruida' : 'Misión completada';
+  const stars = [0, 1, 2].map(i => i < s ? '<span class="on">★</span>' : '<span>★</span>').join('');
+  $('#dockStars').innerHTML = stars; $('#dockStars').setAttribute('aria-label', `${s} de 3 estrellas`);
+  $('#dockTitle').textContent = `${title}: misión ${lvl.num}`;
+  $('#dockLesson').textContent = lvl.lesson;
+  const why = []; if (game.hints) why.push('usaste pistas'); if (game.cmds > lvl.par + 3) why.push(`usaste ${game.cmds} comandos y la meta es ${lvl.par + 3} o menos`);
+  const score = s === 3 ? `${game.cmds} comandos y sin pistas.` : `${s} estrella${s > 1 ? 's' : ''}: ${why.join(' y ')}. Repite para llegar a 3.`;
+  $('#dockScore').innerHTML = esc(score) + (prev ? '' : ` Tarjeta nueva en tu colección: <code>${esc(lvl.card.cmd)}</code>`);
+  $('#winNext').hidden = LEVELS.indexOf(lvl) >= LEVELS.length - 1;
+  celebrate(s, title, `Misión ${lvl.num}: ${lvl.title}`, showDock);
+}
+$('#winMap').onclick = showMap;
+$('#winRetry').onclick = () => startLevel(game.lvl.id, true);
+$('#winNext').onclick = () => { const i = LEVELS.indexOf(game.lvl); startLevel(LEVELS[i + 1].id); };
+$('#collBtn').onclick = () => { $('#collGrid').innerHTML = LEVELS.map(l => cardHtml(l, !progress.done[l.id])).join(''); $('#coll').classList.add('on'); $('#collClose').focus(); };
+$('#collClose').onclick = () => $('#coll').classList.remove('on');
+$('#coll').addEventListener('click', e => { if (e.target.id === 'coll') $('#coll').classList.remove('on'); });
+
+renderMap();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,104 @@
+notes = """
+Git guarda lo que agregaste al staging area o guardaste en un commit; las líneas que solo
+escribiste en la carpeta de trabajo están fuera de "Git tiene una copia". `git restore <file>`
+copia la copia de Git encima de tu archivo, la del staging area si la hay, si no la del commit, así
+que las líneas que nunca agregaste ni guardaste se pierden para siempre: mira primero con `git diff`.
+
+Para deshacer un commit que otros ya tienen, `git revert <commit>` crea un commit nuevo que hace lo
+contrario, y todos lo reciben con su pull. `git reset --hard <commit>` mueve el branch donde estás y
+hace que tu carpeta coincida: úsalo solo con commits que nadie más tiene, y ponles antes un branch.
+Un reset no borra ningún commit. El log de movimientos, `git reflog`, lista cada lugar donde estuvo
+`HEAD`, como `HEAD@{0}`, `HEAD@{1}` y así, contando hacia atrás desde ahora; `git branch <name>
+HEAD@{n}` le pone un nombre a uno y recupera commits a los que no llevaba ningún branch.
+
+    $ git diff                         # lo que está en la carpeta de trabajo y no en el staging area
+    $ git restore engine.cfg           # deséchalo: vuelve a la copia de Git
+    $ git revert HEAD~1                # deshaz un commit compartido con uno nuevo
+    $ git branch rescue                # primero, un branch sobre los commits
+    $ git reset --hard origin/main     # después, mueve el branch hacia atrás
+    $ git reflog                       # el log de movimientos: por dónde estuvo HEAD
+    $ git branch survey HEAD@{1}       # un nombre en un commit del log de movimientos
+"""
+
+[[card]]
+id = "undo-restore-gone"
+prompt = "Escribiste líneas nuevas en `engine.cfg` y nunca las agregaste al staging area ni las guardaste en un commit. Después de `git restore engine.cfg`, ¿dónde puede encontrarlas Git?"
+correct = "En ningún lado: se perdieron"
+wrong = [
+    "En el último commit",
+    "En el staging area",
+    "En el reflog",
+]
+explain = """
+`git restore` copia la versión del staging area encima del archivo de la carpeta de trabajo. Las
+líneas que nunca se agregaron al staging area ni se guardaron en un commit no tenían ninguna copia
+en Git, así que nada puede devolverlas.
+"""
+
+[[card]]
+id = "undo-revert-adds"
+prompt = "Tu equipo ya trajo con pull un commit de `main`. ¿Qué hace `git revert` con ese commit?"
+correct = "Agrega un commit nuevo que lo deshace"
+wrong = [
+    "Lo borra de la historia",
+    "Mueve `main` a antes de él",
+    "Lo deshace en tus archivos, sin commit",
+]
+explain = """
+`git revert` crea un commit nuevo con el cambio contrario. El commit viejo se queda en la historia,
+no se reescribe nada compartido, así que el push funciona y todos reciben el cambio con su próximo
+pull.
+"""
+
+[[card]]
+id = "undo-reset-keeps"
+prompt = "Ejecutas `git branch rescue`, y después `git reset --hard HEAD~2` en `main`. ¿Dónde están los dos commits que dejó `main`?"
+correct = "Siguen ahí, con el branch `rescue`"
+wrong = [
+    "Borrados con el reset",
+    "De vuelta en la carpeta de trabajo",
+    "Movidos al staging area",
+]
+explain = """
+Un reset mueve el branch donde estás; no borra ningún commit. `rescue` sigue apuntando a la punta vieja, así
+que los dos commits están ahí para trabajar en ellos. `--hard` solo hizo que el staging area y la
+carpeta de trabajo coincidan con el commit al que se movió `main`.
+"""
+
+[[card]]
+id = "undo-reflog-find"
+prompt = "¿Qué muestra el último comando?"
+explain = """
+`HEAD@{1}` es donde estaba `HEAD` un movimiento atrás: en el último commit de `thrusters`, justo
+antes del paso a `main`. Borrar el branch quitó el nombre, no los commits, y el log de movimientos todavía los
+nombra.
+"""
+
+[[card]]
+id = "undo-reset-pushed"
+prompt = "Tu equipo ya trajo `main` con pull. Ejecutas `git reset --hard HEAD~1` en él, y después un `git push` simple. ¿Qué pasa?"
+correct = "Git rechaza el push"
+wrong = [
+    "El `main` del remoto también vuelve atrás",
+    "El push quita el commit para todos",
+    "Git crea un commit de revert por ti",
+]
+explain = """
+El `main` del remoto tiene un commit que el tuyo ya no tiene, así que el push no es un fast-forward
+y Git lo rechaza. Solo `--force` haría que el remoto olvide el commit, y eso rompe la copia de todos
+los demás: en un branch compartido, `git revert` es la forma de deshacer.
+"""
+
+[[card]]
+id = "undo-reflog-shifts"
+prompt = "En el log de movimientos, `commit: Survey day 2` es `HEAD@{1}`. Ejecutas `git switch survey`. ¿Qué número tiene ahora esa línea?"
+correct = "`HEAD@{2}`"
+wrong = [
+    "Sigue siendo `HEAD@{1}`",
+    "`HEAD@{0}`",
+]
+explain = """
+Un switch es un movimiento, así que se vuelve la línea más nueva, `HEAD@{0}`, y cada línea más
+vieja cuenta uno más hacia atrás. Lee el log de movimientos justo antes de usar un número, o usa el
+hash al principio de la línea: nunca cambia.
+"""

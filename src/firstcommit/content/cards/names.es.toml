@@ -1,0 +1,107 @@
+notes = """
+Un branch es un nombre para un commit. `HEAD` es "estás aquí": va sobre el branch donde estás, y
+tu próximo commit mueve solo ese branch. `origin/main` es tu marcador del `main` del remoto (la nave
+nodriza): se mueve solo cuando hablas con la nave nodriza (push, fetch, pull).
+
+Los nombres van y vienen; los commits se quedan. `git branch scout` escribe un nombre nuevo donde
+está `HEAD` y no copia ningún archivo; `git branch first-route <hash>` pone uno en cualquier
+commit; `git branch -d` quita uno, pero nunca el que tiene `HEAD`. `git switch scout` lleva `HEAD`
+allí y reescribe la carpeta de trabajo; `git switch -c` crea un nombre y va a él en un solo paso.
+`git checkout` y `git checkout -b` son las formas más viejas de lo mismo.
+
+    $ git branch -v                     # cada branch y el commit que nombra; * es donde va HEAD
+    $ git branch scout                  # un nombre nuevo donde está HEAD
+    $ git branch first-route <hash>     # un nombre en cualquier commit
+    $ git branch -d test-run            # quita un nombre; el commit se queda
+    $ git switch scout                  # lleva HEAD allí; la carpeta lo sigue
+    $ git switch -c lights-v2           # un nombre nuevo donde está HEAD, y ve a él
+    $ git log --oneline --graph --all   # el árbol completo, dibujado
+"""
+
+[[card]]
+id = "names-is-a-label"
+prompt = "Estás en `main` y ejecutas `git branch scout`. ¿Qué cambia?"
+correct = "Una etiqueta nueva, `scout`, apunta ahora a tu commit"
+wrong = [
+    "La carpeta de trabajo se copia en una carpeta nueva para `scout`",
+    "Ahora estás en `scout`, y puedes hacer commit allí",
+    "También se crea un branch `scout` en el remoto",
+]
+explain = """
+`git branch scout` escribe una etiqueta nueva sobre el commit donde estás. No se copia ningún
+archivo, sigues en `main` (`git switch scout` te lleva) y no llega nada al remoto hasta que haces
+push del branch.
+"""
+
+[[card]]
+id = "names-switch-folder"
+prompt = "¿Qué muestra el último comando?"
+explain = """
+`git switch main` reescribe la carpeta de trabajo según el último commit de `main`, que no tiene
+`probe.txt`, así que el archivo sale de la carpeta. No se pierde: vive en el commit de `scout`, y
+`git switch scout` lo trae de vuelta.
+"""
+
+[[card]]
+id = "names-origin-main"
+prompt = "En tu clone, ¿cómo se llama lo que tu repositorio registró de dónde estaba el `main` del remoto `origin` la última vez que tuvo noticias de él?"
+accept = ["origin/main", "remotes/origin/main", "refs/remotes/origin/main"]
+explain = """
+`origin/main` es un remote-tracking branch: una etiqueta que tu repositorio mueve cuando tiene
+noticias de `origin` (clone, fetch, pull, push). `git branch -a` lo lista como
+`remotes/origin/main`. No es el remoto en sí, solo sus últimas noticias.
+"""
+
+[[card]]
+id = "names-delete-keeps"
+prompt = "Ejecutas `git branch -d test-run`. ¿Qué le pasa al commit que nombraba `test-run`?"
+correct = "Se queda; solo se va el nombre"
+wrong = [
+    "Se borra junto con el nombre",
+    "Pasa al branch donde estás",
+    "Queda guardado solo en el remoto",
+]
+explain = """
+Un nombre apunta a un commit; no es el commit. `git branch -d` quita el nombre y muestra el hash
+al que apuntaba. El commit se queda, y cualquier branch cuya historia lo tenga sigue llevando a
+él.
+"""
+
+[[card]]
+id = "names-new-name-at-head"
+prompt = "Estás en `main` y ejecutas `git switch -c lights-v2`. ¿Qué commit nombra `lights-v2`?"
+correct = "El commit donde está `main`"
+wrong = [
+    "El commit más nuevo de cualquier branch",
+    "Un commit nuevo y vacío hecho para él",
+    "El primer commit del repositorio",
+]
+explain = """
+Un nombre nuevo queda donde está `HEAD`. `git switch -c lights-v2` crea el nombre en el commit
+donde estás y después lleva `HEAD` a él; no hace ningún commit. Para ponerlo en otra línea
+lateral, cambia primero a ella.
+"""
+
+[[card]]
+id = "names-delete-head"
+prompt = "`HEAD` está en `fuel-test`. Ejecutas `git branch -d fuel-test`. ¿Qué pasa?"
+correct = "Git se niega y no cambia nada"
+wrong = [
+    "Se va el nombre y `HEAD` pasa a `main`",
+    "Se van el nombre y su commit",
+    "Git pregunta a qué branch ir",
+]
+explain = """
+Git no quita el nombre que muestra tu carpeta: dice que el branch está en uso por el worktree.
+Mueve `HEAD` primero, con `git switch main`, y después quita el nombre.
+"""
+
+[[card]]
+id = "names-checkout-b"
+prompt = "¿Cuál es la forma más vieja de `git switch -c lights`, que verás en tutoriales?"
+accept = ["git checkout -b lights"]
+explain = """
+`git checkout -b lights` crea el branch y va a él, como `git switch -c lights`. `git checkout` es
+más viejo y hace muchos trabajos, hasta restaurar archivos; `git switch` solo se mueve entre
+branches.
+"""

@@ -1,0 +1,1042 @@
+/*
+ * The field guide's command cards (guide-card.js, in their dialog), their small pictures
+ * (guide-pictures.js, gp-) and the merge conflict (guide-conflict.js, gx-). Links after
+ * orbit.css and paints only with its tokens, so light and dark come from them. Terminals and
+ * files are night, like the game's terminal. You are violet (--z-va), Alex green (--alex), the
+ * mothership pink (--z-re), a conflict red (--s-new). In the conflict gold means "look here"; on
+ * a command's card gold means what the command changed and nothing else, a violet dashed ring or
+ * underline means "look here", and red marks a refusal.
+ */
+
+/* The jump bar stays at the top of the guide while it scrolls, over a level too. */
+.guide-jump {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: -20px 0 -12px;
+  padding: 8px 0;
+  background: var(--bg);
+  border-bottom: 3px solid var(--line);
+}
+
+.field-guide > [tabindex="-1"]:focus {
+  outline: none;
+}
+
+.field-guide > [tabindex="-1"] {
+  scroll-margin-top: 64px;
+}
+
+.guide-card-dialog {
+  width: min(760px, calc(100vw - 32px));
+  max-width: none;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  padding: 0;
+  background: var(--panel);
+  color: var(--ink);
+  border: 3px solid var(--edge);
+  box-shadow: 8px 8px 0 var(--edge);
+}
+
+.guide-card-dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+.guide-card-dialog::backdrop {
+  background: color-mix(in srgb, var(--night-edge) 60%, transparent);
+}
+
+/* Close stays in reach while the card scrolls, over the card's head (which leaves it room). */
+.guide-card-close {
+  position: sticky;
+  top: 10px;
+  z-index: 1;
+  align-self: flex-end;
+  margin: 10px 10px -52px 0;
+}
+
+.guide-card {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 18px 20px 22px;
+}
+
+.gc-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  align-items: baseline;
+  padding-right: 120px;
+}
+
+.gc-command {
+  margin: 0;
+}
+
+/* A long command wraps at its spaces on a phone (app.css keeps other code on one line). */
+.gc-command code {
+  white-space: normal;
+  padding: 0;
+  font: 2rem/1.05 var(--f-term);
+  color: var(--ink);
+  background: none;
+  overflow-wrap: anywhere;
+}
+
+.gc-tag {
+  padding: 3px 6px 2px;
+  font: 400 0.8rem/1.15 var(--f-px);
+  color: var(--ink-soft);
+  background: var(--panel-2);
+  border: 2px solid var(--ink-soft);
+}
+
+.gc-meaning {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.gc-pictures {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.gc-pictures:has(> :only-child) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.gc-figure {
+  margin: 0;
+  padding: 8px 10px 10px;
+  background: var(--panel-2);
+  border: 2px solid var(--line);
+  align-self: stretch;
+}
+
+.gc-figure figcaption {
+  margin-bottom: 6px;
+  font: 400 0.85rem/1.2 var(--f-px);
+  color: var(--ink-soft);
+}
+
+/* The arrow from before to after: a pixel triangle drawn with borders. */
+.gc-then {
+  width: 0;
+  height: 0;
+  border-top: 10px solid transparent;
+  border-bottom: 10px solid transparent;
+  border-left: 14px solid var(--ink-soft);
+}
+
+.gc-part h3 {
+  margin: 0 0 6px;
+  font: 400 1rem/1.2 var(--f-px);
+  color: var(--ink-soft);
+}
+
+.gc-part p {
+  margin: 0;
+}
+
+/* Long lines wrap rather than clip, on a phone too. */
+.gc-term {
+  margin: 0;
+  padding: 10px 12px;
+  font: 1.15rem/1.25 var(--f-term);
+  color: var(--crt-ink);
+  background: var(--crt);
+  border: 3px solid var(--edge);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.gc-term:not(.is-open) .gc-more {
+  display: none;
+}
+
+.gc-show {
+  margin-top: 8px;
+}
+
+.gc-where {
+  margin: 0;
+  padding: 6px 10px;
+  background: var(--panel-2);
+  border-left: 5px solid var(--z-va);
+}
+
+.gc-key {
+  margin: -6px 0 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+.gc-prompt,
+.gc-silent {
+  color: var(--crt-soft);
+}
+
+.gc-typed {
+  color: var(--crt-cmd);
+}
+
+.gc-related {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gc-related .btn {
+  font: 1.15rem/1.1 var(--f-term);
+}
+
+.gc-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gc-try {
+  text-decoration: none;
+}
+
+/* The small pictures. */
+.gp-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+.gp-desk {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.gp-place {
+  flex: 1 1 110px;
+  min-width: 0;
+  padding: 6px 8px;
+  background: var(--panel);
+  border: 3px solid var(--tone, var(--line));
+}
+
+.gp-place--folder { --tone: var(--z-wd); }
+.gp-place--staging { --tone: var(--z-st); }
+.gp-place--vault { --tone: var(--z-va); }
+.gp-place--remote { --tone: var(--z-re); }
+
+.gp-place--absent {
+  border-style: dashed;
+}
+
+.gp-place-name {
+  margin: 0 0 4px;
+  font: 700 0.78rem/1.2 var(--f-body);
+  color: var(--ink);
+}
+
+.gp-none {
+  margin: 0;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.gp-chips {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gp-chip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 6px;
+  align-items: baseline;
+  padding: 1px 6px;
+  font: 1.1rem/1.1 var(--f-term);
+  background: var(--panel-2);
+  border-left: 5px solid var(--tone, var(--ink-soft));
+}
+
+.gp-chip--new,
+.gp-chip--conflict { --tone: var(--s-new); }
+.gp-chip--edited { --tone: var(--s-mod); }
+.gp-chip--clean,
+.gp-chip--ignored { --tone: var(--s-clean); }
+
+.gp-chip--ignored .gp-file {
+  color: var(--ink-soft);
+}
+.gp-place--staging .gp-chip { --tone: var(--z-st); }
+.gp-place--vault .gp-chip,
+.gp-place--remote .gp-chip { --tone: var(--z-va); }
+
+.gp-state {
+  font: 0.75rem/1.1 var(--f-body);
+  color: var(--ink-soft);
+}
+
+.gp-fresh {
+  outline: 3px solid var(--gold);
+  outline-offset: 1px;
+}
+
+/* The chain is chain.js's (orbit.css .chain-*); these are only what the cards add to it. */
+.gp-chain .chain-wire.is-fresh {
+  stroke: var(--gold);
+  stroke-width: 4;
+}
+
+.gp-mark {
+  font: 700 0.75rem/1.2 var(--f-body);
+  white-space: nowrap;
+  color: var(--z-va);
+  border: 2px solid var(--z-va);
+  padding: 0 5px;
+}
+
+.gp-subject {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+/* A commit to look at: a violet dashed ring, never gold. */
+.gp-look .chain-cap {
+  outline: 3px dashed var(--z-va);
+  outline-offset: 2px;
+}
+
+.gp-faint .chain-cap {
+  background: var(--panel);
+  border-style: dashed;
+}
+
+.gp-faint .chain-body {
+  opacity: 0.45;
+}
+
+.gp-note {
+  margin: 0;
+  padding: 0 5px;
+  font: 700 0.75rem/1.3 var(--f-body);
+  color: var(--z-va);
+  border: 2px dashed var(--z-va);
+}
+
+.gp-desk > .gp-note {
+  flex-basis: 100%;
+  border: 0;
+  padding: 0;
+  font-weight: 400;
+  color: var(--ink-soft);
+}
+
+.gp-left .gp-file {
+  text-decoration: line-through;
+  opacity: 0.6;
+}
+
+.gp-synced {
+  border-color: var(--z-re);
+}
+
+.gp-gone {
+  display: inline-flex;
+  gap: 4px;
+  align-items: center;
+}
+
+.gp-gone .chain-tag {
+  color: var(--ink-soft);
+  border-color: var(--ink-soft);
+}
+
+.gp-gone-note {
+  font: 700 0.75rem var(--f-body);
+  color: var(--ink-soft);
+}
+
+/* A card's frames: before and after side by side, three or more steps one under the other. */
+.gc-frames {
+  --look-on-night: #B08CFF;
+  display: flex;
+  gap: 10px;
+  align-items: stretch;
+}
+
+.gc-frames.is-steps {
+  flex-direction: column;
+}
+
+.gc-frames.is-steps > .gc-then {
+  align-self: center;
+  transform: rotate(90deg);
+}
+
+.gc-frames > .gc-then,
+.gc-or {
+  flex: none;
+  align-self: center;
+}
+
+.gc-or {
+  font: 400 0.9rem/1 var(--f-px);
+  color: var(--ink-soft);
+}
+
+.gc-frame {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 0;
+  margin: 0;
+  padding: 8px 10px 10px;
+  background: var(--panel-2);
+  border: 2px solid var(--line);
+}
+
+.gc-frame.is-refused {
+  border: 3px dashed var(--s-new);
+}
+
+.gc-frame figcaption {
+  font-size: 0.92rem;
+}
+
+.gc-label {
+  padding: 1px 6px;
+  font: 400 0.85rem/1.3 var(--f-px);
+  color: var(--panel);
+  background: var(--ink);
+}
+
+.gc-label code {
+  padding: 0;
+  font: 1.05rem/1 var(--f-term);
+  color: inherit;
+  background: none;
+}
+
+.gc-frame.is-refused .gc-label {
+  color: var(--on-accent);
+  background: var(--s-new);
+}
+
+.gc-gloss {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--ink-soft);
+}
+
+/* The working folder under a chain is grey: the workshop's orange sits too close to gold. */
+.gc-frame .gp-place--folder {
+  --tone: var(--ink-soft);
+}
+
+.gc-facts {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.gc-fact-kind {
+  padding: 0 6px;
+  font: 400 0.8rem/1.3 var(--f-px);
+  border: 2px solid var(--edge);
+}
+
+.gc-fact.is-changed .gc-fact-kind {
+  color: var(--edge);
+  background: var(--gold);
+}
+
+.gc-fact.is-same .gc-fact-kind {
+  background: var(--panel-2);
+}
+
+.gc-look,
+.gc-refused {
+  text-decoration-line: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+.gc-term .gc-look {
+  text-decoration-color: var(--look-on-night, var(--crt-soft));
+}
+
+.gc-term .gc-refused {
+  text-decoration-color: var(--crt-err);
+}
+
+.gc-section {
+  border-top: 2px dashed var(--line);
+  padding-top: 8px;
+}
+
+.gc-section > summary,
+.gc-section > h3 {
+  margin: 0 0 8px;
+  font: 400 1rem/1.3 var(--f-px);
+  color: var(--ink);
+  cursor: pointer;
+}
+
+.gc-section > h3 {
+  cursor: auto;
+}
+
+details.gc-section:not([open]) > summary {
+  margin-bottom: 0;
+}
+
+.gc-section > .gc-term {
+  margin-top: 8px;
+}
+
+/* A commit message as the editor shows it. */
+.gc-editor {
+  margin: 0;
+  padding: 0 10px 8px;
+  font: 1.05rem/1.25 var(--f-term);
+  color: var(--ink);
+  background: var(--panel);
+  border: 3px solid var(--edge);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.gc-editor-bar {
+  display: block;
+  margin: 0 -10px 6px;
+  padding: 2px 10px;
+  color: var(--panel);
+  background: var(--ink-soft);
+}
+
+.gc-editor .gc-look {
+  text-decoration-color: var(--z-va);
+}
+
+.gc-comment {
+  color: var(--ink-soft);
+}
+
+/* One command as the two it does at once: a + b = c. */
+.gc-sum {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin: 0;
+}
+
+.gc-sum-part {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 8px;
+  background: var(--panel-2);
+  border: 2px solid var(--edge);
+}
+
+.gc-sum-part:last-child {
+  border: 3px solid var(--z-va);
+}
+
+.gc-sum-part small {
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+}
+
+.gc-sum-op {
+  font: 1.6rem/1 var(--f-term);
+}
+
+/* The key of git's drawing. */
+.gc-glyphs {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  gap: 2px 12px;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.gc-glyphs dt {
+  text-align: right;
+}
+
+.gc-glyphs dd {
+  margin: 0;
+}
+
+/* git's graph beside the chain, line for line: every line and every row is one --row high, and
+   the picture starts one row lower, level with the first line under the command. */
+.gc-decoder {
+  --row: 30px;
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+
+.gc-decoder .gc-term {
+  padding: 8px 10px;
+  font-size: 1rem;
+  white-space: pre;
+  overflow-x: auto;
+  overflow-wrap: normal;
+}
+
+.gc-decoder .gc-line {
+  display: block;
+  height: var(--row);
+  line-height: var(--row);
+}
+
+.gc-decoded {
+  min-width: 0;
+  padding-top: calc(var(--row) + 8px);
+}
+
+.gc-decoder .gp-chain {
+  padding: 0 10px;
+  border-width: 0 0 0 3px;
+  overflow-x: auto;
+}
+
+.gc-decoder .chain-row {
+  height: var(--row);
+  min-height: var(--row);
+}
+
+/* Beside git's lines a row says only what git's line says: its names and its subject. */
+.gc-decoder .gp-mark,
+.gc-decoder .gp-note {
+  display: none;
+}
+
+.gc-decoder .chain-body {
+  flex-wrap: nowrap;
+  padding: 0 0 0 8px;
+  white-space: nowrap;
+}
+
+.gc-decoder .gc-line:nth-child(odd):not(:first-child),
+.gc-decoder .chain-row:nth-child(even) {
+  background: color-mix(in srgb, var(--z-va) 16%, transparent);
+}
+
+/* The merge conflict. */
+.gx-lede {
+  margin: -6px 0 12px;
+  color: var(--ink-soft);
+}
+
+.gx-story {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 10px 14px;
+  align-items: center;
+  margin-bottom: 14px;
+  padding: 10px 14px;
+  background: var(--panel);
+  border: 3px solid var(--edge);
+  box-shadow: 4px 4px 0 var(--edge);
+}
+
+.gx-count {
+  font: 400 0.9rem/1.2 var(--f-px);
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+
+.gx-sentence {
+  margin: 0;
+  font-weight: 700;
+}
+
+.gx-buttons {
+  display: flex;
+  gap: 8px;
+}
+
+.gx-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.gx-column {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.gx-editor,
+.gx-explain,
+.gx-legend,
+.gx-keep,
+.gx-diamond-wrap {
+  background: var(--panel);
+  border: 3px solid var(--edge);
+  box-shadow: 4px 4px 0 var(--edge);
+}
+
+.gx-editor {
+  background: var(--crt);
+}
+
+.gx-editor-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 4px 12px;
+  font: 1.1rem var(--f-term);
+  color: var(--crt-soft);
+  border-bottom: 3px solid var(--edge);
+}
+
+.gx-state {
+  color: var(--crt-err);
+}
+
+.gx-state--ok {
+  color: var(--crt-ok);
+}
+
+.gx-file {
+  margin: 0;
+  padding: 8px 0;
+  list-style: none;
+}
+
+.gx-file li {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 10px;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1px 10px 1px 12px;
+  font: 1.35rem/1.25 var(--f-term);
+  color: var(--crt-ink);
+  white-space: pre-wrap;
+  border-left: 6px solid transparent;
+  outline: none;
+}
+
+.gx-file li:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--gold);
+}
+
+.gx-file li.dim {
+  opacity: 0.4;
+}
+
+.gx-file li.marker {
+  color: var(--crt-err);
+}
+
+.gx-file li.frame {
+  box-shadow: inset 3px 0 0 var(--crt-err), inset -3px 0 0 var(--crt-err);
+}
+
+.gx-file li.on[data-part="ours"],
+.gx-file li.on[data-part="ours-start"] {
+  background: color-mix(in srgb, var(--z-va) 30%, var(--crt));
+  border-left-color: var(--z-va);
+}
+
+.gx-file li.on[data-part="theirs"],
+.gx-file li.on[data-part="theirs-end"] {
+  background: color-mix(in srgb, var(--alex) 30%, var(--crt));
+  border-left-color: var(--alex);
+}
+
+.gx-file li.on[data-part="fence"] {
+  background: color-mix(in srgb, var(--crt-err) 22%, var(--crt));
+  border-left-color: var(--crt-err);
+}
+
+.gx-file li.on[data-from="you"],
+.gx-file li.merged[data-from="you"] {
+  border-left-color: var(--z-va);
+}
+
+.gx-file li.on[data-from="alex"],
+.gx-file li.merged[data-from="alex"] {
+  border-left-color: var(--alex);
+}
+
+.gx-file li.pick {
+  cursor: pointer;
+}
+
+.gx-file li.pick[data-part="ours"] {
+  border-left-color: var(--z-va);
+}
+
+.gx-file li.pick[data-part="theirs"] {
+  border-left-color: var(--alex);
+}
+
+.gx-file li.pick:hover {
+  background: color-mix(in srgb, var(--crt-ink) 10%, var(--crt));
+}
+
+.gx-file li.pick[aria-pressed="true"] {
+  background: color-mix(in srgb, var(--gold) 18%, var(--crt));
+  box-shadow: inset 0 0 0 3px var(--gold);
+}
+
+.gx-file li.kept {
+  background: color-mix(in srgb, var(--gold) 14%, var(--crt));
+  border-left-color: var(--gold);
+}
+
+.gx-note {
+  padding: 0 6px;
+  font: 700 0.75rem/1.5 var(--f-body);
+  white-space: nowrap;
+  color: var(--night-edge);
+  background: var(--tone, var(--crt-soft));
+}
+
+.gx-note--you { --tone: var(--art-violet); }
+.gx-note--alex { --tone: var(--art-green); }
+.gx-note--gold { --tone: var(--gold); }
+
+.gx-note--merged {
+  font: 1rem/1.2 var(--f-term);
+  color: var(--crt-ok);
+  background: none;
+}
+
+.gx-empty {
+  margin: 0;
+  padding: 10px 12px;
+  color: var(--crt-soft);
+}
+
+.gx-explain,
+.gx-legend,
+.gx-keep {
+  padding: 12px 14px;
+}
+
+.gx-explain {
+  min-height: 9em;
+  border-left: 8px solid var(--tone, var(--ink-soft));
+}
+
+.gx-explain--ours-start,
+.gx-explain--ours,
+.gx-explain--clean-you { --tone: var(--z-va); }
+.gx-explain--theirs,
+.gx-explain--theirs-end,
+.gx-explain--clean-alex { --tone: var(--alex); }
+.gx-explain--fence { --tone: var(--s-new); }
+
+.gx-explain h3,
+.gx-keep h3 {
+  margin: 0 0 6px;
+  font: 400 1.05rem/1.2 var(--f-px);
+}
+
+.gx-explain p,
+.gx-keep p {
+  margin: 0 0 6px;
+}
+
+.gx-hint {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+.gx-legend {
+  display: grid;
+  gap: 6px;
+}
+
+.gx-legend div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  align-items: baseline;
+}
+
+.gx-mark {
+  padding: 0 4px;
+  font: 1.2rem var(--f-term);
+  white-space: nowrap;
+  background: var(--crt);
+  color: var(--crt-err);
+  border-left: 5px solid var(--tone, var(--crt-err));
+}
+
+.gx-mark--you { --tone: var(--z-va); }
+.gx-mark--alex { --tone: var(--alex); }
+
+.gx-keep {
+  display: grid;
+  gap: 8px;
+}
+
+.gx-keep-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.gx-keep-buttons .btn[aria-pressed="true"] {
+  color: var(--edge);
+  background: var(--gold);
+}
+
+.gx-warn {
+  padding: 8px 10px;
+  border: 3px solid var(--gold);
+}
+
+.gx-diamond-wrap {
+  padding: 8px;
+  background: var(--crt);
+}
+
+.gx-diamond {
+  display: block;
+  width: 100%;
+  height: auto;
+  font: 1.25rem var(--f-term);
+}
+
+.gx-wire {
+  fill: none;
+  stroke-width: 5;
+}
+
+.gx-wire--base { stroke: var(--crt-soft); stroke-width: 4; }
+.gx-wire--you { stroke: var(--art-violet); }
+.gx-wire--alex { stroke: var(--art-green); }
+
+.gx-capsule {
+  stroke: var(--night-edge);
+  stroke-width: 3;
+}
+
+.gx-capsule--base { fill: var(--crt-soft); }
+.gx-capsule--you { fill: var(--art-violet); }
+.gx-capsule--alex { fill: var(--art-green); }
+
+.gx-capsule--merge {
+  fill: var(--art-violet);
+  stroke: var(--gold);
+  stroke-width: 4;
+}
+
+.gx-hash {
+  fill: var(--night-edge);
+}
+
+.gx-label {
+  font-size: 1.05rem;
+  fill: var(--crt-soft);
+}
+
+.gx-label--top { fill: var(--gold); }
+.gx-label--you { fill: var(--art-violet); }
+.gx-label--alex { fill: var(--art-green); }
+
+.guide-conflict:focus {
+  outline: none;
+}
+
+.guide-conflict:focus-visible {
+  outline: 3px solid var(--gold);
+  outline-offset: 6px;
+}
+
+@media (max-width: 760px) {
+  /* One row that scrolls sideways; the fade at the right edge says there is more. */
+  .guide-jump {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-right: 32px;
+    -webkit-mask-image: linear-gradient(to right, black calc(100% - 40px), transparent);
+    mask-image: linear-gradient(to right, black calc(100% - 40px), transparent);
+  }
+
+  .guide-jump .btn {
+    flex: none;
+    white-space: nowrap;
+  }
+
+  .gx-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gx-story {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gx-file li {
+    font-size: 1.1rem;
+  }
+
+  .gc-pictures {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gc-then {
+    justify-self: center;
+    transform: rotate(90deg);
+  }
+
+  .gc-frames {
+    flex-direction: column;
+  }
+
+  .gc-frames > .gc-then {
+    align-self: center;
+  }
+
+  .gc-decoder {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .gc-decoded {
+    padding-top: 0;
+  }
+
+  .gc-head {
+    padding-right: 0;
+  }
+
+  .guide-card-close {
+    margin-bottom: 0;
+  }
+}

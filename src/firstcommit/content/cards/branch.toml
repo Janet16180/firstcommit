@@ -1,0 +1,89 @@
+notes = """
+Changes you have not committed belong to no branch: `git switch -c` makes a branch and moves onto
+it, and takes them along.
+
+A plain `git push` sends only the branch you are on, to its upstream; a new branch goes up by
+name, and `-u` makes the remote's copy its upstream.
+
+    $ git switch -c fix-lights                    # make a branch and move onto it, edits and all
+    $ git push -u origin scout                    # send a branch by name, and track it
+    $ git branch -a                               # your branches, and the remote's
+"""
+
+[[card]]
+id = "branch-push-one"
+kind = "choice"
+level = 2
+prompt = "You are on `main`, which has an upstream, and you have a branch `scout` the remote has never seen. You run a plain `git push`. What reaches the remote?"
+correct = "Only `main`"
+wrong = [
+    "`main` and `scout`, since both are yours",
+    "`scout` only, since it is new",
+    "Every branch that has a commit the remote lacks",
+]
+explain = """
+With git's default settings, a plain `git push` sends only the branch you are on, to its
+upstream. `scout` stays here until you name it: `git push -u origin scout`, which works from any
+branch. `git push --all` would send every branch.
+"""
+source = "git-push(1), DESCRIPTION; git-config(1), `push.default` (default `simple`)"
+verify = """
+git init -q --bare remote.git
+git init -q base && cd base
+echo "Route: Earth, Moon" > route.txt && git add route.txt && git commit -q -m "Add the route"
+git remote add origin ../remote.git && git push -q -u origin main
+git switch -q -c scout && echo "Crater A: ice" > survey.txt && git add survey.txt && git commit -q -m "Survey" && git switch -q main
+git push -q
+! git -C ../remote.git rev-parse -q --verify refs/heads/scout
+"""
+
+[[card]]
+id = "branch-switch-c-carries"
+kind = "choice"
+level = 3
+prompt = "You edited `lights.cfg` on `main` and have not committed. You run `git switch -c fix-lights`. Where is your edit?"
+correct = "In the working folder, on `fix-lights`, still uncommitted"
+wrong = [
+    "Left on `main`; `fix-lights` starts without it",
+    "Committed on `main` before the switch",
+    "Gone: git discards changes when it makes a branch",
+]
+explain = """
+Changes you have not committed belong to no branch: they are in the working folder and the
+staging area. `git switch -c` makes the branch on the commit you are on, so nothing in the folder
+has to change, and the edit comes along. Commit it there, and `main` never sees it.
+"""
+source = "git-switch(1), `-c`; DESCRIPTION (local modifications)"
+verify = """
+git init -q base && cd base
+printf 'deck=dim\\nhall=off\\n' > lights.cfg && git add lights.cfg && git commit -q -m "Add the lights"
+printf 'deck=dim\\nhall=on\\n' > lights.cfg
+git switch -q -c fix-lights
+test "$(git branch --show-current)" = fix-lights && test "$(git status --porcelain)" = " M lights.cfg"
+"""
+
+[[card]]
+id = "branch-switch-refused"
+kind = "choice"
+level = 3
+prompt = "On `scout` you edited `route.txt`, which is different on `main`, and did not commit. You run `git switch main`. What happens?"
+correct = "Git refuses, and your edit stays"
+wrong = [
+    "Git switches and drops your edit",
+    "Git commits your edit on `scout` first",
+    "Git switches and merges the two versions",
+]
+explain = """
+An edit you have not committed belongs to no branch, so a switch carries it along when it can.
+Here `main` has another version of the file, and switching would overwrite your edit, so Git
+refuses and changes nothing. Commit the edit where it belongs, or throw it away with
+`git restore route.txt`, then switch.
+"""
+source = "git-switch(1), DESCRIPTION"
+verify = """
+git init -q base && cd base
+echo "Earth" > route.txt && git add route.txt && git commit -q -m "Route"
+git switch -q -c scout && echo "Mars" >> route.txt && git commit -q -am "Mars" && echo "Phobos" >> route.txt
+! git switch main 2> /dev/null
+test "$(git branch --show-current)" = scout && grep -q Phobos route.txt
+"""

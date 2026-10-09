@@ -1,0 +1,149 @@
+notes = """
+The staging area (Git says index) holds what your next commit will contain, and you choose what
+goes in. `git add` copies a file, as it is at that moment, from the working folder into the
+staging area; the working folder keeps its own copy. A plain `git commit` takes what is staged
+and leaves the rest.
+
+`git status` lists what is staged for the next commit, what changed in the working folder since,
+and the files Git does not track yet. A name `git add` does not find stops it with an error, and
+nothing is staged. `git add .` stages everything in the current folder and the folders inside it.
+
+To take a file back out of the staging area and keep it in the working folder:
+`git rm --cached <file>` before the repository's first commit, and `git restore --staged <file>`
+once it has one. A file `.gitignore` lists names and patterns Git ignores, such as `sim-output/`:
+`git status` stops listing them and `git add .` skips them, while the files stay on your disk.
+
+    $ git add map.txt                  # stage one file
+    $ git status                       # see what is staged and what is not
+    $ git rm --cached journal.txt      # unstage, before the first commit
+    $ git restore --staged map.txt     # unstage, once there is a commit
+    $ echo "sim-output/" > .gitignore  # ignore generated files
+"""
+
+[[card]]
+id = "cargo-add-copies"
+kind = "choice"
+level = 1
+prompt = "In a new repository, you run `git add map.txt`. Where is `map.txt` now?"
+correct = "In the working folder and in the staging area"
+wrong = [
+    "Only in the staging area: it moved out of the folder",
+    "In a new commit in the repository",
+    "Only in the working folder, marked to commit later",
+]
+explain = """
+`git add` copies the file's current content into the staging area, and the working folder keeps
+its file: nothing moves. No commit is made: a commit happens only with `git commit`. The staging
+area really holds the content, not a mark: change the file again and the staging area still has
+the version you added.
+"""
+source = "git-add(1), DESCRIPTION"
+verify = """
+git init -q
+echo "Route: Earth, Moon, Mars" > map.txt
+git add map.txt
+test -f map.txt && git ls-files --error-unmatch map.txt >/dev/null && ! git rev-parse -q --verify HEAD >/dev/null
+"""
+
+[[card]]
+id = "cargo-status-short"
+kind = "predict"
+level = 2
+prompt = "What does the last command print?"
+code = """
+git init -q base && cd base
+echo "Route: Earth, Moon, Mars" > map.txt
+echo "Day 1: landed without trouble." > journal.txt
+git add map.txt
+git status --short
+"""
+correct = "A  map.txt\n?? journal.txt"
+wrong = ["A  journal.txt\nA  map.txt", "?? journal.txt\n?? map.txt", "M  map.txt\n?? journal.txt"]
+explain = """
+`git status --short` gives one line per file with two columns: the staging area, then the working
+folder. `A ` means added to the staging area, a new file for the next commit; `??` means
+untracked. Only `map.txt` was added, so `journal.txt` stays untracked. `M` would mean a change to
+a file the last commit already has, and this repository has no commit yet.
+"""
+source = "git-status(1), Short Format"
+
+[[card]]
+id = "cargo-add-misspelled"
+kind = "choice"
+level = 2
+prompt = "The file is `map.txt`, but you type `git add mapa.txt`. What happens?"
+correct = "Git stops with an error and stages nothing"
+wrong = [
+    "Git stages `map.txt`, the closest name",
+    "Git creates an empty `mapa.txt` and stages it",
+    "Git stages every file in the folder instead",
+]
+explain = """
+`git add` stages the paths it finds; a name that matches no file stops it with an error, and
+nothing is staged, even other names on the same line. Git does not guess the name you meant and
+never creates files. Check the name with `ls`, or let Tab complete it.
+"""
+source = "git-add(1), DESCRIPTION and <pathspec>"
+verify = """
+git init -q
+echo "Route: Earth, Moon, Mars" > map.txt
+if git add mapa.txt >/dev/null 2>&1; then exit 1; fi
+if git add map.txt mapa.txt >/dev/null 2>&1; then exit 1; fi
+test ! -e mapa.txt && test -z "$(git diff --cached --name-only)"
+"""
+
+[[card]]
+id = "cargo-unstage-before-commit"
+kind = "choice"
+level = 3
+prompt = "The repository has no commit yet, and `git add .` staged `journal.txt` by mistake. Which command takes it out of the staging area and keeps the file?"
+correct = "`git rm --cached journal.txt`"
+wrong = [
+    "`git rm journal.txt`",
+    "`git restore --staged journal.txt`",
+    "`git commit journal.txt`",
+]
+explain = """
+`git rm --cached` removes a path from the staging area only and leaves the working folder alone;
+`git status` suggests it when there is no commit yet. `git restore --staged` puts back the
+version of the last commit, so it fails while there is none; once the repository has a commit it
+is the usual way to unstage. A plain `git rm` refuses here, because the file has staged changes,
+and with `-f` it would delete the file from the working folder too. `git commit journal.txt`
+would commit it.
+"""
+source = "git-rm(1), --cached; git-restore(1), --staged (\"restored from HEAD\")"
+verify = """
+git init -q
+echo "Route: Earth, Moon, Mars" > map.txt
+echo "Day 1: landed without trouble." > journal.txt
+git add .
+if git restore --staged journal.txt >/dev/null 2>&1; then exit 1; fi
+git rm -q --cached journal.txt
+test -f journal.txt && test "$(git diff --cached --name-only)" = "map.txt"
+"""
+
+[[card]]
+id = "cargo-gitignore-skips"
+kind = "choice"
+level = 2
+prompt = "`.gitignore` holds the line `sim-output/`, and `sim-output/` is full of new files. What does `git add .` stage from it?"
+correct = "Nothing: Git skips ignored files"
+wrong = [
+    "Every file in it",
+    "Only the files changed since last time",
+    "Everything, but with a warning",
+]
+explain = """
+Files that `.gitignore` names stay out of `git status` and out of `git add .`. They are still on
+your disk; Git just does not offer them for a commit. Commit `.gitignore` itself so everyone gets
+the same rule.
+"""
+source = "gitignore(5), DESCRIPTION"
+verify = """
+git init -q base && cd base
+echo "heading=Moon" > nav.cfg && git add nav.cfg && git commit -q -m "Set the heading"
+mkdir sim-output && echo 1 > sim-output/run-001.log && echo 2 > sim-output/run-002.log
+echo "sim-output/" > .gitignore
+git add .
+test "$(git diff --cached --name-only)" = ".gitignore" && test -e sim-output/run-001.log
+"""

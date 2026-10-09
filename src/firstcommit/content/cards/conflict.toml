@@ -1,0 +1,175 @@
+notes = """
+`git merge <branch>` brings a branch's commits into the branch you are on. When yours has nothing
+the other lacks, Git only slides your label up: a fast-forward, no new commit. When both moved on,
+Git makes a merge commit with two parents and keeps both sides' changes. Write `--no-edit` to keep
+the message Git prepares; without it, Git opens an editor on a terminal.
+
+When both sides changed the same lines, the merge stops: a conflict. The file holds both versions
+between markers, yours after `<<<<<<<`, theirs after `=======`, up to `>>>>>>>`. Choose, or write
+the right version yourself; `git add` marks the file solved, and `git commit --no-edit` finishes
+the merge. `git merge --abort` steps back to before the merge; commit or stash your own changes
+first, since Git can rebuild them only in some cases.
+
+    $ git merge beacon                   # nothing new here: the label slides up
+    $ git merge --no-edit scout          # both moved on: a merge commit with two parents
+    $ git status                         # a merge in progress, and its conflicts
+    $ git restore --theirs docking.txt   # keep the incoming side (--ours: yours)
+    $ git add docking.txt                # mark the conflict solved
+    $ git commit --no-edit               # finish the merge
+    $ git merge --abort                  # or step back to before it
+"""
+
+[[card]]
+id = "conflict-fast-forward"
+kind = "choice"
+level = 1
+prompt = "`beacon` is one commit ahead of `main`, and `main` has nothing `beacon` lacks. On `main`, you run `git merge beacon`. What happens?"
+correct = "`main` moves to `beacon`'s commit; no new commit"
+wrong = [
+    "Git makes a merge commit with two parents",
+    "Git copies `beacon`'s commit onto `main` as a new one",
+    "Git stops and asks you to resolve a conflict",
+]
+explain = """
+When your branch has nothing new, there is nothing to join: Git only slides your label up to the
+other branch's commit. That is a fast-forward, and it makes no commit. A merge commit appears only
+when both sides have commits the other lacks.
+"""
+source = "git-merge(1), FAST-FORWARD MERGE"
+verify = """
+git init -q base && cd base
+echo "Route: Earth, Moon" > route.txt && git add route.txt && git commit -q -m "Add the route"
+git switch -q -c beacon && echo "Beacon: on" > beacon.txt && git add beacon.txt && git commit -q -m "Light the beacon" && git switch -q main
+git merge -q beacon
+test "$(git rev-parse main)" = "$(git rev-parse beacon)" && test "$(git rev-list --count main)" = 2
+"""
+
+[[card]]
+id = "conflict-two-parents"
+kind = "choice"
+level = 1
+prompt = "`main` and `scout` each have a commit the other lacks, on different files. After `git merge --no-edit scout` on `main`, what is `main`'s newest commit?"
+correct = "A merge commit with two parents, holding both changes"
+wrong = [
+    "`scout`'s commit, copied on top of `main`",
+    "A merge commit holding only `scout`'s version of the files",
+    "Your last commit: Git stops to ask about a conflict",
+]
+explain = """
+Both sides moved on, so Git joins them in a new merge commit whose two parents are the two tips.
+The changes touched different files, so nothing conflicts and both are kept. A merge never copies
+one side over the other.
+"""
+source = "git-merge(1), DESCRIPTION"
+verify = """
+git init -q base && cd base
+echo "Route: Earth, Moon" > route.txt && echo "Robin" > crew.txt && git add . && git commit -q -m "Set up"
+git switch -q -c scout && echo "Alex" >> crew.txt && git commit -q -am "Add Alex" && git switch -q main
+echo "Route: Earth, Moon, Mars" > route.txt && git commit -q -am "Extend the route"
+git merge -q --no-edit scout
+test "$(git log -1 --format=%P | wc -w)" = 2 && grep -q Alex crew.txt && grep -q Mars route.txt
+"""
+
+[[card]]
+id = "conflict-markers"
+kind = "predict"
+level = 2
+prompt = "What does the last command print?"
+code = """
+git init -q base && cd base
+echo "Dock at bay 2" > docking.txt && git add docking.txt && git commit -q -m "Plan"
+git switch -q -c scout && echo "Dock at bay 4" > docking.txt && git commit -q -am "Bay 4"
+git switch -q main && echo "Dock at bay 3" > docking.txt && git commit -q -am "Bay 3"
+git merge -q --no-edit scout > /dev/null
+sed -n 2p docking.txt
+"""
+correct = "Dock at bay 3"
+wrong = ["Dock at bay 4", "Dock at bay 2"]
+explain = """
+The merge stopped on a conflict and wrote both versions into the file: line 1 is `<<<<<<< HEAD`,
+line 2 your side (`main`'s bay 3), then `=======`, `scout`'s bay 4, and `>>>>>>> scout`. The bay
+both started from is not shown.
+"""
+source = "git-merge(1), HOW CONFLICTS ARE PRESENTED"
+
+[[card]]
+id = "conflict-abort"
+kind = "choice"
+level = 1
+prompt = "A merge stopped with conflicts in three files, and you want to stop for today. What does `git merge --abort` do?"
+correct = "Goes back to how things were before the merge"
+wrong = [
+    "Keeps your side of every conflicted file and commits",
+    "Deletes the branch you were merging",
+    "Commits the files as they are, markers and all",
+]
+explain = """
+`git merge --abort` stops the paused merge and rebuilds the state from before it: your branch and
+its files as they were. The other branch is untouched, so you can merge again later. Commit or
+stash your own changes before a merge: Git can rebuild them only in some cases.
+"""
+source = "git-merge(1), `--abort`"
+verify = """
+git init -q base && cd base
+echo "Dock at bay 2" > docking.txt && git add docking.txt && git commit -q -m "Plan"
+git switch -q -c scout && echo "Dock at bay 4" > docking.txt && git commit -q -am "Bay 4"
+git switch -q main && echo "Dock at bay 3" > docking.txt && git commit -q -am "Bay 3"
+tip=$(git rev-parse HEAD)
+git merge -q --no-edit scout > /dev/null
+git merge --abort
+test "$(git rev-parse HEAD)" = "$tip" && test "$(cat docking.txt)" = "Dock at bay 3" && test ! -e .git/MERGE_HEAD
+"""
+
+[[card]]
+id = "conflict-add-solves"
+kind = "choice"
+level = 2
+prompt = "During a conflict, you wrote the right version of `docking.txt` and saved it. What tells Git the conflict in that file is solved?"
+correct = "`git add docking.txt`"
+wrong = [
+    "Saving the file without the markers",
+    "`git status`, which sees the markers are gone",
+    "Nothing: Git checks the file when you merge again",
+]
+explain = """
+Git does not read your file to decide: the file stays unmerged until you stage it. `git add`
+records your version in the staging area and marks the conflict solved; `git commit --no-edit`
+then finishes the merge.
+"""
+source = "git-merge(1), HOW TO RESOLVE CONFLICTS"
+verify = """
+git init -q base && cd base
+echo "Dock at bay 2" > docking.txt && git add docking.txt && git commit -q -m "Plan"
+git switch -q -c scout && echo "Dock at bay 4" > docking.txt && git commit -q -am "Bay 4"
+git switch -q main && echo "Dock at bay 3" > docking.txt && git commit -q -am "Bay 3"
+git merge -q --no-edit scout > /dev/null
+echo "Dock at bay 4" > docking.txt
+test -n "$(git diff --name-only --diff-filter=U)" && git add docking.txt && test -z "$(git diff --name-only --diff-filter=U)"
+"""
+
+[[card]]
+id = "conflict-add-markers"
+kind = "choice"
+level = 3
+prompt = "During a conflict, you run `git add` on a file that still holds the markers. What happens?"
+correct = "Git stages it, markers and all, as solved"
+wrong = [
+    "Git refuses while the markers are there",
+    "Git removes the markers and keeps your side",
+    "Git stages it but keeps the conflict open",
+]
+explain = """
+`git add` does not look for markers: it stages the file as it is and marks the conflict solved, so
+the next commit takes the markers in. Read the file before you add it; if markers were committed,
+fix the file and commit again.
+"""
+source = "git-add(1); git-merge(1), HOW TO RESOLVE CONFLICTS"
+verify = """
+git init -q base && cd base
+echo "Dock at bay 2" > docking.txt && git add docking.txt && git commit -q -m "Plan"
+git switch -q -c scout && echo "Dock at bay 4" > docking.txt && git commit -q -am "Bay 4"
+git switch -q main && echo "Dock at bay 3" > docking.txt && git commit -q -am "Bay 3"
+git merge -q --no-edit scout > /dev/null
+git add docking.txt
+test -z "$(git diff --name-only --diff-filter=U)" && git show :docking.txt | grep -q '^<<<<<<<'
+"""

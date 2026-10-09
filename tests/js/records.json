@@ -1,0 +1,2990 @@
+{
+ "status": {
+  "language": "en",
+  "xp": 260,
+  "rank": {
+   "title": "Committer",
+   "floor": 200,
+   "next_title": "Brancher",
+   "next_at": 500
+  },
+  "chapters": [
+   {
+    "id": "start",
+    "title": "Git, GitHub and your first clone",
+    "blurb": "What Git and GitHub are, and your first clone.",
+    "levels": [],
+    "cards": 0
+   },
+   {
+    "id": "cargo",
+    "title": "The cargo dock",
+    "blurb": "The staging area: you choose what goes into your next commit.",
+    "levels": [
+     {
+      "id": "sample-first",
+      "title": "Your first commit",
+      "difficulty": 1,
+      "xp": 100,
+      "command": "git init",
+      "stars": 2,
+      "challenge": false,
+      "done": true,
+      "has_quest": true
+     },
+     {
+      "id": "sample-second",
+      "title": "A message that helps",
+      "difficulty": 2,
+      "xp": 150,
+      "command": "git commit -m",
+      "stars": 0,
+      "challenge": false,
+      "done": false,
+      "has_quest": false
+     }
+    ],
+    "cards": 12
+   },
+   {
+    "id": "vault",
+    "title": "The time vault",
+    "blurb": "Commits: sealed capsules of your project, and the history they make.",
+    "levels": [],
+    "cards": 0
+   }
+  ],
+  "active": {
+   "level": "sample-second",
+   "step": 1,
+   "steps": 3,
+   "hints": 0,
+   "hints_total": 3,
+   "attempts": 0,
+   "started": "2026-10-06T10:00:00+00:00",
+   "auto_check": false,
+   "commands": 3,
+   "stars": 3,
+   "done": [
+    "look"
+   ]
+  },
+  "last_payout": {
+   "level": "sample-first",
+   "xp": 100,
+   "first_time": true,
+   "rank_before": "Newcomer",
+   "rank_after": "Committer"
+  },
+  "dev": false,
+  "cards_due": 4,
+  "max_difficulty": 3,
+  "collection": [
+   {
+    "level": "sample-first",
+    "command": "git init",
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "Makes the current folder a repository.",
+        "code": false,
+        "em": false
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ },
+ "level": {
+  "id": "sample-second",
+  "chapter": "cargo",
+  "chapter_title": "The cargo dock",
+  "title": "A message that helps",
+  "difficulty": 2,
+  "xp": 150,
+  "command": "git commit -m",
+  "par": 4,
+  "scene": [
+   {
+    "art": "zones",
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "Three places on your computer: the working folder, the staging area and the repository.",
+        "code": false,
+        "em": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "art": "conveyor",
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "git add",
+        "code": true,
+        "em": false
+       },
+       {
+        "text": " copies a file into the staging area.",
+        "code": false,
+        "em": false
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "scene_seen": false,
+  "view": "history",
+  "tape": false,
+  "views_seen": [
+   "station",
+   "crew"
+  ],
+  "solution": {
+   "lines": [
+    "git add map.txt",
+    "git commit -m \"Add the map\""
+   ],
+   "answers": {
+    "guess": "It comes with you"
+   },
+   "answer": null,
+   "picks": {}
+  },
+  "card": {
+   "level": "sample-second",
+   "command": "git commit -m \"Message\"",
+   "text": [
+    {
+     "kind": "para",
+     "spans": [
+      {
+       "text": "Saves the staging area as a new commit, with your message.",
+       "code": false,
+       "em": false
+      }
+     ]
+    }
+   ]
+  },
+  "challenge": false,
+  "briefing": [
+   {
+    "kind": "para",
+    "spans": [
+     {
+      "text": "A teammate asked you to record the change to ",
+      "code": false,
+      "em": false
+     },
+     {
+      "text": "notes.txt",
+      "code": true,
+      "em": false
+     },
+     {
+      "text": " in a commit of its own.",
+      "code": false,
+      "em": false
+     }
+    ]
+   },
+   {
+    "kind": "para",
+    "spans": [
+     {
+      "text": "The level is solved once the last commit holds the new ",
+      "code": false,
+      "em": false
+     },
+     {
+      "text": "notes.txt",
+      "code": true,
+      "em": false
+     },
+     {
+      "text": " and nothing else changed.",
+      "code": false,
+      "em": false
+     }
+    ]
+   }
+  ],
+  "question": [],
+  "placeholder": "",
+  "steps": [
+   {
+    "id": "look",
+    "kind": "read",
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "Your repository is in the terminal below. Every command you type there changes the map on the right.",
+        "code": false,
+        "em": false
+       }
+      ]
+     }
+    ],
+    "command": "",
+    "question": [],
+    "placeholder": "",
+    "choices": [],
+    "more": [],
+    "look": [
+     "HEAD"
+    ]
+   },
+   {
+    "id": "status",
+    "kind": "answer",
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "Ask Git what changed since the last commit.",
+        "code": false,
+        "em": false
+       }
+      ]
+     },
+     {
+      "kind": "code",
+      "text": "$ git status"
+     }
+    ],
+    "command": "git status",
+    "question": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "Which file has changes that are not staged?",
+        "code": false,
+        "em": false
+       }
+      ]
+     }
+    ],
+    "placeholder": "a file name",
+    "choices": [],
+    "more": [],
+    "look": []
+   },
+   {
+    "id": "stage",
+    "kind": "watch",
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "Stage the change with ",
+        "code": false,
+        "em": false
+       },
+       {
+        "text": "git add",
+        "code": true,
+        "em": false
+       },
+       {
+        "text": ". Watch the file move to the staging area.",
+        "code": false,
+        "em": false
+       }
+      ]
+     }
+    ],
+    "command": "git add notes.txt",
+    "question": [],
+    "placeholder": "",
+    "choices": [],
+    "more": [],
+    "look": []
+   }
+  ],
+  "hints_total": 3,
+  "hints": [],
+  "debrief": null,
+  "pictures": {
+   "large": "chain",
+   "small": null,
+   "folder": true,
+   "mothership": true,
+   "alex": false,
+   "ghosts": false,
+   "kept": null,
+   "lines": [],
+   "graph": true,
+   "whatif": {
+    "without": [
+     "rescue"
+    ],
+    "after": "look"
+   },
+   "past": null,
+   "plain": false,
+   "quiet": []
+  },
+  "target": {
+   "commits": [
+    {
+     "id": "start",
+     "parents": [],
+     "subject": "Start the project"
+    },
+    {
+     "id": "fuel",
+     "parents": [
+      "start"
+     ],
+     "subject": "Note the fuel level"
+    }
+   ],
+   "names": {
+    "main": "fuel",
+    "release": "start"
+   },
+   "head": "main"
+  }
+ },
+ "active": {
+  "level": "sample-second",
+  "step": 1,
+  "steps": 3,
+  "hints": 0,
+  "hints_total": 3,
+  "attempts": 0,
+  "started": "2026-10-06T10:00:00+00:00",
+  "auto_check": false,
+  "commands": 3,
+  "stars": 3,
+  "done": [
+   "look"
+  ]
+ },
+ "step": {
+  "correct": false,
+  "message": [
+   {
+    "kind": "para",
+    "spans": [
+     {
+      "text": "Not quite: look for the line that says ",
+      "code": false,
+      "em": false
+     },
+     {
+      "text": "modified",
+      "code": true,
+      "em": false
+     },
+     {
+      "text": ".",
+      "code": false,
+      "em": false
+     }
+    ]
+   }
+  ],
+  "step": 1,
+  "quest_done": false,
+  "done": [
+   "look"
+  ],
+  "lost": false
+ },
+ "check_unsolved": {
+  "solved": false,
+  "message": [
+   {
+    "kind": "para",
+    "spans": [
+     {
+      "text": "The last commit does not hold the new ",
+      "code": false,
+      "em": false
+     },
+     {
+      "text": "notes.txt",
+      "code": true,
+      "em": false
+     },
+     {
+      "text": " yet.",
+      "code": false,
+      "em": false
+     }
+    ]
+   }
+  ],
+  "payout": null,
+  "debrief": null,
+  "stars": 0,
+  "new_card": null,
+  "lost": false
+ },
+ "check_solved": {
+  "solved": true,
+  "message": [
+   {
+    "kind": "para",
+    "spans": [
+     {
+      "text": "Solved.",
+      "code": false,
+      "em": false
+     }
+    ]
+   }
+  ],
+  "payout": {
+   "level": "sample-second",
+   "xp": 150,
+   "first_time": true,
+   "rank_before": "Committer",
+   "rank_after": "Committer"
+  },
+  "debrief": [
+   {
+    "kind": "para",
+    "spans": [
+     {
+      "text": "Git records what is staged, not what is in the folder.",
+      "code": false,
+      "em": false
+     }
+    ]
+   },
+   {
+    "kind": "para",
+    "spans": [
+     {
+      "text": "Commands to keep:",
+      "code": false,
+      "em": false
+     }
+    ]
+   },
+   {
+    "kind": "code",
+    "text": "$ git status\n$ git add <file>\n$ git commit -m \"<message>\""
+   }
+  ],
+  "stars": 3,
+  "new_card": {
+   "level": "sample-second",
+   "command": "git commit -m \"Message\"",
+   "text": [
+    {
+     "kind": "para",
+     "spans": [
+      {
+       "text": "Saves the staging area as a new commit, with your message.",
+       "code": false,
+       "em": false
+      }
+     ]
+    }
+   ]
+  },
+  "lost": false
+ },
+ "hint": {
+  "hint": [
+   {
+    "kind": "para",
+    "spans": [
+     {
+      "text": "Look at what ",
+      "code": false,
+      "em": false
+     },
+     {
+      "text": "git status",
+      "code": true,
+      "em": false
+     },
+     {
+      "text": " lists under the changes not staged.",
+      "code": false,
+      "em": false
+     }
+    ]
+   }
+  ],
+  "used": 1,
+  "total": 3,
+  "cost": 10
+ },
+ "observation": {
+  "level": "sample-second",
+  "project": {
+   "exists": true,
+   "bare": false,
+   "head": "547cd2ba3a17b483651496c5ba8c78f1789b5cbd",
+   "branch": "feature",
+   "commits": [
+    {
+     "hash": "547cd2ba3a17b483651496c5ba8c78f1789b5cbd",
+     "short": "547cd2b",
+     "parents": [
+      "adfec5772ae8932aa10896037b0779bec915015b"
+     ],
+     "subject": "Add a greeting to the readme",
+     "author": "Alex Kim",
+     "time": 1768468100
+    },
+    {
+     "hash": "862a51f8b6294a4b0729a7c5c929bfd67068d962",
+     "short": "862a51f",
+     "parents": [
+      "32d332da761f44df7959e5887b6b94cb4667d781"
+     ],
+     "subject": "Fix a typo in the notes",
+     "author": "Alex Kim",
+     "time": 1768468000
+    },
+    {
+     "hash": "adfec5772ae8932aa10896037b0779bec915015b",
+     "short": "adfec57",
+     "parents": [
+      "32d332da761f44df7959e5887b6b94cb4667d781"
+     ],
+     "subject": "Start the greeting feature",
+     "author": "Alex Kim",
+     "time": 1768467900
+    },
+    {
+     "hash": "32d332da761f44df7959e5887b6b94cb4667d781",
+     "short": "32d332d",
+     "parents": [
+      "ae23b94ccaf714337e4ce5ba99ef3dc257e300df"
+     ],
+     "subject": "Add notes",
+     "author": "Alex Kim",
+     "time": 1768467800
+    },
+    {
+     "hash": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df",
+     "short": "ae23b94",
+     "parents": [],
+     "subject": "First commit",
+     "author": "Alex Kim",
+     "time": 1768467700
+    }
+   ],
+   "refs": [
+    {
+     "name": "feature",
+     "kind": "branch",
+     "target": "547cd2ba3a17b483651496c5ba8c78f1789b5cbd"
+    },
+    {
+     "name": "main",
+     "kind": "branch",
+     "target": "862a51f8b6294a4b0729a7c5c929bfd67068d962"
+    },
+    {
+     "name": "origin/main",
+     "kind": "remote",
+     "target": "32d332da761f44df7959e5887b6b94cb4667d781"
+    },
+    {
+     "name": "v0.1",
+     "kind": "tag",
+     "target": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df"
+    }
+   ],
+   "pushed": [],
+   "remotes": [],
+   "files": [
+    {
+     "path": "README.md",
+     "head": "92307fb726f9ead3b06bce244ab99fe6b397ed9f",
+     "index": "3c64b02e037fd91999c109a914fc64ba825f83ea",
+     "folder": "3c64b02e037fd91999c109a914fc64ba825f83ea",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": "modified",
+     "folder_change": null
+    },
+    {
+     "path": "build.log",
+     "head": null,
+     "index": null,
+     "folder": "0e1790696e1b3a7d7b6896a37332833d345720f4",
+     "head_mode": null,
+     "index_mode": null,
+     "folder_mode": "100644",
+     "ignored": true,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": "ignored"
+    },
+    {
+     "path": "notes.txt",
+     "head": "6381d61d612a680ca5731e9daa3c7159ce095fe7",
+     "index": "6381d61d612a680ca5731e9daa3c7159ce095fe7",
+     "folder": "5a756a0f89761abfdf745fea5d21bc7bf237aeb6",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": "modified"
+    },
+    {
+     "path": "old.txt",
+     "head": "53169d90d08f1ce60f0af65818e7eefd0475b2ae",
+     "index": null,
+     "folder": null,
+     "head_mode": "100644",
+     "index_mode": null,
+     "folder_mode": null,
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": "deleted",
+     "folder_change": null
+    },
+    {
+     "path": "run.sh",
+     "head": "4d859a974871cca4a04b68671fb12dbc381511a9",
+     "index": "4d859a974871cca4a04b68671fb12dbc381511a9",
+     "folder": "4d859a974871cca4a04b68671fb12dbc381511a9",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100755",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": "modified"
+    },
+    {
+     "path": "todo.txt",
+     "head": null,
+     "index": null,
+     "folder": "9fb39b7184ab0ae5747cfa9a1bd43dce202e4931",
+     "head_mode": null,
+     "index_mode": null,
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": "untracked"
+    },
+    {
+     "path": "vendor",
+     "head": null,
+     "index": null,
+     "folder": "eb9de1fb05f522780f89b263a4e55cf42f3d1332",
+     "head_mode": null,
+     "index_mode": null,
+     "folder_mode": "160000",
+     "ignored": false,
+     "conflicted": false,
+     "repository": true,
+     "index_change": null,
+     "folder_change": "untracked"
+    }
+   ],
+   "operation": null,
+   "stash": 0,
+   "truncated": false
+  },
+  "github": {
+   "exists": true,
+   "bare": true,
+   "head": "32d332da761f44df7959e5887b6b94cb4667d781",
+   "branch": "main",
+   "commits": [
+    {
+     "hash": "32d332da761f44df7959e5887b6b94cb4667d781",
+     "short": "32d332d",
+     "parents": [
+      "ae23b94ccaf714337e4ce5ba99ef3dc257e300df"
+     ],
+     "subject": "Add notes",
+     "author": "Alex Kim",
+     "time": 1768467800
+    },
+    {
+     "hash": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df",
+     "short": "ae23b94",
+     "parents": [],
+     "subject": "First commit",
+     "author": "Alex Kim",
+     "time": 1768467700
+    }
+   ],
+   "refs": [
+    {
+     "name": "main",
+     "kind": "branch",
+     "target": "32d332da761f44df7959e5887b6b94cb4667d781"
+    }
+   ],
+   "pushed": [],
+   "remotes": [],
+   "files": [],
+   "operation": null,
+   "stash": 0,
+   "truncated": false
+  },
+  "teammate": null,
+  "events": [
+   {
+    "kind": "commit-created",
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "You made commit ",
+        "code": false,
+        "em": false
+       },
+       {
+        "text": "547cd2b",
+        "code": true,
+        "em": false
+       },
+       {
+        "text": " on ",
+        "code": false,
+        "em": false
+       },
+       {
+        "text": "feature",
+        "code": true,
+        "em": false
+       },
+       {
+        "text": ": Add a greeting to the readme.",
+        "code": false,
+        "em": false
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "kind": "file-staged",
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "README.md",
+        "code": true,
+        "em": false
+       },
+       {
+        "text": " is staged: its new version goes into the next commit.",
+        "code": false,
+        "em": false
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "teammate_events": [],
+  "buttons": {},
+  "commands": [
+   {
+    "line": "git add README.md",
+    "status": 0
+   }
+  ],
+  "reactions": [
+   {
+    "line": "git add README.md",
+    "mood": "ok",
+    "text": [
+     {
+      "kind": "para",
+      "spans": [
+       {
+        "text": "Staged: your next commit will take the file as it is now.",
+        "code": false,
+        "em": false
+       }
+      ]
+     }
+    ],
+    "moment": null
+   }
+  ],
+  "conflicts": [
+   {
+    "path": "docking.txt",
+    "you": {
+     "label": "main",
+     "author": "Cadet",
+     "lines": [
+      "Dock at bay 3"
+     ]
+    },
+    "them": {
+     "label": "scout",
+     "author": "Alex",
+     "lines": [
+      "Dock at bay 4"
+     ]
+    },
+    "base": [
+     "Dock at bay 2"
+    ]
+   }
+  ],
+  "marked": [],
+  "reflog": [
+   {
+    "old": "5941dbe0000000000000000000000000000000aa",
+    "new": "a0c26f80000000000000000000000000000000bb",
+    "message": "commit: Add the route",
+    "line": "a0c26f8 HEAD@{0}: commit: Add the route"
+   },
+   {
+    "old": "",
+    "new": "5941dbe0000000000000000000000000000000aa",
+    "message": "commit (initial): Start the project",
+    "line": "5941dbe HEAD@{1}: commit (initial): Start the project"
+   }
+  ],
+  "ghosts": [],
+  "texts": [
+   {
+    "path": "engine.cfg",
+    "folder": "thrust=full\n",
+    "index": "thrust=half\n"
+   }
+  ],
+  "graph": [
+   "* 2ea5abc (HEAD -> dim-lights) Try dim lights",
+   "| * f286a29 (quiet-engine) Try a quiet engine",
+   "|/  ",
+   "* 6b6a005 (origin/main, main) Fix the route"
+  ],
+  "past": {
+   "path": "notes.txt",
+   "touched": [
+    "862a51f8b6294a4b0729a7c5c929bfd67068d962",
+    "32d332da761f44df7959e5887b6b94cb4667d781"
+   ],
+   "read": {
+    "rev": "32d332d",
+    "commit": "32d332da761f44df7959e5887b6b94cb4667d781",
+    "subject": "Add notes",
+    "text": "Buy fuel\n"
+   }
+  }
+ },
+ "cards": [
+  {
+   "id": "sample-card-choice",
+   "chapter": "cargo",
+   "kind": "choice",
+   "level": 1,
+   "prompt": [
+    {
+     "kind": "para",
+     "spans": [
+      {
+       "text": "What does ",
+       "code": false,
+       "em": false
+      },
+      {
+       "text": "git add",
+       "code": true,
+       "em": false
+      },
+      {
+       "text": " change?",
+       "code": false,
+       "em": false
+      }
+     ]
+    }
+   ],
+   "code": "",
+   "choices": [
+    {
+     "value": "The staging area",
+     "text": [
+      {
+       "kind": "para",
+       "spans": [
+        {
+         "text": "The staging area",
+         "code": false,
+         "em": false
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "value": "The last commit",
+     "text": [
+      {
+       "kind": "para",
+       "spans": [
+        {
+         "text": "The last commit",
+         "code": false,
+         "em": false
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "value": "The remote",
+     "text": [
+      {
+       "kind": "para",
+       "spans": [
+        {
+         "text": "The remote",
+         "code": false,
+         "em": false
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "value": "Nothing until you push",
+     "text": [
+      {
+       "kind": "para",
+       "spans": [
+        {
+         "text": "Nothing until you push",
+         "code": false,
+         "em": false
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "placeholder": "",
+   "pays": true,
+   "level_name": "basic"
+  },
+  {
+   "id": "sample-card-text",
+   "chapter": "cargo",
+   "kind": "text",
+   "level": 2,
+   "prompt": [
+    {
+     "kind": "para",
+     "spans": [
+      {
+       "text": "Which command shows the state of the three areas?",
+       "code": false,
+       "em": false
+      }
+     ]
+    }
+   ],
+   "code": "",
+   "choices": [],
+   "placeholder": "a git command",
+   "pays": true,
+   "level_name": "deeper"
+  },
+  {
+   "id": "sample-card-predict",
+   "chapter": "cargo",
+   "kind": "predict",
+   "level": 2,
+   "prompt": [
+    {
+     "kind": "para",
+     "spans": [
+      {
+       "text": "What does the last command print?",
+       "code": false,
+       "em": false
+      }
+     ]
+    }
+   ],
+   "code": "git init -q demo && cd demo\nprintf 'hello\\n' > hello.txt\ngit hash-object hello.txt",
+   "choices": [
+    {
+     "value": "ce013625030ba8dba906f756967f9e9ca394464a",
+     "text": [
+      {
+       "kind": "code",
+       "text": "ce013625030ba8dba906f756967f9e9ca394464a"
+      }
+     ]
+    },
+    {
+     "value": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391",
+     "text": [
+      {
+       "kind": "code",
+       "text": "e69de29bb2d1d6434b8b29ae775ad8c2e48c5391"
+      }
+     ]
+    },
+    {
+     "value": "an error: hello.txt is not staged",
+     "text": [
+      {
+       "kind": "code",
+       "text": "an error: hello.txt is not staged"
+      }
+     ]
+    }
+   ],
+   "placeholder": "",
+   "pays": false,
+   "level_name": "deeper"
+  }
+ ],
+ "card_result": {
+  "correct": true,
+  "answer": "The staging area",
+  "answer_text": [
+   {
+    "kind": "para",
+    "spans": [
+     {
+      "text": "The staging area",
+      "code": false,
+      "em": false
+     }
+    ]
+   }
+  ],
+  "explain": [
+   {
+    "kind": "para",
+    "spans": [
+     {
+      "text": "git add",
+      "code": true,
+      "em": false
+     },
+     {
+      "text": " copies the file into the staging area; the next commit records it.",
+      "code": false,
+      "em": false
+     }
+    ]
+   }
+  ],
+  "xp": 5,
+  "streak": 3,
+  "bonus": 0
+ },
+ "notes": {
+  "chapter": "cargo",
+  "title": "The cargo dock",
+  "notes": [
+   {
+    "kind": "para",
+    "spans": [
+     {
+      "text": "Git keeps three areas.",
+      "code": false,
+      "em": false
+     }
+    ]
+   },
+   {
+    "kind": "code",
+    "text": "$ git status\n$ git add <file>"
+   },
+   {
+    "kind": "bullets",
+    "items": [
+     [
+      {
+       "text": "git status",
+       "code": true,
+       "em": false
+      },
+      {
+       "text": ": what changed",
+       "code": false,
+       "em": false
+      }
+     ],
+     [
+      {
+       "text": "git add",
+       "code": true,
+       "em": false
+      },
+      {
+       "text": ": stage a file",
+       "code": false,
+       "em": false
+      }
+     ]
+    ]
+   }
+  ]
+ },
+ "snapshots": {
+  "empty": {
+   "exists": false,
+   "bare": false,
+   "head": null,
+   "branch": null,
+   "commits": [],
+   "refs": [],
+   "pushed": [],
+   "remotes": [],
+   "files": [],
+   "operation": null,
+   "stash": 0,
+   "truncated": false
+  },
+  "unborn": {
+   "exists": true,
+   "bare": false,
+   "head": null,
+   "branch": "main",
+   "commits": [],
+   "refs": [],
+   "pushed": [],
+   "remotes": [],
+   "files": [
+    {
+     "path": "hello.txt",
+     "head": null,
+     "index": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+     "folder": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+     "head_mode": null,
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": "added",
+     "folder_change": null
+    }
+   ],
+   "operation": null,
+   "stash": 0,
+   "truncated": false
+  },
+  "one": {
+   "exists": true,
+   "bare": false,
+   "head": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df",
+   "branch": "main",
+   "commits": [
+    {
+     "hash": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df",
+     "short": "ae23b94",
+     "parents": [],
+     "subject": "First commit",
+     "author": "Alex Kim",
+     "time": 1768467700
+    }
+   ],
+   "refs": [
+    {
+     "name": "main",
+     "kind": "branch",
+     "target": "ae23b94ccaf714337e4ce5ba99ef3dc257e300df"
+    }
+   ],
+   "pushed": [],
+   "remotes": [],
+   "files": [
+    {
+     "path": "hello.txt",
+     "head": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+     "index": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+     "folder": "30a84e892e8aa4e5d67b2e0245fa60a5eb944a06",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    }
+   ],
+   "operation": null,
+   "stash": 0,
+   "truncated": false
+  },
+  "folder": {
+   "exists": false,
+   "bare": false,
+   "head": null,
+   "branch": null,
+   "commits": [],
+   "refs": [],
+   "pushed": [],
+   "remotes": [],
+   "files": [
+    {
+     "path": "notes.txt",
+     "head": null,
+     "index": null,
+     "folder": "5f0f9bb007c646838fe0aba05f3449fba6a85eef",
+     "head_mode": null,
+     "index_mode": null,
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    }
+   ],
+   "operation": null,
+   "stash": 0,
+   "truncated": false
+  }
+ },
+ "files": [
+  {
+   "path": "added.txt",
+   "head": null,
+   "index": "5626abf0f72e58d7a153368ba57db4c673c0e171",
+   "folder": "5626abf0f72e58d7a153368ba57db4c673c0e171",
+   "head_mode": null,
+   "index_mode": "100644",
+   "folder_mode": "100644",
+   "ignored": false,
+   "conflicted": false,
+   "repository": false,
+   "index_change": "added",
+   "folder_change": null
+  },
+  {
+   "path": "staged.txt",
+   "head": "5626abf0f72e58d7a153368ba57db4c673c0e171",
+   "index": "f719efd430d52bcfc8566a43b2eb655688d38871",
+   "folder": "f719efd430d52bcfc8566a43b2eb655688d38871",
+   "head_mode": "100644",
+   "index_mode": "100644",
+   "folder_mode": "100644",
+   "ignored": false,
+   "conflicted": false,
+   "repository": false,
+   "index_change": "modified",
+   "folder_change": null
+  },
+  {
+   "path": "removed.txt",
+   "head": "2bdf67abb163a4ffb2d7f3f0880c9fe5068ce782",
+   "index": null,
+   "folder": null,
+   "head_mode": "100644",
+   "index_mode": null,
+   "folder_mode": null,
+   "ignored": false,
+   "conflicted": false,
+   "repository": false,
+   "index_change": "deleted",
+   "folder_change": null
+  },
+  {
+   "path": "staged-link",
+   "head": "8510665149157c2bc901848c3e0b746954e9cbd9",
+   "index": "42061c01a1c70097d1e4579f29a5adf40abdec95",
+   "folder": "42061c01a1c70097d1e4579f29a5adf40abdec95",
+   "head_mode": "100644",
+   "index_mode": "120000",
+   "folder_mode": "120000",
+   "ignored": false,
+   "conflicted": false,
+   "repository": false,
+   "index_change": "typechange",
+   "folder_change": null
+  },
+  {
+   "path": "edited.txt",
+   "head": "5626abf0f72e58d7a153368ba57db4c673c0e171",
+   "index": "5626abf0f72e58d7a153368ba57db4c673c0e171",
+   "folder": "54f9d6da5c91d556e6b54340b1327573073030af",
+   "head_mode": "100644",
+   "index_mode": "100644",
+   "folder_mode": "100644",
+   "ignored": false,
+   "conflicted": false,
+   "repository": false,
+   "index_change": null,
+   "folder_change": "modified"
+  },
+  {
+   "path": "gone.txt",
+   "head": "ffe2fce498955b628014618b28c6bcf152466a4a",
+   "index": "ffe2fce498955b628014618b28c6bcf152466a4a",
+   "folder": null,
+   "head_mode": "100644",
+   "index_mode": "100644",
+   "folder_mode": null,
+   "ignored": false,
+   "conflicted": false,
+   "repository": false,
+   "index_change": null,
+   "folder_change": "deleted"
+  },
+  {
+   "path": "link",
+   "head": "8510665149157c2bc901848c3e0b746954e9cbd9",
+   "index": "8510665149157c2bc901848c3e0b746954e9cbd9",
+   "folder": "42061c01a1c70097d1e4579f29a5adf40abdec95",
+   "head_mode": "100644",
+   "index_mode": "100644",
+   "folder_mode": "120000",
+   "ignored": false,
+   "conflicted": false,
+   "repository": false,
+   "index_change": null,
+   "folder_change": "typechange"
+  },
+  {
+   "path": "new.txt",
+   "head": null,
+   "index": null,
+   "folder": "f719efd430d52bcfc8566a43b2eb655688d38871",
+   "head_mode": null,
+   "index_mode": null,
+   "folder_mode": "100644",
+   "ignored": false,
+   "conflicted": false,
+   "repository": false,
+   "index_change": null,
+   "folder_change": "untracked"
+  },
+  {
+   "path": "debug.log",
+   "head": null,
+   "index": null,
+   "folder": "d287cd3edccffc3e4c72a8aac13c3c76e6fbcb64",
+   "head_mode": null,
+   "index_mode": null,
+   "folder_mode": "100644",
+   "ignored": true,
+   "conflicted": false,
+   "repository": false,
+   "index_change": null,
+   "folder_change": "ignored"
+  },
+  {
+   "path": "both.txt",
+   "head": "5626abf0f72e58d7a153368ba57db4c673c0e171",
+   "index": null,
+   "folder": "da747a9ebe1caa2d2115fb25c365941413f428ba",
+   "head_mode": "100644",
+   "index_mode": null,
+   "folder_mode": "100644",
+   "ignored": false,
+   "conflicted": true,
+   "repository": false,
+   "index_change": null,
+   "folder_change": null
+  }
+ ],
+ "press": {
+  "press": {
+   "person": "alex",
+   "button": "push",
+   "command": "git push",
+   "status": 0,
+   "output": "Enumerating objects: 5, done.\nCounting objects: 100% (5/5), done.\nDelta compression using up to 8 threads\nCompressing objects: 100% (2/2), done.\nWriting objects: 100% (3/3), 294 bytes | 294.00 KiB/s, done.\nTotal 3 (delta 0), reused 0 (delta 0), pack-reused 0\nTo ../../github.com/moonbase/project.git\n   de4c885..21e6785  main -> main\n"
+  },
+  "before": {
+   "level": "cargo-sample",
+   "project": {
+    "exists": true,
+    "bare": false,
+    "head": "de4c8859ba493d31e517c0e8019c8d32625f2426",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "de4c8859ba493d31e517c0e8019c8d32625f2426",
+      "short": "de4c885",
+      "parents": [],
+      "subject": "Start the project",
+      "author": "First Commit",
+      "time": 1791331348
+     }
+    ],
+    "refs": [
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "de4c8859ba493d31e517c0e8019c8d32625f2426"
+     },
+     {
+      "name": "origin/main",
+      "kind": "remote",
+      "target": "de4c8859ba493d31e517c0e8019c8d32625f2426"
+     }
+    ],
+    "pushed": [],
+    "remotes": [
+     {
+      "name": "origin",
+      "url": "../github.com/moonbase/project.git"
+     }
+    ],
+    "files": [
+     {
+      "path": "README.md",
+      "head": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+      "index": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+      "folder": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     },
+     {
+      "path": "notes.txt",
+      "head": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
+      "index": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
+      "folder": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "github": {
+    "exists": true,
+    "bare": true,
+    "head": "de4c8859ba493d31e517c0e8019c8d32625f2426",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "de4c8859ba493d31e517c0e8019c8d32625f2426",
+      "short": "de4c885",
+      "parents": [],
+      "subject": "Start the project",
+      "author": "First Commit",
+      "time": 1791331348
+     }
+    ],
+    "refs": [
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "de4c8859ba493d31e517c0e8019c8d32625f2426"
+     }
+    ],
+    "pushed": [],
+    "remotes": [],
+    "files": [],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "teammate": {
+    "exists": true,
+    "bare": false,
+    "head": "21e6785eb8ad2419c4ea639216e64d8d6e91f5e5",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "21e6785eb8ad2419c4ea639216e64d8d6e91f5e5",
+      "short": "21e6785",
+      "parents": [
+       "de4c8859ba493d31e517c0e8019c8d32625f2426"
+      ],
+      "subject": "Update notes.txt",
+      "author": "Alex",
+      "time": 1791331349
+     },
+     {
+      "hash": "de4c8859ba493d31e517c0e8019c8d32625f2426",
+      "short": "de4c885",
+      "parents": [],
+      "subject": "Start the project",
+      "author": "First Commit",
+      "time": 1791331348
+     }
+    ],
+    "refs": [
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "21e6785eb8ad2419c4ea639216e64d8d6e91f5e5"
+     },
+     {
+      "name": "origin/main",
+      "kind": "remote",
+      "target": "de4c8859ba493d31e517c0e8019c8d32625f2426"
+     }
+    ],
+    "pushed": [],
+    "remotes": [
+     {
+      "name": "origin",
+      "url": "../../github.com/moonbase/project.git"
+     }
+    ],
+    "files": [
+     {
+      "path": "README.md",
+      "head": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+      "index": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+      "folder": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     },
+     {
+      "path": "notes.txt",
+      "head": "262d0700ab23da932e59cc7a63b238bf2e3834df",
+      "index": "262d0700ab23da932e59cc7a63b238bf2e3834df",
+      "folder": "262d0700ab23da932e59cc7a63b238bf2e3834df",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "events": [],
+   "teammate_events": [],
+   "buttons": {
+    "you": [
+     {
+      "id": "status",
+      "label": "git status",
+      "line": "git status",
+      "off": ""
+     },
+     {
+      "id": "commit",
+      "label": "git commit",
+      "line": "git commit -m \"Save my work\"",
+      "off": ""
+     },
+     {
+      "id": "push",
+      "label": "git push",
+      "line": "git push",
+      "off": ""
+     },
+     {
+      "id": "fetch",
+      "label": "git fetch",
+      "line": "git fetch",
+      "off": ""
+     },
+     {
+      "id": "pull",
+      "label": "git pull",
+      "line": "git pull",
+      "off": ""
+     },
+     {
+      "id": "edit:README.md",
+      "label": "Edit README.md",
+      "line": "echo \"You: line 2\" >> README.md",
+      "off": ""
+     },
+     {
+      "id": "add:README.md",
+      "label": "git add README.md",
+      "line": "git add README.md",
+      "off": ""
+     },
+     {
+      "id": "edit:notes.txt",
+      "label": "Edit notes.txt",
+      "line": "echo \"You: line 2\" >> notes.txt",
+      "off": ""
+     },
+     {
+      "id": "add:notes.txt",
+      "label": "git add notes.txt",
+      "line": "git add notes.txt",
+      "off": ""
+     }
+    ],
+    "alex": [
+     {
+      "id": "status",
+      "label": "git status",
+      "line": "git status",
+      "off": ""
+     },
+     {
+      "id": "commit",
+      "label": "git commit",
+      "line": "git commit -m \"Save my work\"",
+      "off": ""
+     },
+     {
+      "id": "push",
+      "label": "git push",
+      "line": "git push",
+      "off": ""
+     },
+     {
+      "id": "fetch",
+      "label": "git fetch",
+      "line": "git fetch",
+      "off": ""
+     },
+     {
+      "id": "pull",
+      "label": "git pull",
+      "line": "git pull",
+      "off": ""
+     },
+     {
+      "id": "edit:README.md",
+      "label": "Edit README.md",
+      "line": "echo \"Alex: line 2\" >> README.md",
+      "off": ""
+     },
+     {
+      "id": "add:README.md",
+      "label": "git add README.md",
+      "line": "git add README.md",
+      "off": ""
+     },
+     {
+      "id": "edit:notes.txt",
+      "label": "Edit notes.txt",
+      "line": "echo \"Alex: line 3\" >> notes.txt",
+      "off": ""
+     },
+     {
+      "id": "add:notes.txt",
+      "label": "git add notes.txt",
+      "line": "git add notes.txt",
+      "off": ""
+     }
+    ]
+   },
+   "commands": [],
+   "reactions": [],
+   "conflicts": [],
+   "marked": [],
+   "reflog": [],
+   "ghosts": [],
+   "texts": [
+    {
+     "path": "engine.cfg",
+     "folder": "thrust=full\n",
+     "index": "thrust=half\n"
+    }
+   ],
+   "graph": [
+    "* 2ea5abc (HEAD -> dim-lights) Try dim lights",
+    "| * f286a29 (quiet-engine) Try a quiet engine",
+    "|/  ",
+    "* 6b6a005 (origin/main, main) Fix the route"
+   ],
+   "past": null
+  },
+  "observation": {
+   "level": "cargo-sample",
+   "project": {
+    "exists": true,
+    "bare": false,
+    "head": "de4c8859ba493d31e517c0e8019c8d32625f2426",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "de4c8859ba493d31e517c0e8019c8d32625f2426",
+      "short": "de4c885",
+      "parents": [],
+      "subject": "Start the project",
+      "author": "First Commit",
+      "time": 1791331348
+     }
+    ],
+    "refs": [
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "de4c8859ba493d31e517c0e8019c8d32625f2426"
+     },
+     {
+      "name": "origin/main",
+      "kind": "remote",
+      "target": "de4c8859ba493d31e517c0e8019c8d32625f2426"
+     }
+    ],
+    "pushed": [],
+    "remotes": [
+     {
+      "name": "origin",
+      "url": "../github.com/moonbase/project.git"
+     }
+    ],
+    "files": [
+     {
+      "path": "README.md",
+      "head": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+      "index": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+      "folder": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     },
+     {
+      "path": "notes.txt",
+      "head": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
+      "index": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
+      "folder": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "github": {
+    "exists": true,
+    "bare": true,
+    "head": "21e6785eb8ad2419c4ea639216e64d8d6e91f5e5",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "21e6785eb8ad2419c4ea639216e64d8d6e91f5e5",
+      "short": "21e6785",
+      "parents": [
+       "de4c8859ba493d31e517c0e8019c8d32625f2426"
+      ],
+      "subject": "Update notes.txt",
+      "author": "Alex",
+      "time": 1791331349
+     },
+     {
+      "hash": "de4c8859ba493d31e517c0e8019c8d32625f2426",
+      "short": "de4c885",
+      "parents": [],
+      "subject": "Start the project",
+      "author": "First Commit",
+      "time": 1791331348
+     }
+    ],
+    "refs": [
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "21e6785eb8ad2419c4ea639216e64d8d6e91f5e5"
+     }
+    ],
+    "pushed": [],
+    "remotes": [],
+    "files": [],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "teammate": {
+    "exists": true,
+    "bare": false,
+    "head": "21e6785eb8ad2419c4ea639216e64d8d6e91f5e5",
+    "branch": "main",
+    "commits": [
+     {
+      "hash": "21e6785eb8ad2419c4ea639216e64d8d6e91f5e5",
+      "short": "21e6785",
+      "parents": [
+       "de4c8859ba493d31e517c0e8019c8d32625f2426"
+      ],
+      "subject": "Update notes.txt",
+      "author": "Alex",
+      "time": 1791331349
+     },
+     {
+      "hash": "de4c8859ba493d31e517c0e8019c8d32625f2426",
+      "short": "de4c885",
+      "parents": [],
+      "subject": "Start the project",
+      "author": "First Commit",
+      "time": 1791331348
+     }
+    ],
+    "refs": [
+     {
+      "name": "main",
+      "kind": "branch",
+      "target": "21e6785eb8ad2419c4ea639216e64d8d6e91f5e5"
+     },
+     {
+      "name": "origin/main",
+      "kind": "remote",
+      "target": "21e6785eb8ad2419c4ea639216e64d8d6e91f5e5"
+     }
+    ],
+    "pushed": [
+     "origin/main"
+    ],
+    "remotes": [
+     {
+      "name": "origin",
+      "url": "../../github.com/moonbase/project.git"
+     }
+    ],
+    "files": [
+     {
+      "path": "README.md",
+      "head": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+      "index": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+      "folder": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     },
+     {
+      "path": "notes.txt",
+      "head": "262d0700ab23da932e59cc7a63b238bf2e3834df",
+      "index": "262d0700ab23da932e59cc7a63b238bf2e3834df",
+      "folder": "262d0700ab23da932e59cc7a63b238bf2e3834df",
+      "head_mode": "100644",
+      "index_mode": "100644",
+      "folder_mode": "100644",
+      "ignored": false,
+      "conflicted": false,
+      "repository": false,
+      "index_change": null,
+      "folder_change": null
+     }
+    ],
+    "operation": null,
+    "stash": 0,
+    "truncated": false
+   },
+   "events": [
+    {
+     "kind": "push-received",
+     "text": [
+      {
+       "kind": "para",
+       "spans": [
+        {
+         "text": "A push moved branch ",
+         "code": false,
+         "em": false
+        },
+        {
+         "text": "main",
+         "code": true,
+         "em": false
+        },
+        {
+         "text": " from ",
+         "code": false,
+         "em": false
+        },
+        {
+         "text": "de4c885",
+         "code": true,
+         "em": false
+        },
+        {
+         "text": " to ",
+         "code": false,
+         "em": false
+        },
+        {
+         "text": "21e6785",
+         "code": true,
+         "em": false
+        },
+        {
+         "text": " (",
+         "code": false,
+         "em": false
+        },
+        {
+         "text": "Update notes.txt",
+         "code": true,
+         "em": false
+        },
+        {
+         "text": ").",
+         "code": false,
+         "em": false
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "teammate_events": [
+    {
+     "kind": "remote-updated",
+     "text": [
+      {
+       "kind": "para",
+       "spans": [
+        {
+         "text": "Remote-tracking branch ",
+         "code": false,
+         "em": false
+        },
+        {
+         "text": "origin/main",
+         "code": true,
+         "em": false
+        },
+        {
+         "text": " moved from ",
+         "code": false,
+         "em": false
+        },
+        {
+         "text": "de4c885",
+         "code": true,
+         "em": false
+        },
+        {
+         "text": " to ",
+         "code": false,
+         "em": false
+        },
+        {
+         "text": "21e6785",
+         "code": true,
+         "em": false
+        },
+        {
+         "text": " (",
+         "code": false,
+         "em": false
+        },
+        {
+         "text": "Update notes.txt",
+         "code": true,
+         "em": false
+        },
+        {
+         "text": ").",
+         "code": false,
+         "em": false
+        }
+       ]
+      }
+     ]
+    }
+   ],
+   "buttons": {
+    "you": [
+     {
+      "id": "status",
+      "label": "git status",
+      "line": "git status",
+      "off": ""
+     },
+     {
+      "id": "commit",
+      "label": "git commit",
+      "line": "git commit -m \"Save my work\"",
+      "off": ""
+     },
+     {
+      "id": "push",
+      "label": "git push",
+      "line": "git push",
+      "off": ""
+     },
+     {
+      "id": "fetch",
+      "label": "git fetch",
+      "line": "git fetch",
+      "off": ""
+     },
+     {
+      "id": "pull",
+      "label": "git pull",
+      "line": "git pull",
+      "off": ""
+     },
+     {
+      "id": "edit:README.md",
+      "label": "Edit README.md",
+      "line": "echo \"You: line 2\" >> README.md",
+      "off": ""
+     },
+     {
+      "id": "add:README.md",
+      "label": "git add README.md",
+      "line": "git add README.md",
+      "off": ""
+     },
+     {
+      "id": "edit:notes.txt",
+      "label": "Edit notes.txt",
+      "line": "echo \"You: line 2\" >> notes.txt",
+      "off": ""
+     },
+     {
+      "id": "add:notes.txt",
+      "label": "git add notes.txt",
+      "line": "git add notes.txt",
+      "off": ""
+     }
+    ],
+    "alex": [
+     {
+      "id": "status",
+      "label": "git status",
+      "line": "git status",
+      "off": ""
+     },
+     {
+      "id": "commit",
+      "label": "git commit",
+      "line": "git commit -m \"Save my work\"",
+      "off": ""
+     },
+     {
+      "id": "push",
+      "label": "git push",
+      "line": "git push",
+      "off": ""
+     },
+     {
+      "id": "fetch",
+      "label": "git fetch",
+      "line": "git fetch",
+      "off": ""
+     },
+     {
+      "id": "pull",
+      "label": "git pull",
+      "line": "git pull",
+      "off": ""
+     },
+     {
+      "id": "edit:README.md",
+      "label": "Edit README.md",
+      "line": "echo \"Alex: line 2\" >> README.md",
+      "off": ""
+     },
+     {
+      "id": "add:README.md",
+      "label": "git add README.md",
+      "line": "git add README.md",
+      "off": ""
+     },
+     {
+      "id": "edit:notes.txt",
+      "label": "Edit notes.txt",
+      "line": "echo \"Alex: line 3\" >> notes.txt",
+      "off": ""
+     },
+     {
+      "id": "add:notes.txt",
+      "label": "git add notes.txt",
+      "line": "git add notes.txt",
+      "off": ""
+     }
+    ]
+   },
+   "commands": [],
+   "reactions": [],
+   "conflicts": [],
+   "marked": [],
+   "reflog": [],
+   "ghosts": [],
+   "texts": [
+    {
+     "path": "engine.cfg",
+     "folder": "thrust=full\n",
+     "index": "thrust=half\n"
+    }
+   ],
+   "graph": [
+    "* 2ea5abc (HEAD -> dim-lights) Try dim lights",
+    "| * f286a29 (quiet-engine) Try a quiet engine",
+    "|/  ",
+    "* 6b6a005 (origin/main, main) Fix the route"
+   ],
+   "past": null
+  },
+  "explanation": null,
+  "fix": null,
+  "fix_line": ""
+ },
+ "board": [
+  {
+   "number": 1,
+   "title": "Fix the hall lights",
+   "author": "Alex",
+   "head": "fix-lights",
+   "base": "main",
+   "state": "open",
+   "head_commit": "c3d4e5f60000000000000000000000000000c3d4",
+   "commits": [
+    {
+     "hash": "c3d4e5f60000000000000000000000000000c3d4",
+     "short": "c3d4e5f",
+     "parents": [
+      "a0c26f80000000000000000000000000000000bb"
+     ],
+     "subject": "Fix the hall lights",
+     "author": "Alex",
+     "time": 1788253200
+    }
+   ],
+   "files": [
+    "lights.cfg"
+   ],
+   "mergeable": true,
+   "conflicts": [],
+   "reviews": [
+    {
+     "reviewer": "Robin",
+     "verdict": "changes-requested",
+     "body": "Turn the deck lights on too.",
+     "commit": "b1b2b3b40000000000000000000000000000b1b2",
+     "stale": true
+    }
+   ]
+  },
+  {
+   "number": 2,
+   "title": "Survey the crater",
+   "author": "you",
+   "head": "scout",
+   "base": "main",
+   "state": "merged",
+   "head_commit": "d1d2d3d40000000000000000000000000000d1d2",
+   "commits": [],
+   "files": [
+    "survey.txt"
+   ],
+   "mergeable": true,
+   "conflicts": [],
+   "reviews": []
+  }
+ ],
+ "playground": {
+  "starts": [
+   {
+    "id": "empty",
+    "title": "Empty folder",
+    "blurb": "Two files and no repository yet.",
+    "banner": "No repository here yet. Try: git init",
+    "view": "desk",
+    "mothership": false,
+    "alex": false,
+    "uses": []
+   },
+   {
+    "id": "changes",
+    "title": "Uncommitted changes",
+    "blurb": "notes.txt edited on main, and a branch to switch to.",
+    "banner": "notes.txt is edited and not committed. Try: git status",
+    "view": "desk",
+    "mothership": true,
+    "alex": false,
+    "uses": [
+     {
+      "id": "branch",
+      "title": "Parallel universes"
+     },
+     {
+      "id": "undo",
+      "title": "Time travel"
+     }
+    ]
+   },
+   {
+    "id": "branches",
+    "title": "Two branches",
+    "blurb": "Two experiments forked off main.",
+    "banner": "Try: git switch bright-lights, then pick another view.",
+    "view": "chain",
+    "mothership": true,
+    "alex": false,
+    "uses": [
+     {
+      "id": "names",
+      "title": "Name tags"
+     }
+    ]
+   },
+   {
+    "id": "alex-ahead",
+    "title": "Alex is ahead",
+    "blurb": "Alex pushed two commits you have not fetched.",
+    "banner": "Alex sent two commits. Try: git status, then git fetch.",
+    "view": "history",
+    "mothership": true,
+    "alex": true,
+    "uses": [
+     {
+      "id": "mothership",
+      "title": "The mothership"
+     }
+    ]
+   },
+   {
+    "id": "both",
+    "title": "Both committed",
+    "blurb": "You and Alex each committed a different file: a merge with no conflict.",
+    "banner": "You and Alex each made a commit. Try: git status, then git pull --no-rebase.",
+    "view": "history",
+    "mothership": true,
+    "alex": false,
+    "uses": [
+     {
+      "id": "conflict",
+      "title": "Collisions"
+     }
+    ]
+   },
+   {
+    "id": "conflict",
+    "title": "Conflict",
+    "blurb": "You and Alex changed the same line, and your pull stopped on it.",
+    "banner": "Your pull stopped on a conflict in checklist.txt. Try: git status",
+    "view": "conflict",
+    "mothership": true,
+    "alex": true,
+    "uses": [
+     {
+      "id": "conflict",
+      "title": "Collisions"
+     }
+    ]
+   },
+   {
+    "id": "lost",
+    "title": "Something lost",
+    "blurb": "A branch with two commits, deleted.",
+    "banner": "A branch was deleted. Try: git log --oneline --all, then git reflog",
+    "view": "movelog",
+    "mothership": true,
+    "alex": false,
+    "uses": [
+     {
+      "id": "undo",
+      "title": "Time travel"
+     }
+    ]
+   }
+  ],
+  "current": {
+   "start": "conflict",
+   "started": "2026-10-08T21:21:10.293444+00:00",
+   "view": "conflict",
+   "alex": true,
+   "whose": "you"
+  }
+ },
+ "playground_observation": {
+  "start": "conflict",
+  "started": "2026-10-08T21:21:10.293444+00:00",
+  "project": {
+   "exists": true,
+   "bare": false,
+   "head": "9b9b67cfd5c59c242844b8ea7529e2a397709c90",
+   "branch": "main",
+   "commits": [
+    {
+     "hash": "9b9b67cfd5c59c242844b8ea7529e2a397709c90",
+     "short": "9b9b67c",
+     "parents": [
+      "0a8298cfcb9a00e68a1bb3b6b05f34caa85529a9"
+     ],
+     "subject": "Head for the Moon",
+     "author": "Cadet",
+     "time": 1780567200
+    },
+    {
+     "hash": "94b6459f310f9ec74b15d5f70e207bdf95b25026",
+     "short": "94b6459",
+     "parents": [
+      "0a8298cfcb9a00e68a1bb3b6b05f34caa85529a9"
+     ],
+     "subject": "Head for Jupiter",
+     "author": "Alex",
+     "time": 1780563600
+    },
+    {
+     "hash": "0a8298cfcb9a00e68a1bb3b6b05f34caa85529a9",
+     "short": "0a8298c",
+     "parents": [
+      "44c16d071bc8ec04294f6a0629f063291e505ca8"
+     ],
+     "subject": "Add the launch checklist",
+     "author": "Cadet",
+     "time": 1780477200
+    },
+    {
+     "hash": "44c16d071bc8ec04294f6a0629f063291e505ca8",
+     "short": "44c16d0",
+     "parents": [
+      "a38b8217663b2f7e62eb8b395cfc8948b5245e14"
+     ],
+     "subject": "Add the crew list",
+     "author": "Cadet",
+     "time": 1780390800
+    },
+    {
+     "hash": "a38b8217663b2f7e62eb8b395cfc8948b5245e14",
+     "short": "a38b821",
+     "parents": [
+      "b9e397c48054ecdd8c48a84b7d1047fefc55fad3"
+     ],
+     "subject": "Plot the route",
+     "author": "Cadet",
+     "time": 1780304400
+    },
+    {
+     "hash": "b9e397c48054ecdd8c48a84b7d1047fefc55fad3",
+     "short": "b9e397c",
+     "parents": [],
+     "subject": "Start the project",
+     "author": "First Commit",
+     "time": 1777626000
+    }
+   ],
+   "refs": [
+    {
+     "name": "main",
+     "kind": "branch",
+     "target": "9b9b67cfd5c59c242844b8ea7529e2a397709c90"
+    },
+    {
+     "name": "origin/main",
+     "kind": "remote",
+     "target": "94b6459f310f9ec74b15d5f70e207bdf95b25026"
+    }
+   ],
+   "pushed": [],
+   "remotes": [
+    {
+     "name": "origin",
+     "url": "../github.com/moonbase/project.git"
+    }
+   ],
+   "files": [
+    {
+     "path": "README.md",
+     "head": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+     "index": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+     "folder": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    },
+    {
+     "path": "checklist.txt",
+     "head": "91a973c0f21b8dcd7f31fcc6458c27fa25bbfd73",
+     "index": null,
+     "folder": "ed76517bc335e1b7aa7a4179e523e05539c239f9",
+     "head_mode": "100644",
+     "index_mode": null,
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": true,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    },
+    {
+     "path": "crew.txt",
+     "head": "5d6c120fd7e9e3862421d2b9fa090c57be3ea4b3",
+     "index": "5d6c120fd7e9e3862421d2b9fa090c57be3ea4b3",
+     "folder": "5d6c120fd7e9e3862421d2b9fa090c57be3ea4b3",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    },
+    {
+     "path": "notes.txt",
+     "head": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
+     "index": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
+     "folder": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    },
+    {
+     "path": "route.txt",
+     "head": "65ce4718f4fb93646e3ba1097203aea0fae74a58",
+     "index": "65ce4718f4fb93646e3ba1097203aea0fae74a58",
+     "folder": "65ce4718f4fb93646e3ba1097203aea0fae74a58",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    }
+   ],
+   "operation": "merge",
+   "stash": 0,
+   "truncated": false
+  },
+  "github": {
+   "exists": true,
+   "bare": true,
+   "head": "94b6459f310f9ec74b15d5f70e207bdf95b25026",
+   "branch": "main",
+   "commits": [
+    {
+     "hash": "94b6459f310f9ec74b15d5f70e207bdf95b25026",
+     "short": "94b6459",
+     "parents": [
+      "0a8298cfcb9a00e68a1bb3b6b05f34caa85529a9"
+     ],
+     "subject": "Head for Jupiter",
+     "author": "Alex",
+     "time": 1780563600
+    },
+    {
+     "hash": "0a8298cfcb9a00e68a1bb3b6b05f34caa85529a9",
+     "short": "0a8298c",
+     "parents": [
+      "44c16d071bc8ec04294f6a0629f063291e505ca8"
+     ],
+     "subject": "Add the launch checklist",
+     "author": "Cadet",
+     "time": 1780477200
+    },
+    {
+     "hash": "44c16d071bc8ec04294f6a0629f063291e505ca8",
+     "short": "44c16d0",
+     "parents": [
+      "a38b8217663b2f7e62eb8b395cfc8948b5245e14"
+     ],
+     "subject": "Add the crew list",
+     "author": "Cadet",
+     "time": 1780390800
+    },
+    {
+     "hash": "a38b8217663b2f7e62eb8b395cfc8948b5245e14",
+     "short": "a38b821",
+     "parents": [
+      "b9e397c48054ecdd8c48a84b7d1047fefc55fad3"
+     ],
+     "subject": "Plot the route",
+     "author": "Cadet",
+     "time": 1780304400
+    },
+    {
+     "hash": "b9e397c48054ecdd8c48a84b7d1047fefc55fad3",
+     "short": "b9e397c",
+     "parents": [],
+     "subject": "Start the project",
+     "author": "First Commit",
+     "time": 1777626000
+    }
+   ],
+   "refs": [
+    {
+     "name": "main",
+     "kind": "branch",
+     "target": "94b6459f310f9ec74b15d5f70e207bdf95b25026"
+    }
+   ],
+   "pushed": [],
+   "remotes": [],
+   "files": [],
+   "operation": null,
+   "stash": 0,
+   "truncated": false
+  },
+  "teammate": {
+   "exists": true,
+   "bare": false,
+   "head": "94b6459f310f9ec74b15d5f70e207bdf95b25026",
+   "branch": "main",
+   "commits": [
+    {
+     "hash": "94b6459f310f9ec74b15d5f70e207bdf95b25026",
+     "short": "94b6459",
+     "parents": [
+      "0a8298cfcb9a00e68a1bb3b6b05f34caa85529a9"
+     ],
+     "subject": "Head for Jupiter",
+     "author": "Alex",
+     "time": 1780563600
+    },
+    {
+     "hash": "0a8298cfcb9a00e68a1bb3b6b05f34caa85529a9",
+     "short": "0a8298c",
+     "parents": [
+      "44c16d071bc8ec04294f6a0629f063291e505ca8"
+     ],
+     "subject": "Add the launch checklist",
+     "author": "Cadet",
+     "time": 1780477200
+    },
+    {
+     "hash": "44c16d071bc8ec04294f6a0629f063291e505ca8",
+     "short": "44c16d0",
+     "parents": [
+      "a38b8217663b2f7e62eb8b395cfc8948b5245e14"
+     ],
+     "subject": "Add the crew list",
+     "author": "Cadet",
+     "time": 1780390800
+    },
+    {
+     "hash": "a38b8217663b2f7e62eb8b395cfc8948b5245e14",
+     "short": "a38b821",
+     "parents": [
+      "b9e397c48054ecdd8c48a84b7d1047fefc55fad3"
+     ],
+     "subject": "Plot the route",
+     "author": "Cadet",
+     "time": 1780304400
+    },
+    {
+     "hash": "b9e397c48054ecdd8c48a84b7d1047fefc55fad3",
+     "short": "b9e397c",
+     "parents": [],
+     "subject": "Start the project",
+     "author": "First Commit",
+     "time": 1777626000
+    }
+   ],
+   "refs": [
+    {
+     "name": "main",
+     "kind": "branch",
+     "target": "94b6459f310f9ec74b15d5f70e207bdf95b25026"
+    },
+    {
+     "name": "origin/main",
+     "kind": "remote",
+     "target": "94b6459f310f9ec74b15d5f70e207bdf95b25026"
+    }
+   ],
+   "pushed": [
+    "origin/main"
+   ],
+   "remotes": [
+    {
+     "name": "origin",
+     "url": "../../github.com/moonbase/project.git"
+    }
+   ],
+   "files": [
+    {
+     "path": "README.md",
+     "head": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+     "index": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+     "folder": "dab306f45e6a154ab0fe50d67298f165cfc75392",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    },
+    {
+     "path": "checklist.txt",
+     "head": "3f9cf019812a1a2088b4fd8c7ac94a625a6c5611",
+     "index": "3f9cf019812a1a2088b4fd8c7ac94a625a6c5611",
+     "folder": "3f9cf019812a1a2088b4fd8c7ac94a625a6c5611",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    },
+    {
+     "path": "crew.txt",
+     "head": "5d6c120fd7e9e3862421d2b9fa090c57be3ea4b3",
+     "index": "5d6c120fd7e9e3862421d2b9fa090c57be3ea4b3",
+     "folder": "5d6c120fd7e9e3862421d2b9fa090c57be3ea4b3",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    },
+    {
+     "path": "notes.txt",
+     "head": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
+     "index": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
+     "folder": "e38d7f6166c0658c5019b23a0f05a057b5fe7eb4",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    },
+    {
+     "path": "route.txt",
+     "head": "65ce4718f4fb93646e3ba1097203aea0fae74a58",
+     "index": "65ce4718f4fb93646e3ba1097203aea0fae74a58",
+     "folder": "65ce4718f4fb93646e3ba1097203aea0fae74a58",
+     "head_mode": "100644",
+     "index_mode": "100644",
+     "folder_mode": "100644",
+     "ignored": false,
+     "conflicted": false,
+     "repository": false,
+     "index_change": null,
+     "folder_change": null
+    }
+   ],
+   "operation": null,
+   "stash": 0,
+   "truncated": false
+  },
+  "you": {
+   "conflicts": [
+    {
+     "path": "checklist.txt",
+     "you": {
+      "label": "main",
+      "author": "Cadet",
+      "lines": [
+       "LAUNCH CHECKLIST",
+       "1. Seal the hatch",
+       "2. Fuel tanks: full",
+       "3. Check the radio",
+       "4. Course: the Moon",
+       "5. Music: off",
+       "6. Shields: on",
+       "7. Gloves on",
+       "8. Snack: crackers",
+       "9. Wave goodbye to base"
+      ]
+     },
+     "them": {
+      "label": "origin/main",
+      "author": "Alex",
+      "lines": [
+       "LAUNCH CHECKLIST",
+       "1. Seal the hatch",
+       "2. Fuel tanks: half",
+       "3. Check the radio",
+       "4. Course: Jupiter",
+       "5. Music: off",
+       "6. Shields: off",
+       "7. Gloves on",
+       "8. Snack: space noodles",
+       "9. Wave goodbye to base"
+      ]
+     },
+     "base": [
+      "LAUNCH CHECKLIST",
+      "1. Seal the hatch",
+      "2. Fuel tanks: full",
+      "3. Check the radio",
+      "4. Course: Mars",
+      "5. Music: off",
+      "6. Shields: off",
+      "7. Gloves on",
+      "8. Snack: crackers",
+      "9. Wave goodbye to base"
+     ]
+    }
+   ],
+   "marked": [
+    {
+     "path": "checklist.txt",
+     "read": "2b5dfe4f6420827f3bb86517b4919b716c3a3f2a420f04b01a2613ea50cf8efd",
+     "parts": [
+      {
+       "kind": "clean",
+       "lines": [
+        "LAUNCH CHECKLIST",
+        "1. Seal the hatch",
+        "2. Fuel tanks: half",
+        "3. Check the radio"
+       ]
+      },
+      {
+       "kind": "block",
+       "yours": [
+        "4. Course: the Moon"
+       ],
+       "theirs": [
+        "4. Course: Jupiter"
+       ],
+       "yours_label": "HEAD",
+       "theirs_label": "94b6459f310f9ec74b15d5f70e207bdf95b25026"
+      },
+      {
+       "kind": "clean",
+       "lines": [
+        "5. Music: off",
+        "6. Shields: on",
+        "7. Gloves on",
+        "8. Snack: space noodles",
+        "9. Wave goodbye to base"
+       ]
+      }
+     ]
+    }
+   ],
+   "reflog": [
+    {
+     "old": "0a8298cfcb9a00e68a1bb3b6b05f34caa85529a9",
+     "new": "9b9b67cfd5c59c242844b8ea7529e2a397709c90",
+     "message": "commit: Head for the Moon",
+     "line": "9b9b67c (HEAD -> main) HEAD@{0}: commit: Head for the Moon"
+    },
+    {
+     "old": "44c16d071bc8ec04294f6a0629f063291e505ca8",
+     "new": "0a8298cfcb9a00e68a1bb3b6b05f34caa85529a9",
+     "message": "commit: Add the launch checklist",
+     "line": "0a8298c HEAD@{1}: commit: Add the launch checklist"
+    },
+    {
+     "old": "a38b8217663b2f7e62eb8b395cfc8948b5245e14",
+     "new": "44c16d071bc8ec04294f6a0629f063291e505ca8",
+     "message": "commit: Add the crew list",
+     "line": "44c16d0 HEAD@{2}: commit: Add the crew list"
+    },
+    {
+     "old": "b9e397c48054ecdd8c48a84b7d1047fefc55fad3",
+     "new": "a38b8217663b2f7e62eb8b395cfc8948b5245e14",
+     "message": "commit: Plot the route",
+     "line": "a38b821 HEAD@{3}: commit: Plot the route"
+    },
+    {
+     "old": "",
+     "new": "b9e397c48054ecdd8c48a84b7d1047fefc55fad3",
+     "message": "clone: from /home/player/.firstcommit/playground/github.com/moonbase/project.git",
+     "line": "b9e397c HEAD@{4}: clone: from /home/player/.firstcommit/playground/github.com/moonbase/project.git"
+    }
+   ],
+   "ghosts": [],
+   "texts": [
+    {
+     "path": "README.md",
+     "folder": "# Project\n",
+     "index": "# Project\n"
+    },
+    {
+     "path": "checklist.txt",
+     "folder": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n<<<<<<< HEAD\n4. Course: the Moon\n=======\n4. Course: Jupiter\n>>>>>>> 94b6459f310f9ec74b15d5f70e207bdf95b25026\n5. Music: off\n6. Shields: on\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n",
+     "index": null
+    },
+    {
+     "path": "crew.txt",
+     "folder": "Crew: Ana, Alex\n",
+     "index": "Crew: Ana, Alex\n"
+    },
+    {
+     "path": "notes.txt",
+     "folder": "Notes\n",
+     "index": "Notes\n"
+    },
+    {
+     "path": "route.txt",
+     "folder": "Route: Moon\n",
+     "index": "Route: Moon\n"
+    }
+   ],
+   "graph": [
+    "* 9b9b67c (HEAD -> main) Head for the Moon",
+    "| * 94b6459 (origin/main) Head for Jupiter",
+    "|/  ",
+    "* 0a8298c Add the launch checklist",
+    "* 44c16d0 Add the crew list",
+    "* a38b821 Plot the route",
+    "* b9e397c Start the project"
+   ],
+   "typed": []
+  },
+  "alex": {
+   "conflicts": [],
+   "marked": [],
+   "reflog": [
+    {
+     "old": "0a8298cfcb9a00e68a1bb3b6b05f34caa85529a9",
+     "new": "94b6459f310f9ec74b15d5f70e207bdf95b25026",
+     "message": "commit: Head for Jupiter",
+     "line": "94b6459 (HEAD -> main, origin/main) HEAD@{0}: commit: Head for Jupiter"
+    },
+    {
+     "old": "44c16d071bc8ec04294f6a0629f063291e505ca8",
+     "new": "0a8298cfcb9a00e68a1bb3b6b05f34caa85529a9",
+     "message": "pull --quiet: Fast-forward",
+     "line": "0a8298c HEAD@{1}: pull --quiet: Fast-forward"
+    },
+    {
+     "old": "b9e397c48054ecdd8c48a84b7d1047fefc55fad3",
+     "new": "44c16d071bc8ec04294f6a0629f063291e505ca8",
+     "message": "pull --quiet: Fast-forward",
+     "line": "44c16d0 HEAD@{2}: pull --quiet: Fast-forward"
+    },
+    {
+     "old": "",
+     "new": "b9e397c48054ecdd8c48a84b7d1047fefc55fad3",
+     "message": "clone: from /home/player/.firstcommit/playground/github.com/moonbase/project.git",
+     "line": "b9e397c HEAD@{3}: clone: from /home/player/.firstcommit/playground/github.com/moonbase/project.git"
+    }
+   ],
+   "ghosts": [],
+   "texts": [
+    {
+     "path": "README.md",
+     "folder": "# Project\n",
+     "index": "# Project\n"
+    },
+    {
+     "path": "checklist.txt",
+     "folder": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: Jupiter\n5. Music: off\n6. Shields: off\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n",
+     "index": "LAUNCH CHECKLIST\n1. Seal the hatch\n2. Fuel tanks: half\n3. Check the radio\n4. Course: Jupiter\n5. Music: off\n6. Shields: off\n7. Gloves on\n8. Snack: space noodles\n9. Wave goodbye to base\n"
+    },
+    {
+     "path": "crew.txt",
+     "folder": "Crew: Ana, Alex\n",
+     "index": "Crew: Ana, Alex\n"
+    },
+    {
+     "path": "notes.txt",
+     "folder": "Notes\n",
+     "index": "Notes\n"
+    },
+    {
+     "path": "route.txt",
+     "folder": "Route: Moon\n",
+     "index": "Route: Moon\n"
+    }
+   ],
+   "graph": [
+    "* 94b6459 (HEAD -> main, origin/main) Head for Jupiter",
+    "* 0a8298c Add the launch checklist",
+    "* 44c16d0 Add the crew list",
+    "* a38b821 Plot the route",
+    "* b9e397c Start the project"
+   ],
+   "typed": []
+  }
+ },
+ "resolve": {
+  "file": {
+   "path": "checklist.txt",
+   "read": "323e6796875a4a8ff69abd6fe0d8c9f8cc035738dcf357d4d524e26dfca08fa4",
+   "parts": [
+    {
+     "kind": "clean",
+     "lines": [
+      "LAUNCH CHECKLIST",
+      "1. Seal the hatch",
+      "2. Fuel tanks: half",
+      "3. Check the radio",
+      "4. Course: the Moon",
+      "4. Course: Jupiter",
+      "5. Music: off",
+      "6. Shields: on",
+      "7. Gloves on",
+      "8. Snack: space noodles",
+      "9. Wave goodbye to base"
+     ]
+    }
+   ]
+  }
+ }
+}

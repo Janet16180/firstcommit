@@ -1,0 +1,778 @@
+[
+  {
+    "name": "empty text has no blocks",
+    "text": "",
+    "blocks": []
+  },
+  {
+    "name": "blank lines only have no blocks",
+    "text": "\n   \n\t\n",
+    "blocks": []
+  },
+  {
+    "name": "a paragraph is re-wrapped into one line",
+    "text": "Git keeps\nthe history of\nyour project.",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "Git keeps the history of your project.",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "runs of spaces inside a paragraph become one",
+    "text": "Two   spaces\t and a tab.",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "Two spaces and a tab.",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "blank lines separate paragraphs",
+    "text": "First.\n\nSecond.",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "First.",
+            "code": false,
+            "em": false
+          }
+        ]
+      },
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "Second.",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "several blank lines, or lines of spaces, separate paragraphs once",
+    "text": "First.\n\n  \n\nSecond.",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "First.",
+            "code": false,
+            "em": false
+          }
+        ]
+      },
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "Second.",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "backticks mark code inside a paragraph",
+    "text": "Run `git status` to look.",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "Run ",
+            "code": false,
+            "em": false
+          },
+          {
+            "text": "git status",
+            "code": true,
+            "em": false
+          },
+          {
+            "text": " to look.",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "code can open and close a paragraph",
+    "text": "`main` is a branch, like `topic`",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "main",
+            "code": true,
+            "em": false
+          },
+          {
+            "text": " is a branch, like ",
+            "code": false,
+            "em": false
+          },
+          {
+            "text": "topic",
+            "code": true,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "code in backticks may run over a line break",
+    "text": "Type `git commit\n-m` then a message.",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "Type ",
+            "code": false,
+            "em": false
+          },
+          {
+            "text": "git commit -m",
+            "code": true,
+            "em": false
+          },
+          {
+            "text": " then a message.",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "an unmatched backtick stays as written",
+    "text": "A lone ` stays.",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "A lone ` stays.",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "an empty pair of backticks stays as written",
+    "text": "An empty pair `` stays.",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "An empty pair `` stays.",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "a code span of two backticks may hold a backtick",
+    "text": "Run `` a`b `` now.",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "Run ",
+            "code": false,
+            "em": false
+          },
+          {
+            "text": "a`b",
+            "code": true,
+            "em": false
+          },
+          {
+            "text": " now.",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "one space just inside each end of a code span is dropped, so it can start with a backtick",
+    "text": "`` `main` `` is quoted.",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "`main`",
+            "code": true,
+            "em": false
+          },
+          {
+            "text": " is quoted.",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "spaces inside a code span are kept",
+    "text": "The file `my  notes.txt` has two spaces.",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "The file ",
+            "code": false,
+            "em": false
+          },
+          {
+            "text": "my  notes.txt",
+            "code": true,
+            "em": false
+          },
+          {
+            "text": " has two spaces.",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "a code span of only spaces is kept whole",
+    "text": "A name made of one space: ` `.",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "A name made of one space: ",
+            "code": false,
+            "em": false
+          },
+          {
+            "text": " ",
+            "code": true,
+            "em": false
+          },
+          {
+            "text": ".",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "a run of two backticks closes only on a run of two",
+    "text": "Not closed: `` a ` b.",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "Not closed: `` a ` b.",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "an indented paragraph is verbatim, without its common indentation",
+    "text": "Look:\n\n    $ git log --oneline\n    9fceb02 Add a README\n\nThat is the history.",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "Look:",
+            "code": false,
+            "em": false
+          }
+        ]
+      },
+      {
+        "kind": "code",
+        "text": "$ git log --oneline\n9fceb02 Add a README"
+      },
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "That is the history.",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "a verbatim block keeps the indentation inside it",
+    "text": "The file:\n\n    [user]\n        name = Ada\n",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "The file:",
+            "code": false,
+            "em": false
+          }
+        ]
+      },
+      {
+        "kind": "code",
+        "text": "[user]\n    name = Ada"
+      }
+    ]
+  },
+  {
+    "name": "command lines starting with a dollar sign are verbatim without indentation",
+    "text": "$ git init -q demo\n  (no output)",
+    "blocks": [
+      {
+        "kind": "code",
+        "text": "$ git init -q demo\n  (no output)"
+      }
+    ]
+  },
+  {
+    "name": "a dollar line followed by an unindented line is prose",
+    "text": "$ git init\nmakes a repository.",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "$ git init makes a repository.",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "backticks inside a verbatim block stay as written",
+    "text": "Print the date:\n\n    echo `date`",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "Print the date:",
+            "code": false,
+            "em": false
+          }
+        ]
+      },
+      {
+        "kind": "code",
+        "text": "echo `date`"
+      }
+    ]
+  },
+  {
+    "name": "lines starting with a dash and a space are bullets",
+    "text": "- the working folder\n- the staging area\n- the commits",
+    "blocks": [
+      {
+        "kind": "bullets",
+        "items": [
+          [
+            {
+              "text": "the working folder",
+              "code": false,
+              "em": false
+            }
+          ],
+          [
+            {
+              "text": "the staging area",
+              "code": false,
+              "em": false
+            }
+          ],
+          [
+            {
+              "text": "the commits",
+              "code": false,
+              "em": false
+            }
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "name": "a bullet continues on the lines after it",
+    "text": "- a commit records\n  every file\n- a branch names a commit",
+    "blocks": [
+      {
+        "kind": "bullets",
+        "items": [
+          [
+            {
+              "text": "a commit records every file",
+              "code": false,
+              "em": false
+            }
+          ],
+          [
+            {
+              "text": "a branch names a commit",
+              "code": false,
+              "em": false
+            }
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "name": "lines before the first bullet are a paragraph",
+    "text": "Commands to keep:\n- `git status` shows the three areas\n- `git add` stages a file",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "Commands to keep:",
+            "code": false,
+            "em": false
+          }
+        ]
+      },
+      {
+        "kind": "bullets",
+        "items": [
+          [
+            {
+              "text": "git status",
+              "code": true,
+              "em": false
+            },
+            {
+              "text": " shows the three areas",
+              "code": false,
+              "em": false
+            }
+          ],
+          [
+            {
+              "text": "git add",
+              "code": true,
+              "em": false
+            },
+            {
+              "text": " stages a file",
+              "code": false,
+              "em": false
+            }
+          ]
+        ]
+      }
+    ]
+  },
+  {
+    "name": "a dash without a space is not a bullet",
+    "text": "-q keeps git quiet.",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "-q keeps git quiet.",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "an indented triple-quoted text is dedented as a whole first",
+    "text": "\n        A lesson written inside code.\n        It wraps.\n\n            $ git status\n        ",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "A lesson written inside code. It wraps.",
+            "code": false,
+            "em": false
+          }
+        ]
+      },
+      {
+        "kind": "code",
+        "text": "$ git status"
+      }
+    ]
+  },
+  {
+    "name": "a text that is only indented output reads as prose, since the whole text is dedented first",
+    "text": "    On branch main\n    nothing to commit",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "On branch main nothing to commit",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "trailing spaces in a verbatim block are dropped",
+    "text": "Run:\n\n    $ git add .   \n    $ git commit\t",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "Run:",
+            "code": false,
+            "em": false
+          }
+        ]
+      },
+      {
+        "kind": "code",
+        "text": "$ git add .\n$ git commit"
+      }
+    ]
+  },
+  {
+    "name": "asterisks mark a commit's subject in italics",
+    "text": "Put it on *Plot the route*, by its hash.",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "Put it on ",
+            "code": false,
+            "em": false
+          },
+          {
+            "text": "Plot the route",
+            "code": false,
+            "em": true
+          },
+          {
+            "text": ", by its hash.",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "italics may run over a line break",
+    "text": "an old name on *Start the\nproject* can go",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "an old name on ",
+            "code": false,
+            "em": false
+          },
+          {
+            "text": "Start the project",
+            "code": false,
+            "em": true
+          },
+          {
+            "text": " can go",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "italics can open and close a paragraph",
+    "text": "*Fix the route*",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "Fix the route",
+            "code": false,
+            "em": true
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "an asterisk next to a space stays as written",
+    "text": "2 * 3 and 4 *",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "2 * 3 and 4 *",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "an unmatched asterisk stays as written",
+    "text": "*Plot the route",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "*Plot the route",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "asterisks inside code stay as written",
+    "text": "Run `git add *.txt *` now.",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "Run ",
+            "code": false,
+            "em": false
+          },
+          {
+            "text": "git add *.txt *",
+            "code": true,
+            "em": false
+          },
+          {
+            "text": " now.",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "italics stay inside the prose between code spans",
+    "text": "`main` is on *Fix the route*, not `test-run`.",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "main",
+            "code": true,
+            "em": false
+          },
+          {
+            "text": " is on ",
+            "code": false,
+            "em": false
+          },
+          {
+            "text": "Fix the route",
+            "code": false,
+            "em": true
+          },
+          {
+            "text": ", not ",
+            "code": false,
+            "em": false
+          },
+          {
+            "text": "test-run",
+            "code": true,
+            "em": false
+          },
+          {
+            "text": ".",
+            "code": false,
+            "em": false
+          }
+        ]
+      }
+    ]
+  },
+  {
+    "name": "asterisks in a verbatim block stay as written",
+    "text": "Output:\n\n  *not italics*",
+    "blocks": [
+      {
+        "kind": "para",
+        "spans": [
+          {
+            "text": "Output:",
+            "code": false,
+            "em": false
+          }
+        ]
+      },
+      {
+        "kind": "code",
+        "text": "*not italics*"
+      }
+    ]
+  }
+]
