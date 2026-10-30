@@ -1,7 +1,7 @@
 # First Commit in a container: Ubuntu 24.04 with the git and Python the levels are checked
 # against, and the game's sources copied in. Build it through deploy/docker/run. Two targets:
 # "player", the game, and "test", the same image plus uv and the repository, to run the suite.
-FROM ubuntu:24.04@sha256:534baea6a22c03a63003dbc8dbe78fe34bc0d7e595d9a9dc9834884ff530eb55 AS player
+FROM ubuntu:25.10@sha256:7cc5e35f6567ee8c66d2abb4aab0fd866669e6207c237c3a8f0947a5c7f17092 AS player
 
 # The base image is minimized: it leaves out manuals and replaces man with a notice. Beginners
 # use git help, so manuals come back for the packages installed here (as unminimize does).
